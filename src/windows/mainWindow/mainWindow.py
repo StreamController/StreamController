@@ -24,6 +24,7 @@ from loguru import logger as log
 
 # Import own modules
 from src.windows.mainWindow.elements.leftArea import LeftArea
+from src.windows.mainWindow.elements.rightArea import RightArea
 from src.windows.mainWindow.headerBar import HeaderBar
 
 class MainWindow(Gtk.ApplicationWindow):
@@ -35,15 +36,18 @@ class MainWindow(Gtk.ApplicationWindow):
     def build(self):
         log.trace("Building main window")
 
-
         self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.set_child(self.mainBox)
 
-        self.leftArea = LeftArea()
-        self.mainBox.append(self.leftArea)
+        self.mainPaned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True, tooltip_text="Resize")
+        self.mainBox.append(self.mainPaned)
+
+        self.leftArea = LeftArea(margin_end=3, width_request=500)
+        self.mainPaned.set_start_child(self.leftArea)
+
+        self.rightArea = RightArea(margin_start=3, width_request=180)
+        self.mainPaned.set_end_child(self.rightArea)
 
         # Add header bar
         self.headerBar = HeaderBar(self.leftArea.deckStack)
         self.set_titlebar(self.headerBar)
-        # Set stack for header bar
-        # self.headerBar.deckSwitcher.set_stack(self.leftArea.deckStack)

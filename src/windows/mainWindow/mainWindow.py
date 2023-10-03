@@ -21,9 +21,6 @@ from gi.repository import Gtk, Adw
 # Import Python modules
 from loguru import logger as log
 
-# Import own modules
-from src.windows.mainWindow.elements.leftStack import LeftStack
-
 class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -32,12 +29,5 @@ class MainWindow(Gtk.ApplicationWindow):
     @log.catch
     def build(self):
         log.trace("Building main window")
-        # Demo
         self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.set_child(self.mainBox)
-
-        self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.mainBox.append(self.paned)
-
-        self.paned.set_start_child(LeftStack(hexpand=True, margin_end=3, width_request=500))
-        self.paned.set_end_child(Gtk.Button(label="hello world", hexpand=True, margin_start=3, width_request=100))

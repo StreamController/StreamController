@@ -1,0 +1,3 @@
+pycairo==1.25.0
+PyGObject==3.46.0
+PyGObject-stubs==2.9.0

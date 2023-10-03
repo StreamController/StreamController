@@ -32,10 +32,15 @@ class Main:
         app = App(application_id=application_id)
         app.run(sys.argv)
 
-
-if __name__ == "__main__":
+@log.catch
+def load():
     config_logger()
     log.info("Loading app")
     Main(application_id="com.core447.StreamController")
+
+
+if __name__ == "__main__":
+    load()
+
 
 log.trace("Reached end of main.py")

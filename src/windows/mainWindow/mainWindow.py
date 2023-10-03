@@ -22,16 +22,22 @@ from gi.repository import Gtk, Adw
 from loguru import logger as log
 
 # Import own modules
-from src.windows.mainWindow.mainWindow import MainWindow
+from src.windows.mainWindow.elements.leftStack import LeftStack
 
-class App(Adw.Application):
+class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.connect("activate", self.on_activate)
+        self.build()
 
-    def on_activate(self, app):
-        log.trace("running: on_activate")
-        self.main_win = MainWindow(application=app)
-        self.main_win.present()
+    @log.catch
+    def build(self):
+        log.trace("Building main window")
+        # Demo
+        self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.set_child(self.mainBox)
 
-        log.success("Finished loading app")
+        self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.mainBox.append(self.paned)
+
+        self.paned.set_start_child(LeftStack(hexpand=True, margin_end=3, width_request=500))
+        self.paned.set_end_child(Gtk.Button(label="hello world", hexpand=True, margin_start=3, width_request=100))

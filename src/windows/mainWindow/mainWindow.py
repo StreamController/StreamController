@@ -30,6 +30,7 @@ from src.windows.mainWindow.headerBar import HeaderBar
 class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.set_size_request(1000, 600)
         self.build()
 
     @log.catch

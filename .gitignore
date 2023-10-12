@@ -161,3 +161,6 @@ cython_debug/
 
 # VSCode
 .vscode/
+
+# own folders
+cache/

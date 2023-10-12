@@ -1,4 +1,8 @@
 loguru==0.7.2
+numpy==1.26.0
+opencv-python==4.8.1.78
+Pillow==10.0.1
 pycairo==1.25.0
 PyGObject==3.46.0
 PyGObject-stubs==2.9.0
+streamdeck==0.9.4

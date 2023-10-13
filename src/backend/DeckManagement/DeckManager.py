@@ -12,3 +12,17 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+# Import Python modules
+from StreamDeck.DeviceManager import DeviceManager
+from StreamDeck.ImageHelpers import PILHelper
+
+# Import own modules
+from src.backend.DeckManagement.DeckController import DeckController
+class DeckManager:
+    def __init__(self):
+        self.deck_controller = []
+    def load_decks(self):
+        decks=DeviceManager().enumerate()
+        for deck in decks:
+            deck_controller = DeckController(deck)
+            self.deck_controller.append(deck_controller)

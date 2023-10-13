@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Gdk
 
 # Import Python modules
 from loguru import logger as log
@@ -25,13 +25,18 @@ from loguru import logger as log
 from src.windows.mainWindow.mainWindow import MainWindow
 
 class App(Adw.Application):
-    def __init__(self, **kwargs):
+    def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
+        self.deck_manager = deck_manager
         self.connect("activate", self.on_activate)
+
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_path("style.css")
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def on_activate(self, app):
         log.trace("running: on_activate")
-        self.main_win = MainWindow(application=app)
+        self.main_win = MainWindow(application=app, deck_manager=self.deck_manager)
         self.main_win.present()
 
         log.success("Finished loading app")

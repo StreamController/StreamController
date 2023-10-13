@@ -25,13 +25,14 @@ from loguru import logger as log
 from src.windows.mainWindow.deckSwitcher import DeckSwitcher
 
 class HeaderBar(Gtk.HeaderBar):
-    def __init__(self, deckStack, **kwargs):
+    def __init__(self, deck_manager, deck_stack, **kwargs):
         super().__init__(**kwargs)
-        self.deckStack = deckStack
+        self.deck_manager = deck_manager
+        self.deckStack = deck_stack
         self.build()
 
     def build(self):
         # Deck selector
-        self.deckSwitcher = DeckSwitcher(hexpand=True, margin_start=75, margin_end=75)
+        self.deckSwitcher = DeckSwitcher(hexpand=False, margin_start=75, margin_end=75, width_request=500)
         self.deckSwitcher.set_stack(self.deckStack)
         self.set_title_widget(self.deckSwitcher)

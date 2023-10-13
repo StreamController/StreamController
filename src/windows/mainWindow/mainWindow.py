@@ -28,8 +28,9 @@ from src.windows.mainWindow.elements.rightArea import RightArea
 from src.windows.mainWindow.headerBar import HeaderBar
 
 class MainWindow(Gtk.ApplicationWindow):
-    def __init__(self, **kwargs):
+    def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
+        self.deck_manager = deck_manager
         self.set_size_request(1000, 600)
         self.build()
 
@@ -43,12 +44,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.mainPaned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True, tooltip_text="Resize")
         self.mainBox.append(self.mainPaned)
 
-        self.leftArea = LeftArea(margin_end=3, width_request=500)
+        self.leftArea = LeftArea(deck_manager=self.deck_manager, margin_end=3, width_request=500)
         self.mainPaned.set_start_child(self.leftArea)
 
         self.rightArea = RightArea(margin_start=3, width_request=180)
         self.mainPaned.set_end_child(self.rightArea)
 
         # Add header bar
-        self.headerBar = HeaderBar(self.leftArea.deckStack)
+        self.headerBar = HeaderBar(self.deck_manager, self.leftArea.deckStack)
         self.set_titlebar(self.headerBar)

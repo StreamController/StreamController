@@ -18,14 +18,35 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
-# Import Python modules
+# Import Python modules 
 from loguru import logger as log
 
 class DeckStack(Gtk.Stack):
-    def __init__(self, **kwargs):
+    def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
+        self.deck_manager = deck_manager
         self.build()
 
     def build(self):
-        for i in range(5):
-            self.add_titled(Gtk.Label(label=f"Deck {i}"), f"Deck{i}", f"Deck {i}")
+        deck_names = []
+        deck_ids = []
+        print("loading", self.deck_manager.deck_controller)
+        print(len(self.deck_manager.deck_controller))
+        for deck_controller in self.deck_manager.deck_controller:
+            print("1")
+            deck_type = deck_controller.deck.deck_type()
+            deck_ids.append(str(deck_controller.deck.product_id()))
+            if deck_type not in deck_names:
+                deck_names.append(deck_type)
+                continue
+            # name already exists
+            while deck_type in deck_names:
+                if deck_type[-1].isdigit():
+                    deck_type = deck_type[:-1] + chr(ord(deck_type[-1]) + 1)
+                else:
+                    deck_type = deck_type + " 2"
+
+            deck_names.append(deck_type)
+        
+        for i in range(len(deck_names)):
+            self.add_titled(Gtk.Label(label=f"Deck {deck_names[i]}"), deck_ids[i], deck_names[i])

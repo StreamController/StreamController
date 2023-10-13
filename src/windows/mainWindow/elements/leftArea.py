@@ -25,10 +25,11 @@ from loguru import logger as log
 from src.windows.mainWindow.elements.deckStack import DeckStack
 
 class LeftArea(Gtk.Box):
-    def __init__(self, **kwargs):
+    def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
+        self.deck_manager = deck_manager
         self.build()
 
     def build(self):
-        self.deckStack = DeckStack()
+        self.deckStack = DeckStack(self.deck_manager)
         self.append(self.deckStack)

@@ -41,7 +41,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.set_child(self.mainBox)
 
-        self.mainPaned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True, tooltip_text="Resize")
+        self.mainPaned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
         self.mainBox.append(self.mainPaned)
 
         self.leftArea = LeftArea(deck_manager=self.deck_manager, margin_end=3, width_request=500)

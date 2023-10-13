@@ -58,7 +58,7 @@ class DeckController:
     @log.catch
     def generate_key_image(self, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], key=None, add_background=True, shrink=False):
         # margins = [left, top, right, bottom]
-        DEFAULT_FONT = "Roboto-Regular.ttf"
+        DEFAULT_FONT = "Assets/Fonts/Roboto-Regular.ttf"
         if image != None:
             image = image
         elif image_path != None:

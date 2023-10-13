@@ -26,7 +26,8 @@ from src.windows.mainWindow.elements.KeyGrid import KeyGrid
 from src.windows.mainWindow.elements.DeckSettings import DeckSettings
 
 class DeckPage(Gtk.Box):
-    def __init__(self):
+    def __init__(self, deck_controller, **kwargs):
+        self.deck_controller = deck_controller
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.build()
 

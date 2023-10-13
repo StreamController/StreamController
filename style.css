@@ -1,3 +1,12 @@
 .bold {
   font-weight: bold;
 }
+.key-button{
+  border-radius: 10px;
+  margin: 10px;
+  min-width:75px;	
+	max-width:75px;
+	margin-right:10px;
+	min-height:75px;
+	max-height:75px;
+}

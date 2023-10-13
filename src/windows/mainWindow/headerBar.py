@@ -23,12 +23,14 @@ from loguru import logger as log
 
 # Import own modules
 from src.windows.mainWindow.deckSwitcher import DeckSwitcher
+from src.windows.mainWindow.elements.PageSelector import PageSelector
 
 class HeaderBar(Gtk.HeaderBar):
-    def __init__(self, deck_manager, deck_stack, **kwargs):
+    def __init__(self, deck_manager, main_window, deck_stack, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
         self.deckStack = deck_stack
+        self.main_window = main_window
         self.build()
 
     def build(self):

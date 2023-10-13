@@ -21,13 +21,20 @@ from gi.repository import Gtk, Adw
 # Import Python modules 
 from loguru import logger as log
 
+# Import own modules
+from src.windows.mainWindow.elements.DeckPage import DeckPage
+
 class DeckStack(Gtk.Stack):
     def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
+        self.add_pages()
         self.build()
 
     def build(self):
+        pass
+
+    def add_pages(self):
         deck_names = []
         deck_ids = []
         print("loading", self.deck_manager.deck_controller)
@@ -49,4 +56,7 @@ class DeckStack(Gtk.Stack):
             deck_names.append(deck_type)
         
         for i in range(len(deck_names)):
-            self.add_titled(Gtk.Label(label=f"Deck {deck_names[i]}"), deck_ids[i], deck_names[i])
+            # self.add_titled(Gtk.Label(label=f"Deck {deck_names[i]}"), deck_ids[i], deck_names[i])
+            page = DeckPage()
+            self.add_titled(page, deck_ids[i], deck_names[i])
+            # self.set_visible_child_name(deck_ids[i])

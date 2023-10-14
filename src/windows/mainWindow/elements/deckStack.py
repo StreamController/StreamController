@@ -34,15 +34,15 @@ class DeckStack(Gtk.Stack):
     def build(self):
         pass
 
-    def add_pages(self):
+    def add_pages(self)
         deck_names = []
-        deck_ids = []
+        deck_numbers = []
         print("loading", self.deck_manager.deck_controller)
         print(len(self.deck_manager.deck_controller))
         for deck_controller in self.deck_manager.deck_controller:
             print("1")
             deck_type = deck_controller.deck.deck_type()
-            deck_ids.append(str(deck_controller.deck.product_id()))
+            deck_numbers.append(str(deck_controller.deck.get_serial_number()))
             if deck_type not in deck_names:
                 deck_names.append(deck_type)
                 continue
@@ -58,5 +58,5 @@ class DeckStack(Gtk.Stack):
         for i in range(len(deck_names)):
             # self.add_titled(Gtk.Label(label=f"Deck {deck_names[i]}"), deck_ids[i], deck_names[i])
             page = DeckPage(self.deck_manager.deck_controller[i])
-            self.add_titled(page, deck_ids[i], deck_names[i])
+            self.add_titled(page, deck_numbers[i], deck_names[i])
             # self.set_visible_child_name(deck_ids[i])

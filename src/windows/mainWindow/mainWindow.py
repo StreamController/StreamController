@@ -51,5 +51,5 @@ class MainWindow(Gtk.ApplicationWindow):
         self.mainPaned.set_end_child(self.rightArea)
 
         # Add header bar
-        self.headerBar = HeaderBar(self.deck_manager, self, self.leftArea.deckStack)
+        self.headerBar = HeaderBar(self.deck_manager, self, self.leftArea.deck_stack)
         self.set_titlebar(self.headerBar)

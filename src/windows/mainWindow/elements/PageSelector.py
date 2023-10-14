@@ -38,7 +38,7 @@ class PageSelector(Gtk.Box):
         self.append(self.right_area)
 
         # Dropdown
-        pages = self.page_manager.get_pages(remove_extension=True)
+        pages = self.get_pages()
         self.drop_down = Gtk.DropDown.new_from_strings(pages)
         self.drop_down.set_tooltip_text("Select page for active deck")
         self.right_area.append(self.drop_down)
@@ -46,3 +46,15 @@ class PageSelector(Gtk.Box):
         # Settings button
         self.settings_button = Gtk.Button(icon_name="settings", tooltip_text="Open Page Manager")
         self.right_area.append(self.settings_button)
+
+    def get_pages(self):
+        pages = self.page_manager.get_pages(remove_extension=True)
+        active_deck_serial_number = self.main_window.leftArea.deck_stack.get_visible_child_name()
+        log.debug(f"Active deck serial number: {active_deck_serial_number}")
+        active_deck_default_page = self.page_manager.get_default_page_for_deck(active_deck_serial_number, remove_extension=True)
+        # Add suffix to default page
+        for page in pages:
+            if page == active_deck_default_page:
+                pages[pages.index(page)] = page + " (default)"
+
+        return pages

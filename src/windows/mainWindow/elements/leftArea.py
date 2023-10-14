@@ -31,5 +31,5 @@ class LeftArea(Gtk.Box):
         self.build()
 
     def build(self):
-        self.deckStack = DeckStack(self.deck_manager)
-        self.append(self.deckStack)
+        self.deck_stack = DeckStack(self.deck_manager)
+        self.append(self.deck_stack)

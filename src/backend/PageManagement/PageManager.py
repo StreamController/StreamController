@@ -19,7 +19,8 @@ import os
 from src.backend.PageManagement.Page import Page
 
 class PageManager:
-    def __init__(self):
+    def __init__(self, settings_manager):
+        self.settings_manager = settings_manager
         self.pages = dict()
     
     def load_pages(self) -> None:
@@ -36,3 +37,12 @@ class PageManager:
         if remove_extension:
             pages = [os.path.splitext(page)[0] for page in pages]
         return pages
+    
+    def get_default_page_for_deck(self, serial_number: str, remove_extension: bool = False) -> Page:
+        page_settings = self.settings_manager.load_settings_from_file("settings/pages.json")
+        for page in page_settings["default-pages"]:
+            if page["deck"] == serial_number:
+                if remove_extension:
+                    return os.path.splitext(page["name"])[0]
+                return self.pages[page["name"]]
+        return None

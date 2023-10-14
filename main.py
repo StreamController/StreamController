@@ -26,7 +26,7 @@ def config_logger():
     # Create log files
     log.add("logs/logs.log", rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print
-    log.add(sys.stderr, level="INFO")
+    log.add(sys.stderr, level="DEBUG")
 
 class Main:
     def __init__(self, application_id, deck_manager):

@@ -20,6 +20,10 @@ import os
 # Import own modules
 from src.app import App
 from src.backend.DeckManagement.DeckManager import DeckManager
+from locales.LocaleManager import LocaleManager
+
+# Import globals
+import globals as gl
 
 def config_logger():
     log.remove(0)
@@ -37,6 +41,10 @@ class Main:
 @log.catch
 def load():
     config_logger()
+    # Setup locales
+    localeManager = LocaleManager()
+    localeManager.set_to_os_default()
+    gl.lm = localeManager
     log.info("Loading app")
     deck_manager = DeckManager()
     deck_manager.load_decks()

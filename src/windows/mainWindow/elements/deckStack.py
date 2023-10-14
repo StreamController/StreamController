@@ -34,7 +34,7 @@ class DeckStack(Gtk.Stack):
     def build(self):
         pass
 
-    def add_pages(self)
+    def add_pages(self):
         deck_names = []
         deck_numbers = []
         print("loading", self.deck_manager.deck_controller)

@@ -18,9 +18,12 @@ from StreamDeck.ImageHelpers import PILHelper
 
 # Import own modules
 from src.backend.DeckManagement.DeckController import DeckController
+from src.backend.PageManagement.PageManager import PageManager
 class DeckManager:
     def __init__(self):
         self.deck_controller = []
+        self.page_manager = PageManager()
+        self.page_manager.load_pages()
     def load_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:

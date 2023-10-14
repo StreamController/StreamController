@@ -1,0 +1,70 @@
+{
+    "brightness": 0,
+    "background": {
+        "show": true,
+        "path": "NYC.mp4",
+        "loop": false,
+        "fps": 30
+    },
+    "layout": [
+        3,
+        5
+    ],
+    "keys": {
+        "0x0": {
+            "actions": [
+                {
+                    "name": "Media::Play",
+                    "settings": {}
+                }
+            ],
+            "labels": {
+                "top": {
+                    "text": "TOP",
+                    "color": [
+                        255,
+                        0,
+                        0
+                    ],
+                    "stroke-width": 0,
+                    "font": null,
+                    "font-size": 20
+                },
+                "center": {
+                    "text": "CEN",
+                    "color": [
+                        255,
+                        0,
+                        0
+                    ],
+                    "stroke-width": 0,
+                    "font": null,
+                    "font-size": 20
+                },
+                "bottom": {
+                    "text": "BOT",
+                    "color": [
+                        255,
+                        0,
+                        0
+                    ],
+                    "stroke-width": 0,
+                    "font": null,
+                    "font-size": 20
+                }
+            },
+            "media": {
+                "path": "Assets/copyrighted/Pressed.png",
+                "loop": false,
+                "fps": 30
+            }
+        },
+        "1x0": {
+            "media": {
+                "path": "Assets/copyrighted/triangles.gif",
+                "loop": false,
+                "fps": 30
+            }
+        }
+    }
+}

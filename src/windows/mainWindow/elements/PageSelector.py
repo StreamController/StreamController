@@ -22,8 +22,9 @@ from gi.repository import Gtk, Adw, Gio, GObject
 from loguru import logger as log
 
 class PageSelector(Gtk.Box):
-    def __init__(self, main_window):
+    def __init__(self, main_window, page_manager):
         self.main_window = main_window
+        self.page_manager = page_manager
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.build()
 
@@ -37,7 +38,7 @@ class PageSelector(Gtk.Box):
         self.append(self.right_area)
 
         # Dropdown
-        pages = self.get_pages()
+        pages = self.page_manager.get_pages(remove_extension=True)
         self.drop_down = Gtk.DropDown.new_from_strings(pages)
         self.drop_down.set_tooltip_text("Select page for active deck")
         self.right_area.append(self.drop_down)
@@ -45,6 +46,3 @@ class PageSelector(Gtk.Box):
         # Settings button
         self.settings_button = Gtk.Button(icon_name="settings", tooltip_text="Open Page Manager")
         self.right_area.append(self.settings_button)
-
-    def get_pages(self):
-        return ["Page 1", "Page 2", "Page 3"]

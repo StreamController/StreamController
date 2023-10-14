@@ -35,7 +35,7 @@ class HeaderBar(Gtk.HeaderBar):
 
     def build(self):
         # Page selector
-        self.page_selector = PageSelector(self.main_window)
+        self.page_selector = PageSelector(self.main_window, self.deck_manager.page_manager)
         self.pack_start(self.page_selector)
 
         # Deck selector

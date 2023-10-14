@@ -25,11 +25,17 @@ from loguru import logger as log
 from src.windows.mainWindow.elements.DeckPage import DeckPage
 
 class DeckStack(Gtk.Stack):
-    def __init__(self, deck_manager, **kwargs):
+    def __init__(self, main_window, deck_manager, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
+        self.main_window = main_window
         self.add_pages()
         self.build()
+        self.connect("notify::visible-child-name", self.on_switch)
+
+    def on_switch(self, widget, *args):
+        # Update page selector
+        self.main_window.header_bar.page_selector.update()
 
     def build(self):
         pass

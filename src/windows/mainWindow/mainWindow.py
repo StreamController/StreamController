@@ -44,12 +44,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.mainPaned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
         self.mainBox.append(self.mainPaned)
 
-        self.leftArea = LeftArea(deck_manager=self.deck_manager, margin_end=3, width_request=500, margin_bottom=10)
+        self.leftArea = LeftArea(self, deck_manager=self.deck_manager, margin_end=3, width_request=500, margin_bottom=10)
         self.mainPaned.set_start_child(self.leftArea)
 
         self.rightArea = RightArea(margin_start=3, width_request=180)
         self.mainPaned.set_end_child(self.rightArea)
 
         # Add header bar
-        self.headerBar = HeaderBar(self.deck_manager, self, self.leftArea.deck_stack)
-        self.set_titlebar(self.headerBar)
+        self.header_bar = HeaderBar(self.deck_manager, self, self.leftArea.deck_stack)
+        self.set_titlebar(self.header_bar)

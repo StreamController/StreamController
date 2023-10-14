@@ -38,8 +38,10 @@ class PageSelector(Gtk.Box):
         self.append(self.right_area)
 
         # Dropdown
-        pages = self.get_pages()
-        self.drop_down = Gtk.DropDown.new_from_strings(pages)
+        self.pages_model = Gtk.StringList()
+        self.drop_down = Gtk.DropDown()
+        self.drop_down.set_model(self.pages_model)
+        self.update()
         self.drop_down.set_tooltip_text("Select page for active deck")
         self.right_area.append(self.drop_down)
 
@@ -58,3 +60,15 @@ class PageSelector(Gtk.Box):
                 pages[pages.index(page)] = page + " (default)"
 
         return pages
+    
+    def update(self):
+        pages = self.get_pages()
+        self.clear_model()
+        self.pages_model.remove
+        for page in pages:
+            print(page)
+            self.pages_model.append(page)
+
+    def clear_model(self):
+        for i in range(self.pages_model.get_n_items()):
+            self.pages_model.remove(0)

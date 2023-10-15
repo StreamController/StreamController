@@ -22,6 +22,7 @@ from src.app import App
 from src.backend.DeckManagement.DeckManager import DeckManager
 from locales.LocaleManager import LocaleManager
 from src.backend.MediaManager import MediaManager
+from src.backend.AssetManager import AssetManager
 
 # Import globals
 import globals as gl
@@ -58,6 +59,7 @@ def create_cache_folder():
 
 def create_global_objects():
     gl.media_manager = MediaManager()
+    gl.asset_manager = AssetManager()
 
 
 if __name__ == "__main__":

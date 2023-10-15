@@ -14,3 +14,9 @@
   background-color: #3A3A3A;
   border-radius: 10px;
 }
+.page-settings-media-selector{
+  min-width: 150px;
+  min-height: 150px;
+  max-width: 150px;
+  max-height: 150px;
+}

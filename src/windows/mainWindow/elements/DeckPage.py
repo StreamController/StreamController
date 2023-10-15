@@ -23,7 +23,7 @@ from loguru import logger as log
 
 # Import own modules
 from src.windows.mainWindow.elements.KeyGrid import KeyGrid
-from src.windows.mainWindow.elements.DeckSettings import DeckSettings
+from src.windows.mainWindow.elements.DeckSettings import PageSettings
 
 class DeckPage(Gtk.Box):
     def __init__(self, deck_controller, **kwargs):
@@ -48,7 +48,7 @@ class DeckPage(Gtk.Box):
         self.stack.add_titled(self.grid_page, "keys", "Page Key Grid")
 
         # Add settings
-        self.settings_page = DeckSettings(self)
+        self.settings_page = PageSettings(self)
         self.stack.add_titled(self.settings_page, "settings", "Page Settings")
 
 

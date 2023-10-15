@@ -20,6 +20,8 @@ Shoutout to Dean Camera alias abcminiuser for his amazing work!
 from PIL import Image, ImageOps
 from StreamDeck.ImageHelpers import PILHelper
 
+from gi.repository import GLib, GdkPixbuf
+
 def create_full_deck_sized_image(deck, image_filename = None, image = None):
         key_rows, key_cols = deck.key_layout()
         key_width, key_height = deck.key_image_format()['size']
@@ -92,3 +94,47 @@ def shrink_image(image):
         bg = Image.new("RGB", (72, 72), (0, 0, 0))
         bg.paste(image, (11, 11))
         return bg
+
+def is_transparent(img):
+    """
+    Determines if an image has transparency.
+
+    Args:
+        img (PIL.Image.Image): The image to check for transparency.
+
+    Returns:
+        bool: True if the image has transparency, False otherwise.
+    """
+    if img.info.get("transparency", None) is not None:
+        return True
+    if img.mode == "P":
+        transparent = img.info.get("transparency", -1)
+        for _, index in img.getcolors():
+            if index == transparent:
+                return True
+    elif img.mode == "RGBA":
+        extrema = img.getextrema()
+        if extrema[3][0] < 255:
+            return True
+
+    return False
+
+def image2pixbuf(img):
+    """
+    Converts an image to a GdkPixbuf.Pixbuf object.
+
+    Args:
+        img (PIL.Image.Image): The image to convert.
+
+    Returns:
+        GdkPixbuf.Pixbuf: The converted GdkPixbuf.Pixbuf object.
+    """
+    data = img.tobytes()
+    w, h = img.size
+    data = GLib.Bytes.new(data)
+    transparent = is_transparent(img)
+    channels = 4 if transparent else 3
+
+    pix = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
+            transparent, 8, w, h, w * channels)
+    return pix

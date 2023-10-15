@@ -20,6 +20,7 @@ from StreamDeck.ImageHelpers import PILHelper
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManager import PageManager
 from src.backend.SettingsManager import SettingsManager
+
 class DeckManager:
     def __init__(self):
         #TODO: Maybe outsource some objects
@@ -32,3 +33,18 @@ class DeckManager:
         for deck in decks:
             deck_controller = DeckController(deck)
             self.deck_controller.append(deck_controller)
+
+        self.deck_controller = self.deck_controller*1
+        self.deck_controller.append(Fake())
+
+class Fake:
+    def __init__(self):
+        self.deck = FakeDeck()
+
+class FakeDeck:
+    def deck_type(self):
+        return "Fake Deck"
+    def get_serial_number(self):
+        return "fake-deck-001"
+    def key_layout(self):
+        return (3, 5)

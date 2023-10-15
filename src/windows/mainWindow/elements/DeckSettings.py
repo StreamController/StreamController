@@ -16,12 +16,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GLib, Gdk, GdkPixbuf
 
 # Import Python modules 
 from loguru import logger as log
+import numpy
+import cv2
 
-class DeckSettings(Gtk.Box):
+# Import globals
+import globals as gl
+
+# Import own modules
+from src.backend.DeckManagement.ImageHelpers import image2pixbuf, is_transparent
+
+
+class PageSettings(Gtk.Box):
     def __init__(self, deck_page, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
                          margin_start=50, margin_end=50,
@@ -43,11 +52,72 @@ class DeckSettings(Gtk.Box):
         background_group = Adw.PreferencesGroup(title="Background", description="Applies only to current page", margin_top=15)
         main_box.append(background_group)
 
+
         settings_group.add(SwitchSetting("Enable Screensaver"))
         settings_group.add(ScaleSetting("Brightness", step=1))
 
-        background_group.add(SwitchSetting("Enable Background"))
+        # background_group.add(SwitchSetting("Enable Background"))
+        background_group.add(BackgroundRow())
 
+
+
+class BackgroundRow(Adw.PreferencesRow):
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.build()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.toggle_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.main_box.append(self.toggle_box)
+
+        self.toggle_label = Gtk.Label(label="Enable Background", hexpand=True, xalign=0)
+        self.toggle_box.append(self.toggle_label)
+        self.toggle_switch = Gtk.Switch()
+        self.toggle_switch.connect("state-set", self.on_toggle)
+        self.toggle_box.append(self.toggle_switch)
+
+        self.media_selector = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER)
+        self.media_selector.set_visible(self.toggle_switch.get_state())
+        self.main_box.append(self.media_selector)
+
+        self.media_selector_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"])
+        self.media_selector_button.connect("clicked", self.choose_with_file_dialog)
+        self.media_selector.append(self.media_selector_button)
+        
+
+    def on_toggle(self, toggle_switch, state):
+        self.media_selector.set_visible(state)
+
+    def choose_with_file_dialog(self, button):
+        dialog = ChooseBackgroundDialog(self)
+
+
+class ChooseBackgroundDialog(Gtk.FileDialog):
+    def __init__(self, background_row: BackgroundRow):
+        super().__init__(title="Select Background",
+                         accept_label="Select")
+        self.background_row = background_row
+        self.open(callback=self.callback)
+
+    def callback(self, dialog, result):
+        try:
+            selected_file = self.open_finish(result)
+            file_path = selected_file.get_path()
+        except GLib.Error as err:
+            log.error(err)
+            print("exc")
+            return
+        
+        print(file_path)
+        im = gl.media_manager.get_thumbnail(file_path)
+
+        pixbuf = image2pixbuf(im)
+        image = Gtk.Image.new_from_pixbuf(pixbuf)
+        self.background_row.media_selector_button.set_child(image)
 
 class SwitchSetting(Adw.PreferencesRow):
     def __init__(self, label, **kwargs):

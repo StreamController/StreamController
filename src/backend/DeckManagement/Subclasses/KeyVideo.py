@@ -15,7 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import Python modules
 from loguru import logger as log
 import cv2
-from PIL import Image
+from PIL import Image, ImageSequence
 from StreamDeck.ImageHelpers import PILHelper
 
 # Import own modules
@@ -67,3 +67,11 @@ class KeyVideo(Video):
             pillow_image = Image.fromarray(rgb_frame)
             scaled_pillow_image = PILHelper.create_scaled_image(self.deck, image=pillow_image)
             self.frames.append(scaled_pillow_image)
+
+    @log.catch
+    def load_gif(self, gif_path):
+        # This is the same as load_video but with transparency support
+        gif = Image.open(gif_path)
+        for frame in ImageSequence.Iterator(gif):
+            frame = frame.convert("RGBA")
+            self.frames.append(frame)

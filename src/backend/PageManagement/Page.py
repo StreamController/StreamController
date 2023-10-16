@@ -28,3 +28,13 @@ class Page(dict):
     def save(self):
         with open(self.json_path, "w") as f:
             json.dump(self, f, indent=4)
+
+    def set_background(self, file_path, loop=True, fps=30, show=True):
+        background = {
+            "show": show,
+            "path": file_path,
+            "loop": loop,
+            "fps": fps
+        }
+        self["background"] = background
+        self.save()

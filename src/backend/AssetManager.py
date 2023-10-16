@@ -52,7 +52,8 @@ class AssetManager(list):
         hash = sha256(asset_path)
         if self.has_by_sha256(hash):
             log.warning(f"Tried to add already existing asset. Ignoring. File: {asset_path}")
-            return
+            id = self.get_by_sha256(hash)["id"]
+            return id
         
         # Copy asset to internal folder
         internal_path = self.copy_asset(asset_path)

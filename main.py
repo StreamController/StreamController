@@ -23,6 +23,8 @@ from src.backend.DeckManagement.DeckManager import DeckManager
 from locales.LocaleManager import LocaleManager
 from src.backend.MediaManager import MediaManager
 from src.backend.AssetManager import AssetManager
+from src.backend.PageManagement.PageManager import PageManager
+from src.backend.SettingsManager import SettingsManager
 
 # Import globals
 import globals as gl
@@ -32,7 +34,7 @@ def config_logger():
     # Create log files
     log.add("logs/logs.log", rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print
-    log.add(sys.stderr, level="DEBUG")
+    log.add(sys.stderr, level="TRACE")
 
 class Main:
     def __init__(self, application_id, deck_manager):
@@ -60,6 +62,8 @@ def create_cache_folder():
 def create_global_objects():
     gl.media_manager = MediaManager()
     gl.asset_manager = AssetManager()
+    gl.settings_manager = SettingsManager()
+    gl.page_manager = PageManager(gl.settings_manager)
 
 
 if __name__ == "__main__":

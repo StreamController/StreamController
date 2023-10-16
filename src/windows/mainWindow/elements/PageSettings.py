@@ -57,13 +57,14 @@ class PageSettings(Gtk.Box):
         settings_group.add(ScaleSetting("Brightness", step=1))
 
         # background_group.add(SwitchSetting("Enable Background"))
-        background_group.add(BackgroundRow())
+        background_group.add(BackgroundRow(self))
 
 
 
 class BackgroundRow(Adw.PreferencesRow):
-    def __init__(self, **kwargs):
+    def __init__(self, page_settings: PageSettings, **kwargs):
         super().__init__()
+        self.page_settings = page_settings
         self.build()
 
     def build(self):
@@ -84,16 +85,56 @@ class BackgroundRow(Adw.PreferencesRow):
         self.media_selector.set_visible(self.toggle_switch.get_state())
         self.main_box.append(self.media_selector)
 
+        self.media_selector_image = Gtk.Image() # Will be bind to the button by self.set_thumbnail()
+
         self.media_selector_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"])
         self.media_selector_button.connect("clicked", self.choose_with_file_dialog)
         self.media_selector.append(self.media_selector_button)
-        
+
+        self.set_from_page()
+
+    def set_from_page(self):
+        if not hasattr(self.page_settings.deck_page.deck_controller, "active_page"):
+            return
+        if self.page_settings.deck_page.deck_controller.active_page == None:
+            return
+        state = self.page_settings.deck_page.deck_controller.active_page["background"]["show"]
+        file_path = self.page_settings.deck_page.deck_controller.active_page["background"]["path"]
+
+        self.toggle_switch.set_active(state)
+
+        if self.page_settings.deck_page.deck_controller.active_page["background"]["path"] in [None, ""]:
+            return
+
+        self.set_thumbnail(file_path)
 
     def on_toggle(self, toggle_switch, state):
         self.media_selector.set_visible(state)
+        # Change setting in the active deck page
+        self.page_settings.deck_page.deck_controller.active_page["background"]["show"] = state
+        self.page_settings.deck_page.deck_controller.active_page.save()
+        self.page_settings.deck_page.deck_controller.reload_page()
 
     def choose_with_file_dialog(self, button):
         dialog = ChooseBackgroundDialog(self)
+
+    def set_thumbnail(self, file_path):
+        if file_path == None:
+            return
+        image = gl.media_manager.get_thumbnail(file_path)
+        pixbuf = image2pixbuf(image)
+        self.media_selector_image.set_from_pixbuf(pixbuf)
+        self.media_selector_button.set_child(self.media_selector_image)
+
+        # Add background to assets
+        asset_id = gl.asset_manager.add(file_path)
+
+        local_path = gl.asset_manager.get_by_id(asset_id)["internal-path"]
+        self.set_background_to_page(local_path)
+
+    def set_background_to_page(self, file_path):
+        self.page_settings.deck_page.deck_controller.active_page.set_background(file_path)
+        self.page_settings.deck_page.deck_controller.reload_page()
 
 
 class ChooseBackgroundDialog(Gtk.FileDialog):
@@ -112,12 +153,7 @@ class ChooseBackgroundDialog(Gtk.FileDialog):
             print("exc")
             return
         
-        print(file_path)
-        im = gl.media_manager.get_thumbnail(file_path)
-
-        pixbuf = image2pixbuf(im)
-        image = Gtk.Image.new_from_pixbuf(pixbuf)
-        self.background_row.media_selector_button.set_child(image)
+        self.background_row.set_thumbnail(file_path)
 
 class SwitchSetting(Adw.PreferencesRow):
     def __init__(self, label, **kwargs):

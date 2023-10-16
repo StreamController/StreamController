@@ -18,6 +18,7 @@ from loguru import logger as log
 from PIL import Image
 import threading
 import os
+import uuid
 
 # Import own modules
 import src.backend.DeckManagement.Subclasses.Video as Video
@@ -40,31 +41,46 @@ class DeckMediaHandler():
 
         self.background_playing = False
 
+        self.progress_dir = {}
+
     def add_image_task(self, key, native_image):
         self.image_tasks.append((key, native_image))
 
     @log.catch
     def add_video_task(self, key, video_path, loop=True, fps=30):
-        def add_video_task_thread(self):
+        def add_video_task_thread(self, id):
             self.video_tasks[key] = {}
-            self.video_tasks[key]["frames"] = KeyVideo(self.deck_controller.deck, video_path).frames
+            self.video_tasks[key]["frames"] = KeyVideo(self, self.deck_controller.deck, video_path, progress_id=id).frames
             self.video_tasks[key]["loop"] = loop
             self.video_tasks[key]["fps"] = fps
             self.video_tasks[key]["active_frame"] = -1
-        threading.Thread(target=add_video_task_thread, args=(self,)).start()
+
+        # Generate unique id to track processing progress
+        id = str(uuid.uuid4())
+        self.progress_dir[id] = 0
+        threading.Thread(target=add_video_task_thread, args=(self, id)).start()
+        return id
+
 
     @log.catch
     def set_background(self, media_path, loop=True, fps=30):
-        def set_background_thread(self):
+        def set_background_thread(self, id):
             if os.path.splitext(media_path)[1] in [".png", ".jpg", ".jpeg"]:
                 # Background is an image
-                self.deck_controller.background_key_tiles = create_wallpaper_image_array(deck=self.deck_controller.deck, image_filename=media_path)
+                self.deck_controller.background_key_tiles = create_wallpaper_image_array(deck=self.deck_controller.deck)
                 self.deck_controller.reload_keys(skip_gifs=True)
+                self.progress[id] = 1
             else:
                 # Background is a video
-                bg_video = BackgroundVideo(self.deck_controller.deck, media_path)
+                bg_video = BackgroundVideo(self, self.deck_controller.deck, media_path, progress_id=id)
                 self.background_video_task["frames"] = bg_video.frames
                 self.background_video_task["loop"] = loop
                 self.background_video_task["fps"] = fps
                 self.background_video_task["active_frame"] = -1
-        threading.Thread(target=set_background_thread, args=(self,)).start()
+                self.progress_dir[id] = 1
+
+        # Generate unique id to track processing progress
+        id = str(uuid.uuid4())
+        self.progress_dir[id] = 0   
+        threading.Thread(target=set_background_thread, args=(self,id)).start()
+        return id

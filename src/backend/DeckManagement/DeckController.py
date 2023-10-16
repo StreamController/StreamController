@@ -44,6 +44,9 @@ class DeckController:
     background_key_tiles = None # list with all background key image tiles
     background_image = None
 
+    # Used to inform ui about progress of background video processing
+    set_background_task_id = None
+
     @log.catch
     def __init__(self, deck):
         self.deck = deck
@@ -160,7 +163,7 @@ class DeckController:
         self.media_handler.add_video_task(key, video_path, loop=loop, fps=fps)
 
     def set_background(self, media_path, loop=True, fps=30):
-        self.media_handler.set_background(media_path, loop=loop, fps=fps)
+        return self.media_handler.set_background(media_path, loop=loop, fps=fps)
 
     @log.catch
     def reload_keys(self, skip_gifs=True):
@@ -242,7 +245,7 @@ class DeckController:
             if page["background"]["show"] == False: return
             if os.path.isfile(page["background"]["path"]) == False: return
 
-            self.set_background(page["background"]["path"], loop=page["background"]["loop"], fps=page["background"]["fps"])
+            self.set_background_task_id = self.set_background(page["background"]["path"], loop=page["background"]["loop"], fps=page["background"]["fps"])
         def load_key(coords: str):
             x = int(coords.split("x")[0])
             y = int(coords.split("x")[1])

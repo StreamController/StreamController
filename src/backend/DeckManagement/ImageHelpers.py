@@ -51,10 +51,10 @@ def create_full_deck_sized_image(deck, image_filename = None, image = None):
             image = image.convert("RGBA")
         image = ImageOps.fit(image, full_deck_image_size, Image.Resampling.LANCZOS)
         return image
-def create_wallpaper_image_array(deck, image_filename = None, image = None):
+def create_wallpaper_image_array(deck, progress_dir = None, image = None):
         # Maybe use 2D array instead
-        if image_filename != None:
-            image = create_full_deck_sized_image(deck, image_filename=image_filename)
+        if progress_dir != None:
+            image = create_full_deck_sized_image(deck, image_filename=progress_dir)
         elif image != None:
             image = create_full_deck_sized_image(deck, image=image)
             

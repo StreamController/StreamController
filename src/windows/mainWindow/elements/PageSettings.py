@@ -148,6 +148,8 @@ class BackgroundRow(Adw.PreferencesRow):
     def update_progress_bar(self):
         #TODO: Thread is not the best solution
         def thread(self):
+            if self.page_settings.deck_page.deck_controller.set_background_task_id == None:
+                return
             # Return if task is directly finished
             progress_dir = self.page_settings.deck_page.deck_controller.media_handler.progress_dir
             if progress_dir[self.page_settings.deck_page.deck_controller.set_background_task_id] >= 1:

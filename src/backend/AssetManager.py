@@ -44,7 +44,7 @@ class AssetManager(list):
         with open(self.JSON_PATH, "w") as f:
             json.dump(self, f, indent=4)
 
-    def add(self, asset_path: str, licence_name: str = None, licence_url: str = None) -> str:
+    def add(self, asset_path: str, licence_name: str = None, licence_url: str = None, author: str = None) -> str:
         if not os.path.exists(asset_path):
             log.warning(f"File {asset_path} not found.")
             return
@@ -65,7 +65,8 @@ class AssetManager(list):
             "id": self.create_unique_uuid(),
             "license": {
                 "name": licence_name,
-                "url": licence_url
+                "url": licence_url,
+                "author": author
             }
         }
         self.append(asset)

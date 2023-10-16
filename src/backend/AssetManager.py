@@ -49,14 +49,17 @@ class AssetManager(list):
             log.warning(f"File {asset_path} not found.")
             return
         
+        # Copy asset to internal folder if it does not exist
+        # This is checked before the sha comparison in case the user manually removed the asset and kept it in the Assets.json
+        if not file_in_dir(asset_path, "cache"):
+            internal_path = self.copy_asset(asset_path)
+        
         hash = sha256(asset_path)
         if self.has_by_sha256(hash):
             log.warning(f"Tried to add already existing asset. Ignoring. File: {asset_path}")
             id = self.get_by_sha256(hash)["id"]
             return id
         
-        # Copy asset to internal folder
-        internal_path = self.copy_asset(asset_path)
 
         asset = {
             "name": os.path.splitext(os.path.basename(asset_path))[0],

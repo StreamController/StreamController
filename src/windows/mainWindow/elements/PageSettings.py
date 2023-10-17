@@ -57,12 +57,58 @@ class PageSettings(Gtk.Box):
 
 
         settings_group.add(SwitchSetting("Enable Screensaver"))
-        settings_group.add(ScaleSetting("Brightness", step=1))
+        # settings_group.add(ScaleSetting("Brightness", step=1))
 
-        # background_group.add(SwitchSetting("Enable Background"))
+        settings_group.add(BrightnessRow(self))
+
+
         background_group.add(BackgroundRow(self))
 
 
+class BrightnessRow(Adw.PreferencesRow):
+    def __init__(self, page_settings: PageSettings, **kwargs):
+        super().__init__()
+        self.page_settings = page_settings
+        self.build()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.label = Gtk.Label(label="Brightness", hexpand=True, xalign=0)
+        self.main_box.append(self.label)
+
+        self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min=0, max=100, step=1)
+        self.scale.set_draw_value(True)
+        self.set_scale_initial_value()
+        self.scale.connect("value-changed", self.on_value_changed)
+        self.main_box.append(self.scale)
+
+
+    def set_scale_initial_value(self):
+        # Load default scalar value
+        current_page = None
+        if hasattr(self.page_settings.deck_page.deck_controller, "active_page"):
+            current_page = self.page_settings.deck_page.deck_controller.active_page
+        self.set_scale_from_page(current_page)
+
+    def set_scale_from_page(self, page):
+        if page == None:
+            self.scale.set_sensitive(False)
+            self.main_box.append(Gtk.Label(label="Error", hexpand=True, xalign=0, css_classes=["red-color"]))
+            return
+
+        brightness = page["brightness"]
+        self.scale.set_value(brightness)
+
+    def on_value_changed(self, scale):
+        value = round(scale.get_value())
+        # update value in page
+        self.page_settings.deck_page.deck_controller.active_page["brightness"] = value
+        self.page_settings.deck_page.deck_controller.active_page.save()
+        # update deck without reload of page
+        self.page_settings.deck_page.deck_controller.set_brightness(value)
 
 class BackgroundRow(Adw.PreferencesRow):
     def __init__(self, page_settings: PageSettings, **kwargs):

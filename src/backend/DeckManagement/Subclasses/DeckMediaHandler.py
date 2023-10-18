@@ -70,7 +70,7 @@ class DeckMediaHandler():
                 image = Image.open(media_path)
                 self.deck_controller.background_key_tiles = create_wallpaper_image_array(deck=self.deck_controller.deck, image=image)
                 self.deck_controller.reload_keys(skip_gifs=True)
-                self.progress[id] = 1
+                self.progress_dir[id] = 1
             else:
                 # Background is a video
                 bg_video = BackgroundVideo(self, self.deck_controller.deck, media_path, progress_id=id)

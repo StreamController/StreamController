@@ -27,7 +27,8 @@ class ScreenSaver:
         # time.sleep(100)
         while True:
             if not self.enable or self.media_path == None:
-                pass
+                time.sleep(0.1)
+                continue
 
             print("check")
         

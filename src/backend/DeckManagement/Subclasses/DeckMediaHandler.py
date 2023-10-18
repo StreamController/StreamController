@@ -67,7 +67,8 @@ class DeckMediaHandler():
         def set_background_thread(self, id):
             if os.path.splitext(media_path)[1] in [".png", ".jpg", ".jpeg"]:
                 # Background is an image
-                self.deck_controller.background_key_tiles = create_wallpaper_image_array(deck=self.deck_controller.deck)
+                image = Image.open(media_path)
+                self.deck_controller.background_key_tiles = create_wallpaper_image_array(deck=self.deck_controller.deck, image=image)
                 self.deck_controller.reload_keys(skip_gifs=True)
                 self.progress[id] = 1
             else:

@@ -24,6 +24,7 @@ class DeckMediaThread(threading.Thread):
         super().__init__()
         self.media_handler = media_handler
 
+
     @log.catch
     def run(self):
         log.info("Starting DeckMediaThread")
@@ -35,14 +36,16 @@ class DeckMediaThread(threading.Thread):
             video_tasks = dict(self.media_handler.video_tasks.items()) # Use list to avoid runtime error for changing dict during iteration 
 
             with self.media_handler.deck_controller.deck:
-                # Handle key videos
-                self.handle_videos(video_tasks)
+                if not self.media_handler.only_background:
+                    # Handle key videos
+                    self.handle_videos(video_tasks)
 
                 # Hande background video
                 self.handle_background_video()
 
-                # Handling image requests
-                self.handle_image_requests()
+                if not self.media_handler.only_background:
+                    # Handling image requests
+                    self.handle_image_requests()
         
             sleep_time = (1 / self.FRAMES_PER_SECOND)-(time() - tick_start_time)
             sleep(max(sleep_time, 0))

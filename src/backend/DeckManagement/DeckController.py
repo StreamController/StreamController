@@ -34,6 +34,7 @@ from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
 from src.backend.DeckManagement.Subclasses.DeckMediaHandler import DeckMediaHandler
 from src.backend.PageManagement.Page import Page
+from src.backend.DeckManagement.ScreenSaver import ScreenSaver
 
 # Import globals
 import globals as gl
@@ -72,6 +73,10 @@ class DeckController:
             if page != None:
                 self.active_page = page
                 self.load_page(page)
+
+        # Init screen saver
+        self.screen_saver = ScreenSaver(self)
+        self.screen_saver.enable = True
 
     @log.catch
     def generate_key_image(self, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], key=None, add_background=True, shrink=False):
@@ -163,11 +168,11 @@ class DeckController:
     def set_video(self, key, video_path, labels=None, image_margins=[0, 0, 0, 0], add_background=True, loop=True, fps=30):
         self.media_handler.add_video_task(key, video_path, loop=loop, fps=fps)
 
-    def set_background(self, media_path, loop=True, fps=30):
-        return self.media_handler.set_background(media_path, loop=loop, fps=fps)
+    def set_background(self, media_path, loop=True, fps=30, reload=True):
+        return self.media_handler.set_background(media_path, loop=loop, fps=fps, reload=reload)
 
     @log.catch
-    def reload_keys(self, skip_gifs=True):
+    def reload_keys(self, skip_gifs=True, bypass_task=False):
         # Stop gif animations to prevent sending conflicts resulting in strange artifacts
         for i in range(self.deck.key_count()):
             if skip_gifs:
@@ -191,10 +196,18 @@ class DeckController:
                 bg_image = shrink_image(bg_image) 
 
             bg_image = PILHelper.to_native_format(self.deck, bg_image)
-            self.media_handler.add_image_task(i, bg_image)
+            if bypass_task:
+                self.deck.set_key_image(i, bg_image)
+            else:
+                # default
+                self.media_handler.add_image_task(i, bg_image)
 
     def key_change_callback(self, deck, key, state):
-        self.handle_shrink_animation(deck, key, state)
+        # Ignore key press if screen saver is active
+        if self.screen_saver.active:
+            self.handle_shrink_animation(deck, key, state)
+
+        self.screen_saver.on_key_change()
 
     @log.catch
     def handle_shrink_animation(self, deck, key, state):

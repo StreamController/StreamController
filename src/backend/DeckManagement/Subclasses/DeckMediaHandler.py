@@ -43,6 +43,8 @@ class DeckMediaHandler():
 
         self.progress_dir = {}
 
+        self.only_background = False
+
     def add_image_task(self, key, native_image):
         self.image_tasks.append((key, native_image))
 
@@ -63,7 +65,7 @@ class DeckMediaHandler():
 
 
     @log.catch
-    def set_background(self, media_path, loop=True, fps=30):
+    def set_background(self, media_path, loop=True, fps=30, reload=True):
         def set_background_thread(self, id):
             if os.path.splitext(media_path)[1] in [".png", ".jpg", ".jpeg"]:
                 # Background is an image
@@ -72,8 +74,9 @@ class DeckMediaHandler():
                 self.progress_dir[id] = 1
                 # Remove background video
                 self.background_video_task = {}
-                # Reload deck
-                self.deck_controller.reload_keys(skip_gifs=True)
+                if reload:
+                    # Reload deck
+                    self.deck_controller.reload_keys(skip_gifs=True)
             else:
                 # Background is a video
                 bg_video = BackgroundVideo(self, self.deck_controller.deck, media_path, progress_id=id)

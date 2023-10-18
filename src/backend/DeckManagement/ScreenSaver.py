@@ -1,6 +1,7 @@
 import threading
 import time
 from loguru import logger as log
+import multiprocessing
 
 class ScreenSaver:
     def __init__(self, deck_controller: "DeckController"):
@@ -18,9 +19,9 @@ class ScreenSaver:
         # Time when last key state changed
         self.last_key_change_time = time.time()
 
-        # Start thread
-        thread = threading.Thread(target=self.thread_method)
-        thread.start()
+        # Start process
+        process = multiprocessing.Process(target=self.thread_method)
+        process.start()
 
     @log.catch
     def thread_method(self):

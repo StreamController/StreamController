@@ -139,7 +139,8 @@ class DeckController:
         
         # Set key image
         if bypass_task:
-            self.deck.set_key_image(key, native_image)
+            with self.deck:
+                self.deck.set_key_image(key, native_image)
         else:
             self.media_handler.add_image_task(key, native_image)
 
@@ -273,7 +274,8 @@ class DeckController:
 
     def reload_page(self):
         # Reset deck
-        self.deck.reset()
+        with self.deck:
+            self.deck.reset()
         # Reset images
         self.key_images = [None]*self.deck.key_count() # Fill with None
         self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
@@ -296,10 +298,12 @@ class DeckController:
         return self.deck.key_count()
     
     def set_key_image(self, key, image):
-        self.deck.set_key_image(key, image)
+        with self.deck:
+            self.deck.set_key_image(key, image)
 
     def set_brightness(self, brightness):
-        self.deck.set_brightness(brightness)
+        with self.deck:
+            self.deck.set_brightness(brightness)
 
     def key_state(self, key):
         return self.deck.key_state(key)

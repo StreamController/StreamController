@@ -93,20 +93,30 @@ class Screensaver(Adw.PreferencesRow):
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
-        self.enable_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.main_box.append(self.enable_box)
+        self.override_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.main_box.append(self.override_box)
 
-        self.enable_label = Gtk.Label(label="Override deck's default screensaver", hexpand=True, xalign=0)
-        self.enable_box.append(self.enable_label)
+        self.override_label = Gtk.Label(label="Override deck's default screensaver settings", hexpand=True, xalign=0)
+        self.override_box.append(self.override_label)
 
-        self.enable_switch = Gtk.Switch(margin_end=15)
-        self.enable_switch.connect("state-set", self.on_toggle_enable)
-        self.enable_box.append(self.enable_switch)
+        self.override_switch = Gtk.Switch(margin_end=15)
+        self.override_switch.connect("state-set", self.on_toggle_override)
+        self.override_box.append(self.override_switch)
 
         self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, visible=False)
         self.main_box.append(self.config_box)
 
         self.config_box.append(Gtk.Separator(margin_top=10, margin_bottom=10))
+
+        self.enable_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
+        self.config_box.append(self.enable_box)
+
+        self.enable_label = Gtk.Label(label="Enable", hexpand=True, xalign=0)
+        self.enable_box.append(self.enable_label)
+
+        self.enable_switch = Gtk.Switch(margin_end=15)
+        self.enable_switch.connect("state-set", self.on_toggle_enable)
+        self.enable_box.append(self.enable_switch)
 
         self.time_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.config_box.append(self.time_box)
@@ -164,6 +174,7 @@ class Screensaver(Adw.PreferencesRow):
         time = self.settings_page.deck_page.deck_controller.active_page["screensaver"]["time-delay"]
 
         # Update ui
+        self.override_switch.set_active(enabled)
         self.enable_switch.set_active(enabled)
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
@@ -174,6 +185,10 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_toggle_enable(self, toggle_switch, state):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["enable"] = state
+
+
+    def on_toggle_override(self, toggle_switch, state):
+        self.settings_page.deck_page.deck_controller.active_page["screensaver"]["override"] = state
 
         # Update screensaver config box's visibility
         self.config_box.set_visible(state)

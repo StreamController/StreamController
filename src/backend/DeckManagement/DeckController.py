@@ -177,7 +177,12 @@ class DeckController:
         for i in range(self.deck.key_count()):
             if skip_gifs:
                 if i in self.media_handler.video_tasks.keys():
-                    continue
+                    # Check if video/gif is still playing
+                    loop = self.media_handler.video_tasks[i]["loop"]
+                    n_frames = len(self.media_handler.video_tasks[i]["frames"])
+                    frame = self.media_handler.video_tasks[i]["active_frame"]
+                    if loop and frame < n_frames - 1:
+                        continue
 
             image = self.key_images[i]
             bg_image = copy(self.background_key_tiles[i])

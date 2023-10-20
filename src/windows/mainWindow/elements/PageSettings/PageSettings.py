@@ -45,8 +45,11 @@ class PageSettings(Gtk.Box):
         self.build()
 
     def build(self):
+        self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
+        self.append(self.scrolled_window)
+
         clamp = Adw.Clamp()
-        self.append(clamp)
+        self.scrolled_window.set_child(clamp)
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         clamp.set_child(main_box)
@@ -56,16 +59,6 @@ class PageSettings(Gtk.Box):
 
         background_group = BackgroundGroup(self)
         main_box.append(background_group)
-
-
-        # settings_group.add(SwitchSetting("Enable Screensaver"))
-        # settings_group.add(ScaleSetting("Brightness", step=1))
-
-        # settings_group.add(BrightnessRow(self))
-
-
-        # background_group.add(BackgroundRow(self))
-
 
 class BrightnessRow(Adw.PreferencesRow):
     def __init__(self, page_settings: PageSettings, **kwargs):

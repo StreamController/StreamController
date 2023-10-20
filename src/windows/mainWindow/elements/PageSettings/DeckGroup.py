@@ -144,7 +144,7 @@ class Screensaver(Adw.PreferencesRow):
         self.override_label = Gtk.Label(label="Override deck's default screensaver settings", hexpand=True, xalign=0)
         self.override_box.append(self.override_label)
 
-        self.override_switch = Gtk.Switch(margin_end=15)
+        self.override_switch = Gtk.Switch()
         self.override_switch.connect("state-set", self.on_toggle_override)
         self.override_box.append(self.override_switch)
 
@@ -159,7 +159,7 @@ class Screensaver(Adw.PreferencesRow):
         self.enable_label = Gtk.Label(label="Enable", hexpand=True, xalign=0)
         self.enable_box.append(self.enable_label)
 
-        self.enable_switch = Gtk.Switch(margin_end=15)
+        self.enable_switch = Gtk.Switch()
         self.enable_switch.connect("state-set", self.on_toggle_enable)
         self.enable_box.append(self.enable_switch)
 
@@ -189,7 +189,7 @@ class Screensaver(Adw.PreferencesRow):
         self.loop_label = Gtk.Label(label="Loop", hexpand=True, xalign=0)
         self.loop_box.append(self.loop_label)
 
-        self.loop_switch = Gtk.Switch(margin_end=15)
+        self.loop_switch = Gtk.Switch()
         self.loop_switch.connect("state-set", self.on_toggle_loop)
         self.loop_box.append(self.loop_switch)
 

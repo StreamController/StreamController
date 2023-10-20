@@ -49,21 +49,37 @@ class Brightness(Adw.PreferencesRow):
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
+        self.override_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.main_box.append(self.override_box)
+
+        self.override_label = Gtk.Label(label="Override deck's defaut brightness", hexpand=True, xalign=0)
+        self.override_box.append(self.override_label)
+
+        self.override_switch = Gtk.Switch()
+        self.override_switch.connect("state-set", self.on_toggle_override)
+        self.override_box.append(self.override_switch)
+
+        self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=False)
+        self.main_box.append(self.config_box)
+
+        self.config_box.append(Gtk.Separator(hexpand=True, margin_top=10, margin_bottom=10))
+
         self.label = Gtk.Label(label="Brightness", hexpand=True, xalign=0)
-        self.main_box.append(self.label)
+        self.config_box.append(self.label)
 
         self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min=0, max=100, step=1)
         self.scale.set_draw_value(True)
         self.set_scale_initial_value()
         self.scale.connect("value-changed", self.on_value_changed)
-        self.main_box.append(self.scale)
+        self.config_box.append(self.scale)
 
     def set_scale_initial_value(self):
         # Load default scalar value
         current_page = None
         if hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
             current_page = self.settings_page.deck_page.deck_controller.active_page
-        self.set_scale_from_page(current_page)
+
+        self.load_defaults_from_page()
 
     def set_scale_from_page(self, page):
         if page == None:
@@ -71,16 +87,45 @@ class Brightness(Adw.PreferencesRow):
             self.main_box.append(Gtk.Label(label="Error", hexpand=True, xalign=0, css_classes=["red-color"]))
             return
 
-        brightness = page["brightness"]
+        brightness = page["brightness"]["value"]
         self.scale.set_value(brightness)
 
     def on_value_changed(self, scale):
         value = round(scale.get_value())
         # update value in page
-        self.settings_page.deck_page.deck_controller.active_page["brightness"] = value
+        self.settings_page.deck_page.deck_controller.active_page["brightness"]["value"] = value
         self.settings_page.deck_page.deck_controller.active_page.save()
         # update deck without reload of page
         self.settings_page.deck_page.deck_controller.set_brightness(value)
+
+    def on_toggle_override(self, toggle_switch, state):
+        self.config_box.set_visible(state)
+        # Update page
+        self.settings_page.deck_page.deck_controller.active_page["brightness"]["override"] = state
+        # Save
+        self.settings_page.deck_page.deck_controller.active_page.save()
+
+    def load_defaults_from_page(self):
+        # Verify if page exists
+        if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
+            return
+        if self.settings_page.deck_page.deck_controller.active_page == None:
+            return
+
+        original_values = self.settings_page.deck_page.deck_controller.active_page.copy()
+        
+        # Set defaut values 
+        self.settings_page.deck_page.deck_controller.active_page.setdefault("brightness", {})
+        self.settings_page.deck_page.deck_controller.active_page["brightness"].setdefault("value", 50)
+        self.settings_page.deck_page.deck_controller.active_page["brightness"].setdefault("override", False)
+
+        # Save if changed
+        if original_values != self.settings_page.deck_page.deck_controller.active_page:
+            self.settings_page.deck_page.deck_controller.active_page.save()
+
+        # Update ui
+        self.set_scale_from_page(self.settings_page.deck_page.deck_controller.active_page)
+        self.override_switch.set_active(self.settings_page.deck_page.deck_controller.active_page["brightness"]["override"])
 
 class Screensaver(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", **kwargs):

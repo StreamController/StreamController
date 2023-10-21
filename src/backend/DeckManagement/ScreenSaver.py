@@ -13,7 +13,7 @@ class ScreenSaver:
         self.original_key_images = None
         self.enable = False
         self.inactive_time = 3 # Default time
-        self.active = False
+        self.showing = False
         self.media_path = None
 
         # Time when last key state changed
@@ -33,11 +33,11 @@ class ScreenSaver:
 
             print("check")
         
-            if not self.active:
+            if not self.showing:
                 passed_time = time.time() - self.last_key_change_time
                 if passed_time > self.inactive_time:
                     log.info("Activating screen saver")
-                    self.active = True
+                    self.showing = True
                     # Activate screen saver
                     self.show()
 
@@ -59,7 +59,7 @@ class ScreenSaver:
         self.deck_controller.set_background(media_path=self.media_path)
 
     def hide(self):
-        self.active = False
+        self.showing = False
         self.deck_controller.media_handler.background_video_task = self.original_background_video_task
         self.deck_controller.media_handler.video_tasks = self.original_video_tasks
         self.deck_controller.key_images = self.original_key_images
@@ -70,6 +70,6 @@ class ScreenSaver:
 
     def on_key_change(self):
         self.last_key_change_time = time.time()
-        if self.active:
+        if self.showing:
             # Deactivate screen saver
             self.hide()

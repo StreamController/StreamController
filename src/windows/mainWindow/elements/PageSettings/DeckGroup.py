@@ -104,6 +104,7 @@ class Brightness(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.active_page["brightness"]["overwrite"] = state
         # Save
         self.settings_page.deck_page.deck_controller.active_page.save()
+        self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False)
 
     def load_defaults_from_page(self):
         # Verify if page exists

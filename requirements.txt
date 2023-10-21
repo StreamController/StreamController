@@ -1,3 +1,5 @@
+imageio==2.31.5
+imageio-ffmpeg==0.4.9
 loguru==0.7.2
 numpy==1.26.0
 opencv-python==4.8.1.78

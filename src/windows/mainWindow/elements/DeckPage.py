@@ -51,8 +51,6 @@ class DeckPage(Gtk.Box):
         self.settings_page = PageSettings(self)
         self.stack.add_titled(self.settings_page, "settings", "Page Settings")
 
-        # Tmp for testing
-        self.stack.set_visible_child_name("settings")
 
 class Switcher(Gtk.StackSwitcher):
     def __init__(self, deck_page, **kwargs):

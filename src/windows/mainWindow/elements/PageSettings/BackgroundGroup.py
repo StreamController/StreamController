@@ -48,15 +48,15 @@ class BackgroundMediaRow(Adw.PreferencesRow):
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
-        self.override_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.main_box.append(self.override_box)
+        self.overwrite_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.main_box.append(self.overwrite_box)
 
-        self.override_label = Gtk.Label(label="Override deck's defaut background", hexpand=True, xalign=0)
-        self.override_box.append(self.override_label)
+        self.overwrite_label = Gtk.Label(label="overwrite deck's defaut background", hexpand=True, xalign=0)
+        self.overwrite_box.append(self.overwrite_label)
 
-        self.override_switch = Gtk.Switch()
-        self.override_switch.connect("state-set", self.on_toggle_override)
-        self.override_box.append(self.override_switch)
+        self.overwrite_switch = Gtk.Switch()
+        self.overwrite_switch.connect("state-set", self.on_toggle_overwrite)
+        self.overwrite_box.append(self.overwrite_switch)
 
         self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, visible=False)
         self.main_box.append(self.config_box)
@@ -97,7 +97,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         if "background" in self.settings_page.deck_page.deck_controller.active_page:
             original_values = self.settings_page.deck_page.deck_controller.active_page["background"]
 
-        override = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("override", False)
+        overwrite = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("overwrite", False)
         show = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("show", False)
         file_path = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("path", None)
 
@@ -105,11 +105,11 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         if original_values != self.settings_page.deck_page.deck_controller.active_page:
             self.settings_page.deck_page.deck_controller.active_page.save()
 
-        self.override_switch.set_active(override)
+        self.overwrite_switch.set_active(overwrite)
         self.show_switch.set_active(show)
 
         # Set config box state
-        self.config_box.set_visible(override)
+        self.config_box.set_visible(overwrite)
 
 
         if self.settings_page.deck_page.deck_controller.active_page["background"]["path"] in [None, ""]:
@@ -124,10 +124,10 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.reload_page()
 
-    def on_toggle_override(self, toggle_switch, state):
+    def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)
         # Update page
-        self.settings_page.deck_page.deck_controller.active_page["background"]["override"] = state
+        self.settings_page.deck_page.deck_controller.active_page["background"]["overwrite"] = state
         # Save
         self.settings_page.deck_page.deck_controller.active_page.save()
 

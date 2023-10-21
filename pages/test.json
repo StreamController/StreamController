@@ -1,6 +1,6 @@
 {
     "background": {
-        "override": false,
+        "overwrite": false,
         "path": "Assets/copyrighted/wallpaper3.jpg",
         "loop": false,
         "fps": 30,
@@ -12,11 +12,11 @@
     ],
     "brightness": {
         "value": 50,
-        "override": false
+        "overwrite": false
     },
     "screensaver": {
         "enable": false,
-        "override": false,
+        "overwrite": false,
         "path": null,
         "loop": false,
         "fps": 30,

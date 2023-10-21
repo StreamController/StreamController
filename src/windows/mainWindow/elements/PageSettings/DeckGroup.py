@@ -49,15 +49,15 @@ class Brightness(Adw.PreferencesRow):
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
-        self.override_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.main_box.append(self.override_box)
+        self.overwrite_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.main_box.append(self.overwrite_box)
 
-        self.override_label = Gtk.Label(label="Override deck's defaut brightness", hexpand=True, xalign=0)
-        self.override_box.append(self.override_label)
+        self.overwrite_label = Gtk.Label(label="overwrite deck's defaut brightness", hexpand=True, xalign=0)
+        self.overwrite_box.append(self.overwrite_label)
 
-        self.override_switch = Gtk.Switch()
-        self.override_switch.connect("state-set", self.on_toggle_override)
-        self.override_box.append(self.override_switch)
+        self.overwrite_switch = Gtk.Switch()
+        self.overwrite_switch.connect("state-set", self.on_toggle_overwrite)
+        self.overwrite_box.append(self.overwrite_switch)
 
         self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=False)
         self.main_box.append(self.config_box)
@@ -98,10 +98,10 @@ class Brightness(Adw.PreferencesRow):
         # update deck without reload of page
         self.settings_page.deck_page.deck_controller.set_brightness(value)
 
-    def on_toggle_override(self, toggle_switch, state):
+    def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)
         # Update page
-        self.settings_page.deck_page.deck_controller.active_page["brightness"]["override"] = state
+        self.settings_page.deck_page.deck_controller.active_page["brightness"]["overwrite"] = state
         # Save
         self.settings_page.deck_page.deck_controller.active_page.save()
 
@@ -117,7 +117,7 @@ class Brightness(Adw.PreferencesRow):
         # Set defaut values 
         self.settings_page.deck_page.deck_controller.active_page.setdefault("brightness", {})
         self.settings_page.deck_page.deck_controller.active_page["brightness"].setdefault("value", 50)
-        self.settings_page.deck_page.deck_controller.active_page["brightness"].setdefault("override", False)
+        self.settings_page.deck_page.deck_controller.active_page["brightness"].setdefault("overwrite", False)
 
         # Save if changed
         if original_values != self.settings_page.deck_page.deck_controller.active_page:
@@ -125,7 +125,7 @@ class Brightness(Adw.PreferencesRow):
 
         # Update ui
         self.set_scale_from_page(self.settings_page.deck_page.deck_controller.active_page)
-        self.override_switch.set_active(self.settings_page.deck_page.deck_controller.active_page["brightness"]["override"])
+        self.overwrite_switch.set_active(self.settings_page.deck_page.deck_controller.active_page["brightness"]["overwrite"])
 
 class Screensaver(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", **kwargs):
@@ -138,15 +138,15 @@ class Screensaver(Adw.PreferencesRow):
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
-        self.override_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.main_box.append(self.override_box)
+        self.overwrite_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.main_box.append(self.overwrite_box)
 
-        self.override_label = Gtk.Label(label="Override deck's default screensaver settings", hexpand=True, xalign=0)
-        self.override_box.append(self.override_label)
+        self.overwrite_label = Gtk.Label(label="overwrite deck's default screensaver settings", hexpand=True, xalign=0)
+        self.overwrite_box.append(self.overwrite_label)
 
-        self.override_switch = Gtk.Switch()
-        self.override_switch.connect("state-set", self.on_toggle_override)
-        self.override_box.append(self.override_switch)
+        self.overwrite_switch = Gtk.Switch()
+        self.overwrite_switch.connect("state-set", self.on_toggle_overwrite)
+        self.overwrite_box.append(self.overwrite_switch)
 
         self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, visible=False)
         self.main_box.append(self.config_box)
@@ -217,7 +217,7 @@ class Screensaver(Adw.PreferencesRow):
             original_values = self.settings_page.deck_page.deck_controller.active_page["screensaver"].copy()
         # Set default values
         self.settings_page.deck_page.deck_controller.active_page.setdefault("screensaver", {})
-        override = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("override", False)
+        overwrite = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("overwrite", False)
         enable = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("enable", False)
         path = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("path", None)
         loop = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("loop", False)
@@ -225,13 +225,13 @@ class Screensaver(Adw.PreferencesRow):
         time = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("time-delay", 5)
 
         # Update ui
-        self.override_switch.set_active(override)
+        self.overwrite_switch.set_active(overwrite)
         self.enable_switch.set_active(enable)
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
         self.time_spinner.set_value(time)
 
-        self.config_box.set_visible(override)
+        self.config_box.set_visible(overwrite)
 
         # Save if changed
         if original_values != self.settings_page.deck_page.deck_controller.active_page["screensaver"]:
@@ -242,8 +242,8 @@ class Screensaver(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["enable"] = state
 
 
-    def on_toggle_override(self, toggle_switch, state):
-        self.settings_page.deck_page.deck_controller.active_page["screensaver"]["override"] = state
+    def on_toggle_overwrite(self, toggle_switch, state):
+        self.settings_page.deck_page.deck_controller.active_page["screensaver"]["overwrite"] = state
         # Save
         self.settings_page.deck_page.deck_controller.active_page.save()
 

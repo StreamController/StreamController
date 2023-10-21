@@ -48,18 +48,33 @@ class BackgroundMediaRow(Adw.PreferencesRow):
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
-        self.toggle_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.main_box.append(self.toggle_box)
+        self.override_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.main_box.append(self.override_box)
 
-        self.toggle_label = Gtk.Label(label="Enable Background", hexpand=True, xalign=0)
-        self.toggle_box.append(self.toggle_label)
-        self.toggle_switch = Gtk.Switch()
-        self.toggle_switch.connect("state-set", self.on_toggle)
-        self.toggle_box.append(self.toggle_switch)
+        self.override_label = Gtk.Label(label="Override deck's defaut background", hexpand=True, xalign=0)
+        self.override_box.append(self.override_label)
+
+        self.override_switch = Gtk.Switch()
+        self.override_switch.connect("state-set", self.on_toggle_override)
+        self.override_box.append(self.override_switch)
+
+        self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, visible=False)
+        self.main_box.append(self.config_box)
+
+        self.config_box.append(Gtk.Separator(hexpand=True, margin_top=10, margin_bottom=10))
+
+        self.show_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.config_box.append(self.show_box)
+
+        self.show_label = Gtk.Label(label="Show Background", hexpand=True, xalign=0)
+        self.show_box.append(self.show_label)
+        self.show_switch = Gtk.Switch()
+        self.show_switch.connect("state-set", self.on_toggle_show)
+        self.show_box.append(self.show_switch)
 
         self.media_selector = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER)
-        self.media_selector.set_visible(self.toggle_switch.get_state())
-        self.main_box.append(self.media_selector)
+        self.media_selector.set_visible(self.show_switch.get_state())
+        self.config_box.append(self.media_selector)
 
         self.media_selector_image = Gtk.Image() # Will be bind to the button by self.set_thumbnail()
 
@@ -68,7 +83,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector.append(self.media_selector_button)
 
         self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text="Caching...", fraction=0, show_text=True, visible=False)
-        self.main_box.append(self.progress_bar)
+        self.config_box.append(self.progress_bar)
 
         self.load_defaults_from_page()
 
@@ -77,22 +92,44 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             return
         if self.settings_page.deck_page.deck_controller.active_page == None:
             return
-        state = self.settings_page.deck_page.deck_controller.active_page["background"]["show"]
-        file_path = self.settings_page.deck_page.deck_controller.active_page["background"]["path"]
+        
+        original_values = None
+        if "background" in self.settings_page.deck_page.deck_controller.active_page:
+            original_values = self.settings_page.deck_page.deck_controller.active_page["background"]
 
-        self.toggle_switch.set_active(state)
+        override = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("override", False)
+        show = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("show", False)
+        file_path = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("path", None)
+
+        # Save if changed
+        if original_values != self.settings_page.deck_page.deck_controller.active_page:
+            self.settings_page.deck_page.deck_controller.active_page.save()
+
+        self.override_switch.set_active(override)
+        self.show_switch.set_active(show)
+
+        # Set config box state
+        self.config_box.set_visible(override)
+
 
         if self.settings_page.deck_page.deck_controller.active_page["background"]["path"] in [None, ""]:
             return
 
         self.set_thumbnail(file_path)
 
-    def on_toggle(self, toggle_switch, state):
+    def on_toggle_show(self, toggle_switch, state):
         self.media_selector.set_visible(state)
         # Change setting in the active deck page
         self.settings_page.deck_page.deck_controller.active_page["background"]["show"] = state
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.reload_page()
+
+    def on_toggle_override(self, toggle_switch, state):
+        self.config_box.set_visible(state)
+        # Update page
+        self.settings_page.deck_page.deck_controller.active_page["background"]["override"] = state
+        # Save
+        self.settings_page.deck_page.deck_controller.active_page.save()
 
     def choose_with_file_dialog(self, button):
         dialog = ChooseBackgroundDialog(self)

@@ -1,9 +1,10 @@
 {
     "background": {
-        "show": true,
+        "override": false,
         "path": "Assets/copyrighted/wallpaper3.jpg",
         "loop": false,
-        "fps": 30
+        "fps": 30,
+        "show": true
     },
     "layout": [
         3,

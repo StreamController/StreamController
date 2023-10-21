@@ -26,6 +26,10 @@ class SettingsManager:
         
         
     def save_settings_to_file(self, file_path: str, settings: dict) -> None:
+        # Create directories if they don't exist
+        if not os.path.exists(os.path.dirname(file_path)):
+            os.makedirs(os.path.dirname(file_path))
+
         with open(file_path, "w") as f:
             json.dump(settings, f, indent=4)
 

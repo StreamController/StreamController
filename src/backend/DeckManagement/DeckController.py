@@ -259,7 +259,7 @@ class DeckController:
 
 
     @log.catch
-    def load_page(self, page:Page) -> None:
+    def load_page(self, page:Page, load_brightness:bool = True, load_background:bool = True, load_keys:bool = True) -> None:
         log.info(f"Loading page {page.keys()}")
         self.active_page = page
 
@@ -331,19 +331,28 @@ class DeckController:
                 value = get_from_pagoe(self, page)
             self.set_brightness(value)
 
-        load_brightness(self)
-        load_background(self)
-        load_keys()
+        if load_brightness:
+            load_brightness(self)
+        if load_background:
+            load_background(self)
+        if load_keys:
+            load_keys()
 
-    def reload_page(self):
+    def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True):
+        print(f"Reload brightness: {load_brightness}")
+        print(f"Reload background: {load_background}")
+        print(f"Reload keys: {load_keys}")
         # Reset deck
-        with self.deck:
-            self.deck.reset()
+        if load_background or load_keys:
+            with self.deck:
+                self.deck.reset()
         # Reset images
-        self.key_images = [None]*self.deck.key_count() # Fill with None
-        self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
+        if load_keys:
+            self.key_images = [None]*self.deck.key_count() # Fill with None
+        if load_background:
+            self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
 
-        self.load_page(self.active_page)
+        self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys)
 
     def get_deck_settings(self):
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())

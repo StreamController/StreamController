@@ -60,7 +60,7 @@ class ScreenSaver:
         # Reset original background video tasks
         self.deck_controller.media_handler.background_video_task = {}
         # self.deck_controller.media_handler.video_tasks = {}
-        self.deck_controller.key_images = [None]*self.deck_controller.deck.key_count(()
+        self.deck_controller.key_images = [None]*self.deck_controller.deck.key_count()
             
         self.deck_controller.set_background(media_path=self.media_path)
 

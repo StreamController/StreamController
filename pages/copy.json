@@ -1,7 +1,8 @@
 {
+    "brightness": 10,
     "background": {
         "show": true,
-        "path": "Assets/copyrighted/wallpaper3.jpg",
+        "path": "Assets/copyrighted/NYC.mp4",
         "loop": false,
         "fps": 30
     },
@@ -26,7 +27,7 @@
                         0
                     ],
                     "stroke-width": 0,
-                    "font": "Assets/Fonts/Roboto-Regular.ttf",
+                    "font": null,
                     "font-size": 20
                 },
                 "center": {
@@ -37,7 +38,7 @@
                         0
                     ],
                     "stroke-width": 0,
-                    "font": "Assets/Fonts/Roboto-Regular.ttf",
+                    "font": null,
                     "font-size": 20
                 },
                 "bottom": {
@@ -48,7 +49,7 @@
                         0
                     ],
                     "stroke-width": 0,
-                    "font": "Assets/Fonts/Roboto-Regular.ttf",
+                    "font": null,
                     "font-size": 20
                 }
             },
@@ -65,17 +66,5 @@
                 "fps": 30
             }
         }
-    },
-    "brightness": {
-        "value": 50,
-        "override": false
-    },
-    "screensaver": {
-        "enable": false,
-        "override": false,
-        "path": null,
-        "loop": false,
-        "fps": 30,
-        "time-delay": 5
     }
 }

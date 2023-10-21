@@ -59,5 +59,7 @@ class SettingsManager:
         Returns:
             None
         """
+        if not os.path.exists(os.path.join("settings", "decks")):
+            os.mkdir("settings", "decks")
         path = os.path.join("settings", "decks", f"{deck_serial_number}.json")
         self.save_settings_to_file(path, settings)

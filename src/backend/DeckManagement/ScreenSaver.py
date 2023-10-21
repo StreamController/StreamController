@@ -9,58 +9,66 @@ class ScreenSaver:
 
         # Init vars
         self.original_background_video_task = None
+        self.original_background_key_tiles = None
         self.original_video_tasks = None
         self.original_key_images = None
         self.enable = False
-        self.time_delay = 3 # Default time
+        self.time_delay = None # Default time
         self.showing = False
         self.media_path = None
 
         # Time when last key state changed
         self.last_key_change_time = time.time()
 
-        # Start process
-        process = multiprocessing.Process(target=self.thread_method)
-        process.start()
+    def set_time(self, time_delay):
+        # return
+        self.time_delay = time_delay
+        if hasattr(self, "timer"):
+            self.timer.cancel()
+        self.timer = threading.Timer(time_delay, self.on_timer_end)
+        self.timer.start()
 
-    @log.catch
-    def thread_method(self):
-        # time.sleep(100)
-        while True:
-            if not self.enable or self.media_path == None:
-                time.sleep(0.1)
-                continue
+    def set_enable(self, enable):
+        # return
+        self.enable = enable
 
-            print("check")
+        # Hide if showing and enable == False
+        if self.showing and not enable:
+            self.hide()
+
+        if not hasattr(self, "timer"):
+            return
         
-            if not self.showing:
-                passed_time = time.time() - self.last_key_change_time
-                if passed_time > self.time_delay:
-                    log.info("Activating screen saver")
-                    self.showing = True
-                    # Activate screen saver
-                    self.show()
+        # Stop timer if enable == False
+        if not enable:
+            self.timer.cancel()
 
-            time.sleep(0.5)
+        # Start time if not already running
+        if not self.timer.is_alive:
+            self.timer.start()
+
+    def on_timer_end(self):
+        self.showing = True
+        self.show()
 
     def show(self):
         self.original_background_video_task = self.deck_controller.media_handler.background_video_task
+        self.original_background_key_tiles = self.deck_controller.background_key_tiles
         self.original_video_tasks = self.deck_controller.media_handler.video_tasks
         self.original_key_images = self.deck_controller.key_images
 
         # Reset original background video tasks
         self.deck_controller.media_handler.background_video_task = {}
-        self.deck_controller.media_handler.video_tasks = {}
-        self.deck_controller.key_images = [None]*self.deck_controller.deck.key_count()
-        # self.deck_controller.media_handler.only_background = True
-        # Give the handler some time to finish frame
-        # time.sleep(0.1)
+        # self.deck_controller.media_handler.video_tasks = {}
+        self.deck_controller.key_images = [None]*self.deck_controller.deck.key_count(()
             
         self.deck_controller.set_background(media_path=self.media_path)
 
     def hide(self):
         self.showing = False
+        self.set_time(self.time_delay)
         self.deck_controller.media_handler.background_video_task = self.original_background_video_task
+        self.deck_controller.background_key_tiles = self.original_background_key_tiles
         self.deck_controller.media_handler.video_tasks = self.original_video_tasks
         self.deck_controller.key_images = self.original_key_images
 
@@ -73,3 +81,5 @@ class ScreenSaver:
         if self.showing:
             # Deactivate screen saver
             self.hide()
+        else:
+            self.set_time(self.time_delay)

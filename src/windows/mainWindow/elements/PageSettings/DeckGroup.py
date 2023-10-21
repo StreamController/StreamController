@@ -244,6 +244,9 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_toggle_enable(self, toggle_switch, state):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["enable"] = state
+        self.settings_page.deck_page.deck_controller.active_page.save()
+
+        self.settings_page.deck_page.deck_controller.screen_saver.set_enable(state)
 
 
     def on_toggle_overwrite(self, toggle_switch, state):
@@ -254,14 +257,23 @@ class Screensaver(Adw.PreferencesRow):
         # Update screensaver config box's visibility
         self.config_box.set_visible(state)
 
+        # Reload page
+        self.settings_page.deck_page.deck_controller.reload_page(load_brightness=False, load_background=False, load_keys=False)
+
     def on_toggle_loop(self, toggle_switch, state):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["loop"] = state
+        self.settings_page.deck_page.deck_controller.active_page.save()
+        self.settings_page.deck_page.deck_controller.screen_saver.loop = state
 
     def on_change_fps(self, spinner):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["fps"] = spinner.get_value_as_int()
+        self.settings_page.deck_page.deck_controller.active_page.save()
+        self.settings_page.deck_page.deck_controller.screen_saver.fps = spinner.get_value_as_int()
 
     def on_change_time(self, spinner):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["time-delay"] = spinner.get_value_as_int()
+        self.settings_page.deck_page.deck_controller.active_page.save()
+        self.settings_page.deck_page.deck_controller.screen_saver.set_time(spinner.get_value_as_int())
 
     def set_thumbnail(self, file_path):
         if file_path == None:

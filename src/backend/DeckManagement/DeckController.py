@@ -69,6 +69,9 @@ class DeckController:
         # Get deck settings
         self.deck_settings = self.get_deck_settings()
 
+        # Init screen saver
+        self.screen_saver = ScreenSaver(self)
+
         # Load default page #TODO: maybe remove from this class
         default_page = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
         if default_page != None:
@@ -76,10 +79,6 @@ class DeckController:
             if page != None:
                 self.active_page = page
                 self.load_page(page)
-
-        # Init screen saver
-        self.screen_saver = ScreenSaver(self)
-        self.screen_saver.enable = True
 
 
     @log.catch
@@ -181,10 +180,12 @@ class DeckController:
         for i in range(self.deck.key_count()):
             if skip_gifs:
                 if i in self.media_handler.video_tasks.keys():
-                    # Check if video/gif is still playing
+                    if "loop" not in self.media_handler.video_tasks[i]:
+                        continue
                     loop = self.media_handler.video_tasks[i]["loop"]
                     n_frames = len(self.media_handler.video_tasks[i]["frames"])
                     frame = self.media_handler.video_tasks[i]["active_frame"]
+                    # Check if video/gif is still playing
                     if loop and frame < n_frames - 1:
                         continue
 
@@ -259,7 +260,7 @@ class DeckController:
 
 
     @log.catch
-    def load_page(self, page:Page, load_brightness:bool = True, load_background:bool = True, load_keys:bool = True) -> None:
+    def load_page(self, page:Page, load_brightness:bool = True, load_background:bool = True, load_keys:bool = True, load_screen_saver:bool = True) -> None:
         log.info(f"Loading page {page.keys()}")
         self.active_page = page
 
@@ -331,14 +332,53 @@ class DeckController:
                 value = get_from_pagoe(self, page)
             self.set_brightness(value)
 
+        def load_screensaver(self):
+            def get_from_deck_settings(self):
+                ds = self.deck_settings.copy()
+                ds.setdefault("screensaver", {})
+                path = ds["screensaver"].setdefault("path", None)
+                overwrite = ds["screensaver"].setdefault("overwrite", False)
+                enable = ds["screensaver"].setdefault("enable", False)
+                loop = ds["screensaver"].setdefault("loop", False)
+                fps = ds["screensaver"].setdefault("fps", 30)
+                time = ds["screensaver"].setdefault("time-delay", 5)
+                return overwrite, enable, loop, fps, time, path
+            
+            def get_from_page(self, page):
+                p = page.copy()
+                p.setdefault("screensaver", {})
+                path = p["screensaver"].setdefault("path", None)
+                overwrite = p["screensaver"].setdefault("overwrite", False)
+                enable = p["screensaver"].setdefault("enable", False)
+                loop = p["screensaver"].setdefault("loop", False)
+                fps = p["screensaver"].setdefault("fps", 30)
+                time = p["screensaver"].setdefault("time-delay", 5)
+                return overwrite, enable, loop, fps, time, path
+            
+            if page["screensaver"]["overwrite"] == False and "screensaver" in self.deck_settings:
+                data = get_from_deck_settings(self)
+            else:
+                data = get_from_page(self, page)
+
+            if data == None: return
+            overwrite, enable, loop, fps, time, path = data
+            # Set screensaver
+            self.screen_saver.media_path = path
+            self.screen_saver.loop = loop
+            self.screen_saver.fps = fps
+            self.screen_saver.enable = enable
+            self.screen_saver.set_time(time)
+
         if load_brightness:
             load_brightness(self)
         if load_background:
             load_background(self)
         if load_keys:
             load_keys()
+        if load_screensaver:
+            load_screensaver(self)
 
-    def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True):
+    def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True, load_screen_saver: bool = True):
         print(f"Reload brightness: {load_brightness}")
         print(f"Reload background: {load_background}")
         print(f"Reload keys: {load_keys}")
@@ -352,7 +392,7 @@ class DeckController:
         if load_background:
             self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
 
-        self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys)
+        self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys, load_screen_saver=load_screen_saver)
 
     def get_deck_settings(self):
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())

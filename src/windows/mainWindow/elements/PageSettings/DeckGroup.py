@@ -217,28 +217,21 @@ class Screensaver(Adw.PreferencesRow):
             original_values = self.settings_page.deck_page.deck_controller.active_page["screensaver"].copy()
         # Set default values
         self.settings_page.deck_page.deck_controller.active_page.setdefault("screensaver", {})
-        self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("enable", False)
-        self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("override", False)
-        self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("path", None)
-        self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("loop", False)
-        self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("fps", 30)
-        self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("time-delay", 5)
-
-        # Fetch infos
-        enabled = self.settings_page.deck_page.deck_controller.active_page["screensaver"]["enable"]
-        path = self.settings_page.deck_page.deck_controller.active_page["screensaver"]["path"]
-        loop = self.settings_page.deck_page.deck_controller.active_page["screensaver"]["loop"]
-        fps = self.settings_page.deck_page.deck_controller.active_page["screensaver"]["fps"]
-        time = self.settings_page.deck_page.deck_controller.active_page["screensaver"]["time-delay"]
+        override = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("override", False)
+        enable = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("enable", False)
+        path = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("path", None)
+        loop = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("loop", False)
+        fps = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("fps", 30)
+        time = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("time-delay", 5)
 
         # Update ui
-        self.override_switch.set_active(enabled)
-        self.enable_switch.set_active(enabled)
+        self.override_switch.set_active(override)
+        self.enable_switch.set_active(enable)
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
         self.time_spinner.set_value(time)
 
-        self.config_box.set_visible(enabled)
+        self.config_box.set_visible(override)
 
         # Save if changed
         if original_values != self.settings_page.deck_page.deck_controller.active_page["screensaver"]:
@@ -251,6 +244,8 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_toggle_override(self, toggle_switch, state):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["override"] = state
+        # Save
+        self.settings_page.deck_page.deck_controller.active_page.save()
 
         # Update screensaver config box's visibility
         self.config_box.set_visible(state)

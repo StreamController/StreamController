@@ -66,6 +66,9 @@ class DeckController:
         # Active page
         self.active_page = None
 
+        # Get deck settings
+        self.deck_settings = self.get_deck_settings()
+
         # Load default page #TODO: maybe remove from this class
         default_page = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
         if default_page != None:
@@ -77,6 +80,7 @@ class DeckController:
         # Init screen saver
         self.screen_saver = ScreenSaver(self)
         self.screen_saver.enable = True
+
 
     @log.catch
     def generate_key_image(self, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], key=None, add_background=True, shrink=False):
@@ -259,12 +263,32 @@ class DeckController:
         log.info(f"Loading page {page.keys()}")
         self.active_page = page
 
-        def load_background():
-            if "background" not in page: return
-            if page["background"]["show"] == False: return
-            if os.path.isfile(page["background"]["path"]) == False: return
+        def load_background(self):
+            def get_from_deck_settings(self):
+                if self.deck_settings["background"]["show"] == False: return
+                if os.path.isfile(self.deck_settings["background"]["path"]) == False: return
+                path, loop, fps = self.deck_settings["background"].setdefault("path", None), self.deck_settings["background"].setdefault("loop", True), self.deck_settings["background"].setdefault("fps", 30)
+                return path, loop, fps
+            
+            def get_from_page(self, page):
+                if "background" not in page: return
+                if page["background"]["show"] == False: return
+                if os.path.isfile(page["background"]["path"]) == False: return
+                path, loop, fps = page["background"].setdefault("path", None), page["background"].setdefault("loop", True), page["background"].setdefault("fps", 30)
+                return path, loop, fps
+            
+            if page["background"]["overwrite"] == False and "background" in self.deck_settings:
+                data = get_from_deck_settings(self)
+                if data == None: return
+                path, loop, fps = data
+            else:
+                data = get_from_page(self, page)
+                if data == None: return
+                path, loop, fps = data
 
-            self.set_background_task_id = self.set_background(page["background"]["path"], loop=page["background"]["loop"], fps=page["background"]["fps"])
+            # Add background task
+            self.set_background_task_id = self.set_background(path, loop=loop, fps=fps)
+
         def load_key(coords: str):
             x = int(coords.split("x")[0])
             y = int(coords.split("x")[1])
@@ -287,7 +311,28 @@ class DeckController:
             for coords in page["keys"]:
                 load_key(coords)
 
-        load_background()
+        def load_brightness(self):
+            def get_from_deck_settings(self):
+                ds = self.deck_settings.copy()
+                ds.setdefault("brightness", {})
+                value = ds["brightness"].setdefault("value", 75)
+                return value
+            
+            def get_from_pagoe(self, page):
+                p = page.copy()
+                p.setdefault("brightness", {})
+                value = p["brightness"].setdefault("value", 75)
+                value = page["brightness"].setdefault("value", 75)
+                return value
+            
+            if page["brightness"]["overwrite"] == False and "brightness" in self.deck_settings:
+                value = get_from_deck_settings(self)
+            else:
+                value = get_from_pagoe(self, page)
+            self.set_brightness(value)
+
+        load_brightness(self)
+        load_background(self)
         load_keys()
 
     def reload_page(self):
@@ -299,6 +344,9 @@ class DeckController:
         self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
 
         self.load_page(self.active_page)
+
+    def get_deck_settings(self):
+        return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())
 
     def index_to_coords(self, index):
         rows, cols = self.deck.key_layout()    

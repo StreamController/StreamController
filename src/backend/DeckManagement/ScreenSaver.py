@@ -12,7 +12,7 @@ class ScreenSaver:
         self.original_video_tasks = None
         self.original_key_images = None
         self.enable = False
-        self.inactive_time = 3 # Default time
+        self.time_delay = 3 # Default time
         self.showing = False
         self.media_path = None
 
@@ -35,7 +35,7 @@ class ScreenSaver:
         
             if not self.showing:
                 passed_time = time.time() - self.last_key_change_time
-                if passed_time > self.inactive_time:
+                if passed_time > self.time_delay:
                     log.info("Activating screen saver")
                     self.showing = True
                     # Activate screen saver

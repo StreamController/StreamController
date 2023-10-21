@@ -214,7 +214,7 @@ class DeckController:
 
     def key_change_callback(self, deck, key, state):
         # Ignore key press if screen saver is active
-        if self.screen_saver.showing:
+        if not self.screen_saver.showing:
             self.handle_shrink_animation(deck, key, state)
 
         self.screen_saver.on_key_change()

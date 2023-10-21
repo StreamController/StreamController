@@ -26,8 +26,15 @@ class Page(dict):
             self.update(json.load(f))
 
     def save(self):
+        # Make keys last element
+        self.move_key_to_end(self, "keys")
         with open(self.json_path, "w") as f:
             json.dump(self, f, indent=4)
+
+    def move_key_to_end(self, dictionary, key):
+        if key in self:
+            value = self.pop(key)
+            self[key] = value
 
     def set_background(self, file_path, loop=True, fps=30, show=True):
         background = {

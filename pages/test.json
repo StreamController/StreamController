@@ -9,6 +9,18 @@
         3,
         5
     ],
+    "brightness": {
+        "value": 50,
+        "override": false
+    },
+    "screensaver": {
+        "enable": false,
+        "override": false,
+        "path": null,
+        "loop": false,
+        "fps": 30,
+        "time-delay": 5
+    },
     "keys": {
         "0x0": {
             "actions": [
@@ -65,17 +77,5 @@
                 "fps": 30
             }
         }
-    },
-    "brightness": {
-        "value": 50,
-        "override": false
-    },
-    "screensaver": {
-        "enable": false,
-        "override": false,
-        "path": null,
-        "loop": false,
-        "fps": 30,
-        "time-delay": 5
     }
 }

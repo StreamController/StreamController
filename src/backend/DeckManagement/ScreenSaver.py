@@ -12,6 +12,7 @@ class ScreenSaver:
         self.original_background_key_tiles = None
         self.original_video_tasks = None
         self.original_key_images = None
+        self.original_brightness = None
         self.enable = False
         self.time_delay = None # Default time
         self.showing = False
@@ -47,6 +48,15 @@ class ScreenSaver:
         if not self.timer.is_alive:
             self.timer.start()
 
+    def set_brightness(self, brightness):
+        if self.showing:
+            self.original_brightness = self.deck_controller.get_brightness()
+            self.deck_controller.set_brightness(brightness)
+            # Set background if old brightness was 0 and it therefore was not set
+            if brightness > 0 and self.brightness == 0:
+                self.deck_controller.set_background(media_path=self.media_path)
+        self.brightness = brightness
+
     def on_timer_end(self):
         self.showing = True
         self.show()
@@ -56,13 +66,19 @@ class ScreenSaver:
         self.original_background_key_tiles = self.deck_controller.background_key_tiles
         self.original_video_tasks = self.deck_controller.media_handler.video_tasks
         self.original_key_images = self.deck_controller.key_images
+        self.original_brightness = self.deck_controller.get_brightness()
+
+        # Change brightness
+        self.deck_controller.set_brightness(self.brightness)
 
         # Reset original background video tasks
         self.deck_controller.media_handler.background_video_task = {}
         # self.deck_controller.media_handler.video_tasks = {}
         self.deck_controller.key_images = [None]*self.deck_controller.deck.key_count()
-            
-        self.deck_controller.set_background(media_path=self.media_path)
+
+        if self.brightness > 0:
+            # No need for changing background if brightness is 0
+            self.deck_controller.set_background(media_path=self.media_path)
 
     def hide(self):
         self.showing = False
@@ -71,6 +87,7 @@ class ScreenSaver:
         self.deck_controller.background_key_tiles = self.original_background_key_tiles
         self.deck_controller.media_handler.video_tasks = self.original_video_tasks
         self.deck_controller.key_images = self.original_key_images
+        self.deck_controller.set_brightness(self.original_brightness)
 
         # Reload
         self.deck_controller.reload_keys(skip_gifs=False)

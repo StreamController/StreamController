@@ -206,6 +206,16 @@ class Screensaver(Adw.PreferencesRow):
         self.fps_spinner.connect("value-changed", self.on_change_fps)
         self.fps_box.append(self.fps_spinner)
 
+        self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.config_box.append(self.brightness_box)
+
+        self.brightness_label = Gtk.Label(label="Brightness", hexpand=True, xalign=0)
+        self.brightness_box.append(self.brightness_label)
+
+        self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min=0, max=100, step=1)
+        self.scale.connect("value-changed", self.on_change_brightness)
+        self.brightness_box.append(self.scale)
+
         self.load_defaults_from_page()
 
     def load_defaults_from_page(self):
@@ -226,6 +236,7 @@ class Screensaver(Adw.PreferencesRow):
         loop = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("loop", False)
         fps = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("fps", 30)
         time = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("time-delay", 5)
+        brightness = self.settings_page.deck_page.deck_controller.active_page["screensaver"].setdefault("brightness", 75)
 
         # Update ui
         self.overwrite_switch.set_active(overwrite)
@@ -233,6 +244,7 @@ class Screensaver(Adw.PreferencesRow):
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
         self.time_spinner.set_value(time)
+        self.scale.set_value(brightness)
         self.set_thumbnail(path)
 
         self.config_box.set_visible(overwrite)
@@ -274,6 +286,11 @@ class Screensaver(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["time-delay"] = spinner.get_value_as_int()
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.screen_saver.set_time(spinner.get_value_as_int())
+
+    def on_change_brightness(self, scale):
+        self.settings_page.deck_page.deck_controller.active_page["screensaver"]["brightness"] = scale.get_value()
+        self.settings_page.deck_page.deck_controller.active_page.save()
+        self.settings_page.deck_page.deck_controller.screen_saver.set_brightness(scale.get_value())
 
     def set_thumbnail(self, file_path):
         if file_path == None:

@@ -53,6 +53,11 @@ class DeckController:
         self.deck = deck
         if not deck.is_open():
             deck.open()
+        
+        # Default brightness
+        self.current_brightness = None
+        self.set_brightness(75)
+
         self.deck.reset()
 
         self.key_images = [None]*self.deck.key_count() # Fill with None
@@ -342,7 +347,8 @@ class DeckController:
                 loop = ds["screensaver"].setdefault("loop", False)
                 fps = ds["screensaver"].setdefault("fps", 30)
                 time = ds["screensaver"].setdefault("time-delay", 5)
-                return overwrite, enable, loop, fps, time, path
+                brightness = ds["screensaver"].setdefault("brightness", 75)
+                return overwrite, enable, loop, fps, time, path, brightness
             
             def get_from_page(self, page):
                 p = page.copy()
@@ -353,7 +359,8 @@ class DeckController:
                 loop = p["screensaver"].setdefault("loop", False)
                 fps = p["screensaver"].setdefault("fps", 30)
                 time = p["screensaver"].setdefault("time-delay", 5)
-                return overwrite, enable, loop, fps, time, path
+                brightness = p["screensaver"].setdefault("brightness", 75)
+                return overwrite, enable, loop, fps, time, path, brightness
             
             if page["screensaver"]["overwrite"] == False and "screensaver" in self.deck_settings:
                 data = get_from_deck_settings(self)
@@ -361,13 +368,14 @@ class DeckController:
                 data = get_from_page(self, page)
 
             if data == None: return
-            overwrite, enable, loop, fps, time, path = data
+            overwrite, enable, loop, fps, time, path, brightness = data
             # Set screensaver
             self.screen_saver.media_path = path
             self.screen_saver.loop = loop
             self.screen_saver.fps = fps
             self.screen_saver.enable = enable
             self.screen_saver.set_time(time)
+            self.screen_saver.set_brightness(brightness)
 
         if load_brightness:
             load_brightness(self)
@@ -417,8 +425,12 @@ class DeckController:
             self.deck.set_key_image(key, image)
 
     def set_brightness(self, brightness):
+        self.current_brightness = int(brightness)
         with self.deck:
-            self.deck.set_brightness(brightness)
+            self.deck.set_brightness(int(brightness))
+
+    def get_brightness(self):
+        return self.current_brightness
 
     def key_state(self, key):
         return self.deck.key_state(key)

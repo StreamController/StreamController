@@ -24,6 +24,40 @@ class SettingsManager:
         with open(file_path) as f:
             return json.load(f)
         
+        
     def save_settings_to_file(self, file_path: str, settings: dict) -> None:
         with open(file_path, "w") as f:
             json.dump(settings, f, indent=4)
+
+    def get_deck_settings(self, deck_serial_number: str) -> dict:
+        """
+        Retrieves the deck settings for a given deck serial number.
+        This is just a wrapper around load_settings_from_file()
+
+        Args:
+            deck_serial_number (str): The serial number of the deck.
+
+        Returns:
+            dict: The deck settings loaded from the file.
+        """
+        path = os.path.join("settings", "decks", f"{deck_serial_number}.json")
+        settings =  self.load_settings_from_file(path)
+        if settings == None:
+            settings = {}
+            self.save_settings_to_file(path, settings)
+        return settings
+    
+    def save_deck_settings(self, deck_serial_number: str, settings: dict) -> None:
+        """
+        Saves the settings for a deck.
+        This is just a wrapper around save_settings_to_file()
+
+        Args:
+            deck_serial_number (str): The serial number of the deck.
+            settings (dict): The settings to save.
+
+        Returns:
+            None
+        """
+        path = os.path.join("settings", "decks", f"{deck_serial_number}.json")
+        self.save_settings_to_file(path, settings)

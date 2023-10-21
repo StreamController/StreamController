@@ -181,8 +181,10 @@ class Screensaver(Adw.PreferencesRow):
         self.config_box.append(self.media_selector_box)
 
         self.media_selector_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"])
-        # self.media_selector_button.connect("clicked", self.choose_with_file_dialog)
+        self.media_selector_button.connect("clicked", self.choose_with_file_dialog)
         self.media_selector_box.append(self.media_selector_button)
+
+        self.media_selector_image = Gtk.Image() # Will be bind to the button by self.set_thumbnail()
 
         self.loop_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
         self.config_box.append(self.loop_box)
@@ -231,6 +233,7 @@ class Screensaver(Adw.PreferencesRow):
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
         self.time_spinner.set_value(time)
+        self.set_thumbnail(path)
 
         self.config_box.set_visible(overwrite)
 
@@ -259,3 +262,37 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_change_time(self, spinner):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["time-delay"] = spinner.get_value_as_int()
+
+    def set_thumbnail(self, file_path):
+        if file_path == None:
+            return
+        image = gl.media_manager.get_thumbnail(file_path)
+        pixbuf = image2pixbuf(image)
+        self.media_selector_image.set_from_pixbuf(pixbuf)
+        self.media_selector_button.set_child(self.media_selector_image)
+
+    def choose_with_file_dialog(self, button):
+        dialog = ChooseScreensaverDialog(self)
+
+class ChooseScreensaverDialog(Gtk.FileDialog):
+    def __init__(self, screensaver_row: Screensaver):
+        super().__init__(title="Select Background",
+                         accept_label="Select")
+        self.screensaver_row = screensaver_row
+        self.open(callback=self.callback)
+
+    def callback(self, dialog, result):
+        try:
+            selected_file = self.open_finish(result)
+            file_path = selected_file.get_path()
+        except GLib.Error as err:
+            log.error(err)
+            return
+        
+        # Add image as asset to asset manager
+        asset_id = gl.asset_manager.add(file_path)
+        asset_path = gl.asset_manager.get_by_id(asset_id)["internal-path"]
+        
+        self.screensaver_row.set_thumbnail(asset_path)
+        self.screensaver_row.settings_page.deck_page.deck_controller.active_page["screensaver"]["path"] = asset_path
+        self.screensaver_row.settings_page.deck_page.deck_controller.active_page.save()

@@ -21,6 +21,8 @@ from PIL import Image
 from src.backend.DeckManagement.Subclasses.Video import Video
 from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
+from decord import VideoReader
+from decord import cpu, gpu
 
 class BackgroundVideo(Video):
     @log.catch
@@ -43,19 +45,10 @@ class BackgroundVideo(Video):
 
     @log.catch
     def load_from_video(self, deck, video_path):
-        self.video = cv2.VideoCapture(video_path)
-
-        n_frames = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
-
-        while True:
-            success, frame = self.video.read()
-            if not success:
-                if len(self.frames) < n_frames:
-                    log.error("Failed to load frames for video: {}".format(video_path))
-                break
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            pillow_image = Image.fromarray(rgb_frame)
-            self.frames.append(create_wallpaper_image_array(deck, image=pillow_image))
-
-            # update progress
-            self.deck_media_handler.progress_dir[self.progress_id] = float(len(self.frames)) / n_frames
+        with open(video_path, "rb") as f:
+            vr = VideoReader(f, ctx=cpu(0))
+            for frame in vr:
+                image = Image.fromarray(frame.asnumpy())
+                self.frames.append(create_wallpaper_image_array(deck, image=image))
+                # Update progress
+                self.deck_media_handler.progress_dir[self.progress_id] = float(len(self.frames)) / len(vr)

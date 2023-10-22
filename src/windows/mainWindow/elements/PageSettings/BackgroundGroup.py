@@ -162,18 +162,18 @@ class BackgroundMediaRow(Adw.PreferencesRow):
     def update_progress_bar(self):
         #TODO: Thread is not the best solution
         def thread(self):
-            if self.page_settings.deck_page.deck_controller.set_background_task_id == None:
+            if self.settings_page.deck_page.deck_controller.set_background_task_id == None:
                 return
             # Return if task is directly finished
-            progress_dir = self.page_settings.deck_page.deck_controller.media_handler.progress_dir
-            if progress_dir[self.page_settings.deck_page.deck_controller.set_background_task_id] >= 1:
+            progress_dir = self.settings_page.deck_page.deck_controller.media_handler.progress_dir
+            if progress_dir[self.settings_page.deck_page.deck_controller.set_background_task_id] >= 1:
                 return
             self.progress_bar.set_visible(True)
             while True:
-                set_background_task_id = self.page_settings.deck_page.deck_controller.set_background_task_id
+                set_background_task_id = self.settings_page.deck_page.deck_controller.set_background_task_id
                 if set_background_task_id == None:
                     print("none")
-                progress_dir = self.page_settings.deck_page.deck_controller.media_handler.progress_dir
+                progress_dir = self.settings_page.deck_page.deck_controller.media_handler.progress_dir
                 self.progress_bar.set_fraction(floor(progress_dir[set_background_task_id]*10)/ 10) # floor to one decimal
                 print(progress_dir[set_background_task_id])
                 sleep(0.25)

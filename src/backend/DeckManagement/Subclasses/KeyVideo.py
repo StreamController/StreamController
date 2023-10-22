@@ -17,6 +17,8 @@ from loguru import logger as log
 import cv2
 from PIL import Image, ImageSequence
 from StreamDeck.ImageHelpers import PILHelper
+from decord import VideoReader
+from decord import cpu, gpu
 
 # Import own modules
 from src.backend.DeckManagement.Subclasses.Video import Video
@@ -62,17 +64,14 @@ class KeyVideo(Video):
         n_frames = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
 
         while True:
-            success, frame = self.video.read()
-            if not success:
-                if len(self.frames) < n_frames:
-                    log.error("Failed to load frames for video: {}".format(video_path))
-                break
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            pillow_image = Image.fromarray(rgb_frame)
-            scaled_pillow_image = PILHelper.create_scaled_image(self.deck, image=pillow_image)
-            self.frames.append(scaled_pillow_image)
-            # update progress
-            self.deck_media_handler.progress_dir[self.progress_id] = float(len(self.frames)) / n_frames
+            with open(video_path, "rb") as f:
+                vr = VideoReader(f, ctx=cpu(0))
+                for frame in vr:
+                    image = Image.fromarray(frame.asnumpy())
+                    scaled_image = PILHelper.create_scaled_image(self.deck, image)
+                    self.frames.append(scaled_image)
+                    # update progress
+                    self.deck_media_handler.progress_dir[self.progress_id] = float(len(self.frames)) / len(vr)
 
     @log.catch
     def load_gif(self, gif_path):

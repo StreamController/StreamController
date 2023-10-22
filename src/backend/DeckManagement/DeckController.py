@@ -49,8 +49,9 @@ class DeckController:
     set_background_task_id = None
 
     @log.catch
-    def __init__(self, deck):
+    def __init__(self, deck_manager, deck):
         self.deck = deck
+        self.deck_manager = deck_manager
         if not deck.is_open():
             deck.open()
         
@@ -62,6 +63,9 @@ class DeckController:
 
         self.key_images = [None]*self.deck.key_count() # Fill with None
         self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
+
+        # Save all changes made with hidden key grid
+        self.ui_grid_buttons_changes_while_hidden = {}
 
         self.media_handler = None
         self.media_handler = DeckMediaHandler(self)
@@ -155,10 +159,9 @@ class DeckController:
             with self.deck:
                 self.deck.set_key_image(key, native_image)
         else:
-            self.media_handler.add_image_task(key, native_image)
+            self.media_handler.add_image_task(key, native_image, pillow_image)
 
         self.key_images[key] = pillow_image
-        # self.deck.set_key_image(key, native_image)
 
     def set_key(self, key, media_path=None, labels=None, margins=[0, 0, 0, 0], add_background=True, loop=True, fps=30):
         if media_path in [None, ""]:
@@ -169,6 +172,7 @@ class DeckController:
             if extention in [".png", ".jpg", ".jpeg"]:
                 # Load image
                 self.set_image(key, media_path, labels=labels, image_margins=margins, add_background=add_background)
+                pass
             else:
                 # Load video
                 self.set_video(key, media_path, labels=labels, image_margins=margins, add_background=add_background, loop=loop, fps=fps)
@@ -180,7 +184,7 @@ class DeckController:
         return self.media_handler.set_background(media_path, loop=loop, fps=fps, reload=reload)
 
     @log.catch
-    def reload_keys(self, skip_gifs=True, bypass_task=False):
+    def reload_keys(self, skip_gifs=True, bypass_task=False, update_ui=True):
         # Stop gif animations to prevent sending conflicts resulting in strange artifacts
         for i in range(self.deck.key_count()):
             if skip_gifs:
@@ -202,7 +206,9 @@ class DeckController:
                         # Shrink image
                         bg_image = shrink_image(bg_image) 
                     native_image = PILHelper.to_native_format(self.deck, bg_image)
-                    self.media_handler.add_image_task(i, native_image)
+                    if not update_ui:
+                        bg_image = None
+                    self.media_handler.add_image_task(i, native_image, ui_image=bg_image)
                 continue
             bg_image.paste(image, (0, 0), image)
 
@@ -210,12 +216,14 @@ class DeckController:
                 # Shrink image
                 bg_image = shrink_image(bg_image) 
 
-            bg_image = PILHelper.to_native_format(self.deck, bg_image)
+            native_image = PILHelper.to_native_format(self.deck, bg_image)
             if bypass_task:
-                self.deck.set_key_image(i, bg_image)
+                self.deck.set_key_image(i, native_image)
             else:
                 # default
-                self.media_handler.add_image_task(i, bg_image)
+                if not update_ui:
+                    bg_image = None
+                self.media_handler.add_image_task(i, native_image=native_image, ui_image=bg_image)
 
     def key_change_callback(self, deck, key, state):
         # Ignore key press if screen saver is active
@@ -249,6 +257,7 @@ class DeckController:
 
         image_native = PILHelper.to_native_format(self.deck, image)
         self.media_handler.add_image_task(key, image_native)
+        # self.set_image(key, image=image)
 
     @log.catch
     def show_normal_image(self, key):
@@ -282,7 +291,8 @@ class DeckController:
                 if os.path.isfile(page["background"]["path"]) == False: return
                 path, loop, fps = page["background"].setdefault("path", None), page["background"].setdefault("loop", True), page["background"].setdefault("fps", 30)
                 return path, loop, fps
-            
+
+            page["background"].setdefault("overwrite", False)
             if page["background"]["overwrite"] == False and "background" in self.deck_settings:
                 data = get_from_deck_settings(self)
                 if data == None: return
@@ -434,3 +444,32 @@ class DeckController:
 
     def key_state(self, key):
         return self.deck.key_state(key)
+    
+    def get_own_key_grid(self):
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"): return
+        serial_number = self.deck.get_serial_number()
+        deck_stack = gl.app.main_win.leftArea.deck_stack
+        return deck_stack.get_child_by_name(serial_number).grid_page
+    
+    def set_ui_key(self, index, image):
+        if index == None or image == None: return
+
+        y, x = self.index_to_coords(index)
+        x = x
+        # y, x, = 2, 1
+        # print(f"coords: {x}, {y} from index: {index}")
+        # exit()
+        pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
+        
+        if self.get_own_key_grid() == None:
+            # Save to use later
+            self.ui_grid_buttons_changes_while_hidden[(x, y)] = pixbuf
+            # print("change")
+            return
+        buttons = self.get_own_key_grid().buttons
+        # print(buttons[x][y].key)
+        # button_image = buttons[x][y].image
+        # button_image.set_from_pixbuf(pixbuf)
+        # print()
+
+        buttons[x][y].set_image(image)

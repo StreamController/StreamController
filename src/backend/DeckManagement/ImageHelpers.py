@@ -119,7 +119,7 @@ def is_transparent(img):
 
     return False
 
-def image2pixbuf(img):
+def image2pixbuf(img, force_transparency=False):
     """
     Converts an image to a GdkPixbuf.Pixbuf object.
 
@@ -132,7 +132,7 @@ def image2pixbuf(img):
     data = img.tobytes()
     w, h = img.size
     data = GLib.Bytes.new(data)
-    transparent = is_transparent(img)
+    transparent = True if force_transparency else is_transparent(img)
     channels = 4 if transparent else 3
 
     pix = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,

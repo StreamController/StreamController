@@ -45,8 +45,8 @@ class DeckMediaHandler():
 
         self.only_background = False
 
-    def add_image_task(self, key, native_image):
-        self.image_tasks.append((key, native_image))
+    def add_image_task(self, key, native_image, ui_image = None):
+        self.image_tasks.append((key, native_image, ui_image))
 
     @log.catch
     def add_video_task(self, key, video_path, loop=True, fps=30):

@@ -42,3 +42,21 @@ def file_in_dir(file_path, dir=None):
         bool: True if the file is present in the directory, False otherwise.
     """
     return os.path.split(file_path)[1] in os.listdir(dir)
+
+def recursive_hasattr(obj, attr_string):
+    """
+    Check if an attribute exists in an object.
+
+    Args:
+        obj (object): The object to check.
+        attr_string (str): The attributes to check separated with dots. e.g.: foo.bar
+
+    Returns:
+        bool: True if the attribute exists, False otherwise.
+    """
+    attrs = attr_string.split('.')
+    for attr in attrs:
+        if not hasattr(obj, attr):
+            return False
+        obj = getattr(obj, attr)
+    return True

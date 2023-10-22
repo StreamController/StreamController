@@ -39,8 +39,11 @@ def config_logger():
 class Main:
     def __init__(self, application_id, deck_manager):
         # Launch gtk application
-        app = App(application_id=application_id, deck_manager=deck_manager)
-        app.run(sys.argv)
+        self.app = App(application_id=application_id, deck_manager=deck_manager)
+
+        gl.app = self.app
+
+        self.app.run(sys.argv)
 
 @log.catch
 def load():
@@ -50,9 +53,9 @@ def load():
     localeManager.set_to_os_default()
     gl.lm = localeManager
     log.info("Loading app")
-    deck_manager = DeckManager()
-    deck_manager.load_decks()
-    Main(application_id="com.core447.StreamController", deck_manager=deck_manager)
+    gl.deck_manager = DeckManager()
+    gl.deck_manager.load_decks()
+    gl.main = Main(application_id="com.core447.StreamController", deck_manager=gl.deck_manager)
 
 @log.catch
 def create_cache_folder():

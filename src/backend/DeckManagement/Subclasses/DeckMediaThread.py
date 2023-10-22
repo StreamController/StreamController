@@ -55,11 +55,14 @@ class DeckMediaThread(threading.Thread):
     @log.catch
     def handle_image_requests(self):
         for i in range(len(self.media_handler.image_tasks)):
-                if i > len(self.media_handler.image_tasks) - 1:
-                    break
-                key_index, native_image = self.media_handler.image_tasks[i]
-                self.media_handler.deck_controller.deck.set_key_image(key_index, native_image)
-                self.media_handler.image_tasks.pop(i)
+            if i > len(self.media_handler.image_tasks) - 1:
+                break
+            key_index, native_image, ui_image = self.media_handler.image_tasks[i]
+            if ui_image != None:
+                self.media_handler.deck_controller.set_ui_key(key_index, ui_image)
+            
+            self.media_handler.deck_controller.deck.set_key_image(key_index, native_image)
+            self.media_handler.image_tasks.pop(i)
             
     @log.catch
     def handle_videos(self, video_tasks):
@@ -109,4 +112,4 @@ class DeckMediaThread(threading.Thread):
 
         tiles = self.media_handler.background_video_task["frames"][self.media_handler.background_video_task["active_frame"]]
         self.media_handler.deck_controller.background_key_tiles = tiles
-        self.media_handler.deck_controller.reload_keys(skip_gifs=True)
+        self.media_handler.deck_controller.reload_keys(skip_gifs=True, update_ui=True)

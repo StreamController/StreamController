@@ -69,7 +69,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.show_label = Gtk.Label(label="Show Background", hexpand=True, xalign=0)
         self.show_box.append(self.show_label)
         self.show_switch = Gtk.Switch()
-        self.show_switch.connect("state-set", self.on_toggle_show)
+        self.show_switch.connect("state-set", self.on_toggle_enable)
         self.show_box.append(self.show_switch)
 
         self.media_selector = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER)
@@ -116,11 +116,12 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
         self.set_thumbnail(file_path)
 
-    def on_toggle_show(self, toggle_switch, state):
+    def on_toggle_enable(self, toggle_switch, state):
         # Change setting in the active deck page
         self.settings_page.deck_page.deck_controller.active_page["background"]["show"] = state
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.reload_page()
+        self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
 
     def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)
@@ -128,7 +129,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.active_page["background"]["overwrite"] = state
         # Save
         self.settings_page.deck_page.deck_controller.active_page.save()
-        self.settings_page.deck_page.deck_controller.reload_page()
+        self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
 
     def choose_with_file_dialog(self, button):
         dialog = ChooseBackgroundDialog(self)

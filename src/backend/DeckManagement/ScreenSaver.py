@@ -27,7 +27,8 @@ class ScreenSaver:
         if hasattr(self, "timer"):
             self.timer.cancel()
         self.timer = threading.Timer(time_delay, self.on_timer_end)
-        self.timer.start()
+        if self.enable:
+            self.timer.start()
 
     def set_enable(self, enable):
         # return
@@ -43,10 +44,10 @@ class ScreenSaver:
         # Stop timer if enable == False
         if not enable:
             self.timer.cancel()
-
-        # Start time if not already running
-        if not self.timer.is_alive:
-            self.timer.start()
+        else:
+            # Start time if not already running
+            if not self.timer.is_alive:
+                self.timer.start()
 
     def set_brightness(self, brightness):
         if self.showing:

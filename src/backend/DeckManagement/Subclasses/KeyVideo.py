@@ -81,6 +81,7 @@ class KeyVideo(Video):
         n_frames = 0
         for frame in iterator:
             n_frames += 1 #TODO: Find a better way to do this
+        iterator = ImageSequence.Iterator(gif)
         for frame in iterator:
             frame = frame.convert("RGBA")
             self.frames.append(frame)

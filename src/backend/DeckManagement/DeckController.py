@@ -334,7 +334,7 @@ class DeckController:
                 value = ds["brightness"].setdefault("value", 75)
                 return value
             
-            def get_from_pagoe(self, page):
+            def get_from_page(self, page):
                 p = page.copy()
                 p.setdefault("brightness", {})
                 value = p["brightness"].setdefault("value", 75)
@@ -344,7 +344,7 @@ class DeckController:
             if page["brightness"]["overwrite"] == False and "brightness" in self.deck_settings:
                 value = get_from_deck_settings(self)
             else:
-                value = get_from_pagoe(self, page)
+                value = get_from_page(self, page)
             self.set_brightness(value)
 
         def load_screensaver(self):

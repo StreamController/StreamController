@@ -100,7 +100,7 @@ class DeckController:
             log.debug("Loading image from {}".format(image_path))
             image = Image.open(image_path)
         else:
-            image = Image.new("RGB", (72, 72), (0, 0, 0))
+            image = Image.new("RGBA", (72, 72), (0, 0, 0, 0))
         
         image_height = math.floor(self.deck.key_image_format()["size"][1]-image_margins[1]-image_margins[3])
         image_width = math.floor(self.deck.key_image_format()["size"][0]-image_margins[0]-image_margins[2])
@@ -195,8 +195,11 @@ class DeckController:
                     n_frames = len(self.media_handler.video_tasks[i]["frames"])
                     frame = self.media_handler.video_tasks[i]["active_frame"]
                     # Check if video/gif is still playing
-                    if loop and frame < n_frames - 1:
+                    if loop:
                         continue
+                    else:
+                        if frame < n_frames:
+                            continue
 
             image = self.key_images[i]
             bg_image = copy(self.background_key_tiles[i])
@@ -280,17 +283,30 @@ class DeckController:
 
         def load_background(self):
             def get_from_deck_settings(self):
-                if self.deck_settings["background"]["show"] == False: return
+                if self.deck_settings["background"]["enable"] == False:
+                    set_background_to_none(self)
+                    return
                 if os.path.isfile(self.deck_settings["background"]["path"]) == False: return
                 path, loop, fps = self.deck_settings["background"].setdefault("path", None), self.deck_settings["background"].setdefault("loop", True), self.deck_settings["background"].setdefault("fps", 30)
                 return path, loop, fps
             
             def get_from_page(self, page):
-                if "background" not in page: return
-                if page["background"]["show"] == False: return
+                if "background" not in page: 
+                    set_background_to_none(self)
+                    return
+                if page["background"]["show"] == False: 
+                    set_background_to_none(self)
+                    return
                 if os.path.isfile(page["background"]["path"]) == False: return
                 path, loop, fps = page["background"].setdefault("path", None), page["background"].setdefault("loop", True), page["background"].setdefault("fps", 30)
                 return path, loop, fps
+            
+            def set_background_to_none(self):
+                print(self.media_handler.background_video_task)
+                self.media_handler.background_video_task = {}
+                self.background_key_tiles = [None] * self.deck.key_count()
+                if not load_keys:
+                    load_keys()
 
             page["background"].setdefault("overwrite", False)
             if page["background"]["overwrite"] == False and "background" in self.deck_settings:
@@ -324,8 +340,30 @@ class DeckController:
             self.set_key(index, media_path, labels=labels, loop=media_loop, fps=media_fps)
 
         def load_keys():
+            loaded_indices = []
             for coords in page["keys"]:
                 load_key(coords)
+                loaded_indices.append(self.coords_to_index(coords.split("x")))
+
+            # Clear all keys that are not used on this page
+            print(f"not clearing: {loaded_indices}")
+            for i in range(self.key_count()):
+                if i not in loaded_indices:
+                    # print(f"clearing: {i}")
+                    clear_key(i)
+
+        def clear_key(index):
+            from PIL import Image
+            self.key_images[index] = None
+            # if self.background_key_tiles[index] == None:
+                # image = Image.new("RGB", (72, 72), (0, 0, 0))
+            if self.background_key_tiles[index] != None:
+                print("clearing with background")
+            # Image = Image.new("RGB", (72, 72), (0, 0, 0))
+            # native = PILHelper.to native_format(self.deck, Image)
+            # self.deck.set_key_image(index, native)
+            self.set_key(index)
+
 
         def load_brightness(self):
             def get_from_deck_settings(self):
@@ -372,10 +410,10 @@ class DeckController:
                 brightness = p["screensaver"].setdefault("brightness", 75)
                 return overwrite, enable, loop, fps, time, path, brightness
             
-            if page["screensaver"]["overwrite"] == False and "screensaver" in self.deck_settings:
-                data = get_from_deck_settings(self)
-            else:
+            if page["screensaver"]["overwrite"]:
                 data = get_from_page(self, page)
+            else:
+                data = get_from_deck_settings(self)
 
             if data == None: return
             overwrite, enable, loop, fps, time, path, brightness = data
@@ -383,9 +421,14 @@ class DeckController:
             self.screen_saver.media_path = path
             self.screen_saver.loop = loop
             self.screen_saver.fps = fps
-            self.screen_saver.enable = enable
+            self.screen_saver.set_enable(enable)
             self.screen_saver.set_time(time)
             self.screen_saver.set_brightness(brightness)
+            if enable:
+                print("")
+            # if overwrite and not enable:
+                # print()
+            # if not overwrite and not 
 
         if load_brightness:
             load_brightness(self)
@@ -422,7 +465,7 @@ class DeckController:
         return x, y
     
     def coords_to_index(self, coords):
-        x, y = coords
+        x, y = map(int, coords)
         rows, cols = self.deck.key_layout()
         return y * cols + x
 

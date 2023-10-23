@@ -260,6 +260,9 @@ class Screensaver(Adw.PreferencesRow):
 
         self.settings_page.deck_page.deck_controller.screen_saver.set_enable(state)
 
+        # Reload page
+        self.settings_page.deck_page.deck_controller.reload_page(load_brightness=False, load_background=False, load_keys=False)
+
 
     def on_toggle_overwrite(self, toggle_switch, state):
         self.settings_page.deck_page.deck_controller.active_page["screensaver"]["overwrite"] = state

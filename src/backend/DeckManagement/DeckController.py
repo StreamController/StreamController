@@ -494,14 +494,18 @@ class DeckController:
         deck_stack = gl.app.main_win.leftArea.deck_stack
         return deck_stack.get_child_by_name(serial_number).grid_page
     
-    def set_ui_key(self, index, image):
+    def set_ui_key(self, index, image, force_add_background=False):
         if index == None or image == None: return
 
         y, x = self.index_to_coords(index)
-        x = x
-        # y, x, = 2, 1
-        # print(f"coords: {x}, {y} from index: {index}")
-        # exit()
+
+        if force_add_background:
+            bg = copy(self.background_key_tiles[index])
+            if bg != None:
+                image = image.resize(bg.size, Image.Resampling.LANCZOS)
+                bg.paste(image, (0, 0), image)
+                image = bg
+
         pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         
         if self.get_own_key_grid() == None:

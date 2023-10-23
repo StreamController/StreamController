@@ -34,8 +34,8 @@ class DeckManager:
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)
 
-        self.deck_controller = self.deck_controller*1
-        self.deck_controller.append(Fake())
+        self.deck_controller = self.deck_controller
+        # self.deck_controller.append(Fake())
 
 class Fake:
     def __init__(self):

@@ -180,11 +180,12 @@ class DeckController:
     def set_video(self, key, video_path, labels=None, image_margins=[0, 0, 0, 0], add_background=True, loop=True, fps=30):
         self.media_handler.add_video_task(key, video_path, loop=loop, fps=fps)
 
-    def set_background(self, media_path, loop=True, fps=30, reload=True):
-        return self.media_handler.set_background(media_path, loop=loop, fps=fps, reload=reload)
+    def set_background(self, media_path, loop=True, fps=30, reload=True, bypass_task=False):
+        return self.media_handler.set_background(media_path, loop=loop, fps=fps, reload=reload, bypass_task=bypass_task)
 
     @log.catch
     def reload_keys(self, skip_gifs=True, bypass_task=False, update_ui=True):
+        # tasks = {}
         # Stop gif animations to prevent sending conflicts resulting in strange artifacts
         for i in range(self.deck.key_count()):
             if skip_gifs:
@@ -202,31 +203,52 @@ class DeckController:
                             continue
 
             image = self.key_images[i]
-            bg_image = copy(self.background_key_tiles[i])
+            original_bg_image = copy(self.background_key_tiles[i])
             if image == None:
-                if bg_image != None:
+                if original_bg_image != None:
                     if self.deck.key_states()[i]:
                         # Shrink image
-                        bg_image = shrink_image(bg_image) 
+                        bg_image = shrink_image(original_bg_image.copy()) 
+                    else:
+                        bg_image = original_bg_image
                     native_image = PILHelper.to_native_format(self.deck, bg_image)
                     if not update_ui:
                         bg_image = None
-                    self.media_handler.add_image_task(i, native_image, ui_image=bg_image)
+                    if bypass_task:
+                        self.deck.set_key_image(i, native_image)
+                        self.set_ui_key(i, original_bg_image)
+                        # tasks[i] = native_image
+                    else:
+                        # tasks[i] = (native_image, bg_image)
+                        self.media_handler.add_image_task(i, native_image, ui_image=bg_image)
                 continue
-            bg_image.paste(image, (0, 0), image)
+            original_bg_image.paste(image, (0, 0), image)
 
             if self.deck.key_states()[i]:
                 # Shrink image
-                bg_image = shrink_image(bg_image) 
+                bg_image = shrink_image(original_bg_image.copy()) 
+            else:
+                bg_image = original_bg_image
 
             native_image = PILHelper.to_native_format(self.deck, bg_image)
+            if not update_ui:
+                bg_image = None
             if bypass_task:
+                # tasks[i] = native_image
                 self.deck.set_key_image(i, native_image)
+                self.set_ui_key(i, original_bg_image)
             else:
+                # tasks[i] = (native_image, bg_image)
                 # default
-                if not update_ui:
-                    bg_image = None
                 self.media_handler.add_image_task(i, native_image=native_image, ui_image=bg_image)
+
+
+            # Load tasks
+            # for i, task in tasks.items():
+            #     if bypass_task:
+            #         self.deck.set_key_image(i, task)
+            #     else:
+            #         self.media_handler.add_image_task(i, task[0], ui_image=task[1])
 
     def key_change_callback(self, deck, key, state):
         # Ignore key press if screen saver is active

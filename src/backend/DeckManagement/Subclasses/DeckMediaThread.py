@@ -24,6 +24,8 @@ class DeckMediaThread(threading.Thread):
         super().__init__()
         self.media_handler = media_handler
 
+        self.working = False
+        self.pause_work = False
 
     @log.catch
     def run(self):
@@ -31,11 +33,18 @@ class DeckMediaThread(threading.Thread):
 
         self.ticks = 0
         while True: 
+            if self.pause_work:
+                self.was_paused = True
+            while self.pause_work:
+                # return
+                print("pause thread")
+                sleep(0.25)
+
             # Handling video requests
             tick_start_time = time()
             video_tasks = dict(self.media_handler.video_tasks.items()) # Use list to avoid runtime error for changing dict during iteration 
-
             with self.media_handler.deck_controller.deck:
+                self.working = True
                 if not self.media_handler.only_background:
                     # Handle key videos
                     self.handle_videos(video_tasks)
@@ -47,6 +56,7 @@ class DeckMediaThread(threading.Thread):
                     # Handling image requests
                     self.handle_image_requests()
         
+            self.working = False
             sleep_time = (1 / self.FRAMES_PER_SECOND)-(time() - tick_start_time)
             sleep(max(sleep_time, 0))
 
@@ -97,7 +107,7 @@ class DeckMediaThread(threading.Thread):
             return
         if "frames" not in self.media_handler.background_video_task:
             return
-        
+
         self.media_handler.background_video_task["active_frame"] += 1
         if self.media_handler.background_video_task["active_frame"] >= len(self.media_handler.background_video_task["frames"]):
             if self.media_handler.background_video_task["loop"] == False:
@@ -113,4 +123,5 @@ class DeckMediaThread(threading.Thread):
 
         tiles = self.media_handler.background_video_task["frames"][self.media_handler.background_video_task["active_frame"]]
         self.media_handler.deck_controller.background_key_tiles = tiles
-        self.media_handler.deck_controller.reload_keys(skip_gifs=True, update_ui=True)
+        if not self.pause_work:
+            self.media_handler.deck_controller.reload_keys(skip_gifs=True, update_ui=True, bypass_task=True)

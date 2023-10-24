@@ -11,6 +11,7 @@ class ScreenSaver:
         self.original_background_video_task = None
         self.original_background_key_tiles = None
         self.original_video_tasks = None
+        self.original_video_tasks = None
         self.original_key_images = None
         self.original_brightness = None
         self.enable = False
@@ -55,7 +56,7 @@ class ScreenSaver:
             self.deck_controller.set_brightness(brightness)
             # Set background if old brightness was 0 and it therefore was not set
             if brightness > 0 and self.brightness == 0:
-                self.deck_controller.set_background(media_path=self.media_path)
+                self.deck_controller.set_background(media_path=self.media_path, bypass_task=True)
         self.brightness = brightness
 
     def on_timer_end(self):
@@ -63,6 +64,7 @@ class ScreenSaver:
         self.show()
 
     def show(self):
+        self.deck_controller.media_handler.thread.pause_work = True
         self.original_background_video_task = self.deck_controller.media_handler.background_video_task
         self.original_background_key_tiles = self.deck_controller.background_key_tiles
         self.original_video_tasks = self.deck_controller.media_handler.video_tasks
@@ -74,12 +76,25 @@ class ScreenSaver:
 
         # Reset original background video tasks
         self.deck_controller.media_handler.background_video_task = {}
+        self.deck_controller.media_handler.video_tasks = {}
+        self.deck_controller.media_handler.image_tasks = []
         # self.deck_controller.media_handler.video_tasks = {}
         self.deck_controller.key_images = [None]*self.deck_controller.deck.key_count()
 
+        # wait
+        while self.deck_controller.media_handler.thread.working:
+            pass
+
+        # time.sleep(0.5)
         if self.brightness > 0:
             # No need for changing background if brightness is 0
-            self.deck_controller.set_background(media_path=self.media_path)
+            print("Change background")
+            self.deck_controller.set_background(media_path=self.media_path, bypass_task=True)
+            print("Finished changing background")
+
+        # time.sleep(0.2)
+
+        self.deck_controller.media_handler.thread.pause_work = False
 
     def hide(self):
         self.showing = False

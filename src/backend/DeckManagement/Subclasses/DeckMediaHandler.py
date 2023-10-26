@@ -66,29 +66,30 @@ class DeckMediaHandler():
 
     @log.catch
     def set_background(self, media_path, loop=True, fps=30, reload=True, bypass_task=False):
-        def set_background_thread(self, id):
-            if os.path.splitext(media_path)[1] in [".png", ".jpg", ".jpeg"]:
-                # Background is an image
-                image = Image.open(media_path)
-                self.deck_controller.background_key_tiles = create_wallpaper_image_array(deck=self.deck_controller.deck, image=image)
-                self.progress_dir[id] = 1
-                # Remove background video
-                self.background_video_task = {}
-                if reload:
-                    # Reload deck
-                    print("Reloading for background")
-                    self.deck_controller.reload_keys(skip_gifs=True, bypass_task=bypass_task)
-            else:
-                # Background is a video
-                bg_video = BackgroundVideo(self, self.deck_controller.deck, media_path, progress_id=id)
-                self.background_video_task["frames"] = bg_video.frames
-                self.background_video_task["loop"] = loop
-                self.background_video_task["fps"] = fps
-                self.background_video_task["active_frame"] = -1
-                self.progress_dir[id] = 1
-
-        # Generate unique id to track processing progress
         id = str(uuid.uuid4())
         self.progress_dir[id] = 0   
-        threading.Thread(target=set_background_thread, args=(self,id)).start()
+
+        if os.path.splitext(media_path)[1] in [".png", ".jpg", ".jpeg"]:
+            # Remove background video
+            self.background_video_task = {}
+            # Background is an image
+            image = Image.open(media_path)
+            self.deck_controller.background_key_tiles = create_wallpaper_image_array(deck=self.deck_controller.deck, image=image)
+            self.progress_dir[id] = 1
+            if reload:
+                # Reload deck
+                print("Reloading for background")
+                self.deck_controller.reload_keys(skip_gifs=True, bypass_task=bypass_task)
+                # Reload ui keys
+                # self.deck_controller.reload_ui_keys()
+        else:
+            # Background is a video
+            bg_video = BackgroundVideo(self, self.deck_controller.deck, media_path, progress_id=id)
+            self.background_video_task["frames"] = bg_video.frames
+            self.background_video_task["loop"] = loop
+            self.background_video_task["fps"] = fps
+            self.background_video_task["active_frame"] = -1
+            self.progress_dir[id] = 1
+
+        # Generate unique id to track processing progress
         return id

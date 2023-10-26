@@ -120,7 +120,6 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Change setting in the active deck page
         self.settings_page.deck_page.deck_controller.active_page["background"]["show"] = state
         self.settings_page.deck_page.deck_controller.active_page.save()
-        self.settings_page.deck_page.deck_controller.reload_page()
         self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
 
     def on_toggle_overwrite(self, toggle_switch, state):
@@ -156,9 +155,9 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
     def set_background_to_page(self, file_path):
         self.settings_page.deck_page.deck_controller.active_page.set_background(file_path)
-        self.settings_page.deck_page.deck_controller.reload_page()
+        self.settings_page.deck_page.deck_controller.set_background(file_path)
 
-        self.update_progress_bar()
+        # self.update_progress_bar()
 
     def update_progress_bar(self):
         #TODO: Thread is not the best solution

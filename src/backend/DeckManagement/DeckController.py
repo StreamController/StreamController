@@ -147,31 +147,35 @@ class DeckController:
             bg = shrink_image(bg)
 
         # return image in native format
-        return PILHelper.to_native_format(self.deck, bg), alpha_bg
+        return PILHelper.to_native_format(self.deck, bg), alpha_bg, bg
     
     @log.catch
-    def set_image(self, key, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], add_background=True, bypass_task = False, shrink=False):
-        native_image, pillow_image = self.generate_key_image(image_path=image_path, image=image, labels=labels, image_margins=image_margins,
+    def set_image(self, key, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], add_background=True, bypass_task = False, shrink=False, update_ui=True):
+        native_image, pillow_image, ui_image = self.generate_key_image(image_path=image_path, image=image, labels=labels, image_margins=image_margins,
                                             key=key, add_background=add_background, shrink=shrink)
         
         # Set key image
         if bypass_task:
             with self.deck:
                 self.deck.set_key_image(key, native_image)
+                if update_ui or True:
+                    self.set_ui_key(key, ui_image)
         else:
-            self.media_handler.add_image_task(key, native_image, pillow_image)
+            if not update_ui:
+                ui_image = None
+            self.media_handler.add_image_task(key, native_image, ui_image)
 
         self.key_images[key] = pillow_image
 
-    def set_key(self, key, media_path=None, labels=None, margins=[0, 0, 0, 0], add_background=True, loop=True, fps=30):
+    def set_key(self, key, image=None, media_path=None, labels=None, margins=[0, 0, 0, 0], add_background=True, loop=True, fps=30, bypass_task=False, update_ui=True):
         if media_path in [None, ""]:
             # Load image
-            self.set_image(key, labels=labels, image_margins=margins, add_background=add_background)
+            self.set_image(key, image=image, labels=labels, image_margins=margins, add_background=add_background, update_ui=update_ui, bypass_task=bypass_task)
         else:
             extention = os.path.splitext(media_path)[1]
             if extention in [".png", ".jpg", ".jpeg"]:
                 # Load image
-                self.set_image(key, media_path, labels=labels, image_margins=margins, add_background=add_background)
+                self.set_image(key, media_path, labels=labels, image_margins=margins, add_background=add_background, bypass_task=bypass_task, update_ui=update_ui)
                 pass
             else:
                 # Load video
@@ -205,7 +209,7 @@ class DeckController:
             image = self.key_images[i]
             original_bg_image = copy(self.background_key_tiles[i])
             if image == None:
-                if original_bg_image != None:
+                if original_bg_image:
                     if self.deck.key_states()[i]:
                         # Shrink image
                         bg_image = shrink_image(original_bg_image.copy()) 
@@ -215,12 +219,12 @@ class DeckController:
                     if not update_ui:
                         bg_image = None
                     if bypass_task:
-                        self.deck.set_key_image(i, native_image)
+                        self.set_key_image(i, native_image)
                         self.set_ui_key(i, original_bg_image)
                         # tasks[i] = native_image
                     else:
                         # tasks[i] = (native_image, bg_image)
-                        self.media_handler.add_image_task(i, native_image, ui_image=bg_image)
+                        self.media_handler.add_image_task(i, native_image, ui_image=original_bg_image)
                 continue
             original_bg_image.paste(image, (0, 0), image)
 
@@ -235,12 +239,12 @@ class DeckController:
                 bg_image = None
             if bypass_task:
                 # tasks[i] = native_image
-                self.deck.set_key_image(i, native_image)
+                self.set_key_image(i, native_image)
                 self.set_ui_key(i, original_bg_image)
             else:
                 # tasks[i] = (native_image, bg_image)
                 # default
-                self.media_handler.add_image_task(i, native_image=native_image, ui_image=bg_image)
+                self.media_handler.add_image_task(i, native_image=native_image, ui_image=original_bg_image)
 
 
             # Load tasks
@@ -249,6 +253,8 @@ class DeckController:
             #         self.deck.set_key_image(i, task)
             #     else:
             #         self.media_handler.add_image_task(i, task[0], ui_image=task[1])
+
+            # time.sleep(2)
 
     def key_change_callback(self, deck, key, state):
         # Ignore key press if screen saver is active
@@ -328,7 +334,7 @@ class DeckController:
                 self.media_handler.background_video_task = {}
                 self.background_key_tiles = [None] * self.deck.key_count()
                 if not load_keys:
-                    load_keys()
+                    load_all_keys()
 
             page["background"].setdefault("overwrite", False)
             if page["background"]["overwrite"] == False and "background" in self.deck_settings:
@@ -340,8 +346,8 @@ class DeckController:
                 if data == None: return
                 path, loop, fps = data
 
-            # Add background task
-            self.set_background_task_id = self.set_background(path, loop=loop, fps=fps)
+            # Add background task - no reload required if load_keys is True because load_keys() will do this later
+            self.set_background_task_id = self.set_background(path, loop=loop, fps=fps, reload=not load_all_keys)
 
         def load_key(coords: str):
             x = int(coords.split("x")[0])
@@ -359,19 +365,17 @@ class DeckController:
                     media_path = page["keys"][coords]["media"]["path"]
                     media_loop = page["keys"][coords]["media"]["loop"]
                     media_fps = page["keys"][coords]["media"]["fps"]
-            self.set_key(index, media_path, labels=labels, loop=media_loop, fps=media_fps)
+            self.set_key(index, media_path=media_path, labels=labels, loop=media_loop, fps=media_fps, bypass_task=True, update_ui=True)
 
-        def load_keys():
+        def load_all_keys():
             loaded_indices = []
             for coords in page["keys"]:
                 load_key(coords)
                 loaded_indices.append(self.coords_to_index(coords.split("x")))
-
+            # return
             # Clear all keys that are not used on this page
-            print(f"not clearing: {loaded_indices}")
             for i in range(self.key_count()):
                 if i not in loaded_indices:
-                    # print(f"clearing: {i}")
                     clear_key(i)
 
         def clear_key(index):
@@ -384,8 +388,8 @@ class DeckController:
             # Image = Image.new("RGB", (72, 72), (0, 0, 0))
             # native = PILHelper.to native_format(self.deck, Image)
             # self.deck.set_key_image(index, native)
-            self.set_key(index)
-
+            self.set_key(index, bypass_task=False, update_ui=True, add_background=True)
+        # time.sleep(2)
 
         def load_brightness(self):
             def get_from_deck_settings(self):
@@ -456,8 +460,8 @@ class DeckController:
             load_brightness(self)
         if load_background:
             load_background(self)
-        if load_keys:
-            load_keys()
+        if load_all_keys:
+            load_all_keys()
         if load_screensaver:
             load_screensaver(self)
 
@@ -475,7 +479,7 @@ class DeckController:
         if load_background:
             self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
 
-        self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys, load_screen_saver=load_screen_saver)
+        self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_all_keys=load_keys, load_screen_saver=load_screen_saver)
 
     def get_deck_settings(self):
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())
@@ -517,7 +521,8 @@ class DeckController:
         return deck_stack.get_child_by_name(serial_number).grid_page
     
     def set_ui_key(self, index, image, force_add_background=False):
-        if index == None or image == None: return
+        if image == None or index == None:
+            return
 
         y, x = self.index_to_coords(index)
 
@@ -533,12 +538,22 @@ class DeckController:
         if self.get_own_key_grid() == None:
             # Save to use later
             self.ui_grid_buttons_changes_while_hidden[(x, y)] = pixbuf
-            # print("change")
             return
         buttons = self.get_own_key_grid().buttons
-        # print(buttons[x][y].key)
-        # button_image = buttons[x][y].image
-        # button_image.set_from_pixbuf(pixbuf)
-        # print()
-
         buttons[x][y].set_image(image)
+
+    def reload_ui_keys(self):
+        for i in range(self.deck.key_count()):
+            key_image = copy(self.key_images[i])
+            bg_image = copy(self.background_key_tiles[i])
+            if bg_image == None:
+                bg_image = Image.new("RGB", (72, 72), (0, 0, 0))
+            if key_image == None:
+                key_image = Image.new("RGBA", (72, 72), (0, 0, 0, 0))
+
+            key_image = Image.new("RGBA", (72, 72), (255, 255, 255, 255))
+
+            key_image.save(f"keys/{i}.png")
+            # bg_image.paste(key_image, (0, 0), key_image)
+            self.set_ui_key(i, key_image, force_add_background=True)
+

@@ -18,19 +18,15 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
-# Import Python modules
+# Import Python modules 
 from loguru import logger as log
 
-# Import own modules
-from src.windows.mainWindow.elements.DeckStack import DeckStack
-
-class LeftArea(Gtk.Box):
-    def __init__(self, main_window, deck_manager, **kwargs):
+class DeckSettingsPage(Gtk.Box):
+    def __init__(self, deck_stack_child, **kwargs):
         super().__init__(**kwargs)
-        self.deck_manager = deck_manager
-        self.main_window = main_window
+        self.deck_stack_child = deck_stack_child
         self.build()
 
     def build(self):
-        self.deck_stack = DeckStack(self.main_window, self.deck_manager)
-        self.append(self.deck_stack)
+        b = Gtk.Button(label="Deck Settings", hexpand=True, vexpand=True)
+        self.append(b)

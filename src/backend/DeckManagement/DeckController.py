@@ -518,7 +518,7 @@ class DeckController:
         if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"): return
         serial_number = self.deck.get_serial_number()
         deck_stack = gl.app.main_win.leftArea.deck_stack
-        return deck_stack.get_child_by_name(serial_number).grid_page
+        return deck_stack.get_child_by_name(serial_number).page_settings.grid_page
     
     def set_ui_key(self, index, image, force_add_background=False):
         if image == None or index == None:

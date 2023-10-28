@@ -36,6 +36,10 @@ from src.windows.mainWindow.elements.PageSettings.DeckGroup import DeckGroup
 
 
 class PageSettings(Gtk.Box):
+    """
+    Child of PageSettingsPage
+    Page specific settings
+    """
     def __init__(self, deck_page, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
                          margin_start=50, margin_end=50,

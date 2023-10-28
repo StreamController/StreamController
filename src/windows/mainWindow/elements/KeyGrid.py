@@ -28,6 +28,10 @@ import globals as gl
 # Import own modules
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 class KeyGrid(Gtk.Grid):
+    """
+    Child of PageSettingsPage
+    Key grid for the button config
+    """
     def __init__(self, deck_controller, deck_page, **kwargs):
         super().__init__(**kwargs)
         self.set_halign(Gtk.Align.CENTER)

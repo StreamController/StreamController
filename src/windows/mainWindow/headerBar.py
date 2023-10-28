@@ -39,6 +39,19 @@ class HeaderBar(Gtk.HeaderBar):
         self.pack_start(self.page_selector)
 
         # Deck selector
-        self.deckSwitcher = DeckSwitcher(hexpand=False, margin_start=75, margin_end=75, width_request=500)
+        self.deckSwitcher = DeckSwitcher(hexpand=False, margin_start=75, margin_end=75)
         self.deckSwitcher.set_stack(self.deckStack)
         self.set_title_widget(self.deckSwitcher)
+
+        # Config deck button
+        self.config_button = Gtk.Button(label="Config deck")
+        self.config_button.connect("clicked", self.on_config_button_click)
+        self.pack_end(self.config_button)
+
+    def on_config_button_click(self, button):
+        if button.get_label() == "Config deck":
+            self.deckStack.get_visible_child().set_visible_child_name("Deck Settings")
+            button.set_label("Config page")
+        elif button.get_label() == "Config page":
+            self.deckStack.get_visible_child().set_visible_child_name("Page Settings")
+            button.set_label("Config deck")

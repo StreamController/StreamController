@@ -25,7 +25,11 @@ from loguru import logger as log
 from src.windows.mainWindow.elements.KeyGrid import KeyGrid
 from src.windows.mainWindow.elements.PageSettings.PageSettings import PageSettings
 
-class DeckPage(Gtk.Box):
+class PageSettingsPage(Gtk.Box):
+    """
+    Child of DeckStackChild
+    This stack features one page for the key grid and one for the page settings
+    """
     def __init__(self, deck_stack, deck_controller, **kwargs):
         self.deck_controller = deck_controller
         self.deck_stack = deck_stack

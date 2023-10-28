@@ -479,7 +479,7 @@ class DeckController:
         if load_background:
             self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
 
-        self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_all_keys=load_keys, load_screen_saver=load_screen_saver)
+        self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys, load_screen_saver=load_screen_saver)
 
     def get_deck_settings(self):
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())

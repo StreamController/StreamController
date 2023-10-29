@@ -30,3 +30,15 @@
 .red-color{
   color: red;
 }
+.icon-selector{
+  border-radius: 10px;
+  margin: 10px;
+  min-width:175px;	
+	min-height:175px;
+}
+.no-padding{
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+}

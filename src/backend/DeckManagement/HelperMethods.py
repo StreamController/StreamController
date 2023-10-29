@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import hashlib
 import os
+import matplotlib.font_manager
 def sha256(file_path):
     """
     Calculates the sha256 hash of a file.
@@ -60,3 +61,10 @@ def recursive_hasattr(obj, attr_string):
             return False
         obj = getattr(obj, attr)
     return True
+
+def font_path_from_name(font_name: str):
+    return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=font_name))
+
+def font_name_from_path(font_path: str):
+    font_properties = matplotlib.font_manager.FontProperties(fname=font_path)
+    return font_properties.get_family()[0]

@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, GLib
@@ -27,6 +28,8 @@ import globals as gl
 
 # Import own modules
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+
 class KeyGrid(Gtk.Grid):
     """
     Child of PageSettingsPage
@@ -50,7 +53,7 @@ class KeyGrid(Gtk.Grid):
         layout = self.deck_controller.deck.key_layout()
         for x in range(layout[0]):
             for y in range(layout[1]):
-                button = KeyButton(self, x*y)
+                button = KeyButton(self, (layout[0] - x - 1, y))
                 self.attach(button, y, layout[0] - x, 1, 1)
                 x = layout[0] - 1 - x
                 self.buttons[x][y] = button
@@ -60,26 +63,27 @@ class KeyGrid(Gtk.Grid):
         l = Gtk.Label(label="Key Grid")
         self.attach(l, 0, 0, 1, 1)
 
-
     def load_from_changes(self):
         # Applt changes made before creation of self
         if not hasattr(self.deck_controller, "ui_grid_buttons_changes_while_hidden"):
             return
         tasks = self.deck_controller.ui_grid_buttons_changes_while_hidden
         for coords, pixbuf in tasks.items():
-            self.buttons[coords[0]][coords[1]].image.set_from_pixbuf(pixbuf)
+            self.buttons[coords[0]][coords[1]].show_pixbuf(pixbuf)
 
 
 class KeyButton(Gtk.Button):
-    def __init__(self, key_grid, key, **kwargs):
+    def __init__(self, key_grid, coords, **kwargs):
         super().__init__(**kwargs)
         self.set_css_classes(["key-button"])
-        self.key = key
+        self.coords = coords
         self.key_grid = key_grid
 
         self.image = Gtk.Image(hexpand=True, vexpand=True, css_classes=["key-image"])
         self.image.set_overflow(Gtk.Overflow.HIDDEN)
         self.set_child(self.image)
+
+        self.connect("clicked", self.on_click)
 
     def set_image(self, image):
         # Check if this keygrid is on the screen
@@ -89,5 +93,28 @@ class KeyButton(Gtk.Button):
         if self.key_grid.deck_page.deck_stack.get_visible_child() != self.key_grid.deck_page:
             return
 
-        pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
-        GLib.idle_add(self.image.set_from_pixbuf, pixbuf)
+        self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
+        self.show_pixbuf(self.pixbuf)
+
+        # update righthand side key preview
+        if not recursive_hasattr(gl, "app.main_win.rightArea"): return
+        right_area = gl.app.main_win.rightArea
+        if right_area.label_editor.label_group.active_coords == (self.coords[1], self.coords[0]):
+            self.set_right_preview(self.pixbuf)
+
+    def set_right_preview(self, pixbuf):
+        right_area = gl.app.main_win.rightArea
+        # pixbuf = self.image.get_pixbuf()
+        if pixbuf != None:
+            GLib.idle_add(right_area.icon_selector.image.set_from_pixbuf, pixbuf)
+
+    def show_pixbuf(self, pixbuf):
+        self.pixbuf = pixbuf
+        GLib.idle_add(self.image.set_from_pixbuf, self.pixbuf)
+
+    def on_click(self, button):
+        # Update settings on the righthand side of the screen
+        right_area = gl.app.main_win.rightArea
+        right_area.label_editor.label_group.load_for_coords((self.coords[1], self.coords[0]))
+        # Update preview
+        self.set_right_preview(self.pixbuf)

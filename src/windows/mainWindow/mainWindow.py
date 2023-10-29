@@ -17,14 +17,15 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GLib
+GLib.threads_init()
 
 # Import Python modules
 from loguru import logger as log
 
 # Import own modules
 from src.windows.mainWindow.elements.leftArea import LeftArea
-from src.windows.mainWindow.elements.rightArea import RightArea
+from src.windows.mainWindow.elements.RightArea.RightArea import RightArea
 from src.windows.mainWindow.headerBar import HeaderBar
 
 class MainWindow(Gtk.ApplicationWindow):
@@ -47,7 +48,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.leftArea = LeftArea(self, deck_manager=self.deck_manager, margin_end=3, width_request=500, margin_bottom=10)
         self.mainPaned.set_start_child(self.leftArea)
 
-        self.rightArea = RightArea(margin_start=3, width_request=180)
+        self.rightArea = RightArea(main_window=self, margin_start=4, width_request=180, margin_end=4)
         self.mainPaned.set_end_child(self.rightArea)
 
         # Add header bar

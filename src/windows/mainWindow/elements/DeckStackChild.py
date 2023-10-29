@@ -42,5 +42,3 @@ class DeckStackChild(Gtk.Stack):
 
         self.add_named(self.page_settings, "Page Settings")
         self.add_named(self.deck_settings, "Deck Settings")
-
-        self.set_visible_child_name("Deck Settings")

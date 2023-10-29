@@ -120,9 +120,11 @@ class DeckController:
             # Draw labels onto the image
             for label in list(labels.keys()):
                 # Use default font if no font is specified
-                if labels[label]["font"] is None:
-                    labels[label]["font"] = DEFAULT_FONT
-                font = ImageFont.truetype(labels[label]["font"], labels[label]["font-size"])
+                if labels[label]["font-family"] is None:
+                    font_path = font_path_from_name(DEFAULT_FONT)
+                else:
+                    font_path = font_path_from_name(labels[label]["font-family"])
+                font = ImageFont.truetype(font_path, labels[label]["font-size"])
                 # Top text
                 if label == "top":
                     draw.text((image.width / 2, labels[label]["font-size"] - 3), text=labels[label]["text"], font=font, anchor="ms",
@@ -350,28 +352,10 @@ class DeckController:
             # Add background task - no reload required if load_keys is True because load_keys() will do this later
             self.set_background_task_id = self.set_background(path, loop=loop, fps=fps, reload=not load_all_keys)
 
-        def load_key(coords: str):
-            x = int(coords.split("x")[0])
-            y = int(coords.split("x")[1])
-            index = self.coords_to_index((x, y))
-            # Ignore key if it is out of bounds
-            if index > self.key_count(): return
-
-            labels = None
-            if "labels" in page["keys"][coords]:
-                labels = page["keys"][coords]["labels"]
-            media_path, media_loop, media_fps = None, None, None
-            if "media" in page["keys"][coords]:
-                if page["keys"][coords] not in ["", None]:
-                    media_path = page["keys"][coords]["media"]["path"]
-                    media_loop = page["keys"][coords]["media"]["loop"]
-                    media_fps = page["keys"][coords]["media"]["fps"]
-            self.set_key(index, media_path=media_path, labels=labels, loop=media_loop, fps=media_fps, bypass_task=True, update_ui=True)
-
         def load_all_keys():
             loaded_indices = []
             for coords in page["keys"]:
-                load_key(coords)
+                self.load_key(coords)
                 loaded_indices.append(self.coords_to_index(coords.split("x")))
             # return
             # Clear all keys that are not used on this page
@@ -481,6 +465,25 @@ class DeckController:
             self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
 
         self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys, load_screen_saver=load_screen_saver)
+
+    def load_key(self, coords: str):
+        self.active_page.load()
+        x = int(coords.split("x")[0])
+        y = int(coords.split("x")[1])
+        index = self.coords_to_index((x, y))
+        # Ignore key if it is out of bounds
+        if index > self.key_count(): return
+
+        labels = None
+        if "labels" in self.active_page["keys"][coords]:
+            labels = self.active_page["keys"][coords]["labels"]
+        media_path, media_loop, media_fps = None, None, None
+        if "media" in self.active_page["keys"][coords]:
+            if self.active_page["keys"][coords] not in ["", None]:
+                media_path = self.active_page["keys"][coords]["media"]["path"]
+                media_loop = self.active_page["keys"][coords]["media"]["loop"]
+                media_fps = self.active_page["keys"][coords]["media"]["fps"]
+        self.set_key(index, media_path=media_path, labels=labels, loop=media_loop, fps=media_fps, bypass_task=True, update_ui=True)
 
     def get_deck_settings(self):
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())

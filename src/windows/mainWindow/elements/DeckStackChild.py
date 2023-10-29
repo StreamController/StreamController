@@ -21,7 +21,7 @@ from gi.repository import Gtk, Adw
 
 # Import own modules
 from src.windows.mainWindow.elements.PageSettings.PageSettings import PageSettings
-from windows.mainWindow.elements.DeckSettings.DeckSettingsPage import DeckSettingsPage
+from src.windows.mainWindow.elements.DeckSettings.DeckSettingsPage import DeckSettingsPage
 from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
 
 class DeckStackChild(Gtk.Stack):
@@ -38,7 +38,9 @@ class DeckStackChild(Gtk.Stack):
 
     def build(self):
         self.page_settings = PageSettingsPage(self, self.deck_controller)
-        self.deck_settings = DeckSettingsPage(self)
+        self.deck_settings = DeckSettingsPage(self, self.deck_controller)
 
         self.add_named(self.page_settings, "Page Settings")
         self.add_named(self.deck_settings, "Deck Settings")
+
+        self.set_visible_child_name("Deck Settings")

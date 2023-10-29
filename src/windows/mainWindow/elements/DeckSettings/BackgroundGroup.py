@@ -68,7 +68,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER)
         self.config_box.append(self.media_selector)
 
-        self.media_selector_image = Gtk.Image() # Will be bind to the button by self.set_thumbnail()
+        self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
         self.media_selector_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"])
         self.media_selector_button.connect("clicked", self.choose_with_file_dialog)

@@ -141,7 +141,7 @@ class Screensaver(Adw.PreferencesRow):
         self.media_selector_button.connect("clicked", self.choose_with_file_dialog)
         self.media_selector_box.append(self.media_selector_button)
 
-        self.media_selector_image = Gtk.Image() # Will be bind to the button by self.set_thumbnail()
+        self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
         self.loop_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
         self.config_box.append(self.loop_box)

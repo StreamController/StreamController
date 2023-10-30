@@ -25,6 +25,7 @@ from loguru import logger as log
 # Import own modules
 from src.windows.mainWindow.elements.RightArea.elements.IconSelector import IconSelector
 from src.windows.mainWindow.elements.RightArea.elements.LabelEditor import LabelEditor
+from src.windows.mainWindow.elements.RightArea.elements.ActionEditor import ActionEditor
 
 class RightArea(Gtk.Box):
     def __init__(self, main_window, **kwargs):
@@ -44,3 +45,6 @@ class RightArea(Gtk.Box):
 
         self.label_editor = LabelEditor(self, halign=Gtk.Align.CENTER, margin_top=25)
         self.main_box.append(self.label_editor)
+
+        self.action_editor = ActionEditor(self, halign=Gtk.Align.CENTER, margin_top=25)
+        self.main_box.append(self.action_editor)

@@ -15,7 +15,7 @@
   max-height: 150px;
 }
 .red-color{
-  color: red;
+  color: #C01C28;
 }
 .icon-selector{
   border-radius: 10px;
@@ -61,4 +61,7 @@
   padding-bottom: 4px;
   margin: 6px;
   transition: border-color 0.25s;
+}
+.remove-button {
+  background-color: #C01C28;
 }

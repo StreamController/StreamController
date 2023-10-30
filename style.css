@@ -1,19 +1,6 @@
 .bold {
   font-weight: bold;
 }
-.key-button{
-  border-radius: 10px;
-  margin: 10px;
-  min-width:75px;	
-	max-width:75px;
-	margin-right:10px;
-	min-height:75px;
-	max-height:75px;
-  padding-left: 0px;
-  padding-right: 0px;
-  padding-top: 0px;
-  padding-bottom: 0px;
-}
 .key-image{
   border-radius: 10px;
 }
@@ -41,4 +28,37 @@
   padding-right: 0px;
   padding-top: 0px;
   padding-bottom: 0px;
+}
+.key-button-frame {
+  border-radius:15px;
+  border-width: 3px;
+  border-color: #78AEED;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  margin: 6px;
+  transition: border-color 0.25s;
+}
+.key-button{
+  border-radius: 10px;
+  min-width:75px;	
+	max-width:75px;
+	min-height:75px;
+	max-height:75px;
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+.key-button-frame-hidden {
+  border-radius:15px;
+  border-width: 3px;
+  border-color: #00000000;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  margin: 6px;
+  transition: border-color 0.25s;
 }

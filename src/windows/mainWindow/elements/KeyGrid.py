@@ -42,6 +42,8 @@ class KeyGrid(Gtk.Grid):
         self.deck_controller = deck_controller
         self.deck_page = deck_page
 
+        self.selected_key = None # The selected key, indicated by a blue frame around it
+
         self.buttons = [[None] * deck_controller.deck.key_layout()[1] for i in range(deck_controller.deck.key_layout()[0])]
 
         self.build()
@@ -57,7 +59,6 @@ class KeyGrid(Gtk.Grid):
                 self.attach(button, y, layout[0] - x, 1, 1)
                 x = layout[0] - 1 - x
                 self.buttons[x][y] = button
-
         return
         log.debug(self.deck_controller.deck.key_layout())
         l = Gtk.Label(label="Key Grid")
@@ -71,19 +72,25 @@ class KeyGrid(Gtk.Grid):
         for coords, pixbuf in tasks.items():
             self.buttons[coords[0]][coords[1]].show_pixbuf(pixbuf)
 
-
-class KeyButton(Gtk.Button):
+class KeyButton(Gtk.Frame):
     def __init__(self, key_grid, coords, **kwargs):
         super().__init__(**kwargs)
-        self.set_css_classes(["key-button"])
+        self.set_css_classes(["key-button-frame-hidden"])
         self.coords = coords
         self.key_grid = key_grid
 
+        self.button = Gtk.Button(hexpand=True, vexpand=True, css_classes=["key-button"])
+        self.set_child(self.button)
+
         self.image = Gtk.Image(hexpand=True, vexpand=True, css_classes=["key-image"])
         self.image.set_overflow(Gtk.Overflow.HIDDEN)
-        self.set_child(self.image)
+        self.button.set_child(self.image)
 
-        self.connect("clicked", self.on_click)
+        self.button.connect("clicked", self.on_click)
+
+        focus_controller = Gtk.EventControllerFocus()
+        self.add_controller(focus_controller)
+        focus_controller.connect("enter", self.on_focus_in)
 
     def set_image(self, image):
         # Check if this keygrid is on the screen
@@ -118,3 +125,22 @@ class KeyButton(Gtk.Button):
         right_area.label_editor.label_group.load_for_coords((self.coords[1], self.coords[0]))
         # Update preview
         self.set_right_preview(self.pixbuf)
+        # self.set_css_classes(["key-button-frame"])
+        # self.button.set_css_classes(["key-button-new-small"])
+        self.set_visible(True)
+
+    def set_visible(self, visible):
+        if visible:
+            # Hide other frames
+            if self.key_grid.selected_key not in [self, None]:
+                # self.key_grid.selected_key.set_css_classes(["key-button-frame-hidden"])
+                self.key_grid.selected_key.set_visible(False)
+            self.set_css_classes(["key-button-frame"])
+            self.key_grid.selected_key = self
+        else:
+            self.set_css_classes(["key-button-frame-hidden"])
+            self.key_grid.selected_key = None
+
+
+    def on_focus_in(self, *args):
+        self.set_visible(True)

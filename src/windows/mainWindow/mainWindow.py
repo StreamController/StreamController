@@ -48,7 +48,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.leftArea = LeftArea(self, deck_manager=self.deck_manager, margin_end=3, width_request=500, margin_bottom=10)
         self.mainPaned.set_start_child(self.leftArea)
 
-        self.rightArea = RightArea(main_window=self, margin_start=4, width_request=180, margin_end=4)
+        self.rightArea = RightArea(main_window=self, margin_start=4, width_request=300, margin_end=4)
         self.mainPaned.set_end_child(self.rightArea)
 
         # Add header bar

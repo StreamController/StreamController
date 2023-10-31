@@ -259,11 +259,27 @@ class DeckController:
             # time.sleep(2)
 
     def key_change_callback(self, deck, key, state):
-        # Ignore key press if screen saver is active
-        if not self.screen_saver.showing:
-            self.handle_shrink_animation(deck, key, state)
-
         self.screen_saver.on_key_change()
+
+        # Ignore key press if screen saver is active
+        if self.screen_saver.showing:
+            return
+
+        self.handle_shrink_animation(deck, key, state)
+
+        # Perform actions
+        self.perform_actions(deck, key, state)
+
+    def perform_actions(self, deck, key, state):
+        coords = self.index_to_coords(key)
+        if "keys" not in self.active_page:
+            return
+        if f"{coords[0]}x{coords[1]}" not in self.active_page["keys"]:
+            return
+        if "actions" not in self.active_page["keys"][f"{coords[0]}x{coords[1]}"]:
+            return
+        print(self.active_page["keys"][f"{coords[0]}x{coords[1]}"]["actions"])
+
 
     @log.catch
     def handle_shrink_animation(self, deck, key, state):

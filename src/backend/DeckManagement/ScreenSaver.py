@@ -52,7 +52,6 @@ class ScreenSaver:
 
     def set_brightness(self, brightness):
         if self.showing:
-            self.original_brightness = self.deck_controller.get_brightness()
             self.deck_controller.set_brightness(brightness)
             # Set background if old brightness was 0 and it therefore was not set
             if brightness > 0 and self.brightness == 0:

@@ -29,6 +29,18 @@
   padding-top: 0px;
   padding-bottom: 0px;
 }
+.large-padding {
+  padding-left: 15px;
+  padding-right: 15px;
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+.no-margin {
+  margin-left: 0px;
+  margin-right: 0px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
 .key-button-frame {
   border-radius:15px;
   border-width: 3px;
@@ -64,4 +76,10 @@
 }
 .remove-button {
   background-color: #C01C28;
+}
+.no-rounded-corners {
+  border-radius: 0px;
+}
+.invisible {
+  background-color: #00000000;
 }

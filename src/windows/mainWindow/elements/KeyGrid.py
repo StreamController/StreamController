@@ -106,14 +106,14 @@ class KeyButton(Gtk.Frame):
         # update righthand side key preview
         if not recursive_hasattr(gl, "app.main_win.rightArea"): return
         right_area = gl.app.main_win.rightArea
-        if right_area.label_editor.label_group.active_coords == (self.coords[1], self.coords[0]):
+        if right_area.key_editor.label_editor.label_group.active_coords == (self.coords[1], self.coords[0]):
             self.set_right_preview(self.pixbuf)
 
     def set_right_preview(self, pixbuf):
         right_area = gl.app.main_win.rightArea
         # pixbuf = self.image.get_pixbuf()
         if pixbuf != None:
-            GLib.idle_add(right_area.icon_selector.image.set_from_pixbuf, pixbuf)
+            GLib.idle_add(right_area.key_editor.icon_selector.image.set_from_pixbuf, pixbuf)
 
     def show_pixbuf(self, pixbuf):
         self.pixbuf = pixbuf
@@ -122,7 +122,7 @@ class KeyButton(Gtk.Frame):
     def on_click(self, button):
         # Update settings on the righthand side of the screen
         right_area = gl.app.main_win.rightArea
-        right_area.label_editor.label_group.load_for_coords((self.coords[1], self.coords[0]))
+        right_area.key_editor.label_editor.label_group.load_for_coords((self.coords[1], self.coords[0]))
         # Update preview
         self.set_right_preview(self.pixbuf)
         # self.set_css_classes(["key-button-frame"])

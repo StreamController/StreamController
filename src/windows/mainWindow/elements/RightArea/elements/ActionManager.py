@@ -22,7 +22,7 @@ from gi.repository import Gtk, Adw, Gdk
 # Import Python modules
 from loguru import logger as log
 
-class ActionEditor(Gtk.Box):
+class ActionManager(Gtk.Box):
     def __init__(self, right_area, **kwargs):
         self.right_area = right_area
         super().__init__(**kwargs)
@@ -40,7 +40,7 @@ class ActionEditor(Gtk.Box):
 
 class ActionGroup(Adw.PreferencesGroup):
     def __init__(self, right_area, **kwargs):
-        super().__init__(title="Actions", description="Actions for this key", **kwargs)
+        super().__init__(**kwargs)
         self.right_area = right_area
 
         self.active_coords = None
@@ -50,41 +50,74 @@ class ActionGroup(Adw.PreferencesGroup):
         self.build()
 
     def build(self):
-        self.add_action("Name 1", "Category")
-        self.add_action("Name 2", "Category")
-        self.add_action("Name 3", "Category")
-        self.add_action("Name 4", "Category")
-        self.add_action("Name 5", "Category")
-        self.add_action("Name 6", "Category")
+        self.expander = ActionExpanderRow(self)
+        self.add(self.expander)
 
-    def add_action(self, action_name, action_category):
-        action_row = ActionRow(action_name, action_category, self.right_area, len(self.actions))
+    
+
+    
+            
+    
+
+class ActionExpanderRow(Adw.ExpanderRow):
+    def __init__(self, action_group):
+        super().__init__(title="Actions", subtitle="Actions for this key")
+        self.actions = []
+        self.action_group = action_group
+
+        self.preview = None
+
+        self.build()
+
+    def build(self):
+        self.add_action_row("Name 1", "Category")
+        self.add_action_row("Name 2", "Category")
+        self.add_action_row("Name 3", "Category")
+        self.add_action_row("Name 4", "Category")
+        self.add_action_row("Name 5", "Category")
+        self.add_action_row("Name 6", "Category")
+
+        print("calling one")
+        self.reorder_child_after(self.actions[0], self.actions[1])
+        print("calling two")
+        self.reorder_child_after(self.actions[1], self.actions[2])
+
+    def add_action_row(self, action_name, action_category):
+        action_row = ActionRow(action_name, action_category, self.action_group.right_area, len(self.actions))
         self.actions.append(action_row)
-        self.add(action_row)
+        self.add_row(action_row)
 
     def reorder_child_after(self, child, after):
+        # self.remove(self.actions[0])
         # return
+        # return
+
         child_index = self.get_index_of_child(child)
         after_index = self.get_index_of_child(after)
 
         if child_index == None or after_index == None:
             log.warning("Child or after index is None")
+            return
+        
+        old_actions = self.actions
 
-        self.remove(child)
+        # return
+
+        # Remove all actions
+        for action in self.actions:
+            if type(action) != ActionRow:
+                continue
+            self.remove(action)
+
+        # Change order in self.actions
         self.actions.pop(child_index)
         self.actions.insert(after_index, child)
 
-        old_actions = self.actions
 
-        # Remove actions
+        # Add actions in new order
         for i in range(len(self.actions)):
-            self.remove(self.actions[i])
-        self.actions = []
-
-        # Add actions
-        for i in range(len(old_actions)):
-            self.add(old_actions[i])
-            self.actions.append(old_actions[i])
+            self.add_row(self.actions[i])
+            # self.actions.append(self.actions[i])
 
     def get_index_of_child(self, child):
         for i in range(len(self.actions)):
@@ -92,32 +125,37 @@ class ActionGroup(Adw.PreferencesGroup):
                 return i
             
     def add_drop_preview(self, index):
+        #TODO: Fix this function, it does not work
+        return
         if hasattr(self, "preview"):
             if self.preview != None:
                 self.reorder_child_after(self.preview, self.actions[index])
                 return
 
 
-        self.preview = ActionRow("Preview", "Preview", self.right_area, None)
+        self.preview = ActionRow("Preview", "Preview", self.action_group.right_area, None)
         self.preview.set_sensitive(False)
-        
-        old_actions = self.actions
-        old_actions.insert(index, self.preview)
+        self.actions.append(self.preview)
 
         # Remove actions
         for i in range(len(self.actions)):
             self.remove(self.actions[i])
-        self.actions = []
+        
+        # old_actions = self.actions
+        self.actions.insert(index, self.preview)
+
+        # self.actions = []
 
         # Add actions
-        for i in range(len(old_actions)):
-            self.add(old_actions[i])
-            self.actions.append(old_actions[i])
+        for i in range(len(self.actions)):
+            self.add_row(self.actions[i])
+            # self.actions.append(old_actions[i])
+
 
 
 class ActionRow(Adw.PreferencesRow):
     def __init__(self, action_name, action_category, right_area, index, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(**kwargs, css_classes=["no-padding"])
         self.action_name = action_name
         self.action_category = action_category
         self.right_area = right_area
@@ -127,8 +165,12 @@ class ActionRow(Adw.PreferencesRow):
         self.init_dnd()
 
     def build(self):
+        self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN, css_classes=["no-margin", "invisible"])
+        self.button.connect("clicked", self.on_click)
+        self.set_child(self.button)
+
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
-        self.set_child(self.main_box)
+        self.button.set_child(self.main_box)
 
         self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.main_box.append(self.left_box)
@@ -142,14 +184,14 @@ class ActionRow(Adw.PreferencesRow):
         # self.remove_button = Gtk.Button(label="Remove Action")
         # self.left_box.append(self.remove_button)
 
-        self.main_box.append(Gtk.Image(icon_name="draw-arrow-forward"))\
+        self.main_box.append(Gtk.Image(icon_name="draw-arrow-forward"))
         
     def init_dnd(self):
         if self.index == None:
             return
         # DnD Source
         dnd_source = Gtk.DragSource()
-        dnd_source.set_actions(Gdk.DragAction.COPY)
+        dnd_source.set_actions(Gdk.DragAction.MOVE)
         dnd_source.connect("prepare", self.on_dnd_prepare)
         dnd_source.connect("drag-begin", self.on_dnd_begin)
         dnd_source.connect("drag-end", self.on_dnd_end)
@@ -157,7 +199,7 @@ class ActionRow(Adw.PreferencesRow):
         self.add_controller(dnd_source)
 
         # DnD Target
-        dnd_target = Gtk.DropTarget.new(self, Gdk.DragAction.COPY)
+        dnd_target = Gtk.DropTarget.new(self, Gdk.DragAction.MOVE)
         dnd_target.set_gtypes([ActionRow])
         dnd_target.connect("drop", self.on_dnd_drop)
         dnd_target.connect("motion", self.on_dnd_motion)
@@ -179,15 +221,21 @@ class ActionRow(Adw.PreferencesRow):
         return content
 
     def on_dnd_drop(self, drop_target, value, x, y):
-        if isinstance(value, ActionRow):
-            self.right_area.action_editor.action_group.reorder_child_after(value, self)
-            # Remove preview
-            index = self.right_area.action_editor.action_group.get_index_of_child(self.right_area.action_editor.action_group.preview)
-            self.right_area.action_editor.action_group.remove(self.right_area.action_editor.action_group.preview)
-            self.right_area.action_editor.action_group.actions.pop(index)
+        if not isinstance(value, ActionRow):
+            return False
+        
+        self.right_area.key_editor.action_editor.action_group.expander.reorder_child_after(value, self)
+        # Remove preview
+        index = self.right_area.key_editor.action_editor.action_group.expander.get_index_of_child(self.right_area.key_editor.action_editor.action_group.expander.preview)
+        self.right_area.key_editor.action_editor.action_group.expander.remove(self.right_area.key_editor.action_editor.action_group.expander.preview)
+        self.right_area.key_editor.action_editor.action_group.expander.actions.pop(index)
         return True
     
     def on_dnd_motion(self, drop_target, x, y):
         # print(f"{drop_target}, {x}, {y}")
-        self.right_area.action_editor.action_group.add_drop_preview(self.index)
+        self.right_area.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
 
+        return Gdk.DragAction.MOVE
+
+    def on_click(self, button):
+        self.right_area.show_action_configurator()

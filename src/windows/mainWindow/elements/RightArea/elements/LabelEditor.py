@@ -45,7 +45,7 @@ class LabelEditor(Gtk.Box):
 
 class LabelGroup(Adw.PreferencesGroup):
     def __init__(self, right_area, **kwargs):
-        super().__init__(title="Labels", description="Labels for this key", **kwargs)
+        super().__init__(**kwargs)
         self.right_area = right_area
 
         self.active_coords = None
@@ -55,16 +55,32 @@ class LabelGroup(Adw.PreferencesGroup):
         self.load_for_coords((0, 0))
 
     def build(self):
-        self.top_row = LabelRow("Top", self.right_area)
-        self.center_row = LabelRow("Center", self.right_area)
-        self.bottom_row = LabelRow("Bottom", self.right_area)
+        self.expander = LabelExpanderRow(self)
+        self.add(self.expander)
 
-        self.add(self.top_row)
-        self.add(self.center_row)
-        self.add(self.bottom_row)
+        return
+
+    def load_for_coords(self, coords):
+        self.expander.load_for_coords(coords)
+
+class LabelExpanderRow(Adw.ExpanderRow):
+    def __init__(self, label_group):
+        super().__init__(title="Labels", subtitle="Labels for this key",)
+        self.label_group = label_group
+        self.build()
+
+    def build(self):
+        self.top_row = LabelRow("Top", self.label_group.right_area)
+        self.center_row = LabelRow("Center", self.label_group.right_area)
+        self.bottom_row = LabelRow("Bottom", self.label_group.right_area)
+
+        self.add_row(self.top_row)
+        self.add_row(self.center_row)
+        self.add_row(self.bottom_row)
 
     def load_for_coords(self, coords):
         self.active_coords = coords
+
         self.top_row.load_for_coords(coords)
         self.center_row.load_for_coords(coords)
         self.bottom_row.load_for_coords(coords)

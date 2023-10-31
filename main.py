@@ -54,11 +54,6 @@ def load():
     localeManager.set_to_os_default()
     gl.lm = localeManager
 
-    # Plugin Manager
-    gl.plugin_manager = PluginManager()
-    gl.plugin_manager.load_plugins()
-    gl.plugin_manager.generate_action_index()
-
     log.info("Loading app")
     gl.deck_manager = DeckManager()
     gl.deck_manager.load_decks()
@@ -70,6 +65,11 @@ def create_cache_folder():
         os.makedirs("cache")
 
 def create_global_objects():
+    # Plugin Manager
+    gl.plugin_manager = PluginManager()
+    gl.plugin_manager.load_plugins()
+    gl.plugin_manager.generate_action_index()
+
     gl.media_manager = MediaManager()
     gl.asset_manager = AssetManager()
     gl.settings_manager = SettingsManager()

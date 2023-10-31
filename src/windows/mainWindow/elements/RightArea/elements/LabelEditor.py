@@ -48,8 +48,6 @@ class LabelGroup(Adw.PreferencesGroup):
         super().__init__(**kwargs)
         self.right_area = right_area
 
-        self.active_coords = None
-
         self.build()
 
         self.load_for_coords((0, 0))
@@ -67,6 +65,7 @@ class LabelExpanderRow(Adw.ExpanderRow):
     def __init__(self, label_group):
         super().__init__(title="Labels", subtitle="Labels for this key",)
         self.label_group = label_group
+        self.active_coords = None
         self.build()
 
     def build(self):

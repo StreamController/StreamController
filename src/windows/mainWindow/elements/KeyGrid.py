@@ -106,7 +106,7 @@ class KeyButton(Gtk.Frame):
         # update righthand side key preview
         if not recursive_hasattr(gl, "app.main_win.rightArea"): return
         right_area = gl.app.main_win.rightArea
-        if right_area.key_editor.label_editor.label_group.active_coords == (self.coords[1], self.coords[0]):
+        if right_area.key_editor.label_editor.label_group.expander.active_coords == (self.coords[1], self.coords[0]):
             self.set_right_preview(self.pixbuf)
 
     def set_right_preview(self, pixbuf):

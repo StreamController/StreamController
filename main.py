@@ -25,6 +25,7 @@ from src.backend.MediaManager import MediaManager
 from src.backend.AssetManager import AssetManager
 from src.backend.PageManagement.PageManager import PageManager
 from src.backend.SettingsManager import SettingsManager
+from src.backend.PluginManager.PluginManager import PluginManager
 
 # Import globals
 import globals as gl
@@ -52,6 +53,12 @@ def load():
     localeManager = LocaleManager()
     localeManager.set_to_os_default()
     gl.lm = localeManager
+
+    # Plugin Manager
+    gl.plugin_manager = PluginManager()
+    gl.plugin_manager.load_plugins()
+    gl.plugin_manager.generate_action_index()
+
     log.info("Loading app")
     gl.deck_manager = DeckManager()
     gl.deck_manager.load_decks()

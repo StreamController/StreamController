@@ -68,3 +68,10 @@ def font_path_from_name(font_name: str):
 def font_name_from_path(font_path: str):
     font_properties = matplotlib.font_manager.FontProperties(fname=font_path)
     return font_properties.get_family()[0]
+
+def get_last_dir(path: str) -> str:
+    if os.path.isdir(path):
+        return os.path.basename(os.path.normpath(path))
+    elif os.path.isfile(path):
+        return os.path.basename(os.path.normpath(os.path.dirname(path)))
+    return

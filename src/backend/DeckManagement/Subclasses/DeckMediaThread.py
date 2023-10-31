@@ -94,9 +94,10 @@ class DeckMediaThread(threading.Thread):
                     continue
                 video_tasks[key]["active_frame"] = 0
 
-            image = video_tasks[key]["frames"][video_tasks[key]["active_frame"]]            
+            image = video_tasks[key]["frames"][video_tasks[key]["active_frame"]]
+            labels = video_tasks[key]["labels"]
             shrink = self.media_handler.deck_controller.deck.key_states()[key]
-            self.media_handler.deck_controller.set_image(key=key, labels=None, image=image, add_background=True, bypass_task=True, shrink=shrink)
+            self.media_handler.deck_controller.set_image(key=key, labels=labels, image=image, add_background=True, bypass_task=True, shrink=shrink)
             self.media_handler.deck_controller.set_ui_key(key, image=image, force_add_background=True)
             # TODO: add label support
     @log.catch

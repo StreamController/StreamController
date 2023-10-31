@@ -184,7 +184,7 @@ class DeckController:
                 self.set_video(key, media_path, labels=labels, image_margins=margins, add_background=add_background, loop=loop, fps=fps)
 
     def set_video(self, key, video_path, labels=None, image_margins=[0, 0, 0, 0], add_background=True, loop=True, fps=30):
-        self.media_handler.add_video_task(key, video_path, loop=loop, fps=fps)
+        self.media_handler.add_video_task(key, video_path, loop=loop, fps=fps, labels=labels)
 
     def set_background(self, media_path, loop=True, fps=30, reload=True, bypass_task=False):
         return self.media_handler.set_background(media_path, loop=loop, fps=fps, reload=reload, bypass_task=bypass_task)

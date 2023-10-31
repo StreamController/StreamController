@@ -49,13 +49,15 @@ class DeckMediaHandler():
         self.image_tasks.append((key, native_image, ui_image))
 
     @log.catch
-    def add_video_task(self, key, video_path, loop=True, fps=30):
+    def add_video_task(self, key, video_path, loop=True, fps=30, labels=None):
         def add_video_task_thread(self, id):
             self.video_tasks[key] = {}
             self.video_tasks[key]["frames"] = KeyVideo(self, self.deck_controller.deck, video_path, progress_id=id).frames
             self.video_tasks[key]["loop"] = loop
             self.video_tasks[key]["fps"] = fps
             self.video_tasks[key]["active_frame"] = -1
+            self.video_tasks[key]["labels"] = labels
+
 
         # Generate unique id to track processing progress
         id = str(uuid.uuid4())

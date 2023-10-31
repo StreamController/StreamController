@@ -63,7 +63,7 @@ class Page(dict):
                     log.warning(f"Action {action['name']} not found, skipping")
                     continue
                 action_object.settings = action["settings"]
-                action["object"] = action_object
+                action["object"] = action_object()
 
     def get_without_action_objects(self):
         dictionary = copy(self)

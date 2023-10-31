@@ -29,6 +29,7 @@ class Page(dict):
     def load(self):
         with open(self.json_path) as f:
             self.update(json.load(f))
+        self.load_actions()
 
     def save(self):
         without_objects = self.get_without_action_objects()

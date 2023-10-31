@@ -1,7 +1,7 @@
 {
     "background": {
         "show": true,
-        "path": "Assets/AssetManager/Assets/VitaminE.png",
+        "path": "Assets/AssetManager/Assets/wallpaper3.jpg",
         "loop": true,
         "fps": 30,
         "overwrite": true
@@ -11,17 +11,17 @@
         5
     ],
     "brightness": {
-        "value": 66,
-        "overwrite": false
+        "value": 75,
+        "overwrite": true
     },
     "screensaver": {
-        "enable": false,
+        "enable": true,
         "overwrite": true,
-        "path": "Assets/copyrighted/wallpaper3.jpg",
+        "path": "Assets/AssetManager/Assets/_415e3770-86a9-4a2c-ba57-93144975cb12.jpg",
         "loop": false,
         "fps": 30,
         "time-delay": 3,
-        "brightness": 39.03136531365313
+        "brightness": 0.0
     },
     "keys": {
         "0x0": {
@@ -37,33 +37,35 @@
                     "color": [
                         255,
                         0,
-                        0
+                        0,
+                        255
                     ],
-                    "stroke-width": 0,
-                    "font": "Assets/Fonts/Roboto-Regular.ttf",
-                    "font-size": 20
+                    "stroke-width": 1,
+                    "font-family": "GoMono Nerd Font Propo",
+                    "font-size": 18
                 },
                 "center": {
                     "text": "CEN",
                     "color": [
                         255,
                         0,
-                        0
+                        0,
+                        255
                     ],
                     "stroke-width": 0,
-                    "font": "Assets/Fonts/Roboto-Regular.ttf",
-                    "font-size": 20
+                    "font-family": "Arial",
+                    "font-size": 10
                 },
                 "bottom": {
-                    "text": "BOT",
+                    "text": "BOTTOM",
                     "color": [
                         255,
-                        0,
-                        0
+                        255,
+                        255
                     ],
-                    "stroke-width": 0,
-                    "font": "Assets/Fonts/Roboto-Regular.ttf",
-                    "font-size": 20
+                    "stroke-width": 1,
+                    "font-family": "Arial",
+                    "font-size": 14
                 }
             },
             "media": {
@@ -77,6 +79,81 @@
                 "path": "Assets/copyrighted/triangles.gif",
                 "loop": true,
                 "fps": 30
+            },
+            "labels": {
+                "top": {
+                    "text": "TOP",
+                    "color": [
+                        255,
+                        0,
+                        0,
+                        255
+                    ],
+                    "stroke-width": 1,
+                    "font-family": "GoMono Nerd Font Propo",
+                    "font-size": 18
+                },
+                "center": {
+                    "text": "",
+                    "color": [
+                        255,
+                        255,
+                        255,
+                        255
+                    ],
+                    "font-family": "",
+                    "font-size": 15,
+                    "stroke-width": 0
+                },
+                "bottom": {
+                    "text": "",
+                    "color": [
+                        255,
+                        255,
+                        255,
+                        255
+                    ],
+                    "font-family": "",
+                    "font-size": 15,
+                    "stroke-width": 0
+                }
+            }
+        },
+        "0x2": {
+            "labels": {
+                "top": {
+                    "text": "",
+                    "color": [
+                        255,
+                        255,
+                        255
+                    ],
+                    "font-family": "",
+                    "font-size": 15,
+                    "stroke-width": 0
+                },
+                "center": {
+                    "text": "",
+                    "color": [
+                        255,
+                        255,
+                        255
+                    ],
+                    "font-family": "",
+                    "font-size": 15,
+                    "stroke-width": 0
+                },
+                "bottom": {
+                    "text": "",
+                    "color": [
+                        255,
+                        255,
+                        255
+                    ],
+                    "font-family": "",
+                    "font-size": 15,
+                    "stroke-width": 0
+                }
             }
         }
     }

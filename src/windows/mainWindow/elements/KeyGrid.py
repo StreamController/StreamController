@@ -143,4 +143,4 @@ class KeyButton(Gtk.Frame):
 
 
     def on_focus_in(self, *args):
-        self.set_visible(True)
+        self.on_click(self)

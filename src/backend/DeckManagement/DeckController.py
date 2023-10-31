@@ -466,7 +466,7 @@ class DeckController:
 
         self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys, load_screen_saver=load_screen_saver)
 
-    def load_key(self, coords: str):
+    def load_key(self, coords: str, only_labels: bool = False):
         self.active_page.load()
         x = int(coords.split("x")[0])
         y = int(coords.split("x")[1])
@@ -483,6 +483,16 @@ class DeckController:
                 media_path = self.active_page["keys"][coords]["media"]["path"]
                 media_loop = self.active_page["keys"][coords]["media"]["loop"]
                 media_fps = self.active_page["keys"][coords]["media"]["fps"]
+
+        if only_labels:
+            # Only update labels - used for live reloading of video keys
+            if media_path not in ["", None]:
+                extention = os.path.splitext(media_path)[1]
+                if extention not in [".png", ".jpg", ".jpeg"]:
+                    # Media is video
+                    self.media_handler.video_tasks[index]["labels"] = labels
+                    return
+
         self.set_key(index, media_path=media_path, labels=labels, loop=media_loop, fps=media_fps, bypass_task=True, update_ui=True)
 
     def get_deck_settings(self):

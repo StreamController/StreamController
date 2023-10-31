@@ -98,7 +98,6 @@ class DeckMediaThread(threading.Thread):
             labels = video_tasks[key]["labels"]
             shrink = self.media_handler.deck_controller.deck.key_states()[key]
             self.media_handler.deck_controller.set_image(key=key, labels=labels, image=image, add_background=True, bypass_task=True, shrink=shrink)
-            self.media_handler.deck_controller.set_ui_key(key, image=image, force_add_background=True)
     @log.catch
     def handle_background_video(self):
         if self.media_handler.background_video_task == None:

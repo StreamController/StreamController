@@ -35,7 +35,6 @@ class BackgroundVideo(Video):
         file_name = f"{hash}-{x}x{y}.cache"
         # Check if video has already been cached:
         if file_in_dir(file_name, "cache"):
-            print("from cache")
             self.load_from_cache(file_name)
             self.deck_media_handler.progress_dir[progress_id] = 1
         else:

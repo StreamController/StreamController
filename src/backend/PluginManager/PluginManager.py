@@ -18,9 +18,6 @@ class PluginManager:
             # Import main module
             importlib.import_module(f"plugins.{folder}.main")
 
-        # Get all classes extending from PluginBase and generate objects for them
-        print(self.init_plugins())
-
     def init_plugins(self):
         subclasses = PluginBase.__subclasses__()
         for subclass in subclasses:
@@ -45,8 +42,6 @@ class PluginManager:
         """
         Example string: dev_core447_MediaPlugin::Pause
         """
-        print(self.action_index)
-        # plugin_name, action_name = action_string.split("::")
         try:
             return self.action_index[action_string]
         except KeyError:

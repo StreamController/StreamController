@@ -40,7 +40,6 @@ class MediaManager:
             return self.generate_thumbnail(file_path)
 
     def generate_thumbnail(self, file_path):
-        print(os.path.splitext(file_path)[1])
         if os.path.splitext(file_path)[1] in [".jpg", ".jpeg", ".png"]:
             return self.generate_image_thumbnail(file_path)
         elif os.path.splitext(file_path)[1] in [".gif", ".GIF"]:

@@ -37,7 +37,6 @@ class DeckMediaThread(threading.Thread):
                 self.was_paused = True
             while self.pause_work:
                 # return
-                print("pause thread")
                 sleep(0.25)
 
             # Handling video requests

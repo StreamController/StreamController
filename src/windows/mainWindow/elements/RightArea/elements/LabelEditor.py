@@ -178,7 +178,6 @@ class LabelRow(Adw.PreferencesRow):
         page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["color"] = [red, green, blue]
         page.save()
-        print([red, green, blue])
 
         self.update_key()
 
@@ -186,8 +185,6 @@ class LabelRow(Adw.PreferencesRow):
         font = self.font_chooser_button.get_font()
 
         pango_font = Pango.font_description_from_string(font)
-
-        print(font_path_from_name(pango_font.get_family()))
 
         font_path = font_path_from_name(pango_font.get_family())
         font_size = pango_font.get_size()
@@ -216,7 +213,6 @@ class LabelRow(Adw.PreferencesRow):
 
     def update_key(self):
         controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        print(controller)
         # controller.reload_keys()
         page = controller.active_page
         page.load()

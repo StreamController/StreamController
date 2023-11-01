@@ -223,7 +223,6 @@ class ActionRow(Adw.PreferencesRow):
         return True
     
     def on_dnd_motion(self, drop_target, x, y):
-        # print(f"{drop_target}, {x}, {y}")
         self.right_area.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
 
         return Gdk.DragAction.MOVE

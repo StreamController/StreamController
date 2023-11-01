@@ -367,7 +367,6 @@ class DeckController:
                 return path, loop, fps
             
             def set_background_to_none(self):
-                print(self.media_handler.background_video_task)
                 self.media_handler.background_video_task = {}
                 self.background_key_tiles = [None] * self.deck.key_count()
                 if not load_keys:
@@ -402,8 +401,6 @@ class DeckController:
             self.key_images[index] = None
             # if self.background_key_tiles[index] == None:
                 # image = Image.new("RGB", (72, 72), (0, 0, 0))
-            if self.background_key_tiles[index] != None:
-                print("clearing with background")
             # Image = Image.new("RGB", (72, 72), (0, 0, 0))
             # native = PILHelper.to native_format(self.deck, Image)
             # self.deck.set_key_image(index, native)
@@ -469,11 +466,6 @@ class DeckController:
             self.screen_saver.set_enable(enable)
             self.screen_saver.set_time(time)
             self.screen_saver.set_brightness(brightness)
-            if enable:
-                print("")
-            # if overwrite and not enable:
-                # print()
-            # if not overwrite and not 
 
         if load_brightness:
             load_brightness(self)
@@ -485,9 +477,6 @@ class DeckController:
             load_screensaver(self)
 
     def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True, load_screen_saver: bool = True):
-        print(f"Reload brightness: {load_brightness}")
-        print(f"Reload background: {load_background}")
-        print(f"Reload keys: {load_keys}")
         # Reset deck
         if load_background or load_keys:
             with self.deck:

@@ -137,11 +137,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         if file_path == None:
             return
         # return
-        print("abcd")
-        print(file_path)
-        print(type(gl.media_manager))
         image = gl.media_manager.get_thumbnail(file_path)
-        print("finished")
         pixbuf = image2pixbuf(image)
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
@@ -171,11 +167,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             self.progress_bar.set_visible(True)
             while True:
                 set_background_task_id = self.settings_page.deck_page.deck_controller.set_background_task_id
-                if set_background_task_id == None:
-                    print("none")
                 progress_dir = self.settings_page.deck_page.deck_controller.media_handler.progress_dir
                 self.progress_bar.set_fraction(floor(progress_dir[set_background_task_id]*10)/ 10) # floor to one decimal
-                print(progress_dir[set_background_task_id])
                 sleep(0.25)
 
                 if progress_dir[set_background_task_id] >= 1:
@@ -203,7 +196,6 @@ class ChooseBackgroundDialog(Gtk.FileDialog):
             file_path = selected_file.get_path()
         except GLib.Error as err:
             log.error(err)
-            print("exc")
             return
         
         self.background_row.set_thumbnail(file_path)

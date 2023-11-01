@@ -80,7 +80,6 @@ class DeckMediaHandler():
             self.progress_dir[id] = 1
             if reload:
                 # Reload deck
-                print("Reloading for background")
                 self.deck_controller.reload_keys(skip_gifs=True, bypass_task=bypass_task)
                 # Reload ui keys
                 # self.deck_controller.reload_ui_keys()

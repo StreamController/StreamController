@@ -66,7 +66,6 @@ class PageSelector(Gtk.Box):
         self.clear_model()
         self.pages_model.remove
         for page in pages:
-            print(page)
             self.pages_model.append(page)
 
     def clear_model(self):

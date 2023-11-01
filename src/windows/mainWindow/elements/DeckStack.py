@@ -46,10 +46,7 @@ class DeckStack(Gtk.Stack):
     def add_pages(self):
         deck_names = []
         deck_numbers = []
-        print("loading", self.deck_manager.deck_controller)
-        print(len(self.deck_manager.deck_controller))
         for deck_controller in self.deck_manager.deck_controller:
-            print("1")
             deck_type = deck_controller.deck.deck_type()
             deck_numbers.append(str(deck_controller.deck.get_serial_number()))
             if deck_type not in deck_names:

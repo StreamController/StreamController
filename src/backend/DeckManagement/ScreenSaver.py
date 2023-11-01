@@ -87,9 +87,7 @@ class ScreenSaver:
         # time.sleep(0.5)
         if self.brightness > 0:
             # No need for changing background if brightness is 0
-            print("Change background")
             self.deck_controller.set_background(media_path=self.media_path, bypass_task=True)
-            print("Finished changing background")
 
         # time.sleep(0.2)
 

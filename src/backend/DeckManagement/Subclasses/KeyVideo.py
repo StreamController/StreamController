@@ -35,13 +35,11 @@ class KeyVideo(Video):
         file_name = f"{hash}-single.cache"
         # Check if video has already been cached:
         if file_in_dir(file_name, "cache"):
-            print("from cache")
             self.load_from_cache(file_name)
 
             log.success(f"Loaded {len(self.frames)} frames from cache: {video_path}")
             self.deck_media_handler.progress_dir[progress_id] = 1
         else:
-            print("gen")
             self.load_from_file(video_path)
             self.save_to_cache(file_name)
         

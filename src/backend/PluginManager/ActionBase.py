@@ -2,10 +2,15 @@ class ActionBase:
     # Change to match your action
     ACTION_NAME = ""
 
-    def __init__(self):
+
+    def __init__(self, deck_controller, page, coords):
         # Verify variables
         if self.ACTION_NAME in ["", None]:
             raise ValueError("Please specify an action name")
+        
+        self.deck_controller = deck_controller
+        self.page = page
+        self.coords = coords
         
     def set_deck_controller(self, deck_controller):
         """
@@ -25,11 +30,11 @@ class ActionBase:
         """
         self.coords = coords
     
-    def onKeyDown(self):
+    def on_key_down(self):
         pass
 
-    def onKeyUp(self):
+    def on_key_up(self):
         pass
 
-    def onTick(self):
+    def on_tick(self):
         pass

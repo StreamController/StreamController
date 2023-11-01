@@ -86,7 +86,6 @@ class DeckController:
         if default_page != None:
             page = gl.page_manager.get_page_by_name(default_page)
             if page != None:
-                self.active_page = page
                 self.load_page(page)
 
 
@@ -278,7 +277,16 @@ class DeckController:
             return
         if "actions" not in self.active_page["keys"][f"{coords[0]}x{coords[1]}"]:
             return
-        print(self.active_page["keys"][f"{coords[0]}x{coords[1]}"]["actions"])
+        
+        page_coords = f"{coords[0]}x{coords[1]}"
+
+        if page_coords not in self.active_page.action_objects:
+            return
+        for i, action in self.active_page.action_objects[page_coords].items():
+            if state:
+                action.on_key_down()
+            else:
+                action.on_key_up()
 
 
     @log.catch
@@ -326,6 +334,16 @@ class DeckController:
     def load_page(self, page:Page, load_brightness:bool = True, load_background:bool = True, load_keys:bool = True, load_screen_saver:bool = True) -> None:
         log.info(f"Loading page {page.keys()}")
         self.deck_settings = self.get_deck_settings()
+
+        if self.active_page is not page:
+            # Remove deck_controller from old page
+            if isinstance(self.active_page, Page):
+                self.active_page.set_deck_controller(None)
+
+            # Add deck_controller to new page
+            page.set_deck_controller(self)
+
+        # Set active page
         self.active_page = page
 
         def load_background(self):

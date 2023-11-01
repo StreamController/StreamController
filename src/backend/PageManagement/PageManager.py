@@ -26,6 +26,12 @@ class PageManager:
     
     def load_pages(self) -> None:
         for page in os.listdir("pages"):
+            if page in self.pages:
+                if isinstance(self.pages[page], Page):
+                # Already loaded, just refreshing
+                    page.load()
+                    continue
+
             page_path = os.path.join("pages", page)
             self.pages[page] = Page(page_path)
     

@@ -15,7 +15,7 @@
         "overwrite": true
     },
     "screensaver": {
-        "enable": true,
+        "enable": false,
         "overwrite": true,
         "path": "Assets/AssetManager/Assets/_415e3770-86a9-4a2c-ba57-93144975cb12.jpg",
         "loop": false,
@@ -27,7 +27,7 @@
         "0x0": {
             "actions": [
                 {
-                    "name": "Media::Play",
+                    "name": "dev_core447_MediaPlugin::Pause",
                     "settings": {}
                 }
             ],
@@ -61,6 +61,7 @@
                     "color": [
                         255,
                         255,
+                        255,
                         255
                     ],
                     "stroke-width": 1,
@@ -80,44 +81,14 @@
                 "loop": true,
                 "fps": 30
             },
-            "labels": {
-                "top": {
-                    "text": "TOP",
-                    "color": [
-                        255,
-                        0,
-                        0,
-                        255
-                    ],
-                    "stroke-width": 1,
-                    "font-family": "GoMono Nerd Font Propo",
-                    "font-size": 18
-                },
-                "center": {
-                    "text": "",
-                    "color": [
-                        255,
-                        255,
-                        255,
-                        255
-                    ],
-                    "font-family": "",
-                    "font-size": 15,
-                    "stroke-width": 0
-                },
-                "bottom": {
-                    "text": "",
-                    "color": [
-                        255,
-                        255,
-                        255,
-                        255
-                    ],
-                    "font-family": "",
-                    "font-size": 15,
-                    "stroke-width": 0
+            "actions": [
+                {
+                    "name": "dev_core447_MediaPlugin::Pause",
+                    "settings": {
+                        "a": 1
+                    }
                 }
-            }
+            ]
         },
         "0x2": {
             "labels": {
@@ -126,6 +97,7 @@
                     "color": [
                         255,
                         255,
+                        255,
                         255
                     ],
                     "font-family": "",
@@ -137,6 +109,7 @@
                     "color": [
                         255,
                         255,
+                        255,
                         255
                     ],
                     "font-family": "",
@@ -146,6 +119,7 @@
                 "bottom": {
                     "text": "",
                     "color": [
+                        255,
                         255,
                         255,
                         255

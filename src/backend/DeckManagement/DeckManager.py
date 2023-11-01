@@ -21,13 +21,16 @@ from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManager import PageManager
 from src.backend.SettingsManager import SettingsManager
 
+# Import globals
+import globals as gl
+
 class DeckManager:
     def __init__(self):
         #TODO: Maybe outsource some objects
         self.deck_controller = []
         self.settings_manager = SettingsManager()
-        self.page_manager = PageManager(self.settings_manager)
-        self.page_manager.load_pages()
+        self.page_manager = gl.page_manager
+        # self.page_manager.load_pages()
     def load_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:

@@ -24,12 +24,17 @@ class Page(dict):
     def __init__(self, json_path, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.json_path = json_path
+
+        # Dir that contains all actions this allows us to keep them at reload
+        self.action_objects = {}
+
         self.load()
 
     def load(self):
         with open(self.json_path) as f:
             self.update(json.load(f))
-        self.load_actions()
+        # self.load_actions()
+            self.load_action_objects()
 
     def save(self):
         without_objects = self.get_without_action_objects()
@@ -53,17 +58,21 @@ class Page(dict):
         self["background"] = background
         self.save()
 
-    def load_actions(self):
+    def load_action_objects(self):
         for key in self["keys"]:
             if "actions" not in self["keys"][key]:
                 continue
-            for action in self["keys"][key]["actions"]:
-                action_object = gl.plugin_manager.get_action_from_action_string(action["name"])
-                if action_object == None:
-                    log.warning(f"Action {action['name']} not found, skipping")
+            for i, action in enumerate(self["keys"][key]["actions"]):
+                action_class = gl.plugin_manager.get_action_from_action_string(action["name"])
+                action_object = action_class(deck_controller=1, page=self, coords=key)
+                self.action_objects.setdefault(key, {})
+
+                old_object = self.action_objects[key].get(i)
+                if isinstance(old_object, action_class):
+                    # Action already exists - keep it
                     continue
-                action_object.settings = action["settings"]
-                action["object"] = action_object()
+
+                self.action_objects[key][i] = action_object
 
     def get_without_action_objects(self):
         dictionary = copy(self)
@@ -75,3 +84,8 @@ class Page(dict):
                     del action["object"]
 
         return dictionary
+
+    def set_deck_controller(self, deck_controller):
+        for key in self.action_objects:
+            for i, action in self.action_objects[key].items():
+                action.set_deck_controller(deck_controller)

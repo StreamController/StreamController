@@ -64,6 +64,8 @@ class Page(dict):
                 continue
             for i, action in enumerate(self["keys"][key]["actions"]):
                 action_class = gl.plugin_manager.get_action_from_action_string(action["name"])
+                if action_class is None:
+                    return
                 action_object = action_class(deck_controller=1, page=self, coords=key)
                 self.action_objects.setdefault(key, {})
 

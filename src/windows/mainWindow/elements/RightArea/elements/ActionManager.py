@@ -51,17 +51,13 @@ class ActionGroup(Adw.PreferencesGroup):
 
     def build(self):
         self.expander = ActionExpanderRow(self)
-        self.add(self.expander)
+        self.add(self.expander)           
 
-    
-
-    
-            
-    
 
 class ActionExpanderRow(Adw.ExpanderRow):
     def __init__(self, action_group):
         super().__init__(title="Actions", subtitle="Actions for this key")
+        self.set_expanded(True)
         self.actions = []
         self.action_group = action_group
 
@@ -73,14 +69,9 @@ class ActionExpanderRow(Adw.ExpanderRow):
         self.add_action_row("Name 1", "Category")
         self.add_action_row("Name 2", "Category")
         self.add_action_row("Name 3", "Category")
-        self.add_action_row("Name 4", "Category")
-        self.add_action_row("Name 5", "Category")
-        self.add_action_row("Name 6", "Category")
 
-        print("calling one")
-        self.reorder_child_after(self.actions[0], self.actions[1])
-        print("calling two")
-        self.reorder_child_after(self.actions[1], self.actions[2])
+        self.add_action_button = AddActionButtonRow(self)
+        self.add_row(self.add_action_button)
 
     def add_action_row(self, action_name, action_category):
         action_row = ActionRow(action_name, action_category, self.action_group.right_area, len(self.actions))
@@ -239,3 +230,19 @@ class ActionRow(Adw.PreferencesRow):
 
     def on_click(self, button):
         self.right_area.show_action_configurator()
+
+
+class AddActionButtonRow(Adw.PreferencesRow):
+    def __init__(self, expander, **kwargs):
+        super().__init__(**kwargs, css_classes=["no-padding", "add-button"])
+        self.expander = expander
+
+        self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN,
+                                 css_classes=["no-margin", "invisible"],
+                                 label="Add Action",
+                                 margin_bottom=5, margin_top=5)
+        self.button.connect("clicked", self.on_click)
+        self.set_child(self.button)
+
+    def on_click(self, button):
+        self.expander.action_group.right_area.set_visible_child_name("action_chooser")

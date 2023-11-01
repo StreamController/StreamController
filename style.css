@@ -83,3 +83,25 @@
 .invisible {
   background-color: #00000000;
 }
+.blue-background {
+  background-color: #78AEED;
+}
+.dark-blue-background {
+  background-color: #3584E4;
+}
+.add-button {
+  background-color: #3584E4;
+  transition: background-color 0.25s
+}
+.add-button:hover {
+  background-color: #5696C8;
+  transition: background-color 0.25s
+}
+.add-button:active {
+  background-color: #78AEED;
+  transition: background-color 0.25s
+}
+.page-header {
+  font-size: 40px;
+  font-weight: bold;
+}

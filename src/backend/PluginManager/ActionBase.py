@@ -1,7 +1,7 @@
 class ActionBase:
     # Change to match your action
     ACTION_NAME = ""
-
+    PLUGIN_BASE = None
 
     def __init__(self, deck_controller, page, coords):
         # Verify variables

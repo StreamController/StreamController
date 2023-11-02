@@ -15,12 +15,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk
 
 # Import Python modules
 from loguru import logger as log
+from copy import copy
 
 class ActionManager(Gtk.Box):
     def __init__(self, right_area, **kwargs):
@@ -38,6 +40,9 @@ class ActionManager(Gtk.Box):
         self.action_group = ActionGroup(self.right_area)
         self.main_box.append(self.action_group)
 
+    def load_for_coords(self, coords):
+        self.action_group.load_for_coords(coords)
+
 class ActionGroup(Adw.PreferencesGroup):
     def __init__(self, right_area, **kwargs):
         super().__init__(**kwargs)
@@ -51,7 +56,10 @@ class ActionGroup(Adw.PreferencesGroup):
 
     def build(self):
         self.expander = ActionExpanderRow(self)
-        self.add(self.expander)           
+        self.add(self.expander)
+
+    def load_for_coords(self, coords):
+        self.expander.load_for_coords(coords)
 
 
 class ActionExpanderRow(Adw.ExpanderRow):
@@ -66,23 +74,46 @@ class ActionExpanderRow(Adw.ExpanderRow):
         self.build()
 
     def build(self):
-        self.add_action_row("Name 1", "Category")
-        self.add_action_row("Name 2", "Category")
-        self.add_action_row("Name 3", "Category")
-
         self.add_action_button = AddActionButtonRow(self)
         self.add_row(self.add_action_button)
+        self.actions.append(self.add_action_button)
 
     def add_action_row(self, action_name, action_category):
         action_row = ActionRow(action_name, action_category, self.action_group.right_area, len(self.actions))
         self.actions.append(action_row)
         self.add_row(action_row)
 
-    def reorder_child_after(self, child, after):
-        # self.remove(self.actions[0])
-        # return
-        # return
+    def load_for_coords(self, coords):
+        self.clear_actions(keep_add_button=True)
+        self.active_coords = coords
+        page_coords = f"{coords[0]}x{coords[1]}"
+        controller = self.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        if page_coords not in controller.active_page.action_objects:
+            return
+        for i in controller.active_page.action_objects[page_coords]:
+            action =  controller.active_page.action_objects[page_coords][i]
+            self.add_action_row(action.ACTION_NAME, action.PLUGIN_BASE.PLUGIN_NAME)
 
+        # Place add button at the end
+        if len(self.actions) > 0:
+            # self.remove(self.add_action_button)
+            # self.add_row(self.add_action_button)
+
+            # self.actions.remove(self.add_action_button)
+            # self.actions.append(self.add_action_button)
+            self.reorder_child_after(self.add_action_button, self.actions[-1])
+
+    def clear_actions(self, keep_add_button=False):
+        iter_actions = copy(self.actions) # Copy to iterate over to avoid problems with removing
+        for action in iter_actions:
+            if isinstance(action, ActionRow) or (isinstance(action, AddActionButtonRow) and not keep_add_button):
+                self.remove(action)
+                self.actions.remove(action)
+
+    def reorder_child_after(self, child, after):
+        if child == after:
+            return
+        
         child_index = self.get_index_of_child(child)
         after_index = self.get_index_of_child(after)
 
@@ -90,29 +121,22 @@ class ActionExpanderRow(Adw.ExpanderRow):
             log.warning("Child or after index is None")
             return
         
-        old_actions = self.actions
-
-        # return
-
-        # Remove all actions
-        for action in self.actions:
-            if type(action) != ActionRow:
-                continue
-            self.remove(action)
+        old_actions = copy(self.actions)
+        self.clear_actions()
+        self.actions = old_actions
 
         # Change order in self.actions
         self.actions.pop(child_index)
         self.actions.insert(after_index, child)
 
-
         # Add actions in new order
-        for i in range(len(self.actions)):
-            self.add_row(self.actions[i])
-            # self.actions.append(self.actions[i])
+        for action in self.actions:
+            if isinstance(action, ActionRow) or isinstance(action, AddActionButtonRow):
+                self.add_row(action)
 
     def get_index_of_child(self, child):
-        for i in range(len(self.actions)):
-            if self.actions[i] == child:
+        for i, action in enumerate(self.actions):
+            if action == child:
                 return i
             
     def add_drop_preview(self, index):

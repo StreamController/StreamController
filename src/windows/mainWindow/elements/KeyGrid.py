@@ -122,7 +122,7 @@ class KeyButton(Gtk.Frame):
     def on_click(self, button):
         # Update settings on the righthand side of the screen
         right_area = gl.app.main_win.rightArea
-        right_area.key_editor.label_editor.label_group.load_for_coords((self.coords[1], self.coords[0]))
+        right_area.load_for_coords((self.coords[1], self.coords[0]))
         # Update preview
         self.set_right_preview(self.pixbuf)
         # self.set_css_classes(["key-button-frame"])

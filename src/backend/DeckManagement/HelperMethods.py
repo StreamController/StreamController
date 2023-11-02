@@ -75,3 +75,11 @@ def get_last_dir(path: str) -> str:
     elif os.path.isfile(path):
         return os.path.basename(os.path.normpath(os.path.dirname(path)))
     return
+
+def has_dict_recursive(dictionary: dict, *args):
+    working_dict = dictionary
+    for arg in args:
+        working_dict = working_dict.get(arg)
+        if working_dict == None:
+            return False
+    return True

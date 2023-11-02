@@ -42,6 +42,9 @@ class LabelEditor(Gtk.Box):
         self.label_group = LabelGroup(self.right_area)
         self.main_box.append(self.label_group)
 
+    def load_for_coords(self, coords):
+        self.label_group.load_for_coords(coords)
+
 
 class LabelGroup(Adw.PreferencesGroup):
     def __init__(self, right_area, **kwargs):

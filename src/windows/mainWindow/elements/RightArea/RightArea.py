@@ -55,6 +55,9 @@ class RightArea(Gtk.Stack):
     def show_action_configurator(self):
         self.set_visible_child(self.action_configurator)
 
+    def load_for_coords(self, coords):
+        self.key_editor.load_for_coords(coords)
+
 class RightAreaKeyEditor(Gtk.Box):
     def __init__(self, right_area, **kwargs):
         super().__init__(**kwargs)
@@ -72,3 +75,8 @@ class RightAreaKeyEditor(Gtk.Box):
 
         self.action_editor = ActionManager(right_area, margin_top=25, width_request=400)
         self.main_box.append(self.action_editor)
+
+    def load_for_coords(self, coords):
+        # self.icon_selector.load_for_coords(coords) #TODO
+        self.label_editor.load_for_coords(coords)
+        self.action_editor.load_for_coords(coords)

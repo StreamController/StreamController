@@ -34,4 +34,5 @@ class PluginBase:
         }
 
     def add_action(self, action):
+        action.PLUGIN_BASE = self
         self.ACTIONS[action.ACTION_NAME] = action

@@ -33,6 +33,10 @@ class DeckSettingsPage(Gtk.Box):
         self.deck_stack_child = deck_stack_child
         self.deck_controller = deck_controller
         self.deck_serial_number = deck_controller.deck.get_serial_number()
+        if self.deck_controller.active_page == None:
+            # TODO: Fix: Error not showing up
+            self.show_no_page_error()
+            return
         self.build()
 
     def build(self):
@@ -50,3 +54,27 @@ class DeckSettingsPage(Gtk.Box):
 
         background_group = BackgroundGroup(self)
         main_box.append(background_group)
+
+    def show_no_page_error(self):
+        self.clear()
+        self.error_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+        self.append(self.error_box)
+
+        self.error_label = Gtk.Label(label="No page selected for this deck")
+        self.error_box.append(self.error_label)
+
+        # TODO: Do this automatically on page change
+        self.retry_button = Gtk.Button(label="Retry")
+        self.retry_button.connect("clicked", self.on_retry_button_click)
+        self.error_box.append(self.retry_button)
+
+    def on_retry_button_click(self, button):
+        if self.deck_controller.active_page == None:
+            return
+        
+        self.clear()
+        self.build()
+
+    def clear(self):
+        while self.get_first_child() is not None:
+            self.remove(self.get_first_child())

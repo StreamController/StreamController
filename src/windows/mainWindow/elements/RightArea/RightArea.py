@@ -28,6 +28,7 @@ from src.windows.mainWindow.elements.RightArea.elements.LabelEditor import Label
 from src.windows.mainWindow.elements.RightArea.elements.ActionManager import ActionManager
 from src.windows.mainWindow.elements.RightArea.elements.ActionChooser import ActionChooser
 from src.windows.mainWindow.elements.RightArea.elements.ActionConfigurator import ActionConfigurator
+from src.windows.mainWindow.elements.RightArea.elements.ErrorPage import ErrorPage
 
 class RightArea(Gtk.Stack):
     def __init__(self, main_window, **kwargs):
@@ -44,6 +45,9 @@ class RightArea(Gtk.Stack):
 
         self.action_configurator = ActionConfigurator(self)
         self.add_named(self.action_configurator, "action_configurator")
+
+        self.error_page = ErrorPage(self)
+        self.add_named(self.error_page, "error_page")
 
         # Config transition
         self.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
@@ -71,7 +75,28 @@ class RightArea(Gtk.Stack):
         self.set_visible_child(self.action_configurator)
 
     def load_for_coords(self, coords):
+        # Verify is page is loaded on current controller
+        controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        if controller.active_page == None:
+            self.show_no_page_error()
+            return
+
+        self.hide_no_page_error()        
+
         self.key_editor.load_for_coords(coords)
+
+    def show_no_page_error(self):
+        self.set_transition_duration(0)
+        self.set_visible_child(self.error_page)
+        self.set_transition_duration(200)
+
+
+    def hide_no_page_error(self):
+        if self.get_visible_child() == self.error_page:
+            self.set_transition_duration(0)
+            self.set_visible_child(self.key_editor)
+            self.set_transition_duration(200)
+
 
 class RightAreaKeyEditor(Gtk.Box):
     def __init__(self, right_area, **kwargs):

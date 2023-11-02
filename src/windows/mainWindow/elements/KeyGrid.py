@@ -79,6 +79,8 @@ class KeyButton(Gtk.Frame):
         self.coords = coords
         self.key_grid = key_grid
 
+        self.pixbuf = None
+
         self.button = Gtk.Button(hexpand=True, vexpand=True, css_classes=["key-button"])
         self.set_child(self.button)
 
@@ -124,7 +126,8 @@ class KeyButton(Gtk.Frame):
         right_area = gl.app.main_win.rightArea
         right_area.load_for_coords((self.coords[1], self.coords[0]))
         # Update preview
-        self.set_right_preview(self.pixbuf)
+        if self.pixbuf is not None:
+            self.set_right_preview(self.pixbuf)
         # self.set_css_classes(["key-button-frame"])
         # self.button.set_css_classes(["key-button-new-small"])
         self.set_visible(True)

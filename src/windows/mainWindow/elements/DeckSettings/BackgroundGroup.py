@@ -143,7 +143,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         dialog = ChooseBackgroundDialog(self)
 
     def set_thumbnail(self, file_path):
-        if file_path == None:
+        if file_path in [None, ""]:
             return
         # return
         image = gl.media_manager.get_thumbnail(file_path)

@@ -17,7 +17,7 @@ class ActionBase:
         Internal function, do not call manually
         """
         self.deck_controller = deck_controller
-
+ 
     def set_page(self, page):
         """
         Internal function, do not call manually
@@ -38,3 +38,9 @@ class ActionBase:
 
     def on_tick(self):
         pass
+
+    def get_custom_config_area(self) -> "Gtk.Widget":
+        return None
+    
+    def get_config_rows(self) -> "list[Adw.PreferencesRow]":
+        return []

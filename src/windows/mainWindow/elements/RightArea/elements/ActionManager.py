@@ -82,8 +82,8 @@ class ActionExpanderRow(Adw.ExpanderRow):
         self.add_row(self.add_action_button)
         self.actions.append(self.add_action_button)
 
-    def add_action_row(self, action_name, action_category):
-        action_row = ActionRow(action_name, action_category, self.action_group.right_area, len(self.actions))
+    def add_action_row(self, action_name, action_category, action_object):
+        action_row = ActionRow(action_name, action_category, action_object, self.action_group.right_area, len(self.actions))
         self.actions.append(action_row)
         self.add_row(action_row)
 
@@ -96,7 +96,7 @@ class ActionExpanderRow(Adw.ExpanderRow):
             return
         for i in controller.active_page.action_objects[page_coords]:
             action =  controller.active_page.action_objects[page_coords][i]
-            self.add_action_row(action.ACTION_NAME, action.PLUGIN_BASE.PLUGIN_NAME)
+            self.add_action_row(action.ACTION_NAME, action.PLUGIN_BASE.PLUGIN_NAME, action)
 
         # Place add button at the end
         if len(self.actions) > 0:
@@ -173,11 +173,12 @@ class ActionExpanderRow(Adw.ExpanderRow):
 
 
 class ActionRow(Adw.PreferencesRow):
-    def __init__(self, action_name, action_category, right_area, index, **kwargs):
+    def __init__(self, action_name, action_category, action_object, right_area, index, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding"])
         self.action_name = action_name
         self.action_category = action_category
         self.right_area = right_area
+        self.action_object = action_object
         self.index = index
         self.active_coords = None
         self.build()
@@ -256,6 +257,7 @@ class ActionRow(Adw.PreferencesRow):
         return Gdk.DragAction.MOVE
 
     def on_click(self, button):
+        self.right_area.action_configurator.load_for_action(self.action_object)
         self.right_area.show_action_configurator()
 
 

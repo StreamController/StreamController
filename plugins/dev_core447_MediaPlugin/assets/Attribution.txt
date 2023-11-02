@@ -1,0 +1,16 @@
+All images in this folder are from: https://iconduck.com/sets/font-awesome-icons
+They're licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) that can be found under: https://creativecommons.org/licenses/by/4.0/
+A copy of the license can be found in the "CC BY 4.0.txt" file
+
+I made the following changes to the images:
+    - play.png & stop.png & pause.png & next.png & previous.png:
+        - I inverted the colors to make the icon white
+        - I changed the Color mode from indexed to RGB
+        - I added a transparent border around the image
+
+Links to the images:
+    - next: https://iconduck.com/icons/22413/step-forward
+    - play: https://iconduck.com/icons/22254/play
+    - pause: https://iconduck.com/icons/22222/pause
+    - stop: https://iconduck.com/icons/22417/stop
+    - previous: https://iconduck.com/icons/22412/step-backward

@@ -13,6 +13,7 @@ class PluginBase:
     ## Internal variables - do not change
     ACTIONS = {}
     plugins = {}
+    PLUGIN = None
     def __init__(self):
         # Verify variables
         if self.PLUGIN_NAME in ["", None]:
@@ -32,6 +33,7 @@ class PluginBase:
             "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
             "file_name": os.path.basename(inspect.getfile(self.__class__))
         }
+        self.PATH = os.path.dirname(inspect.getfile(self.__class__))
 
     def add_action(self, action):
         action.PLUGIN_BASE = self

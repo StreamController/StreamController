@@ -342,6 +342,9 @@ class DeckController:
 
             # Add deck_controller to new page
             page.set_deck_controller(self)
+            # Send load signal to actions
+
+        old_page = copy(self.active_page)
 
         # Set active page
         self.active_page = page
@@ -402,7 +405,7 @@ class DeckController:
             # if self.background_key_tiles[index] == None:
                 # image = Image.new("RGB", (72, 72), (0, 0, 0))
             # Image = Image.new("RGB", (72, 72), (0, 0, 0))
-            # native = PILHelper.to native_format(self.deck, Image)
+            # native = PILHelper.to_native_format(self.deck, Image)
             # self.deck.set_key_image(index, native)
             self.set_key(index, bypass_task=False, update_ui=True, add_background=True)
         # time.sleep(2)
@@ -475,6 +478,11 @@ class DeckController:
             load_all_keys()
         if load_screensaver:
             load_screensaver(self)
+
+        if self.active_page is not old_page:
+            # Remove deck_controller from old page
+            if isinstance(self.active_page, Page):
+                page.actions_send_load()
 
     def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True, load_screen_saver: bool = True):
         # Reset deck

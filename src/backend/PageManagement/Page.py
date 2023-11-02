@@ -92,3 +92,8 @@ class Page(dict):
         for key in self.action_objects:
             for i, action in self.action_objects[key].items():
                 action.set_deck_controller(deck_controller)
+
+    def actions_send_load(self):
+        for key in self.action_objects:
+            for i, action in self.action_objects[key].items():
+                action.on_load()

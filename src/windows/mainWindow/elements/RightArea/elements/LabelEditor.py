@@ -141,6 +141,9 @@ class LabelRow(Adw.PreferencesRow):
         x = coords[0]
         y = coords[1]
 
+        if page == None:
+            #TODO: Show error
+            return
         # Set defaults
         page.setdefault("keys", {})
         page["keys"].setdefault(f"{x}x{y}", {})

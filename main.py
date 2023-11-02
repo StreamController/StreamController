@@ -26,6 +26,7 @@ from src.backend.AssetManager import AssetManager
 from src.backend.PageManagement.PageManager import PageManager
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
+from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 
 # Import globals
 import globals as gl
@@ -44,7 +45,7 @@ class Main:
 
         gl.app = self.app
 
-        self.app.run(sys.argv)
+        self.app.run(get_sys_args_without_param("--fake"))
 
 @log.catch
 def load():

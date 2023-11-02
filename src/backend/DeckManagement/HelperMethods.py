@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import hashlib
 import os
 import matplotlib.font_manager
+import sys
 def sha256(file_path):
     """
     Calculates the sha256 hash of a file.
@@ -83,3 +84,20 @@ def has_dict_recursive(dictionary: dict, *args):
         if working_dict == None:
             return False
     return True
+
+def get_sys_param_value(param_name: str) -> str:
+    for i, param in enumerate(sys.argv):
+        if param.startswith(param_name):
+            if i + 1 < len(sys.argv):
+                return sys.argv[i + 1]
+            
+def get_sys_args_without_param(param_name: str) -> list:
+    args = sys.argv
+    print(args)
+    for i, param in enumerate(args):
+        if param.startswith(param_name):
+            print(f"found at: {i}")
+            if i < len(args):
+                args.pop(i + 1) # to include the value of the param
+            args.pop(i)
+    return args

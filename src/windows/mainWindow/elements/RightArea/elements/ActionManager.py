@@ -24,6 +24,9 @@ from gi.repository import Gtk, Adw, Gdk
 from loguru import logger as log
 from copy import copy
 
+# Import globals
+import globals as gl
+
 class ActionManager(Gtk.Box):
     def __init__(self, right_area, **kwargs):
         self.right_area = right_area
@@ -68,6 +71,7 @@ class ActionExpanderRow(Adw.ExpanderRow):
         self.set_expanded(True)
         self.actions = []
         self.action_group = action_group
+        self.active_coords = None
 
         self.preview = None
 
@@ -268,4 +272,32 @@ class AddActionButtonRow(Adw.PreferencesRow):
         self.set_child(self.button)
 
     def on_click(self, button):
-        self.expander.action_group.right_area.set_visible_child_name("action_chooser")
+        self.expander.action_group.right_area.let_user_select_action(callback_function=self.add_action)
+
+    def add_action(self, action_class):
+        log.trace(f"Adding action: {action_class}")
+
+        # Gather data
+        action_string = gl.plugin_manager.get_action_string_from_action(action_class)
+        active_controller = self.expander.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        active_page = active_controller.active_page
+        page_coords = f"{self.expander.active_coords[0]}x{self.expander.active_coords[1]}"
+
+        # Set missing values
+        active_page.setdefault("keys", {})
+        active_page["keys"].setdefault(page_coords, {})
+        active_page["keys"][page_coords].setdefault("actions", [])
+
+        # Add action
+        active_page["keys"][page_coords]["actions"].append({
+            "name": action_string,
+            "settings": {}
+        })
+
+        # Save page
+        active_page.save()
+        # Reload page to add an object to the new action
+        active_page.load()
+
+        # Reload ui
+        self.expander.load_for_coords(self.expander.active_coords)

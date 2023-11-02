@@ -49,8 +49,23 @@ class RightArea(Gtk.Stack):
         self.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
         self.set_transition_duration(200)
 
-    def let_user_select_action(self, callback_function, callback_args):
-        self.action_chooser.show(callback_function=callback_function, callback_args=callback_args)
+    def let_user_select_action(self, callback_function, *callback_args, **callback_kwargs):
+        """
+        Show the action chooser to let the user select an action.
+        The callback_function will be called with the following parameters:
+             - action_object: The action object that was selected.
+             - args: The args passed to this function
+             - kwargs: The kwargs passed to this function
+
+        Parameters:
+            callback_function (function): The callback function to be called after the action is selected.
+            *callback_args: Variable length argument list to be passed to the callback function.
+            **callback_kwargs: Arbitrary keyword arguments to be passed to the callback function.
+
+        Returns:
+            None
+        """
+        self.action_chooser.show(callback_function=callback_function, current_stack_page=self.get_visible_child(), callback_args=callback_args, callback_kwargs=callback_kwargs)
 
     def show_action_configurator(self):
         self.set_visible_child(self.action_configurator)

@@ -193,7 +193,9 @@ class LabelRow(Adw.PreferencesRow):
                     self.set_sensitive(False)
                     self.controlled_by_action_label.set_visible(True)
                     # Update the ui - this is why we reversed the list
+                    self.entry.disconnect_by_func(self.on_change_text) # Remove signal to avoid saving to page
                     self.entry.set_text(action.labels[key]["text"])
+                    self.entry.connect("changed", self.on_change_text)
                     self.set_color(action.labels[key]["color"])
                     self.stroke_width_button.set_value(action.labels[key]["stroke-width"])
                     self.font_chooser_button.set_font(action.labels[key]["font-family"] + " " + str(action.labels[key]["font-size"]))

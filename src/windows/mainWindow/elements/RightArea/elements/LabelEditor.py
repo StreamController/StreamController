@@ -103,6 +103,10 @@ class LabelRow(Adw.PreferencesRow):
         self.label = Gtk.Label(label=self.label_text, xalign=0, margin_bottom=3, css_classes=["bold"])
         self.main_box.append(self.label)
 
+        self.controlled_by_action_label = Gtk.Label(label="Controlled by action", css_classes=["bold", "red-color"], xalign=0,
+                                                    margin_bottom=3, visible=False)
+        self.main_box.append(self.controlled_by_action_label)
+
         self.text_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.text_box)
 
@@ -166,6 +170,33 @@ class LabelRow(Adw.PreferencesRow):
         vis = self.entry.get_text() != ""
         self.font_chooser_box.set_visible(vis)
         self.stroke_width_box.set_visible(vis)
+
+        # Reset appearance
+        self.set_sensitive(True)
+        self.controlled_by_action_label.set_visible(False)
+
+        # Get all actions for this key - This allows us to see which labels are set by actions and set the sensivity to False
+        controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        if controller == None:
+            return
+        action_objects = controller.active_page.get_all_actions_for_key(f"{x}x{y}")
+        if action_objects in [None, []]:
+            return
+        
+        action_objects.reverse() # Reverse list, this allows us to easily set the label in the ui to the label set by the last action
+
+        # Set sensitive = False if label is set by an action
+        for action in action_objects:
+            for key in action.labels:
+                if key == self.label_text.lower():
+                    self.set_sensitive(False)
+                    self.controlled_by_action_label.set_visible(True)
+                    # Update the ui - this is why we reversed the list
+                    self.entry.set_text(action.labels[key]["text"])
+                    self.set_color(action.labels[key]["color"])
+                    self.stroke_width_button.set_value(action.labels[key]["stroke-width"])
+                    self.font_chooser_button.set_font(action.labels[key]["font-family"] + " " + str(action.labels[key]["font-size"]))
+                    return
 
     def set_color(self, color_values: list):
         if len(color_values) == 3:

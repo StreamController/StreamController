@@ -96,6 +96,13 @@ class Page(dict):
                 actions.append(action)
         return actions
     
+    def get_all_actions_for_key(self, key):
+        actions = []
+        if key in self.action_objects:
+            for action in self.action_objects[key].values():
+                actions.append(action)
+        return actions
+    
     def get_settings_for_action(self, action_object, coords: list = None):
         if coords is None:
             for key in self["keys"]:

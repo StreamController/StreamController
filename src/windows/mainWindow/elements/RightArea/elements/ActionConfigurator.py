@@ -72,6 +72,9 @@ class ConfigGroup(Adw.PreferencesGroup):
         if not hasattr(action, "get_config_rows"):
             self.hide()
             return
+        if action.get_config_rows() is None:
+            self.hide()
+            return
         # Load labels
         self.set_title(action.ACTION_NAME)
         self.set_description(action.PLUGIN_BASE.PLUGIN_NAME)

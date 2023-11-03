@@ -55,3 +55,11 @@ class ActionBase:
     
     def get_config_rows(self) -> "list[Adw.PreferencesRow]":
         return []
+    
+    def get_settings(self) -> dir:
+        # self.page.load()
+        return self.page.get_settings_for_action(self, coords = self.page_coords)
+    
+    def set_settings(self, settings: dict):
+        self.page.set_settings_for_action(self, settings=settings, coords = self.page_coords)
+        self.page.save()

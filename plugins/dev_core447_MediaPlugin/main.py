@@ -56,7 +56,17 @@ class Output(ActionBase):
         self.update_player_selector()
         self.player_selector.connect("notify::selected-item", self.on_change_player)
 
-        return [self.player_selector]
+        self.label_toggle = Adw.SwitchRow(title="Show name of playing song", subtitle="Show the name of the currently playing song")
+        self.label_toggle.connect("notify::active", self.on_toggle_label)
+
+        # Load toggle state from settings
+        settings = self.get_settings()
+        if settings is not None:
+            settings.setdefault("show_label", True)
+            self.label_toggle.set_active(settings["show_label"])
+        self.set_settings(settings)
+
+        return [self.player_selector, self.label_toggle]
 
     ## Custom methods
     def on_change_player(self, combo, *args):
@@ -102,6 +112,9 @@ class Output(ActionBase):
             return settings.get("player_name")
 
     def show_current_media_status(self):
+        if self.get_settings() == None:
+            # Page not yet fully loaded
+            return
         status = self.PLUGIN_BASE.mc.status(self.get_player_name())
 
         file = {
@@ -114,15 +127,18 @@ class Output(ActionBase):
         title = self.PLUGIN_BASE.mc.title(self.get_player_name())
         label = None
         margins = [0, 0, 0, 0]
-        if isinstance(title, list):
-            if len(title) > 0:
-                label = title[0]
-                margins = [5, 0, 5, 10]
-        if isinstance(title, str):
-            if len(title) > 0:
-                label = title
-                margins = [5, 0, 5, 10]
-        self.set_bottom_label(self.shorten_title(label, 10), font_size=12)
+        if self.get_settings().setdefault("show_label", True):
+            if isinstance(title, list):
+                if len(title) > 0:
+                    label = title[0]
+                    margins = [5, 0, 5, 10]
+            if isinstance(title, str):
+                if len(title) > 0:
+                    label = title
+                    margins = [5, 0, 5, 10]
+            self.set_bottom_label(self.shorten_title(label, 10), font_size=12)
+        else:
+            self.set_bottom_label(None)
         
         if status == None:
             if self.current_status == None:
@@ -144,6 +160,11 @@ class Output(ActionBase):
         if len(title) > length:
             return title[:length-2] + ".."
         return title
+    
+    def on_toggle_label(self, switch, *args):
+        settings = self.get_settings()
+        settings["show_label"] = switch.get_active()
+        self.set_settings(settings)
 
 class Test(PluginBase):
     PLUGIN_NAME = "MediaPlugin"

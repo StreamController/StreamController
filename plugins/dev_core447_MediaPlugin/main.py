@@ -38,14 +38,6 @@ class Output(ActionBase):
 
     def on_tick(self):
         self.show_current_media_status()
-
-    def get_custom_config_area(self) -> "Gtk.Widget":
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        button = Gtk.Button(label="Test")
-        box.append(button)
-        label = Gtk.Label(label="label")
-        box.append(label)
-        return box
     
     def get_config_rows(self) -> "list[Adw.PreferencesRow]":
         # Init ui elements

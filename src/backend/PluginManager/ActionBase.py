@@ -1,3 +1,5 @@
+from loguru import logger as log
+
 class ActionBase:
     # Change to match your action
     ACTION_NAME = ""
@@ -13,6 +15,7 @@ class ActionBase:
         self.page_coords = coords
         self.coords = coords.split("x")
         self.index = self.deck_controller.coords_to_index(self.coords)
+        log.info(f"Loaded action {self.ACTION_NAME}")
         
     def set_deck_controller(self, deck_controller):
         """

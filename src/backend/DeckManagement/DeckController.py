@@ -131,15 +131,15 @@ class DeckController:
                 font = ImageFont.truetype(font_path, labels[label]["font-size"])
                 # Top text
                 if label == "top":
-                    draw.text((image.width / 2, labels[label]["font-size"] - 3), text=labels[label]["text"], font=font, anchor="ms",
+                    draw.text((alpha_bg.width / 2, labels[label]["font-size"] - 3), text=labels[label]["text"], font=font, anchor="ms",
                               fill=tuple(labels[label]["color"]), stroke_width=labels[label]["stroke-width"])
                 # Center text
                 if label == "center":
-                    draw.text((image.width / 2, (image.height + labels[label]["font-size"]) / 2 - 3), text=labels[label]["text"], font=font, anchor="ms",
+                    draw.text((alpha_bg.width / 2, (alpha_bg.height + labels[label]["font-size"]) / 2 - 3), text=labels[label]["text"], font=font, anchor="ms",
                               fill=tuple(labels[label]["color"]), stroke_width=labels[label]["stroke-width"])
                 # Bottom text
                 if label == "bottom":
-                    draw.text((image.width / 2, image.height - 3), text=labels[label]["text"], font=font, anchor="ms",
+                    draw.text((alpha_bg.width / 2, alpha_bg.height - 3), text=labels[label]["text"], font=font, anchor="ms",
                               fill=tuple(labels[label]["color"]), stroke_width=labels[label]["stroke-width"])
                     
 

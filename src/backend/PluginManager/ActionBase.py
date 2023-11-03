@@ -1,4 +1,5 @@
 from loguru import logger as log
+from copy import copy
 
 class ActionBase:
     # Change to match your action
@@ -87,7 +88,12 @@ class ActionBase:
         elif self.current_key == {}:
             log.warning("No key to reload")
             return
-        self.deck_controller.set_key(**self.current_key, labels=self.labels)
+        
+        # Fill unset labels with labels set in the ui
+        page_labels = copy(self.page["keys"][self.page_coords]["labels"])
+        page_labels.update(self.labels)
+
+        self.deck_controller.set_key(**self.current_key, labels=page_labels)
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18):

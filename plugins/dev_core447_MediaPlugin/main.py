@@ -49,28 +49,57 @@ class Output(ActionBase):
     
     def get_config_rows(self) -> "list[Adw.PreferencesRow]":
         # Init ui elements
-        self.player_name_row = Adw.EntryRow(title="Bound to player:", input_hints=Gtk.InputHints.WORD_COMPLETION)
-        self.player_name_row.connect("changed", self.on_player_name_changed)
+        self.player_model = Gtk.StringList()
+        self.player_selector = Adw.ComboRow(model=self.player_model, title="Bind to player:", subtitle="Specify the player to controll")
+        self.player_selector.set_enable_search(True) #TODO: Implement
 
-        # Load settings
+        self.update_player_selector()
+        self.player_selector.connect("notify::selected-item", self.on_change_player)
+
+        return [self.player_selector]
+
+    ## Custom methods
+    def on_change_player(self, combo, *args):
         settings = self.get_settings()
-        if "player_name" in settings:
-            self.player_name_row.set_text(settings["player_name"])
-        return [self.player_name_row]
-    
-    def on_player_name_changed(self, entry):
-        settings = self.get_settings()
-        settings["player_name"] = entry.get_text()
+        if combo.get_selected_item().get_string() == "All Players":
+            del settings["player_name"]
+        else:
+            settings["player_name"] = combo.get_selected_item().get_string()
         self.set_settings(settings)
     
-    # Custom methods
+    def update_player_selector(self):
+        # Clear the model
+        for i in range(self.player_model.get_n_items()):
+            self.player_model.remove(0)
+
+        players = self.PLUGIN_BASE.mc.get_player_names(remove_duplicates=True)
+
+        self.player_model.append("All Players")
+
+        for player in players:
+            self.player_model.append(player)
+
+        # Add from settings if not already in the model
+        if self.get_player_name() is not None:
+            if self.get_player_name() not in players:
+                self.player_model.append(self.get_player_name())
+
+        # Select from settings
+        if self.get_player_name() is not None:
+            position = 0
+            for i in range(self.player_model.get_n_items()):
+                item = self.player_model.get_item(i).get_string()
+                n = self.get_player_name()
+                print(f"item: {item}, n: {n}")
+                if self.player_model.get_item(i).get_string() == self.get_player_name():
+                    position = i
+                    break
+            self.player_selector.set_selected(position)
+    
     def get_player_name(self):
-        if hasattr(self, "player_name_row"):
-            return self.player_name_row.get_text()
-        else:
-            settings = self.get_settings()
-            if settings is not None:
-                return settings.get("player_name")
+        settings = self.get_settings()
+        if settings is not None:
+            return settings.get("player_name")
 
     def show_current_media_status(self):
         status = self.PLUGIN_BASE.mc.status(self.get_player_name())

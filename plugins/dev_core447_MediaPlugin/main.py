@@ -9,6 +9,8 @@ from gi.repository import Gtk, Adw
 
 import sys
 import os
+from loguru import logger as log
+from PIL import Image, ImageEnhance
 
 # Add plugin to sys.paths
 sys.path.append(os.path.dirname(__file__))
@@ -20,23 +22,22 @@ class Output(ActionBase):
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
 
-    def on_load(self):
+        self.current_status = None
         self.show_current_media_status()
-        return
-        self.deck_controller.set_key(key = 4,
-                                     media_path = os.path.join(self.PLUGIN_BASE.PATH, "assets", "play.png"))
-
+        
     def on_key_down(self):
-        self.show_current_media_status()
-        return
-        print("down")
-        print(f"controller: {self.deck_controller}")
-        self.deck_controller.set_key(key = 4,
-                                     media_path = os.path.join(self.PLUGIN_BASE.PATH, "assets", "play.png"))
+        status = self.PLUGIN_BASE.mc.status(self.get_player_name())
+        if status == "Playing":
+            self.PLUGIN_BASE.mc.pause(self.get_player_name())
+        else:
+            self.PLUGIN_BASE.mc.play(self.get_player_name())
 
     def on_key_up(self):
         print("up")
-        print(f"controller: {self.deck_controller}")
+        print(f"controller: {self.deck_controller}")\
+
+    def on_tick(self):
+        self.show_current_media_status()
 
     def get_custom_config_area(self) -> "Gtk.Widget":
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -47,24 +48,73 @@ class Output(ActionBase):
         return box
     
     def get_config_rows(self) -> "list[Adw.PreferencesRow]":
-        # row = Adw.SwitchRow()
-        row = Adw.PreferencesRow()
-        row.set_child(Gtk.Box(margin_bottom=100))
-        return [row]
+        # Init ui elements
+        self.player_name_row = Adw.EntryRow(title="Bound to player:", input_hints=Gtk.InputHints.WORD_COMPLETION)
+        self.player_name_row.connect("changed", self.on_player_name_changed)
+
+        # Load settings
+        settings = self.get_settings()
+        if "player_name" in settings:
+            self.player_name_row.set_text(settings["player_name"])
+        return [self.player_name_row]
+    
+    def on_player_name_changed(self, entry):
+        settings = self.get_settings()
+        settings["player_name"] = entry.get_text()
+        self.set_settings(settings)
     
     # Custom methods
+    def get_player_name(self):
+        if hasattr(self, "player_name_row"):
+            return self.player_name_row.get_text()
+        else:
+            settings = self.get_settings()
+            if settings is not None:
+                return settings.get("player_name")
+
     def show_current_media_status(self):
-        status = self.PLUGIN_BASE.mc.status()
-        index_tuple = self.coords.split("x")
+        status = self.PLUGIN_BASE.mc.status(self.get_player_name())
 
         file = {
             "Playing": os.path.join(self.PLUGIN_BASE.PATH, "assets", "pause.png"),
-            "Paused": os.path.join(self.PLUGIN_BASE.PATH, "assets", "play.png")
+            "Paused": os.path.join(self.PLUGIN_BASE.PATH, "assets", "play.png"),
         }
         if isinstance(status, list):
             return
-        self.deck_controller.set_key(key = self.deck_controller.coords_to_index(index_tuple),
-                                        media_path = file[status])
+        
+        title = self.PLUGIN_BASE.mc.title(self.get_player_name())
+        label = None
+        margins = [0, 0, 0, 0]
+        if isinstance(title, list):
+            if len(title) > 0:
+                label = title[0]
+                margins = [5, 0, 5, 10]
+        if isinstance(title, str):
+            if len(title) > 0:
+                label = title
+                margins = [5, 0, 5, 10]
+        self.set_bottom_label(self.shorten_title(label, 10), font_size=12)
+        
+        if status == None:
+            if self.current_status == None:
+                self.current_status = "Playing"
+            file_path = file[self.current_status]
+            image = Image.open(file_path)
+            enhancer = ImageEnhance.Brightness(image)
+            image = enhancer.enhance(0.25)
+            self.set_key(image=image, margins=margins)
+            return
+
+        self.current_status = status
+
+        self.set_key(media_path = file[status], margins=margins)
+
+    def shorten_title(self, title, length):
+        if title is None:
+            return
+        if len(title) > length:
+            return title[:length-2] + ".."
+        return title
 
 class Test(PluginBase):
     PLUGIN_NAME = "MediaPlugin"

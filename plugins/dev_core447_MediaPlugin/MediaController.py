@@ -4,11 +4,13 @@ import sys
 
 class MediaController:
     def __init__(self):
-        session_bus = dbus.SessionBus()
+        self.session_bus = dbus.SessionBus()
+
+    def update_players(self):
         mpris_players = []
-        for i in session_bus.list_names():
+        for i in self.session_bus.list_names():
             if str(i)[:22] == "org.mpris.MediaPlayer2":
-                mpris_players += [session_bus.get_object(i, '/org/mpris/MediaPlayer2')]
+                mpris_players += [self.session_bus.get_object(i, '/org/mpris/MediaPlayer2')]
         self.mpris_players = mpris_players
 
     def get_player_names(self, remove_duplicates = False):
@@ -23,6 +25,7 @@ class MediaController:
         return names
     
     def get_matching_ifaces(self, player_name: str = None) -> list[dbus.Interface]:
+        self.update_players()
         """
         Retrieves a list of dbus interfaces that match the given player name.
 
@@ -36,7 +39,7 @@ class MediaController:
         ifaces = []
         for player in self.mpris_players:
             properties = dbus.Interface(player, 'org.freedesktop.DBus.Properties')
-            if player_name in [None, properties.Get('org.mpris.MediaPlayer2', 'Identity')]:
+            if player_name in [None, "", properties.Get('org.mpris.MediaPlayer2', 'Identity')]:
                 iface = dbus.Interface(player, 'org.mpris.MediaPlayer2.Player')
                 ifaces.append(iface)
         return ifaces
@@ -206,6 +209,9 @@ class MediaController:
         def all_equal(iterable):
             g = groupby(iterable)
             return next(g, True) and not next(g, False)
+        
+        if len(list) == 0:
+            return None
         
         if all_equal(list):
             return list[0]

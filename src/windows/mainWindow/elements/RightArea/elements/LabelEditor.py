@@ -142,8 +142,7 @@ class LabelRow(Adw.PreferencesRow):
         self.active_coords = coords
         page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
 
-        x = coords[0]
-        y = coords[1]
+        x, y = coords
 
         if page == None:
             #TODO: Show error
@@ -160,7 +159,9 @@ class LabelRow(Adw.PreferencesRow):
         page["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("stroke-width", 0)
 
         label = page["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()]
+        self.entry.disconnect_by_func(self.on_change_text) # Remove signal to avoid unnecessary updates
         self.entry.set_text(label["text"])
+        self.entry.connect("changed", self.on_change_text) # Reconnect signal
         self.set_color(label["color"])
         self.stroke_width_button.set_value(label["stroke-width"])
 

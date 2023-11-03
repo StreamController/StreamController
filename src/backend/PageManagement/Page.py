@@ -21,9 +21,10 @@ from copy import copy
 import globals as gl
 
 class Page(dict):
-    def __init__(self, json_path, *args, **kwargs):
+    def __init__(self, json_path, deck_controller, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.json_path = json_path
+        self.deck_controller = deck_controller
 
         # Dir that contains all actions this allows us to keep them at reload
         self.action_objects = {}
@@ -66,7 +67,7 @@ class Page(dict):
                 action_class = gl.plugin_manager.get_action_from_action_string(action["name"])
                 if action_class is None:
                     return
-                action_object = action_class(deck_controller=1, page=self, coords=key)
+                action_object = action_class(deck_controller=self.deck_controller, page=self, coords=key)
                 self.action_objects.setdefault(key, {})
 
                 old_object = self.action_objects[key].get(i)

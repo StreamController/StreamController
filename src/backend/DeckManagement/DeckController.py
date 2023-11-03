@@ -84,7 +84,7 @@ class DeckController:
         # Load default page #TODO: maybe remove from this class
         default_page = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
         if default_page != None:
-            page = gl.page_manager.get_page_by_name(default_page)
+            page = gl.page_manager.create_page_for_name(default_page, deck_controller=self)
             if page != None:
                 self.load_page(page)
 
@@ -335,17 +335,6 @@ class DeckController:
         log.info(f"Loading page {page.keys()}")
         self.deck_settings = self.get_deck_settings()
 
-        if self.active_page is not page:
-            # Remove deck_controller from old page
-            if isinstance(self.active_page, Page):
-                self.active_page.set_deck_controller(None)
-
-            # Add deck_controller to new page
-            page.set_deck_controller(self)
-            # Send load signal to actions
-
-        old_page = copy(self.active_page)
-
         # Set active page
         self.active_page = page
 
@@ -478,11 +467,6 @@ class DeckController:
             load_all_keys()
         if load_screensaver:
             load_screensaver(self)
-
-        if self.active_page is not old_page:
-            # Remove deck_controller from old page
-            if isinstance(self.active_page, Page):
-                page.actions_send_load()
 
     def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True, load_screen_saver: bool = True):
         # Reset deck

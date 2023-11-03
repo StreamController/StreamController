@@ -10,7 +10,9 @@ class ActionBase:
         
         self.deck_controller = deck_controller
         self.page = page
-        self.coords = coords
+        self.page_coords = coords
+        self.coords = coords.split("x")
+        self.index = self.deck_controller.coords_to_index(self.coords)
         
     def set_deck_controller(self, deck_controller):
         """

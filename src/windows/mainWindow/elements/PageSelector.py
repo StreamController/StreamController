@@ -20,6 +20,7 @@ from gi.repository import Gtk, Adw, Gio, GObject
 
 # Import Python modules
 from loguru import logger as log
+import os
 
 class PageSelector(Gtk.Box):
     def __init__(self, main_window, page_manager):
@@ -48,25 +49,12 @@ class PageSelector(Gtk.Box):
         # Settings button
         self.settings_button = Gtk.Button(icon_name="settings", tooltip_text="Open Page Manager")
         self.right_area.append(self.settings_button)
-
-    def get_pages(self):
-        pages = self.page_manager.get_pages(remove_extension=True)
-        active_deck_serial_number = self.main_window.leftArea.deck_stack.get_visible_child_name()
-        log.debug(f"Active deck serial number: {active_deck_serial_number}")
-        active_deck_default_page = self.page_manager.get_default_page_for_deck(active_deck_serial_number, remove_extension=True)
-        # Add suffix to default page
-        for page in pages:
-            if page == active_deck_default_page:
-                pages[pages.index(page)] = page + " (default)"
-
-        return pages
     
     def update(self):
-        pages = self.get_pages()
+        pages = self.page_manager.get_pages()
         self.clear_model()
-        self.pages_model.remove
         for page in pages:
-            self.pages_model.append(page)
+            self.pages_model.append(os.path.splitext(page)[0])
 
     def clear_model(self):
         for i in range(self.pages_model.get_n_items()):

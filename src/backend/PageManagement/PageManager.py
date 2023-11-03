@@ -21,36 +21,22 @@ from src.backend.PageManagement.Page import Page
 class PageManager:
     def __init__(self, settings_manager):
         self.settings_manager = settings_manager
-        self.pages = dict()
-        self.load_pages()
-    
-    def load_pages(self) -> None:
-        for page in os.listdir("pages"):
-            if page in self.pages:
-                if isinstance(self.pages[page], Page):
-                # Already loaded, just refreshing
-                    page.load()
-                    continue
-
-            page_path = os.path.join("pages", page)
-            self.pages[page] = Page(page_path)
     
     def save_pages(self) -> None:
         for page in self.pages.values():
             page.save()
 
     def get_pages(self, remove_extension: bool = False) -> list:
-        pages = list(self.pages.keys())
-        if remove_extension:
-            pages = [os.path.splitext(page)[0] for page in pages]
+        pages = []
+        for page in os.listdir("pages"):
+            if os.path.splitext(page)[1] == ".json":
+                pages.append(page)
         return pages
     
-    def get_page_by_name(self, name: str, add_json: bool = False) -> Page:
-        if add_json:
+    def create_page_for_name(self, name: str, deck_controller: "DeckController") -> Page:
+        if os.path.splitext(name)[1] != ".json":
             name += ".json"
-        for key in self.pages.keys():
-            if key == name:
-                return self.pages[key]
+        return Page(json_path=os.path.join("pages", name), deck_controller=deck_controller)
 
     def get_default_page_for_deck(self, serial_number: str, remove_extension: bool = False) -> Page:
         page_settings = self.settings_manager.load_settings_from_file("settings/pages.json")

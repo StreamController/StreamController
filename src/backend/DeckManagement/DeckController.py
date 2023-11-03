@@ -88,6 +88,11 @@ class DeckController:
             if page != None:
                 self.load_page(page)
 
+        # Init the action tick timer
+        self.TICK_DELAY = 1 # seconds
+        self.action_tick_timer = threading.Timer(self.TICK_DELAY, self.tick_actions)
+        self.action_tick_timer.start()
+
 
     @log.catch
     def generate_key_image(self, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], key=None, add_background=True, shrink=False):
@@ -586,3 +591,11 @@ class DeckController:
             # bg_image.paste(key_image, (0, 0), key_image)
             self.set_ui_key(i, key_image, force_add_background=True)
 
+
+    def tick_actions(self):
+        actions = self.active_page.get_all_actions()
+        for action in actions:
+            if hasattr(action, "on_tick"):
+                action.on_tick()
+        self.action_tick_timer = threading.Timer(self.TICK_DELAY, self.tick_actions)
+        self.action_tick_timer.start()

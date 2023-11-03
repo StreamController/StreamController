@@ -44,6 +44,9 @@ class ActionBase:
     def on_load(self):
         pass
 
+    def on_tick(self):
+        pass
+
     def get_custom_config_area(self) -> "Gtk.Widget":
         return None
     

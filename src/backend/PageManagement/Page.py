@@ -88,12 +88,39 @@ class Page(dict):
 
         return dictionary
 
-    def set_deck_controller(self, deck_controller):
+    def get_all_actions(self):
+        actions = []
         for key in self.action_objects:
-            for i, action in self.action_objects[key].items():
-                action.set_deck_controller(deck_controller)
-
-    def actions_send_load(self):
-        for key in self.action_objects:
-            for i, action in self.action_objects[key].items():
-                action.on_load()
+            for action in self.action_objects[key].values():
+                actions.append(action)
+        return actions
+    
+    def get_settings_for_action(self, action_object, coords: list = None):
+        if coords is None:
+            for key in self["keys"]:
+                for i, action in enumerate(self["keys"][key]["actions"]):
+                    if not key in self.action_objects:
+                        break
+                    if not i in self.action_objects[key]:
+                        break
+                    if self.action_objects[key][i] == action_object:
+                        return action["settings"]
+        else:
+            for i, action in enumerate(self["keys"][coords]["actions"]):
+                if not coords in self.action_objects:
+                    break
+                if not i in self.action_objects[coords]:
+                    break
+                if self.action_objects[coords][i] == action_object:
+                    return action["settings"]
+                
+    def set_settings_for_action(self, action_object, settings: dict, coords: list = None):
+        if coords is None:
+            for key in self["keys"]:
+                for i, action in enumerate(self["keys"][key]["actions"]):
+                    if self.action_objects[key][i] == action_object:
+                        self["keys"][key]["actions"][i]["settings"] = settings
+        else:
+            for i, action in enumerate(self["keys"][coords]["actions"]):
+                if self.action_objects[coords][i] == action_object:
+                    self["keys"][coords]["actions"][i]["settings"] = settings

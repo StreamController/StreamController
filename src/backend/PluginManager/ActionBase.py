@@ -18,7 +18,10 @@ class ActionBase:
         self.index = self.deck_controller.coords_to_index(self.coords)
 
         self.labels = {}
-        self.current_key = {}
+        self.current_key = {
+            "key": self.index,
+            "image": None,
+         }
 
         log.info(f"Loaded action {self.ACTION_NAME}")
         
@@ -96,7 +99,7 @@ class ActionBase:
         self.deck_controller.set_key(**self.current_key, labels=page_labels)
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
-                      font_family: str = "", font_size = 18):
+                      font_family: str = "", font_size = 18, reload: bool = True):
         if position not in ["top", "center", "bottom"]:
             raise ValueError("Position must be 'top', 'center' or 'bottom'")
         
@@ -113,19 +116,20 @@ class ActionBase:
             }
 
         # Reload key
-        self.set_key(reload=True)
+        if reload:
+            self.set_key(reload=True)
 
     def set_top_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
-                      font_family: str = "", font_size = 18):
-        self.set_label(text, "top", color, stroke_width, font_family, font_size)
+                      font_family: str = "", font_size = 18, reload: bool = True):
+        self.set_label(text, "top", color, stroke_width, font_family, font_size, reload)
     
     def set_center_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
-                      font_family: str = "", font_size = 18):
-        self.set_label(text, "center", color, stroke_width, font_family, font_size)
+                      font_family: str = "", font_size = 18, reload: bool = True):
+        self.set_label(text, "center", color, stroke_width, font_family, font_size, reload)
     
     def set_bottom_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
-                      font_family: str = "", font_size = 18):
-        self.set_label(text, "bottom", color, stroke_width, font_family, font_size)
+                      font_family: str = "", font_size = 18, reload: bool = True):
+        self.set_label(text, "bottom", color, stroke_width, font_family, font_size, reload)
 
     def get_config_rows(self) -> "list[Adw.PreferencesRow]":
         return []

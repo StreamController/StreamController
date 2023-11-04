@@ -75,6 +75,7 @@ class PlayPause(MediaAction):
             elif isinstance(thumbnail, list):
                 thumbnail = Image.open(thumbnail[0])
 
+
         image = Image.open(file[status])
         
         image = self.generate_image(background=thumbnail, icon=image, icon_margins=margins)
@@ -143,7 +144,62 @@ class Previous(MediaAction):
 
         image = self.generate_image(background=thumbnail, icon=image, icon_margins=new_margins)
 
-        self.set_key(image=image)     
+        self.set_key(image=image) 
+
+class Info(MediaAction):
+    ACTION_NAME = "Info"
+    def __init__(self, deck_controller, page, coords):
+        super().__init__(deck_controller=deck_controller, page=page, coords=coords)
+
+    def on_tick(self):
+        self.update_image()
+
+    def update_image(self):
+        title = self.PLUGIN_BASE.mc.title(self.get_player_name())[0]
+        artist = self.PLUGIN_BASE.mc.artist(self.get_player_name())[0]
+
+        title = self.shorten_label(title, 10)
+        artist = self.shorten_label(artist, 10)
+
+        self.set_top_label(title, font_size=12)
+        self.set_center_label(self.get_settings().get("seperator_text", "--"), font_size=12)
+        self.set_bottom_label(artist, font_size=12)
+
+        thumbnail = None
+        if self.get_settings().setdefault("show_thumbnail", True):
+            thumbnail = self.PLUGIN_BASE.mc.thumbnail(self.get_player_name())
+            if thumbnail == None:
+                thumbnail = Image.new("RGBA", (256, 256), (255, 255, 255, 0))
+            elif isinstance(thumbnail, list):
+                thumbnail = Image.open(thumbnail[0])
+        self.set_key(image=thumbnail)
+
+    def get_config_rows(self):
+        super_rows =  super().get_config_rows()
+        super_rows.pop(1) # Remove label toggle row
+        self.seperator_text_entry = Adw.EntryRow(title="Seperator Text:")
+
+        self.load_own_config_defaults()
+
+        self.seperator_text_entry.connect("notify::text", self.on_change_seperator_text)
+
+        return super_rows + [self.seperator_text_entry]
+    
+    def load_own_config_defaults(self):
+        settings = self.get_settings()
+        settings.setdefault("seperator_text", "--")
+        self.set_settings(settings)
+
+        # Update ui
+        self.seperator_text_entry.set_text(settings["seperator_text"])
+
+    def on_change_seperator_text(self, entry, *args):
+        settings = self.get_settings()
+        settings["seperator_text"] = entry.get_text()
+        self.set_settings(settings)
+
+        # Update image
+        self.set_center_label(self.get_settings().get("seperator_text", "--"), font_size=12)
 
 class MediaPlugin(PluginBase):
     PLUGIN_NAME = "MediaPlugin"
@@ -156,3 +212,4 @@ class MediaPlugin(PluginBase):
         self.add_action(PlayPause)
         self.add_action(Next)
         self.add_action(Previous)
+        self.add_action(Info)

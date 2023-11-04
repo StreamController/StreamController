@@ -111,6 +111,10 @@ class CustomConfigs(Gtk.Box):
             self.hide()
             return
         
+        if action.get_custom_config_area() is None:
+            self.hide()
+            return
+        
         # Clear
         self.clear()
 

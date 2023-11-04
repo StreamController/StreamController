@@ -153,7 +153,7 @@ class DeckController:
             bg = shrink_image(bg)
 
         # return image in native format
-        return PILHelper.to_native_format(self.deck, bg), alpha_bg, bg
+        return PILHelper.to_native_format(self.deck, bg), alpha_bg, alpha_bg
     
     @log.catch
     def set_image(self, key, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], add_background=True, bypass_task = False, shrink=False, update_ui=True):

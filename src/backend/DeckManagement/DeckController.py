@@ -391,17 +391,9 @@ class DeckController:
             # Clear all keys that are not used on this page
             for i in range(self.key_count()):
                 if i not in loaded_indices:
-                    clear_key(i)
+                    self.clear_key(i)
 
-        def clear_key(index):
-            from PIL import Image
-            self.key_images[index] = None
-            # if self.background_key_tiles[index] == None:
-                # image = Image.new("RGB", (72, 72), (0, 0, 0))
-            # Image = Image.new("RGB", (72, 72), (0, 0, 0))
-            # native = PILHelper.to_native_format(self.deck, Image)
-            # self.deck.set_key_image(index, native)
-            self.set_key(index, bypass_task=False, update_ui=True, add_background=True)
+        
         # time.sleep(2)
 
         def load_brightness(self):
@@ -514,6 +506,16 @@ class DeckController:
                     return
 
         self.set_key(index, media_path=media_path, labels=labels, loop=media_loop, fps=media_fps, bypass_task=True, update_ui=True)
+
+    def clear_key(self, index):
+        from PIL import Image
+        self.key_images[index] = None
+        # if self.background_key_tiles[index] == None:
+            # image = Image.new("RGB", (72, 72), (0, 0, 0))
+        # Image = Image.new("RGB", (72, 72), (0, 0, 0))
+        # native = PILHelper.to_native_format(self.deck, Image)
+        # self.deck.set_key_image(index, native)
+        self.set_key(index, bypass_task=False, update_ui=True, add_background=True)
 
     def get_deck_settings(self):
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())

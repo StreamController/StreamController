@@ -5,6 +5,7 @@ class ActionBase:
     # Change to match your action
     ACTION_NAME = ""
     PLUGIN_BASE = None
+    CONTROLS_KEY_IMAGE = False
 
     def __init__(self, deck_controller, page, coords):
         # Verify variables

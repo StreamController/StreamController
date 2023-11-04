@@ -105,3 +105,7 @@
   font-size: 40px;
   font-weight: bold;
 }
+.remove-action-button {
+  background-color: #C01C28;
+  min-height: 50px;
+}

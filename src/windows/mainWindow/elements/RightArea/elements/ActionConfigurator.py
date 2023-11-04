@@ -51,9 +51,13 @@ class ActionConfigurator(Gtk.Box):
         self.custom_configs = CustomConfigs(self, margin_top=6)
         self.main_box.append(self.custom_configs)
 
-    def load_for_action(self, action):
+        self.remove_button = RemoveButton(self, margin_top=12)
+        self.main_box.append(self.remove_button)
+
+    def load_for_action(self, action, index):
         self.config_group.load_for_action(action)
         self.custom_configs.load_for_action(action)
+        self.remove_button.load_for_action(action, index)
 
     def on_back_button_click(self, button):
         self.right_area.set_visible_child_name("key_editor")
@@ -129,3 +133,47 @@ class CustomConfigs(Gtk.Box):
     def clear(self):
         while self.main_box.get_first_child() is not None:
             self.main_box.remove(self.main_box.get_first_child())
+
+class RemoveButton(Gtk.Button):
+    def __init__(self, configurator, **kwargs):
+        super().__init__(**kwargs)
+        self.set_css_classes(["remove-action-button"])
+        self.configurator = configurator
+        self.set_label("Remove Action")
+        self.connect("clicked", self.on_remove_button_click)
+
+        self.action = None
+        self.index = None
+
+    def on_remove_button_click(self, button):
+        controller = self.configurator.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page = controller.active_page
+
+        # Swtich to main editor page
+        self.configurator.right_area.set_visible_child_name("key_editor")
+
+        # Remove from action_objects
+        del page.action_objects[self.action.page_coords][self.index]
+
+        # Remove from page json
+        page["keys"][self.action.page_coords]["actions"].pop(self.index)
+        page.save()
+
+        # Clear deck key
+        key_index = controller.coords_to_index(self.action.page_coords.split("x"))
+        controller.clear_key(key_index)
+
+        # Reload configurator
+        self.configurator.right_area.load_for_coords(self.action.page_coords.split("x"))
+
+        # Check whether we have to clear the key
+        clear = not page.has_key_a_image_controlling_action(self.action.page_coords)
+        if clear:
+            controller.clear_key(key_index)
+
+        # Destroy the actual action
+        del self.action
+
+    def load_for_action(self, action, index):
+        self.action = action
+        self.index = index

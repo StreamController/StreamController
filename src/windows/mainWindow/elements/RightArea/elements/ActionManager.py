@@ -82,8 +82,8 @@ class ActionExpanderRow(Adw.ExpanderRow):
         self.add_row(self.add_action_button)
         self.actions.append(self.add_action_button)
 
-    def add_action_row(self, action_name, action_category, action_object):
-        action_row = ActionRow(action_name, action_category, action_object, self.action_group.right_area, len(self.actions))
+    def add_action_row(self, action_name, action_category, action_object, index):
+        action_row = ActionRow(action_name, action_category, action_object, self.action_group.right_area, index)
         self.actions.append(action_row)
         self.add_row(action_row)
 
@@ -94,9 +94,9 @@ class ActionExpanderRow(Adw.ExpanderRow):
         controller = self.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         if page_coords not in controller.active_page.action_objects:
             return
-        for i in controller.active_page.action_objects[page_coords]:
-            action =  controller.active_page.action_objects[page_coords][i]
-            self.add_action_row(action.ACTION_NAME, action.PLUGIN_BASE.PLUGIN_NAME, action)
+        for i, key in enumerate(controller.active_page.action_objects[page_coords]):
+            action =  controller.active_page.action_objects[page_coords][key]
+            self.add_action_row(action.ACTION_NAME, action.PLUGIN_BASE.PLUGIN_NAME, action, i)
 
         # Place add button at the end
         if len(self.actions) > 0:
@@ -257,7 +257,7 @@ class ActionRow(Adw.PreferencesRow):
         return Gdk.DragAction.MOVE
 
     def on_click(self, button):
-        self.right_area.action_configurator.load_for_action(self.action_object)
+        self.right_area.action_configurator.load_for_action(self.action_object, self.index)
         self.right_area.show_action_configurator()
 
 

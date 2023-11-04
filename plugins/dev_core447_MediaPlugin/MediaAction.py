@@ -11,6 +11,7 @@ import os
 import math
 
 class MediaAction(ActionBase):
+    CONTROLS_KEY_IMAGE = True
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
 

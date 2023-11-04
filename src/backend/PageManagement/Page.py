@@ -139,6 +139,13 @@ class Page(dict):
                 if self.action_objects[coords][i] == action_object:
                     self["keys"][coords]["actions"][i]["settings"] = settings
 
+    def has_key_a_image_controlling_action(self, page_coords: str):
+        for key in self.action_objects:
+            for action in self.action_objects[key].values():
+                if action.CONTROLS_KEY_IMAGE:
+                    return True
+        return False
+
     def call_actions_ready(self):
         for action in self.get_all_actions():
             if hasattr(action, "on_ready"):

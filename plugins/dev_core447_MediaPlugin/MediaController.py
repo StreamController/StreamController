@@ -204,6 +204,22 @@ class MediaController:
                 titles.append(None)
 
         return self.compress_list(titles)
+    
+    def thumbnail(self, player_name: str = None) -> list[str]:
+        ifaces = self.get_matching_ifaces(player_name)
+        thumbnails = []
+        for iface in ifaces:
+            try:
+                properties = dbus.Interface(iface, 'org.freedesktop.DBus.Properties')
+                metadata = properties.Get('org.mpris.MediaPlayer2.Player', 'Metadata')
+                path = str(metadata['mpris:artUrl'])
+                path = path.replace("file://", "")
+                thumbnails.append(path)
+            except dbus.exceptions.DBusException as e:
+                print(e)
+                thumbnails.append(None)
+
+        return self.compress_list(thumbnails)
 
     def compress_list(self, list) -> list | bool:
         def all_equal(iterable):
@@ -214,5 +230,5 @@ class MediaController:
             return None
         
         if all_equal(list):
-            return list[0]
+            return [list[0]]
         return list

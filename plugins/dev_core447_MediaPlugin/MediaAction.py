@@ -8,6 +8,7 @@ from gi.repository import Gtk, Adw
 
 from PIL import Image, ImageEnhance
 import os
+import math
 
 class MediaAction(ActionBase):
     def __init__(self, deck_controller, page, coords):
@@ -32,13 +33,15 @@ class MediaAction(ActionBase):
 
 
         self.label_toggle = Adw.SwitchRow(title="Show name of playing song", subtitle="Show the name of the currently playing song")
+        self.thumbnail_toggle = Adw.SwitchRow(title="Show thumbnail of playing song", subtitle="Show the thumbnail of the currently playing song")
 
         self.load_config_defaults()
 
         self.player_selector.connect("notify::selected-item", self.on_change_player)
         self.label_toggle.connect("notify::active", self.on_toggle_label)
+        self.thumbnail_toggle.connect("notify::active", self.on_toggle_thumbnail)
 
-        return [self.player_selector, self.label_toggle]
+        return [self.player_selector, self.label_toggle, self.thumbnail_toggle]
 
     ## Custom methods
     def load_config_defaults(self):
@@ -47,9 +50,11 @@ class MediaAction(ActionBase):
             return
         
         show_label = settings.setdefault("show_label", True)
+        show_thumbnail = settings.setdefault("show_thumbnail", True)
 
         # Update ui
         self.label_toggle.set_active(show_label)
+        self.thumbnail_toggle.set_active(show_thumbnail)
         self.update_player_selector()
     
     def update_player_selector(self):
@@ -94,35 +99,6 @@ class MediaAction(ActionBase):
         if settings is not None:
             return settings.get("player_name")
 
-    def show_current_media_status(self):
-        if self.get_settings() == None:
-            # Page not yet fully loaded
-            return
-        status = self.PLUGIN_BASE.mc.status(self.get_player_name())
-
-        file = {
-            "Playing": os.path.join(self.PLUGIN_BASE.PATH, "assets", "pause.png"),
-            "Paused": os.path.join(self.PLUGIN_BASE.PATH, "assets", "play.png"),
-        }
-        if isinstance(status, list):
-            return
-        
-        margins = [5, 0, 5, 10] if self.show_title() else [0, 0, 0, 0]  
-        
-        if status == None:
-            if self.current_status == None:
-                self.current_status = "Playing"
-            file_path = file[self.current_status]
-            image = Image.open(file_path)
-            enhancer = ImageEnhance.Brightness(image)
-            image = enhancer.enhance(0.25)
-            self.set_key(image=image, margins=margins)
-            return
-
-        self.current_status = status
-
-        self.set_key(media_path = file[status], margins=margins)
-
     def show_title(self, reload_key = True) -> bool:
         if self.get_settings() == None:
             return
@@ -156,3 +132,23 @@ class MediaAction(ActionBase):
         settings = self.get_settings()
         settings["show_label"] = switch.get_active()
         self.set_settings(settings)
+
+    def on_toggle_thumbnail(self, switch, *args):
+        settings = self.get_settings()
+        settings["show_thumbnail"] = switch.get_active()
+        self.set_settings(settings)
+
+    def generate_image(self, icon:Image = None, icon_margins=[0, 0, 0, 0], background:Image=None):
+        if background is None:
+            background = Image.new("RGBA", (self.deck_controller.deck.key_image_format()["size"]), (0, 0, 0, 0))
+
+        if icon is not None:
+            # Resize
+            icon_height = math.floor(self.deck_controller.deck.key_image_format()["size"][1]-icon_margins[1]-icon_margins[3])
+            icon_width = math.floor(self.deck_controller.deck.key_image_format()["size"][0]-icon_margins[0]-icon_margins[2])
+
+            icon = icon.resize((icon_width, icon_height), Image.Resampling.LANCZOS)
+
+            background.paste(icon, (icon_margins[0], icon_margins[1]), icon)
+
+        return background

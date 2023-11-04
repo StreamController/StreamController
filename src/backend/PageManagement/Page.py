@@ -67,7 +67,6 @@ class Page(dict):
                 action_class = gl.plugin_manager.get_action_from_action_string(action["name"])
                 if action_class is None:
                     return
-                action_object = action_class(deck_controller=self.deck_controller, page=self, coords=key)
                 self.action_objects.setdefault(key, {})
 
                 old_object = self.action_objects[key].get(i)
@@ -75,6 +74,7 @@ class Page(dict):
                     # Action already exists - keep it
                     continue
                 
+                action_object = action_class(deck_controller=self.deck_controller, page=self, coords=key)
                 #TODO: Change this to a list because there is no reason for it to be a dict
                 self.action_objects[key][i] = action_object
 

@@ -37,6 +37,9 @@ class Page(dict):
         # self.load_actions()
             self.load_action_objects()
 
+            # Call on_ready for all actions
+            self.call_actions_ready()
+
     def save(self):
         without_objects = self.get_without_action_objects()
         # Make keys last element
@@ -132,3 +135,8 @@ class Page(dict):
             for i, action in enumerate(self["keys"][coords]["actions"]):
                 if self.action_objects[coords][i] == action_object:
                     self["keys"][coords]["actions"][i]["settings"] = settings
+
+    def call_actions_ready(self):
+        for action in self.get_all_actions():
+            if hasattr(action, "on_ready"):
+                action.on_ready()

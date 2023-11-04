@@ -52,7 +52,11 @@ class ActionBase:
     def on_tick(self):
         pass
 
-    def on_load(self):
+    def on_ready(self):
+        """
+        This method is called when the page is ready to process requests made by the actions.
+        Setting the default image in this method is recommended over setting it in the constructor.
+        """
         pass
 
     def on_tick(self):

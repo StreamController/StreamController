@@ -52,7 +52,7 @@ class PlayPause(MediaAction):
         if isinstance(status, list):
             return
         
-        margins = [10, 0, 0, 10] if self.show_title() else [0, 0, 0, 0]  
+        margins = [5, 0, 5, 10] if self.show_title() else [0, 0, 0, 0]  
         
         if status == None:
             if self.current_status == None:
@@ -98,7 +98,7 @@ class Next(MediaAction):
 
     def update_image(self):
         has_title = self.show_title()
-        new_margins = [10, 0, 0, 10] if has_title else [0, 0, 0, 0]
+        new_margins = [5, 0, 5, 10] if has_title else [0, 0, 0, 0]
 
         image = Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "next.png"))
         
@@ -130,7 +130,7 @@ class Previous(MediaAction):
 
     def update_image(self):
         has_title = self.show_title()
-        new_margins = [10, 0, 5, 10] if has_title else [0, 0, 0, 0]
+        new_margins = [5, 0, 5, 10] if has_title else [0, 0, 0, 0]
 
         image = Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "previous.png"))
         

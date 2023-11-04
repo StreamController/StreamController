@@ -149,6 +149,9 @@ class MediaAction(ActionBase):
 
             icon = icon.resize((icon_width, icon_height), Image.Resampling.LANCZOS)
 
-            background.paste(icon, (icon_margins[0], icon_margins[1]), icon)
+            x_pos = math.floor((background.width - icon_width)/2)
+            y_pos = math.floor((background.height - icon_height)/2)
+
+            background.paste(icon, (x_pos - icon_margins[1], y_pos - icon_margins[0]), icon)
 
         return background

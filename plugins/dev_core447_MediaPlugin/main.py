@@ -43,7 +43,10 @@ class PlayPause(MediaAction):
         if self.get_settings() == None:
             # Page not yet fully loaded
             return
-        status = self.PLUGIN_BASE.mc.status(self.get_player_name())[0]
+        status = self.PLUGIN_BASE.mc.status(self.get_player_name())
+        if status == None:
+            return
+        status = status[0]
 
         file = {
             "Playing": os.path.join(self.PLUGIN_BASE.PATH, "assets", "pause.png"),
@@ -103,6 +106,8 @@ class Next(MediaAction):
         image = Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "next.png"))
         
         thumbnail = None
+        if self.get_settings() is None:
+            return
         if self.get_settings().setdefault("show_thumbnail", True):
             thumbnail = self.PLUGIN_BASE.mc.thumbnail(self.get_player_name())
             if thumbnail == None:
@@ -135,6 +140,8 @@ class Previous(MediaAction):
         image = Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "previous.png"))
         
         thumbnail = None
+        if self.get_settings() is None:
+            return
         if self.get_settings().setdefault("show_thumbnail", True):
             thumbnail = self.PLUGIN_BASE.mc.thumbnail(self.get_player_name())
             if thumbnail == None:
@@ -155,11 +162,16 @@ class Info(MediaAction):
         self.update_image()
 
     def update_image(self):
-        title = self.PLUGIN_BASE.mc.title(self.get_player_name())[0]
-        artist = self.PLUGIN_BASE.mc.artist(self.get_player_name())[0]
+        title = self.PLUGIN_BASE.mc.title(self.get_player_name())
+        artist = self.PLUGIN_BASE.mc.artist(self.get_player_name())
 
-        title = self.shorten_label(title, 10)
-        artist = self.shorten_label(artist, 10)
+        if title is not None:
+            title = self.shorten_label(title[0], 10)
+        if title is not None:
+            artist = self.shorten_label(artist[0], 10)
+
+        if self.get_settings() is None:
+            return
 
         self.set_top_label(title, font_size=12)
         self.set_center_label(self.get_settings().get("seperator_text", "--"), font_size=12)

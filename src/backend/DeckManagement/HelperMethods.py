@@ -93,10 +93,8 @@ def get_sys_param_value(param_name: str) -> str:
             
 def get_sys_args_without_param(param_name: str) -> list:
     args = sys.argv
-    print(args)
     for i, param in enumerate(args):
         if param.startswith(param_name):
-            print(f"found at: {i}")
             if i < len(args):
                 args.pop(i + 1) # to include the value of the param
             args.pop(i)

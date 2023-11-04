@@ -81,7 +81,6 @@ class MediaAction(ActionBase):
             for i in range(self.player_model.get_n_items()):
                 item = self.player_model.get_item(i).get_string()
                 n = self.get_player_name()
-                print(f"item: {item}, n: {n}")
                 if self.player_model.get_item(i).get_string() == self.get_player_name():
                     position = i
                     break

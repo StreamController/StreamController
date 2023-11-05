@@ -21,9 +21,12 @@ from gi.repository import Gtk, Adw
 
 # Import Python modules
 from loguru import logger as log
+from fuzzywuzzy import fuzz, process
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import get_last_dir
+from src.GtkHelper import BetterExpander, BetterPreferencesGroup
+
 
 # Import globals
 import globals as gl
@@ -56,6 +59,10 @@ class ActionChooser(Gtk.Box):
         self.back_label = Gtk.Label(label="Go Back", margin_start=6, xalign=0, css_classes=["bold"])
         self.nav_box.append(self.back_label)
 
+        self.search_entry = Gtk.SearchEntry(margin_top=10, placeholder_text="Search for actions and plugins")
+        self.search_entry.connect("search-changed", self.on_search_changed)
+        self.main_box.append(self.search_entry)
+
         self.header = Gtk.Label(label="Choose An Action", xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
         self.main_box.append(self.header)
 
@@ -84,20 +91,85 @@ class ActionChooser(Gtk.Box):
     def on_back_button_click(self, button):
         self.right_area.set_visible_child_name("key_editor")
 
-class PluginGroup(Adw.PreferencesGroup):
+    def on_search_changed(self, search_entry):
+        self.plugin_group.search()
+
+class PluginGroup(BetterPreferencesGroup):
     def __init__(self, action_chooser, **kwargs):
         super().__init__(**kwargs)
         self.action_chooser = action_chooser
 
+        self.expander = []
+
         self.build()
+
+        self.set_sort_func(self.sort_func, None)
+        self.set_filter_func(self.filter_func, None)
 
     def build(self):
         for plugin_name, plugin_dir in gl.plugin_manager.get_plugins().items():
             expander = PluginExpander(self, plugin_name, plugin_dir)
             self.add(expander)
+            self.expander.append(expander)
+            expander = PluginExpander(self, "Custom name", plugin_dir)
+            self.add(expander)
+            self.expander.append(expander)
+
+    def search(self):
+        # Let the expanders search
+        for expander in self.expander:
+            expander.search()
+
+        self.invalidate_sort()
+        self.invalidate_filter()
+
+    def sort_func(self, expander1, expander2, user_data):
+        search_string = self.action_chooser.search_entry.get_text()
+
+        if search_string == "":
+            # sort alphabetically
+            if expander1.get_title() < expander2.get_title():
+                return -1
+            if expander1.get_title() > expander2.get_title():
+                return 1
+            return 0
+
+        highest_fuzz_1 = expander1.highest_fuzz_score
+        highest_fuzz_2 = expander2.highest_fuzz_score
+
+        title_fuzz_1 = fuzz.ratio(search_string.lower(), expander1.get_title().lower())
+        title_fuzz_2 = fuzz.ratio(search_string.lower(), expander2.get_title().lower())
+
+        # Sort by highest fuzzy score and title fuzz score
+        max_expander_1 = max(highest_fuzz_1, title_fuzz_1)
+        max_expander_2 = max(highest_fuzz_2, title_fuzz_2)
+
+        if max_expander_1 > max_expander_2:
+            return -1
+        elif max_expander_1 < max_expander_2:
+            return 1
+        
+        return 0
+    
+    def filter_func(self, expander, user_data):
+        MIN_ACTION_FUZZY_SCORE = 50
+        MIN_TITLE_FUZZY_SCORE = 40
+
+        search_string = self.action_chooser.search_entry.get_text()
+        if search_string == "":
+            # Show all
+            return True
+
+        if expander.highest_fuzz_score >= MIN_ACTION_FUZZY_SCORE:
+            return True
+        
+        title_fuzzy = fuzz.ratio(search_string.lower(), expander.get_title().lower())
+        if title_fuzzy >= MIN_TITLE_FUZZY_SCORE:
+            return True
+        return False
 
 
-class PluginExpander(Adw.ExpanderRow):
+class PluginExpander(BetterExpander):
     def __init__(self, plugin_group, plugin_name, plugin_dir, **kwargs):
         super().__init__(**kwargs)
         self.plugin_group = plugin_group
@@ -113,6 +185,65 @@ class PluginExpander(Adw.ExpanderRow):
         for action_name, action_class in plugin_dir["object"].ACTIONS.items():
             action_row = ActionRow(self, action_name, action_class)
             self.add_row(action_row)
+
+        self.highest_fuzz_score = 0
+
+        # Init sort func
+        self.set_sort_func(self.sort_func, None)
+        # Init filter func
+        self.set_filter_func(self.filter_func, None)
+
+    def search(self):
+        self.invalidate_filter()
+        self.invalidate_sort()
+
+    def sort_func(self, row1, row2, user_data):
+        # Returns -1 if row1 should be brefore row2, 0 if they are equal, and 1 otherwise
+        search_string = self.plugin_group.action_chooser.search_entry.get_text()
+
+        action1_label = row1.label.get_label()
+        action2_label = row2.label.get_label()
+
+        if search_string == "":
+            self.highest_fuzz_score = 0
+            # sort alphabetically
+            if action1_label < action2_label:
+                return -1
+            if action1_label > action2_label:
+                return 1
+            return 0
+
+        fuzz_score_1 = fuzz.ratio(search_string.lower(), action1_label.lower())
+        fuzz_score_2 = fuzz.ratio(search_string.lower(), action2_label.lower())
+
+        if fuzz_score_1 > self.highest_fuzz_score:
+            self.highest_fuzz_score = fuzz_score_1
+        if fuzz_score_2 > self.highest_fuzz_score:
+            self.highest_fuzz_score = fuzz_score_2
+
+        if fuzz_score_1 > fuzz_score_2:
+            return -1
+        if fuzz_score_1 < fuzz_score_2:
+            return 1
+        return 0
+    
+    def filter_func(self, row, user_data):
+        search_string = self.plugin_group.action_chooser.search_entry.get_text()
+
+        if search_string == "":
+            # Collapse all
+            self.set_expanded(False)
+            # Show all
+            return True
+
+        fuzz_score = fuzz.ratio(search_string.lower(), row.label.get_label().lower())
+
+        MIN_FUZZY_SCORE = 50
+        if fuzz_score >= MIN_FUZZY_SCORE:
+            # Expand
+            self.set_expanded(True)
+            return True
+        return False
 
 
 class ActionRow(Adw.PreferencesRow):

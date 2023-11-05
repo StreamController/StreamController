@@ -486,6 +486,10 @@ class DeckController:
         # Ignore key if it is out of bounds
         if index > self.key_count(): return
 
+        if self.is_key_image_controlled_by_actions((x, y)):
+            self.let_actions_update_key_labels((x, y))
+            return
+
         labels = None
         if "labels" in self.active_page["keys"][coords]:
             labels = self.active_page["keys"][coords]["labels"]
@@ -506,6 +510,26 @@ class DeckController:
                     return
 
         self.set_key(index, media_path=media_path, labels=labels, loop=media_loop, fps=media_fps, bypass_task=True, update_ui=True)
+
+    def is_key_image_controlled_by_actions(self, coords: list[int]):
+        x, y = coords
+        page_coords = f"{x}x{y}"
+        actions = self.active_page.get_all_actions_for_key(page_coords)
+        for action in actions:
+            if action.CONTROLS_KEY_IMAGE:
+                return True
+
+        return False
+    
+    def let_actions_update_key_labels(self, coords: list[int]):
+        x, y = coords
+        page_coords = f"{x}x{y}"
+        actions = self.active_page.get_all_actions_for_key(page_coords)
+        actions.reverse() # Start from last
+        for action in actions:
+            if action.CONTROLS_KEY_IMAGE:
+                action.on_labels_changed_in_ui()
+                return
 
     def clear_key(self, index):
         from PIL import Image

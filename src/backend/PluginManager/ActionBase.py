@@ -138,6 +138,9 @@ class ActionBase:
                       font_family: str = "", font_size = 18, reload: bool = True):
         self.set_label(text, "bottom", color, stroke_width, font_family, font_size, reload)
 
+    def on_labels_changed_in_ui(self):
+        self.set_key(reload=True)
+
     def get_config_rows(self) -> "list[Adw.PreferencesRow]":
         return []
     

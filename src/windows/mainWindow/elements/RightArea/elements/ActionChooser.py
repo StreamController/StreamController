@@ -111,9 +111,6 @@ class PluginGroup(BetterPreferencesGroup):
             expander = PluginExpander(self, plugin_name, plugin_dir)
             self.add(expander)
             self.expander.append(expander)
-            expander = PluginExpander(self, "Custom name", plugin_dir)
-            self.add(expander)
-            self.expander.append(expander)
 
     def search(self):
         # Let the expanders search

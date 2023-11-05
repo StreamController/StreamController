@@ -101,9 +101,9 @@ class MediaAction(ActionBase):
 
     def show_title(self, reload_key = True) -> bool:
         if self.get_settings() == None:
-            return
-        if self.get_settings().setdefault("show_label", True):
-            title = self.PLUGIN_BASE.mc.title(self.get_player_name())
+            return False
+        title = self.PLUGIN_BASE.mc.title(self.get_player_name())
+        if self.get_settings().setdefault("show_label", True) and title is not None:
             label = None
             if isinstance(title, list):
                 if len(title) > 0:

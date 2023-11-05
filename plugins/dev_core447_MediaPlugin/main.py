@@ -44,9 +44,8 @@ class PlayPause(MediaAction):
             # Page not yet fully loaded
             return
         status = self.PLUGIN_BASE.mc.status(self.get_player_name())
-        if status == None:
-            return
-        status = status[0]
+        if isinstance(status, list):
+            status = status[0]
 
         file = {
             "Playing": os.path.join(self.PLUGIN_BASE.PATH, "assets", "pause.png"),

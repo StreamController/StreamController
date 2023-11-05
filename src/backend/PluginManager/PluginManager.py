@@ -19,7 +19,7 @@ class PluginManager:
             importlib.import_module(f"plugins.{folder}.main")
 
             # Get all classes extending from PluginBase and generate objects for them
-            self.init_plugins()
+        self.init_plugins()
 
     def init_plugins(self):
         subclasses = PluginBase.__subclasses__()

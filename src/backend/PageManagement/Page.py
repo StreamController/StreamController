@@ -28,7 +28,6 @@ class Page(dict):
 
         # Dir that contains all actions this allows us to keep them at reload
         self.action_objects = {}
-        self.loaded = False
 
         self.load()
 
@@ -39,9 +38,7 @@ class Page(dict):
             self.load_action_objects()
 
             # Call on_ready for all actions
-            if not self.loaded:
-                self.call_actions_ready()
-        self.loaded = True
+            self.call_actions_ready()
 
     def save(self):
         without_objects = self.get_without_action_objects()
@@ -149,4 +146,6 @@ class Page(dict):
     def call_actions_ready(self):
         for action in self.get_all_actions():
             if hasattr(action, "on_ready"):
-                action.on_ready()
+                if not action.on_ready_called:
+                    action.on_ready()
+                    action.on_ready_called = True

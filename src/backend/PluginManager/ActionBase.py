@@ -18,6 +18,8 @@ class ActionBase:
         self.coords = coords.split("x")
         self.index = self.deck_controller.coords_to_index(self.coords)
 
+        self.on_ready_called = False
+
         self.labels = {}
         self.current_key = {
             "key": self.index,

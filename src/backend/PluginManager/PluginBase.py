@@ -4,16 +4,20 @@ import inspect
 from loguru import logger as log
 
 class PluginBase:
-    # Change this variables to match your plugin
-    PLUGIN_NAME = "" # This name will be shown in the ui
-    GITHUB_REPO = "" # Link to the github repo
-    ATTRIBUTIONS = {} # See documentation
-    VERSION = "1.0"
-
-    ## Internal variables - do not change
-    ACTIONS = {}
     plugins = {}
-    PLUGIN = None
+    
+    def __init_subclass__(cls, *args, **kwargs) -> None:
+        super().__init_subclass__(*args, **kwargs)
+        # Change this variables in the subclasses constuctor to match your plugin
+        cls.PLUGIN_NAME = ""
+        cls.GITHUB_REPO = ""
+        cls.ATTRIBUTIONS = {}
+        cls.VERSION = "1.0"
+
+        ## Internal variables - do not change
+        cls.ACTIONS = {}
+        cls.PLUGIN = None
+
     def __init__(self):
         # Verify variables
         if self.PLUGIN_NAME in ["", None]:

@@ -218,9 +218,9 @@ class Info(MediaAction):
         self.set_center_label(self.get_settings().get("seperator_text", "--"), font_size=12)
 
 class MediaPlugin(PluginBase):
-    PLUGIN_NAME = "MediaPlugin"
-    GITHUB_REPO = "https://github.com/your-github-repo"
     def __init__(self):
+        self.PLUGIN_NAME = "MediaPlugin"
+        self.GITHUB_REPO = "https://github.com/your-github-repo"
         super().__init__()
 
         self.mc = MediaController()

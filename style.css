@@ -23,6 +23,30 @@
   min-width:175px;	
 	min-height:175px;
 }
+.icon-selector-image-normal {
+  border-radius: 10px;
+  min-width:175px;
+  min-height:175px;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+.icon-selector-image-hover {
+  border-radius: 10px;
+  min-width:175px;
+  min-height:175px;
+  opacity: 0.25;
+  transition: opacity 0.2s;
+}
+.icon-selector-hint-label-visible {
+  font-size: 16px;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+.icon-selector-hint-label-hidden {
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
 .no-padding{
   padding-left: 0px;
   padding-right: 0px;

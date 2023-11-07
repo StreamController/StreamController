@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GLib, Gio, Pango, GdkPixbuf, GObject
+from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject
 
 # Import Python modules
 from loguru import logger as log
@@ -57,18 +57,19 @@ class AssetChooser(Gtk.GridView):
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.build()
+        self.init_dnd()
 
     def build(self):
-        list_store = Gio.ListStore()
+        self.list_store = Gio.ListStore()
         for asset in gl.asset_manager.get_all():
-            list_store.append(Asset(asset["name"], asset["internal-path"]))
+            self.list_store.append(Asset(asset["name"], asset["internal-path"]))
 
-        single_selection = Gtk.SingleSelection()
-        single_selection.set_model(list_store)
+        self.single_selection = Gtk.SingleSelection()
+        self.single_selection.set_model(self.list_store)
 
-        self.set_model(single_selection)
+        self.set_model(self.single_selection)
 
-        factory = Gtk.SignalListItemFactory()
+        self.factory = Gtk.SignalListItemFactory()
         def factory_setup(fact, item):
             item.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, width_request=250)
             item.set_child(item.box)
@@ -80,16 +81,42 @@ class AssetChooser(Gtk.GridView):
             item.box.append(item.label)
 
 
-        factory.connect("setup", factory_setup)
+        self.factory.connect("setup", factory_setup)
 
         def factory_bind(fact, item):
             item.label.set_text(item.get_item().name)
             item.picture.set_file(Gio.File.new_for_path(item.get_item().image_path))
 
-        factory.connect("bind", factory_bind)
+        self.factory.connect("bind", factory_bind)
 
-        self.set_factory(factory)
+        self.set_factory(self.factory)
 
+    def init_dnd(self):
+        dnd_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
+        dnd_target.connect("drop", self.on_dnd_drop)
+        dnd_target.connect("accept", self.on_dnd_accept)
+        self.add_controller(dnd_target)
+
+    def on_dnd_accept(self, drop, user_data):
+        return True
+    
+    def on_dnd_drop(self, drop_target, value, x, y):
+        paths = value.get_files()
+        print(len(paths))
+        for path in paths:
+            path = path.get_path()
+            if path == None:
+                continue
+            if not os.path.exists(path):
+                continue
+            if not os.path.splitext(path)[1] not in ["png", "jpg", "jpeg", "gif", "GIF", "MP4", "mp4", "mov", "MOV"]:
+                continue
+            asset_id = gl.asset_manager.add(asset_path=path)
+            if asset_id == None:
+                continue
+            asset = gl.asset_manager.get_by_id(asset_id)
+            self.list_store.append(Asset(asset["name"], asset["internal-path"]))
+        return True
 
 class Asset(GObject.Object):
     name = GObject.Property(type=str)

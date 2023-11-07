@@ -25,6 +25,9 @@ from loguru import logger as log
 # Import own modules
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 
+# Import globals
+import globals as gl
+
 class IconSelector(Gtk.Box):
     def __init__(self, right_area, **kwargs):
         super().__init__(**kwargs)
@@ -33,6 +36,7 @@ class IconSelector(Gtk.Box):
 
     def build(self):
         self.button = Gtk.Button(label="Select", css_classes=["icon-selector", "key-image", "no-padding"])
+        self.button.connect("clicked", self.on_click)
 
         self.button_fixed = Gtk.Fixed()
         self.button.set_child(self.button_fixed)
@@ -68,3 +72,7 @@ class IconSelector(Gtk.Box):
         self.label.set_css_classes(["icon-selector-hint-label-hidden"])
         self.image.remove_css_class("icon-selector-image-hover")
         self.image.add_css_class("icon-selector-image-normal")
+
+    def on_click(self, button):
+        asset_manager = gl.app.asset_manager
+        asset_manager.present()

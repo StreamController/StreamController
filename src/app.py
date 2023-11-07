@@ -23,6 +23,7 @@ from loguru import logger as log
 
 # Import own modules
 from src.windows.mainWindow.mainWindow import MainWindow
+from src.windows.AssetManager.AssetManager import AssetManager
 
 class App(Adw.Application):
     def __init__(self, deck_manager, **kwargs):
@@ -38,5 +39,8 @@ class App(Adw.Application):
         log.trace("running: on_activate")
         self.main_win = MainWindow(application=app, deck_manager=self.deck_manager)
         self.main_win.present()
+
+        self.asset_manager = AssetManager(application=app, main_window=self.main_win)
+        # self.asset_manager.present()
 
         log.success("Finished loading app")

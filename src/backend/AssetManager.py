@@ -127,3 +127,6 @@ class AssetManager(list):
         for asset in self:
             if asset["id"] == id:
                 return asset
+            
+    def get_all(self) -> list:
+        return self

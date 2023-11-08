@@ -93,6 +93,9 @@ class AssetManager(list):
                 file_name = f"{file_name}-{str(index).zfill(2)}"
             dst_path = os.path.join("Assets", "AssetManager", "Assets", file_name)
 
+        if asset_path == dst_path:
+            return asset_path
+
         shutil.copy(asset_path, dst_path)
         return dst_path
     

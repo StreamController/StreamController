@@ -496,9 +496,9 @@ class DeckController:
         media_path, media_loop, media_fps = None, None, None
         if "media" in self.active_page["keys"][coords]:
             if self.active_page["keys"][coords] not in ["", None]:
-                media_path = self.active_page["keys"][coords]["media"]["path"]
-                media_loop = self.active_page["keys"][coords]["media"]["loop"]
-                media_fps = self.active_page["keys"][coords]["media"]["fps"]
+                media_path = self.active_page["keys"][coords]["media"].get("path", None)
+                media_loop = self.active_page["keys"][coords]["media"].get("loop", False)
+                media_fps = self.active_page["keys"][coords]["media"].get("fps", 30)
 
         if only_labels:
             # Only update labels - used for live reloading of video keys

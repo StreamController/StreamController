@@ -78,7 +78,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
         self.media_selector_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"])
-        self.media_selector_button.connect("clicked", self.choose_with_file_dialog)
+        self.media_selector_button.connect("clicked", self.on_choose_image)
         self.media_selector.append(self.media_selector_button)
 
         self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text="Caching...", fraction=0, show_text=True, visible=False)
@@ -130,8 +130,11 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
 
-    def choose_with_file_dialog(self, button):
-        dialog = ChooseBackgroundDialog(self)
+    def on_choose_image(self, button):
+        self.settings_page.deck_page.deck_controller.active_page.setdefault("background", {})
+        media_path = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("path", None)
+
+        gl.app.let_user_select_asset(default_path=media_path, callback_func=self.set_deck_background)
 
     def set_thumbnail(self, file_path):
         if file_path == None:
@@ -143,6 +146,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_button.set_child(self.media_selector_image)
 
     def set_deck_background(self, file_path):
+        self.set_thumbnail(file_path)
         # Add background to assets
         asset_id = gl.asset_manager.add(file_path)
 

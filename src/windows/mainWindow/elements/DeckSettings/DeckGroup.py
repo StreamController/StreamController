@@ -138,7 +138,7 @@ class Screensaver(Adw.PreferencesRow):
         self.config_box.append(self.media_selector_box)
 
         self.media_selector_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"])
-        self.media_selector_button.connect("clicked", self.choose_with_file_dialog)
+        self.media_selector_button.connect("clicked", self.on_choose_image)
         self.media_selector_box.append(self.media_selector_button)
 
         self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
@@ -208,6 +208,8 @@ class Screensaver(Adw.PreferencesRow):
         if not active_page["screensaver"]["overwrite"]:
             self.settings_page.deck_controller.screen_saver.set_enable(state)
 
+        self.config_box.set_visible(state)
+
     def on_toggle_loop(self, toggle_switch, state):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         config["screensaver"]["loop"] = state
@@ -257,32 +259,16 @@ class Screensaver(Adw.PreferencesRow):
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 
-    def choose_with_file_dialog(self, button):
-        dialog = ChooseScreensaverDialog(self)
+    def on_choose_image(self, button):
+        settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        settings.setdefault("screensaver", {})
+        media_path = settings["screensaver"].get("path", None)
 
-class ChooseScreensaverDialog(Gtk.FileDialog):
-    def __init__(self, screensaver_row: Screensaver):
-        super().__init__(title="Select Background",
-                         accept_label="Select")
-        self.screensaver_row = screensaver_row
-        self.open(callback=self.callback)
+        gl.app.let_user_select_asset(default_path=media_path, callback_func=self.update_image)
 
-    def callback(self, dialog, result):
-        try:
-            selected_file = self.open_finish(result)
-            file_path = selected_file.get_path()
-        except GLib.Error as err:
-            log.error(err)
-            return
-        
-        # Add image as asset to asset manager
-        asset_id = gl.asset_manager.add(file_path)
-        asset_path = gl.asset_manager.get_by_id(asset_id)["internal-path"]
-        
-        self.screensaver_row.set_thumbnail(asset_path)
-        config = gl.settings_manager.get_deck_settings(self.screensaver_row.deck_serial_number)
-        config["screensaver"]["path"] = asset_path
-        # Save
-        gl.settings_manager.save_deck_settings(self.screensaver_row.deck_serial_number, config)
-        # Update
-        self.screensaver_row.settings_page.deck_controller.screen_saver.media_path = asset_path
+    def update_image(self, image_path):
+        self.set_thumbnail(image_path)
+        settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        settings.setdefault("screensaver", {})
+        settings["screensaver"]["path"] = image_path
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)

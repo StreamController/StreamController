@@ -34,6 +34,7 @@ class RightArea(Gtk.Stack):
     def __init__(self, main_window, **kwargs):
         super().__init__(hexpand=True, **kwargs)
         self.main_window = main_window
+        self.active_coords: tuple = None
         self.build()
 
     def build(self):
@@ -104,6 +105,8 @@ class RightArea(Gtk.Stack):
 class RightAreaKeyEditor(Gtk.Box):
     def __init__(self, right_area, **kwargs):
         super().__init__(**kwargs)
+        self.right_area:RightArea = right_area
+
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
         self.append(self.scrolled_window)
 
@@ -120,6 +123,7 @@ class RightAreaKeyEditor(Gtk.Box):
         self.main_box.append(self.action_editor)
 
     def load_for_coords(self, coords):
+        self.right_area.active_coords = coords
         # self.icon_selector.load_for_coords(coords) #TODO
         self.label_editor.load_for_coords(coords)
         self.action_editor.load_for_coords(coords)

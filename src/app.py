@@ -44,3 +44,6 @@ class App(Adw.Application):
         # self.asset_manager.present()
 
         log.success("Finished loading app")
+
+    def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
+        self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)

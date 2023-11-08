@@ -74,5 +74,44 @@ class IconSelector(Gtk.Box):
         self.image.add_css_class("icon-selector-image-normal")
 
     def on_click(self, button):
-        asset_manager = gl.app.asset_manager
-        asset_manager.present()
+        media_path = self.get_media_path()
+        gl.app.let_user_select_asset(default_path = media_path, callback_func=self.set_media_callback)
+
+    def get_media_path(self):
+        active_page:dict = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        active_coords:tuple = self.right_area.active_coords
+        page_coords = f"{active_coords[0]}x{active_coords[1]}"
+
+        if "keys" not in active_page:
+            return None
+        if page_coords not in active_page["keys"]:
+            return None
+        if "media" not in active_page["keys"][page_coords]:
+            return None
+        if "path" not in active_page["keys"][page_coords]["media"]:
+            return None
+        return active_page["keys"][page_coords]["media"]["path"]
+    
+    def set_media_path(self, path):
+        active_page:dict = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        active_coords:tuple = self.right_area.active_coords
+        page_coords = f"{active_coords[0]}x{active_coords[1]}"
+
+        active_page.setdefault("keys", {})
+        active_page["keys"].setdefault(page_coords, {})
+        active_page["keys"][page_coords].setdefault("media", {
+            "path": None,
+            "loop": False,
+            "fps": 30
+        })
+        active_page["keys"][page_coords]["media"]["path"] = path
+
+        # Save page
+        active_page.save()
+
+    def set_media_callback(self, path):
+        self.set_media_path(path)
+        # Reload key
+        controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page_coords = f"{self.right_area.active_coords[0]}x{self.right_area.active_coords[1]}"
+        controller.load_key(page_coords)

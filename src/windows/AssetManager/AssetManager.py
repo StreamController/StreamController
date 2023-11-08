@@ -52,10 +52,21 @@ class AssetManager(Gtk.ApplicationWindow):
         self.asset_chooser = AssetChooser(self)
         self.main_box.append(self.asset_chooser)
 
+    def show_for_path(self, path, callback_func=None, *callback_args, **callback_kwargs):
+        if not callable(callback_func):
+            log.error("callback_func is not callable")
+        self.asset_chooser.show_for_path(path, callback_func, *callback_args, **callback_kwargs)
 
 class AssetChooser(Gtk.GridView):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, asset_manager, *args, **kwargs):
         super().__init__()
+
+        self.callback_func = None
+        self.callback_args = ()
+        self.callback_kwargs = {}
+
+        self.asset_manager:AssetManager = asset_manager
+
         self.build()
         self.init_dnd()
 
@@ -64,8 +75,10 @@ class AssetChooser(Gtk.GridView):
         for asset in gl.asset_manager.get_all():
             self.list_store.append(Asset(asset["name"], asset["internal-path"]))
 
-        self.single_selection = Gtk.SingleSelection()
+        self.single_selection = Gtk.SingleSelection(can_unselect=True, autoselect=False)
+        self.single_selection.unselect_all()
         self.single_selection.set_model(self.list_store)
+        self.single_selection.connect("selection-changed", self.on_selected_item_changed)
 
         self.set_model(self.single_selection)
 
@@ -90,6 +103,40 @@ class AssetChooser(Gtk.GridView):
         self.factory.connect("bind", factory_bind)
 
         self.set_factory(self.factory)
+
+    def on_selected_item_changed(self, selection, position, n_items):
+        selected_item = selection.get_selected_item()
+        if selected_item == None:
+            return
+        print(f"Selected item: {selected_item.image_path}")
+        # Call callback
+        if self.callback_func == None:
+            return
+        if not callable(self.callback_func):
+            return
+        
+        self.asset_manager.hide()
+        self.callback_func(selected_item.image_path, *self.callback_args, **self.callback_kwargs)
+
+    def show_for_path(self, path, callback_func=None, *callback_args, **callback_kwargs):    
+        self.asset_manager.present()
+        if not callable(callback_func):
+            log.error("callback_func is not callable")
+
+        # Setup callback
+        self.callback_func = callback_func
+        self.callback_args = callback_args
+        self.callback_kwargs = callback_kwargs
+        
+        if path == None:
+            # Deselect all
+            self.single_selection.unselect_all()
+            return
+
+        for i, item in enumerate(self.list_store):
+            if item.image_path == path:
+                self.single_selection.select_item(i, True)
+                return
 
     def init_dnd(self):
         dnd_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)

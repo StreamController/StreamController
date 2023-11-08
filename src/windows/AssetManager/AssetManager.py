@@ -21,6 +21,9 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject
 
 # Import Python modules
 from loguru import logger as log
+from decord import VideoReader
+from decord import cpu
+from PIL import Image
 import os
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -28,6 +31,9 @@ if TYPE_CHECKING:
 
 # Import globals
 import globals as gl
+
+# Import own modules
+from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 
 class AssetManager(Gtk.ApplicationWindow):
     def __init__(self, main_window: "MainWindow", *args, **kwargs):
@@ -98,7 +104,18 @@ class AssetChooser(Gtk.GridView):
 
         def factory_bind(fact, item):
             item.label.set_text(item.get_item().name)
-            item.picture.set_file(Gio.File.new_for_path(item.get_item().image_path))
+
+            splitext = os.path.splitext(item.get_item().image_path)
+            if len(splitext) < 2:
+                return
+            media_ext = splitext[1][1:].lower() # Remove the dot from the extension
+            if media_ext in gl.image_extensions:
+                item.picture.set_file(Gio.File.new_for_path(item.get_item().image_path))
+            elif media_ext in gl.video_extensions:
+                first_frame = get_first_frame(item.get_item().image_path)
+                first_frame = Image.fromarray(first_frame.asnumpy())
+                pixbuf = image2pixbuf(first_frame)
+                item.picture.set_pixbuf(pixbuf)
 
         self.factory.connect("bind", factory_bind)
 

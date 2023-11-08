@@ -6,3 +6,5 @@ settings_manager = None #SettingsManager
 app = None #App
 deck_manager = None #DeckManager
 plugin_manager = None #PluginManager
+video_extensions = ["mp4", "mov", "MP4", "MOV", "mkv", "MKV", "webm", "WEBM", "gif", "GIF"]
+image_extensions = ["png", "jpg", "jpeg"]

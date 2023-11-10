@@ -133,3 +133,6 @@
   background-color: #C01C28;
   min-height: 50px;
 }
+.blue-toggle-button:checked{
+  background-color: #78AEED;
+}

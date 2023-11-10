@@ -20,7 +20,7 @@ class SettingsManager:
     def load_settings_from_file(self, file_path: str) -> dict:
         if not os.path.exists(file_path):
             log.warning(f"Settings file {file_path} not found.")
-            return
+            return {}
         with open(file_path) as f:
             return json.load(f)
         

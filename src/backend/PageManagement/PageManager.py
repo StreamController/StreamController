@@ -30,6 +30,8 @@ class PageManager:
         pages = []
         for page in os.listdir("pages"):
             if os.path.splitext(page)[1] == ".json":
+                if remove_extension:
+                    page = os.path.splitext(page)[0]
                 pages.append(page)
         return pages
     

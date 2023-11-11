@@ -76,7 +76,7 @@ class ChangePage(ActionBase):
         self.set_settings(settings)
 
     def on_key_down(self):
-        page = gl.page_manager.create_page_for_name(self.get_settings()["selected_page"], deck_controller = self.deck_controller)
+        page = gl.page_manager.get_page(self.get_settings()["selected_page"], deck_controller = self.deck_controller)
         self.deck_controller.load_page(page)
 
 

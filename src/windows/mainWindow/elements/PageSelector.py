@@ -77,5 +77,5 @@ class PageSelector(Gtk.Box):
 
     def on_change_page(self, drop_down, *args):
         active_controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        page = gl.page_manager.create_page_for_name(self.pages_model.get_item(drop_down.get_selected()).get_string(), deck_controller = active_controller)
+        page = gl.page_manager.get_page(self.pages_model.get_item(drop_down.get_selected()).get_string(), deck_controller = active_controller)
         active_controller.load_page(page)

@@ -50,6 +50,8 @@ class ToggleRecord(ActionBase):
         self.show_for_state(state)
 
     def show_current_rec_status(self, new_paused = False):
+        if not self.PLUGIN_BASE.obs.connected:
+            return
         active = self.PLUGIN_BASE.obs.get_record_status().datain["outputActive"]
         paused = self.PLUGIN_BASE.obs.get_record_status().datain["outputPaused"]
         if paused:
@@ -87,6 +89,8 @@ class ToggleRecord(ActionBase):
         self.show_current_rec_status()
 
     def show_rec_time(self):
+        if not self.PLUGIN_BASE.obs.connected:
+            return
         status = self.PLUGIN_BASE.obs.get_record_status()
         active = status.datain["outputActive"]
         if not active:
@@ -125,6 +129,8 @@ class RecPlayPause(ActionBase):
         self.show_for_state(state)
 
     def show_current_rec_status(self, new_paused = False):
+        if not self.PLUGIN_BASE.obs.connected:
+            return
         active = self.PLUGIN_BASE.obs.get_record_status().datain["outputActive"]
         paused = self.PLUGIN_BASE.obs.get_record_status().datain["outputPaused"]
         if active and not paused:
@@ -154,6 +160,8 @@ class RecPlayPause(ActionBase):
         self.set_key(media_path=os.path.join(self.PLUGIN_BASE.PATH, "assets", image))
 
     def on_key_down(self):
+        if not self.PLUGIN_BASE.obs.connected:
+            return
         self.PLUGIN_BASE.obs.toggle_record_pause()
 
     def on_tick(self):

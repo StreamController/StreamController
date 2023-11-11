@@ -77,6 +77,8 @@ class PlayPause(MediaAction):
             elif isinstance(thumbnail, list):
                 if thumbnail[0] == None:
                     return
+                if not os.path.exists(thumbnail[0]):
+                    return
                 thumbnail = Image.open(thumbnail[0])
 
 
@@ -185,6 +187,8 @@ class Info(MediaAction):
                 thumbnail = Image.new("RGBA", (256, 256), (255, 255, 255, 0))
             elif isinstance(thumbnail, list):
                 if thumbnail[0] == None:
+                    return
+                if not os.path.exists(thumbnail[0]):
                     return
                 thumbnail = Image.open(thumbnail[0])
         self.set_key(image=thumbnail)

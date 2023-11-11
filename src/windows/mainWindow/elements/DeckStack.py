@@ -38,7 +38,7 @@ class DeckStack(Gtk.Stack):
 
     def on_switch(self, widget, *args):
         # Update page selector
-        self.main_window.header_bar.page_selector.update()
+        self.main_window.header_bar.page_selector.update_selected()
 
     def build(self):
         pass
@@ -66,3 +66,4 @@ class DeckStack(Gtk.Stack):
             page = DeckStackChild(self, self.deck_manager.deck_controller[i])
             self.add_titled(page, deck_numbers[i], deck_names[i])
             # self.set_visible_child_name(deck_ids[i])
+            self.get_visible_child

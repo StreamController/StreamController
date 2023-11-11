@@ -59,3 +59,14 @@ class PageSelector(Gtk.Box):
     def clear_model(self):
         for i in range(self.pages_model.get_n_items()):
             self.pages_model.remove(0)
+
+    def set_selected(self, page_name):
+        for i in range(self.pages_model.get_n_items()):
+            if self.pages_model.get_item(i).get_string() == page_name:
+                self.drop_down.set_selected(i)
+                return
+            
+    def update_selected(self):
+        active_controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page_name = active_controller.active_page.get_name()
+        self.set_selected(page_name)

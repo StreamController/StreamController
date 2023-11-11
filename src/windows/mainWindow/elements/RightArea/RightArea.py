@@ -101,6 +101,9 @@ class RightArea(Gtk.Stack):
             self.set_visible_child(self.key_editor)
             self.set_transition_duration(200)
 
+    def reload(self):
+        self.key_editor.load_for_coords(self.active_coords)
+
 
 class RightAreaKeyEditor(Gtk.Box):
     def __init__(self, right_area, **kwargs):

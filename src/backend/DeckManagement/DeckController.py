@@ -357,6 +357,10 @@ class DeckController:
         if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
             gl.app.main_win.header_bar.page_selector.update_selected()
 
+        # Update right area
+        if recursive_hasattr(gl, "app.main_win.rightArea"):
+            gl.app.main_win.rightArea.reload()
+
         def load_background(self):
             def get_from_deck_settings(self):
                 if self.deck_settings["background"]["enable"] == False:

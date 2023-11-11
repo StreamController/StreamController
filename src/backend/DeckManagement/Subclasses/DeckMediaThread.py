@@ -71,7 +71,10 @@ class DeckMediaThread(threading.Thread):
                 self.media_handler.deck_controller.set_ui_key(key_index, ui_image)
             
             self.media_handler.deck_controller.deck.set_key_image(key_index, native_image)
-            self.media_handler.image_tasks.pop(i)
+            # Catch error if request list has been changed
+            if i < len(self.media_handler.image_tasks):
+                # Remove task
+                self.media_handler.image_tasks.pop(i)
             
     @log.catch
     def handle_videos(self, video_tasks):

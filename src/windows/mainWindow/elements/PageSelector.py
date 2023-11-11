@@ -22,6 +22,9 @@ from gi.repository import Gtk, Adw, Gio, GObject
 from loguru import logger as log
 import os
 
+# Import globas
+import globals as gl
+
 class PageSelector(Gtk.Box):
     def __init__(self, main_window, page_manager):
         self.main_window = main_window
@@ -44,6 +47,7 @@ class PageSelector(Gtk.Box):
         self.drop_down.set_model(self.pages_model)
         self.update()
         self.drop_down.set_tooltip_text("Select page for active deck")
+        self.drop_down.connect("notify::selected", self.on_change_page)
         self.right_area.append(self.drop_down)
 
         # Settings button
@@ -70,3 +74,8 @@ class PageSelector(Gtk.Box):
         active_controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page_name = active_controller.active_page.get_name()
         self.set_selected(page_name)
+
+    def on_change_page(self, drop_down, *args):
+        active_controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page = gl.page_manager.create_page_for_name(self.pages_model.get_item(drop_down.get_selected()).get_string(), deck_controller = active_controller)
+        active_controller.load_page(page)

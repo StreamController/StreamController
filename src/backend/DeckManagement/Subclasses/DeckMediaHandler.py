@@ -18,6 +18,7 @@ from loguru import logger as log
 from PIL import Image
 import threading
 import os
+import time
 import uuid
 
 # Import own modules
@@ -99,3 +100,6 @@ class DeckMediaHandler():
         self.image_tasks = []
         self.video_tasks = {}
         self.background_video_task = {}
+
+        while self.thread.working:
+            time.sleep(1/30)

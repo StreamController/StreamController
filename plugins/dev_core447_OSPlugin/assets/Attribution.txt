@@ -1,12 +1,10 @@
-All images in this folder are from: https://iconduck.com/sets/font-awesome-icons
-They're licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) that can be found under: https://creativecommons.org/licenses/by/4.0/
-A copy of the license can be found in the "CC BY 4.0.txt" file
+Images:
+    - terminal:
+        - https://iconduck.com/icons/22458/terminal
+        - License: CC BY 4.0
+        - License Link: https://creativecommons.org/licenses/by/4.0/
 
-I made the following changes to the images:
-    - terminall.png:
-        - I inverted the colors to make the icon white
-        - I changed the Color mode from indexed to RGB
-        - I added a transparent border around the image
-
-Links to the images:
-    - terminal: https://iconduck.com/icons/22458/terminal
+    - web:
+        - fonts.google.com
+        - License: Apache License 2.0
+        - License Link: https://www.apache.org/licenses/LICENSE-2.0

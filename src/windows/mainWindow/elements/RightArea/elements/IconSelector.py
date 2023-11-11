@@ -122,6 +122,10 @@ class IconSelector(Gtk.Box):
         # Save page
         active_page.save()
 
+        # Update remove button visibility
+        if path not in [None, ""]:
+            self.remove_button.set_visible(True)
+
     def set_media_callback(self, path):
         self.set_media_path(path)
         # Reload key

@@ -4,6 +4,12 @@ import json
 
 from loguru import logger as log
 
+# Import gtk modules
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, Gdk
+
 class PluginBase:
     plugins = {}
     
@@ -53,3 +59,12 @@ class PluginBase:
     def set_settings(self, settings):
         with open(os.path.join(self.PATH, "settings.json"), "w") as f:
             json.dump(settings, f, indent=4)
+
+    def add_css_stylesheet(self, path):
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_path(path)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )

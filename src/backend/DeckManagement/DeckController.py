@@ -142,9 +142,10 @@ class DeckController:
                     draw.text((alpha_bg.width / 2, alpha_bg.height - 3), text=labels[label]["text"], font=font, anchor="ms",
                               fill=tuple(labels[label]["color"]), stroke_width=labels[label]["stroke-width"])
                     
-
+        empty_background = True
         if add_background and self.background_key_tiles[key] != None:
             bg = self.background_key_tiles[key].copy() # Load background tile
+            empty_background = False
         else:
             bg = Image.new("RGB", (72, 72), (0, 0, 0)) # Create black background
         bg.paste(alpha_bg, (0, 0), alpha_bg)
@@ -152,8 +153,10 @@ class DeckController:
         if shrink:
             bg = shrink_image(bg)
 
+        ui_image = alpha_bg if empty_background else bg
+
         # return image in native format
-        return PILHelper.to_native_format(self.deck, bg), alpha_bg, alpha_bg
+        return PILHelper.to_native_format(self.deck, bg), alpha_bg, ui_image
     
     @log.catch
     def set_image(self, key, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], add_background=True, bypass_task = False, shrink=False, update_ui=True):
@@ -340,8 +343,16 @@ class DeckController:
         log.info(f"Loading page {page.keys()}")
         self.deck_settings = self.get_deck_settings()
 
+        if page != self.active_page:
+            # Stop all key image tasks
+            self.media_handler.stop_all_tasks()
+
         # Set active page
         self.active_page = page
+
+        # Update ui
+        if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
+            gl.app.main_win.header_bar.page_selector.update_selected()
 
         def load_background(self):
             def get_from_deck_settings(self):

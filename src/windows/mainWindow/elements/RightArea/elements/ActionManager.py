@@ -303,3 +303,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         # Reload ui
         self.expander.load_for_coords(self.expander.active_coords)
+
+        # Reload key
+        controller = self.expander.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller.load_key(page_coords)

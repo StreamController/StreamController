@@ -149,3 +149,6 @@ class Page(dict):
                 if not action.on_ready_called:
                     action.on_ready()
                     action.on_ready_called = True
+
+    def get_name(self):
+        return os.path.splitext(os.path.basename(self.json_path))[0]

@@ -73,6 +73,7 @@ class ToggleRecord(ActionBase):
         elif state == 1:
             self.show_rec_time()
             image = "record_active.png"
+            print("active")
         elif state == 2:
             self.show_rec_time()
             image = "record_resume.png"
@@ -83,7 +84,7 @@ class ToggleRecord(ActionBase):
         self.PLUGIN_BASE.obs.toggle_record()
 
     def on_tick(self):
-        self.show_rec_time()
+        self.show_current_rec_status()
 
     def show_rec_time(self):
         status = self.PLUGIN_BASE.obs.get_record_status()
@@ -155,6 +156,8 @@ class RecPlayPause(ActionBase):
     def on_key_down(self):
         self.PLUGIN_BASE.obs.toggle_record_pause()
 
+    def on_tick(self):
+        self.show_current_rec_status()
 
 class OBS(PluginBase):
     def __init__(self):

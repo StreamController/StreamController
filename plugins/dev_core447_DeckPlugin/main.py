@@ -90,6 +90,75 @@ class GoToSleep(ActionBase):
     def on_key_down(self):
         self.deck_controller.screen_saver.show()
 
+class ChangeBrightness(ActionBase):
+    ACTION_NAME = "Change Brightness"
+    def __init__(self, deck_controller, page, coords):
+        super().__init__(deck_controller=deck_controller, page=page, coords=coords)
+
+        self.set_default_image(Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "light.png")))
+
+    def get_config_rows(self) -> list:
+        self.brightness_row = Adw.PreferencesRow(title="Brightness:")
+        self.brighness_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
+        self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.brightness_box.append(Gtk.Label(label="Brightness", margin_bottom=3))
+        self.brightness_box.append(self.brighness_scale)
+
+        self.load_config_defaults()
+
+        self.brighness_scale.connect("value-changed", self.on_change_brightness)
+
+        return [self.brightness_row]
+    
+    def load_config_defaults(self):
+        settings = self.get_settings()
+        brightness = settings.setdefault("brightness", self.deck_controller.current_brightness)
+        self.brighness_scale.set_value(brightness)
+        self.set_settings(settings)
+
+    def on_change_brightness(self, scale, *args):
+        settings = self.get_settings()
+        settings["brightness"] = scale.get_value()
+        self.set_settings(settings)
+
+    def on_key_down(self):
+        if self.PLUGIN_BASE.original_brightness is None:
+            self.PLUGIN_BASE.original_brightness = self.deck_controller.current_brightness
+        self.deck_controller.set_brightness(self.get_settings().get("brightness", self.deck_controller.current_brightness))
+
+class RevertBrightness(ActionBase):
+    ACTION_NAME = "Revert Brightness To Default"
+    def __init__(self, deck_controller, page, coords):
+        super().__init__(deck_controller=deck_controller, page=page, coords=coords)
+
+        self.set_default_image(Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "light.png")))
+
+    def on_key_down(self):
+        self.deck_controller.set_brightness(self.PLUGIN_BASE.original_brightness)
+
+class IncreaseBrightness(ActionBase):
+    ACTION_NAME = "Increase Brightness"
+    def __init__(self, deck_controller, page, coords):
+        super().__init__(deck_controller=deck_controller, page=page, coords=coords)
+
+        self.set_default_image(Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "increase_brightness.png")))
+
+    def on_key_down(self):
+        if self.PLUGIN_BASE.original_brightness is None:
+            self.PLUGIN_BASE.original_brightness = self.deck_controller.current_brightness
+        self.deck_controller.set_brightness(self.deck_controller.current_brightness + 10)
+
+class DecreaseBrightness(ActionBase):
+    ACTION_NAME = "Decrease Brightness"
+    def __init__(self, deck_controller, page, coords):
+        super().__init__(deck_controller=deck_controller, page=page, coords=coords)
+
+        self.set_default_image(Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "decrease_brightness.png")))
+
+    def on_key_down(self):
+        if self.PLUGIN_BASE.original_brightness is None:
+            self.PLUGIN_BASE.original_brightness = self.deck_controller.current_brightness
+        self.deck_controller.set_brightness(self.deck_controller.current_brightness - 10)
 
 class DeckPlugin(PluginBase):
     def __init__(self):
@@ -97,5 +166,11 @@ class DeckPlugin(PluginBase):
         self.GITHUB_REPO = "https://github.com/your-github-repo"
         super().__init__()
 
+        self.original_brightness = None
+
         self.add_action(ChangePage)
         self.add_action(GoToSleep)
+        self.add_action(ChangeBrightness)
+        self.add_action(RevertBrightness)
+        self.add_action(IncreaseBrightness)
+        self.add_action(DecreaseBrightness)

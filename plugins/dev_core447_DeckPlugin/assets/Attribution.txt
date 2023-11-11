@@ -1,0 +1,6 @@
+All images in this folder are compositions of icons from Google's Material icons
+which can be accessed under: https://fonts.google.com/icons.
+
+They are licensed under the Apache 2.0 license
+which can be found under: https://www.apache.org/licenses/LICENSE-2.0.
+A copy of this license can be found in the "Apache 2.0.txt" file

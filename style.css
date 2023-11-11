@@ -101,6 +101,12 @@
 .remove-button {
   background-color: #C01C28;
 }
+.remove-button:hover {
+  opacity: 0.8;
+}
+.remove-button:active {
+  opacity: 0.6;
+}
 .no-rounded-corners {
   border-radius: 0px;
 }
@@ -135,4 +141,9 @@
 }
 .blue-toggle-button:checked{
   background-color: #78AEED;
+}
+.icon-selector-remove-button{
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 20px;
 }

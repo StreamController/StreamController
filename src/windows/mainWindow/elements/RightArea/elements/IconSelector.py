@@ -35,8 +35,13 @@ class IconSelector(Gtk.Box):
         self.build()
 
     def build(self):
-        self.button = Gtk.Button(label="Select", css_classes=["icon-selector", "key-image", "no-padding"])
+        self.overlay = Gtk.Overlay()
+        self.append(self.overlay)
+
+        self.button = Gtk.Button(label="Select", css_classes=["icon-selector", "key-image", "no-padding"], overflow=Gtk.Overflow.HIDDEN)
         self.button.connect("clicked", self.on_click)
+        # self.append(self.button)
+        self.overlay.set_child(self.button)
 
         self.button_fixed = Gtk.Fixed()
         self.button.set_child(self.button_fixed)
@@ -57,7 +62,15 @@ class IconSelector(Gtk.Box):
 
         self.button.add_controller(motion_controller)
 
-        self.append(self.button)
+        # Remove button overlay
+        self.remove_button = Gtk.Button(icon_name="delete", valign=Gtk.Align.END, halign=Gtk.Align.END,
+                                        css_classes=["icon-selector-remove-button", "no-padding", "remove-button"],
+                                        visible=False)
+        self.remove_button.connect("clicked", self.remove_media)
+        self.overlay.add_overlay(self.remove_button)
+        self.overlay.set_clip_overlay(self.remove_button, True)
+
+
 
     def set_image(self, image):
         pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
@@ -115,3 +128,16 @@ class IconSelector(Gtk.Box):
         controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page_coords = f"{self.right_area.active_coords[0]}x{self.right_area.active_coords[1]}"
         controller.load_key(page_coords)
+
+    def remove_media(self, *args):
+        self.set_media_path(None)
+        # Reload key
+        controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page_coords = f"{self.right_area.active_coords[0]}x{self.right_area.active_coords[1]}"
+        controller.load_key(page_coords)
+
+    def has_image_to_remove(self):
+        return self.get_media_path() is not None
+    
+    def load_for_coords(self, coords):
+        self.remove_button.set_visible(self.has_image_to_remove())

@@ -124,6 +124,6 @@ class RightAreaKeyEditor(Gtk.Box):
 
     def load_for_coords(self, coords):
         self.right_area.active_coords = coords
-        # self.icon_selector.load_for_coords(coords) #TODO
+        self.icon_selector.load_for_coords(coords)
         self.label_editor.load_for_coords(coords)
         self.action_editor.load_for_coords(coords)

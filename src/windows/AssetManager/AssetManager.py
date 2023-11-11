@@ -131,11 +131,10 @@ class AssetChooser(Gtk.GridView):
 
     def build(self):
         self.list_store = Gio.ListStore()
-        for i in range(2):
-            for asset in gl.asset_manager.get_all():
-                    asset = Asset(asset["name"], asset["internal-path"])
-                    self.list_store.append(asset)
-                    self.all_assets.append(asset)
+        for asset in gl.asset_manager.get_all():
+                asset = Asset(asset["name"], asset["internal-path"])
+                self.list_store.append(asset)
+                self.all_assets.append(asset)
 
         self.single_selection = Gtk.SingleSelection(can_unselect=True, autoselect=False)
         self.single_selection.unselect_all()

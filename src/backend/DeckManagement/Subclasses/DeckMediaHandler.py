@@ -94,3 +94,8 @@ class DeckMediaHandler():
 
         # Generate unique id to track processing progress
         return id
+    
+    def stop_all_tasks(self):
+        self.image_tasks = []
+        self.video_tasks = {}
+        self.background_video_task = {}

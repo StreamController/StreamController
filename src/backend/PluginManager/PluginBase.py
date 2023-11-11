@@ -1,5 +1,6 @@
 import os
 import inspect
+import json
 
 from loguru import logger as log
 
@@ -42,3 +43,13 @@ class PluginBase:
     def add_action(self, action):
         action.PLUGIN_BASE = self
         self.ACTIONS[action.ACTION_NAME] = action
+
+    def get_settings(self):
+        if os.path.exists(os.path.join(self.PATH, "settings.json")):
+            with open(os.path.join(self.PATH, "settings.json"), "r") as f:
+                return json.load(f)
+        return {}
+    
+    def set_settings(self, settings):
+        with open(os.path.join(self.PATH, "settings.json"), "w") as f:
+            json.dump(settings, f, indent=4)

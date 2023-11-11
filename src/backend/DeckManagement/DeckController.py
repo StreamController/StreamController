@@ -566,7 +566,10 @@ class DeckController:
                     break
 
         if not has_controlling_action:
-            if len(actions) == 1:
+            if len(actions) == 0:
+                # No actions - show nothing
+                return None
+            elif len(actions) == 1:
                 # Only one action - use it's default image
                 if hasattr(actions[0], "default_image"):
                     return actions[0].default_image

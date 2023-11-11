@@ -5,7 +5,7 @@ from src.backend.PluginManager.PluginBase import PluginBase
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Gdk
 
 import sys
 import os
@@ -18,8 +18,9 @@ from obswebsocket import events
 sys.path.append(os.path.dirname(__file__))
 
 from OBSController import OBSController
+from OBSActionBase import OBSActionBase
 
-class ToggleRecord(ActionBase):
+class ToggleRecord(OBSActionBase):
     ACTION_NAME = "Toggle Record"
     CONTROLS_KEY_IMAGE = True
     def __init__(self, deck_controller, page, coords):
@@ -28,7 +29,8 @@ class ToggleRecord(ActionBase):
     def on_ready(self):
         # Connect to obs if not connected
         if not self.PLUGIN_BASE.obs.connected:
-            self.PLUGIN_BASE.obs.connect_to(host="localhost", port=4444, timeout=3, legacy=False)
+            # self.PLUGIN_BASE.obs.connect_to(host="localhost", port=4444, timeout=3, legacy=False)
+            self.reconnect_obs()
 
         # Show current rec status
         self.show_current_rec_status()
@@ -53,8 +55,12 @@ class ToggleRecord(ActionBase):
         if not self.PLUGIN_BASE.obs.connected:
             self.set_key(media_path=os.path.join(self.PLUGIN_BASE.PATH, "assets", "error.png"))
             return
-        active = self.PLUGIN_BASE.obs.get_record_status().datain["outputActive"]
-        paused = self.PLUGIN_BASE.obs.get_record_status().datain["outputPaused"]
+        status = self.PLUGIN_BASE.obs.get_record_status()
+        if status is None:
+            self.set_key(media_path=os.path.join(self.PLUGIN_BASE.PATH, "assets", "error.png"))
+            return
+        active = status.datain["outputActive"]
+        paused = status.datain["outputPaused"]
         if paused:
             self.show_for_state(2)
         elif active:
@@ -96,13 +102,16 @@ class ToggleRecord(ActionBase):
             self.set_key(media_path=os.path.join(self.PLUGIN_BASE.PATH, "assets", "error.png"))
             return
         status = self.PLUGIN_BASE.obs.get_record_status()
+        if status is None:
+            self.set_key(media_path=os.path.join(self.PLUGIN_BASE.PATH, "assets", "error.png"))
+            return
         active = status.datain["outputActive"]
         if not active:
             self.set_bottom_label(None)
             return
         self.set_bottom_label(status.datain["outputTimecode"][:-4], font_size=16)
 
-class RecPlayPause(ActionBase):
+class RecPlayPause(OBSActionBase):
     ACTION_NAME = "Recording Play/Pause"
     CONTROLS_KEY_IMAGE = True
     def __init__(self, deck_controller, page, coords):
@@ -111,7 +120,8 @@ class RecPlayPause(ActionBase):
     def on_ready(self):
         # Connect to obs if not connected
         if not self.PLUGIN_BASE.obs.connected:
-            self.PLUGIN_BASE.obs.connect_to(host="localhost", port=4444, timeout=3, legacy=False)
+            # self.PLUGIN_BASE.obs.connect_to(host="localhost", port=4444, timeout=3, legacy=False)
+            self.reconnect_obs()
 
         # Show current rec status
         self.show_current_rec_status()
@@ -136,8 +146,12 @@ class RecPlayPause(ActionBase):
         if not self.PLUGIN_BASE.obs.connected:
             self.set_key(media_path=os.path.join(self.PLUGIN_BASE.PATH, "assets", "error.png"))
             return
-        active = self.PLUGIN_BASE.obs.get_record_status().datain["outputActive"]
-        paused = self.PLUGIN_BASE.obs.get_record_status().datain["outputPaused"]
+        status = self.PLUGIN_BASE.obs.get_record_status()
+        if status is None:
+            self.set_key(media_path=os.path.join(self.PLUGIN_BASE.PATH, "assets", "error.png"))
+            return
+        active = status.datain["outputActive"]
+        paused = status.datain["outputPaused"]
         if active and not paused:
             self.show_for_state(1)
         elif paused:
@@ -182,3 +196,6 @@ class OBS(PluginBase):
 
         self.add_action(ToggleRecord)
         self.add_action(RecPlayPause)
+
+        # Load custom css
+        self.add_css_stylesheet(os.path.join(self.PATH, "style.css"))

@@ -1,6 +1,7 @@
 from obswebsocket import obsws, requests
 import obswebsocket
-from loguru import logger as log
+from loguru import logger as log 
+import websocket
 
 class OBSController(obsws):
     def __init__(self):
@@ -20,33 +21,52 @@ class OBSController(obsws):
             super().__init__(host=host, port=port, timeout=timeout, legacy=legacy, on_connect=self.on_connect, on_disconnect=self.on_disconnect, authreconnect=True, **kwargs)
             self.event_obs = obsws(host=host, port=port, timeout=timeout, legacy=legacy, on_connect=self.on_connect, on_disconnect=self.on_disconnect, authreconnect=True, **kwargs)
             self.connect()
+            log.info("Successfully connected to OBS")
         except obswebsocket.exceptions.ConnectionFailure as e:
-            log.error(f"Failed to connect to OBS with legacy: {legacy}, trying with legacy: {not legacy}")
-            super().__init__(host=host, port=port, timeout=timeout, legacy=not legacy, on_connect=self.on_connect, on_disconnect=self.on_disconnect, authreconnect=True, **kwargs)
-            self.event_obs = obsws(host=host, port=port, timeout=timeout, legacy=not legacy, on_connect=self.on_connect, on_disconnect=self.on_disconnect, authreconnect=True, **kwargs)
-            self.connect()
+            try:
+                log.error(f"Failed to connect to OBS with legacy: {legacy}, trying with legacy: {not legacy}")
+                super().__init__(host=host, port=port, timeout=timeout, legacy=not legacy, on_connect=self.on_connect, on_disconnect=self.on_disconnect, authreconnect=True, **kwargs)
+                self.event_obs = obsws(host=host, port=port, timeout=timeout, legacy=not legacy, on_connect=self.on_connect, on_disconnect=self.on_disconnect, authreconnect=True, **kwargs)
+                self.connect()
+                log.info("Successfully connected to OBS")
+            except obswebsocket.exceptions.ConnectionFailure as e:
+                log.error(f"Failed to connect to OBS: {e}")
 
-        log.info("Successfully connected to OBS")
 
     def get_scenes(self) -> list:
-        scenes = self.call(requests.GetSceneList()).getScenes()
-        return [scene["sceneName"] for scene in scenes]
+        try:
+            scenes = self.call(requests.GetSceneList()).getScenes()
+            return [scene["sceneName"] for scene in scenes]
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def switch_to_scene(self, scene:str) -> None:
-        self.call(requests.SetCurrentProgramScene(sceneName=scene))
+        try:
+            self.call(requests.SetCurrentProgramScene(sceneName=scene))
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
 
     ## Stream methods
     def start_stream(self) -> None:
-        self.call(requests.StartStream())
+        try:
+            self.call(requests.StartStream())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
 
     def stop_stream(self) -> None:
-        self.call(requests.StopStream())
+        try:
+            self.call(requests.StopStream())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
 
     def toggle_stream(self):
         """
         outputActive: bool -> The new state of the stream
         """
-        self.call(requests.ToggleStream())
+        try:
+            self.call(requests.ToggleStream())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
 
     def get_stream_status(self) -> bool:
         """
@@ -59,27 +79,45 @@ class OBSController(obsws):
         outputSkippedFrames: int -> The number of skipped frames
         outputTotalFrames: int -> The total number of delivered frames
         """
-        return self.call(requests.GetStreamStatus())
+        try:
+            return self.call(requests.GetStreamStatus())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def send_stream_caption(self, caption:str):
-        self.call(requests.SendStreamCaption(caption=caption))
+        try:
+            self.call(requests.SendStreamCaption(caption=caption))
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
 
     ## Record methods
     def start_record(self) -> None:
-        return self.call(requests.StartRecord())
+        try:
+            return self.call(requests.StartRecord())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def pause_record(self):
-        return self.call(requests.PauseRecord())
+        try:
+            return self.call(requests.PauseRecord())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def resume_record(self):
-        return self.call(requests.ResumeRecord())
+        try:
+            return self.call(requests.ResumeRecord())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
 
     def stop_recording(self) -> None:
         """
         outputPath: str -> The path to the saved recording
         """
-        return self.call(requests.StopRecord())
+        try:
+            return self.call(requests.StopRecord())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def get_record_status(self):
         """
@@ -89,13 +127,22 @@ class OBSController(obsws):
         outputDuration: int -> The duration of the recording in milliseconds
         outputBytes: int -> The number of bytes written to the recording
         """
-        return self.call(requests.GetRecordStatus())
+        try:
+            return self.call(requests.GetRecordStatus())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def toggle_record(self):
-        return self.call(requests.ToggleRecord())
+        try:
+            return self.call(requests.ToggleRecord())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def toggle_record_pause(self):
-        return self.call(requests.ToggleRecordPause())
+        try:
+            return self.call(requests.ToggleRecordPause())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
 
     ## UI methods
@@ -103,7 +150,10 @@ class OBSController(obsws):
         """
         studioModeEnabled: bool -> Whether studio mode is enabled
         """
-        return self.call(requests.GetStudioModeEnabled())
+        try:
+            return self.call(requests.GetStudioModeEnabled())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def set_studio_mode_enabled(self, enabled:bool):
         return self.call(requests.SetStudioModeEnabled(studioModeEnabled=enabled))
@@ -111,20 +161,32 @@ class OBSController(obsws):
     
     ## Replay Buffer
     def start_replay_buffer(self):
-        return self.call(requests.StartReplayBuffer())
+        try:
+            return self.call(requests.StartReplayBuffer())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def stop_replay_buffer(self):
-        return self.call(requests.StopReplayBuffer())
+        try:
+            return self.call(requests.StopReplayBuffer())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def get_replay_buffer_status(self):
         """
         outputActive: bool -> Whether replay buffer is active
         """
-        return self.call(requests.GetReplayBufferStatus())
+        try:
+            return self.call(requests.GetReplayBufferStatus())
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)
     
     def register(self, *args, **kwargs):
         """
         Pass all event register calls to the event_obs.
         This avoid crashes if a request is made in an event
         """
-        self.event_obs.register(*args, **kwargs)
+        try:
+            self.event_obs.register(*args, **kwargs)
+        except (obswebsocket.exceptions.MessageTimeout,  websocket._exceptions.WebSocketConnectionClosedException, KeyError) as e:
+            log.error(e)

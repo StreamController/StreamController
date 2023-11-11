@@ -24,8 +24,7 @@ class RunCommand(ActionBase):
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
 
-    def on_ready(self):
-        self.set_key(media_path=os.path.join(self.PLUGIN_BASE.PATH, "assets", "terminal.png"))
+        self.set_default_image(Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "terminal.png")))
 
     def on_key_down(self):
         command = self.get_settings().get("command", None)
@@ -65,9 +64,7 @@ class OpenInBrowser(ActionBase):
 
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
-
-    def on_ready(self):
-        self.set_key(media_path=os.path.join(self.PLUGIN_BASE.PATH, "assets", "web.png"))
+        self.set_default_image(Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "web.png")))
 
     def on_key_down(self):
         url = self.get_settings().get("url", None)

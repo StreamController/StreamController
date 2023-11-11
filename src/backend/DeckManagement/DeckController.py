@@ -486,10 +486,6 @@ class DeckController:
         # Ignore key if it is out of bounds
         if index > self.key_count(): return
 
-        if self.is_key_image_controlled_by_actions((x, y)):
-            self.let_actions_update_key_labels((x, y))
-            return
-
         labels = None
         if "labels" in self.active_page["keys"][coords]:
             labels = self.active_page["keys"][coords]["labels"]
@@ -508,8 +504,13 @@ class DeckController:
                     # Media is video
                     self.media_handler.video_tasks[index]["labels"] = labels
                     return
+        
+        action_default_image = self.get_actions_default_image((x, y))
+        action_default_labels = self.get_actions_default_labels((x, y))
+        if self.get_labels_empty(labels):
+            labels = action_default_labels
 
-        self.set_key(index, media_path=media_path, labels=labels, loop=media_loop, fps=media_fps, bypass_task=True, update_ui=True)
+        self.set_key(index, image=action_default_image, media_path=media_path, labels=labels, loop=media_loop, fps=media_fps, bypass_task=True, update_ui=True)
 
     def is_key_image_controlled_by_actions(self, coords: list[int]):
         x, y = coords
@@ -530,6 +531,43 @@ class DeckController:
             if action.CONTROLS_KEY_IMAGE:
                 action.on_labels_changed_in_ui()
                 return
+            
+    def get_actions_default_image(self, coords: list[int]):
+        x, y = coords
+        page_coords = f"{x}x{y}"
+        actions = self.active_page.get_all_actions_for_key(page_coords)
+        actions.reverse() # Start from last
+        
+        default_image = None
+        for action in actions:
+            if hasattr(action, "default_image"):
+                default_image = action.default_image
+                if default_image is not None:
+                    break
+        return default_image
+    
+    def get_actions_default_labels(self, coords: list[int]):
+        x, y = coords
+        page_coords = f"{x}x{y}"
+        actions = self.active_page.get_all_actions_for_key(page_coords)
+        actions.reverse() # Start from last
+        
+        default_labels = {}
+        for action in actions:
+            if hasattr(action, "default_labels"):
+                default_labels = action.default_labels
+                if default_labels not in ["", None, {}]:
+                    break
+        return default_labels
+    
+    def get_labels_empty(self, labels:dict):
+        for position in labels:
+            if "text" not in labels[position]:
+                continue
+            if labels[position]["text"] not in ["", None]:
+                return False
+        return True
+
 
     def clear_key(self, index):
         from PIL import Image

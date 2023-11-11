@@ -6,6 +6,8 @@ class ActionBase:
     ACTION_NAME = ""
     PLUGIN_BASE = None
     CONTROLS_KEY_IMAGE = False
+    KEY_IMAGE_CAN_BE_OVERWRITTEN = True
+    LABELS_CAN_BE_OVERWRITTEN = [True, True, True]
 
     def __init__(self, deck_controller, page, coords):
         # Verify variables
@@ -25,6 +27,9 @@ class ActionBase:
             "key": self.index,
             "image": None,
          }
+        
+        self.default_image = None
+        self.default_labels = {}
 
         log.info(f"Loaded action {self.ACTION_NAME}")
         
@@ -65,9 +70,30 @@ class ActionBase:
     def on_tick(self):
         pass
 
-    def get_custom_config_area(self) -> "Gtk.Widget":
-        return None
-    
+    def set_default_image(self, image: "PIL.Image"):
+        self.default_image = image
+
+    def set_default_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0, 
+                          font_family: str = "", font_size = 18):
+        log.warning("set_default_label is not yet supported, please use fixed or no lables for now")
+        """
+        Not yet implemented, changes made through this function will be ignored
+        """
+        if position not in ["top", "center", "bottom"]:
+            raise ValueError("Position must be 'top', 'center' or 'bottom'")
+        
+        if text == None:
+            if position in self.default_labels:
+                del self.default_labels[position]
+        else:
+            self.default_labels[position] = {
+                "text": text,
+                "color": color,
+                "stroke-width": stroke_width,
+                "font-family": font_family,
+                "font-size": font_size
+            }
+
     def set_key(self, image = None, media_path=None, margins=[0, 0, 0, 0],
                 add_background=True, loop=True, fps=30, bypass_task=False, update_ui=True, reload: bool = False):
         """

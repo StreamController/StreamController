@@ -129,7 +129,7 @@ class ActionBase:
         page_labels = copy(self.page["keys"][self.page_coords]["labels"])
         page_labels.update(self.labels)
 
-        self.deck_controller.set_key(**self.current_key, labels=page_labels)
+        self.deck_controller.set_key(**self.current_key, labels=page_labels, shrink=self.deck_controller.deck.key_states()[self.index])
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18, reload: bool = True):

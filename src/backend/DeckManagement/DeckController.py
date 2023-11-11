@@ -176,15 +176,15 @@ class DeckController:
 
         self.key_images[key] = pillow_image
 
-    def set_key(self, key, image=None, media_path=None, labels=None, margins=[0, 0, 0, 0], add_background=True, loop=True, fps=30, bypass_task=False, update_ui=True):
+    def set_key(self, key, image=None, media_path=None, labels=None, margins=[0, 0, 0, 0], add_background=True, loop=True, fps=30, bypass_task=False, update_ui=True, shrink=False):
         if media_path in [None, ""]:
             # Load image
-            self.set_image(key, image=image, labels=labels, image_margins=margins, add_background=add_background, update_ui=update_ui, bypass_task=bypass_task)
+            self.set_image(key, image=image, labels=labels, image_margins=margins, add_background=add_background, update_ui=update_ui, bypass_task=bypass_task, shrink=shrink)
         else:
             extention = os.path.splitext(media_path)[1]
             if extention in [".png", ".jpg", ".jpeg"]:
                 # Load image
-                self.set_image(key, media_path, labels=labels, image_margins=margins, add_background=add_background, bypass_task=bypass_task, update_ui=update_ui)
+                self.set_image(key, media_path, labels=labels, image_margins=margins, add_background=add_background, bypass_task=bypass_task, update_ui=update_ui, shrink=shrink)
                 pass
             else:
                 # Load video

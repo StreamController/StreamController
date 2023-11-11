@@ -159,17 +159,13 @@ class RemoveButton(Gtk.Button):
         page["keys"][self.action.page_coords]["actions"].pop(self.index)
         page.save()
 
-        # Clear deck key
-        key_index = controller.coords_to_index(self.action.page_coords.split("x"))
-        controller.clear_key(key_index)
-
         # Reload configurator
         self.configurator.right_area.load_for_coords(self.action.page_coords.split("x"))
 
-        # Check whether we have to clear the key
-        clear = not page.has_key_an_image_controlling_action(self.action.page_coords)
-        if clear:
-            controller.clear_key(key_index)
+        # Check whether we have to reload the key
+        load = not page.has_key_an_image_controlling_action(self.action.page_coords)
+        if load:
+            controller.load_key(self.action.page_coords)
 
         # Destroy the actual action
         del self.action

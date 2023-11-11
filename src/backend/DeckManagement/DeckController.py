@@ -550,15 +550,24 @@ class DeckController:
         x, y = coords
         page_coords = f"{x}x{y}"
         actions = self.active_page.get_all_actions_for_key(page_coords)
-        actions.reverse() # Start from last
-        
-        default_image = None
+        # actions.reverse() # Start from last
+
+        has_controlling_action = False
         for action in actions:
-            if hasattr(action, "default_image"):
-                default_image = action.default_image
-                if default_image is not None:
+            if hasattr(action, "CONTROLS_KEY_IMAGE"):
+                if action.CONTROLS_KEY_IMAGE:
+                    has_controlling_action = action
                     break
-        return default_image
+
+        if not has_controlling_action:
+            if len(actions) == 1:
+                # Only one action - use it's default image
+                if hasattr(actions[0], "default_image"):
+                    return actions[0].default_image
+            else:
+                # Multiple actions - use the multi_action icon
+                return Image.open("Assets/images/multi_action.png")
+        return None
     
     def get_actions_default_labels(self, coords: list[int]):
         x, y = coords

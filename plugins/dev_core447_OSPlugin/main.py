@@ -20,7 +20,7 @@ sys.path.append(os.path.dirname(__file__))
 
 class RunCommand(ActionBase):
     ACTION_NAME = "Run Command"
-    CONTROLS_KEY_IMAGE = True
+    CONTROLS_KEY_IMAGE = False
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)
 
@@ -60,7 +60,7 @@ class RunCommand(ActionBase):
 
 class OpenInBrowser(ActionBase):
     ACTION_NAME = "Open In Browser"
-    CONTROLS_KEY_IMAGE = True
+    CONTROLS_KEY_IMAGE = False
 
     def __init__(self, deck_controller, page, coords):
         super().__init__(deck_controller=deck_controller, page=page, coords=coords)

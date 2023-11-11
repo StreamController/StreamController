@@ -80,6 +80,17 @@ class ChangePage(ActionBase):
         self.deck_controller.load_page(page)
 
 
+class GoToSleep(ActionBase):
+    ACTION_NAME = "Go To Sleep"
+    def __init__(self, deck_controller, page, coords):
+        super().__init__(deck_controller=deck_controller, page=page, coords=coords)
+
+        self.set_default_image(Image.open(os.path.join(self.PLUGIN_BASE.PATH, "assets", "sleep.png")))
+
+    def on_key_down(self):
+        self.deck_controller.screen_saver.show()
+
+
 class DeckPlugin(PluginBase):
     def __init__(self):
         self.PLUGIN_NAME = "Deck"
@@ -87,3 +98,4 @@ class DeckPlugin(PluginBase):
         super().__init__()
 
         self.add_action(ChangePage)
+        self.add_action(GoToSleep)

@@ -266,10 +266,13 @@ class DeckController:
             # time.sleep(2)
 
     def key_change_callback(self, deck, key, state):
-        self.screen_saver.on_key_change()
+        old_showing = copy(self.screen_saver.showing)
+        if state:
+            # Only on key down this allows plugins to control screen saver without directly deactivating it
+            self.screen_saver.on_key_change()
 
         # Ignore key press if screen saver is active
-        if self.screen_saver.showing:
+        if old_showing:
             return
 
         self.handle_shrink_animation(deck, key, state)

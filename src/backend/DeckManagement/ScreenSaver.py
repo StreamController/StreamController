@@ -63,6 +63,11 @@ class ScreenSaver:
         self.show()
 
     def show(self):
+        # Stop timer - in case this method is called manually
+        self.timer.cancel()
+        # Set showing = True - in case this method is called manually
+        self.showing = True
+
         self.deck_controller.media_handler.thread.pause_work = True
         self.original_background_video_task = self.deck_controller.media_handler.background_video_task
         self.original_background_key_tiles = self.deck_controller.background_key_tiles

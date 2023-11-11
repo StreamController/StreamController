@@ -501,6 +501,8 @@ class DeckController:
         if index > self.key_count(): return
 
         labels = None
+        if coords not in self.active_page["keys"]:
+            return
         if "labels" in self.active_page["keys"][coords]:
             labels = self.active_page["keys"][coords]["labels"]
         media_path, media_loop, media_fps = None, None, None

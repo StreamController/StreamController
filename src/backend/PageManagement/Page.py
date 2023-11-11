@@ -136,6 +136,7 @@ class Page(dict):
                 if self.action_objects[coords][i] == action_object:
                     self["keys"][coords]["actions"][i]["settings"] = settings
 
+    def has_key_an_image_controlling_action(self, page_coords: str):
         if page_coords not in self.action_objects:
             return False
         for action in self.action_objects[page_coords].values():

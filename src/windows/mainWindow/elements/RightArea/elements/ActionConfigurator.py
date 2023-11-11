@@ -167,7 +167,7 @@ class RemoveButton(Gtk.Button):
         self.configurator.right_area.load_for_coords(self.action.page_coords.split("x"))
 
         # Check whether we have to clear the key
-        clear = not page.has_key_a_image_controlling_action(self.action.page_coords)
+        clear = not page.has_key_an_image_controlling_action(self.action.page_coords)
         if clear:
             controller.clear_key(key_index)
 

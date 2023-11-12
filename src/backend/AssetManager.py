@@ -96,7 +96,10 @@ class AssetManager(list):
         if asset_path == dst_path:
             return asset_path
 
-        shutil.copy(asset_path, dst_path)
+        try:
+            shutil.copy(asset_path, dst_path)
+        except shutil.SameFileError:
+            log.warning(f"File already exists: {dst_path}")
         return dst_path
     
     def create_unique_uuid(self) -> str:

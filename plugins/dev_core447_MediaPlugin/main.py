@@ -27,7 +27,10 @@ class PlayPause(MediaAction):
         self.update_image()
         
     def on_key_down(self):
-        status = self.PLUGIN_BASE.mc.status(self.get_player_name())[0]
+        status = self.PLUGIN_BASE.mc.status(self.get_player_name())
+        if status is None:
+            return
+        status = status[0]
         if status == "Playing":
             self.PLUGIN_BASE.mc.pause(self.get_player_name())
         else:

@@ -35,8 +35,11 @@ class DeckGroup(Adw.PreferencesGroup):
     def __init__(self, settings_page):
         super().__init__(title="Deck Settings", description="Applies only to current page")
 
-        self.add(Brightness(settings_page))
-        self.add(Screensaver(settings_page))
+        self.brightness = Brightness(settings_page)
+        self.screensaver = Screensaver(settings_page)
+
+        self.add(self.brightness)
+        self.add(self.screensaver)
 
 class Brightness(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", **kwargs):

@@ -1,6 +1,7 @@
 import os
 import importlib
 from loguru import logger as log
+from install import install
 
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import get_last_dir
@@ -14,9 +15,13 @@ class PluginManager:
         # get all folders in plugins folder
         folders = os.listdir("plugins")
         for folder in folders:
-            # path = os.path.join("plugins", folder, f"{folder}.py")
+            # Install all dependencies
+            if os.path.isfile(os.path.join("plugins", folder, "requirements.txt")):
+                install(os.path.join("plugins", folder, "requirements.txt"), requirements=True)
+            
             # Import main module
             importlib.import_module(f"plugins.{folder}.main")
+
 
             # Get all classes extending from PluginBase and generate objects for them
         self.init_plugins()

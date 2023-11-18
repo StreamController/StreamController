@@ -19,15 +19,19 @@ import os
 import shutil
 import uuid
 from loguru import logger as log
+from decord import VideoReader
+from PIL import Image
 
 # Import own modules
-from src.backend.DeckManagement.HelperMethods import sha256, file_in_dir
+from src.backend.DeckManagement.HelperMethods import is_video, sha256, file_in_dir
 
 
 class AssetManager(list):
     JSON_PATH = os.path.join("Assets", "AssetManager", "Assets.json")
     def __init__(self):
         self.load_json()
+
+        self.fill_missing_data()
 
     def load_json(self):
         if not os.path.exists(self.JSON_PATH):
@@ -60,6 +64,11 @@ class AssetManager(list):
             id = self.get_by_sha256(hash)["id"]
             return id
         
+        thumbnail_path = internal_path
+        
+        if is_video(asset_path):
+            thumbnail_path = self.save_thumbnail(asset_path, hash)
+            
 
         asset = {
             "name": os.path.splitext(os.path.basename(asset_path))[0],
@@ -71,7 +80,8 @@ class AssetManager(list):
                 "name": licence_name,
                 "url": licence_url,
                 "author": author
-            }
+            },
+            "thumbnail": thumbnail_path
         }
         self.append(asset)
 
@@ -80,6 +90,20 @@ class AssetManager(list):
 
         # Return id of added asset
         return asset["id"]
+    
+    def save_thumbnail(self, asset_path, asset_hash):
+        thumbnail_path = os.path.join("Assets", "AssetManager", "thumbnails", f"{asset_hash}.png")
+        if os.path.exists(thumbnail_path):
+            return thumbnail_path
+        if not is_video(asset_path):
+            return asset_path
+        # Create thumbnail
+        vr = VideoReader(asset_path)
+        decord_image = vr[0]
+        thumbnail = Image.fromarray(decord_image.asnumpy())
+        thumbnail.save(thumbnail_path)
+
+        return thumbnail_path
         
     def copy_asset(self, asset_path: str) -> str:
         file_name = os.path.basename(asset_path)
@@ -136,3 +160,32 @@ class AssetManager(list):
             
     def get_all(self) -> list:
         return self
+    
+    def fill_missing_data(self):
+        def fill_missing_folders():
+            if not os.path.exists("Assets"):
+                os.makedirs("Assets")
+            if not os.path.exists("Assets/AssetManager"):
+                os.makedirs("Assets/AssetManager")
+            if not os.path.exists("Assets/AssetManager/Assets"):
+                os.makedirs("Assets/AssetManager/Assets")
+            if not os.path.exists("Assets/AssetManager/thumbnails"):
+                os.makedirs("Assets/AssetManager/thumbnails")
+
+        def fill_missing_thumbnails():
+            for asset in self:
+                if "thumbnail" in asset:
+                    if os.path.exists(asset["thumbnail"]):
+                        continue
+
+                # Create thumbnail
+                thumbnail_path = self.save_thumbnail(asset["internal-path"], asset["sha256"])
+
+                asset["thumbnail"] = thumbnail_path
+
+        
+        fill_missing_folders()
+        fill_missing_thumbnails()
+
+        # Save
+        self.save_json()

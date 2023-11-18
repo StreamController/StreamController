@@ -99,3 +99,11 @@ def get_sys_args_without_param(param_name: str) -> list:
                 args.pop(i + 1) # to include the value of the param
             args.pop(i)
     return args
+
+def is_video(path: str) -> bool:
+    video_formats = ["mkv", "mp4", "webm"]
+
+    if os.path.isfile(path):
+        return os.path.splitext(path)[1][1:].lower() in video_formats
+
+    return False

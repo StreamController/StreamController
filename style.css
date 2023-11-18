@@ -147,3 +147,9 @@
   min-height: 40px;
   border-radius: 20px;
 }
+.asset-preview{
+  background-color: #2f2f2f;
+}
+.asset-preview:selected{
+  background-color: #283C54;
+}

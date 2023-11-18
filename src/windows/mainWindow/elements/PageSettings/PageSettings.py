@@ -58,8 +58,8 @@ class PageSettings(Gtk.Box):
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         clamp.set_child(main_box)
         
-        settings_group = DeckGroup(self)
-        main_box.append(settings_group)
+        self.settings_group = DeckGroup(self)
+        main_box.append(self.settings_group)
 
         background_group = BackgroundGroup(self)
         main_box.append(background_group)

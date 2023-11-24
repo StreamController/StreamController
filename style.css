@@ -153,3 +153,7 @@
 .asset-preview:selected{
   background-color: #283C54;
 }
+.plugin-store-image{
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}

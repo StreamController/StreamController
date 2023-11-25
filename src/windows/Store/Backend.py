@@ -125,6 +125,8 @@ class StoreBackend:
         return img
     
     async def get_stargazers(self, repo_url:str) -> int:
+        "Deactivated for now because of rate limits"
+        return 0
         user_name = self.get_user_name(repo_url)
         repo_name = self.get_repo_name(repo_url)
 

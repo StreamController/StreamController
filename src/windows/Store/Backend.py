@@ -138,18 +138,21 @@ class StoreBackend:
         with open(f"src/windows/Store/cache/manifests/{cache_file_name}.json", "w") as f:
             json.dump(manifest, f, indent=4)
 
-        if url in self.manifest_cache:
-            # There is a newer version - remove the old one
-            if os.path.isfile(self.manifest_cache[url]):
-                os.remove(self.manifest_cache[url])
+        self.remove_old_manifest_cache(url, commit)
 
-        self.manifest_cache[url] = os.path.join(os.getcwd(), f"src/windows/Store/cache/manifests/{cache_file_name}.json")
+        self.manifest_cache[url] = f"src/windows/Store/cache/manifests/{cache_file_name}.json"
         # Save cache file
         with open("src/windows/Store/cache/manifests.json", "w") as f:
             json.dump(self.manifest_cache, f, indent=4)
 
-
         return manifest
+    
+    def remove_old_manifest_cache(self, url:str, commit_sha:str):
+        for cached_url in list(self.manifest_cache.keys()):
+            if self.get_repo_name(cached_url) == self.get_repo_name(url) and not commit_sha in cached_url:
+                if os.path.isfile(self.manifest_cache[cached_url]):
+                    os.remove(self.manifest_cache[cached_url])
+                del self.manifest_cache[cached_url]
 
     async def prepare_plugin(self, plugin):
         url = plugin["url"]

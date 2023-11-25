@@ -1,1 +1,0 @@
-obs-websocket-py>=1.0

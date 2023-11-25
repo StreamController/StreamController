@@ -152,7 +152,7 @@ class PluginPreview(Gtk.FlowBoxChild):
         self.bottom_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.main_button_box.append(self.bottom_box)
 
-        self.name_label = Gtk.Label(label=self.plugin_dict["repo_name"],
+        self.name_label = Gtk.Label(label=self.plugin_dict["name"],
                                     css_classes=["bold"],
                                     xalign=0)
         self.bottom_box.append(self.name_label)

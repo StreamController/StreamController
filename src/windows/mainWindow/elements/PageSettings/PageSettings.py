@@ -61,8 +61,8 @@ class PageSettings(Gtk.Box):
         self.settings_group = DeckGroup(self)
         main_box.append(self.settings_group)
 
-        background_group = BackgroundGroup(self)
-        main_box.append(background_group)
+        self.background_group = BackgroundGroup(self)
+        main_box.append(self.background_group)
 
 class BrightnessRow(Adw.PreferencesRow):
     def __init__(self, page_settings: PageSettings, **kwargs):

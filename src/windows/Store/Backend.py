@@ -24,6 +24,7 @@ from loguru import logger as log
 from datetime import datetime
 import time
 import os
+import uuid
 
 class StoreBackend:
     def __init__(self):
@@ -32,6 +33,12 @@ class StoreBackend:
             os.mkdir("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache")
         with open("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/api.json", "r") as f:
             self.api_cache = json.load(f)
+        
+        # Image cache file
+        if not os.path.exists("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/images"):
+            os.mkdir("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/images")
+        with open("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/images.json", "r") as f:
+            self.image_cache = json.load(f)
 
     @lru_cache(maxsize=None)
     async def request_from_url(self, url: str) -> requests.Response:
@@ -120,8 +127,23 @@ class StoreBackend:
         }
 
     async def image_from_url(self, url):
+        # Search in cache
+        if url in self.image_cache:
+            if os.path.isfile(self.image_cache[url]):
+                return Image.open(self.image_cache[url])
+        
         result = await self.request_from_url(url)
         img = Image.open(BytesIO(result.content))
+        
+        ## Save to cache
+        image_uuid = str(uuid.uuid4())
+        save_path = f"/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/images/{image_uuid}.png"
+        img.save(save_path)
+        self.image_cache[url] = save_path
+        # Update image cache json file
+        with open("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/images.json", "w") as f:
+            json.dump(self.image_cache, f, indent=4)
+
         return img
     
     async def get_stargazers(self, repo_url:str) -> int:

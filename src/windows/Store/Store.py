@@ -24,6 +24,7 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
 # Import Python modules
 from loguru import logger as log
 from fuzzywuzzy import fuzz
+import webbrowser as web
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.mainWindow.mainWindow import MainWindow
@@ -131,10 +132,19 @@ class PluginPreview(Gtk.FlowBoxChild):
         self.build()
 
     def build(self):
+        self.overlay = Gtk.Overlay()
+        self.set_child(self.overlay)
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                                 hexpand=True, vexpand=False,
+                                 css_classes=["no-padding"],
+                                 width_request=250, height_request=250)
+        self.set_child(self.main_box)
+
         self.main_button = Gtk.Button(hexpand=True, vexpand=False,
                                       width_request=250, height_request=200,
-                                      css_classes=["no-padding"])
-        self.set_child(self.main_button)
+                                      css_classes=["no-padding", "no-round-bottom"])
+        self.main_box.append(self.main_button)
         
         self.main_button_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                                        hexpand=True, vexpand=False)
@@ -149,13 +159,69 @@ class PluginPreview(Gtk.FlowBoxChild):
         self.image.set_pixbuf(image2pixbuf(pil_image, force_transparency=True))
         self.main_button_box.append(self.image)
 
-        self.bottom_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.main_button_box.append(self.bottom_box)
+        self.label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                                 margin_start=6, margin_top=6)
+        self.main_button_box.append(self.label_box)
 
         self.name_label = Gtk.Label(label=self.plugin_dict["name"],
                                     css_classes=["bold"],
                                     xalign=0)
-        self.bottom_box.append(self.name_label)
+        self.label_box.append(self.name_label)
+
+        self.author_label = Gtk.Label(label=f"By {self.plugin_dict['user_name']}",
+                                      sensitive=False, #Grey out
+                                      xalign=0)
+        self.label_box.append(self.author_label)
+
+        self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
+                                 hexpand=False, vexpand=False,
+                                 margin_start=7, margin_top=15, margin_bottom=15)
+        # self.overlay.add_overlay(self.batch_box)
+        self.main_button_box.append(self.batch_box)
+
+        if self.plugin_dict["official"]:
+            self.batch_box.append(OfficialBatch(margin_end=7))
+        
+        if self.plugin_dict["commit_sha"] is not None:
+            self.batch_box.append(VerifiedBatch())
+
+        self.main_button_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+
+        self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
+                                  hexpand=True)
+        self.main_box.append(self.button_box)
+
+        self.github_button = Gtk.Button(icon_name="github-symbolic",
+                                        hexpand=True,
+                                        css_classes=["no-round-top-left", "no-round-top-right", "no-round-bottom-right"])
+        self.github_button.connect("clicked", self.on_github_clicked)
+        self.button_box.append(self.github_button)
+
+        self.button_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+
+        self.download_button = Gtk.Button(icon_name="download-symbolic",
+                                          hexpand=True,
+                                          css_classes=["no-round-top-left", "no-round-top-right", "no-round-bottom-left"])
+        self.download_button.connect("clicked", self.on_download_clicked)
+        self.button_box.append(self.download_button)
+
+
+    def on_github_clicked(self, button: Gtk.Button):
+        web.open(self.plugin_dict["url"])
+
+    def on_download_clicked(self, button: Gtk.Button):
+        self.install()
+
+    def install(self):
+        pass
+
+class OfficialBatch(Gtk.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(label="Official", *args, **kwargs)
+
+class VerifiedBatch(Gtk.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(label="Verified", *args, **kwargs)
 
 
 

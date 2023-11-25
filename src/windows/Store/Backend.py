@@ -123,7 +123,8 @@ class StoreBackend:
             "repo_name": repo_name,
             "image": image,
             "stargazers": stargazers,
-            "official": True
+            "official": True,
+            "commit_sha": plugin["verified-commit"]
         }
 
     async def image_from_url(self, url):

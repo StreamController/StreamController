@@ -34,7 +34,8 @@ from src.backend.DeckManagement.ImageHelpers import image2pixbuf, is_transparent
 class BackgroundGroup(Adw.PreferencesGroup):
     def __init__(self, settings_page):
         super().__init__(title="Background", description="Applies only to current page", margin_top=15)
-        self.add(BackgroundMediaRow(settings_page))
+        self.media_row = BackgroundMediaRow(settings_page)
+        self.add(self.media_row)
 
 
 class BackgroundMediaRow(Adw.PreferencesRow):

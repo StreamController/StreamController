@@ -36,11 +36,19 @@ class StoreBackend:
         # API cache file
         if not os.path.exists("src/windows/Store/cache"):
             os.mkdir("src/windows/Store/cache")
+        if not os.path.exists("src/windows/Store/cache/api.json"):
+            with open("src/windows/Store/cache/api.json", "w") as f:
+                json.dump({}, f, indent=4)
+        with open("src/windows/Store/cache/api.json", "r") as f:
             self.api_cache = json.load(f)
         
         # Image cache file
         if not os.path.exists("src/windows/Store/cache/images"):
             os.mkdir("src/windows/Store/cache/images")
+        if not os.path.exists("src/windows/Store/cache/images.json"):
+            with open("src/windows/Store/cache/images.json", "w") as f:
+                json.dump({}, f, indent=4)
+        with open("src/windows/Store/cache/images.json", "r") as f:
             self.image_cache = json.load(f)
 
     @alru_cache(maxsize=None)

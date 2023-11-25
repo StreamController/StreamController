@@ -33,17 +33,11 @@ class PluginManager:
     def init_plugins(self):
         subclasses = PluginBase.__subclasses__()
         for subclass in subclasses:
-            print(subclass)
-            print(subclass.is_initialized)
             if subclass in self.initialized_plugin_classes:
                 print("skippting, already initialized")
                 continue
-            print(f"{self.initialized_plugin_classes} for: {subclass}")
-            print()
             obj = subclass()
-            # print(subclass.is_initialized)
             self.initialized_plugin_classes.append(subclass)
-            print()
 
     def generate_action_index(self):
         plugins = self.get_plugins()

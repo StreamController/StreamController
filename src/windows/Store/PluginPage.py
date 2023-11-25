@@ -19,6 +19,7 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
 
 # Import python modules
 import webbrowser as web
+import asyncio
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
 class PluginPage(StorePage):
     def __init__(self, store: "Store"):
         super().__init__(store=store)
+        self.store = store
         self.search_entry.set_placeholder_text("Search for plugins")
 
         self.load()
@@ -49,6 +51,7 @@ class PluginPage(StorePage):
 class PluginPreview(Gtk.FlowBoxChild):
     def __init__(self, plugin_page: PluginPage, plugin_dict: dict):
         super().__init__()
+        self.plugin_page = plugin_page
         self.plugin_dict = plugin_dict
 
         self.build()
@@ -135,4 +138,4 @@ class PluginPreview(Gtk.FlowBoxChild):
         self.install()
 
     def install(self):
-        pass
+        asyncio.run(self.plugin_page.store.backend.install_plugin(plugin_dict=self.plugin_dict))

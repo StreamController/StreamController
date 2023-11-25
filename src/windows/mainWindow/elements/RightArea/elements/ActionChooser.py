@@ -107,6 +107,7 @@ class PluginGroup(BetterPreferencesGroup):
         self.set_filter_func(self.filter_func, None)
 
     def build(self):
+        self.clear()
         for plugin_name, plugin_dir in gl.plugin_manager.get_plugins().items():
             expander = PluginExpander(self, plugin_name, plugin_dir)
             self.add(expander)

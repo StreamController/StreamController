@@ -1,5 +1,6 @@
 import os
 import importlib
+import sys
 from loguru import logger as log
 from install import install
 
@@ -9,7 +10,7 @@ from src.backend.DeckManagement.HelperMethods import get_last_dir
 class PluginManager:
     action_index = {}
     def __init__(self):
-        pass
+        self.initialized_plugin_classes = list[PluginBase]()
 
     def load_plugins(self):
         # get all folders in plugins folder
@@ -21,20 +22,34 @@ class PluginManager:
                 # install(os.path.join("plugins", folder, "requirements.txt"), requirements=True)
             
             # Import main module
-            importlib.import_module(f"plugins.{folder}.main")
+            import_string = f"plugins.{folder}.main"
+            if import_string not in sys.modules.keys():
+                # Import module only if it's not already imported
+                importlib.import_module(f"plugins.{folder}.main")
 
-
-            # Get all classes extending from PluginBase and generate objects for them
+        # Get all classes inheriting from PluginBase and generate objects for them
         self.init_plugins()
 
     def init_plugins(self):
         subclasses = PluginBase.__subclasses__()
         for subclass in subclasses:
+            print(subclass)
+            print(subclass.is_initialized)
+            if subclass in self.initialized_plugin_classes:
+                print("skippting, already initialized")
+                continue
+            print(f"{self.initialized_plugin_classes} for: {subclass}")
+            print()
             obj = subclass()
+            # print(subclass.is_initialized)
+            self.initialized_plugin_classes.append(subclass)
+            print()
 
     def generate_action_index(self):
         plugins = self.get_plugins()
         for plugin in plugins.keys():
+            if plugin in self.action_index.keys():
+                continue
             for action in plugins[plugin]["object"].ACTIONS.keys():
                 path = plugins[plugin]["folder-path"]
                 # Remove everything except the last folder

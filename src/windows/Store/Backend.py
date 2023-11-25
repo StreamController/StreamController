@@ -22,9 +22,14 @@ from PIL import Image
 from io import BytesIO
 from loguru import logger as log
 from datetime import datetime
+import subprocess
 import time
 import os
 import uuid
+import shutil
+
+# Import globals
+import globals as gl
 
 class StoreBackend:
     def __init__(self):
@@ -124,7 +129,8 @@ class StoreBackend:
             "image": image,
             "stargazers": stargazers,
             "official": True,
-            "commit_sha": plugin["verified-commit"]
+            "commit_sha": plugin["verified-commit"],
+            "id": manifest.get("id")
         }
 
     async def image_from_url(self, url):
@@ -191,6 +197,70 @@ class StoreBackend:
     
     def get_all_plugins(self):
         return asyncio.run(self.get_all_plugins_async())
- 
+    
 
+    ## Install
+    async def subp_call(self, args):
+        return subprocess.call(args)
+    
+    async def os_sys(self, args):
+        return os.system(args)
+    
+    async def clone_repo(self, repo_url:str, local_path:str, commit_sha:str = None, branch_name:str = None):
+        # if branch_name == None and commit_sha == None:
+            # Set branch_name to main branch's name
+            # api_answer = await self.make_api_call(f"https://api.github.com/repos/{self.get_user_name(repo_url)}/{self.get_repo_name(repo_url)}")
+            # branch_name = api_answer["default_branch"]
+
+        if commit_sha is not None:
+            # Use the main branch for the initial clone
+            branch_name = None
+
+        # Check if git is installed on the system - should be the case for most linux systems
+        if shutil.which("git") is None:
+            log.error("Git is not installed on this system. Please install it.")
+            return 404
+        
+        # Remove folder if it already exists
+        shutil.rmtree(local_path, ignore_errors=True)
+
+        # Clone the repository at the newest stage on the default branch
+        await self.subp_call(["git", "clone", repo_url, local_path])
+
+        # Add repository to the safe directory list to avoid dubious ownership warnings
+        await self.subp_call(["git", "config", "--global", "--add", "safe.directory", os.path.abspath(local_path)])
+
+        # Set repository to the given commit_sha
+        if commit_sha is not None:
+            await self.os_sys(f"cd {local_path} && git reset --hard {commit_sha}")
+            return
+        
+        if branch_name is not None:
+            await self.os_sys(f"cd {local_path} && git switch {branch_name}")
+            return
+        
+    async def install_plugin(self, plugin_dict:dict):
+        url = plugin_dict["url"]
+
+        PLUGINS_FOLDER = "plugins"
+        local_path = f"{PLUGINS_FOLDER}/{plugin_dict['id']}"
+
+        response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_dict["commit_sha"])
+
+        if response == 404:
+            return 404
+        
+        # Update plugin manager
+        gl.plugin_manager.load_plugins()
+        gl.plugin_manager.init_plugins()
+        gl.plugin_manager.generate_action_index()
+
+        # Update ui
+        gl.app.main_win.rightArea.action_chooser.plugin_group.build()
+
+        # Update page
+        # TODO
+        
+        log.success(f"Plugin {plugin_dict['id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
+        
 b = StoreBackend()

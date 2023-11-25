@@ -51,6 +51,15 @@ class StoreBackend:
         with open("src/windows/Store/cache/images.json", "r") as f:
             self.image_cache = json.load(f)
 
+        # Manifest cache file
+        if not os.path.exists("src/windows/Store/cache/manifests"):
+            os.mkdir("src/windows/Store/cache/manifests")
+        if not os.path.exists("src/windows/Store/cache/manifests.json"):
+            with open("src/windows/Store/cache/manifests.json", "w") as f:
+                json.dump({}, f, indent=4)
+        with open("src/windows/Store/cache/manifests.json", "r") as f:
+            self.manifest_cache = json.load(f)
+
     @alru_cache(maxsize=None)
     async def request_from_url(self, url: str) -> requests.Response:
         req = requests.get(url, stream=True)
@@ -111,11 +120,40 @@ class StoreBackend:
             plugins.append(await self.prepare_plugin(plugin))
 
         return plugins
+    
+    async def get_manifest(self, url:str, commit:str) -> dict:
+        url = self.build_url(url, "manifest.json", commit)
+        # Look for cached manifest - if we have a file for the same commit we can safely assume it's the same
+        if url in self.manifest_cache:
+            if os.path.isfile(self.manifest_cache[url]):
+                with open(self.manifest_cache[url], "r") as f:
+                    return json.load(f)
+
+        # Not in cache, get it
+        manifest = await self.request_from_url(url)
+        manifest = json.loads(manifest.text)
+
+        # Save to cache
+        cache_file_name = f"{self.get_repo_name(url)}::{commit}"
+        with open(f"src/windows/Store/cache/manifests/{cache_file_name}.json", "w") as f:
+            json.dump(manifest, f, indent=4)
+
+        if url in self.manifest_cache:
+            # There is a newer version - remove the old one
+            if os.path.isfile(self.manifest_cache[url]):
+                os.remove(self.manifest_cache[url])
+
+        self.manifest_cache[url] = os.path.join(os.getcwd(), f"src/windows/Store/cache/manifests/{cache_file_name}.json")
+        # Save cache file
+        with open("src/windows/Store/cache/manifests.json", "w") as f:
+            json.dump(self.manifest_cache, f, indent=4)
+
+
+        return manifest
 
     async def prepare_plugin(self, plugin):
         url = plugin["url"]
-        manifest = await self.get_remote_file(url, "manifest.json", plugin["verified-commit"])
-        manifest = json.loads(manifest.text)
+        manifest = await self.get_manifest(url, plugin["verified-commit"])
 
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), plugin["verified-commit"]))
 

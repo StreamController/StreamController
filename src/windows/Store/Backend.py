@@ -34,15 +34,13 @@ import globals as gl
 class StoreBackend:
     def __init__(self):
         # API cache file
-        if not os.path.exists("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache"):
-            os.mkdir("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache")
-        with open("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/api.json", "r") as f:
+        if not os.path.exists("src/windows/Store/cache"):
+            os.mkdir("src/windows/Store/cache")
             self.api_cache = json.load(f)
         
         # Image cache file
-        if not os.path.exists("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/images"):
-            os.mkdir("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/images")
-        with open("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/images.json", "r") as f:
+        if not os.path.exists("src/windows/Store/cache/images"):
+            os.mkdir("src/windows/Store/cache/images")
             self.image_cache = json.load(f)
 
     @alru_cache(maxsize=None)

@@ -193,7 +193,13 @@ class StoreBackend:
         return splitted[splitted.index("github.com")+1]
     
     def get_repo_name(self, repo_url:str) -> str:
-        return repo_url.split("/")[-1]
+        github_split = repo_url.split("github")
+        if len(github_split) < 2:
+            return
+        split = github_split[1].split("/")
+        if len(split) < 3:
+            return
+        return split[2]
     
     def get_all_plugins(self):
         return asyncio.run(self.get_all_plugins_async())

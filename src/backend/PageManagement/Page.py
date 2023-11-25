@@ -32,10 +32,11 @@ class Page(dict):
         self.load()
 
     def load(self):
+        old_json = copy(self)
         with open(self.json_path) as f:
             self.update(json.load(f))
-        # self.load_actions()
-            self.load_action_objects()
+            if old_json != self:
+                self.load_action_objects()
 
             # Call on_ready for all actions
             self.call_actions_ready()

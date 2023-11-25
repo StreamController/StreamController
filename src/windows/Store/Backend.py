@@ -258,9 +258,13 @@ class StoreBackend:
         # Update ui
         gl.app.main_win.rightArea.action_chooser.plugin_group.build()
 
-        # Update page
-        # TODO
-        
+        ## Update page
+        for controller in gl.deck_manager.deck_controller:
+            # Load action objects
+            controller.active_page.load_action_objects()
+            # Reload page to send new on_load events
+            controller.reload_page()
+
         log.success(f"Plugin {plugin_dict['id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
         
 b = StoreBackend()

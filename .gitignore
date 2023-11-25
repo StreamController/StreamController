@@ -166,3 +166,4 @@ cython_debug/
 cache/
 Assets/copyrighted/
 Assets/AssetManager/Assets/
+plugins/*

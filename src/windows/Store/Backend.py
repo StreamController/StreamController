@@ -15,7 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
  
 from git import Repo
 import requests
-from functools import lru_cache
+from async_lru import alru_cache
 import json
 import asyncio
 from PIL import Image
@@ -45,7 +45,7 @@ class StoreBackend:
         with open("/mnt/P3/Development/Programmieren/Python/StreamController/src/windows/Store/cache/images.json", "r") as f:
             self.image_cache = json.load(f)
 
-    @lru_cache(maxsize=None)
+    @alru_cache(maxsize=None)
     async def request_from_url(self, url: str) -> requests.Response:
         req = requests.get(url, stream=True)
         if req.status_code == 200:
@@ -66,7 +66,7 @@ class StoreBackend:
         repo_url = repo_url.replace("github.com", "raw.githubusercontent.com")
         return f"{repo_url}/{branch_name}/{file_path}"
 
-    @lru_cache(maxsize=None)
+    @alru_cache(maxsize=None)
     async def get_remote_file(self, repo_url: str, file_path: str, branch_name: str = "main") -> requests.Response:
         """
         This function retrieves the content of a remote file from a GitHub repository.

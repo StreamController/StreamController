@@ -1,4 +1,5 @@
 annotated-types==0.6.0
+async-lru==2.0.4
 contourpy==1.1.1
 cycler==0.12.1
 dbus-python==1.3.2

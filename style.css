@@ -157,3 +157,33 @@
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
 }
+.no-round-bottom {
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+.no-round-right {
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+.no-round-left {
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+}
+.no-round {
+  border-radius: 0px;
+}
+.no-round-top-left {
+  border-top-left-radius: 0px;
+}
+.no-round-top-right {
+  border-top-right-radius: 0px;
+}
+.no-round-bottom-left {
+  border-bottom-left-radius: 0px;
+}
+.no-round-bottom-right {
+  border-bottom-right-radius: 0px;
+}
+.border-round {
+  border-radius: 6px;
+}

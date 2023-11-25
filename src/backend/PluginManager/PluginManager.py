@@ -17,7 +17,8 @@ class PluginManager:
         for folder in folders:
             # Install all dependencies
             if os.path.isfile(os.path.join("plugins", folder, "requirements.txt")):
-                install(os.path.join("plugins", folder, "requirements.txt"), requirements=True)
+                pass
+                # install(os.path.join("plugins", folder, "requirements.txt"), requirements=True)
             
             # Import main module
             importlib.import_module(f"plugins.{folder}.main")

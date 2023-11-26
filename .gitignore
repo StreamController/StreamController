@@ -163,7 +163,16 @@ cython_debug/
 .vscode/
 
 # own folders
-cache/
 Assets/copyrighted/
 Assets/AssetManager/Assets/
-plugins/*
+
+# App folders
+cache/
+plugins/
+Assets/AssetManager/thumbnails/
+Assets/AssetManager/Assets.json
+pages/
+settings/
+
+# Keep .gitkeep files
+!/**/.gitkeep

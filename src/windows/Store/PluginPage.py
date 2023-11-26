@@ -54,6 +54,8 @@ class PluginPreview(Gtk.FlowBoxChild):
         self.plugin_page = plugin_page
         self.plugin_dict = plugin_dict
 
+        self.stars = self.plugin_dict["stargazers"]
+
         self.build()
 
     def build(self):

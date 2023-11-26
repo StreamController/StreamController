@@ -39,12 +39,15 @@ class PluginPage(StorePage):
         self.store = store
         self.search_entry.set_placeholder_text("Search for plugins")
 
-        self.load()
+        threading.Thread(target=self.load).start()
 
     def load(self):
+        self.set_loading()
         plugins = self.store.backend.get_all_plugins()
-        for plugin in plugins:
-            self.flow_box.append(PluginPreview(plugin_page=self, plugin_dict=plugin))
+        for i in range(250):
+            for plugin in plugins:
+
+        self.set_loaded()
 
 
 

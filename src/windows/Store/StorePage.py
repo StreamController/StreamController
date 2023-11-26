@@ -19,6 +19,7 @@ from gi.repository import Gtk
 
 # Import python modules
 from fuzzywuzzy import fuzz
+import threading
 
 # Typing
 from typing import TYPE_CHECKING
@@ -58,8 +59,19 @@ class StorePage(Gtk.Box):
         self.flow_box.set_sort_func(self.sort_func)
         self.scrolled_box.append(self.flow_box)
 
+        self.loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
+                                   visible=False, valign=Gtk.Align.CENTER)
+        self.scrolled_box.append(self.loading_box)
+
+        self.spinner = Gtk.Spinner(spinning=False)
+        self.loading_box.append(self.spinner)
+
+        self.loading_text = Gtk.Label(label="Loading")
+        self.loading_box.append(self.loading_text)
+
         # Add vexpand box to the bottom to avoid unwanted stretching of the flowbox children
-        self.scrolled_box.append(Gtk.Box(hexpand=True, vexpand=True))
+        self.bottom_box = Gtk.Box(hexpand=True, vexpand=True)
+        self.scrolled_box.append(self.bottom_box)
 
     def on_search_changed(self, entry: Gtk.SearchEntry):
         self.flow_box.invalidate_filter()
@@ -123,3 +135,15 @@ class StorePage(Gtk.Box):
         if total_a < total_b:
             return 1
         return 0
+    
+    def set_loading(self):
+        self.flow_box.set_visible(False)
+        self.bottom_box.set_visible(False)
+        self.loading_box.set_visible(True)
+        threading.Thread(target=self.spinner.set_spinning, args=(True,)).start()
+
+    def set_loaded(self):
+        self.flow_box.set_visible(True)
+        self.bottom_box.set_visible(True)
+        self.loading_box.set_visible(False)
+        self.spinner.set_spinning(False)

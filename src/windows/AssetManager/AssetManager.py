@@ -15,7 +15,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
-from src.backend.DeckManagement.HelperMethods import is_video
 
 
 gi.require_version("Gtk", "4.0")
@@ -29,6 +28,7 @@ from decord import VideoReader
 from decord import cpu
 from PIL import Image
 import os
+from videoprops import get_video_properties
 from functools import lru_cache
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -39,6 +39,7 @@ import globals as gl
 
 # Import own modules
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
+from src.backend.DeckManagement.HelperMethods import get_image_aspect_ratio, is_video
 
 class AssetManager(Gtk.ApplicationWindow):
     def __init__(self, main_window: "MainWindow", *args, **kwargs):
@@ -51,15 +52,51 @@ class AssetManager(Gtk.ApplicationWindow):
             )
         self.main_window = main_window
         self.build()
+
+    def build(self):
+        self.stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, hexpand=True, vexpand=True)
+        self.set_child(self.stack)
+        self.asset_chooser = AssetChooser(self)
+        self.stack.add_titled(self.asset_chooser, "Asset Chooser", "Asset Chooser")
+
+        self.asset_info = AssetInfo(self)
+        self.stack.add_titled(self.asset_info, "Asset Info", "Asset Info")
+
+        # Header bar
+        self.header_bar = Gtk.HeaderBar()
+        self.set_titlebar(self.header_bar)
+
+        self.back_button = Gtk.Button(icon_name="go-previous", visible=False)
+        self.back_button.connect("clicked", self.on_back_button_click)
+        self.header_bar.pack_start(self.back_button)
+
+    def show_for_path(self, path, callback_func=None, *callback_args, **callback_kwargs):
+        self.asset_chooser.show_for_path(path, callback_func, *callback_args, **callback_kwargs)
+        self.stack.set_visible_child(self.asset_chooser)
+        self.back_button.set_visible(False)
+        self.present()
+
+    def show_info_for_asset(self, asset:dict):
+        self.asset_info.show_for_asset(asset)
+        self.stack.set_visible_child(self.asset_info)
+        self.back_button.set_visible(True)
+        self.present()
+
+    def on_back_button_click(self, button):
+        self.stack.set_visible_child(self.asset_chooser)
+
+class AssetChooser(Gtk.Box):
+    def __init__(self, asset_manager: AssetManager):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=False,
+                            margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.asset_manager = asset_manager
+
+        self.build()
         self.load_defaults()
 
     def build(self):
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=False,
-                            margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
-        self.set_child(self.main_box)
-
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=False, margin_bottom=15)
-        self.main_box.append(self.nav_box)
+        self.append(self.nav_box)
 
         self.search_entry = Gtk.SearchEntry(placeholder_text="Search", hexpand=True)
         self.search_entry.connect("search-changed", self.on_search_changed)
@@ -77,7 +114,7 @@ class AssetManager(Gtk.ApplicationWindow):
         self.type_box.append(self.image_button)
 
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
-        self.main_box.append(self.scrolled_window)
+        self.append(self.scrolled_window)
 
         self.scrolled_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=False,
                                 margin_top=5, margin_bottom=5)
@@ -86,7 +123,7 @@ class AssetManager(Gtk.ApplicationWindow):
         self.inside_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=False)
         self.scrolled_box.append(self.inside_box)
 
-        self.asset_chooser = AssetChooser(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.asset_chooser = AssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.scrolled_box.append(self.asset_chooser)
 
         # Add vexpand box to the bottom to avoid unwanted stretching of the children
@@ -96,8 +133,6 @@ class AssetManager(Gtk.ApplicationWindow):
         if not callable(callback_func):
             log.error("callback_func is not callable")
         self.asset_chooser.show_for_path(path, callback_func, *callback_args, **callback_kwargs)
-
-        self.present()
 
     def on_video_toggled(self, button):
         settings = gl.settings_manager.load_settings_from_file("settings/ui/AssetManager.json")
@@ -123,8 +158,10 @@ class AssetManager(Gtk.ApplicationWindow):
     def on_search_changed(self, entry):
         self.asset_chooser.flow_box.invalidate_sort()
 
-class AssetChooser(Gtk.Box):
-    def __init__(self, asset_manager, *args, **kwargs):
+
+
+class AssetChooserFlowBox(Gtk.Box):
+    def __init__(self, asset_chooser, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_orientation(Gtk.Orientation.HORIZONTAL)
         self.set_hexpand(True)
@@ -133,7 +170,7 @@ class AssetChooser(Gtk.Box):
         self.callback_args = ()
         self.callback_kwargs = {}
 
-        self.asset_manager:AssetManager = asset_manager
+        self.asset_chooser:AssetChooser = asset_chooser
 
         self.all_assets:list[AssetPreview] = []
 
@@ -148,7 +185,7 @@ class AssetChooser(Gtk.Box):
         self.append(self.flow_box)
 
         for asset in gl.asset_manager.get_all():
-            asset = AssetPreview(asset["name"], asset["thumbnail"], asset["internal-path"], width_request=100, height_request=100)
+            asset = AssetPreview(flow=self, asset=asset, width_request=100, height_request=100)
             self.flow_box.append(asset)
 
     def show_for_path(self, path, callback_func=None, *callback_args, **callback_kwargs):
@@ -160,16 +197,16 @@ class AssetChooser(Gtk.Box):
             child = self.flow_box.get_child_at_index(i)
             if child == None:
                 return
-            if child.asset_path == path:
+            if child.asset["internal-path"] == path:
                 self.flow_box.select_child(child)
                 return
             
     def filter_func(self, child):
-        search_string = self.asset_manager.search_entry.get_text()
-        show_image = self.asset_manager.image_button.get_active()
-        show_video = self.asset_manager.video_button.get_active()
+        search_string = self.asset_chooser.search_entry.get_text()
+        show_image = self.asset_chooser.image_button.get_active()
+        show_video = self.asset_chooser.video_button.get_active()
 
-        child_is_video = is_video(child.asset_path)
+        child_is_video = is_video(child.asset["internal-path"])
 
         if child_is_video and not show_video:
             return False
@@ -186,18 +223,18 @@ class AssetChooser(Gtk.Box):
         return True
     
     def sort_func(self, a, b):
-        search_string = self.asset_manager.search_entry.get_text()
+        search_string = self.asset_chooser.search_entry.get_text()
 
         if search_string == "":
             # Sort alphabetically
-            if a.name < b.name:
+            if a.asset["name"] < b.asset["name"]:
                 return -1
-            if a.name > b.name:
+            if a.asset["name"] > b.asset["name"]:
                 return 1
             return 0
         
-        a_fuzz = fuzz.partial_ratio(search_string.lower(), a.name.lower())
-        b_fuzz = fuzz.partial_ratio(search_string.lower(), b.name.lower())
+        a_fuzz = fuzz.partial_ratio(search_string.lower(), a.asset["name"].lower())
+        b_fuzz = fuzz.partial_ratio(search_string.lower(), b.asset["name"].lower())
 
         if a_fuzz > b_fuzz:
             return -1
@@ -208,7 +245,7 @@ class AssetChooser(Gtk.Box):
 
 
 class AssetPreview(Gtk.FlowBoxChild):
-    def __init__(self, name, thumbnail_path, asset_path, *args, **kwargs):
+    def __init__(self, flow:AssetChooserFlowBox, asset:dict, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_css_classes(["asset-preview"])
         self.set_margin_start(5)
@@ -216,19 +253,21 @@ class AssetPreview(Gtk.FlowBoxChild):
         self.set_margin_top(5)
         self.set_margin_bottom(5)
 
-        self.name = name
-        self.thumbnail_path = thumbnail_path
-        self.asset_path = asset_path
+        self.asset = asset
+        self.flow = flow
 
         self.build()
 
     def build(self):
+        self.overlay = Gtk.Overlay()
+        self.set_child(self.overlay)
+
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, width_request=250, height_request=180)
-        self.set_child(self.main_box)
+        self.overlay.set_child(self.main_box)
 
         self.picture = Gtk.Picture(width_request=250, height_request=180, overflow=Gtk.Overflow.HIDDEN, content_fit=Gtk.ContentFit.COVER,
                                    hexpand=False, vexpand=False, keep_aspect_ratio=True)
-        self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(self.thumbnail_path,
+        self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(self.asset["thumbnail"],
                                                               width=250,
                                                               height=180,
                                                               preserve_aspect_ratio=True)
@@ -236,5 +275,127 @@ class AssetPreview(Gtk.FlowBoxChild):
         self.picture.set_pixbuf(self.pixbuf)
         self.main_box.append(self.picture)
 
-        self.label = Gtk.Label(label=self.name, xalign=Gtk.Align.CENTER)
+        self.label = Gtk.Label(label=self.asset["name"], xalign=Gtk.Align.CENTER)
         self.main_box.append(self.label)
+
+        self.info_button = Gtk.Button(icon_name="help-info-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.END, margin_end=5, margin_bottom=5)
+        self.info_button.connect("clicked", self.on_click_info)
+        self.overlay.add_overlay(self.info_button)
+
+    def on_click_info(self, button):
+        self.flow.asset_chooser.asset_manager.show_info_for_asset(self.asset)
+
+class AssetInfo(Gtk.Box):
+    def __init__(self, asset_manager:AssetManager):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL,
+                         margin_top=15)
+        self.asset_manager = asset_manager
+        self.build()
+
+    def build(self):
+        self.clamp = Adw.Clamp(hexpand=True)
+        self.append(self.clamp)
+
+        self.clamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.clamp.set_child(self.clamp_box)
+
+        # Image
+        self.image_group = Adw.PreferencesGroup(title="Image")
+        self.clamp_box.append(self.image_group)
+
+        self.img_resolution_row = AttributeRow(title="Resolution:", attr="Error")
+        self.image_group.add(self.img_resolution_row)
+
+        self.img_aspect_ratio_row = AttributeRow(title="Aspect Ratio:", attr="Error")
+        self.image_group.add(self.img_aspect_ratio_row)
+
+        # Video
+        self.video_group = Adw.PreferencesGroup(title="Video")
+        self.clamp_box.append(self.video_group)
+
+        self.video_resolution_row = AttributeRow(title="Resolution:", attr="Error")
+        self.video_group.add(self.video_resolution_row)
+
+        self.aspect_ratio_row = AttributeRow(title="Aspect Ratio:", attr="Error")
+        self.video_group.add(self.aspect_ratio_row)
+
+        self.video_framerate_row = AttributeRow(title="Framerate:", attr="Error")
+        self.video_group.add(self.video_framerate_row)
+
+        # License
+        self.license_group = Adw.PreferencesGroup(title="License")
+        self.clamp_box.append(self.license_group)
+
+        self.license_type_row = AttributeRow(title="License:", attr="Error")
+        self.license_group.add(self.license_type_row)
+
+        self.license_author_row = AttributeRow(title="Author:", attr="Error")
+        self.license_group.add(self.license_author_row)
+
+        self.license_url_row = AttributeRow(title="URL:", attr="Error")
+        self.license_group.add(self.license_url_row)
+
+        self.license_comment_row = AttributeRow(title="Comment:", attr="Error")
+        self.license_group.add(self.license_comment_row)
+
+    def show_for_asset(self, asset:dict):
+        if is_video(asset["internal-path"]):
+            self.show_for_vid(asset["internal-path"])
+        else:
+            self.show_for_img(asset["internal-path"])
+
+        self.license_type_row.set_attribute(asset["license"].get("name"))
+        self.license_author_row.set_attribute(asset["license"].get("author"))
+        self.license_url_row.set_attribute(asset["license"].get("url"))
+        self.license_comment_row.set_attribute(asset["license"].get("comment"))
+
+        
+
+    def show_for_img(self, path:str):
+        # Update ui vis
+        self.image_group.set_visible(True)
+        self.video_group.set_visible(False)
+
+        # Update ui content
+        with Image.open(path) as img:
+            self.img_resolution_row.set_attribute(f"{img.width}x{img.height}")
+            self.img_aspect_ratio_row.set_attribute(f"{get_image_aspect_ratio(img)}")
+
+    def show_for_vid(self, path:str):
+        props = get_video_properties(path)
+
+        # Update ui vis
+        self.image_group.set_visible(False)
+        self.video_group.set_visible(True)
+
+        # Update ui content
+        self.video_resolution_row.set_attribute(f"{props['width']}x{props['height']}")
+        self.aspect_ratio_row.set_attribute(f"{props['display_aspect_ratio']}")
+        self.video_framerate_row.set_attribute(f"{eval(props['avg_frame_rate']):.2f} fps")
+
+
+class AttributeRow(Adw.PreferencesRow):
+    def __init__(self, title:str, attr:str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.title = title
+        self.attr_str = attr
+        self.build()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
+                                margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.title_label = Gtk.Label(label=self.title, xalign=0, hexpand=True, margin_start=15)
+        self.main_box.append(self.title_label)
+
+        self.attribute_label = Gtk.Label(label=self.attr_str, halign=0, margin_end=15)
+        self.main_box.append(self.attribute_label)
+
+    def set_title(self, title:str):
+        self.title_label.set_label(title)
+
+    def set_attribute(self, attr:str):
+        if attr is None:
+            attr = "N/A"
+        self.attribute_label.set_label(attr)

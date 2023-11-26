@@ -16,6 +16,9 @@ import hashlib
 import os
 import matplotlib.font_manager
 import sys
+import math
+from PIL import Image
+
 def sha256(file_path):
     """
     Calculates the sha256 hash of a file.
@@ -107,3 +110,9 @@ def is_video(path: str) -> bool:
         return os.path.splitext(path)[1][1:].lower() in video_formats
 
     return False
+
+def get_image_aspect_ratio(img: Image) -> str:
+    width, height = img.size
+    gcd = math.gcd(width, height)
+    aspect_ratio = f"{width//gcd}:{height//gcd}"
+    return aspect_ratio

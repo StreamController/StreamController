@@ -70,3 +70,10 @@ class PluginManager:
         for key, value in self.action_index.items():
             if value == action:
                 return key
+            
+    def get_plugin_by_id(self, plugin_id:str) -> PluginBase:
+        plugins = self.get_plugins()
+        for plugin in plugins.keys():
+            _id = get_last_dir(plugins[plugin]["folder-path"])
+            if _id == plugin_id:
+                return plugins[plugin]["object"]

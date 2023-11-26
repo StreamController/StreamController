@@ -84,6 +84,45 @@ class Page(dict):
                 #TODO: Change this to a list because there is no reason for it to be a dict
                 self.action_objects[key][i] = action_object
 
+    def remove_plugin_action_objects(self, plugin_id: str) -> bool:
+        plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
+        if plugin_obj is None:
+            return False
+        print(self.action_objects)
+        for key in list(self.action_objects.keys()):
+            for index in list(self.action_objects[key].keys()):
+                if self.action_objects[key][index].PLUGIN_BASE == plugin_obj:
+                    # Remove object
+                    action = self.action_objects[key][index]
+                    del action
+
+                    # Remove action from action_objects
+                    del self.action_objects[key][index]
+
+        return True
+    
+    def get_keys_with_plugin(self, plugin_id: str):
+        plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
+        if plugin_obj is None:
+            return
+        
+        keys = []
+        for key in self.action_objects:
+            for action in self.action_objects[key].values():
+                if action.PLUGIN_BASE == plugin_obj:
+                    keys.append(key)
+
+        return keys
+
+    def remove_plugin_actions_from_json(self, plugin_id: str): 
+        for key in self["keys"]:
+            for i, action in enumerate(self["keys"][key]["actions"]):
+                # Check if the action is from the plugin by using the plugin id before the action name
+                if self["keys"][key]["actions"].split("::")[0] == plugin_id:
+                    del self["keys"][key]["actions"][i]
+
+        self.save()
+
     def get_without_action_objects(self):
         dictionary = copy(self)
         for key in dictionary["keys"]:

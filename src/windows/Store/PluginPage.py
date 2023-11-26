@@ -136,6 +136,12 @@ class PluginPreview(Gtk.FlowBoxChild):
         self.download_button.connect("clicked", self.on_download_clicked)
         self.button_box.append(self.download_button)
 
+        self.remove_button = Gtk.Button(icon_name="remove-symbolic",
+                                        hexpand=True,
+                                        css_classes=["no-round-top-left", "no-round-top-right", "no-round-bottom-right"])
+        self.remove_button.connect("clicked", self.on_remove_clicked)
+        self.button_box.append(self.remove_button)
+
 
     def on_github_clicked(self, button: Gtk.Button):
         web.open(self.plugin_dict["url"])
@@ -145,3 +151,6 @@ class PluginPreview(Gtk.FlowBoxChild):
 
     def install(self):
         asyncio.run(self.plugin_page.store.backend.install_plugin(plugin_dict=self.plugin_dict))
+
+    def on_remove_clicked(self, button: Gtk.Button):
+        self.plugin_page.store.backend.uninstall_plugin(plugin_id=self.plugin_dict["id"])

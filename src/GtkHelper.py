@@ -94,7 +94,10 @@ class BetterExpander(Adw.ExpanderRow):
         # Add all childs in new order
         for child in childs:
             self.add_row(child)
-        
+
+    def remove_child(self, child:Gtk.Widget) -> None:
+        self.get_list_box().remove(child)
+
 
 class BetterPreferencesGroup(Adw.PreferencesGroup):
     def __init__(self, *args, **kwargs):

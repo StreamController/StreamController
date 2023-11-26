@@ -20,6 +20,7 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
 # Import python modules
 import webbrowser as web
 import asyncio
+import threading
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage

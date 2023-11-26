@@ -56,7 +56,7 @@ class BetterExpander(Adw.ExpanderRow):
 
         return rows
 
-    def get_list_box(self):
+    def get_list_box(self) -> Gtk.ListBox:
         expander_box = self.get_first_child()
         if expander_box is None:
             return
@@ -73,6 +73,28 @@ class BetterExpander(Adw.ExpanderRow):
     def clear(self):
         revealer_list_box = self.get_list_box()
         revealer_list_box.remove_all()
+
+    def reorder_child_after(self, child, after):
+        childs = self.get_rows()
+        after_index = childs.index(after)
+
+        if after_index is None:
+            log.warning("After child could not be found. Please add it first")
+            return
+        
+        # Remove child from list
+        childs.remove(child)
+
+        # Add child in new position
+        childs.insert(after_index, child)
+
+        # Remove all childs
+        self.clear()
+
+        # Add all childs in new order
+        for child in childs:
+            self.add_row(child)
+        
 
 class BetterPreferencesGroup(Adw.PreferencesGroup):
     def __init__(self, *args, **kwargs):

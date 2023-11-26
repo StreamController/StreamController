@@ -69,9 +69,11 @@ class Page(dict):
                 continue
             for i, action in enumerate(self["keys"][key]["actions"]):
                 action_class = gl.plugin_manager.get_action_from_action_string(action["name"])
-                if action_class is None:
-                    continue
+                
                 self.action_objects.setdefault(key, {})
+                if action_class is None:
+                    self.action_objects[key][i] = action["name"].split("::")[0]
+                    continue
 
                 old_object = self.action_objects[key].get(i)
                 if isinstance(old_object, action_class):

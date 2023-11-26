@@ -323,5 +323,11 @@ class StoreBackend:
             controller.reload_page()
 
         log.success(f"Plugin {plugin_dict['id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
+
+    async def get_plugin_for_id(self, plugin_id):
+        plugins = await self.get_all_plugins_async()
+        for plugin in plugins:
+            if plugin["id"] == plugin_id:
+                return plugin
         
 b = StoreBackend()

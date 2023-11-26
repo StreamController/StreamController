@@ -16,16 +16,24 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 
 
+
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk
+from gi.repository import Gtk, Adw, Gdk, GLib
 
 # Import Python modules
 from loguru import logger as log
 from copy import copy
+import asyncio
+import threading
 
 # Import globals
 import globals as gl
+
+# Import own modules
+from src.backend.PluginManager.ActionBase import ActionBase
+from src.GtkHelper import BetterExpander
 
 class ActionManager(Gtk.Box):
     def __init__(self, right_area, **kwargs):
@@ -65,7 +73,7 @@ class ActionGroup(Adw.PreferencesGroup):
         self.expander.load_for_coords(coords)
 
 
-class ActionExpanderRow(Adw.ExpanderRow):
+class ActionExpanderRow(BetterExpander):
     def __init__(self, action_group):
         super().__init__(title="Actions", subtitle="Actions for this key")
         self.set_expanded(True)
@@ -96,7 +104,14 @@ class ActionExpanderRow(Adw.ExpanderRow):
             return
         for i, key in enumerate(controller.active_page.action_objects[page_coords]):
             action =  controller.active_page.action_objects[page_coords][key]
-            self.add_action_row(action.ACTION_NAME, action.PLUGIN_BASE.PLUGIN_NAME, action, i)
+            if isinstance(action, ActionBase):
+                self.add_action_row(action.ACTION_NAME, action.PLUGIN_BASE.PLUGIN_NAME, action, i)
+            elif isinstance(action, str):
+                # No plugin installed for this action
+                missing_button_row = MissingActionButtonRow(action)
+                self.actions.append(missing_button_row)
+                self.add_row(missing_button_row)
+
 
         # Place add button at the end
         if len(self.actions) > 0:
@@ -110,33 +125,11 @@ class ActionExpanderRow(Adw.ExpanderRow):
     def clear_actions(self, keep_add_button=False):
         iter_actions = copy(self.actions) # Copy to iterate over to avoid problems with removing
         for action in iter_actions:
-            if isinstance(action, ActionRow) or (isinstance(action, AddActionButtonRow) and not keep_add_button):
+            if isinstance(action, ActionRow) or isinstance(action, MissingActionButtonRow) or (isinstance(action, AddActionButtonRow) and not keep_add_button):
                 self.remove(action)
                 self.actions.remove(action)
 
-    def reorder_child_after(self, child, after):
-        if child == after:
-            return
-        
-        child_index = self.get_index_of_child(child)
-        after_index = self.get_index_of_child(after)
-
-        if child_index == None or after_index == None:
-            log.warning("Child or after index is None")
-            return
-        
-        old_actions = copy(self.actions)
-        self.clear_actions()
-        self.actions = old_actions
-
-        # Change order in self.actions
-        self.actions.pop(child_index)
-        self.actions.insert(after_index, child)
-
-        # Add actions in new order
-        for action in self.actions:
-            if isinstance(action, ActionRow) or isinstance(action, AddActionButtonRow):
-                self.add_row(action)
+   
 
     def get_index_of_child(self, child):
         for i, action in enumerate(self.actions):
@@ -169,7 +162,6 @@ class ActionExpanderRow(Adw.ExpanderRow):
         for i in range(len(self.actions)):
             self.add_row(self.actions[i])
             # self.actions.append(old_actions[i])
-
 
 
 class ActionRow(Adw.PreferencesRow):
@@ -259,6 +251,66 @@ class ActionRow(Adw.PreferencesRow):
     def on_click(self, button):
         self.right_area.action_configurator.load_for_action(self.action_object, self.index)
         self.right_area.show_action_configurator()
+
+
+class MissingActionButtonRow(Adw.PreferencesRow):
+    def __init__(self, action_id:str):
+        super().__init__(css_classes=["no-padding"])
+        self.action_id = action_id
+
+        self.main_button = Gtk.Button(hexpand=True, css_classes=["invisible"])
+        self.main_button.connect("clicked", self.on_click)
+        self.set_child(self.main_button)
+    
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
+                                margin_bottom=10, margin_top=10)
+        self.main_button.set_child(self.main_box)
+
+        self.spinner = Gtk.Spinner(spinning=False, margin_bottom=5, visible=False)
+        self.main_box.append(self.spinner)
+
+        self.label = Gtk.Label(label=f"Install Missing Plugin", xalign=Gtk.Align.CENTER)
+        self.main_box.append(self.label)
+
+
+    def on_click(self, button):
+        self.spinner.set_visible(True)
+        self.spinner.start()
+        self.label.set_text("Installing Missing Plugin")
+
+        # Run in thread to allow the ui to update
+        threading.Thread(target=self.install).start()
+
+    def install(self):
+        # Get missing plugin from id
+        plugin = asyncio.run(gl.app.store.backend.get_plugin_for_id(self.action_id))
+        # Install plugin
+        success = asyncio.run(gl.app.store.backend.install_plugin(plugin))
+        if success == 404:
+            self.show_install_error()
+            return
+
+        # Reset ui
+        self.spinner.set_visible(False)
+        self.spinner.stop()
+        self.label.set_text("Install Missing Plugin")
+
+    def show_install_error(self):
+        self.spinner.set_visible(False)
+        self.spinner.stop()
+        self.label.set_text("Install Failed")
+        self.set_css_classes(["error"])
+        self.set_sensitive(False)
+        self.main_button.set_sensitive(False)
+
+        # Hide error after 3s
+        threading.Timer(3, self.hide_install_error).start()
+
+    def hide_install_error(self):
+        self.label.set_text("Install Missing Plugin")
+        self.remove_css_class("error")
+        self.set_sensitive(True)
+        self.main_button.set_sensitive(True)
 
 
 class AddActionButtonRow(Adw.PreferencesRow):

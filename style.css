@@ -187,3 +187,7 @@
 .border-round {
   border-radius: 6px;
 }
+.error {
+  background-color: #C01C28;
+  transition: background-color 0.25s;
+}

@@ -188,6 +188,9 @@ class LabelRow(Adw.PreferencesRow):
 
         # Set sensitive = False if label is set by an action
         for action in action_objects:
+            if isinstance(action, str):
+                # No plugin installed for this action
+                continue
             for key in action.labels:
                 if key == self.label_text.lower():
                     self.set_sensitive(False)

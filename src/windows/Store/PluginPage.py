@@ -47,6 +47,7 @@ class PluginPage(StorePage):
         plugins = self.store.backend.get_all_plugins()
         for i in range(250):
             for plugin in plugins:
+                GLib.idle_add(self.flow_box.append, PluginPreview(plugin_page=self, plugin_dict=plugin))
 
         self.set_loaded()
 

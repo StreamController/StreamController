@@ -77,7 +77,6 @@ class ActionExpanderRow(BetterExpander):
     def __init__(self, action_group):
         super().__init__(title="Actions", subtitle="Actions for this key")
         self.set_expanded(True)
-        self.actions = []
         self.action_group = action_group
         self.active_coords = None
 
@@ -88,11 +87,9 @@ class ActionExpanderRow(BetterExpander):
     def build(self):
         self.add_action_button = AddActionButtonRow(self)
         self.add_row(self.add_action_button)
-        self.actions.append(self.add_action_button)
 
     def add_action_row(self, action_name, action_category, action_object, index):
         action_row = ActionRow(action_name, action_category, action_object, self.action_group.right_area, index)
-        self.actions.append(action_row)
         self.add_row(action_row)
 
     def load_for_coords(self, coords):
@@ -109,27 +106,16 @@ class ActionExpanderRow(BetterExpander):
             elif isinstance(action, str):
                 # No plugin installed for this action
                 missing_button_row = MissingActionButtonRow(action)
-                self.actions.append(missing_button_row)
                 self.add_row(missing_button_row)
 
-
         # Place add button at the end
-        if len(self.actions) > 0:
-            # self.remove(self.add_action_button)
-            # self.add_row(self.add_action_button)
-
-            # self.actions.remove(self.add_action_button)
-            # self.actions.append(self.add_action_button)
-            self.reorder_child_after(self.add_action_button, self.actions[-1])
+        if len(self.get_rows()) > 0:
+            self.reorder_child_after(self.add_action_button, self.get_rows()[-1])
 
     def clear_actions(self, keep_add_button=False):
-        iter_actions = copy(self.actions) # Copy to iterate over to avoid problems with removing
-        for action in iter_actions:
-            if isinstance(action, ActionRow) or isinstance(action, MissingActionButtonRow) or (isinstance(action, AddActionButtonRow) and not keep_add_button):
-                self.remove(action)
-                self.actions.remove(action)
-
-   
+        self.clear()
+        if keep_add_button:
+            self.add_row(self.add_action_button)
 
     def get_index_of_child(self, child):
         for i, action in enumerate(self.actions):

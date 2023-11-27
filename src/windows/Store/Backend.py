@@ -343,7 +343,7 @@ class StoreBackend:
         shutil.rmtree(plugin_dir)
 
         ## 3. Delete plugin base object
-        plugin_obj = gl.plugin_manager.remove_plugin_by_id(plugin_id)
+        plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
         del plugin_obj
 
     async def get_plugin_for_id(self, plugin_id):

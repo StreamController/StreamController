@@ -63,6 +63,9 @@ class PluginPreview(StorePreview):
         self.set_image(plugin_dict["image"])
         self.set_url(plugin_dict["url"])
 
+        self.set_official(plugin_dict["official"])
+        self.set_verified(plugin_dict["commit_sha"] is not None)
+
     def install(self):
         asyncio.run(self.store.backend.install_plugin(plugin_dict=self.plugin_dict))
 

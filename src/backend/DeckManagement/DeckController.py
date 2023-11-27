@@ -35,6 +35,7 @@ from src.backend.DeckManagement.ImageHelpers import *
 from src.backend.DeckManagement.Subclasses.DeckMediaHandler import DeckMediaHandler
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.ScreenSaver import ScreenSaver
+from src.backend.PluginManager.ActionBase import ActionBase
 
 # Import globals
 import globals as gl
@@ -294,6 +295,8 @@ class DeckController:
         if page_coords not in self.active_page.action_objects:
             return
         for i, action in self.active_page.action_objects[page_coords].items():
+            if not isinstance(action, ActionBase):
+                continue
             if state:
                 action.on_key_down()
             else:

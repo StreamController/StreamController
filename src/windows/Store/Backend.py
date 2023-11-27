@@ -121,6 +121,17 @@ class StoreBackend:
 
         return plugins
     
+    async def get_all_icons(self):
+        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Icons.json")
+        icons_json = result.text
+        icons_json = json.loads(icons_json)
+
+        icons = []
+        for icon in icons_json:
+            icons.append(await self.prepare_icon(icon))
+
+        return icons
+    
     async def get_manifest(self, url:str, commit:str) -> dict:
         url = self.build_url(url, "manifest.json", commit)
         # Look for cached manifest - if we have a file for the same commit we can safely assume it's the same
@@ -178,6 +189,29 @@ class StoreBackend:
             "official": True,
             "commit_sha": plugin["verified-commit"],
             "id": manifest.get("id")
+        }
+    
+    async def prepare_icon(self, icon):
+        url = icon["url"]
+        manifest = await self.get_manifest(url, icon["verified-commit"])
+
+        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), icon["verified-commit"]))
+
+        description = manifest.get("description")
+
+        user_name = self.get_user_name(url)
+        repo_name = self.get_repo_name(url)
+
+        stargazers = await self.get_stargazers(url)
+
+        return {
+            "name": manifest.get("name"),
+            "description": description,
+            "url": url,
+            "user_name": user_name,
+            "repo_name": repo_name,
+            "image": image,
+            "stargazers": stargazers,
         }
 
     async def image_from_url(self, url):

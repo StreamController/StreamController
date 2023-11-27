@@ -36,6 +36,7 @@ import globals as gl
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.windows.Store.Backend import StoreBackend
 from src.windows.Store.Plugins.PluginPage import PluginPage
+from src.windows.Store.Icons.IconPage import IconPage
 from src.windows.Store.StorePage import StorePage
 
 class Store(Gtk.ApplicationWindow):
@@ -76,17 +77,6 @@ class Store(Gtk.ApplicationWindow):
         self.main_stack.add_titled(self.icon_page, "Icons", "Icons")
         self.main_stack.add_titled(self.wallpaper_page, "Wallpapers", "Wallpapers")
 
-
-
-
-
-
-
-
-class IconPage(StorePage):
-    def __init__(self, store: Store):
-        super().__init__(store=store)
-        self.search_entry.set_placeholder_text("Search for icons")
 
 class WallpaperPage(StorePage):
     def __init__(self, store: Store):

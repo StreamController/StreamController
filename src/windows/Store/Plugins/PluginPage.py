@@ -13,6 +13,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
@@ -27,6 +28,7 @@ from src.windows.Store.StorePage import StorePage
 from src.windows.Store.Batches import OfficialBatch, VerifiedBatch
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
+from src.windows.Store.Preview import StorePreview
 
 # Typing
 from typing import TYPE_CHECKING
@@ -51,8 +53,24 @@ class PluginPage(StorePage):
         self.set_loaded()
 
 
+class PluginPreview(StorePreview):
+    def __init__(self, plugin_page:PluginPage, plugin_dict:dict):
+        super().__init__(store_page=plugin_page)
+        self.plugin_dict = plugin_dict
 
-class PluginPreview(Gtk.FlowBoxChild):
+        self.set_author_label(plugin_dict["user_name"])
+        self.set_name_label(plugin_dict["name"])
+        self.set_image(plugin_dict["image"])
+        self.set_url(plugin_dict["url"])
+
+    def install(self):
+        asyncio.run(self.store.backend.install_plugin(plugin_dict=self.plugin_dict))
+
+    def uninstall(self):
+        self.store.backend.uninstall_plugin(plugin_id=self.plugin_dict["id"])
+
+
+class PluginPreviewOLD(Gtk.FlowBoxChild):
     def __init__(self, plugin_page: PluginPage, plugin_dict: dict):
         super().__init__()
         self.plugin_page = plugin_page

@@ -35,7 +35,7 @@ import globals as gl
 # Import own modules
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.windows.Store.Backend import StoreBackend
-from src.windows.Store.PluginPage import PluginPage
+from src.windows.Store.Plugins.PluginPage import PluginPage
 from src.windows.Store.StorePage import StorePage
 
 class Store(Gtk.ApplicationWindow):

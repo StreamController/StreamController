@@ -78,7 +78,7 @@ class StorePreview(Gtk.FlowBoxChild):
         self.label_box.append(self.author_label)
 
         self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
-                                 hexpand=False, vexpand=False,
+                                 hexpand=False, vexpand=True,
                                  margin_start=7, margin_top=15, margin_bottom=15)
         # self.overlay.add_overlay(self.batch_box)
         self.main_button_box.append(self.batch_box)

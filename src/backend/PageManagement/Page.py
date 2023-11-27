@@ -91,6 +91,8 @@ class Page(dict):
         print(self.action_objects)
         for key in list(self.action_objects.keys()):
             for index in list(self.action_objects[key].keys()):
+                if isinstance(self.action_objects[key][index], str):
+                    continue
                 if self.action_objects[key][index].PLUGIN_BASE == plugin_obj:
                     # Remove object
                     action = self.action_objects[key][index]
@@ -109,6 +111,8 @@ class Page(dict):
         keys = []
         for key in self.action_objects:
             for action in self.action_objects[key].values():
+                if isinstance(action, str):
+                    continue
                 if action.PLUGIN_BASE == plugin_obj:
                     keys.append(key)
 

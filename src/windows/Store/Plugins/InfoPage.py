@@ -131,7 +131,7 @@ class DescriptionRow(Adw.PreferencesRow):
         self.main_box.append(self.title_label)
 
         self.description_label = Gtk.Label(label=self.desc, xalign=0, wrap=True, wrap_mode=Pango.WrapMode.WORD,
-                                           margin_start=15, margin_top=15)
+                                           margin_start=15, margin_top=15, margin_end=15)
         self.main_box.append(self.description_label)
 
     def set_description(self, description:str):

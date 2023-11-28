@@ -25,6 +25,9 @@ from loguru import logger as log
 from src.windows.mainWindow.elements.DeckSettings.DeckGroup import DeckGroup
 from src.windows.mainWindow.elements.DeckSettings.BackgroundGroup import BackgroundGroup
 
+# Import globals
+import globals as gl
+
 class DeckSettingsPage(Gtk.Box):
     def __init__(self, deck_stack_child, deck_controller, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,

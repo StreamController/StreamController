@@ -25,6 +25,9 @@ from loguru import logger as log
 from src.windows.mainWindow.elements.KeyGrid import KeyGrid
 from src.windows.mainWindow.elements.PageSettings.PageSettings import PageSettings
 
+# Import globals
+import globals as gl
+
 class PageSettingsPage(Gtk.Box):
     """
     Child of DeckStackChild
@@ -50,11 +53,11 @@ class PageSettingsPage(Gtk.Box):
         ## Add stack pages
         # Add key grid
         self.grid_page = KeyGrid(self.deck_controller, self)
-        self.stack.add_titled(self.grid_page, "keys", "Page Key Grid")
+        self.stack.add_titled(self.grid_page, "keys", gl.lm.get("main-page-page-grid"))
 
         # Add settings
         self.settings_page = PageSettings(self)
-        self.stack.add_titled(self.settings_page, "settings", "Page Settings")
+        self.stack.add_titled(self.settings_page, "settings", gl.lm.get("main-page-page-settings"))
 
 
 class Switcher(Gtk.StackSwitcher):

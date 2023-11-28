@@ -24,6 +24,9 @@ from src.windows.mainWindow.elements.PageSettings.PageSettings import PageSettin
 from src.windows.mainWindow.elements.DeckSettings.DeckSettingsPage import DeckSettingsPage
 from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
 
+# Import globals
+import globals as gl
+
 class DeckStackChild(Gtk.Stack):
     """
     Child of DeckStack

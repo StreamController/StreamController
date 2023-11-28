@@ -40,4 +40,8 @@ class LocaleManager:
             log.warning("No language set.")
             return key
         #TODO: If language does not have key, return automatic translation
+        if key not in self.locales_json:
+            print(key)
+            exit()
+            return "Not found"
         return self.locales_json[key]

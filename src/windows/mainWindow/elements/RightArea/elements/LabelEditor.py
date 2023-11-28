@@ -25,6 +25,8 @@ from loguru import logger as log
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import font_path_from_name, font_name_from_path
 
+# Import globals
+import globals as gl
 
 class LabelEditor(Gtk.Box):
     def __init__(self, right_area, **kwargs):
@@ -66,15 +68,15 @@ class LabelGroup(Adw.PreferencesGroup):
 
 class LabelExpanderRow(Adw.ExpanderRow):
     def __init__(self, label_group):
-        super().__init__(title="Labels", subtitle="Labels for this key",)
+        super().__init__(title=gl.lm.get("label-editor-header"), subtitle=gl.lm.get("label-editor-expander-subtitle"))
         self.label_group = label_group
         self.active_coords = None
         self.build()
 
     def build(self):
-        self.top_row = LabelRow("Top", self.label_group.right_area)
-        self.center_row = LabelRow("Center", self.label_group.right_area)
-        self.bottom_row = LabelRow("Bottom", self.label_group.right_area)
+        self.top_row = LabelRow(gl.lm.get("label-editor-top-name"), self.label_group.right_area)
+        self.center_row = LabelRow(gl.lm.get("label-editor-center-name"), self.label_group.right_area)
+        self.bottom_row = LabelRow(gl.lm.get("label-editor-bottom-name"), self.label_group.right_area)
 
         self.add_row(self.top_row)
         self.add_row(self.center_row)
@@ -103,14 +105,14 @@ class LabelRow(Adw.PreferencesRow):
         self.label = Gtk.Label(label=self.label_text, xalign=0, margin_bottom=3, css_classes=["bold"])
         self.main_box.append(self.label)
 
-        self.controlled_by_action_label = Gtk.Label(label="Controlled by action", css_classes=["bold", "red-color"], xalign=0,
+        self.controlled_by_action_label = Gtk.Label(label=gl.lm.get("label-editor-warning-controlled-by-action"), css_classes=["bold", "red-color"], xalign=0,
                                                     margin_bottom=3, visible=False)
         self.main_box.append(self.controlled_by_action_label)
 
         self.text_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.text_box)
 
-        self.entry = Gtk.Entry(hexpand=True, margin_end=5, placeholder_text="Label")
+        self.entry = Gtk.Entry(hexpand=True, margin_end=5, placeholder_text=gl.lm.get("label-editor-placeholder-text"))
         self.entry.connect("changed", self.on_change_text)
         self.text_box.append(self.entry)
 
@@ -121,7 +123,7 @@ class LabelRow(Adw.PreferencesRow):
         self.font_chooser_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
         self.main_box.append(self.font_chooser_box)
 
-        self.font_chooser_label = Gtk.Label(label="Font:", xalign=0, hexpand=True)
+        self.font_chooser_label = Gtk.Label(label=gl.lm.get("label-editor-font-chooser-label"), xalign=0, hexpand=True)
         self.font_chooser_box.append(self.font_chooser_label)
 
         self.font_chooser_button = Gtk.FontButton()
@@ -131,7 +133,7 @@ class LabelRow(Adw.PreferencesRow):
         self.stroke_width_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
         self.main_box.append(self.stroke_width_box)
 
-        self.stroke_width_label = Gtk.Label(label="Stroke width:", xalign=0, hexpand=True)
+        self.stroke_width_label = Gtk.Label(label=gl.lm.get("label-editor-font-weight-label"), xalign=0, hexpand=True)
         self.stroke_width_box.append(self.stroke_width_label)
 
         self.stroke_width_button = Gtk.SpinButton.new_with_range(0, 5, 1)

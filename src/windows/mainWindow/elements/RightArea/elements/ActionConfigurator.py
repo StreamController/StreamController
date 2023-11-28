@@ -19,6 +19,9 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
+# Import globals
+import globals as gl
+
 class ActionConfigurator(Gtk.Box):
     def __init__(self, right_area, **kwargs):
         super().__init__(**kwargs)
@@ -39,10 +42,10 @@ class ActionConfigurator(Gtk.Box):
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
 
-        self.back_label = Gtk.Label(label="Go Back", margin_start=6, xalign=0, css_classes=["bold"])
+        self.back_label = Gtk.Label(label=gl.lm.get("go-back"), margin_start=6, xalign=0, css_classes=["bold"])
         self.nav_box.append(self.back_label)
 
-        self.header = Gtk.Label(label="Configure Action", xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
+        self.header = Gtk.Label(label=gl.lm.get("action-configurator-header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
         self.main_box.append(self.header)
 
         self.config_group = ConfigGroup(self, margin_top=40)
@@ -139,7 +142,7 @@ class RemoveButton(Gtk.Button):
         super().__init__(**kwargs)
         self.set_css_classes(["remove-action-button"])
         self.configurator = configurator
-        self.set_label("Remove Action")
+        self.set_label(gl.lm.get("action-configurator-remove-action"))
         self.connect("clicked", self.on_remove_button_click)
 
         self.action = None

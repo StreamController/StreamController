@@ -50,7 +50,7 @@ class IconSelector(Gtk.Box):
         # self.button.set_child(self.image)
         self.button_fixed.put(self.image, 0, 0)
 
-        self.label = Gtk.Label(label="Click to change", css_classes=["icon-selector-hint-label-hidden"])
+        self.label = Gtk.Label(label=gl.lm.get("icon-selector-click-hint"), css_classes=["icon-selector-hint-label-hidden"])
         label_size = self.label.get_preferred_size()[1] # 1 for natural size
         label_width, label_height = label_size.width, label_size.height
         self.button_fixed.put(self.label, (175-label_width)/2, (175-label_height)/2) # 175 for the size of the image

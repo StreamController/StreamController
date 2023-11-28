@@ -1,3 +1,25 @@
 {
-    "test": "de_DE Test"
+    "icon-selector-click-hint": "Klicken zum ändern",
+    "label-editor-header": "Text",
+    "label-editor-warning-controlled-by-action": "Gesteuert von Action",
+    "label-editor-top-name": "Oben",
+    "label-editor-center-name": "Mitte",
+    "label-editor-bottom-name": "Unten",
+    "label-editor-font-chooser-label": "Schriftart:",
+    "label-editor-font-weight-label": "Schriftdicke:",
+    "label-editor-placeholder-text": "Text",
+    "label-editor-expander-subtitle": "Texte für diese Taste",
+    "action-editor-header": "Actions",
+    "action-editor-expander-subtitle": "Actions für diese Taste",
+    "action-editor-add-new-action": "Action hinzufügen",
+    "go-back": "Zurück",
+    "action-configurator-header": "Action einstellen",
+    "action-configurator-remove-action": "Action entfernen",
+    "header-page-selector-page-label": "Seite:",
+    "header-page-selector-drop-down-hint": "Seite für aktives Deck auswählen",
+    "header-page-selector-page-manager-hint": "Seiten verwalten",
+    "main-page-page-settings": "Einstellungen der Seite",
+    "main-page-page-grid": "Tasten der Seite",
+    "toggle-config-to-page": "Seite einstellen",
+    "toggle-config-to-deck": "Deck einstellen"
 }

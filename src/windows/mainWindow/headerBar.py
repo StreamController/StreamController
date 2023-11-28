@@ -25,6 +25,9 @@ from loguru import logger as log
 from src.windows.mainWindow.deckSwitcher import DeckSwitcher
 from src.windows.mainWindow.elements.PageSelector import PageSelector
 
+# Import globals
+import globals as gl
+
 class HeaderBar(Gtk.HeaderBar):
     def __init__(self, deck_manager, main_window, deck_stack, **kwargs):
         super().__init__(**kwargs)
@@ -44,14 +47,16 @@ class HeaderBar(Gtk.HeaderBar):
         self.set_title_widget(self.deckSwitcher)
 
         # Config deck button
-        self.config_button = Gtk.Button(label="Config deck")
+        self.config_button = Gtk.Button(label=gl.lm.get("toggle-config-to-deck"))
         self.config_button.connect("clicked", self.on_config_button_click)
         self.pack_end(self.config_button)
 
     def on_config_button_click(self, button):
-        if button.get_label() == "Config deck":
+        active_page = self.deckStack.get_visible_child().get_visible_child_name()
+
+        if active_page == "Page Settings":
             self.deckStack.get_visible_child().set_visible_child_name("Deck Settings")
-            button.set_label("Config page")
-        elif button.get_label() == "Config page":
+            button.set_label(gl.lm.get("toggle-config-to-page"))
+        elif active_page == "Deck Settings":
             self.deckStack.get_visible_child().set_visible_child_name("Page Settings")
-            button.set_label("Config deck")
+            button.set_label(gl.lm.get("toggle-config-to-deck"))

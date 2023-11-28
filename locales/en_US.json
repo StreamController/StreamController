@@ -1,3 +1,25 @@
 {
-    "test": "en_US Test"
+    "icon-selector-click-hint": "Click to change",
+    "label-editor-header": "Labels",
+    "label-editor-warning-controlled-by-action": "Controlled by action",
+    "label-editor-top-name": "Top",
+    "label-editor-center-name": "Center",
+    "label-editor-bottom-name": "Bottom",
+    "label-editor-font-chooser-label": "Font:",
+    "label-editor-font-weight-label": "Font weight:",
+    "label-editor-placeholder-text": "Label",
+    "label-editor-expander-subtitle": "Labels for this key",
+    "action-editor-header": "Actions",
+    "action-editor-expander-subtitle": "Actions for this key",
+    "action-editor-add-new-action": "Add Action",
+    "go-back": "Go Back",
+    "action-configurator-header": "Configure Action",
+    "action-configurator-remove-action": "Remove Action",
+    "header-page-selector-page-label": "Page:",
+    "header-page-selector-drop-down-hint": "Select page for active deck",
+    "header-page-selector-page-manager-hint": "Open Page Manager",
+    "main-page-page-settings": "Page Settings",
+    "main-page-page-grid": "Page Key Grid",
+    "toggle-config-to-page": "Configure page",
+    "toggle-config-to-deck": "Configure deck"
 }

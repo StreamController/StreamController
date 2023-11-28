@@ -34,11 +34,6 @@ class AssetManager(list):
         self.fill_missing_data()
 
     def load_json(self):
-        if not os.path.exists(self.JSON_PATH):
-            log.warning("No JSON file found! Creating a new one.")
-            self.clear()
-            self.save_json()
-            return
         # Create file if it does not exist
         create_empty_json(self.JSON_PATH)
         # Load json file

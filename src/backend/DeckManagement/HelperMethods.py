@@ -118,9 +118,12 @@ def get_image_aspect_ratio(img: Image) -> str:
     aspect_ratio = f"{width//gcd}:{height//gcd}"
     return aspect_ratio
 
-def create_empty_json(self, path:str):
+def create_empty_json(path:str, ignore_present: bool = False):
     # Create all dirs
     os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    if not ignore_present and os.path.exists(path):
+        return
 
     # Write empty json
     with open(path, "w") as f:

@@ -56,7 +56,8 @@ class IconPage(StorePage):
 class IconPreview(StorePreview):
     def __init__(self, icon_page:IconPage, icon_dict:dict):
         super().__init__(store_page=icon_page)
-        self.plugin_dict = icon_dict
+        self.icon_dict = icon_dict
+        self.icon_page = icon_page
 
         self.set_author_label(icon_dict["user_name"])
         self.set_name_label(icon_dict["name"])
@@ -71,3 +72,17 @@ class IconPreview(StorePreview):
 
     def uninstall(self):
         pass
+
+    def on_click_main(self, button: Gtk.Button):
+        self.icon_page.set_info_visible(True)
+
+        # Update info page
+        self.icon_page.info_page.set_name(self.icon_dict.get("name"))
+        self.icon_page.info_page.set_description(self.icon_dict.get("description"))
+        self.icon_page.info_page.set_author(self.icon_dict.get("user_name"))
+        self.icon_page.info_page.set_version(self.icon_dict.get("version"))
+
+        self.icon_page.info_page.set_license(self.icon_dict.get("license"))
+        self.icon_page.info_page.set_copyright(self.icon_dict.get("copyright"))
+        self.icon_page.info_page.original_url.set_url(self.icon_dict.get("original_url"))
+        self.icon_page.info_page.set_license_description(self.icon_dict.get("license_description"))

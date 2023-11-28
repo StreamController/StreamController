@@ -69,6 +69,11 @@ class Store(Gtk.ApplicationWindow):
         self.stack_switcher = Gtk.StackSwitcher(stack=self.main_stack)
         self.header.set_title_widget(self.stack_switcher)
 
+        # Header back button
+        self.back_button = Gtk.Button(icon_name="go-previous", visible=False)
+        self.back_button.connect("clicked", self.on_back_button_click)
+        self.header.pack_start(self.back_button)
+
         self.plugin_page = PluginPage(store=self)
         self.icon_page = IconPage(store=self)
         self.wallpaper_page = WallpaperPage(store=self)
@@ -76,6 +81,10 @@ class Store(Gtk.ApplicationWindow):
         self.main_stack.add_titled(self.plugin_page, "Plugins", "Plugins")
         self.main_stack.add_titled(self.icon_page, "Icons", "Icons")
         self.main_stack.add_titled(self.wallpaper_page, "Wallpapers", "Wallpapers")
+
+    def on_back_button_click(self, button: Gtk.Button):
+        # Switch active page back from info page
+        self.main_stack.get_visible_child().set_info_visible(False)
 
 
 class WallpaperPage(StorePage):

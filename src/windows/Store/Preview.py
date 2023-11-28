@@ -53,6 +53,7 @@ class StorePreview(Gtk.FlowBoxChild):
         self.main_button = Gtk.Button(hexpand=True, vexpand=False,
                                       width_request=250, height_request=200,
                                       css_classes=["no-padding", "no-round-bottom"])
+        self.main_button.connect("clicked", self.on_click_main)
         self.main_box.append(self.main_button)
         
         self.main_button_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
@@ -150,4 +151,7 @@ class StorePreview(Gtk.FlowBoxChild):
         self.uninstall()
 
     def uninstall(self):
+        pass
+
+    def on_click_main(self, button: Gtk.Button):
         pass

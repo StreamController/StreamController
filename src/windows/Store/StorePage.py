@@ -13,6 +13,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk
@@ -21,37 +22,45 @@ from gi.repository import Gtk
 from fuzzywuzzy import fuzz
 import threading
 
+# Import own modules
+from src.windows.Store.Plugins.InfoPage import InfoPage
+
 # Typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.Store.Store import Store
 
-class StorePage(Gtk.Box):
+class StorePage(Gtk.Stack):
     def __init__(self, store: "Store"):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        super().__init__()
         self.set_hexpand(True)
         self.set_vexpand(True)
         self.set_margin_start(15)
         self.set_margin_end(15)
         self.set_margin_top(15)
         self.set_margin_bottom(15)
+        self.set_transition_duration(200)
+        self.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
 
         self.store = store
 
         self.build()
 
     def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.add_titled(self.main_box, "Store", "Store")
+
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
-        self.append(self.nav_box)
+        self.main_box.append(self.nav_box)
 
         self.search_entry = Gtk.SearchEntry(placeholder_text="Search", hexpand=True)
         self.search_entry.connect("search-changed", self.on_search_changed)
         self.nav_box.append(self.search_entry)
 
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True)
-        self.append(self.scrolled_window)
+        self.main_box.append(self.scrolled_window)
 
-        self.scrolled_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.scrolled_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.scrolled_window.set_child(self.scrolled_box)
 
         self.flow_box = Gtk.FlowBox(orientation=Gtk.Orientation.HORIZONTAL)
@@ -72,6 +81,10 @@ class StorePage(Gtk.Box):
         # Add vexpand box to the bottom to avoid unwanted stretching of the flowbox children
         self.bottom_box = Gtk.Box(hexpand=True, vexpand=True)
         self.scrolled_box.append(self.bottom_box)
+
+        # Info page
+        self.info_page = InfoPage(self)
+        self.add_titled(self.info_page, "Info", "Info")
 
     def on_search_changed(self, entry: Gtk.SearchEntry):
         self.flow_box.invalidate_filter()
@@ -147,3 +160,11 @@ class StorePage(Gtk.Box):
         self.bottom_box.set_visible(True)
         self.loading_box.set_visible(False)
         self.spinner.set_spinning(False)
+
+    def set_info_visible(self, visible:bool):
+        if visible:
+            self.set_visible_child(self.info_page)
+            self.store.back_button.set_visible(True)
+        else:
+            self.set_visible_child(self.main_box)
+            self.store.back_button.set_visible(False)

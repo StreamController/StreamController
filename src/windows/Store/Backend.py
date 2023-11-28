@@ -60,6 +60,15 @@ class StoreBackend:
         with open("src/windows/Store/cache/manifests.json", "r") as f:
             self.manifest_cache = json.load(f)
 
+        # Attribution cache file
+        if not os.path.exists("src/windows/Store/cache/attribution"):
+            os.mkdir("src/windows/Store/cache/attribution")
+        if not os.path.exists("src/windows/Store/cache/attribution.json"):
+            with open("src/windows/Store/cache/attribution.json", "w") as f:
+                json.dump({}, f, indent=4)
+        with open("src/windows/Store/cache/attribution.json", "r") as f:
+            self.attribution_cache = json.load(f)
+
     @alru_cache(maxsize=None)
     async def request_from_url(self, url: str) -> requests.Response:
         req = requests.get(url, stream=True)
@@ -165,6 +174,39 @@ class StoreBackend:
                     os.remove(self.manifest_cache[cached_url])
                 del self.manifest_cache[cached_url]
 
+    async def get_attribution(self, url:str, commit:str) -> dict:
+        url = self.build_url(url, "attribution.json", commit)
+        # Look for cached manifest - if we have a file for the same commit we can safely assume it's the same
+        if url in self.attribution_cache:
+            if os.path.isfile(self.attribution_cache[url]):
+                with open(self.attribution_cache[url], "r") as f:
+                    return json.load(f)
+
+        # Not in cache, get it
+        attribution = await self.request_from_url(url)
+        attribution = json.loads(attribution.text)
+
+        # Save to cache
+        cache_file_name = f"{self.get_repo_name(url)}::{commit}"
+        with open(f"src/windows/Store/cache/attribution/{cache_file_name}.json", "w") as f:
+            json.dump(attribution, f, indent=4)
+
+        self.remove_old_attribution_cache(url, commit)
+
+        self.attribution_cache[url] = f"src/windows/Store/cache/attribution/{cache_file_name}.json"
+        # Save cache file
+        with open("src/windows/Store/cache/attribution.json", "w") as f:
+            json.dump(self.attribution_cache, f, indent=4)
+
+        return attribution
+    
+    def remove_old_attribution_cache(self, url:str, commit_sha:str):
+        for cached_url in list(self.attribution_cache.keys()):
+            if self.get_repo_name(cached_url) == self.get_repo_name(url) and not commit_sha in cached_url:
+                if os.path.isfile(self.attribution_cache[cached_url]):
+                    os.remove(self.attribution_cache[cached_url])
+                del self.attribution_cache[cached_url]
+
     async def prepare_plugin(self, plugin):
         url = plugin["url"]
         manifest = await self.get_manifest(url, plugin["verified-commit"])
@@ -194,6 +236,8 @@ class StoreBackend:
     async def prepare_icon(self, icon):
         url = icon["url"]
         manifest = await self.get_manifest(url, icon["verified-commit"])
+        attribution = await self.get_attribution(url, icon["verified-commit"])
+        attribution = attribution["generic"] #TODO: Choose correct attribution
 
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), icon["verified-commit"]))
 
@@ -207,11 +251,16 @@ class StoreBackend:
         return {
             "name": manifest.get("name"),
             "description": description,
+            "version": manifest.get("version"),
             "url": url,
             "user_name": user_name,
             "repo_name": repo_name,
             "image": image,
             "stargazers": stargazers,
+            "license": attribution.get("license"),
+            "copyright": attribution.get("copyright"),
+            "original_url": attribution.get("original-url"),
+            "license_description": attribution.get("description"),
         }
 
     async def image_from_url(self, url):

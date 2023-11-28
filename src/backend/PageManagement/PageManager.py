@@ -30,6 +30,9 @@ class PageManager:
 
     def get_pages(self, remove_extension: bool = False) -> list:
         pages = []
+        # Create pages dir if it doesn't exist
+        os.makedirs("pages", exist_ok=True)
+        # Get all pages
         for page in os.listdir("pages"):
             if os.path.splitext(page)[1] == ".json":
                 if remove_extension:
@@ -57,7 +60,7 @@ class PageManager:
 
     def get_default_page_for_deck(self, serial_number: str, remove_extension: bool = False) -> Page:
         page_settings = self.settings_manager.load_settings_from_file("settings/pages.json")
-        for page in page_settings["default-pages"]:
+        for page in page_settings.get("default-pages", []):
             if page["deck"] == serial_number:
                 name = page["name"]
                 if not remove_extension:

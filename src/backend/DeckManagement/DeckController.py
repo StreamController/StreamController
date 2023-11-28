@@ -699,6 +699,8 @@ class DeckController:
 
 
     def tick_actions(self):
+        if not isinstance(self.active_page, Page):
+            return
         actions = self.active_page.get_all_actions()
         for action in actions:
             if hasattr(action, "on_tick"):

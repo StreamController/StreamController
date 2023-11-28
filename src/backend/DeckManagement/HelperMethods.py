@@ -17,6 +17,7 @@ import os
 import matplotlib.font_manager
 import sys
 import math
+import json
 from PIL import Image
 
 def sha256(file_path):
@@ -116,3 +117,11 @@ def get_image_aspect_ratio(img: Image) -> str:
     gcd = math.gcd(width, height)
     aspect_ratio = f"{width//gcd}:{height//gcd}"
     return aspect_ratio
+
+def create_empty_json(self, path:str):
+    # Create all dirs
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    # Write empty json
+    with open(path, "w") as f:
+        json.dump({}, f, indent=4)

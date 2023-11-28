@@ -23,7 +23,7 @@ from decord import VideoReader
 from PIL import Image
 
 # Import own modules
-from src.backend.DeckManagement.HelperMethods import is_video, sha256, file_in_dir
+from src.backend.DeckManagement.HelperMethods import is_video, sha256, file_in_dir, create_empty_json
 
 
 class AssetManager(list):
@@ -39,6 +39,9 @@ class AssetManager(list):
             self.clear()
             self.save_json()
             return
+        # Create file if it does not exist
+        create_empty_json(self.JSON_PATH)
+        # Load json file
         with open(self.JSON_PATH, "r") as f:
             self.clear()
             content = json.load(f)

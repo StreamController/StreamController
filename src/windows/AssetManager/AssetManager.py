@@ -213,6 +213,7 @@ class AssetChooserFlowBox(Gtk.Box):
 
     def build(self):
         self.flow_box = Gtk.FlowBox(hexpand=True, orientation=Gtk.Orientation.HORIZONTAL)
+        self.flow_box.connect("child-activated", self.on_child_activated)
         self.append(self.flow_box)
 
         for asset in gl.asset_manager.get_all():
@@ -273,6 +274,11 @@ class AssetChooserFlowBox(Gtk.Box):
             return 1
         
         return 0
+    
+    def on_child_activated(self, flow_box, child):
+        if callable(self.callback_func):
+            self.callback_func(child.asset["internal-path"], *self.callback_args, **self.callback_kwargs)
+        self.asset_chooser.asset_manager.close()
 
 
 class AssetPreview(Gtk.FlowBoxChild):

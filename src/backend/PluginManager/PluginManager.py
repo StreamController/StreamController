@@ -14,6 +14,8 @@ class PluginManager:
 
     def load_plugins(self):
         # get all folders in plugins folder
+        if not os.path.exists("plugins"):
+            os.mkdir("plugins")
         folders = os.listdir("plugins")
         for folder in folders:
             # Install all dependencies

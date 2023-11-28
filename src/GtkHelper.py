@@ -143,3 +143,29 @@ class BetterPreferencesGroup(Adw.PreferencesGroup):
         list_box = third_box.get_first_child()
 
         return list_box
+    
+class AttributeRow(Adw.PreferencesRow):
+    def __init__(self, title:str, attr:str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.title = title
+        self.attr_str = attr
+        self.build()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
+                                margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.title_label = Gtk.Label(label=self.title, xalign=0, hexpand=True, margin_start=15)
+        self.main_box.append(self.title_label)
+
+        self.attribute_label = Gtk.Label(label=self.attr_str, halign=0, margin_end=15)
+        self.main_box.append(self.attribute_label)
+
+    def set_title(self, title:str):
+        self.title_label.set_label(title)
+
+    def set_url(self, attr:str):
+        if attr is None:
+            attr = "N/A"
+        self.attribute_label.set_label(attr)

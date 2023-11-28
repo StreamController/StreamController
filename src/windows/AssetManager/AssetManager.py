@@ -40,6 +40,7 @@ import globals as gl
 # Import own modules
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import get_image_aspect_ratio, is_video
+from src.GtkHelper import AttributeRow
 
 class AssetManager(Gtk.ApplicationWindow):
     def __init__(self, main_window: "MainWindow", *args, **kwargs):
@@ -344,10 +345,10 @@ class AssetInfo(Gtk.Box):
         else:
             self.show_for_img(asset["internal-path"])
 
-        self.license_type_row.set_attribute(asset["license"].get("name"))
-        self.license_author_row.set_attribute(asset["license"].get("author"))
-        self.license_url_row.set_attribute(asset["license"].get("url"))
-        self.license_comment_row.set_attribute(asset["license"].get("comment"))
+        self.license_type_row.set_url(asset["license"].get("name"))
+        self.license_author_row.set_url(asset["license"].get("author"))
+        self.license_url_row.set_url(asset["license"].get("url"))
+        self.license_comment_row.set_url(asset["license"].get("comment"))
 
         
 
@@ -358,8 +359,8 @@ class AssetInfo(Gtk.Box):
 
         # Update ui content
         with Image.open(path) as img:
-            self.img_resolution_row.set_attribute(f"{img.width}x{img.height}")
-            self.img_aspect_ratio_row.set_attribute(f"{get_image_aspect_ratio(img)}")
+            self.img_resolution_row.set_url(f"{img.width}x{img.height}")
+            self.img_aspect_ratio_row.set_url(f"{get_image_aspect_ratio(img)}")
 
     def show_for_vid(self, path:str):
         props = get_video_properties(path)
@@ -369,33 +370,6 @@ class AssetInfo(Gtk.Box):
         self.video_group.set_visible(True)
 
         # Update ui content
-        self.video_resolution_row.set_attribute(f"{props['width']}x{props['height']}")
-        self.aspect_ratio_row.set_attribute(f"{props['display_aspect_ratio']}")
-        self.video_framerate_row.set_attribute(f"{eval(props['avg_frame_rate']):.2f} fps")
-
-
-class AttributeRow(Adw.PreferencesRow):
-    def __init__(self, title:str, attr:str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.title = title
-        self.attr_str = attr
-        self.build()
-
-    def build(self):
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
-                                margin_top=15, margin_bottom=15)
-        self.set_child(self.main_box)
-
-        self.title_label = Gtk.Label(label=self.title, xalign=0, hexpand=True, margin_start=15)
-        self.main_box.append(self.title_label)
-
-        self.attribute_label = Gtk.Label(label=self.attr_str, halign=0, margin_end=15)
-        self.main_box.append(self.attribute_label)
-
-    def set_title(self, title:str):
-        self.title_label.set_label(title)
-
-    def set_attribute(self, attr:str):
-        if attr is None:
-            attr = "N/A"
-        self.attribute_label.set_label(attr)
+        self.video_resolution_row.set_url(f"{props['width']}x{props['height']}")
+        self.aspect_ratio_row.set_url(f"{props['display_aspect_ratio']}")
+        self.video_framerate_row.set_url(f"{eval(props['avg_frame_rate']):.2f} fps")

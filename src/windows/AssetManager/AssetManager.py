@@ -95,6 +95,8 @@ class AssetChooser(Gtk.Box):
         self.build()
         self.load_defaults()
 
+        self.init_dnd()
+
     def build(self):
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=False, margin_bottom=15)
         self.append(self.nav_box)
@@ -129,6 +131,34 @@ class AssetChooser(Gtk.Box):
 
         # Add vexpand box to the bottom to avoid unwanted stretching of the children
         self.scrolled_box.append(Gtk.Box(vexpand=True, hexpand=True))
+
+    def init_dnd(self):
+        self.dnd_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
+        self.dnd_target.connect("drop", self.on_dnd_drop)
+        self.dnd_target.connect("accept", self.on_dnd_accept)
+
+        self.add_controller(self.dnd_target)
+
+    def on_dnd_accept(self, drop, user_data):
+        return True
+    
+    def on_dnd_drop(self, drop_target, value, x, y):
+        paths = value.get_files()
+        print(len(paths))
+        for path in paths:
+            path = path.get_path()
+            if path == None:
+                continue
+            if not os.path.exists(path):
+                continue
+            if not os.path.splitext(path)[1] not in ["png", "jpg", "jpeg", "gif", "GIF", "MP4", "mp4", "mov", "MOV"]:
+                continue
+            asset_id = gl.asset_manager.add(asset_path=path)
+            if asset_id == None:
+                continue
+            asset = gl.asset_manager.get_by_id(asset_id)
+            self.asset_chooser.flow_box.append(AssetPreview(flow=self, asset=asset, width_request=100, height_request=100))
+        return True
 
     def show_for_path(self, path, callback_func=None, *callback_args, **callback_kwargs):
         if not callable(callback_func):

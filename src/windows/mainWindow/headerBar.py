@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Gio
 
 # Import Python modules
 from loguru import logger as log
@@ -46,6 +46,25 @@ class HeaderBar(Gtk.HeaderBar):
         self.deckSwitcher.set_stack(self.deckStack)
         self.set_title_widget(self.deckSwitcher)
 
+        # Hamburger menu actions
+        self.open_store_action = Gio.SimpleAction.new("open-store", None)
+        self.open_store_action.connect("activate", self.on_open_store)
+        self.main_window.add_action(self.open_store_action)
+
+        # Menu
+        self.menu = Gio.Menu.new()
+        self.menu.append(gl.lm.get("open-store"), "win.open-store")
+
+        # Popover
+        self.popover = Gtk.PopoverMenu()
+        self.popover.set_menu_model(self.menu)
+
+        # Create a menu button
+        self.hamburger_menu = Gtk.MenuButton()
+        self.hamburger_menu.set_popover(self.popover)
+        self.hamburger_menu.set_icon_name("open-menu-symbolic")
+        self.pack_end(self.hamburger_menu)
+
         # Config deck button
         self.config_button = Gtk.Button(label=gl.lm.get("toggle-config-to-deck"))
         self.config_button.connect("clicked", self.on_config_button_click)
@@ -60,3 +79,6 @@ class HeaderBar(Gtk.HeaderBar):
         elif active_page == "Deck Settings":
             self.deckStack.get_visible_child().set_visible_child_name("Page Settings")
             button.set_label(gl.lm.get("toggle-config-to-deck"))
+
+    def on_open_store(self, action, parameter):
+        gl.app.store.present()

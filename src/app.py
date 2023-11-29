@@ -45,7 +45,7 @@ class App(Adw.Application):
         # self.asset_manager.present()
 
         self.store = Store(application=app, main_window=self.main_win)
-        self.store.present()
+        # self.store.present()
 
         log.success("Finished loading app")
 

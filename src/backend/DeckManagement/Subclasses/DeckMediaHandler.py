@@ -103,3 +103,8 @@ class DeckMediaHandler():
 
         while self.thread.working:
             time.sleep(1/30)
+
+    def delete(self):
+        self.thread.pause_work = True
+        self.stop_all_tasks()
+        del self.thread

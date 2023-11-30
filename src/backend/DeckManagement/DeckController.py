@@ -658,7 +658,10 @@ class DeckController:
         if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"): return
         serial_number = self.deck.get_serial_number()
         deck_stack = gl.app.main_win.leftArea.deck_stack
-        return deck_stack.get_child_by_name(serial_number).page_settings.grid_page
+        deck_stack_page = deck_stack.get_child_by_name(serial_number)
+        if deck_stack_page == None:
+            return
+        return deck_stack_page.page_settings.grid_page
     
     def set_ui_key(self, index, image, force_add_background=False):
         if image == None or index == None:
@@ -707,3 +710,8 @@ class DeckController:
                 action.on_tick()
         self.action_tick_timer = threading.Timer(self.TICK_DELAY, self.tick_actions)
         self.action_tick_timer.start()
+
+    def delete(self):
+        self.action_tick_timer.cancel()
+        self.media_handler.delete()
+        del self.media_handler

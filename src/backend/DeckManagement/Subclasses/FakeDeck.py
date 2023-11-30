@@ -12,6 +12,9 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+
+import uuid
+
 class FakeDeck:
     def __init__(self, serial_number = None, deck_type = None):
         self.serial_number = serial_number
@@ -38,6 +41,10 @@ class FakeDeck:
         return [False] * 15
     def key_image_format(self):
         return {'size': (72, 72), 'format': 'JPEG', 'flip': (True, True), 'rotation': 0}
+    def id(self):
+        return str(uuid.uuid4())
+    def connected(self):
+        return True
     def __enter__(self):
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):

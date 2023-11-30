@@ -41,4 +41,5 @@ smmap==5.0.1
 streamdeck==0.9.4
 typing_extensions==4.8.0
 urllib3==2.1.0
+usb-monitor==1.16
 websocket-client==1.6.4

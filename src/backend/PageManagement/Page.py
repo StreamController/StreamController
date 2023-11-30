@@ -16,6 +16,7 @@ import os
 import json
 from loguru import logger as log
 from copy import copy
+import shutil
 
 # Import globals
 import globals as gl
@@ -42,11 +43,30 @@ class Page(dict):
             self.call_actions_ready()
 
     def save(self):
+        # Make backup in case something goes wrong
+        self.make_backup()
+
         without_objects = self.get_without_action_objects()
         # Make keys last element
         self.move_key_to_end(without_objects, "keys")
         with open(self.json_path, "w") as f:
             json.dump(without_objects, f, indent=4)
+
+    def make_backup(self):
+        os.makedirs(os.path.join("pages","backups"), exist_ok=True)
+
+        src_path = self.json_path
+        dst_path = os.path.join("pages","backups", os.path.basename(src_path))
+
+        # Check if json in src is valid
+        with open(src_path) as f:
+            try:
+                json.load(f)
+            except json.decoder.JSONDecodeError as e:
+                log.error(f"Invalid json in {src_path}: {e}")
+                return
+
+        shutil.copy2(src_path, dst_path)
 
     def move_key_to_end(self, dictionary, key):
         if key in self:

@@ -71,9 +71,9 @@ class Brightness(Adw.PreferencesRow):
         gl.settings_manager.save_deck_settings(self.deck_serial_number, deck_settings)
         # update brightness if current page does not overwrite
         overwrite = False
-        if "brightness" in self.settings_page.deck_controller.active_page:
-            if "overwrite" in self.settings_page.deck_controller.active_page["brightness"]:
-                overwrite = self.settings_page.deck_controller.active_page["brightness"]["overwrite"]
+        if "brightness" in self.settings_page.deck_controller.active_page.dict:
+            if "overwrite" in self.settings_page.deck_controller.active_page.dict["brightness"]:
+                overwrite = self.settings_page.deck_controller.active_page.dict["brightness"]["overwrite"]
         if overwrite == False:
             self.settings_page.deck_controller.set_brightness(value)
 
@@ -205,7 +205,7 @@ class Screensaver(Adw.PreferencesRow):
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
         # Update enable if not overwritten by the active page
         active_page = self.settings_page.deck_controller.active_page
-        if not active_page["screensaver"]["overwrite"]:
+        if not active_page.dict["screensaver"]["overwrite"]:
             self.settings_page.deck_controller.screen_saver.set_enable(state)
 
         self.config_box.set_visible(state)
@@ -218,7 +218,7 @@ class Screensaver(Adw.PreferencesRow):
 
         # Update loop if not overwritten by the active page
         active_page = self.settings_page.deck_controller.active_page
-        if not active_page["screensaver"]["overwrite"]:
+        if not active_page.dict["screensaver"]["overwrite"]:
             self.settings_page.deck_controller.screen_saver.loop = state
 
     def on_change_fps(self, spinner):
@@ -228,7 +228,7 @@ class Screensaver(Adw.PreferencesRow):
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
         # Update fps if not overwritten by the active page
         active_page = self.settings_page.deck_controller.active_page
-        if not active_page["screensaver"]["overwrite"]:
+        if not active_page.dict["screensaver"]["overwrite"]:
             self.settings_page.deck_controller.screen_saver.fps = spinner.get_value_as_int()
 
     def on_change_time(self, spinner):
@@ -238,7 +238,7 @@ class Screensaver(Adw.PreferencesRow):
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
         # Update time if not overwritten by the active page
         active_page = self.settings_page.deck_controller.active_page
-        if not active_page["screensaver"]["overwrite"]:
+        if not active_page.dict["screensaver"]["overwrite"]:
             self.settings_page.deck_controller.screen_saver.set_time(spinner.get_value_as_int())
 
     def on_change_brightness(self, scale):
@@ -248,7 +248,7 @@ class Screensaver(Adw.PreferencesRow):
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
         # Update brightness if not overwritten by the active page
         active_page = self.settings_page.deck_controller.active_page
-        if not active_page["screensaver"]["overwrite"]:
+        if not active_page.dict["screensaver"]["overwrite"]:
             self.settings_page.deck_controller.screen_saver.set_brightness(scale.get_value())
 
     def set_thumbnail(self, file_path):

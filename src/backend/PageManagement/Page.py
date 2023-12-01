@@ -21,9 +21,12 @@ import shutil
 # Import globals
 import globals as gl
 
-class Page(dict):
+class Page:
     def __init__(self, json_path, deck_controller, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.dict = {}
+
         self.json_path = json_path
         self.deck_controller = deck_controller
 
@@ -33,10 +36,13 @@ class Page(dict):
         self.load()
 
     def load(self):
-        old_json = copy(self)
+        old_json = copy(self.dict)
         with open(self.json_path) as f:
-            self.update(json.load(f))
-            if old_json != self:
+            self.dict.update(json.load(f))
+            print("load")
+            print(old_json)
+            print(self)
+            if old_json != self.dict or True:
                 self.load_action_objects()
 
             # Call on_ready for all actions
@@ -69,9 +75,9 @@ class Page(dict):
         shutil.copy2(src_path, dst_path)
 
     def move_key_to_end(self, dictionary, key):
-        if key in self:
-            value = self.pop(key)
-            self[key] = value
+        if key in self.dict:
+            value = self.dict.pop(key)
+            self.dict[key] = value
 
     def set_background(self, file_path, loop=True, fps=30, show=True):
         background = {
@@ -80,14 +86,14 @@ class Page(dict):
             "loop": loop,
             "fps": fps
         }
-        self["background"] = background
+        self.dict["background"] = background
         self.save()
 
     def load_action_objects(self):
-        for key in self["keys"]:
-            if "actions" not in self["keys"][key]:
+        for key in self.dict["keys"]:
+            if "actions" not in self.dict["keys"][key]:
                 continue
-            for i, action in enumerate(self["keys"][key]["actions"]):
+            for i, action in enumerate(self.dict["keys"][key]["actions"]):
                 action_class = gl.plugin_manager.get_action_from_action_string(action["name"])
                 
                 self.action_objects.setdefault(key, {})
@@ -139,16 +145,16 @@ class Page(dict):
         return keys
 
     def remove_plugin_actions_from_json(self, plugin_id: str): 
-        for key in self["keys"]:
-            for i, action in enumerate(self["keys"][key]["actions"]):
+        for key in self.dict["keys"]:
+            for i, action in enumerate(self.dict["keys"][key]["actions"]):
                 # Check if the action is from the plugin by using the plugin id before the action name
-                if self["keys"][key]["actions"].split("::")[0] == plugin_id:
-                    del self["keys"][key]["actions"][i]
+                if self.dict["keys"][key]["actions"].split("::")[0] == plugin_id:
+                    del self.dict["keys"][key]["actions"][i]
 
         self.save()
 
     def get_without_action_objects(self):
-        dictionary = copy(self)
+        dictionary = copy(self.dict)
         for key in dictionary["keys"]:
             if "actions" not in dictionary["keys"][key]:
                 continue
@@ -174,8 +180,8 @@ class Page(dict):
     
     def get_settings_for_action(self, action_object, coords: list = None):
         if coords is None:
-            for key in self["keys"]:
-                for i, action in enumerate(self["keys"][key]["actions"]):
+            for key in self.dict["keys"]:
+                for i, action in enumerate(self.dict["keys"][key]["actions"]):
                     if not key in self.action_objects:
                         break
                     if not i in self.action_objects[key]:
@@ -183,7 +189,7 @@ class Page(dict):
                     if self.action_objects[key][i] == action_object:
                         return action["settings"]
         else:
-            for i, action in enumerate(self["keys"][coords]["actions"]):
+            for i, action in enumerate(self.dict["keys"][coords]["actions"]):
                 if not coords in self.action_objects:
                     break
                 if not i in self.action_objects[coords]:
@@ -193,14 +199,14 @@ class Page(dict):
                 
     def set_settings_for_action(self, action_object, settings: dict, coords: list = None):
         if coords is None:
-            for key in self["keys"]:
-                for i, action in enumerate(self["keys"][key]["actions"]):
+            for key in self.dict["keys"]:
+                for i, action in enumerate(self.dict["keys"][key]["actions"]):
                     if self.action_objects[key][i] == action_object:
-                        self["keys"][key]["actions"][i]["settings"] = settings
+                        self.dict["keys"][key]["actions"][i]["settings"] = settings
         else:
-            for i, action in enumerate(self["keys"][coords]["actions"]):
+            for i, action in enumerate(self.dict["keys"][coords]["actions"]):
                 if self.action_objects[coords][i] == action_object:
-                    self["keys"][coords]["actions"][i]["settings"] = settings
+                    self.dict["keys"][coords]["actions"][i]["settings"] = settings
 
     def has_key_an_image_controlling_action(self, page_coords: str):
         if page_coords not in self.action_objects:

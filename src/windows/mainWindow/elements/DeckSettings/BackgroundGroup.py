@@ -107,11 +107,11 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         
         original_values = None
         if "background" in self.settings_page.deck_page.deck_controller.active_page:
-            original_values = self.settings_page.deck_page.deck_controller.active_page["background"]
+            original_values = self.settings_page.deck_page.deck_controller.active_page.dict["background"]
 
-        overwrite = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("overwrite", False)
-        show = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("show", False)
-        file_path = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("path", None)
+        overwrite = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("overwrite", False)
+        show = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("show", False)
+        file_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)
 
         # Save if changed
         if original_values != self.settings_page.deck_page.deck_controller.active_page:
@@ -124,7 +124,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.config_box.set_visible(overwrite)
 
 
-        if self.settings_page.deck_page.deck_controller.active_page["background"]["path"] in [None, ""]:
+        if self.settings_page.deck_page.deck_controller.active_page.dict["background"]["path"] in [None, ""]:
             return
 
         self.set_thumbnail(file_path)

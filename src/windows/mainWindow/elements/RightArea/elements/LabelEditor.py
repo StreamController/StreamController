@@ -150,17 +150,17 @@ class LabelRow(Adw.PreferencesRow):
             #TODO: Show error
             return
         # Set defaults
-        page.setdefault("keys", {})
-        page["keys"].setdefault(f"{x}x{y}", {})
-        page["keys"][f"{x}x{y}"].setdefault("labels", {})
-        page["keys"][f"{x}x{y}"]["labels"].setdefault(self.label_text.lower(), {})
-        page["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("text", "")
-        page["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("color", [255, 255, 255])
-        page["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("font-family", "")
-        page["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("font-size", 15)
-        page["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("stroke-width", 0)
+        page.dict.setdefault("keys", {})
+        page.dict["keys"].setdefault(f"{x}x{y}", {})
+        page.dict["keys"][f"{x}x{y}"].setdefault("labels", {})
+        page.dict["keys"][f"{x}x{y}"]["labels"].setdefault(self.label_text.lower(), {})
+        page.dict["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("text", "")
+        page.dict["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("color", [255, 255, 255])
+        page.dict["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("font-family", "")
+        page.dict["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("font-size", 15)
+        page.dict["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()].setdefault("stroke-width", 0)
 
-        label = page["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()]
+        label = page.dict["keys"][f"{x}x{y}"]["labels"][self.label_text.lower()]
         self.entry.disconnect_by_func(self.on_change_text) # Remove signal to avoid unnecessary updates
         self.entry.set_text(label["text"])
         self.entry.connect("changed", self.on_change_text) # Reconnect signal
@@ -221,7 +221,7 @@ class LabelRow(Adw.PreferencesRow):
 
         # Get active page
         page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
-        page["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["color"] = [red, green, blue]
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["color"] = [red, green, blue]
         page.save()
 
         self.update_key()
@@ -237,8 +237,8 @@ class LabelRow(Adw.PreferencesRow):
         # Get active page
         page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
 
-        page["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["font-family"] = pango_font.get_family()
-        page["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["font-size"] = round(font_size/1000)
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["font-family"] = pango_font.get_family()
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["font-size"] = round(font_size/1000)
 
         page.save()
 
@@ -246,7 +246,7 @@ class LabelRow(Adw.PreferencesRow):
 
     def on_change_text(self, entry):
         page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
-        page["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["text"] = entry.get_text()
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["text"] = entry.get_text()
         page.save()
 
         self.update_key()
@@ -266,7 +266,7 @@ class LabelRow(Adw.PreferencesRow):
 
     def on_change_stroke_width(self, button):
         page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
-        page["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["stroke-width"] = round(self.stroke_width_button.get_value())
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["stroke-width"] = round(self.stroke_width_button.get_value())
         page.save()
 
         self.update_key()
@@ -275,5 +275,5 @@ class LabelRow(Adw.PreferencesRow):
         page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
 
         # Update ui
-        self.entry.set_text(page["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["text"])
-        self.stroke_width_button.set_value(page["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["stroke-width"])
+        self.entry.set_text(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["text"])
+        self.stroke_width_button.set_value(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["stroke-width"])

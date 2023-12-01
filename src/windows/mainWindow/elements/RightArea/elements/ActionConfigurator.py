@@ -159,7 +159,7 @@ class RemoveButton(Gtk.Button):
         del page.action_objects[self.action.page_coords][self.index]
 
         # Remove from page json
-        page["keys"][self.action.page_coords]["actions"].pop(self.index)
+        page.dict["keys"][self.action.page_coords]["actions"].pop(self.index)
         page.save()
 
         # Reload configurator

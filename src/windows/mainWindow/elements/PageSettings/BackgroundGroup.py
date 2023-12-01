@@ -24,6 +24,7 @@ import threading
 from loguru import logger as log
 from math import floor
 from time import sleep
+from copy import copy
 
 # Import globals
 import globals as gl
@@ -94,15 +95,15 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             return
         
         original_values = None
-        if "background" in self.settings_page.deck_page.deck_controller.active_page:
-            original_values = self.settings_page.deck_page.deck_controller.active_page["background"]
+        if "background" in self.settings_page.deck_page.deck_controller.active_page.dict:
+            original_values = copy(self.settings_page.deck_page.deck_controller.active_page.dict)
 
-        overwrite = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("overwrite", False)
-        show = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("show", False)
-        file_path = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("path", None)
+        overwrite = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("overwrite", False)
+        show = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("show", False)
+        file_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)
 
         # Save if changed
-        if original_values != self.settings_page.deck_page.deck_controller.active_page:
+        if original_values != self.settings_page.deck_page.deck_controller.active_page.dict:
             self.settings_page.deck_page.deck_controller.active_page.save()
 
         self.overwrite_switch.set_active(overwrite)
@@ -112,28 +113,28 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.config_box.set_visible(overwrite)
 
 
-        if self.settings_page.deck_page.deck_controller.active_page["background"]["path"] in [None, ""]:
+        if self.settings_page.deck_page.deck_controller.active_page.dict["background"]["path"] in [None, ""]:
             return
 
         self.set_thumbnail(file_path)
 
     def on_toggle_enable(self, toggle_switch, state):
         # Change setting in the active deck page
-        self.settings_page.deck_page.deck_controller.active_page["background"]["show"] = state
+        self.settings_page.deck_page.deck_controller.active_page.dict["background"]["show"] = state
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
 
     def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)
         # Update page
-        self.settings_page.deck_page.deck_controller.active_page["background"]["overwrite"] = state
+        self.settings_page.deck_page.deck_controller.active_page.dict["background"]["overwrite"] = state
         # Save
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
 
     def on_choose_image(self, button):
         self.settings_page.deck_page.deck_controller.active_page.setdefault("background", {})
-        media_path = self.settings_page.deck_page.deck_controller.active_page["background"].setdefault("path", None)
+        media_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)
 
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.set_deck_background)
 

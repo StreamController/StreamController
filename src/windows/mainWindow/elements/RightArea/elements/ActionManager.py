@@ -75,7 +75,7 @@ class ActionGroup(Adw.PreferencesGroup):
 
 class ActionExpanderRow(BetterExpander):
     def __init__(self, action_group):
-        super().__init__(title="Actions", subtitle="Actions for this key")
+        super().__init__(title=gl.lm.get("action-editor-header"), subtitle=gl.lm.get("action-editor-expander-subtitle"))
         self.set_expanded(True)
         self.action_group = action_group
         self.active_coords = None
@@ -324,7 +324,7 @@ class MissingActionButtonRow(Adw.PreferencesRow):
         del page.action_objects[self.page_coords][self.index]
 
         # Remove from page json
-        page["keys"][self.page_coords]["actions"].pop(self.index)
+        page.dict["keys"][self.page_coords]["actions"].pop(self.index)
         page.save()
 
         # Reload configurator ui
@@ -357,11 +357,11 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         # Set missing values
         active_page.setdefault("keys", {})
-        active_page["keys"].setdefault(page_coords, {})
-        active_page["keys"][page_coords].setdefault("actions", [])
+        active_page.dict["keys"].setdefault(page_coords, {})
+        active_page.dict["keys"][page_coords].setdefault("actions", [])
 
         # Add action
-        active_page["keys"][page_coords]["actions"].append({
+        active_page.dict["keys"][page_coords]["actions"].append({
             "name": action_string,
             "settings": {}
         })

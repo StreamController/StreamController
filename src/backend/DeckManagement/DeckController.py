@@ -285,9 +285,9 @@ class DeckController:
         coords = self.index_to_coords(key)
         if "keys" not in self.active_page:
             return
-        if f"{coords[0]}x{coords[1]}" not in self.active_page["keys"]:
+        if f"{coords[0]}x{coords[1]}" not in self.active_page.dict["keys"]:
             return
-        if "actions" not in self.active_page["keys"][f"{coords[0]}x{coords[1]}"]:
+        if "actions" not in self.active_page.dict["keys"][f"{coords[0]}x{coords[1]}"]:
             return
         
         page_coords = f"{coords[0]}x{coords[1]}"
@@ -346,7 +346,7 @@ class DeckController:
 
     @log.catch
     def load_page(self, page:Page, load_brightness:bool = True, load_background:bool = True, load_keys:bool = True, load_screen_saver:bool = True) -> None:
-        log.info(f"Loading page {page.keys()}")
+        log.info(f"Loading page {page.dict.keys()}")
         self.deck_settings = self.get_deck_settings()
 
         if page != self.active_page:
@@ -381,14 +381,14 @@ class DeckController:
                 return path, loop, fps
             
             def get_from_page(self, page):
-                if "background" not in page: 
+                if "background" not in page.dict: 
                     set_background_to_none(self)
                     return
-                if page["background"]["show"] == False: 
+                if page.dict["background"]["show"] == False: 
                     set_background_to_none(self)
                     return
-                if os.path.isfile(page["background"]["path"]) == False: return
-                path, loop, fps = page["background"].setdefault("path", None), page["background"].setdefault("loop", True), page["background"].setdefault("fps", 30)
+                if os.path.isfile(page.dict["background"]["path"]) == False: return
+                path, loop, fps = page.dict["background"].setdefault("path", None), page.dict["background"].setdefault("loop", True), page.dict["background"].setdefault("fps", 30)
                 return path, loop, fps
             
             def set_background_to_none(self):
@@ -397,8 +397,8 @@ class DeckController:
                 if not load_keys:
                     load_all_keys()
 
-            page["background"].setdefault("overwrite", False)
-            if page["background"]["overwrite"] == False and "background" in self.deck_settings:
+            page.dict["background"].setdefault("overwrite", False)
+            if page.dict["background"]["overwrite"] == False and "background" in self.deck_settings:
                 data = get_from_deck_settings(self)
                 if data == None: return
                 path, loop, fps = data
@@ -412,7 +412,7 @@ class DeckController:
 
         def load_all_keys():
             loaded_indices = []
-            for coords in page["keys"]:
+            for coords in page.dict["keys"]:
                 self.load_key(coords)
                 loaded_indices.append(self.coords_to_index(coords.split("x")))
             # return
@@ -432,13 +432,13 @@ class DeckController:
                 return value
             
             def get_from_page(self, page):
-                p = page.copy()
+                p = copy(page.dict)
                 p.setdefault("brightness", {})
                 value = p["brightness"].setdefault("value", 75)
-                value = page["brightness"].setdefault("value", 75)
+                value = page.dict["brightness"].setdefault("value", 75)
                 return value
             
-            if page["brightness"]["overwrite"] == False and "brightness" in self.deck_settings:
+            if page.dict["brightness"]["overwrite"] == False and "brightness" in self.deck_settings:
                 value = get_from_deck_settings(self)
             else:
                 value = get_from_page(self, page)
@@ -458,7 +458,7 @@ class DeckController:
                 return overwrite, enable, loop, fps, time, path, brightness
             
             def get_from_page(self, page):
-                p = page.copy()
+                p = page.dict.copy()
                 p.setdefault("screensaver", {})
                 path = p["screensaver"].setdefault("path", None)
                 overwrite = p["screensaver"].setdefault("overwrite", False)
@@ -469,7 +469,7 @@ class DeckController:
                 brightness = p["screensaver"].setdefault("brightness", 75)
                 return overwrite, enable, loop, fps, time, path, brightness
             
-            if page["screensaver"]["overwrite"]:
+            if page.dict["screensaver"]["overwrite"]:
                 data = get_from_page(self, page)
             else:
                 data = get_from_deck_settings(self)
@@ -515,16 +515,16 @@ class DeckController:
         if index > self.key_count(): return
 
         labels = None
-        if coords not in self.active_page["keys"]:
+        if coords not in self.active_page.dict["keys"]:
             return
-        if "labels" in self.active_page["keys"][coords]:
-            labels = self.active_page["keys"][coords]["labels"]
+        if "labels" in self.active_page.dict["keys"][coords]:
+            labels = self.active_page.dict["keys"][coords]["labels"]
         media_path, media_loop, media_fps = None, None, None
-        if "media" in self.active_page["keys"][coords]:
-            if self.active_page["keys"][coords] not in ["", None]:
-                media_path = self.active_page["keys"][coords]["media"].get("path", None)
-                media_loop = self.active_page["keys"][coords]["media"].get("loop", False)
-                media_fps = self.active_page["keys"][coords]["media"].get("fps", 30)
+        if "media" in self.active_page.dict["keys"][coords]:
+            if self.active_page.dict["keys"][coords] not in ["", None]:
+                media_path = self.active_page.dict["keys"][coords]["media"].get("path", None)
+                media_loop = self.active_page.dict["keys"][coords]["media"].get("loop", False)
+                media_fps = self.active_page.dict["keys"][coords]["media"].get("fps", 30)
 
         if only_labels:
             # Only update labels - used for live reloading of video keys

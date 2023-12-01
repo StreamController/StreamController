@@ -126,7 +126,7 @@ class ActionBase:
             return
         
         # Fill unset labels with labels set in the ui
-        page_labels = copy(self.page["keys"][self.page_coords]["labels"])
+        page_labels = copy(self.page.dict["keys"][self.page_coords]["labels"])
         page_labels.update(self.labels)
 
         self.deck_controller.set_key(**self.current_key, labels=page_labels, shrink=self.deck_controller.deck.key_states()[self.index])

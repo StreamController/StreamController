@@ -124,31 +124,19 @@ class ActionExpanderRow(BetterExpander):
             
     def add_drop_preview(self, index):
         #TODO: Fix this function, it does not work
-        return
+        # return
         if hasattr(self, "preview"):
             if self.preview != None:
-                self.reorder_child_after(self.preview, self.actions[index])
+                # self.reorder_child_after(self.preview, self.get_rows()[index])
+                GLib.idle_add(self.reorder_child_after, self.preview, self.get_rows()[index])
                 return
 
 
-        self.preview = ActionRow("Preview", "Preview", self.action_group.right_area, None)
+        self.preview = Adw.PreferencesRow(title="Preview", height_request=100)
         self.preview.set_sensitive(False)
-        self.actions.append(self.preview)
+        self.add_row(self.preview)
 
-        # Remove actions
-        for i in range(len(self.actions)):
-            self.remove(self.actions[i])
-        
-        # old_actions = self.actions
-        self.actions.insert(index, self.preview)
-
-        # self.actions = []
-
-        # Add actions
-        for i in range(len(self.actions)):
-            self.add_row(self.actions[i])
-            # self.actions.append(old_actions[i])
-
+        self.reorder_child_after(self.preview, self.get_rows()[index])
 
 class ActionRow(Adw.PreferencesRow):
     def __init__(self, action_name, action_category, action_object, right_area, index, **kwargs):
@@ -223,6 +211,7 @@ class ActionRow(Adw.PreferencesRow):
             return False
         
         self.right_area.key_editor.action_editor.action_group.expander.reorder_child_after(value, self)
+        return True
         # Remove preview
         index = self.right_area.key_editor.action_editor.action_group.expander.get_index_of_child(self.right_area.key_editor.action_editor.action_group.expander.preview)
         self.right_area.key_editor.action_editor.action_group.expander.remove(self.right_area.key_editor.action_editor.action_group.expander.preview)
@@ -230,6 +219,16 @@ class ActionRow(Adw.PreferencesRow):
         return True
     
     def on_dnd_motion(self, drop_target, x, y):
+        print(f"Motion: {x}, {y}")
+        print(f"Shape: {self.get_height()}")
+
+        if y > self.get_height() / 2:
+            self.right_area.key_editor.action_editor.action_group.expander.add_drop_preview(self.index-1)
+        else:
+            self.right_area.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
+        return Gdk.DragAction.MOVE
+
+
         self.right_area.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
 
         return Gdk.DragAction.MOVE
@@ -339,7 +338,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN,
                                  css_classes=["no-margin", "invisible"],
-                                 label="Add Action",
+                                 label=gl.lm.get("action-editor-add-new-action"),
                                  margin_bottom=5, margin_top=5)
         self.button.connect("clicked", self.on_click)
         self.set_child(self.button)

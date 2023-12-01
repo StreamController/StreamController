@@ -110,7 +110,7 @@ class IconSelector(Gtk.Box):
         active_coords:tuple = self.right_area.active_coords
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
-        active_page.setdefault("keys", {})
+        active_page.dict.setdefault("keys", {})
         active_page.dict["keys"].setdefault(page_coords, {})
         active_page.dict["keys"][page_coords].setdefault("media", {
             "path": None,

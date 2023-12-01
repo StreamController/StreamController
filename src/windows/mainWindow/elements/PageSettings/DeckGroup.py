@@ -308,14 +308,14 @@ class Screensaver(Adw.PreferencesRow):
         self.media_selector_button.set_child(self.media_selector_image)
 
     def on_choose_image(self, button):
-        self.settings_page.deck_page.deck_controller.active_page.setdefault("screensaver", {})
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})
         media_path = self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"].setdefault("path", None)
 
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.update_image)
 
     def update_image(self, file_path):
         self.set_thumbnail(file_path)
-        self.settings_page.deck_page.deck_controller.active_page.setdefault("screensaver", {})
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})
         self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["path"] = file_path
         # Save page
         self.settings_page.deck_page.deck_controller.active_page.save()

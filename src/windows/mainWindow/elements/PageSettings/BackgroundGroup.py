@@ -133,7 +133,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
 
     def on_choose_image(self, button):
-        self.settings_page.deck_page.deck_controller.active_page.setdefault("background", {})
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("background", {})
         media_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)
 
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.set_deck_background)

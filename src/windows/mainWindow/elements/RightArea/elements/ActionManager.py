@@ -356,7 +356,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         page_coords = f"{self.expander.active_coords[0]}x{self.expander.active_coords[1]}"
 
         # Set missing values
-        active_page.setdefault("keys", {})
+        active_page.dict.setdefault("keys", {})
         active_page.dict["keys"].setdefault(page_coords, {})
         active_page.dict["keys"][page_coords].setdefault("actions", [])
 

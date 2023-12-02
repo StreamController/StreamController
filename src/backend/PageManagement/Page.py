@@ -33,20 +33,16 @@ class Page:
         # Dir that contains all actions this allows us to keep them at reload
         self.action_objects = {}
 
-        self.load()
+        self.load(load_from_file=True)
 
-    def load(self):
-        old_json = copy(self.dict)
-        with open(self.json_path) as f:
-            self.dict.update(json.load(f))
-            print("load")
-            print(old_json)
-            print(self)
-            if old_json != self.dict or True:
-                self.load_action_objects()
+    def load(self, load_from_file: bool = False):
+        if load_from_file:
+            with open(self.json_path) as f:
+                self.dict.update(json.load(f))
+        self.load_action_objects()
 
-            # Call on_ready for all actions
-            self.call_actions_ready()
+        # Call on_ready for all actions
+        self.call_actions_ready()
 
     def save(self):
         # Make backup in case something goes wrong

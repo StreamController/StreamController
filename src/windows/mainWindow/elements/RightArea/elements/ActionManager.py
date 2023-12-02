@@ -370,6 +370,8 @@ class AddActionButtonRow(Adw.PreferencesRow):
         active_page.save()
         # Reload page to add an object to the new action
         active_page.load()
+        # Reload the key on all decks
+        active_page.reload_similar_pages(page_coords=page_coords)
 
         # Reload ui
         self.expander.load_for_coords(self.expander.active_coords)

@@ -89,6 +89,8 @@ class Page:
         for key in self.dict["keys"]:
             if "actions" not in self.dict["keys"][key]:
                 continue
+            old_loaded_actions = self.action_objects.get(key)
+            old_actins_to_keep = []
             for i, action in enumerate(self.dict["keys"][key]["actions"]):
                 action_class = gl.plugin_manager.get_action_from_action_string(action["name"])
                 
@@ -100,11 +102,25 @@ class Page:
                 old_object = self.action_objects[key].get(i)
                 if isinstance(old_object, action_class):
                     # Action already exists - keep it
+                    old_actins_to_keep.append(old_object)
                     continue
                 
                 action_object = action_class(deck_controller=self.deck_controller, page=self, coords=key)
                 #TODO: Change this to a list because there is no reason for it to be a dict
                 self.action_objects[key][i] = action_object
+
+            # Remove all actions that are no longer in the page
+            if old_loaded_actions is None:
+                continue
+            for action in old_loaded_actions.copy().values():
+                if action in old_actins_to_keep:
+                    continue
+                # Remove action from action_objects
+                for key in self.action_objects.copy():
+                    for i, action_obj in enumerate(self.action_objects[key].copy()):
+                        if self.action_objects[key][i] == action:
+                            del self.action_objects[key][i]
+                del action
 
     def remove_plugin_action_objects(self, plugin_id: str) -> bool:
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
@@ -222,3 +238,24 @@ class Page:
 
     def get_name(self):
         return os.path.splitext(os.path.basename(self.json_path))[0]
+    
+    def get_pages_with_same_json(self) -> list:
+        pages: list[Page]= []
+        for controller in gl.deck_manager.deck_controller:
+            if controller.active_page is None:
+                continue
+            if controller.active_page == self:
+                continue
+            if controller.active_page.json_path == self.json_path:
+                pages.append(controller.active_page)
+        return pages
+    
+    def reload_similar_pages(self, page_coords=None):
+        self.save()
+        for page in self.get_pages_with_same_json():
+            page.load(load_from_file=True)
+            if page_coords is None:
+                page.deck_controller.reload_page()
+            else:
+                # Reload only given key
+                page.deck_controller.load_key(page_coords)

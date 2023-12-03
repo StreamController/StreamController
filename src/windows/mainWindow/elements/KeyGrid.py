@@ -222,31 +222,6 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         self.copy_paste_menu = Gio.Menu.new()
         self.remove_menu = Gio.Menu.new()
 
-        # # Copy paste menu actions
-        # self.copy_action = Gio.SimpleAction.new("copy", None)
-        # self.cut_action = Gio.SimpleAction.new("cut", None)
-        # self.paste_action = Gio.SimpleAction.new("paste", None)
-        # self.remove_action = Gio.SimpleAction.new("remove", None)
-
-        # # Connect actions
-        # self.copy_action.connect("activate", self.on_copy)
-        # self.cut_action.connect("activate", self.on_cut)
-        # self.paste_action.connect("activate", self.on_paste)
-        # self.remove_action.connect("activate", self.on_remove)
-
-        # # Set accels
-        # gl.app.set_accels_for_action("win.copy", ["<Primary>c"])
-        # gl.app.set_accels_for_action("win.cut", ["<Primary>x"])
-        # gl.app.set_accels_for_action("win.paste", ["<Primary>v"])
-        # gl.app.set_accels_for_action("win.remove", ["Delete"])
-
-        # Add actions to window
-        # win = gl.app.main_win
-        # win.add_action(self.copy_action)
-        # win.add_action(self.cut_action)
-        # win.add_action(self.paste_action)
-        # win.add_action(self.remove_action)
-
         # Add actions to menus
         self.copy_paste_menu.append("Copy", "win.copy")
         self.copy_paste_menu.append("Cut", "win.cut")

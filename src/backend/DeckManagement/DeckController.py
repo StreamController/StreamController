@@ -283,7 +283,7 @@ class DeckController:
 
     def perform_actions(self, deck, key, state):
         coords = self.index_to_coords(key)
-        if "keys" not in self.active_page:
+        if "keys" not in self.active_page.dict:
             return
         if f"{coords[0]}x{coords[1]}" not in self.active_page.dict["keys"]:
             return

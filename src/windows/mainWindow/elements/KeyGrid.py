@@ -84,14 +84,14 @@ class KeyButton(Gtk.Frame):
 
         self.pixbuf = None
 
-        self.button = Gtk.Button(hexpand=True, vexpand=True, css_classes=["key-button"])
-        self.set_child(self.button)
+        # self.button = Gtk.Button(hexpand=True, vexpand=True, css_classes=["key-button"])
+        # self.set_child(self.button)
 
-        self.image = Gtk.Image(hexpand=True, vexpand=True, css_classes=["key-image"])
+        self.image = Gtk.Image(hexpand=True, vexpand=True, css_classes=["key-image", "key-button"])
         self.image.set_overflow(Gtk.Overflow.HIDDEN)
-        self.button.set_child(self.image)
+        self.set_child(self.image)
 
-        self.button.connect("clicked", self.on_click)
+        # self.button.connect("clicked", self.on_click)
 
         focus_controller = Gtk.EventControllerFocus()
         self.add_controller(focus_controller)
@@ -99,9 +99,13 @@ class KeyButton(Gtk.Frame):
 
         # Click ctrl
         self.right_click_ctrl = Gtk.GestureClick().new()
-        self.right_click_ctrl.connect("pressed", self.on_right_click)
-        self.right_click_ctrl.set_button(3)
-        self.button.add_controller(self.right_click_ctrl)
+        self.right_click_ctrl.connect("pressed", self.on_click)
+        self.right_click_ctrl.set_button(0)
+        self.image.add_controller(self.right_click_ctrl)
+
+        # Make image focusable
+        self.set_focus_child(self.image)
+        self.image.set_focusable(True)
 
     def set_image(self, image):
         # Check if this keygrid is on the screen
@@ -134,16 +138,29 @@ class KeyButton(Gtk.Frame):
         self.pixbuf = pixbuf
         GLib.idle_add(self.image.set_from_pixbuf, self.pixbuf)
 
-    def on_click(self, button):
-        # Update settings on the righthand side of the screen
-        right_area = gl.app.main_win.rightArea
-        right_area.load_for_coords((self.coords[1], self.coords[0]))
-        # Update preview
-        if self.pixbuf is not None:
-            self.set_right_preview(self.pixbuf)
-        # self.set_css_classes(["key-button-frame"])
-        # self.button.set_css_classes(["key-button-new-small"])
-        self.set_visible(True)
+    def on_click(self, gesture, n_press, x, y):
+        if gesture.get_current_button() == 1 and n_press == 1:
+            # Single left click
+            # Select key
+            self.image.grab_focus()
+
+        elif gesture.get_current_button() == 1 and n_press == 2:
+            # Double left click
+            # Simulate key press
+            self.simulate_press()
+            
+        elif gesture.get_current_button() == 3 and n_press == 1:
+            # Single right click
+            # Open context menu
+            popover = KeyButtonContextMenu(self)
+            popover.popup()
+
+    def simulate_press(self):
+        deck = self.key_grid.deck_controller.deck
+        key = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
+        self.key_grid.deck_controller.key_change_callback(deck, key, True)
+        # Release key after 100ms
+        GLib.timeout_add(100, self.key_grid.deck_controller.key_change_callback, deck, key, False)
 
     def set_visible(self, visible):
         if visible:
@@ -157,13 +174,16 @@ class KeyButton(Gtk.Frame):
             self.set_css_classes(["key-button-frame-hidden"])
             self.key_grid.selected_key = None
 
-
     def on_focus_in(self, *args):
-        self.on_click(self)
-
-    def on_right_click(self, widget, n_press, x, y):
-        context_menu = KeyButtonContextMenu(self)
-        context_menu.popup()
+        # Update settings on the righthand side of the screen
+        right_area = gl.app.main_win.rightArea
+        right_area.load_for_coords((self.coords[1], self.coords[0]))
+        # Update preview
+        if self.pixbuf is not None:
+            self.set_right_preview(self.pixbuf)
+        # self.set_css_classes(["key-button-frame"])
+        # self.button.set_css_classes(["key-button-new-small"])
+        self.set_visible(True)
 
     # Modifier
     def on_copy(self):

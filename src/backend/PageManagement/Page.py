@@ -230,20 +230,20 @@ class Page:
     def get_name(self):
         return os.path.splitext(os.path.basename(self.json_path))[0]
     
-    def get_pages_with_same_json(self) -> list:
+    def get_pages_with_same_json(self, get_self: bool = False) -> list:
         pages: list[Page]= []
         for controller in gl.deck_manager.deck_controller:
             if controller.active_page is None:
                 continue
-            if controller.active_page == self:
+            if controller.active_page == self and not get_self:
                 continue
             if controller.active_page.json_path == self.json_path:
                 pages.append(controller.active_page)
         return pages
     
-    def reload_similar_pages(self, page_coords=None):
+    def reload_similar_pages(self, page_coords=None, reload_self: bool = False):
         self.save()
-        for page in self.get_pages_with_same_json():
+        for page in self.get_pages_with_same_json(get_self=reload_self):
             page.load(load_from_file=True)
             if page_coords is None:
                 page.deck_controller.reload_page()

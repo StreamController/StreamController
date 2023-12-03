@@ -516,6 +516,7 @@ class DeckController:
 
         labels = None
         if coords not in self.active_page.dict["keys"]:
+            self.clear_key(index)
             return
         if "labels" in self.active_page.dict["keys"][coords]:
             labels = self.active_page.dict["keys"][coords]["labels"]

@@ -169,3 +169,20 @@ class AttributeRow(Adw.PreferencesRow):
         if attr is None:
             attr = "N/A"
         self.attribute_label.set_label(attr)
+
+def get_focused_widgets(start: Gtk.Widget) -> list[Gtk.Widget]:
+    widgets = []
+    while True:
+        child = start.get_focus_child()
+        if child is None:
+            return widgets
+        widgets.append(child)
+        start = child
+
+def get_deepest_focused_widget(start: Gtk.Widget) -> Gtk.Widget:
+    return get_focused_widgets(start)[-1]
+
+def get_deepest_focused_widget_with_attr(start: Gtk.Widget, attr:str) -> Gtk.Widget:
+    for widget in reversed(get_focused_widgets(start)):
+        if hasattr(widget, attr):
+            return widget

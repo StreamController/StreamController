@@ -18,7 +18,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk, GLib
+from gi.repository import Gtk, Adw, Gdk, GLib, Gio
 
 # Import Python modules 
 from loguru import logger as log
@@ -45,6 +45,9 @@ class KeyGrid(Gtk.Grid):
         self.selected_key = None # The selected key, indicated by a blue frame around it
 
         self.buttons = [[None] * deck_controller.deck.key_layout()[1] for i in range(deck_controller.deck.key_layout()[0])]
+
+        # Store the copied key from the page
+        self.copied_key:dict = None
 
         self.build()
 
@@ -93,6 +96,12 @@ class KeyButton(Gtk.Frame):
         focus_controller = Gtk.EventControllerFocus()
         self.add_controller(focus_controller)
         focus_controller.connect("enter", self.on_focus_in)
+
+        # Click ctrl
+        self.right_click_ctrl = Gtk.GestureClick().new()
+        self.right_click_ctrl.connect("pressed", self.on_right_click)
+        self.right_click_ctrl.set_button(3)
+        self.button.add_controller(self.right_click_ctrl)
 
     def set_image(self, image):
         # Check if this keygrid is on the screen
@@ -151,3 +160,101 @@ class KeyButton(Gtk.Frame):
 
     def on_focus_in(self, *args):
         self.on_click(self)
+
+    def on_right_click(self, widget, n_press, x, y):
+        context_menu = KeyButtonContextMenu(self)
+        context_menu.popup()
+
+    # Modifier
+    def on_copy(self):
+        active_page = self.key_grid.deck_controller.active_page
+        if active_page is None:
+            return
+        y, x = self.coords
+        key_dict = active_page.dict["keys"][f"{x}x{y}"]
+
+        self.key_grid.copied_key = key_dict
+
+    def on_cut(self):
+        self.on_copy()
+        self.on_remove()
+
+    def on_paste(self):
+        active_page = self.key_grid.deck_controller.active_page
+        if active_page is None:
+            return
+        y, x = self.coords
+        
+        active_page.dict["keys"][f"{x}x{y}"] = self.key_grid.copied_key
+        active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
+
+        # Reload ui
+        gl.app.main_win.rightArea.load_for_coords((x, y))
+
+    def on_remove(self):
+        active_page = self.key_grid.deck_controller.active_page
+        if active_page is None:
+            return
+        y, x = self.coords
+
+        del active_page.dict["keys"][f"{x}x{y}"]
+        active_page.save()
+        active_page.load()
+
+        active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
+
+        # Reload ui
+        gl.app.main_win.rightArea.load_for_coords((x, y))
+
+
+class KeyButtonContextMenu(Gtk.PopoverMenu):
+    def __init__(self, key_button:KeyButton, **kwargs):
+        super().__init__(**kwargs)
+        self.key_button = key_button
+        self.build()
+
+    def build(self):
+        self.set_parent(self.key_button)
+        self.set_has_arrow(False)
+
+        self.main_menu = Gio.Menu.new()
+
+        self.copy_paste_menu = Gio.Menu.new()
+        self.remove_menu = Gio.Menu.new()
+
+        # # Copy paste menu actions
+        # self.copy_action = Gio.SimpleAction.new("copy", None)
+        # self.cut_action = Gio.SimpleAction.new("cut", None)
+        # self.paste_action = Gio.SimpleAction.new("paste", None)
+        # self.remove_action = Gio.SimpleAction.new("remove", None)
+
+        # # Connect actions
+        # self.copy_action.connect("activate", self.on_copy)
+        # self.cut_action.connect("activate", self.on_cut)
+        # self.paste_action.connect("activate", self.on_paste)
+        # self.remove_action.connect("activate", self.on_remove)
+
+        # # Set accels
+        # gl.app.set_accels_for_action("win.copy", ["<Primary>c"])
+        # gl.app.set_accels_for_action("win.cut", ["<Primary>x"])
+        # gl.app.set_accels_for_action("win.paste", ["<Primary>v"])
+        # gl.app.set_accels_for_action("win.remove", ["Delete"])
+
+        # Add actions to window
+        # win = gl.app.main_win
+        # win.add_action(self.copy_action)
+        # win.add_action(self.cut_action)
+        # win.add_action(self.paste_action)
+        # win.add_action(self.remove_action)
+
+        # Add actions to menus
+        self.copy_paste_menu.append("Copy", "win.copy")
+        self.copy_paste_menu.append("Cut", "win.cut")
+        self.copy_paste_menu.append("Paste", "win.paste")
+        self.remove_menu.append("Remove", "win.remove")
+
+        # Add sections to menu
+        self.main_menu.append_section(None, self.copy_paste_menu)
+        self.main_menu.append_section(None, self.remove_menu)
+
+        self.set_menu_model(self.main_menu)

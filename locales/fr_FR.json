@@ -22,5 +22,20 @@
     "main-page-page-grid": "Paramétrage des boutons",
     "toggle-config-to-page": "Configurer la page",
     "toggle-config-to-deck": "Configurer le deck",
-    "open-store": "Ouvrir le store"
+    "open-store": "Ouvrir le store",
+    "page-settings-deck-heading": "Paramétrage du deck",
+    "page-settings-overwrite-brightness": "Ignorer la luminosité par défaut du deck",
+    "page-settings-overwrite-screensaver": "Ignorer les paramètres par défaut de l'écran de veille",
+    "enable": "Activer",
+    "screensaver-delay": "Activer après (min.)",
+    "media-to-show": "Media à afficher",
+    "media-loop": "Boucle",
+    "fps": "FPS",
+    "brightness": "Luminosité",
+    "background": "Arrière-plan",
+    "page-settings-only-current-page-hint": "S'applique uniquement à la page actuelle",
+    "page-settings-deck-overwrite-background": "Ignorer l'arrière-plan par défaut",
+    "page-settings-deck-show-background": "Afficher l'arrière-plan",
+    "error": "Erreur",
+    "select": "Sélectionner"
 }

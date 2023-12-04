@@ -75,7 +75,7 @@ class BrightnessRow(Adw.PreferencesRow):
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
-        self.label = Gtk.Label(label="Brightness", hexpand=True, xalign=0)
+        self.label = Gtk.Label(label=gl.lm.get("brightness"), hexpand=True, xalign=0)
         self.main_box.append(self.label)
 
         self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min=0, max=100, step=1)
@@ -95,7 +95,7 @@ class BrightnessRow(Adw.PreferencesRow):
     def set_scale_from_page(self, page):
         if page == None:
             self.scale.set_sensitive(False)
-            self.main_box.append(Gtk.Label(label="Error", hexpand=True, xalign=0, css_classes=["red-color"]))
+            self.main_box.append(Gtk.Label(label=gl.lm.get("error"), hexpand=True, xalign=0, css_classes=["red-color"]))
             return
 
         brightness = page.dict["brightness"]

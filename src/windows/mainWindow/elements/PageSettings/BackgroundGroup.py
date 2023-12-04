@@ -34,7 +34,7 @@ from src.backend.DeckManagement.ImageHelpers import image2pixbuf, is_transparent
 
 class BackgroundGroup(Adw.PreferencesGroup):
     def __init__(self, settings_page):
-        super().__init__(title="Background", description="Applies only to current page", margin_top=15)
+        super().__init__(title=gl.lm.get("background"), description=gl.lm.get("page-settings-only-current-page-hint"), margin_top=15)
         self.media_row = BackgroundMediaRow(settings_page)
         self.add(self.media_row)
 
@@ -53,7 +53,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.overwrite_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.overwrite_box)
 
-        self.overwrite_label = Gtk.Label(label="overwrite deck's defaut background", hexpand=True, xalign=0)
+        self.overwrite_label = Gtk.Label(label=gl.lm.get("page-settings-deck-overwrite-background"), hexpand=True, xalign=0)
         self.overwrite_box.append(self.overwrite_label)
 
         self.overwrite_switch = Gtk.Switch()
@@ -68,7 +68,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.show_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.config_box.append(self.show_box)
 
-        self.show_label = Gtk.Label(label="Show Background", hexpand=True, xalign=0)
+        self.show_label = Gtk.Label(label=gl.lm.get("page-settings-deck-show-background"), hexpand=True, xalign=0)
         self.show_box.append(self.show_label)
         self.show_switch = Gtk.Switch()
         self.show_switch.connect("state-set", self.on_toggle_enable)
@@ -79,7 +79,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
         self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
-        self.media_selector_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"])
+        self.media_selector_button = Gtk.Button(label=gl.lm.get("select"), css_classes=["page-settings-media-selector"])
         self.media_selector_button.connect("clicked", self.on_choose_image)
         self.media_selector.append(self.media_selector_button)
 

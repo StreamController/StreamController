@@ -22,5 +22,20 @@
     "main-page-page-grid": "Tasten der Seite",
     "toggle-config-to-page": "Seite einstellen",
     "toggle-config-to-deck": "Deck einstellen",
-    "open-store": "Store öffnen"
+    "open-store": "Store öffnen",
+    "page-settings-deck-heading": "Einstellungen zum Deck",
+    "page-settings-overwrite-brightness": "Helligkeit des Decks überschreiben",
+    "page-settings-overwrite-screensaver": "Bildschirmschoner des Decks überschreiben",
+    "enable": "Aktivieren",
+    "screensaver-delay": "Einschalten nach",
+    "media-to-show": "Zu zeigendes Medium",
+    "media-loop": "Wiederholen",
+    "fps": "FPS",
+    "brightness": "Helligkeit",
+    "background": "Hintergrund",
+    "page-settings-only-current-page-hint": "Bezieht sich nur auf die aktuelle Seite",
+    "page-settings-deck-overwrite-background": "Hintergrund des Decks überschreiben",
+    "page-settings-deck-show-background": "Hintergrund zeigen",
+    "error": "Fehler",
+    "select": "Auswählen"
 }

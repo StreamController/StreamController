@@ -22,5 +22,20 @@
     "main-page-page-grid": "Page Key Grid",
     "toggle-config-to-page": "Configure page",
     "toggle-config-to-deck": "Configure deck",
-    "open-store": "Open Store"
+    "open-store": "Open Store",
+    "page-settings-deck-heading": "Deck Settings",
+    "page-settings-overwrite-brightness": "Overwrite default deck brightness",
+    "page-settings-overwrite-screensaver": "Overwrite default deck screensaver",
+    "enable": "Enable",
+    "screensaver-delay": "Screensaver delay (min)",
+    "media-to-show": "Media to show",
+    "media-loop": "Loop",
+    "fps": "FPS",
+    "brightness": "Brightness",
+    "background": "Background",
+    "page-settings-only-current-page-hint": "Only applies to current page",
+    "page-settings-deck-overwrite-background": "Overwrite default deck background",
+    "page-settings-deck-show-background": "Show background",
+    "error": "Error",
+    "select": "Select"
 }

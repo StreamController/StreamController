@@ -25,6 +25,7 @@ from loguru import logger as log
 from src.windows.mainWindow.mainWindow import MainWindow
 from src.windows.AssetManager.AssetManager import AssetManager
 from src.windows.Store.Store import Store
+from src.windows.Shortcuts.Shortcuts import ShortcutsWindow
 
 class App(Adw.Application):
     def __init__(self, deck_manager, **kwargs):
@@ -46,6 +47,9 @@ class App(Adw.Application):
 
         self.store = Store(application=app, main_window=self.main_win)
         # self.store.present()
+
+        self.shortcuts = ShortcutsWindow(app=app, application=app)
+        # self.shortcuts.present()
 
         log.success("Finished loading app")
 

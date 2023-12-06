@@ -37,5 +37,9 @@
     "page-settings-deck-overwrite-background": "Ignorer l'arrière-plan par défaut",
     "page-settings-deck-show-background": "Afficher l'arrière-plan",
     "error": "Erreur",
-    "select": "Sélectionner"
+    "select": "Sélectionner",
+    "page-manager-search-hint": "Rechercher",
+    "page-manager-add-page": "Ajouter une page",
+    "page-manager-rename": "Renommer",
+    "page-manager-remove": "Supprimer"
 }

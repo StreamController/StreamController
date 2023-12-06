@@ -14,9 +14,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
 import os
+import shutil
+from copy import copy
 
 # Import own modules
 from src.backend.PageManagement.Page import Page
+
+# Import globals
+import globals as gl
 
 class PageManager:
     def __init__(self, settings_manager):
@@ -67,3 +72,73 @@ class PageManager:
                     name += ".json"
                 return name
         return None
+    
+    def rename_page(self, old_name: str, new_name: str):
+        old_path = os.path.join("pages", f"{old_name}.json")
+        new_path = os.path.join("pages", f"{new_name}.json")
+
+        # Copy page json file
+        shutil.copy2(old_path, new_path)
+
+        # Change name in page objects
+        for controller in gl.deck_manager.deck_controller:
+            if controller.active_page is None:
+                continue
+            page = self.get_page(old_name, controller)
+            if page is None:
+                continue
+            page.json_path = new_path
+            
+            # Update default page settings
+            settings = gl.settings_manager.load_settings_from_file("settings/pages.json")
+            if settings.get("default-pages") is None:
+                continue
+            for entry in settings["default-pages"]:
+                if entry["name"] == old_name:
+                    entry["name"] = new_name
+                    gl.settings_manager.save_settings_to_file("settings/pages.json", settings)
+
+        # Remove old page
+        os.remove(old_path)
+
+        # Update ui
+        gl.app.main_win.header_bar.page_selector.update()
+
+
+    def remove_page(self, name: str):
+        # Clear page objects
+        for controller in gl.deck_manager.deck_controller:
+            if controller.active_page is None:
+                continue
+            page = self.get_page(name, controller)
+            if page is None:
+                continue
+
+            if controller.active_page.get_name() != name:
+                continue
+
+
+            deck_default_page = self.get_default_page_for_deck(controller.deck.get_serial_number(), remove_extension=True)
+            if name != deck_default_page:
+                new_page = self.get_page(deck_default_page, controller)
+                controller.load_page(new_page)
+                continue
+
+            if name == deck_default_page:
+                page_list = self.get_pages(remove_extension=True)
+                page_list.remove(name)
+                controller.load_page(self.get_page(page_list[0], controller))
+
+
+        # Remove page json file
+        os.remove(os.path.join("pages", f"{name}.json"))
+
+        # Remove default page entries
+        settings = gl.settings_manager.load_settings_from_file("settings/pages.json")
+        for entry in copy(settings.get("default-pages",[])):
+            if entry["name"] == name:
+                settings["default-pages"].remove(entry)
+        gl.settings_manager.save_settings_to_file("settings/pages.json", settings)
+
+        # Update ui
+        gl.app.main_win.header_bar.page_selector.update()

@@ -35,6 +35,9 @@ class Page:
 
         self.load(load_from_file=True)
 
+    def get_name(self) -> str:
+        return os.path.splitext(os.path.basename(self.json_path))[0]
+
     def load(self, load_from_file: bool = False):
         if load_from_file:
             with open(self.json_path) as f:

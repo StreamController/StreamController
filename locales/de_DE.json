@@ -37,5 +37,9 @@
     "page-settings-deck-overwrite-background": "Hintergrund des Decks überschreiben",
     "page-settings-deck-show-background": "Hintergrund zeigen",
     "error": "Fehler",
-    "select": "Auswählen"
+    "select": "Auswählen",
+    "page-manager-search-hint": "Suchen",
+    "page-manager-add-page": "Seite hinzufügen",
+    "page-manager-rename": "Umbenennen",
+    "page-manager-remove": "Löschen"
 }

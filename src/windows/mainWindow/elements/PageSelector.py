@@ -25,6 +25,9 @@ import os
 # Import globas
 import globals as gl
 
+# Import own modules
+from src.windows.PageManager.PageManager import PageManager
+
 class PageSelector(Gtk.Box):
     def __init__(self, main_window, page_manager):
         self.main_window = main_window
@@ -52,6 +55,7 @@ class PageSelector(Gtk.Box):
 
         # Settings button
         self.settings_button = Gtk.Button(icon_name="settings", tooltip_text=gl.lm.get("header-page-selector-page-manager-hint"))
+        self.settings_button.connect("clicked", self.on_click_open_page_manager)
         self.right_area.append(self.settings_button)
     
     def update(self):
@@ -79,3 +83,7 @@ class PageSelector(Gtk.Box):
         active_controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page = gl.page_manager.get_page(self.pages_model.get_item(drop_down.get_selected()).get_string(), deck_controller = active_controller)
         active_controller.load_page(page)
+
+    def on_click_open_page_manager(self, button):
+        page_manager = PageManager(gl.app)
+        page_manager.present()

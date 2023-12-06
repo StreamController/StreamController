@@ -37,5 +37,9 @@
     "page-settings-deck-overwrite-background": "Overwrite default deck background",
     "page-settings-deck-show-background": "Show background",
     "error": "Error",
-    "select": "Select"
+    "select": "Select",
+    "page-manager-search-hint": "Search",
+    "page-manager-add-page": "Add Page",
+    "page-manager-rename": "Rename",
+    "page-manager-remove": "Delete"
 }

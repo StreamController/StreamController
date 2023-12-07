@@ -186,3 +186,86 @@ def get_deepest_focused_widget_with_attr(start: Gtk.Widget, attr:str) -> Gtk.Wid
     for widget in reversed(get_focused_widgets(start)):
         if hasattr(widget, attr):
             return widget
+        
+class EntryDialog(Gtk.ApplicationWindow):
+    def __init__(self, parent_window, dialog_title:str, entry_heading:str = "Name:", default_text:str = None, confirm_label:str = "OK", forbid_answers:list[str] = []):
+        self.default_text = default_text
+        self.confirm_label = confirm_label
+        self.entry_heading = entry_heading
+        self.forbid_answers = forbid_answers
+        super().__init__(transient_for=parent_window, modal=True, default_height=150, default_width=350, title = dialog_title)
+        self.build()
+
+    def build(self):
+        # Create title bar
+        self.title_bar = Gtk.HeaderBar(show_title_buttons=False)
+        # Cancel button
+        self.cancel_button = Gtk.Button(label='Cancel')
+        self.cancel_button.connect('clicked', self.on_cancel)
+        # Confirm button
+        self.confirm_button = Gtk.Button(label=self.confirm_label, css_classes=['confirm-button'], sensitive=False)
+        # self.confirm_button.connect('clicked', self.on_confirm)
+        # Main box
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_start=20, margin_end=20, margin_top=20, margin_bottom=20)
+        # Label
+        self.label = Gtk.Label(label=self.entry_heading)
+        # Input box
+        self.input_box = Gtk.Entry(hexpand=True, margin_top=10, text=self.default_text)
+        self.input_box.connect('changed', self.on_name_change)
+        # Warning label
+        self.warning_label = Gtk.Label(label="The name can't be empty", css_classes=['warning-label'], margin_top=10)
+
+        # Add objects
+        self.set_titlebar(self.title_bar)
+        self.title_bar.pack_start(self.cancel_button)
+        self.title_bar.pack_end(self.confirm_button)
+        self.set_child(self.main_box)
+        self.main_box.append(self.label)
+        self.main_box.append(self.input_box)
+        self.main_box.append(self.warning_label)
+
+        # Set status
+        self.on_name_change(self.input_box)
+
+    def on_cancel(self, button):
+        self.destroy()
+    
+
+    def on_name_change(self, entry):
+        if entry.get_text() == '':
+            self.set_dialog_status(0)
+        elif entry.get_text() not in self.forbid_answers:
+            self.set_dialog_status(2)
+        else:
+            self.set_dialog_status(1)
+
+    def set_dialog_status(self, status):
+        """
+        Sets the status of the dialog
+
+        Args:
+            status (int): The status of the dialog: 0: no name; 1:already in use; 2:ok
+        """
+        if status == 0:
+            # Label
+            if self.main_box.get_last_child() is not self.warning_label:
+                self.main_box.append(self.warning_label)
+            self.warning_label.set_text("The name can't be empty")
+            # Button
+            self.confirm_button.set_sensitive(False)
+            self.confirm_button.set_css_classes(['confirm-button'])
+        if status == 1:
+            # Label
+            if self.main_box.get_last_child() is not self.warning_label:
+                self.main_box.append(self.warning_label)
+            self.warning_label.set_text("This name is already in use")
+            # Button
+            self.confirm_button.set_sensitive(False)
+            self.confirm_button.set_css_classes(['confirm-button-error'])
+        if status == 2:
+            # Label
+            if self.main_box.get_last_child() is self.warning_label:
+                self.main_box.remove(self.warning_label)
+            # Button
+            self.confirm_button.set_sensitive(True)
+            self.confirm_button.set_css_classes(['confirm-button'])

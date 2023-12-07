@@ -194,3 +194,12 @@
   background-color: #C01C28;
   transition: background-color 0.25s;
 }
+.warning-label {
+	color: #EA735D;
+}
+.confirm-button { 
+	background-color: #4990E7;
+}
+.confirm-button-error { 
+	background-color: #EA735D;
+}

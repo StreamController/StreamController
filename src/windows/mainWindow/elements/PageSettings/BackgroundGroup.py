@@ -98,6 +98,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         if "background" in self.settings_page.deck_page.deck_controller.active_page.dict:
             original_values = copy(self.settings_page.deck_page.deck_controller.active_page.dict)
 
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("background", {}) 
+
         overwrite = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("overwrite", False)
         show = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("show", False)
         file_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)

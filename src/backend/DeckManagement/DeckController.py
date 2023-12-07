@@ -412,7 +412,7 @@ class DeckController:
 
         def load_all_keys():
             loaded_indices = []
-            for coords in page.dict["keys"]:
+            for coords in page.dict.get("keys", []):
                 self.load_key(coords)
                 loaded_indices.append(self.coords_to_index(coords.split("x")))
             # return
@@ -438,7 +438,9 @@ class DeckController:
                 value = page.dict["brightness"].setdefault("value", 75)
                 return value
             
-            if page.dict["brightness"]["overwrite"] == False and "brightness" in self.deck_settings:
+            page.dict.setdefault("brightness", {})
+            
+            if page.dict["brightness"].get("overwrite", False) == False and "brightness" in self.deck_settings:
                 value = get_from_deck_settings(self)
             else:
                 value = get_from_page(self, page)

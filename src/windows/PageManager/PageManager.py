@@ -18,11 +18,15 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
 
+# Import globals
 import globals as gl
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.app import App
+
+# Import own modules
+from src.GtkHelper import EntryDialog
 
 class PageManager(Gtk.ApplicationWindow):
     def __init__(self, app:"App"):
@@ -67,7 +71,7 @@ class PageManager(Gtk.ApplicationWindow):
         # Add new button
         self.add_button = Gtk.Button(label=gl.lm.get("page-manager-add-page"),
                                      css_classes=["add-button"])
-        # self.add_button.connect("clicked", self.on_add_page)
+        self.add_button.connect("clicked", self.on_add_page)
         self.main_box.append(self.add_button)
 
     def load_pages(self):
@@ -75,6 +79,14 @@ class PageManager(Gtk.ApplicationWindow):
         for page in pages:
             self.page_box.append(PageButton(page_manager=self, page_name=page))
 
+    def on_add_page(self, button):
+        dial = EntryDialog(parent_window=self, dialog_title="Add Page", entry_heading="Page name:", default_text="page",
+                           forbid_answers=gl.page_manager.get_pages(remove_extension=True))
+        dial.show(self.add_page_callback)
+
+    def add_page_callback(self, name:str):
+        gl.page_manager.add_page(name)
+        self.page_box.append(PageButton(page_manager=self, page_name=name))
 
 
 class PageButton(Gtk.Box):

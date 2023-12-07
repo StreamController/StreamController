@@ -188,23 +188,28 @@ def get_deepest_focused_widget_with_attr(start: Gtk.Widget, attr:str) -> Gtk.Wid
             return widget
         
 class EntryDialog(Gtk.ApplicationWindow):
-    def __init__(self, parent_window, dialog_title:str, entry_heading:str = "Name:", default_text:str = None, confirm_label:str = "OK", forbid_answers:list[str] = []):
+    def __init__(self, parent_window, dialog_title:str, entry_heading:str = "Name:", default_text:str = None, confirm_label:str = "OK", forbid_answers:list[str] = [],
+                 empty_warning:str = "The name cannot be empty", cancel_label:str = "Cancel", already_exists_warning:str = "This name already exists"):
         self.default_text = default_text
         self.confirm_label = confirm_label
         self.entry_heading = entry_heading
         self.forbid_answers = forbid_answers
+        self.empty_warning = empty_warning
+        self.cancel_label = cancel_label
+        self.already_exists_warning = already_exists_warning
         super().__init__(transient_for=parent_window, modal=True, default_height=150, default_width=350, title = dialog_title)
+        self.callback_func = None
         self.build()
 
     def build(self):
         # Create title bar
         self.title_bar = Gtk.HeaderBar(show_title_buttons=False)
         # Cancel button
-        self.cancel_button = Gtk.Button(label='Cancel')
+        self.cancel_button = Gtk.Button(label=self.cancel_label)
         self.cancel_button.connect('clicked', self.on_cancel)
         # Confirm button
         self.confirm_button = Gtk.Button(label=self.confirm_label, css_classes=['confirm-button'], sensitive=False)
-        # self.confirm_button.connect('clicked', self.on_confirm)
+        self.confirm_button.connect('clicked', self.on_confirm)
         # Main box
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_start=20, margin_end=20, margin_top=20, margin_bottom=20)
         # Label
@@ -213,7 +218,7 @@ class EntryDialog(Gtk.ApplicationWindow):
         self.input_box = Gtk.Entry(hexpand=True, margin_top=10, text=self.default_text)
         self.input_box.connect('changed', self.on_name_change)
         # Warning label
-        self.warning_label = Gtk.Label(label="The name can't be empty", css_classes=['warning-label'], margin_top=10)
+        self.warning_label = Gtk.Label(label=self.empty_warning, css_classes=['warning-label'], margin_top=10)
 
         # Add objects
         self.set_titlebar(self.title_bar)
@@ -250,7 +255,7 @@ class EntryDialog(Gtk.ApplicationWindow):
             # Label
             if self.main_box.get_last_child() is not self.warning_label:
                 self.main_box.append(self.warning_label)
-            self.warning_label.set_text("The name can't be empty")
+            self.warning_label.set_text(self.empty_warning)
             # Button
             self.confirm_button.set_sensitive(False)
             self.confirm_button.set_css_classes(['confirm-button'])
@@ -258,7 +263,7 @@ class EntryDialog(Gtk.ApplicationWindow):
             # Label
             if self.main_box.get_last_child() is not self.warning_label:
                 self.main_box.append(self.warning_label)
-            self.warning_label.set_text("This name is already in use")
+            self.warning_label.set_text(self.already_exists_warning)
             # Button
             self.confirm_button.set_sensitive(False)
             self.confirm_button.set_css_classes(['confirm-button-error'])
@@ -269,3 +274,11 @@ class EntryDialog(Gtk.ApplicationWindow):
             # Button
             self.confirm_button.set_sensitive(True)
             self.confirm_button.set_css_classes(['confirm-button'])
+
+    def show(self, callback_func):
+        self.callback_func = callback_func
+        self.present()
+
+    def on_confirm(self, button):
+        self.callback_func(self.input_box.get_text())
+        self.destroy()

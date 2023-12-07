@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import Python modules
 import os
 import shutil
+import json
 from copy import copy
 
 # Import own modules
@@ -139,6 +140,17 @@ class PageManager:
             if entry["name"] == name:
                 settings["default-pages"].remove(entry)
         gl.settings_manager.save_settings_to_file("settings/pages.json", settings)
+
+        # Update ui
+        gl.app.main_win.header_bar.page_selector.update()
+
+    def add_page(self, name:str):
+        page = {
+            "keys": {}
+        }
+
+        with open(os.path.join("pages", f"{name}.json"), "w") as f:
+            json.dump(page, f)
 
         # Update ui
         gl.app.main_win.header_bar.page_selector.update()

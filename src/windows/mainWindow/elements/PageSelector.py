@@ -48,9 +48,9 @@ class PageSelector(Gtk.Box):
         self.pages_model = Gtk.StringList()
         self.drop_down = Gtk.DropDown()
         self.drop_down.set_model(self.pages_model)
-        self.update()
         self.drop_down.set_tooltip_text(gl.lm.get("header-page-selector-drop-down-hint"))
         self.drop_down.connect("notify::selected", self.on_change_page)
+        self.update()
         self.right_area.append(self.drop_down)
 
         # Settings button
@@ -59,10 +59,16 @@ class PageSelector(Gtk.Box):
         self.right_area.append(self.settings_button)
     
     def update(self):
+        self.disconnect_change_signal()
         pages = self.page_manager.get_pages()
         self.clear_model()
         for page in pages:
             self.pages_model.append(os.path.splitext(page)[0])
+
+        self.update_selected()
+
+        # self.connect("notify::selected", self.on_change_page)
+        self.connect_change_signal()
 
     def clear_model(self):
         for i in range(self.pages_model.get_n_items()):
@@ -87,3 +93,12 @@ class PageSelector(Gtk.Box):
     def on_click_open_page_manager(self, button):
         page_manager = PageManager(gl.app)
         page_manager.present()
+
+    def disconnect_change_signal(self):
+        try:
+            self.drop_down.disconnect_by_func(self.on_change_page)
+        except:
+            pass
+
+    def connect_change_signal(self):
+        self.drop_down.connect("notify::selected", self.on_change_page)

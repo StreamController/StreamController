@@ -42,9 +42,7 @@ class App(Adw.Application):
         self.main_win = MainWindow(application=app, deck_manager=self.deck_manager)
         self.main_win.present()
 
-        self.asset_manager = AssetManager(application=app, main_window=self.main_win)
-        # self.asset_manager.present()
-
+        
         self.store = Store(application=app, main_window=self.main_win)
         # self.store.present()
 
@@ -54,4 +52,5 @@ class App(Adw.Application):
         log.success("Finished loading app")
 
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
+        self.asset_manager = AssetManager(application=self, main_window=self.main_win)
         self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)

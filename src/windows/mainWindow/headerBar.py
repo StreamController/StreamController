@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
@@ -24,6 +25,7 @@ from loguru import logger as log
 # Import own modules
 from src.windows.mainWindow.deckSwitcher import DeckSwitcher
 from src.windows.mainWindow.elements.PageSelector import PageSelector
+from src.windows.Store.Store import Store
 
 # Import globals
 import globals as gl
@@ -81,4 +83,5 @@ class HeaderBar(Gtk.HeaderBar):
             button.set_label(gl.lm.get("toggle-config-to-deck"))
 
     def on_open_store(self, action, parameter):
-        gl.app.store.present()
+        self.store = Store(application=gl.app, main_window=gl.app.main_win)
+        self.store.present()

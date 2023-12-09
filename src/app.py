@@ -43,9 +43,6 @@ class App(Adw.Application):
         self.main_win.present()
 
         
-        self.store = Store(application=app, main_window=self.main_win)
-        # self.store.present()
-
         self.shortcuts = ShortcutsWindow(app=app, application=app)
         # self.shortcuts.present()
 

@@ -43,5 +43,6 @@
     "page-manager-rename": "Umbenennen",
     "page-manager-remove": "Löschen",
     "right-area-no-page-selected-error": "Keine Seite ausgewählt",
-    "right-area-no-deck-selected-error": "Kein Deck ausgewählt"
+    "right-area-no-deck-selected-error": "Kein Deck ausgewählt",
+    "deck-switcher-no-decks": "Keine Decks Erkannt"
 }

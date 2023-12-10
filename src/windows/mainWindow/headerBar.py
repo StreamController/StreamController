@@ -44,8 +44,8 @@ class HeaderBar(Gtk.HeaderBar):
         self.pack_start(self.page_selector)
 
         # Deck selector
-        self.deckSwitcher = DeckSwitcher(hexpand=False, margin_start=75, margin_end=75)
-        self.deckSwitcher.set_stack(self.deckStack)
+        self.deckSwitcher = DeckSwitcher(main_window = self.main_window)
+        self.deckSwitcher.switcher.set_stack(self.deckStack)
         self.set_title_widget(self.deckSwitcher)
 
         # Hamburger menu actions

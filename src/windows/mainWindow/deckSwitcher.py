@@ -21,6 +21,30 @@ from gi.repository import Gtk, Adw
 # Import Python modules
 from loguru import logger as log
 
-class DeckSwitcher(Gtk.StackSwitcher):
-    def __init__(self, **kwargs):
+# Import globals
+import globals as gl
+
+class DeckSwitcher(Gtk.Box):
+    def __init__(self, main_window, **kwargs):
         super().__init__(**kwargs)
+        self.main_window = main_window
+        self.build()
+
+        no_decks = len(main_window.deck_manager.deck_controller) == 0
+        self.set_show_switcher(not no_decks)
+
+
+    def build(self):
+        self.switcher = Gtk.StackSwitcher(hexpand=False, margin_start=75, margin_end=75)
+        self.append(self.switcher)
+
+        self.no_decks_label = Gtk.Label(label=gl.lm.get("deck-switcher-no-decks"))
+        self.append(self.no_decks_label)
+
+    def set_show_switcher(self, show):
+        if show:
+            self.switcher.set_visible(True)
+            self.no_decks_label.set_visible(False)
+        else:
+            self.switcher.set_visible(False)
+            self.no_decks_label.set_visible(True)

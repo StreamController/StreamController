@@ -81,7 +81,14 @@ class PageSelector(Gtk.Box):
                 return
             
     def update_selected(self):
-        active_controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        child = self.main_window.leftArea.deck_stack.get_visible_child()
+        if child is None:
+            self.drop_down.set_sensitive(False)
+            self.clear_model()
+            return
+        else:
+            self.drop_down.set_sensitive(True)
+        active_controller = child.deck_controller
         page_name = active_controller.active_page.get_name()
         self.set_selected(page_name)
 

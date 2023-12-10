@@ -22,6 +22,8 @@ from gi.repository import Gtk, Adw
 # Import Python modules
 from loguru import logger as log
 
+# Import globals
+import globals as gl
 
 class BetterExpander(Adw.ExpanderRow):
     def __init__(self, *args, **kwargs):
@@ -282,3 +284,46 @@ class EntryDialog(Gtk.ApplicationWindow):
     def on_confirm(self, button):
         self.callback_func(self.input_box.get_text())
         self.destroy()
+
+
+class ErrorPage(Gtk.Box):
+    def __init__(self, reload_func: callable = None,
+                 error_text:str = "Error",
+                 reload_args = []):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL,
+                         halign=Gtk.Align.CENTER,
+                         valign=Gtk.Align.CENTER)
+        
+        self.reload_func = reload_func
+        self.error_text = error_text
+        self.reload_args = reload_args
+        self.build()
+
+    def build(self):
+        self.error_label = Gtk.Label(label=self.error_text)
+        self.append(self.error_label)
+
+        self.retry_button = Gtk.Button(label="Retry")
+        self.retry_button.connect("clicked", self.on_retry_button_click)
+        
+        if callable(self.reload_func):
+            self.append(self.retry_button)
+
+    def on_retry_button_click(self, button):
+        self.reload_func(*self.reload_args)
+
+    def set_error_text(self, error_text):
+        self.error_label.set_text(error_text)
+
+    def set_reload_func(self, reload_func):
+        if callable(self.reload_func):
+            if callable(reload_func):
+                self.reload_func = reload_func
+            else:
+                self.remove(self.retry_button)
+        else:
+            self.append(self.retry_button)
+            self.reload_func = reload_func
+
+    def set_reload_args(self, reload_args):
+        self.reload_args = reload_args

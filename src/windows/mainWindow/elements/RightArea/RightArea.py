@@ -28,7 +28,10 @@ from src.windows.mainWindow.elements.RightArea.elements.LabelEditor import Label
 from src.windows.mainWindow.elements.RightArea.elements.ActionManager import ActionManager
 from src.windows.mainWindow.elements.RightArea.elements.ActionChooser import ActionChooser
 from src.windows.mainWindow.elements.RightArea.elements.ActionConfigurator import ActionConfigurator
-from src.windows.mainWindow.elements.RightArea.elements.ErrorPage import ErrorPage
+from src.GtkHelper import ErrorPage
+
+# Import globals
+import globals as gl
 
 class RightArea(Gtk.Stack):
     def __init__(self, main_window, **kwargs):
@@ -54,6 +57,8 @@ class RightArea(Gtk.Stack):
         self.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
         self.set_transition_duration(200)
 
+        self.load_for_coords((0, 0))
+
     def let_user_select_action(self, callback_function, *callback_args, **callback_kwargs):
         """
         Show the action chooser to let the user select an action.
@@ -76,26 +81,35 @@ class RightArea(Gtk.Stack):
         self.set_visible_child(self.action_configurator)
 
     def load_for_coords(self, coords):
+        # Verify that a controller is selected
+        if self.main_window.leftArea.deck_stack.get_visible_child() is None:
+            self.error_page.set_error_text(gl.lm.get("right-area-no-deck-selected-error"))
+            # self.error_page.set_reload_func(self.main_window.rightArea.load_for_coords)
+            # self.error_page.set_reload_args([coords])
+            self.show_error()
+            return
         # Verify is page is loaded on current controller
         controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         if controller.active_page == None:
-            self.show_no_page_error()
+            # self.error_page.set_error_text(gl.lm.get("right-area-no-page-selected-error"))
+            # self.error_page.set_reload_args([None])
+            self.show_error()
             return
 
-        self.hide_no_page_error()        
+        self.hide_error()        
 
         self.key_editor.load_for_coords(coords)
 
         if self.get_visible_child() == self.action_configurator:
             self.set_visible_child(self.key_editor)
 
-    def show_no_page_error(self):
+    def show_error(self):
         self.set_transition_duration(0)
         self.set_visible_child(self.error_page)
         self.set_transition_duration(200)
 
 
-    def hide_no_page_error(self):
+    def hide_error(self):
         if self.get_visible_child() == self.error_page:
             self.set_transition_duration(0)
             self.set_visible_child(self.key_editor)

@@ -41,5 +41,7 @@
     "page-manager-search-hint": "Suchen",
     "page-manager-add-page": "Seite hinzufügen",
     "page-manager-rename": "Umbenennen",
-    "page-manager-remove": "Löschen"
+    "page-manager-remove": "Löschen",
+    "right-area-no-page-selected-error": "Keine Seite ausgewählt",
+    "right-area-no-deck-selected-error": "Kein Deck ausgewählt"
 }

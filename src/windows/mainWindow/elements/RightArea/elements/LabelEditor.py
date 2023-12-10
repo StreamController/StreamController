@@ -55,8 +55,6 @@ class LabelGroup(Adw.PreferencesGroup):
 
         self.build()
 
-        self.load_for_coords((0, 0))
-
     def build(self):
         self.expander = LabelExpanderRow(self)
         self.add(self.expander)

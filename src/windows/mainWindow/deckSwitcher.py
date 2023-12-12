@@ -38,7 +38,7 @@ class DeckSwitcher(Gtk.Box):
         self.switcher = Gtk.StackSwitcher(hexpand=False, margin_start=75, margin_end=75)
         self.append(self.switcher)
 
-        self.no_decks_label = Gtk.Label(label=gl.lm.get("deck-switcher-no-decks"))
+        self.no_decks_label = Gtk.Label(label=gl.lm.get("deck-switcher-no-decks"), css_classes=["bold"])
         self.append(self.no_decks_label)
 
     def set_show_switcher(self, show):

@@ -26,6 +26,7 @@ from loguru import logger as log
 from src.windows.mainWindow.deckSwitcher import DeckSwitcher
 from src.windows.mainWindow.elements.PageSelector import PageSelector
 from src.windows.Store.Store import Store
+from src.windows.Settings.Settings import Settings
 
 # Import globals
 import globals as gl
@@ -48,14 +49,20 @@ class HeaderBar(Gtk.HeaderBar):
         self.deckSwitcher.switcher.set_stack(self.deckStack)
         self.set_title_widget(self.deckSwitcher)
 
-        # Hamburger menu actions
+        ## Hamburger menu actions
+        # Open store
         self.open_store_action = Gio.SimpleAction.new("open-store", None)
         self.open_store_action.connect("activate", self.on_open_store)
         self.main_window.add_action(self.open_store_action)
+        # Open settings
+        self.open_settings_action = Gio.SimpleAction.new("open-settings", None)
+        self.open_settings_action.connect("activate", self.on_open_settings)
+        self.main_window.add_action(self.open_settings_action)
 
         # Menu
         self.menu = Gio.Menu.new()
         self.menu.append(gl.lm.get("open-store"), "win.open-store")
+        self.menu.append(gl.lm.get("open-settings"), "win.open-settings")
 
         # Popover
         self.popover = Gtk.PopoverMenu()
@@ -85,3 +92,7 @@ class HeaderBar(Gtk.HeaderBar):
     def on_open_store(self, action, parameter):
         self.store = Store(application=gl.app, main_window=gl.app.main_win)
         self.store.present()
+
+    def on_open_settings(self, action, parameter):
+        self.settings = Settings()
+        self.settings.present()

@@ -92,7 +92,7 @@ class DevPageGroup(Adw.PreferencesGroup):
 
         self.n_fake_decks_row = Adw.SpinRow.new_with_range(min=0, max=3, step=1)
         self.n_fake_decks_row.set_title("Number of fake decks")
-        self.n_fake_decks_row.set_subtitle("For testing purposes")
+        self.n_fake_decks_row.set_subtitle("For testing purposes (might require restart of the app)")
         self.n_fake_decks_row.set_range(0, 3)
         self.add(self.n_fake_decks_row)
 

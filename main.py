@@ -45,7 +45,7 @@ class Main:
 
         gl.app = self.app
 
-        self.app.run(get_sys_args_without_param("--fake"))
+        self.app.run(sys.argv)
 
 @log.catch
 def load():

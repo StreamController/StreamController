@@ -23,7 +23,7 @@ from usbmonitor import USBMonitor
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManager import PageManager
 from src.backend.SettingsManager import SettingsManager
-from src.backend.DeckManagement.HelperMethods import get_sys_param_value
+from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
 
 # Import globals
@@ -33,6 +33,7 @@ class DeckManager:
     def __init__(self):
         #TODO: Maybe outsource some objects
         self.deck_controller = []
+        self.fake_deck_controller = []
         self.settings_manager = SettingsManager()
         self.page_manager = gl.page_manager
         # self.page_manager.load_pages()
@@ -51,16 +52,41 @@ class DeckManager:
         self.load_fake_decks()
 
     def load_fake_decks(self):
-        n_fake_decks = get_sys_param_value("--fake")
-        if n_fake_decks == None:
-            return
-        if not n_fake_decks.isdigit():
-            return
-        n_fake_decks = int(n_fake_decks)
-        log.info(f"Loading {n_fake_decks} fake deck(s)")
-        for i in range(n_fake_decks):
-            fake_deck_controller = DeckController(self, FakeDeck(serial_number = f"fake-deck-{i+1}", deck_type=f"Fake Deck {i+1}"))
-            self.deck_controller.append(fake_deck_controller)
+        old_n_fake_decks = len(self.fake_deck_controller)
+        n_fake_decks = int(gl.settings_manager.load_settings_from_file("settings.json").get("dev", {}).get("n-fake-decks", 0))
+        if n_fake_decks > old_n_fake_decks:
+            log.info(f"Loading {n_fake_decks - old_n_fake_decks} fake deck(s)")
+            # Load difference in number of fake decks
+            for i in range(n_fake_decks - old_n_fake_decks):
+                a = f"Fake Deck {len(self.fake_deck_controller)+1}"
+                fake_deck = FakeDeck(serial_number = f"fake-deck-{len(self.fake_deck_controller)+1}", deck_type=f"Fake Deck {len(self.fake_deck_controller)+1}")
+                self.add_newly_connected_deck(fake_deck, is_fake=True)
+
+            # Update header deck switcher if the new deck is the only one
+            if len(self.deck_controller) == 1:
+                # Check if ui is loaded - if not it will grab the controller automatically
+                if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
+                    gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(True)
+
+        elif n_fake_decks < old_n_fake_decks:
+            # Remove difference in number of fake decks
+            log.info(f"Removing {old_n_fake_decks - n_fake_decks} fake deck(s)")
+            a = (old_n_fake_decks - n_fake_decks)
+            print((old_n_fake_decks - n_fake_decks))
+            for i in self.fake_deck_controller[-(old_n_fake_decks - n_fake_decks):]:
+                # Remove controller from fake_decks
+                self.fake_deck_controller.remove(i)
+                # Remove controller from main list
+                self.deck_controller.remove(i)
+                # Remove deck page on stack
+                gl.app.main_win.leftArea.deck_stack.remove_page(i)
+
+            # Update header deck switcher if there are no more decks
+            if len(self.deck_controller) == 0:
+                # Check if ui is loaded - if not it will grab the controller automatically
+                if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
+                    gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(False)
+
 
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
@@ -94,11 +120,15 @@ class DeckManager:
 
                 del controller
 
-    def add_newly_connected_deck(self, deck:StreamDeck):
+    def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):
         deck_controller = DeckController(self, deck)
 
-        # Add to deck stack
-        gl.app.main_win.leftArea.deck_stack.add_page(deck_controller)
+        # Check if ui is loaded - if not it will grab the controller automatically
+        if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            # Add to deck stack
+            gl.app.main_win.leftArea.deck_stack.add_page(deck_controller)
 
 
         self.deck_controller.append(deck_controller)
+        if is_fake:
+            self.fake_deck_controller.append(deck_controller)

@@ -105,11 +105,15 @@ class DevPageGroup(Adw.PreferencesGroup):
         self.n_fake_decks_row.set_value(self.settings.settings_json.get("dev", {}).get("n-fake-decks", 0))
 
     def on_n_fake_decks_row_changed(self, *args):
+        #FIXME: For some reason this gets called twice
         self.settings.settings_json.setdefault("dev", {})
         self.settings.settings_json["dev"]["n-fake-decks"] = self.n_fake_decks_row.get_value()
 
         # Save
         self.settings.save_json()
+
+        # Reload decks
+        gl.deck_manager.load_fake_decks()
 
 class StorePage(Adw.PreferencesPage):
     def __init__(self, settings: Settings):

@@ -156,6 +156,11 @@ class KeyButton(Gtk.Frame):
             popover.popup()
 
     def simulate_press(self):
+        ## Check if double click to emulate is turned on in the settings
+        settings = gl.settings_manager.load_settings_from_file("settings.json")
+        if not settings.get("key-grid", {}).get("emulate-at-double-click", True):
+            return
+        
         deck = self.key_grid.deck_controller.deck
         key = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
         self.key_grid.deck_controller.key_change_callback(deck, key, True)

@@ -24,6 +24,7 @@ import threading
 
 # Import own modules
 from src.windows.Store.Plugins.InfoPage import InfoPage
+from src.GtkHelper import ErrorPage
 
 # Typing
 from typing import TYPE_CHECKING
@@ -85,6 +86,10 @@ class StorePage(Gtk.Stack):
         # Info page
         self.info_page = InfoPage(self)
         self.add_titled(self.info_page, "Info", "Info")
+
+        # Error page
+        self.no_connection_page = ErrorPage(error_text="No connection")
+        self.add_titled(self.no_connection_page, "Error", "Error")
 
     def on_search_changed(self, entry: Gtk.SearchEntry):
         self.flow_box.invalidate_filter()
@@ -168,3 +173,9 @@ class StorePage(Gtk.Stack):
         else:
             self.set_visible_child(self.main_box)
             self.store.back_button.set_visible(False)
+
+    def show_connection_error(self):
+        self.set_visible_child(self.no_connection_page)
+
+    def hide_connection_error(self):
+        self.set_visible_child(self.main_box)

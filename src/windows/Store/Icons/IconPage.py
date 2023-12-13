@@ -29,6 +29,7 @@ from src.windows.Store.Batches import OfficialBatch, VerifiedBatch
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
+from src.windows.Store.Backend import NoConnectionError
 
 # Typing
 from typing import TYPE_CHECKING
@@ -47,6 +48,9 @@ class IconPage(StorePage):
     def load(self):
         self.set_loading()
         icons = asyncio.run(self.store.backend.get_all_icons())
+        if isinstance(icons, NoConnectionError):
+            self.show_connection_error()
+            return
         for icon in icons:
             GLib.idle_add(self.flow_box.append, IconPreview(icon_page=self, icon_dict=icon))
 

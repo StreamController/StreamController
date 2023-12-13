@@ -71,9 +71,13 @@ class StoreBackend:
 
     @alru_cache(maxsize=None)
     async def request_from_url(self, url: str) -> requests.Response:
-        req = requests.get(url, stream=True)
-        if req.status_code == 200:
-            return req
+        try:
+            req = requests.get(url, stream=True)
+            if req.status_code == 200:
+                return req
+        except requests.exceptions.ConnectionError as e:
+            log.error(e)
+            return NoConnectionError()
     
     def build_url(self, repo_url: str, file_path: str, branch_name: str = "main") -> str:
         """
@@ -118,6 +122,8 @@ class StoreBackend:
     
     async def get_all_plugins_async(self):
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Plugins.json")
+        if isinstance(result, NoConnectionError):
+            return result
         plugins_json = result.text
         plugins_json = json.loads(plugins_json)
         print(plugins_json)
@@ -132,6 +138,8 @@ class StoreBackend:
     
     async def get_all_icons(self):
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Icons.json")
+        if isinstance(result, NoConnectionError):
+            return result
         icons_json = result.text
         icons_json = json.loads(icons_json)
 
@@ -151,6 +159,8 @@ class StoreBackend:
 
         # Not in cache, get it
         manifest = await self.request_from_url(url)
+        if isinstance(manifest, NoConnectionError):
+            return manifest
         manifest = json.loads(manifest.text)
 
         # Save to cache
@@ -184,6 +194,8 @@ class StoreBackend:
 
         # Not in cache, get it
         attribution = await self.request_from_url(url)
+        if isinstance(attribution, NoConnectionError):
+            return attribution
         attribution = json.loads(attribution.text)
 
         # Save to cache
@@ -210,8 +222,12 @@ class StoreBackend:
     async def prepare_plugin(self, plugin):
         url = plugin["url"]
         manifest = await self.get_manifest(url, plugin["verified-commit"])
+        if isinstance(manifest, NoConnectionError):
+            return manifest
 
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), plugin["verified-commit"]))
+        if isinstance(manifest, NoConnectionError):
+            return image
 
         description = manifest.get("description")
 
@@ -236,10 +252,16 @@ class StoreBackend:
     async def prepare_icon(self, icon):
         url = icon["url"]
         manifest = await self.get_manifest(url, icon["verified-commit"])
+        if isinstance(manifest, NoConnectionError):
+            return manifest
         attribution = await self.get_attribution(url, icon["verified-commit"])
+        if isinstance(attribution, NoConnectionError):
+            return attribution
         attribution = attribution["generic"] #TODO: Choose correct attribution
 
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), icon["verified-commit"]))
+        if isinstance(image, NoConnectionError):
+            return image
 
         description = manifest.get("description")
 
@@ -247,6 +269,8 @@ class StoreBackend:
         repo_name = self.get_repo_name(url)
 
         stargazers = await self.get_stargazers(url)
+        if isinstance(stargazers, NoConnectionError):
+            return stargazers
 
         return {
             "name": manifest.get("name"),
@@ -270,6 +294,8 @@ class StoreBackend:
                 return Image.open(self.image_cache[url])
         
         result = await self.request_from_url(url)
+        if isinstance(result, NoConnectionError):
+            return result
         img = Image.open(BytesIO(result.content))
         
         ## Save to cache
@@ -301,6 +327,8 @@ class StoreBackend:
         async def call():
             log.trace(f"Making API call: {api_call_url}")
             resp = await self.request_from_url(api_call_url)
+            if isinstance(resp, NoConnectionError):
+                return resp
             self.api_cache[api_call_url] = {}
             self.api_cache[api_call_url]["answer"] = resp.json()
             self.api_cache[api_call_url]["time-code"] = datetime.now().strftime("%d-%m-%y-%H-%M")
@@ -436,3 +464,6 @@ class StoreBackend:
                 return plugin
         
 b = StoreBackend()
+
+class NoConnectionError:
+    pass

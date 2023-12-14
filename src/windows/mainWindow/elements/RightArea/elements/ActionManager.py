@@ -219,9 +219,6 @@ class ActionRow(Adw.PreferencesRow):
         return True
     
     def on_dnd_motion(self, drop_target, x, y):
-        print(f"Motion: {x}, {y}")
-        print(f"Shape: {self.get_height()}")
-
         if y > self.get_height() / 2:
             self.right_area.key_editor.action_editor.action_group.expander.add_drop_preview(self.index-1)
         else:

@@ -114,7 +114,6 @@ class StoreBackend:
               with raw.githubusercontent.com.
         """
         url = self.build_url(repo_url, file_path, branch_name)
-        print(url)
 
         answer = await self.request_from_url(url)
 
@@ -126,8 +125,6 @@ class StoreBackend:
             return result
         plugins_json = result.text
         plugins_json = json.loads(plugins_json)
-        print(plugins_json)
-        print()
 
         plugins = []
 

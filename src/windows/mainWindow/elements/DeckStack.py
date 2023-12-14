@@ -77,7 +77,6 @@ class DeckStack(Gtk.Stack):
 
     def remove_page(self, deck_controller) -> str:
         for page in self.get_pages():
-            print(page.get_child())
             if page.get_child().deck_controller == deck_controller:
                 # Remove from deck_names
                 self.deck_names.remove(page.get_title())

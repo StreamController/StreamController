@@ -120,7 +120,6 @@ class Page:
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
         if plugin_obj is None:
             return False
-        print(self.action_objects)
         for key in list(self.action_objects.keys()):
             for index in list(self.action_objects[key].keys()):
                 if isinstance(self.action_objects[key][index], str):

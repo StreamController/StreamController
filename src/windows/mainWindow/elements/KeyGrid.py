@@ -129,7 +129,6 @@ class KeyButton(Gtk.Frame):
             return
         if right_area.key_editor.label_editor.label_group.expander.active_coords != (self.coords[1], self.coords[0]):
             return
-        print(gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller)
         if gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller != self.key_grid.deck_controller:
             return
         GLib.idle_add(right_area.key_editor.icon_selector.image.set_from_pixbuf, pixbuf)

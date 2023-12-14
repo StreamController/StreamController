@@ -144,7 +144,6 @@ class AssetChooser(Gtk.Box):
     
     def on_dnd_drop(self, drop_target, value, x, y):
         paths = value.get_files()
-        print(len(paths))
         for path in paths:
             path = path.get_path()
             if path == None:

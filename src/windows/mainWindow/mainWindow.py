@@ -87,7 +87,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.add_action(self.remove_action)
 
     def on_copy(self, *args):
-        print(*args)
         child = get_deepest_focused_widget_with_attr(self, "on_copy")
         if hasattr(child, "on_copy"):
             child.on_copy()

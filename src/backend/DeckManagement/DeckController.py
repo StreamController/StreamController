@@ -199,6 +199,7 @@ class DeckController:
 
     @log.catch
     def reload_keys(self, skip_gifs=True, bypass_task=False, update_ui=True):
+        print()
         # tasks = {}
         # Stop gif animations to prevent sending conflicts resulting in strange artifacts
         for i in range(self.deck.key_count()):

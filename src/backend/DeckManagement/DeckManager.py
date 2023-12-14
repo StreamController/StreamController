@@ -71,8 +71,6 @@ class DeckManager:
         elif n_fake_decks < old_n_fake_decks:
             # Remove difference in number of fake decks
             log.info(f"Removing {old_n_fake_decks - n_fake_decks} fake deck(s)")
-            a = (old_n_fake_decks - n_fake_decks)
-            print((old_n_fake_decks - n_fake_decks))
             for i in self.fake_deck_controller[-(old_n_fake_decks - n_fake_decks):]:
                 # Remove controller from fake_decks
                 self.fake_deck_controller.remove(i)

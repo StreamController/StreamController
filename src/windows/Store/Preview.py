@@ -104,17 +104,11 @@ class StorePreview(Gtk.FlowBoxChild):
 
         self.button_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
 
-        self.download_button = Gtk.Button(icon_name="download-symbolic",
+        self.install_uninstall_button = Gtk.Button(icon_name="download-symbolic",
                                           hexpand=True,
                                           css_classes=["no-round-top-left", "no-round-top-right", "no-round-bottom-left"])
-        self.download_button.connect("clicked", self.on_download_clicked)
-        self.button_box.append(self.download_button)
-
-        self.remove_button = Gtk.Button(icon_name="remove-symbolic",
-                                        hexpand=True,
-                                        css_classes=["no-round-top-left", "no-round-top-right", "no-round-bottom-right"])
-        self.remove_button.connect("clicked", self.on_remove_clicked)
-        self.button_box.append(self.remove_button)
+        self.install_uninstall_button.connect("clicked", self.on_download_clicked)
+        self.button_box.append(self.install_uninstall_button)
 
     def set_image(self, image:Image):
         image.thumbnail((250, 90))
@@ -155,3 +149,11 @@ class StorePreview(Gtk.FlowBoxChild):
 
     def on_click_main(self, button: Gtk.Button):
         pass
+
+    def set_installed(self, installed:bool):
+        if installed:
+            self.install_uninstall_button.set_icon_name("delete")
+            self.install_uninstall_button.add_css_class("red-background")
+        else:
+            self.install_uninstall_button.set_icon_name("download-symbolic")
+            self.install_uninstall_button.remove_css_class("red-background")

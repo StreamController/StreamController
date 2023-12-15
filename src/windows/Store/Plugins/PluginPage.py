@@ -72,9 +72,11 @@ class PluginPreview(StorePreview):
 
     def install(self):
         asyncio.run(self.store.backend.install_plugin(plugin_dict=self.plugin_dict))
+        self.set_installed(True)
 
     def uninstall(self):
         self.store.backend.uninstall_plugin(plugin_id=self.plugin_dict["id"])
+        self.set_installed(False)
 
 
 class PluginPreviewOLD(Gtk.FlowBoxChild):

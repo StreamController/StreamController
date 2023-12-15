@@ -70,10 +70,21 @@ class PluginPreview(StorePreview):
         self.set_official(plugin_dict["official"])
         self.set_verified(plugin_dict["commit_sha"] is not None)
 
+        # Set install button state
+        if plugin_dict["local-sha"] is None:
+            self.set_install_state(0)
+        elif plugin_dict["local-sha"] == plugin_dict["commit_sha"]:
+            self.set_install_state(1)
+        else:
+            self.set_install_state(2)
+
     def install(self):
         asyncio.run(self.store.backend.install_plugin(plugin_dict=self.plugin_dict))
-        self.set_installed(True)
+        self.set_install_state(1)
 
     def uninstall(self):
         self.store.backend.uninstall_plugin(plugin_id=self.plugin_dict["id"])
-        self.set_installed(False)
+        self.set_install_state(0)
+
+    def update(self):
+        self.install()

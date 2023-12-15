@@ -243,8 +243,19 @@ class StoreBackend:
             "stargazers": stargazers,
             "official": True,
             "commit_sha": plugin["verified-commit"],
-            "id": manifest.get("id")
+            "id": manifest.get("id"),
+            "local-sha": await self.get_local_sha(manifest.get("id"))
         }
+    
+    async def get_local_sha(self, plugin_id):
+        cwd = os.getcwd()
+        new_dir = os.path.join("plugins", plugin_id)
+        if not os.path.exists(new_dir):
+            return
+        os.chdir(os.path.join("plugins", plugin_id))
+        sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
+        os.chdir(cwd)
+        return sha
     
     async def prepare_icon(self, icon):
         url = icon["url"]

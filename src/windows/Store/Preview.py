@@ -38,6 +38,8 @@ class StorePreview(Gtk.FlowBoxChild):
 
         self.url = None
 
+        self.install_state = 0
+
         self.build()
 
     def build(self):
@@ -136,24 +138,52 @@ class StorePreview(Gtk.FlowBoxChild):
         web.open(self.url)
 
     def on_download_clicked(self, button: Gtk.Button):
-        self.install()
+        if self.install_state == 0:
+            # Install
+            self.install()
+        elif self.install_state == 1:
+            # Uninstall
+            self.uninstall()
+        elif self.install_state == 2:
+            # Update
+            self.update()
 
     def install(self):
         pass
 
-    def on_remove_clicked(self, button: Gtk.Button):
-        self.uninstall()
-
     def uninstall(self):
+        pass
+
+    def update(self):
         pass
 
     def on_click_main(self, button: Gtk.Button):
         pass
 
-    def set_installed(self, installed:bool):
-        if installed:
-            self.install_uninstall_button.set_icon_name("delete")
-            self.install_uninstall_button.add_css_class("red-background")
-        else:
+    def set_install_state(self, state: int):
+        """
+        Sets the state of the install button.
+
+        Args:
+            state (int): The state to set. Possible values:
+                - 0: Sets to install
+                - 1: Sets to remove
+                - 2: Sets to update
+        """
+        self.install_state = state
+        if state == 0:
             self.install_uninstall_button.set_icon_name("download-symbolic")
+
+            self.install_uninstall_button.remove_css_class("red-background")
+            self.install_uninstall_button.remove_css_class("confirm-button")
+        elif state == 1:
+            self.install_uninstall_button.set_icon_name("delete")
+
+            self.install_uninstall_button.add_css_class("red-background")
+            self.install_uninstall_button.remove_css_class("confirm-button")
+
+        elif state == 2:
+            self.install_uninstall_button.set_icon_name("software-update-available")
+            
+            self.install_uninstall_button.add_css_class("confirm-button")
             self.install_uninstall_button.remove_css_class("red-background")

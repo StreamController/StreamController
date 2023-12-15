@@ -111,10 +111,12 @@ class Page:
                     continue
                 
                 if i in self.loaded_action_objects.get(key, []):
-                    self.action_objects[key][i] = self.loaded_action_objects[key][i]
-                else:
-                    action_object = action_class(deck_controller=self.deck_controller, page=self, coords=key)
-                    self.action_objects[key][i] = action_object
+                    if not isinstance(self.loaded_action_objects.get(key, [i])[i], str):
+                        self.action_objects[key][i] = self.loaded_action_objects[key][i]
+                        continue
+
+                action_object = action_class(deck_controller=self.deck_controller, page=self, coords=key)
+                self.action_objects[key][i] = action_object
 
     def remove_plugin_action_objects(self, plugin_id: str) -> bool:
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)

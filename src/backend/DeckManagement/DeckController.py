@@ -283,7 +283,7 @@ class DeckController:
         self.handle_shrink_animation(deck, key, state)
 
         # Perform actions
-        self.perform_actions(deck, key, state)
+        threading.Thread(target=self.perform_actions, args=(deck, key, state)).start()
 
     def perform_actions(self, deck, key, state):
         coords = self.index_to_coords(key)

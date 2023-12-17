@@ -87,7 +87,8 @@ class IconPreview(StorePreview):
         self.set_install_state(1)
 
     def uninstall(self):
-        pass
+    def update(self):
+        self.install()
 
     def on_click_main(self, button: Gtk.Button):
         self.icon_page.set_info_visible(True)

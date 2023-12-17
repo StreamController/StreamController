@@ -22,6 +22,7 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
 import webbrowser as web
 import asyncio
 import threading
+import os
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
@@ -72,7 +73,18 @@ class IconPreview(StorePreview):
         # self.set_verified(icon_dict["commit_sha"] is not None)
 
     def install(self):
-        pass
+        folder_name = f"{self.icon_dict['user_name']}::{self.icon_dict['name']}"
+        if os.path.exists(os.path.join("icons", folder_name)):
+            os.remove(os.path.join("icons", folder_name))
+        if not os.path.exists("icons"):
+            os.mkdir("icons")
+
+        asyncio.run(self.store.backend.clone_repo(
+            repo_url=self.icon_dict["url"],
+            local_path=os.path.join("icons", folder_name),
+            commit_sha=self.icon_dict["commit_sha"]
+        ))
+        self.set_install_state(1)
 
     def uninstall(self):
         pass

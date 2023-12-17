@@ -293,6 +293,7 @@ class StoreBackend:
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
             "license_description": attribution.get("description"),
+            "commit_sha": icon["verified-commit"],
         }
 
     async def image_from_url(self, url):

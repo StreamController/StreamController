@@ -87,6 +87,11 @@ class IconPreview(StorePreview):
         self.set_install_state(1)
 
     def uninstall(self):
+        folder_name = f"{self.icon_dict['user_name']}::{self.icon_dict['name']}"
+        if os.path.exists(os.path.join("icons", folder_name)):
+            os.remove(os.path.join("icons", folder_name))
+        self.set_install_state(0)
+
     def update(self):
         self.install()
 

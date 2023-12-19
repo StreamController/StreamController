@@ -23,6 +23,7 @@ import webbrowser as web
 import asyncio
 import threading
 import os
+import shutil
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
@@ -75,7 +76,7 @@ class IconPreview(StorePreview):
     def install(self):
         folder_name = f"{self.icon_dict['user_name']}::{self.icon_dict['name']}"
         if os.path.exists(os.path.join("icons", folder_name)):
-            os.remove(os.path.join("icons", folder_name))
+            shutil.rmtree(os.path.join("icons", folder_name))
         if not os.path.exists("icons"):
             os.mkdir("icons")
 

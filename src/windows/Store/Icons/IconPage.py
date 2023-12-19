@@ -70,8 +70,12 @@ class IconPreview(StorePreview):
         self.set_image(icon_dict["image"])
         self.set_url(icon_dict["url"])
 
-        # self.set_official(icon_dict["official"])
-        # self.set_verified(icon_dict["commit_sha"] is not None)
+        if icon_dict["local_sha"] is None:
+            self.set_install_state(0)
+        elif icon_dict["commit_sha"] == icon_dict["local_sha"]:
+            self.set_install_state(1)
+        else:
+            self.set_install_state(2)
 
     def install(self):
         folder_name = f"{self.icon_dict['user_name']}::{self.icon_dict['name']}"

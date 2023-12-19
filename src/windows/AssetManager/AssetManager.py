@@ -23,13 +23,6 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
 
 # Import Python modules
 from loguru import logger as log
-from fuzzywuzzy import fuzz
-from decord import VideoReader
-from decord import cpu
-from PIL import Image
-import os
-from videoprops import get_video_properties
-from functools import lru_cache
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.mainWindow.mainWindow import MainWindow
@@ -38,9 +31,8 @@ if TYPE_CHECKING:
 import globals as gl
 
 # Import own modules
-from src.backend.DeckManagement.ImageHelpers import image2pixbuf
-from src.backend.DeckManagement.HelperMethods import get_image_aspect_ratio, is_video
-from src.GtkHelper import AttributeRow
+from src.windows.AssetManager.InfoPage import InfoPage
+from src.windows.AssetManager.CustomAssets.Chooser import CustomAssetChooser
 
 class AssetManager(Gtk.ApplicationWindow):
     def __init__(self, main_window: "MainWindow", *args, **kwargs):
@@ -55,17 +47,20 @@ class AssetManager(Gtk.ApplicationWindow):
         self.build()
 
     def build(self):
-        self.stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, hexpand=True, vexpand=True)
-        self.set_child(self.stack)
+        self.main_stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, hexpand=True, vexpand=True)
+        self.set_child(self.main_stack)
         self.asset_chooser = AssetChooser(self)
-        self.stack.add_titled(self.asset_chooser, "Asset Chooser", "Asset Chooser")
+        self.main_stack.add_titled(self.asset_chooser, "Asset Chooser", "Asset Chooser")
 
-        self.asset_info = AssetInfo(self)
-        self.stack.add_titled(self.asset_info, "Asset Info", "Asset Info")
+        self.asset_info = InfoPage(self)
+        self.main_stack.add_titled(self.asset_info, "Asset Info", "Asset Info")
 
         # Header bar
         self.header_bar = Gtk.HeaderBar()
         self.set_titlebar(self.header_bar)
+
+        self.stack_switcher = Gtk.StackSwitcher(stack=self.asset_chooser)
+        self.header_bar.set_title_widget(self.stack_switcher)
 
         self.back_button = Gtk.Button(icon_name="go-previous", visible=False)
         self.back_button.connect("clicked", self.on_back_button_click)
@@ -73,20 +68,33 @@ class AssetManager(Gtk.ApplicationWindow):
 
     def show_for_path(self, path, callback_func=None, *callback_args, **callback_kwargs):
         self.asset_chooser.show_for_path(path, callback_func, *callback_args, **callback_kwargs)
-        self.stack.set_visible_child(self.asset_chooser)
+        self.main_stack.set_visible_child(self.asset_chooser)
         self.back_button.set_visible(False)
         self.present()
 
     def show_info_for_asset(self, asset:dict):
         self.asset_info.show_for_asset(asset)
-        self.stack.set_visible_child(self.asset_info)
+        self.main_stack.set_visible_child(self.asset_info)
         self.back_button.set_visible(True)
         self.present()
 
     def on_back_button_click(self, button):
-        self.stack.set_visible_child(self.asset_chooser)
+        self.main_stack.set_visible_child(self.asset_chooser)
 
-class AssetChooser(Gtk.Box):
+
+class AssetChooser(Gtk.Stack):
+    def __init__(self, asset_manager: AssetManager, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.asset_manager = asset_manager
+
+        self.build()
+
+    def build(self):
+        self.custom_asset_chooser = CustomAssetChooser(self.asset_manager)
+        self.add_titled(self.custom_asset_chooser, "custom-assets", "Custom Assets")
+
+    def show_for_path(self, *args, **kwargs):
+        self.custom_asset_chooser.show_for_path(*args, **kwargs)
     def __init__(self, asset_manager: AssetManager):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=False,
                             margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)

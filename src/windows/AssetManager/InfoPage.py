@@ -23,8 +23,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .AssetManager import AssetManager
 
+# Import python modules
+from PIL import Image
+from videoprops import get_video_properties
+
 # Import own modules
 from src.GtkHelper import AttributeRow
+from src.backend.DeckManagement.HelperMethods import is_video, get_image_aspect_ratio
 
 class InfoPage(Gtk.Box):
     def __init__(self, asset_manager:"AssetManager"):
@@ -78,6 +83,21 @@ class InfoPage(Gtk.Box):
 
         self.license_comment_row = AttributeRow(title="Comment:", attr="Error")
         self.license_group.add(self.license_comment_row)
+
+    def show_info(self, internal_path:str = None, licence_name: str = None, license_url: str = None, author: str = None, license_comment: str = None):
+        if internal_path is None:
+            self.image_group.set_visible(False)
+            self.video_group.set_visible(False)
+        elif is_video(internal_path):
+            self.show_for_vid(internal_path)
+        else:
+            self.show_for_img(internal_path)
+
+        self.license_type_row.set_url(licence_name)
+        self.license_author_row.set_url(author)
+        self.license_url_row.set_url(license_url)
+        self.license_comment_row.set_url(license_comment)
+
 
     def show_for_asset(self, asset:dict):
         if is_video(asset["internal-path"]):

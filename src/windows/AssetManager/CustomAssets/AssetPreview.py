@@ -39,4 +39,10 @@ class AssetPreview(Preview):
 
 
     def on_click_info(self, button):
-        self.flow.asset_chooser.asset_manager.show_info_for_asset(self.asset)
+        self.flow.asset_chooser.asset_manager.show_info(
+            internal_path = self.asset["internal-path"],
+            licence_name = self.asset["license"].get("name"),
+            license_url = self.asset["license"].get("url"),
+            author = self.asset["license"].get("author"),
+            license_comment = self.asset["license"].get("comment")
+        )

@@ -69,13 +69,15 @@ class CustomAssetChooserFlowBox(Gtk.Box):
         self.callback_args = callback_args
         self.callback_kwargs = callback_kwargs
 
-        for i in range(1, 100):
+        i = 0
+        while True:
             child = self.flow_box.get_child_at_index(i)
             if child == None:
                 return
             if child.asset["internal-path"] == path:
                 self.flow_box.select_child(child)
                 return
+            i += 1
             
     def filter_func(self, child):
         search_string = self.asset_chooser.search_entry.get_text()

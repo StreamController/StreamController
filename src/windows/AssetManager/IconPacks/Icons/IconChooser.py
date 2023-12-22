@@ -43,6 +43,8 @@ class IconChooser(ChooserPage):
         self.icon_flow = IconFlowBox(self)
         self.scrolled_box.prepend(self.icon_flow)
 
+        self.icon_flow.connect("child-activated", self.on_child_activated)
+
     def load_for_pack(self, pack: "IconPack"):
         self.clear_flow_box()
 
@@ -53,3 +55,8 @@ class IconChooser(ChooserPage):
     def clear_flow_box(self):
         while self.icon_flow.get_first_child() is not None:
             self.icon_flow.remove(self.icon_flow.get_first_child())
+
+    def on_child_activated(self, flow_box, child):
+        self.asset_manager.callback_func(child.icon.path, *self.asset_manager.callback_args, **self.asset_manager.callback_kwargs)
+        self.asset_manager.close()
+        self.asset_manager.destroy()

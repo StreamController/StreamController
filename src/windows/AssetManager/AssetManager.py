@@ -44,6 +44,12 @@ class AssetManager(Gtk.ApplicationWindow):
             *args, **kwargs
             )
         self.main_window = main_window
+
+        # Callback func
+        self.callback_func = None
+        self.callback_args = []
+        self.callback_kwargs = {}
+
         self.build()
 
     def build(self):
@@ -67,6 +73,10 @@ class AssetManager(Gtk.ApplicationWindow):
         self.header_bar.pack_start(self.back_button)
 
     def show_for_path(self, path, callback_func=None, *callback_args, **callback_kwargs):
+        self.callback_func = callback_func
+        self.callback_args = callback_args
+        self.callback_kwargs = callback_kwargs
+        
         self.asset_chooser.show_for_path(path, callback_func, *callback_args, **callback_kwargs)
         self.main_stack.set_visible_child(self.asset_chooser)
         self.back_button.set_visible(False)

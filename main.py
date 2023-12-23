@@ -27,6 +27,7 @@ from src.backend.PageManagement.PageManager import PageManager
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
+from src.backend.IconPackManagement.IconPackManager import IconPackManager
 
 # Import globals
 import globals as gl
@@ -75,6 +76,7 @@ def create_global_objects():
     gl.asset_manager = AssetManager()
     gl.settings_manager = SettingsManager()
     gl.page_manager = PageManager(gl.settings_manager)
+    gl.icon_pack_manager = IconPackManager()
 
 
 if __name__ == "__main__":

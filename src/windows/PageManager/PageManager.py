@@ -21,6 +21,9 @@ from gi.repository import Gtk, Adw, Gio
 # Import globals
 import globals as gl
 
+# Import python modules
+from fuzzywuzzy import fuzz
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.app import App
@@ -50,7 +53,7 @@ class PageManager(Gtk.ApplicationWindow):
         self.search_entry = Gtk.SearchEntry(placeholder_text=gl.lm.get("page-manager-search-hint"),
                                             hexpand=True,
                                             margin_bottom=10)
-        # self.search_entry.connect("search-changed", self.on_search_changed)
+        self.search_entry.connect("search-changed", self.on_search_changed)
         self.main_box.append(self.search_entry)
 
         # Scrolled window
@@ -62,8 +65,14 @@ class PageManager(Gtk.ApplicationWindow):
         self.scrolled_window.set_child(self.scrolled_box)
 
         # Page box
-        self.page_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.page_box = Gtk.FlowBox(orientation=Gtk.Orientation.HORIZONTAL, max_children_per_line=1,
+                                    selection_mode=Gtk.SelectionMode.NONE)
+        self.page_box.set_sort_func(self.sort_func)
+        self.page_box.set_filter_func(self.filter_func)
         self.scrolled_box.append(self.page_box)
+
+        # Fix stretching of page_box children
+        self.scrolled_box.append(Gtk.Box(vexpand=True))
 
         # Load page buttons
         self.load_pages()
@@ -88,11 +97,53 @@ class PageManager(Gtk.ApplicationWindow):
         gl.page_manager.add_page(name)
         self.page_box.append(PageButton(page_manager=self, page_name=name))
 
+    def on_search_changed(self, *args):
+        self.page_box.invalidate_filter()
+        self.page_box.invalidate_sort()
 
-class PageButton(Gtk.Box):
+    def sort_func(self, a: "PageButton", b: "PageButton"):
+        search_string = self.search_entry.get_text()
+        
+        a_label = a.main_button.get_label()
+        b_label = b.main_button.get_label()
+        
+        if search_string == "":
+            # Sort alphabetically
+
+            if a_label < b_label:
+                return -1
+            if a_label > b_label:
+                return 1
+            return 0
+        
+        else:
+            a_ratio = fuzz.ratio(search_string.lower(), a_label.lower())
+            b_ratio = fuzz.ratio(search_string.lower(), b_label.lower())
+
+            if a_ratio > b_ratio:
+                return -1
+            elif a_ratio < b_ratio:
+                return 1
+            return 0
+    
+    def filter_func(self, child):
+        MIN_MATCH_RATIO = 0.6
+
+        search_string = self.search_entry.get_text()
+        if search_string == "":
+            return True
+
+        match_ratio = fuzz.ratio(search_string.lower(), child.page_name.lower())
+        if match_ratio >= MIN_MATCH_RATIO:
+            return True
+        return False
+
+
+
+
+class PageButton(Gtk.FlowBoxChild):
     def __init__(self, page_manager:PageManager, page_name:str):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL,
-                         margin_bottom=10)
+        super().__init__(margin_bottom=5)
 
         self.page_manager = page_manager
         self.page_name = page_name
@@ -100,18 +151,21 @@ class PageButton(Gtk.Box):
         self.build()
 
     def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.set_child(self.main_box)
+
         self.main_button = Gtk.Button(hexpand=True, height_request=50,
                                       label=self.page_name,
                                       css_classes=["no-round-right"])
-        self.append(self.main_button)
+        self.main_box.append(self.main_button)
 
-        self.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+        self.main_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
 
         self.config_button = Gtk.Button(height_request=50,
                                         icon_name="view-more",
                                         css_classes=["no-round-left"])
         self.config_button.connect("clicked", self.on_config)
-        self.append(self.config_button)
+        self.main_box.append(self.config_button)
 
     def on_config(self, button):
         context = KeyButtonContextMenu(self)

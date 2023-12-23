@@ -38,6 +38,10 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
         self.set_size_request(1000, 600)
+
+        # Store copied stuff
+        self.key_dict = {}
+
         self.build()
         self.init_actions()
 

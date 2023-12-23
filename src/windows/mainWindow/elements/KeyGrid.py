@@ -197,7 +197,7 @@ class KeyButton(Gtk.Frame):
         y, x = self.coords
         key_dict = active_page.dict["keys"][f"{x}x{y}"]
 
-        self.key_grid.copied_key = key_dict
+        gl.app.main_win.key_dict = key_dict
 
     def on_cut(self):
         self.on_copy()
@@ -209,7 +209,7 @@ class KeyButton(Gtk.Frame):
             return
         y, x = self.coords
         
-        active_page.dict["keys"][f"{x}x{y}"] = self.key_grid.copied_key
+        active_page.dict["keys"][f"{x}x{y}"] = gl.app.main_win.key_dict
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
         # Reload ui

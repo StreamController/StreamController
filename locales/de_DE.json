@@ -45,5 +45,15 @@
     "right-area-no-page-selected-error": "Keine Seite ausgewählt",
     "right-area-no-deck-selected-error": "Kein Deck ausgewählt",
     "deck-switcher-no-decks": "Keine Decks Erkannt",
-    "open-settings": "Einstellungen öffnen"
+    "open-settings": "Einstellungen öffnen",
+    "settings-emulate-at-double-click": "Bei Doppelklick klick auf Gerät simulieren",
+    "settings-dev-settings-title": "Entwicklereinstellungen",
+    "settings-fake-decks-header": "Fake Decks",
+    "settings-number-of-fake-decks": "Anzahl der Fake Decks",
+    "settings-number-of-fake-decks-hint": "Für Testzwecke (App muss mölicherweise neugestartet werden)",
+    "settings-store-settings-title": "Store",
+    "settings-store-settings-header": "Store",
+    "settings-store-settings-auto-update": "Automatische Aktualisierung der Assets",
+    "settings-ui-settings-title": "UI Einstellungen",
+    "settings-ui-settings-key-grid-header": "Tastenraster"
 }

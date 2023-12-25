@@ -47,7 +47,7 @@ class UIPage(Adw.PreferencesPage):
     def __init__(self, settings: Settings):
         super().__init__()
         self.settings = settings
-        self.set_title("UI Settings")
+        self.set_title(gl.lm.get("settings-ui-settings-title"))
         self.set_icon_name("system-run-symbolic")
 
         self.add(UIPageGroup(settings=settings))
@@ -55,9 +55,9 @@ class UIPage(Adw.PreferencesPage):
 class UIPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):
         self.settings = settings
-        super().__init__(title="Key Grid")
+        super().__init__(title=gl.lm.get("settings-ui-settings-key-grid-header"))
 
-        self.emulate_row = Adw.SwitchRow(title="Emulate button press on double click", active=True)
+        self.emulate_row = Adw.SwitchRow(title=gl.lm.get("settings-emulate-at-double-click"), active=True)
         self.add(self.emulate_row)
 
         self.load_defaults()
@@ -80,7 +80,7 @@ class DevPage(Adw.PreferencesPage):
     def __init__(self, settings: Settings):
         self.settings = settings
         super().__init__()
-        self.set_title("Developer Settings")
+        self.set_title(gl.lm.get("settings-dev-settings-title"))
         self.set_icon_name("code-block")
 
         self.add(DevPageGroup(settings=settings))
@@ -88,11 +88,11 @@ class DevPage(Adw.PreferencesPage):
 class DevPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):
         self.settings = settings
-        super().__init__(title="Fake Decks")
+        super().__init__(title=gl.lm.get("settings-fake-decks-header"))
 
         self.n_fake_decks_row = Adw.SpinRow.new_with_range(min=0, max=3, step=1)
-        self.n_fake_decks_row.set_title("Number of fake decks")
-        self.n_fake_decks_row.set_subtitle("For testing purposes (might require restart of the app)")
+        self.n_fake_decks_row.set_title(gl.lm.get("settings-number-of-fake-decks"))
+        self.n_fake_decks_row.set_subtitle(gl.lm.get("settings-number-of-fake-decks-hint"))
         self.n_fake_decks_row.set_range(0, 3)
         self.add(self.n_fake_decks_row)
 
@@ -119,7 +119,7 @@ class StorePage(Adw.PreferencesPage):
     def __init__(self, settings: Settings):
         self.settings = settings
         super().__init__()
-        self.set_title("Store")
+        self.set_title(gl.lm.get("settings-store-settings-title"))
         self.set_icon_name("download-symbolic")
 
         self.add(StorePageGroup(settings=settings))
@@ -127,9 +127,9 @@ class StorePage(Adw.PreferencesPage):
 class StorePageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):
         self.settings = settings
-        super().__init__(title="Store")
+        super().__init__(title=gl.lm.get("settings-store-settings-header"))
 
-        self.auto_update = Adw.SwitchRow(title="Auto update assets", active=True)
+        self.auto_update = Adw.SwitchRow(title=gl.lm.get("settings-auto-update"), active=True)
         self.add(self.auto_update)
 
         self.load_defaults()

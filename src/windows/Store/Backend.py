@@ -27,6 +27,7 @@ import time
 import os
 import uuid
 import shutil
+from install import install
 
 # Import globals
 import globals as gl
@@ -423,6 +424,10 @@ class StoreBackend:
         local_path = f"{PLUGINS_FOLDER}/{plugin_dict['id']}"
 
         response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_dict["commit_sha"])
+
+        # Install all dependencies
+        if os.path.isfile(os.path.join(local_path, "requirements.txt")):
+            install(os.path.join(local_path, "requirements.txt"), requirements=True)
 
         if response == 404:
             return 404

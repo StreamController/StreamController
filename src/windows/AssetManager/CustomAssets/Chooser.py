@@ -21,6 +21,7 @@ from gi.repository import Gtk, Adw
 
 # Import python modules
 import os
+from loguru import logger as log
 
 # Import own modules
 from src.windows.AssetManager.ChooserPage import ChooserPage

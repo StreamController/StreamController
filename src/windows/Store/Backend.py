@@ -245,17 +245,17 @@ class StoreBackend:
             "official": True,
             "commit_sha": plugin["verified-commit"],
             "id": manifest.get("id"),
-            "local-sha": await self.get_local_sha(manifest.get("id"))
+            "local-sha": await self.get_local_sha(os.path.join("plugins", manifest.get("id")))
         }
     
-    async def get_local_sha(self, plugin_id):
-        cwd = os.getcwd()
-        new_dir = os.path.join("plugins", plugin_id)
-        if not os.path.exists(new_dir):
+    async def get_local_sha(self, git_dir: str):
+        if not os.path.exists(git_dir):
             return
-        os.chdir(os.path.join("plugins", plugin_id))
-        sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
-        os.chdir(cwd)
+        try:
+            sha = subprocess.check_output(f'cd "{git_dir}" && git rev-parse HEAD', shell=True).decode("utf-8").strip()
+        except subprocess.CalledProcessError as e:
+            log.error(e)
+            return
         return sha
     
     async def prepare_icon(self, icon):
@@ -295,6 +295,7 @@ class StoreBackend:
             "original_url": attribution.get("original-url"),
             "license_description": attribution.get("description"),
             "commit_sha": icon["verified-commit"],
+            "local_sha": await self.get_local_sha(os.path.join("icons", f"{user_name}::{manifest.get('name')}"))
         }
 
     async def image_from_url(self, url):

@@ -312,7 +312,6 @@ class StoreBackend:
         ## Save to cache
         image_uuid = str(uuid.uuid4())
         save_path = f"src/windows/Store/cache/images/{self.get_repo_name(url)}::{image_uuid}.png"
-        img.save(save_path)
         if url in self.image_cache:
             # Remove the old file
             if os.path.isfile(self.image_cache[url]):

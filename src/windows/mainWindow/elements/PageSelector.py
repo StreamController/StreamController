@@ -45,11 +45,17 @@ class PageSelector(Gtk.Box):
         self.append(self.right_area)
 
         # Dropdown
-        self.pages_model = Gtk.StringList()
-        self.drop_down = Gtk.DropDown()
-        self.drop_down.set_model(self.pages_model)
+        self.pages_model = Gtk.ListStore.new([str, str])
+        self.drop_down = Gtk.ComboBox.new_with_model(self.pages_model)
+
+        self.renderer_text = Gtk.CellRendererText()
+        self.drop_down.pack_start(self.renderer_text, True)
+        # Use first column for text
+        self.drop_down.add_attribute(self.renderer_text, "text", 0)
+
+        # self.drop_down.set_model(self.pages_model)
         self.drop_down.set_tooltip_text(gl.lm.get("header-page-selector-drop-down-hint"))
-        self.drop_down.connect("notify::selected", self.on_change_page)
+        self.drop_down.connect("changed", self.on_change_page)
         self.update()
         self.right_area.append(self.drop_down)
 
@@ -61,23 +67,26 @@ class PageSelector(Gtk.Box):
     def update(self):
         self.disconnect_change_signal()
         pages = self.page_manager.get_pages()
-        self.clear_model()
+        # self.clear_model()
+        self.pages_model.clear()
         for page in pages:
-            self.pages_model.append(os.path.splitext(page)[0])
-
+            display_name = os.path.splitext(os.path.basename(page))[0]
+            self.pages_model.append([display_name, page])  # Append a tuple
+            
         self.update_selected()
 
         # self.connect("notify::selected", self.on_change_page)
         self.connect_change_signal()
 
     def clear_model(self):
+        self.pages_model.clear
         for i in range(self.pages_model.get_n_items()):
             self.pages_model.remove(0)
 
-    def set_selected(self, page_name):
-        for i in range(self.pages_model.get_n_items()):
-            if self.pages_model.get_item(i).get_string() == page_name:
-                self.drop_down.set_selected(i)
+    def set_selected(self, page_path: str):
+        for i, row in enumerate(self.pages_model):
+            if row[1] == page_path:
+                self.drop_down.set_active(i)
                 return
             
     def update_selected(self):
@@ -89,12 +98,16 @@ class PageSelector(Gtk.Box):
         else:
             self.drop_down.set_sensitive(True)
         active_controller = child.deck_controller
-        page_name = active_controller.active_page.get_name()
-        self.set_selected(page_name)
+        page = active_controller.active_page
+        if page is None:
+            return
+        page_path = page.json_path
+        self.set_selected(page_path)
 
     def on_change_page(self, drop_down, *args):
         active_controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        page = gl.page_manager.get_page(self.pages_model.get_item(drop_down.get_selected()).get_string(), deck_controller = active_controller)
+        page_path = self.pages_model[drop_down.get_active()][1]
+        page = gl.page_manager.get_page(path=page_path, deck_controller = active_controller)
         active_controller.load_page(page)
 
     def on_click_open_page_manager(self, button):
@@ -108,4 +121,4 @@ class PageSelector(Gtk.Box):
             pass
 
     def connect_change_signal(self):
-        self.drop_down.connect("notify::selected", self.on_change_page)
+        self.drop_down.connect("changed", self.on_change_page)

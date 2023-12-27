@@ -17,9 +17,11 @@ import os
 import shutil
 import json
 from copy import copy
+from loguru import logger as log
 
 # Import own modules
 from src.backend.PageManagement.Page import Page
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
 # Import globals
 import globals as gl
@@ -29,55 +31,58 @@ class PageManager:
         self.settings_manager = settings_manager
 
         self.created_pages = {}
+
+        self.custom_pages = []
     
     def save_pages(self) -> None:
         for page in self.pages.values():
             page.save()
 
-    def get_pages(self, remove_extension: bool = False) -> list:
+    def get_pages(self) -> list:
         pages = []
         # Create pages dir if it doesn't exist
         os.makedirs("pages", exist_ok=True)
         # Get all pages
         for page in os.listdir("pages"):
             if os.path.splitext(page)[1] == ".json":
-                if remove_extension:
-                    page = os.path.splitext(page)[0]
-                pages.append(page)
+                pages.append(os.path.join("pages", page))
+
+        pages.extend(self.custom_pages)
+
         return pages
     
-    def create_page_for_name(self, name: str, deck_controller: "DeckController") -> Page:
-        if os.path.splitext(name)[1] != ".json":
-            name += ".json"
-        page = Page(json_path=os.path.join("pages", name), deck_controller=deck_controller)
+    def get_page_names(self) -> list[str]:
+        pages: list[str] = []
+        for page in self.get_pages():
+            pages.append(os.path.splitext(os.path.basename(page))[0])
+        return pages
+    
+    def create_page(self, path: str, deck_controller: "DeckController") -> Page:
+        if path is None:
+            return None
+        if not os.path.exists(path):
+            return None
+        page = Page(json_path=path, deck_controller=deck_controller)
         self.created_pages.setdefault(deck_controller, {})
-        self.created_pages[deck_controller][name] = page
+        self.created_pages[deck_controller][path] = page
         return page
     
-    def get_page(self, name: str, deck_controller: "DeckController") -> Page:
-        if os.path.splitext(name)[1] != ".json":
-            name += ".json"
-        
+    def get_page(self, path: str, deck_controller: "DeckController") -> Page:
         if deck_controller in self.created_pages:
-            if name in self.created_pages[deck_controller]:
-                return self.created_pages[deck_controller][name]
+            if path in self.created_pages[deck_controller]:
+                return self.created_pages[deck_controller][path]
             
-        return self.create_page_for_name(name, deck_controller)
+        return self.create_page(path, deck_controller)
 
-    def get_default_page_for_deck(self, serial_number: str, remove_extension: bool = False) -> Page:
+    def get_default_page_for_deck(self, serial_number: str) -> str:
         page_settings = self.settings_manager.load_settings_from_file("settings/pages.json")
         for page in page_settings.get("default-pages", []):
             if page["deck"] == serial_number:
-                name = page["name"]
-                if not remove_extension:
-                    name += ".json"
-                return name
+                path = page["path"]
+                return path
         return None
     
-    def rename_page(self, old_name: str, new_name: str):
-        old_path = os.path.join("pages", f"{old_name}.json")
-        new_path = os.path.join("pages", f"{new_name}.json")
-
+    def rename_page(self, old_path: str, new_path: str):
         # Copy page json file
         shutil.copy2(old_path, new_path)
 
@@ -85,7 +90,7 @@ class PageManager:
         for controller in gl.deck_manager.deck_controller:
             if controller.active_page is None:
                 continue
-            page = self.get_page(old_name, controller)
+            page = self.get_page(path=old_path, deck_controller=controller)
             if page is None:
                 continue
             page.json_path = new_path
@@ -95,54 +100,55 @@ class PageManager:
             if settings.get("default-pages") is None:
                 continue
             for entry in settings["default-pages"]:
-                if entry["name"] == old_name:
-                    entry["name"] = new_name
+                if entry["path"] == old_path:
+                    entry["path"] = new_path
                     gl.settings_manager.save_settings_to_file("settings/pages.json", settings)
 
         # Remove old page
         os.remove(old_path)
 
         # Update ui
-        gl.app.main_win.header_bar.page_selector.update()
+        self.update_ui()
 
 
-    def remove_page(self, name: str):
+    def remove_page(self, page_path: str):
+        print()
         # Clear page objects
         for controller in gl.deck_manager.deck_controller:
             if controller.active_page is None:
                 continue
-            page = self.get_page(name, controller)
+            page = self.get_page(path=page_path, deck_controller=controller)
             if page is None:
                 continue
 
-            if controller.active_page.get_name() != name:
+            if controller.active_page.json_path != page_path:
                 continue
 
 
-            deck_default_page = self.get_default_page_for_deck(controller.deck.get_serial_number(), remove_extension=True)
-            if name != deck_default_page:
+            deck_default_page = self.get_default_page_for_deck(controller.deck.get_serial_number())
+            if page_path != deck_default_page:
                 new_page = self.get_page(deck_default_page, controller)
                 controller.load_page(new_page)
                 continue
 
-            if name == deck_default_page:
-                page_list = self.get_pages(remove_extension=True)
-                page_list.remove(name)
+            else:
+                page_list = self.get_pages()
+                page_list.remove(page_path)
                 controller.load_page(self.get_page(page_list[0], controller))
 
 
         # Remove page json file
-        os.remove(os.path.join("pages", f"{name}.json"))
+        os.remove(page_path)
 
         # Remove default page entries
         settings = gl.settings_manager.load_settings_from_file("settings/pages.json")
         for entry in copy(settings.get("default-pages",[])):
-            if entry["name"] == name:
+            if entry["path"] == page_path:
                 settings["default-pages"].remove(entry)
         gl.settings_manager.save_settings_to_file("settings/pages.json", settings)
 
         # Update ui
-        gl.app.main_win.header_bar.page_selector.update()
+        self.update_ui()
 
     def add_page(self, name:str):
         page = {
@@ -153,4 +159,8 @@ class PageManager:
             json.dump(page, f)
 
         # Update ui
-        gl.app.main_win.header_bar.page_selector.update()
+        self.update_ui()
+
+    def update_ui(self):
+        if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
+            gl.app.main_win.header_bar.page_selector.update()

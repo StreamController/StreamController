@@ -83,12 +83,14 @@ class DeckController:
         self.screen_saver = ScreenSaver(self)
 
         # Load default page #TODO: maybe remove from this class
-        default_page = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
-        if default_page == None:
+        default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
+        if default_page_path == None:
             # Use the first page
-            default_page = gl.page_manager.get_pages(remove_extension=False)[0]
-        if default_page != None:
-            page = gl.page_manager.create_page_for_name(default_page, deck_controller=self)
+            default_page_path = gl.page_manager.get_pages()[0]
+        if not os.path.exists(default_page_path):
+            default_page_path = None
+        if default_page_path != None:
+            page = gl.page_manager.create_page(default_page_path, deck_controller=self)
             if page != None:
                 self.load_page(page)
 

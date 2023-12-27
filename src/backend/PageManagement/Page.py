@@ -94,7 +94,7 @@ class Page:
 
         # Load action objects
         self.action_objects = {}
-        for key in self.dict["keys"]:
+        for key in self.dict.get("keys", {}):
             if "actions" not in self.dict["keys"][key]:
                 continue
             for i, action in enumerate(self.dict["keys"][key]["actions"]):
@@ -162,7 +162,7 @@ class Page:
 
     def get_without_action_objects(self):
         dictionary = copy(self.dict)
-        for key in dictionary["keys"]:
+        for key in dictionary.get("keys", {}):
             if "actions" not in dictionary["keys"][key]:
                 continue
             for action in dictionary["keys"][key]["actions"]:

@@ -161,6 +161,15 @@ class PageManager:
         # Update ui
         self.update_ui()
 
+    def register_page(self, path: str):
+        if not os.path.exists(path):
+            log.error(f"Page {path} does not exist")
+        log.trace(f"Registering page: {path}")
+        self.custom_pages.append(path)
+
+        # Update ui
+        self.update_ui()
+
     def update_ui(self):
         if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
             gl.app.main_win.header_bar.page_selector.update()

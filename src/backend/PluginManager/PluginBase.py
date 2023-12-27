@@ -10,6 +10,9 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk
 
+# Import globals
+import globals as gl
+
 class PluginBase:
     plugins = {}
     
@@ -68,3 +71,6 @@ class PluginBase:
             css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
+
+    def register_page(self, path: str) -> None:
+        gl.page_manager.register_page(path)

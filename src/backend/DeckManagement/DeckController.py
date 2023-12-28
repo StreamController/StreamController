@@ -352,6 +352,8 @@ class DeckController:
 
     @log.catch
     def load_page(self, page:Page, load_brightness:bool = True, load_background:bool = True, load_keys:bool = True, load_screen_saver:bool = True) -> None:
+        if recursive_hasattr(gl, "app.main_win.rightArea"):
+            gl.app.main_win.rightArea.load_for_coords((0, 0))
         log.info(f"Loading page {page.dict.keys()}")
         self.deck_settings = self.get_deck_settings()
 

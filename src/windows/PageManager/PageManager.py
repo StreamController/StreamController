@@ -23,6 +23,7 @@ import globals as gl
 
 # Import python modules
 from fuzzywuzzy import fuzz
+import os
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -84,18 +85,19 @@ class PageManager(Gtk.ApplicationWindow):
         self.main_box.append(self.add_button)
 
     def load_pages(self):
-        pages = gl.page_manager.get_pages(remove_extension=True)
-        for page in pages:
-            self.page_box.append(PageButton(page_manager=self, page_name=page))
+        pages = gl.page_manager.get_pages()
+        for page_path in pages:
+            self.page_box.append(PageButton(page_manager=self, page_path = page_path))
 
     def on_add_page(self, button):
         dial = EntryDialog(parent_window=self, dialog_title="Add Page", entry_heading="Page name:", default_text="page",
-                           forbid_answers=gl.page_manager.get_pages(remove_extension=True))
+                           forbid_answers=gl.page_manager.get_page_names())
         dial.show(self.add_page_callback)
 
     def add_page_callback(self, name:str):
+        path = os.path.join("pages", f"{name}.json")
         gl.page_manager.add_page(name)
-        self.page_box.append(PageButton(page_manager=self, page_name=name))
+        self.page_box.append(PageButton(page_manager=self, page_path=path))
 
     def on_search_changed(self, *args):
         self.page_box.invalidate_filter()
@@ -142,11 +144,11 @@ class PageManager(Gtk.ApplicationWindow):
 
 
 class PageButton(Gtk.FlowBoxChild):
-    def __init__(self, page_manager:PageManager, page_name:str):
+    def __init__(self, page_manager:PageManager, page_path:str):
         super().__init__(margin_bottom=5)
 
         self.page_manager = page_manager
-        self.page_name = page_name
+        self.page_path = page_path
 
         self.build()
 
@@ -155,7 +157,7 @@ class PageButton(Gtk.FlowBoxChild):
         self.set_child(self.main_box)
 
         self.main_button = Gtk.Button(hexpand=True, height_request=50,
-                                      label=self.page_name,
+                                      label=os.path.splitext(os.path.basename(self.page_path))[0],
                                       css_classes=["no-round-right"])
         self.main_box.append(self.main_button)
 
@@ -202,11 +204,11 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         self.set_menu_model(self.main_menu)
 
     def on_rename(self, action, param):
-        old_name = self.page_button.main_button.get_label()
-        new_name = old_name + "-copy"
-        gl.page_manager.rename_page(old_name, new_name)
-        self.page_button.main_button.set_label(new_name)
+        old_path = self.page_button.page_path
+        new_path = os.path.join(os.path.dirname(old_path), f"{self.page_button.main_button.get_label()}-copy.json")
+        gl.page_manager.rename_page(old_path, new_path)
+        self.page_button.main_button.set_label(os.path.splitext(os.path.basename(new_path))[0])
 
     def on_remove(self, action, param):
-        gl.page_manager.remove_page(self.page_button.main_button.get_label())
+        gl.page_manager.remove_page(self.page_button.page_path)
         self.page_button.page_manager.page_box.remove(self.page_button)

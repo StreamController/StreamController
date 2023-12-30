@@ -94,9 +94,12 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_button.connect("clicked", self.on_choose_image)
 
     def disconnect_signals(self):
-        self.overwrite_switch.disconnect_by_func(self.on_toggle_overwrite)
-        self.show_switch.disconnect_by_func(self.on_toggle_enable)
-        self.media_selector_button.disconnect_by_func(self.on_choose_image)
+        try:
+            self.overwrite_switch.disconnect_by_func(self.on_toggle_overwrite)
+            self.show_switch.disconnect_by_func(self.on_toggle_enable)
+            self.media_selector_button.disconnect_by_func(self.on_choose_image)
+        except TypeError as e:
+            log.error(f"Don't panic, getting this error is normal: {e}")
 
     def load_defaults_from_page(self):
         self.disconnect_signals()

@@ -57,7 +57,6 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.overwrite_box.append(self.overwrite_label)
 
         self.overwrite_switch = Gtk.Switch()
-        self.overwrite_switch.connect("state-set", self.on_toggle_overwrite)
         self.overwrite_box.append(self.overwrite_switch)
 
         self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, visible=False)
@@ -71,7 +70,6 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.show_label = Gtk.Label(label=gl.lm.get("page-settings-deck-show-background"), hexpand=True, xalign=0)
         self.show_box.append(self.show_label)
         self.show_switch = Gtk.Switch()
-        self.show_switch.connect("state-set", self.on_toggle_enable)
         self.show_box.append(self.show_switch)
 
         self.media_selector = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER)
@@ -80,15 +78,29 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
         self.media_selector_button = Gtk.Button(label=gl.lm.get("select"), css_classes=["page-settings-media-selector"])
-        self.media_selector_button.connect("clicked", self.on_choose_image)
         self.media_selector.append(self.media_selector_button)
 
         self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text="Caching...", fraction=0, show_text=True, visible=False)
         self.config_box.append(self.progress_bar)
 
+        # Signals get directly disconnected by disconnect_signals() but we have to connect them beforehand to prevent errors
+        self.connect_signals()
+
         self.load_defaults_from_page()
 
+    def connect_signals(self):
+        self.overwrite_switch.connect("state-set", self.on_toggle_overwrite)
+        self.show_switch.connect("state-set", self.on_toggle_enable)
+        self.media_selector_button.connect("clicked", self.on_choose_image)
+
+    def disconnect_signals(self):
+        self.overwrite_switch.disconnect_by_func(self.on_toggle_overwrite)
+        self.show_switch.disconnect_by_func(self.on_toggle_enable)
+        self.media_selector_button.disconnect_by_func(self.on_choose_image)
+
     def load_defaults_from_page(self):
+        self.disconnect_signals()
+
         if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
             return
         if self.settings_page.deck_page.deck_controller.active_page == None:
@@ -120,11 +132,14 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
         self.set_thumbnail(file_path)
 
+        self.connect_signals()
+
     def on_toggle_enable(self, toggle_switch, state):
         # Change setting in the active deck page
         self.settings_page.deck_page.deck_controller.active_page.dict["background"]["show"] = state
         self.settings_page.deck_page.deck_controller.active_page.save()
-        self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
+        # self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
+        self.settings_page.deck_page.deck_controller.load_page(self.settings_page.deck_page.deck_controller.active_page)
 
     def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)
@@ -159,7 +174,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
     def set_background_to_page(self, file_path):
         self.settings_page.deck_page.deck_controller.active_page.set_background(file_path)
-        self.settings_page.deck_page.deck_controller.set_background(file_path)
+        self.settings_page.deck_page.deck_controller.set_background(file_path, bypass_task=True)
 
         # self.update_progress_bar()
 

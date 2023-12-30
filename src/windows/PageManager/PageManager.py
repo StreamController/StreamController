@@ -32,6 +32,9 @@ if TYPE_CHECKING:
 # Import own modules
 from GtkHelper.GtkHelper import EntryDialog
 
+# Import signals
+from src.backend.PluginManager import Signals
+
 class PageManager(Gtk.ApplicationWindow):
     def __init__(self, app:"App"):
         super().__init__(title="Page Manager", default_width=400, default_height=600)
@@ -208,6 +211,9 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         new_path = os.path.join(os.path.dirname(old_path), f"{self.page_button.main_button.get_label()}-copy.json")
         gl.page_manager.rename_page(old_path, new_path)
         self.page_button.main_button.set_label(os.path.splitext(os.path.basename(new_path))[0])
+
+        # Notify plugin actions
+        gl.plugin_manager.trigger_signal(signal= Signals.PageRename, old_path= old_path, new_path= new_path)
 
     def on_remove(self, action, param):
         gl.page_manager.remove_page(self.page_button.page_path)

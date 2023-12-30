@@ -207,9 +207,21 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         self.set_menu_model(self.main_menu)
 
     def on_rename(self, action, param):
+        old_name = self.page_button.main_button.get_label()
+        forbidden_names = gl.page_manager.get_page_names()
+        forbidden_names.remove(old_name)
+        dial = EntryDialog(parent_window=self.page_button.page_manager, dialog_title="Rename Page", entry_heading="New Name:", default_text=old_name,
+                           forbid_answers=forbidden_names)
+        dial.show(self.rename_callback)
+        
+
+    def rename_callback(self, new_name: str):
         old_path = self.page_button.page_path
-        new_path = os.path.join(os.path.dirname(old_path), f"{self.page_button.main_button.get_label()}-copy.json")
-        gl.page_manager.rename_page(old_path, new_path)
+        page_dir = os.path.dirname(old_path)
+        new_path = os.path.join(page_dir, f"{new_name}.json")
+        gl.page_manager.move_page(old_path, new_path)
+
+        # Update ui
         self.page_button.main_button.set_label(os.path.splitext(os.path.basename(new_path))[0])
 
         # Notify plugin actions

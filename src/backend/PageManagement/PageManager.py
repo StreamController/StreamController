@@ -82,7 +82,7 @@ class PageManager:
                 return path
         return None
     
-    def rename_page(self, old_path: str, new_path: str):
+    def move_page(self, old_path: str, new_path: str):
         # Copy page json file
         shutil.copy2(old_path, new_path)
 

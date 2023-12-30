@@ -102,6 +102,9 @@ class PageManager(Gtk.ApplicationWindow):
         gl.page_manager.add_page(name)
         self.page_box.append(PageButton(page_manager=self, page_path=path))
 
+        # Notify plugin actions
+        gl.plugin_manager.trigger_signal(signal= Signals.PageAdd, path= path)
+
     def on_search_changed(self, *args):
         self.page_box.invalidate_filter()
         self.page_box.invalidate_sort()
@@ -227,6 +230,10 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         # Notify plugin actions
         gl.plugin_manager.trigger_signal(signal= Signals.PageRename, old_path= old_path, new_path= new_path)
 
+
     def on_remove(self, action, param):
         gl.page_manager.remove_page(self.page_button.page_path)
         self.page_button.page_manager.page_box.remove(self.page_button)
+
+        # Notify plugin actions
+        gl.plugin_manager.trigger_signal(signal= Signals.PageDelete, path= self.page_button.page_path)

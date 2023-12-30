@@ -26,7 +26,7 @@ import webbrowser as web
 if TYPE_CHECKING:
     from src.windows.Store.StorePage import StorePage
 
-from src.GtkHelper import AttributeRow
+from GtkHelper.GtkHelper import AttributeRow
 
 class InfoPage(Gtk.Box):
     def __init__(self, store_page:"StorePage"):

@@ -28,7 +28,7 @@ from loguru import logger as log
 from src.windows.mainWindow.elements.leftArea import LeftArea
 from src.windows.mainWindow.elements.RightArea.RightArea import RightArea
 from src.windows.mainWindow.headerBar import HeaderBar
-from src.GtkHelper import get_deepest_focused_widget, get_deepest_focused_widget_with_attr
+from GtkHelper.GtkHelper import get_deepest_focused_widget, get_deepest_focused_widget_with_attr
 
 # Import globals
 import globals as gl

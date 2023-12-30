@@ -28,7 +28,7 @@ from PIL import Image
 from videoprops import get_video_properties
 
 # Import own modules
-from src.GtkHelper import AttributeRow
+from GtkHelper.GtkHelper import AttributeRow
 from src.backend.DeckManagement.HelperMethods import is_video, get_image_aspect_ratio
 
 class InfoPage(Gtk.Box):

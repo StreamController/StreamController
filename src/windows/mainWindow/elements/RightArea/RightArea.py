@@ -28,7 +28,7 @@ from src.windows.mainWindow.elements.RightArea.elements.LabelEditor import Label
 from src.windows.mainWindow.elements.RightArea.elements.ActionManager import ActionManager
 from src.windows.mainWindow.elements.RightArea.elements.ActionChooser import ActionChooser
 from src.windows.mainWindow.elements.RightArea.elements.ActionConfigurator import ActionConfigurator
-from src.GtkHelper import ErrorPage
+from GtkHelper.GtkHelper import ErrorPage
 
 # Import globals
 import globals as gl

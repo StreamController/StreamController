@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from src.app import App
 
 # Import own modules
-from src.GtkHelper import EntryDialog
+from GtkHelper.GtkHelper import EntryDialog
 
 class PageManager(Gtk.ApplicationWindow):
     def __init__(self, app:"App"):

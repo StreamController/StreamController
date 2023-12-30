@@ -33,7 +33,7 @@ import globals as gl
 
 # Import own modules
 from src.backend.PluginManager.ActionBase import ActionBase
-from src.GtkHelper import BetterExpander
+from GtkHelper.GtkHelper import BetterExpander
 
 class ActionManager(Gtk.Box):
     def __init__(self, right_area, **kwargs):

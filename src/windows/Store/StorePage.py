@@ -24,7 +24,7 @@ import threading
 
 # Import own modules
 from src.windows.Store.Plugins.InfoPage import InfoPage
-from src.GtkHelper import ErrorPage
+from GtkHelper.GtkHelper import ErrorPage
 
 # Typing
 from typing import TYPE_CHECKING

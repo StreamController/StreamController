@@ -17,7 +17,7 @@ class ActionBase:
         self.deck_controller = deck_controller
         self.page = page
         self.page_coords = coords
-        self.coords = coords.split("x")
+        self.coords = int(coords.split("x")[0]), int(coords.split("x")[1])
         self.index = self.deck_controller.coords_to_index(self.coords)
 
         self.on_ready_called = False

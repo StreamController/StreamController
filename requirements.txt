@@ -32,6 +32,7 @@ pip-review==1.3.0
 pipenv==2023.11.15
 platformdirs==4.1.0
 psutil==5.9.7
+pulsectl==23.5.2
 pycairo==1.25.1
 pydantic==2.5.2
 pydantic_core==2.14.5

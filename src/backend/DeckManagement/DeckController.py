@@ -351,7 +351,7 @@ class DeckController:
 
 
     @log.catch
-    def load_page(self, page:Page, load_brightness:bool = True, load_background:bool = True, load_keys:bool = True, load_screen_saver:bool = True) -> None:
+    def load_page(self, page:Page, load_brightness:bool = True, load_background:bool = True, load_keys:bool = True, load_screensaver:bool = True) -> None:
         if recursive_hasattr(gl, "app.main_win.rightArea"):
             gl.app.main_win.rightArea.load_for_coords((0, 0))
         log.info(f"Loading page {page.dict.keys()}")
@@ -503,7 +503,7 @@ class DeckController:
         if load_screensaver:
             load_screensaver(self)
 
-    def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True, load_screen_saver: bool = True):
+    def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True, load_screensaver: bool = True):
         # Reset deck
         if load_background or load_keys:
             with self.deck:
@@ -514,7 +514,7 @@ class DeckController:
         if load_background:
             self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
 
-        self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys, load_screen_saver=load_screen_saver)
+        self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys, load_screensaver=load_screensaver)
 
     def load_key(self, coords: str, only_labels: bool = False):
         self.active_page.load()

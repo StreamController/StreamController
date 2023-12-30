@@ -138,8 +138,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Change setting in the active deck page
         self.settings_page.deck_page.deck_controller.active_page.dict["background"]["show"] = state
         self.settings_page.deck_page.deck_controller.active_page.save()
-        # self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
-        self.settings_page.deck_page.deck_controller.load_page(self.settings_page.deck_page.deck_controller.active_page)
+        self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screensaver=False)
 
     def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)
@@ -147,7 +146,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.active_page.dict["background"]["overwrite"] = state
         # Save
         self.settings_page.deck_page.deck_controller.active_page.save()
-        self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screen_saver=False)
+        self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screensaver=False)
 
     def on_choose_image(self, button):
         self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("background", {})

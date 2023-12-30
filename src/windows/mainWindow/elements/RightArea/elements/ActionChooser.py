@@ -25,7 +25,7 @@ from fuzzywuzzy import fuzz, process
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import get_last_dir
-from src.GtkHelper import BetterExpander, BetterPreferencesGroup
+from GtkHelper.GtkHelper import BetterExpander, BetterPreferencesGroup
 
 
 # Import globals

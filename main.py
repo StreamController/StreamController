@@ -67,17 +67,16 @@ def create_cache_folder():
         os.makedirs("cache")
 
 def create_global_objects():
-    # Plugin Manager
-    gl.plugin_manager = PluginManager()
-    gl.plugin_manager.load_plugins()
-    gl.plugin_manager.generate_action_index()
-
     gl.media_manager = MediaManager()
     gl.asset_manager = AssetManager()
     gl.settings_manager = SettingsManager()
     gl.page_manager = PageManager(gl.settings_manager)
     gl.icon_pack_manager = IconPackManager()
 
+    # Plugin Manager
+    gl.plugin_manager = PluginManager()
+    gl.plugin_manager.load_plugins()
+    gl.plugin_manager.generate_action_index()
 
 if __name__ == "__main__":
     create_global_objects()

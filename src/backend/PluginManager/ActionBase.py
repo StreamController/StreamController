@@ -1,6 +1,12 @@
 from loguru import logger as log
 from copy import copy
 
+# Import own modules
+from src.backend.PluginManager.Signals import Signal
+
+# Import globals
+import globals as gl
+
 class ActionBase:
     # Change to match your action
     ACTION_NAME = ""
@@ -180,3 +186,15 @@ class ActionBase:
     def set_settings(self, settings: dict):
         self.page.set_settings_for_action(self, settings=settings, coords = self.page_coords)
         self.page.save()
+
+    def connect(self, signal:Signal = None, callback: callable = None) -> None:
+        # Verify signal
+        if not isinstance(signal, Signal):
+            raise TypeError("signal_name must be of type Signal")
+        
+        # Verify callback
+        if not callable(callback):
+            raise TypeError("callback must be callable")
+        
+        # Connect
+        gl.plugin_manager.connect_signal(signal = signal, callback = callback)

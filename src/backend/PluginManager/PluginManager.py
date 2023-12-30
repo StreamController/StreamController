@@ -5,11 +5,14 @@ from loguru import logger as log
 
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import get_last_dir
+from src.backend.PluginManager.Signals import Signal
 
 class PluginManager:
     action_index = {}
     def __init__(self):
         self.initialized_plugin_classes = list[PluginBase]()
+
+        self.connected_signals: dict = {}
 
     def load_plugins(self):
         # get all folders in plugins folder
@@ -73,3 +76,23 @@ class PluginManager:
             _id = get_last_dir(plugins[plugin]["folder-path"])
             if _id == plugin_id:
                 return plugins[plugin]["object"]
+            
+    def connect_signal(self, signal: Signal = None, callback: callable = None) -> None:
+        # Verify signal
+        if not isinstance(signal, Signal):
+            raise TypeError("signal_name must be of type Signal")
+        
+        # Verify callback
+        if not callable(callback):
+            raise TypeError("callback must be callable")
+        
+        self.connected_signals.setdefault(signal, [])
+        self.connected_signals[signal].append(callback)
+
+    def trigger_signal(self, signal: Signal = None, *args, **kwargs) -> None:
+        # Verify signal
+        if not isinstance(signal, Signal):
+            raise TypeError("signal_name must be of type Signal")
+        
+        for callback in self.connected_signals.get(signal, []):
+            callback(*args, **kwargs)

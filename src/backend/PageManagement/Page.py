@@ -203,6 +203,7 @@ class Page:
                     break
                 if self.action_objects[coords][i] == action_object:
                     return action["settings"]
+        return {}
                 
     def set_settings_for_action(self, action_object, settings: dict, coords: list = None):
         if coords is None:

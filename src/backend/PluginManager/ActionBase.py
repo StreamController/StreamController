@@ -7,6 +7,9 @@ from src.backend.PluginManager.Signals import Signal
 # Import globals
 import globals as gl
 
+# Import locale manager
+from locales.LocaleManager import LocaleManager
+
 class ActionBase:
     # Change to match your action
     ACTION_NAME = ""
@@ -36,6 +39,8 @@ class ActionBase:
         
         self.default_image = None
         self.default_labels = {}
+
+        self.locale_manager: LocaleManager = None
 
         log.info(f"Loaded action {self.ACTION_NAME}")
         

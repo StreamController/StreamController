@@ -13,6 +13,9 @@ from gi.repository import Gtk, Adw, Gdk
 # Import globals
 import globals as gl
 
+# Import own modules
+from locales.LocaleManager import LocaleManager
+
 class PluginBase:
     plugins = {}
     
@@ -49,8 +52,11 @@ class PluginBase:
         }
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
 
+        self.locale_manager = LocaleManager(os.path.join(self.PATH, "locales"))
+
     def add_action(self, action):
         action.PLUGIN_BASE = self
+        action.locale_manager = self.locale_manager
         self.ACTIONS[action.ACTION_NAME] = action
 
     def get_settings(self):

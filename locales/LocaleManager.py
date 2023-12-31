@@ -18,28 +18,37 @@ import locale
 from loguru import logger as log
 
 class LocaleManager:
-    locales = None
-    locales_json = None
-    def __init__(self):
-        pass
+    def __init__(self, locales_path: str):
+        self.locales_path: str = locales_path
+        self.locales_json: dict = {}
+        self.fallback_json: dict = {}
+        self.locales: str = None
+        self.FALLBACK_LOCALE: str = "en_US"
+
+    def load_fallback_language(self):
+        path = os.path.join(self.locales_path, f"{self.FALLBACK_LOCALE}.json")
+        if not os.path.exists(path):
+            log.warning(f"Fallback language file not found under: {path}")
+            return
+        with open(os.path.join(self.locales_path, f"{self.FALLBACK_LOCALE}.json")) as f:
+            self.fallback_json = json.load(f)
 
     def set_to_os_default(self):
         os_locale = locale.getlocale()[0]
         self.set_language(os_locale)
 
-    def set_language(self, language):
+    def set_language(self, language: str) -> str:
         self.locales = language
-        if os.path.isfile(os.path.join("locales", f"{self.locales}.json")) == False:
-            #Default to en_US if language file does not exist
-            self.locales = "en_US"
-        with open(os.path.join("locales", f"{self.locales}.json")) as f:
+        if not os.path.isfile(os.path.join(self.locales_path, f"{self.locales}.json")):
+            # We're gonna use the fallback language
+            return
+
+        with open(os.path.join(self.locales_path, f"{self.locales}.json")) as f:
             self.locales_json = json.load(f)
-    
-    def get(self, key):
-        if self.locales_json is None:
-            log.warning("No language set.")
-            return key
-        #TODO: If language does not have key, return automatic translation
-        if key not in self.locales_json:
-            return "Not found"
-        return self.locales_json[key]
+
+    def set_fallback_language(self, language: str) -> None:
+        self.FALLBACK_LOCALE = language
+        self.load_fallback_language()
+
+    def get(self, key: str) -> str:
+        return self.locales_json.get(key, self.fallback_json.get(key, "Not found"))

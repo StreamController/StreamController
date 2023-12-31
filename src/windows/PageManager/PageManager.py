@@ -141,7 +141,7 @@ class PageManager(Gtk.ApplicationWindow):
         if search_string == "":
             return True
 
-        match_ratio = fuzz.ratio(search_string.lower(), child.page_name.lower())
+        match_ratio = fuzz.ratio(search_string.lower(), child.main_button.get_label().lower())
         if match_ratio >= MIN_MATCH_RATIO:
             return True
         return False

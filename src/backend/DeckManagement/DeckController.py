@@ -37,6 +37,9 @@ from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.ScreenSaver import ScreenSaver
 from src.backend.PluginManager.ActionBase import ActionBase
 
+# Import signals
+from src.backend.PluginManager import Signals
+
 # Import globals
 import globals as gl
 
@@ -502,6 +505,9 @@ class DeckController:
             load_all_keys()
         if load_screensaver:
             load_screensaver(self)
+
+        # Notify plugin actions
+        gl.plugin_manager.trigger_signal(signal= Signals.ChangePage, path= self.active_page.json_path)
 
     def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True, load_screensaver: bool = True):
         # Reset deck

@@ -5,4 +5,4 @@ class Signal:
 PageRename = Signal(0)
 PageDelete = Signal(1)
 PageAdd = Signal(2)
-PageRename = Signal(code = 1)
+ChangePage = Signal(3)

@@ -26,6 +26,7 @@ from loguru import logger as log
 # Import own modules
 from src.windows.AssetManager.ChooserPage import ChooserPage
 from src.windows.AssetManager.CustomAssets.FlowBox import CustomAssetChooserFlowBox
+from src.windows.AssetManager.CustomAssets.AssetPreview import AssetPreview
 
 # Import globals
 import globals as gl

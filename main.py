@@ -87,6 +87,12 @@ def create_global_objects():
     gl.plugin_manager.generate_action_index()
 
 def update_assets():
+    settings = gl.settings_manager.load_settings_from_file("settings/settings.json")
+    auto_update = settings.get("store", {}).get("auto-update", True)
+    if not auto_update:
+        log.info("Skipping store asset update")
+        return
+
     log.info("Updating store assets")
     start = time.time()
     asyncio.run(gl.store_backend.update_everything())

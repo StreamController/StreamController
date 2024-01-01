@@ -29,7 +29,7 @@ from src.windows.Store.Batches import OfficialBatch, VerifiedBatch
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
-from src.windows.Store.Backend import NoConnectionError
+from src.windows.Store.StoreBackend import NoConnectionError
 
 # Typing
 from typing import TYPE_CHECKING

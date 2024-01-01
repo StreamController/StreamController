@@ -88,10 +88,12 @@ class DeckController:
         # Load default page #TODO: maybe remove from this class
         default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
         if default_page_path == None:
-            # Use the first page
-            default_page_path = gl.page_manager.get_pages()[0]
-        if not os.path.exists(default_page_path):
-            default_page_path = None
+            # Use the first page if available
+            if len(gl.page_manager.get_pages()) > 0:
+                default_page_path = gl.page_manager.get_pages()[0]
+        if default_page_path is not None:
+            if not os.path.exists(default_page_path):
+                default_page_path = None
         if default_page_path != None:
             page = gl.page_manager.create_page(default_page_path, deck_controller=self)
             if page != None:

@@ -123,6 +123,15 @@ class StoreBackend:
 
         return answer
     
+    @alru_cache(maxsize=None)
+    async def get_official_authors(self) -> list:
+        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "OfficialAuthors.json")
+        if isinstance(result, NoConnectionError):
+            return result
+        authors_json = result.text
+        authors_json = json.loads(authors_json)
+        return authors_json
+    
     async def get_all_plugins_async(self):
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Plugins.json")
         if isinstance(result, NoConnectionError):
@@ -245,7 +254,7 @@ class StoreBackend:
             "repo_name": repo_name,
             "image": image,
             "stargazers": stargazers,
-            "official": True,
+            "official": user_name in await self.get_official_authors(),
             "commit_sha": plugin["verified-commit"],
             "id": manifest.get("id"),
             "local-sha": await self.get_local_sha(os.path.join("plugins", manifest.get("id")))
@@ -298,7 +307,8 @@ class StoreBackend:
             "original_url": attribution.get("original-url"),
             "license_description": attribution.get("description"),
             "commit_sha": icon["verified-commit"],
-            "local_sha": await self.get_local_sha(os.path.join("icons", f"{user_name}::{manifest.get('name')}"))
+            "local_sha": await self.get_local_sha(os.path.join("icons", f"{user_name}::{manifest.get('name')}")),
+            "official": user_name in await self.get_official_authors()
         }
 
     async def image_from_url(self, url):

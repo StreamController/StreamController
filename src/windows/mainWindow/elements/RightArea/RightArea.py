@@ -81,6 +81,7 @@ class RightArea(Gtk.Stack):
         self.set_visible_child(self.action_configurator)
 
     def load_for_coords(self, coords):
+        self.active_coords = coords
         # Verify that a controller is selected
         if self.main_window.leftArea.deck_stack.get_visible_child() is None:
             self.error_page.set_error_text(gl.lm.get("right-area-no-deck-selected-error"))
@@ -116,7 +117,7 @@ class RightArea(Gtk.Stack):
             self.set_transition_duration(200)
 
     def reload(self):
-        self.key_editor.load_for_coords(self.active_coords)
+        self.load_for_coords(self.active_coords)
 
 
 class RightAreaKeyEditor(Gtk.Box):

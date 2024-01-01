@@ -39,7 +39,7 @@ class IconPackChooserStack(Gtk.Stack):
         self.pack_chooser = IconPackChooser(self.asset_manager)
         self.add_titled(self.pack_chooser, "chooser", "Chooser")
 
-        self.icon_chooser = IconChooser(self.asset_manager)
+        self.icon_chooser = IconChooserPage(self.asset_manager)
         self.add_titled(self.icon_chooser, "icon-chooser", "Icon Chooser")
 
         

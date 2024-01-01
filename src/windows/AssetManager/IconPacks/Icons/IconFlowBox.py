@@ -19,15 +19,18 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
+# Import own modules
+from GtkHelper.DynamicFlowBox import DynamicFlowBox
+
 # Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.AssetManager.IconPacks.Icons.IconChooser import IconChooser
 
-class IconFlowBox(Gtk.FlowBox):
+class IconFlowBox(DynamicFlowBox):
     def __init__(self, icon_chooser: "IconChooser", *args, **kwargs):
-        super().__init__(hexpand=True, orientation=Gtk.Orientation.HORIZONTAL, selection_mode=Gtk.SelectionMode.NONE, *args, **kwargs)
-        self.set_orientation(Gtk.Orientation.HORIZONTAL)
+        super().__init__(*args, **kwargs)
+        self.CHILDREN_PER_PAGE = 150
         self.set_hexpand(True)
 
         self.callback_func = None

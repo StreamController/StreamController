@@ -25,32 +25,41 @@ from src.windows.AssetManager.IconPacks.Icons.IconFlowBox import IconFlowBox
 from src.windows.AssetManager.IconPacks.Icons.IconPreview import IconPreview
 from src.windows.AssetManager.IconPacks.Preview import IconPackPreview
 
+# Import python modules
+import os
+from fuzzywuzzy import fuzz
+
 # Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.AssetManager.AssetManager import AssetManager
     from src.backend.IconPackManagement.IconPack import IconPack
 
-class IconChooser(ChooserPage):
+class IconChooserPage(ChooserPage):
     def __init__(self, asset_manager: "AssetManager"):
         super().__init__()
         self.asset_manager = asset_manager
-        self.nav_box.set_visible(False)
 
         self.build()
 
     def build(self):
-        self.icon_flow = IconFlowBox(self)
-        self.scrolled_box.prepend(self.icon_flow)
+        self.icon_flow = IconFlowBox(self, margin_bottom=15, margin_top=15, margin_start=15, margin_end=15)
+        self.icon_flow.set_factory(self.preview_factory)
+        self.icon_flow.set_sort_func(self.sort_func)
+        self.icon_flow.set_filter_func(self.filter_func)
+        # Remove default scrolled window
+        self.remove(self.scrolled_window)
+        # Add dynamic flow box
+        self.append(self.icon_flow)
 
-        self.icon_flow.connect("child-activated", self.on_child_activated)
+        # self.icon_flow.connect("child-activated", self.on_child_activated)
 
     def load_for_pack(self, pack: "IconPack"):
-        self.clear_flow_box()
-
         for icon in pack.get_icons():
-            preview = IconPreview(self, icon)
-            self.icon_flow.append(preview)
+            self.icon_flow.add_item(icon)
+            # preview = IconPreview(self, icon)
+            # self.icon_flow.append(preview)
+        self.icon_flow.load_items()
 
     def clear_flow_box(self):
         while self.icon_flow.get_first_child() is not None:
@@ -60,3 +69,34 @@ class IconChooser(ChooserPage):
         self.asset_manager.callback_func(child.icon.path, *self.asset_manager.callback_args, **self.asset_manager.callback_kwargs)
         self.asset_manager.close()
         self.asset_manager.destroy()
+
+    def preview_factory(self, item):
+        return IconPreview(self, item)
+    
+    
+    def filter_func(self, item) -> bool:
+        file_name = os.path.splitext(os.path.basename(item.path))[0]
+        search = self.search_entry.get_text()
+
+        if fuzz.ratio(file_name.lower(), search.lower()) < 50:
+            return False
+        return True
+
+    def sort_func(self, item1, item2) -> bool:
+        # return -1 if child1 should come before child2
+        # return 1 if child1 should come after child2
+        # return 0 if they are equal
+        search = self.search_entry.get_text()
+        fuzz1 = fuzz.ratio(os.path.splitext(os.path.basename(item1.path))[0].lower(), search.lower())
+        fuzz2 = fuzz.ratio(os.path.splitext(os.path.basename(item2.path))[0].lower(), search.lower())
+
+        if fuzz1 > fuzz2:
+            return -1
+        elif fuzz1 < fuzz2:
+            return 1
+        
+        return 0
+    
+    def on_search_changed(self, entry):
+        self.icon_flow.invalidate_filter()
+        self.icon_flow.invalidate_sort()

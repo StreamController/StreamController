@@ -35,6 +35,9 @@ from src.backend.PluginManager import Signals
 # Import globals
 import globals as gl
 
+class NoConnectionError:
+    pass
+
 class StoreBackend:
     def __init__(self):
         # API cache file
@@ -72,6 +75,8 @@ class StoreBackend:
                 json.dump({}, f, indent=4)
         with open("src/windows/Store/cache/attribution.json", "r") as f:
             self.attribution_cache = json.load(f)
+
+        self.official_authors = asyncio.run(self.get_official_authors())
 
     @alru_cache(maxsize=None)
     async def request_from_url(self, url: str) -> requests.Response:
@@ -254,7 +259,7 @@ class StoreBackend:
             "repo_name": repo_name,
             "image": image,
             "stargazers": stargazers,
-            "official": user_name in await self.get_official_authors(),
+            "official": user_name in self.official_authors,
             "commit_sha": plugin["verified-commit"],
             "id": manifest.get("id"),
             "local-sha": await self.get_local_sha(os.path.join("plugins", manifest.get("id")))
@@ -308,7 +313,7 @@ class StoreBackend:
             "license_description": attribution.get("description"),
             "commit_sha": icon["verified-commit"],
             "local_sha": await self.get_local_sha(os.path.join("icons", f"{user_name}::{manifest.get('name')}")),
-            "official": user_name in await self.get_official_authors()
+            "official": user_name in self.official_authors
         }
 
     async def image_from_url(self, url):
@@ -540,6 +545,3 @@ class StoreBackend:
 
         
 b = StoreBackend()
-
-class NoConnectionError:
-    pass

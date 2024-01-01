@@ -16,6 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import sys
 from loguru import logger as log
 import os
+import time
+import asyncio
+import threading
 
 # Import own modules
 from src.app import App
@@ -28,6 +31,7 @@ from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
+from src.windows.Store.StoreBackend import StoreBackend
 
 # Import globals
 import globals as gl
@@ -52,8 +56,9 @@ class Main:
 def load():
     config_logger()
     # Setup locales
-    localeManager = LocaleManager()
+    localeManager = LocaleManager(locales_path="locales")
     localeManager.set_to_os_default()
+    # localeManager.set_fallback_language("en_US")
     gl.lm = localeManager
 
     log.info("Loading app")
@@ -73,14 +78,24 @@ def create_global_objects():
     gl.page_manager = PageManager(gl.settings_manager)
     gl.icon_pack_manager = IconPackManager()
 
+    # Store
+    gl.store_backend = StoreBackend()
+
     # Plugin Manager
     gl.plugin_manager = PluginManager()
     gl.plugin_manager.load_plugins()
     gl.plugin_manager.generate_action_index()
 
+def update_assets():
+    log.info("Updating store assets")
+    start = time.time()
+    asyncio.run(gl.store_backend.update_everything())
+    log.info(f"Updating store assets took {time.time() - start} seconds")
+
 if __name__ == "__main__":
     create_global_objects()
     create_cache_folder()
+    threading.Thread(target=update_assets).start()
     load()
 
 

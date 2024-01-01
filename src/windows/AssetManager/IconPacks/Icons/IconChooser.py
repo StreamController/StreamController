@@ -52,7 +52,8 @@ class IconChooserPage(ChooserPage):
         # Add dynamic flow box
         self.append(self.icon_flow)
 
-        # self.icon_flow.connect("child-activated", self.on_child_activated)
+        # Connect flow box select signal
+        self.icon_flow.flow_box.connect("child-activated", self.on_child_activated)
 
     def load_for_pack(self, pack: "IconPack"):
         for icon in pack.get_icons():

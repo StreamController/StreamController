@@ -719,12 +719,19 @@ class DeckController:
 
 
     def tick_actions(self):
+        perform_tick = True
+        if self.screen_saver.showing:
+            # Do not tick actions while screen saver is showing
+            perform_tick = False
+            
         if not isinstance(self.active_page, Page):
-            return
-        actions = self.active_page.get_all_actions()
-        for action in actions:
-            if hasattr(action, "on_tick"):
-                action.on_tick()
+            perform_tick = False
+        if perform_tick:
+            actions = self.active_page.get_all_actions()
+            for action in actions:
+                if hasattr(action, "on_tick"):
+                    action.on_tick()
+
         self.action_tick_timer = threading.Timer(self.TICK_DELAY, self.tick_actions)
         self.action_tick_timer.start()
 

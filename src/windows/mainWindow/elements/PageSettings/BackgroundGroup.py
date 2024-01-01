@@ -105,8 +105,10 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.disconnect_signals()
 
         if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
+            self.connect_signals()
             return
         if self.settings_page.deck_page.deck_controller.active_page == None:
+            self.connect_signals()
             return
         
         original_values = None
@@ -131,6 +133,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
 
         if self.settings_page.deck_page.deck_controller.active_page.dict["background"]["path"] in [None, ""]:
+            self.connect_signals()
             return
 
         self.set_thumbnail(file_path)

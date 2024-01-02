@@ -144,8 +144,7 @@ class DynamicFlowBox(Gtk.Box):
         if not callable(self.sort):
             self.sorted_items = self.filtered_items
         self.sorted_items = sorted(self.filtered_items, key=cmp_to_key(self.sort))
-        
-
+        self.load_items()
 
     def set_filter_func(self, filter: callable) -> None:
         if not callable(filter):
@@ -159,3 +158,4 @@ class DynamicFlowBox(Gtk.Box):
             log.warning("Chosen sort function is not callable")
             return
         self.sort = sort
+        self.invalidate_sort()

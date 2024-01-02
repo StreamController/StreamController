@@ -1,0 +1,72 @@
+"""
+Author: Core447
+Year: 2023
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+any later version.
+
+This programm comes with ABSOLUTELY NO WARRANTY!
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+"""
+# Import gtk modules
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, GdkPixbuf
+
+class Preview(Gtk.FlowBoxChild):
+    def __init__(self, image_path: str = None, text:str = None):
+        super().__init__()
+        self.set_css_classes(["asset-preview"])
+        self.set_margin_start(5)
+        self.set_margin_end(5)
+        self.set_margin_top(5)
+        self.set_margin_bottom(5)
+
+        self.pixbuf: GdkPixbuf.Pixbuf = None
+
+        self._build()
+
+        self.set_image(image_path)
+        self.set_text(text)
+
+    def _build(self):
+        self.overlay = Gtk.Overlay()
+        self.set_child(self.overlay)
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, width_request=250, height_request=180)
+        self.overlay.set_child(self.main_box)
+
+        self.picture = Gtk.Picture(width_request=250, height_request=180, overflow=Gtk.Overflow.HIDDEN, content_fit=Gtk.ContentFit.COVER,
+                                   hexpand=False, vexpand=False, keep_aspect_ratio=True)
+        
+        self.picture.set_pixbuf(self.pixbuf)
+        self.main_box.append(self.picture)
+
+        self.label = Gtk.Label(xalign=Gtk.Align.CENTER)
+        self.main_box.append(self.label)
+
+        self.info_button = Gtk.Button(icon_name="help-info-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.END, margin_end=5, margin_bottom=5)
+        self.info_button.connect("clicked", self.on_click_info)
+        self.overlay.add_overlay(self.info_button)
+
+    def set_image(self, path:str):
+        if path is None:
+            self.pixbuf = GdkPixbuf.Pixbuf.new(width=250, height=180)
+            return
+        self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path,
+                                                              width=250,
+                                                              height=180,
+                                                              preserve_aspect_ratio=True)
+        self.picture.set_pixbuf(self.pixbuf)
+
+    def set_text(self, text:str):
+        self.label.set_text(text)
+
+    def on_click_info(self, *args):
+        pass

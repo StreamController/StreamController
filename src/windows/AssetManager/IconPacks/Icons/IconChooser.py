@@ -74,11 +74,12 @@ class IconChooserPage(ChooserPage):
     def preview_factory(self, item):
         return IconPreview(self, item)
     
-    
     def filter_func(self, item) -> bool:
-        file_name = os.path.splitext(os.path.basename(item.path))[0]
         search = self.search_entry.get_text()
+        if search == "":
+            return True
 
+        file_name = os.path.splitext(os.path.basename(item.path))[0]
         if fuzz.ratio(file_name.lower(), search.lower()) < 50:
             return False
         return True
@@ -88,6 +89,13 @@ class IconChooserPage(ChooserPage):
         # return 1 if child1 should come after child2
         # return 0 if they are equal
         search = self.search_entry.get_text()
+        if search == "":
+            # Sort alphabetically
+            if os.path.splitext(os.path.basename(item1.path))[0] < os.path.splitext(os.path.basename(item2.path))[0]:
+                return -1
+            if os.path.splitext(os.path.basename(item1.path))[0] > os.path.splitext(os.path.basename(item2.path))[0]:
+                return 1
+            return 0
         fuzz1 = fuzz.ratio(os.path.splitext(os.path.basename(item1.path))[0].lower(), search.lower())
         fuzz2 = fuzz.ratio(os.path.splitext(os.path.basename(item2.path))[0].lower(), search.lower())
 

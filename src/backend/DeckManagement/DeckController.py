@@ -391,7 +391,7 @@ class DeckController:
         def load_background(self):
             def get_from_deck_settings(self):
                 if self.deck_settings["background"]["enable"] == False:
-                    set_background_to_none(self)
+                    self.set_background_to_none(self)
                     return
                 if os.path.isfile(self.deck_settings["background"]["path"]) == False: return
                 path, loop, fps = self.deck_settings["background"].setdefault("path", None), self.deck_settings["background"].setdefault("loop", True), self.deck_settings["background"].setdefault("fps", 30)
@@ -399,20 +399,15 @@ class DeckController:
             
             def get_from_page(self, page):
                 if "background" not in page.dict: 
-                    set_background_to_none(self)
+                    self.set_background_to_none(self)
                     return
                 if page.dict["background"]["show"] == False: 
-                    set_background_to_none(self)
+                    self.set_background_to_none(self)
                     return
                 if os.path.isfile(page.dict["background"]["path"]) == False: return
                 path, loop, fps = page.dict["background"].setdefault("path", None), page.dict["background"].setdefault("loop", True), page.dict["background"].setdefault("fps", 30)
                 return path, loop, fps
             
-            def set_background_to_none(self):
-                self.media_handler.background_video_task = {}
-                self.background_key_tiles = [None] * self.deck.key_count()
-                if not load_keys:
-                    load_all_keys()
 
             page.dict["background"].setdefault("overwrite", False)
             if page.dict["background"]["overwrite"] == False and "background" in self.deck_settings:
@@ -425,18 +420,7 @@ class DeckController:
                 path, loop, fps = data
 
             # Add background task - no reload required if load_keys is True because load_keys() will do this later
-            self.set_background_task_id = self.set_background(path, loop=loop, fps=fps, reload=not load_all_keys)
-
-        def load_all_keys():
-            loaded_indices = []
-            for coords in page.dict.get("keys", []):
-                self.load_key(coords)
-                loaded_indices.append(self.coords_to_index(coords.split("x")))
-            # return
-            # Clear all keys that are not used on this page
-            for i in range(self.key_count()):
-                if i not in loaded_indices:
-                    self.clear_key(i)
+            self.set_background_task_id = self.set_background(path, loop=loop, fps=fps, reload=not load_keys)
 
         
         # time.sleep(2)
@@ -507,8 +491,8 @@ class DeckController:
             load_brightness(self)
         if load_background:
             load_background(self)
-        if load_all_keys:
-            load_all_keys()
+        if load_keys:
+            self.load_all_keys()
         if load_screensaver:
             load_screensaver(self)
 
@@ -527,6 +511,22 @@ class DeckController:
             self.background_key_tiles = [None]*self.deck.key_count() # Fill with None
 
         self.load_page(self.active_page, load_brightness=load_brightness, load_background=load_background, load_keys=load_keys, load_screensaver=load_screensaver)
+
+    def set_background_to_none(self):
+        self.media_handler.background_video_task = {}
+        self.background_key_tiles = [None] * self.deck.key_count()
+        self.load_all_keys()
+
+    def load_all_keys(self):
+        loaded_indices = []
+        for coords in self.active_page.dict.get("keys", []):
+            self.load_key(coords)
+            loaded_indices.append(self.coords_to_index(coords.split("x")))
+        # return
+        # Clear all keys that are not used on this page
+        for i in range(self.key_count()):
+            if i not in loaded_indices:
+                self.clear_key(i)
 
     def load_key(self, coords: str, only_labels: bool = False):
         self.active_page.load()

@@ -45,8 +45,8 @@ class IconChooserPage(ChooserPage):
     def build(self):
         self.icon_flow = IconFlowBox(self, margin_bottom=15, margin_top=15, margin_start=15, margin_end=15)
         self.icon_flow.set_factory(self.preview_factory)
-        self.icon_flow.set_sort_func(self.sort_func)
         self.icon_flow.set_filter_func(self.filter_func)
+        self.icon_flow.set_sort_func(self.sort_func)
         # Remove default scrolled window
         self.remove(self.scrolled_window)
         # Add dynamic flow box

@@ -58,7 +58,8 @@ class ChooserPage(Gtk.Box):
 
 
         # Add vexpand box to the bottom to avoid unwanted stretching of the children
-        self.scrolled_box.append(Gtk.Box(vexpand=True, hexpand=True))
+        self.fix_box = Gtk.Box(vexpand=True, hexpand=True)
+        self.scrolled_box.append(self.fix_box)
 
     def init_dnd(self):
         self.dnd_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)

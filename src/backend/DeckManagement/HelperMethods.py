@@ -18,6 +18,8 @@ import matplotlib.font_manager
 import sys
 import math
 import json
+import requests
+from urllib.parse import urlparse
 from PIL import Image
 
 def sha256(file_path):
@@ -128,3 +130,43 @@ def create_empty_json(path:str, ignore_present: bool = False):
     # Write empty json
     with open(path, "w") as f:
         json.dump({}, f, indent=4)
+
+def get_file_name_from_url(url: str):
+    """
+    Extracts the file name from a given URL.
+
+    Args:
+        url (str): The URL from which to extract the file name.
+
+    Returns:
+        str: The file name extracted from the URL.
+    """
+    # Parse the url to extract the path
+    parsed_url = urlparse(url)
+    # Extract the file name from the path
+    return os.path.basename(parsed_url.path)
+
+def download_file(url: str, path: str = "", file_name: str = None) -> str:
+    """
+    Downloads a file from the specified URL and saves it to the specified path.
+
+    Args:
+        url (str): The URL of the file to be downloaded.
+        path (str): The path of the directory where the file will be saved. If a directory is provided, the filename will be extracted from the URL and appended to the path.
+
+    Returns:
+        path (str): The path of the downloaded file.
+    """
+    
+    if file_name is None:
+        file_name = get_file_name_from_url(url)
+
+    path = os.path.join(path, file_name)
+
+    if os.path.dirname(path) != "":
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    with open(path, "wb") as f:
+        f.write(requests.get(url).content)
+
+    return path

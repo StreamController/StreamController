@@ -52,10 +52,17 @@ class CustomAssetChooser(ChooserPage):
     def on_dnd_accept(self, drop, user_data):
         return True
     
-    def on_dnd_drop(self, drop_target, value, x, y):
+    def on_dnd_drop(self, drop_target, value: Gdk.FileList, x, y):
         paths = value.get_files()
         for path in paths:
+            # data = path.get_data()
+            url = path.get_uri()
             path = path.get_path()
+
+            if path is None and url is not None:
+                # Download file from url
+                path = download_file(url=url, path="cache/downloads")
+
             if path == None:
                 continue
             if not os.path.exists(path):

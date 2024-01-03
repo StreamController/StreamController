@@ -55,5 +55,6 @@
     "settings-store-settings-header": "Store",
     "settings-store-settings-auto-update": "Automatische Aktualisierung der Assets",
     "settings-ui-settings-title": "UI Einstellungen",
-    "settings-ui-settings-key-grid-header": "Tastenraster"
+    "settings-ui-settings-key-grid-header": "Tastenraster",
+    "open-about": "Über"
 }

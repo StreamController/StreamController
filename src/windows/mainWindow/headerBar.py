@@ -67,7 +67,7 @@ class HeaderBar(Gtk.HeaderBar):
         self.menu = Gio.Menu.new()
         self.menu.append(gl.lm.get("open-store"), "win.open-store")
         self.menu.append(gl.lm.get("open-settings"), "win.open-settings")
-        self.menu.append("About", "win.open-about")
+        self.menu.append(gl.lm.get("open-about"), "win.open-about")
 
         # Popover
         self.popover = Gtk.PopoverMenu()

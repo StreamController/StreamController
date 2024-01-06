@@ -164,6 +164,20 @@ class StoreBackend:
 
         return icons
     
+    async def get_all_wallpapers(self):
+        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Wallpapers.json")
+        if isinstance(result, NoConnectionError):
+            return result
+        wallpapers_json = result.text
+        wallpapers_json = json.loads(wallpapers_json)
+
+        wallpapers = []
+        for wallpaper in wallpapers_json:
+            wallpapers.append(await self.prepare_wallpaper(wallpaper))
+        
+        return wallpapers
+    
+    @alru_cache(maxsize=None)
     async def get_manifest(self, url:str, commit:str) -> dict:
         url = self.build_url(url, "manifest.json", commit)
         # Look for cached manifest - if we have a file for the same commit we can safely assume it's the same
@@ -314,6 +328,30 @@ class StoreBackend:
             "commit_sha": icon["verified-commit"],
             "local_sha": await self.get_local_sha(os.path.join("icons", f"{user_name}::{manifest.get('name')}")),
             "official": user_name in self.official_authors
+        }
+    
+    async def prepare_wallpaper(self, wallpaper):
+        url = wallpaper["url"]
+        manifest = await self.get_manifest(url, wallpaper["verified-commit"])
+        if isinstance(manifest, NoConnectionError):
+            return manifest
+        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), wallpaper["verified-commit"]))
+        if isinstance(image, NoConnectionError):
+            return image
+        return {
+            "name": manifest.get("name"),
+            "description": manifest.get("description"),
+            "version": manifest.get("version"),
+            "url": url,
+            "user_name": self.get_user_name(url),
+            "repo_name": self.get_repo_name(url),
+            "image": image,
+            "stargazers": await self.get_stargazers(url),
+            "license": manifest.get("license"),
+            "copyright": manifest.get("copyright"),
+            "commit_sha": wallpaper["verified-commit"],
+            "local_sha": await self.get_local_sha(os.path.join("wallpapers", manifest.get("name"))),
+            "official": self.get_user_name(url) in self.official_authors
         }
 
     async def image_from_url(self, url):

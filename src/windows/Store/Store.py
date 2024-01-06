@@ -37,6 +37,7 @@ from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.windows.Store.Plugins.PluginPage import PluginPage
 from src.windows.Store.Icons.IconPage import IconPage
 from src.windows.Store.StorePage import StorePage
+from src.windows.Store.Wallpapers.WallpaperPage import WallpaperPage
 
 class Store(Gtk.ApplicationWindow):
     def __init__(self, main_window: "MainWindow", *args, **kwargs):
@@ -84,9 +85,3 @@ class Store(Gtk.ApplicationWindow):
     def on_back_button_click(self, button: Gtk.Button):
         # Switch active page back from info page
         self.main_stack.get_visible_child().set_info_visible(False)
-
-
-class WallpaperPage(StorePage):
-    def __init__(self, store: Store):
-        super().__init__(store=store)
-        self.search_entry.set_placeholder_text("Search for wallpapers")

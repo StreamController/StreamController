@@ -78,3 +78,26 @@ class WallpaperPreview(StorePreview):
             self.set_install_state(1)
         else:
             self.set_install_state(2)
+
+    def install(self):
+        folder_name = f"{self.wallpaper_dict['user_name']}::{self.wallpaper_dict['name']}"
+        if os.path.exists(os.path.join("wallpapers", folder_name)):
+            shutil.rmtree(os.path.join("wallpapers", folder_name))
+        if not os.path.exists("wallpapers"):
+            os.mkdir("wallpapers")
+
+        asyncio.run(self.store.backend.clone_repo(
+            repo_url=self.wallpaper_dict["url"],
+            local_path=os.path.join("wallpapers", folder_name),
+            commit_sha=self.wallpaper_dict["commit_sha"]
+        ))
+        self.set_install_state(1)
+
+    def uninstall(self):
+        folder_name = f"{self.wallpaper_dict['user_name']}::{self.wallpaper_dict['name']}"
+        if os.path.exists(os.path.join("wallpapers", folder_name)):
+            os.remove(os.path.join("wallpapers", folder_name))
+        self.set_install_state(0)
+
+    def update(self):
+        self.install()

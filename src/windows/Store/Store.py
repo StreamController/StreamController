@@ -78,9 +78,9 @@ class Store(Gtk.ApplicationWindow):
         self.icon_page = IconPage(store=self)
         self.wallpaper_page = WallpaperPage(store=self)
 
-        self.main_stack.add_titled(self.plugin_page, "Plugins", "Plugins")
-        self.main_stack.add_titled(self.icon_page, "Icons", "Icons")
-        self.main_stack.add_titled(self.wallpaper_page, "Wallpapers", "Wallpapers")
+        self.main_stack.add_titled(self.plugin_page, "Plugins", gl.lm.get("store.plugins.section"))
+        self.main_stack.add_titled(self.icon_page, "Icons", gl.lm.get("store.icons.section"))
+        self.main_stack.add_titled(self.wallpaper_page, "Wallpapers", gl.lm.get("store.wallpapers.section"))
 
     def on_back_button_click(self, button: Gtk.Button):
         # Switch active page back from info page

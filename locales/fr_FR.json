@@ -46,5 +46,10 @@
     "right-area-no-deck-selected-error": "Aucun deck sélectionnée",
     "deck-switcher-no-decks": "Aucun Deck Détecté",
     "open-settings": "Ouvrir les paramètres",
-    "open-about": "A propos"
+    "open-about": "A propos",
+    "store.plugins.section": "Plugins",
+    "store.icons.section": "Icônes",
+    "store.wallpapers.section": "Fonds d'Écran",
+    "store.badges.official": "Officiel",
+    "store.badges.verified": "Vérifié"
 }

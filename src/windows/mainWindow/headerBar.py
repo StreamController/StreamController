@@ -105,7 +105,7 @@ class HeaderBar(Gtk.HeaderBar):
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutWindow(transient_for=self.main_window)
         self.about.set_application_name("StreamController")
-        self.about.set_version("0.1-beta")
+        self.about.set_version("dev")
         self.about.set_developers(["Core447"])
         self.about.set_developer_name("Core447")
         self.about.set_license_type(Gtk.License.GPL_3_0)

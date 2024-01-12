@@ -115,5 +115,5 @@ class HeaderBar(Gtk.HeaderBar):
         self.about.add_credit_section("Contributors", ["Core447"])
         self.about.set_translator_credits("Core447")
         self.about.set_copyright("Copyright (C) 2024 Core447")
-        self.about.set_application_icon("com.core447.StreamController")
+        self.about.set_application_icon("dev.core447.StreamController")
         self.about.set_visible(True)

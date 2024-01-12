@@ -65,7 +65,7 @@ def load():
     log.info("Loading app")
     gl.deck_manager = DeckManager()
     gl.deck_manager.load_decks()
-    gl.main = Main(application_id="com.core447.StreamController", deck_manager=gl.deck_manager)
+    gl.main = Main(application_id="dev.core447.StreamController", deck_manager=gl.deck_manager)
 
 @log.catch
 def create_cache_folder():

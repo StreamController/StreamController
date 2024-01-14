@@ -112,7 +112,8 @@ class PluginBase:
     @property
     def backend(self):
         # Transfer ownership
-        self._backend._pyroClaimOwnership()
+        if self._backend is not None:
+            self._backend._pyroClaimOwnership()
         return self._backend
 
     @backend.setter

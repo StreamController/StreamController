@@ -1,3 +1,5 @@
+import Pyro5.api
+import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -13,6 +15,7 @@ if TYPE_CHECKING:
     from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
     from src.windows.Store.StoreBackend import StoreBackend
 
+top_level_dir:str = os.path.dirname(__file__)
 lm:"LocaleManager" = None
 media_manager:"MediaManager" = None #MediaManager
 asset_manager:"AssetManager" = None #AssetManager
@@ -26,3 +29,4 @@ image_extensions = ["png", "jpg", "jpeg"]
 icon_pack_manager: "IconPackManager" = None
 wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
+pyro_daemon: Pyro5.api.Daemon = None

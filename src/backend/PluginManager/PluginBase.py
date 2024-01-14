@@ -1,6 +1,8 @@
 import os
 import inspect
 import json
+import Pyro5.api
+import subprocess
 
 from loguru import logger as log
 
@@ -16,6 +18,7 @@ import globals as gl
 # Import own modules
 from locales.LocaleManager import LocaleManager
 
+@Pyro5.api.expose
 class PluginBase:
     plugins = {}
     
@@ -32,6 +35,7 @@ class PluginBase:
         cls.PLUGIN = None
 
     def __init__(self):
+        self._backend: Pyro5.api.Proxy = None
         # Verify variables
         if self.PLUGIN_NAME in ["", None]:
             raise ValueError("Please specify a plugin name")
@@ -80,3 +84,41 @@ class PluginBase:
 
     def register_page(self, path: str) -> None:
         gl.page_manager.register_page(path)
+
+    def launch_backend(self, backend_path: str, venv_activate_path: str = None):
+        uri = self.add_to_pyro()
+
+        ## Launch
+        command = ""
+        if venv_activate_path is not None:
+            command = f"{venv_activate_path} && "
+        command += "python3 "
+        command += f"{backend_path}"
+        command += f" --uri={uri}"
+
+        # Add path to BackendBase
+        backend_base_path = os.path.join(gl.top_level_dir, "src", "backend", "PluginManager", "BackendBase.py")
+        command += f" --backend_base_path={backend_base_path}"
+
+        subprocess.Popen(command, shell=True, start_new_session=True)
+
+    def add_to_pyro(self) -> str:
+        daemon = gl.plugin_manager.pyro_daemon
+        uri = daemon.register(self)
+        return str(uri)
+    
+    def register_backend(self, backend_uri:str):
+        """
+        Internal method, do not call manually
+        """
+        self._backend = Pyro5.api.Proxy(backend_uri)
+
+    @property
+    def backend(self):
+        # Transfer ownership
+        self._backend._pyroClaimOwnership()
+        return self._backend
+
+    @backend.setter
+    def backend(self, value):
+        self._backend = value

@@ -85,20 +85,16 @@ class PluginBase:
     def register_page(self, path: str) -> None:
         gl.page_manager.register_page(path)
 
-    def launch_backend(self, backend_path: str, venv_activate_path: str = None):
+    def launch_backend(self, backend_path: str, venv_path: str = None):
         uri = self.add_to_pyro()
 
         ## Launch
         command = ""
-        if venv_activate_path is not None:
-            command = f"{venv_activate_path} && "
+        if venv_path is not None:
+            command = f"source {venv_path}/bin/activate && "
         command += "python3 "
         command += f"{backend_path}"
         command += f" --uri={uri}"
-
-        # Add path to BackendBase
-        backend_base_path = os.path.join(gl.top_level_dir, "src", "backend", "PluginManager", "BackendBase.py")
-        command += f" --backend_base_path={backend_base_path}"
 
         subprocess.Popen(command, shell=True, start_new_session=True)
 

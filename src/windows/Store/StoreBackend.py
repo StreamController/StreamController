@@ -481,10 +481,10 @@ class StoreBackend:
 
         response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_dict["commit_sha"])
 
-        # Install all dependencies
-        if os.path.isfile(os.path.join(local_path, "requirements.txt")):
-            install(os.path.join(local_path, "requirements.txt"), requirements=True)
-
+        # Run install script if present
+        if os.path.isfile(os.path.join(local_path, "__install__.py")):
+            subprocess.Popen(f"python3 {os.path.join(local_path, '__install__.py')}", shell=True, start_new_session=True)
+            
         if response == 404:
             return 404
         

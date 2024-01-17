@@ -221,10 +221,6 @@ class ActionBase:
         command += f"{backend_path}"
         command += f" --uri={uri}"
 
-        # Add path to BackendBase
-        backend_base_path = os.path.join(gl.top_level_dir, "src", "backend", "PluginManager", "BackendBase.py")
-        command += f" --backend_base_path={backend_base_path}"
-
         subprocess.Popen(command, shell=True, start_new_session=True)
 
     def add_to_pyro(self) -> str:

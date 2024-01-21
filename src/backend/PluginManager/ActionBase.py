@@ -236,8 +236,9 @@ class ActionBase:
 
     @property
     def backend(self):
-        # Transfer ownership
-        self._backend._pyroClaimOwnership()
+        if self._backend is not None:
+            # Transfer ownership
+            self._backend._pyroClaimOwnership()
         return self._backend
 
     @backend.setter

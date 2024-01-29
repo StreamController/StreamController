@@ -497,7 +497,7 @@ class DeckController:
             load_screensaver(self)
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.ChangePage, path= self.active_page.json_path)
+        gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
 
     def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True, load_screensaver: bool = True):
         # Reset deck

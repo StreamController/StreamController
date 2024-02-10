@@ -20,10 +20,10 @@ from gi.repository import Gtk
 # Import globals
 import globals as gl
 
-class OfficialBatch(Gtk.Button):
+class OfficialBadge(Gtk.Button):
     def __init__(self, *args, **kwargs):
-        super().__init__(label=gl.lm.get("store.batches.official"), *args, **kwargs)
+        super().__init__(label=gl.lm.get("store.badges.official"), *args, **kwargs)
 
-class VerifiedBatch(Gtk.Button):
+class VerifiedBadge(Gtk.Button):
     def __init__(self, *args, **kwargs):
-        super().__init__(label=gl.lm.get("store.batches.verified"), *args, **kwargs)
+        super().__init__(label=gl.lm.get("store.badges.verified"), *args, **kwargs)

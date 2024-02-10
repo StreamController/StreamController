@@ -60,6 +60,7 @@ class PluginPage(StorePage):
 class PluginPreview(StorePreview):
     def __init__(self, plugin_page:PluginPage, plugin_dict:dict):
         super().__init__(store_page=plugin_page)
+        self.plugin_page = plugin_page
         self.plugin_dict = plugin_dict
 
         self.set_author_label(plugin_dict["user_name"])
@@ -88,3 +89,17 @@ class PluginPreview(StorePreview):
 
     def update(self):
         self.install()
+
+    def on_click_main(self, button: Gtk.Button):
+        self.plugin_page.set_info_visible(True)
+
+        # Update info page
+        self.plugin_page.info_page.set_name(self.plugin_dict.get("name"))
+        self.plugin_page.info_page.set_description(self.plugin_dict.get("description"))
+        self.plugin_page.info_page.set_author(self.plugin_dict.get("user_name"))
+        self.plugin_page.info_page.set_version(self.plugin_dict.get("version"))
+
+        self.plugin_page.info_page.set_license(self.plugin_dict.get("license"))
+        self.plugin_page.info_page.set_copyright(self.plugin_dict.get("copyright"))
+        self.plugin_page.info_page.set_original_url(self.plugin_dict.get("original_url"))
+        self.plugin_page.info_page.set_license_description(self.plugin_dict.get("license_description"))

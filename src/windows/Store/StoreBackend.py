@@ -257,6 +257,11 @@ class StoreBackend:
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), plugin["verified-commit"]))
         if isinstance(manifest, NoConnectionError):
             return image
+        
+        attribution = await self.get_attribution(url, plugin["verified-commit"])
+        if isinstance(attribution, NoConnectionError):
+            return attribution
+        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
         description = manifest.get("description")
 
@@ -271,12 +276,17 @@ class StoreBackend:
             "url": url,
             "user_name": user_name,
             "repo_name": repo_name,
+            "version": manifest.get("version"),
             "image": image,
             "stargazers": stargazers,
             "official": user_name in self.official_authors,
             "commit_sha": plugin["verified-commit"],
             "id": manifest.get("id"),
-            "local-sha": await self.get_local_sha(os.path.join("plugins", manifest.get("id")))
+            "local-sha": await self.get_local_sha(os.path.join("plugins", manifest.get("id"))),
+            "license": attribution.get("license"),
+            "copyright": attribution.get("copyright"),
+            "license_description": attribution.get("description_description"),
+            "original_url": attribution.get("original-url"),
         }
     
     async def get_local_sha(self, git_dir: str):

@@ -17,10 +17,13 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GLib
 
 # Import own modules
 from src.windows.AssetManager.Preview import Preview
+
+# Import python modules
+import os
 
 # Import globals
 import globals as gl
@@ -32,13 +35,10 @@ if TYPE_CHECKING:
     from src.backend.IconPackManagement.Icon import Icon
 
 class IconPreview(Preview):
-    def __init__(self, icon_pack_chooser: "IconPackChooser", icon: "Icon"):
-        super().__init__(
-            image_path=icon.path,
-            text=icon.name
-        )
-        self.icon = icon
-        self.icon_pack_chooser = icon_pack_chooser
+    def __init__(self):
+        super().__init__()
+
+        self.icon: "Icon" = None
 
     def on_click_info(self, *args):
         self.icon_pack_chooser.asset_manager.show_info(
@@ -48,3 +48,9 @@ class IconPreview(Preview):
             author = self.icon.get_attribution().get("copyright"),
             license_comment = self.icon.get_attribution().get("comment")
         )
+
+    def set_icon(self, icon: "Icon") -> None:
+        self.icon = icon
+
+        GLib.idle_add(self.set_text, os.path.splitext(os.path.basename(self.icon.path))[0])
+        GLib.idle_add(self.set_image, self.icon.path)

@@ -63,3 +63,5 @@ class IconPackChooser(ChooserPage):
         self.asset_manager.asset_chooser.icon_pack_chooser.icon_chooser.load_for_pack(child.pack)
         # Switch to icon chooser
         self.asset_manager.asset_chooser.icon_pack_chooser.set_visible_child_name("icon-chooser")
+        # Show back button
+        self.asset_manager.back_button.set_visible(True)

@@ -21,7 +21,10 @@ from gi.repository import Gtk, Adw
 
 # Import own modules
 from src.windows.AssetManager.IconPacks.PackChooser import IconPackChooser
-from src.windows.AssetManager.IconPacks.Icons.IconChooser import IconChooser
+from src.windows.AssetManager.IconPacks.Icons.IconChooser import IconChooserPage
+
+# Import globals
+import globals as gl
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -42,4 +45,16 @@ class IconPackChooserStack(Gtk.Stack):
         self.icon_chooser = IconChooserPage(self.asset_manager)
         self.add_titled(self.icon_chooser, "icon-chooser", "Icon Chooser")
 
-        
+
+    def show_for_path(self, path):
+        packs = gl.icon_pack_manager.get_icon_packs()
+        for pack in packs.values():
+            icons = pack.get_icons()
+            for icon in icons:
+                if icon.path == path:
+                    self.icon_chooser.load_for_pack(pack)
+                    self.icon_chooser.select_icon(path=path)
+                    self.set_visible_child(self.icon_chooser)
+                    self.asset_manager.asset_chooser.set_visible_child_name("icon-packs")
+                    self.asset_manager.back_button.set_visible(True)
+                    return

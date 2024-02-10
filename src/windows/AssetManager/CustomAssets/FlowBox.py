@@ -41,10 +41,6 @@ class CustomAssetChooserFlowBox(Gtk.Box):
         self.set_orientation(Gtk.Orientation.HORIZONTAL)
         self.set_hexpand(True)
 
-        self.callback_func = None
-        self.callback_args = ()
-        self.callback_kwargs = {}
-
         self.asset_chooser:"CustomAssetChooser" = asset_chooser
 
         self.all_assets:list["AssetPreview"] = []
@@ -64,11 +60,7 @@ class CustomAssetChooserFlowBox(Gtk.Box):
             asset = AssetPreview(flow=self, asset=asset, width_request=100, height_request=100)
             self.flow_box.append(asset)
 
-    def show_for_path(self, path, callback_func=None, *callback_args, **callback_kwargs):
-        self.callback_func = callback_func
-        self.callback_args = callback_args
-        self.callback_kwargs = callback_kwargs
-
+    def show_for_path(self, path):
         i = 0
         while True:
             child = self.flow_box.get_child_at_index(i)
@@ -122,6 +114,8 @@ class CustomAssetChooserFlowBox(Gtk.Box):
         return 0
     
     def on_child_activated(self, flow_box, child):
-        if callable(self.callback_func):
-            self.callback_func(child.asset["internal-path"], *self.callback_args, **self.callback_kwargs)
+        if callable(self.asset_chooser.asset_manager.callback_func):
+            self.asset_chooser.asset_manager.callback_func(child.asset["internal-path"],
+                                                           *self.asset_chooser.asset_manager.callback_args,
+                                                           **self.asset_chooser.asset_manager.callback_kwargs)
         self.asset_chooser.asset_manager.close()

@@ -338,6 +338,9 @@ class StoreBackend:
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), wallpaper["verified-commit"]))
         if isinstance(image, NoConnectionError):
             return image
+        attribution = await self.get_attribution(url, wallpaper["verified-commit"])
+        if isinstance(attribution, NoConnectionError):
+            return attribution
         
         user_name = self.get_user_name(url)
 
@@ -353,6 +356,8 @@ class StoreBackend:
             "license": manifest.get("license"),
             "copyright": manifest.get("copyright"),
             "commit_sha": wallpaper["verified-commit"],
+            "original_url": attribution.get("original-url"),
+            "license_description": attribution.get("description"),
             "local_sha": await self.get_local_sha(os.path.join("wallpapers", f"{user_name}::{manifest.get('name')}")),
             "official": self.get_user_name(url) in self.official_authors
         }

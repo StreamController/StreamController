@@ -94,6 +94,11 @@ class InfoPage(Gtk.Box):
     def set_license_description(self, description:str):
         self.license_description.set_description(description)
 
+    def set_original_url(self, url:str):
+        self.original_url.set_url(url)
+
+    
+
 class OriginalURL(Adw.ActionRow):
     def __init__(self):
         super().__init__(title="Original URL:", subtitle="N/A")
@@ -107,7 +112,12 @@ class OriginalURL(Adw.ActionRow):
         self.suffix_box.append(self.open_button)
 
     def set_url(self, url:str):
+        if url is None:
+            self.set_subtitle("N/A")
+            self.open_button.set_sensitive(False)
+            return
         self.set_subtitle(url)
+        self.open_button.set_sensitive(True)
 
     def on_open_clicked(self, button:Gtk.Button):
         if self.get_subtitle() in [None, "N/A"]:

@@ -23,7 +23,7 @@ from fuzzywuzzy import fuzz
 import threading
 
 # Import own modules
-from src.windows.Store.Plugins.InfoPage import InfoPage
+from src.windows.Store.InfoPage import InfoPage
 from GtkHelper.GtkHelper import ErrorPage
 
 # Typing

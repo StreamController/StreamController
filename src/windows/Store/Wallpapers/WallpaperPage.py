@@ -101,3 +101,17 @@ class WallpaperPreview(StorePreview):
 
     def update(self):
         self.install()
+
+    def on_click_main(self, button: Gtk.Button):
+        self.wallpaper_page.set_info_visible(True)
+
+        # Update info page
+        self.wallpaper_page.info_page.set_name(self.wallpaper_dict.get("name"))
+        self.wallpaper_page.info_page.set_description(self.wallpaper_dict.get("description"))
+        self.wallpaper_page.info_page.set_author(self.wallpaper_dict.get("user_name"))
+        self.wallpaper_page.info_page.set_version(self.wallpaper_dict.get("version"))
+
+        self.wallpaper_page.info_page.set_license(self.wallpaper_dict.get("license"))
+        self.wallpaper_page.info_page.set_copyright(self.wallpaper_dict.get("copyright"))
+        self.wallpaper_page.info_page.original_url.set_url(self.wallpaper_dict.get("original_url"))
+        self.wallpaper_page.info_page.set_license_description(self.wallpaper_dict.get("license_description"))

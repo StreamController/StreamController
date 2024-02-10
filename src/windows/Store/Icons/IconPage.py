@@ -114,5 +114,5 @@ class IconPreview(StorePreview):
 
         self.icon_page.info_page.set_license(self.icon_dict.get("license"))
         self.icon_page.info_page.set_copyright(self.icon_dict.get("copyright"))
-        self.icon_page.info_page.original_url.set_url(self.icon_dict.get("original_url"))
+        self.icon_page.info_page.set_original_url(self.icon_dict.get("original_url"))
         self.icon_page.info_page.set_license_description(self.icon_dict.get("license_description"))

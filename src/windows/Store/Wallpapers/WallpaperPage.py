@@ -113,5 +113,5 @@ class WallpaperPreview(StorePreview):
 
         self.wallpaper_page.info_page.set_license(self.wallpaper_dict.get("license"))
         self.wallpaper_page.info_page.set_copyright(self.wallpaper_dict.get("copyright"))
-        self.wallpaper_page.info_page.original_url.set_url(self.wallpaper_dict.get("original_url"))
+        self.wallpaper_page.info_page.set_original_url(self.wallpaper_dict.get("original_url"))
         self.wallpaper_page.info_page.set_license_description(self.wallpaper_dict.get("license_description"))

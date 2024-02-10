@@ -20,7 +20,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
 # Import own modules
-from GtkHelper.DynamicFlowBox import DynamicFlowBox
+from src.windows.AssetManager.DynamicFlowBox import DynamicFlowBox
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -28,8 +28,8 @@ if TYPE_CHECKING:
     from src.windows.AssetManager.IconPacks.Icons.IconChooser import IconChooser
 
 class IconFlowBox(DynamicFlowBox):
-    def __init__(self, icon_chooser: "IconChooser", *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, base_class, icon_chooser: "IconChooser", *args, **kwargs):
+        super().__init__(base_class=base_class, *args, **kwargs)
         self.CHILDREN_PER_PAGE = 150
         self.set_hexpand(True)
 

@@ -2,15 +2,23 @@ import os
 import importlib
 import sys
 from loguru import logger as log
-
+import Pyro5.api
+import threading
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import get_last_dir
 from src.backend.PluginManager.Signals import Signal
+from streamcontroller_plugin_tools import BackendBase
+
+import globals as gl
 
 class PluginManager:
     action_index = {}
     def __init__(self):
         self.initialized_plugin_classes = list[PluginBase]()
+
+        self.pyro_daemon:Pyro5.api.Daemon = None
+        self.backends:list[BackendBase] = []
+        self.init_pyro5()
 
         self.connected_signals: dict = {}
 
@@ -96,3 +104,7 @@ class PluginManager:
         
         for callback in self.connected_signals.get(signal, []):
             callback(*args, **kwargs)
+
+    def init_pyro5(self):
+        self.pyro_daemon = Pyro5.api.Daemon()
+        threading.Thread(target=self.pyro_daemon.requestLoop).start()

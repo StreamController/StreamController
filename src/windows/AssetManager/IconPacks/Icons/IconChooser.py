@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GLib
 
 # Import own modules
 from src.windows.AssetManager.ChooserPage import ChooserPage
@@ -40,10 +40,12 @@ class IconChooserPage(ChooserPage):
         super().__init__()
         self.asset_manager = asset_manager
 
+        self.selected_icon: str = None
+
         self.build()
 
     def build(self):
-        self.icon_flow = IconFlowBox(self, margin_bottom=15, margin_top=15, margin_start=15, margin_end=15)
+        self.icon_flow = IconFlowBox(IconPreview, self)
         self.icon_flow.set_factory(self.preview_factory)
         self.icon_flow.set_filter_func(self.filter_func)
         self.icon_flow.set_sort_func(self.sort_func)
@@ -56,23 +58,21 @@ class IconChooserPage(ChooserPage):
         self.icon_flow.flow_box.connect("child-activated", self.on_child_activated)
 
     def load_for_pack(self, pack: "IconPack"):
-        for icon in pack.get_icons():
-            self.icon_flow.add_item(icon)
-            # preview = IconPreview(self, icon)
-            # self.icon_flow.append(preview)
-        self.icon_flow.load_items()
+        self.icon_flow.set_item_list(pack.get_icons())
+        self.icon_flow.show_range(0, 50)
 
-    def clear_flow_box(self):
-        while self.icon_flow.get_first_child() is not None:
-            self.icon_flow.remove(self.icon_flow.get_first_child())
+    def select_icon(self, path) -> None:
+        self.selected_icon = path
 
     def on_child_activated(self, flow_box, child):
         self.asset_manager.callback_func(child.icon.path, *self.asset_manager.callback_args, **self.asset_manager.callback_kwargs)
         self.asset_manager.close()
         self.asset_manager.destroy()
 
-    def preview_factory(self, item):
-        return IconPreview(self, item)
+    def preview_factory(self, preview: IconPreview, icon):
+        preview.set_icon(icon)
+        if self.selected_icon == icon.path:
+            self.icon_flow.flow_box.select_child(preview)
     
     def filter_func(self, item) -> bool:
         search = self.search_entry.get_text()
@@ -107,5 +107,4 @@ class IconChooserPage(ChooserPage):
         return 0
     
     def on_search_changed(self, entry):
-        self.icon_flow.invalidate_filter()
-        self.icon_flow.invalidate_sort()
+        self.icon_flow.show_range(0, 50)

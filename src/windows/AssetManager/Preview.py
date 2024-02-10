@@ -32,8 +32,10 @@ class Preview(Gtk.FlowBoxChild):
 
         self._build()
 
-        self.set_image(image_path)
-        self.set_text(text)
+        if image_path is not None:
+            self.set_image(image_path)
+        if text is not None:
+            self.set_text(text)
 
     def _build(self):
         self.overlay = Gtk.Overlay()

@@ -140,6 +140,9 @@ class AssetManager(list):
 
     def has_by_id(self, id: str) -> bool:
         return self.get_by_id(id) is not None
+    
+    def has_by_internal_path(self, internal_path: str) -> bool:
+        return self.get_by_internal_path(internal_path) is not None
 
     def get_by_name(self, name: str) -> dict:
         for asset in self:
@@ -154,6 +157,11 @@ class AssetManager(list):
     def get_by_id(self, id: str) -> dict:
         for asset in self:
             if asset["id"] == id:
+                return asset
+            
+    def get_by_internal_path(self, internal_path: str) -> dict:
+        for asset in self:
+            if asset["internal-path"] == internal_path:
                 return asset
             
     def get_all(self) -> list:

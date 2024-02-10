@@ -18,7 +18,7 @@ import threading
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
-from PIL import Image, ImageSequence
+from PIL import Image, ImageSequence, ImageOps
 from StreamDeck.Transport.Transport import TransportError
 from time import sleep
 import math
@@ -106,7 +106,13 @@ class DeckController:
 
 
     @log.catch
-    def generate_key_image(self, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], key=None, add_background=True, shrink=False):
+    def generate_key_image(self, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], key=None, add_background=True, shrink=False, fill_mode:str = "cover"):
+        """
+        fill_mode:
+            cover: fill the whole key while maintaining aspect ratio
+            fit: scale the image to fit the key while maintaining aspect ratio (not respecting margins)
+            stretch: fill the whole key while changing the aspect ratio
+        """
         # margins = [left, top, right, bottom]
         DEFAULT_FONT = "Assets/Fonts/Roboto-Regular.ttf"
         if image != None:
@@ -120,7 +126,16 @@ class DeckController:
         image_height = math.floor(self.deck.key_image_format()["size"][1]-image_margins[1]-image_margins[3])
         image_width = math.floor(self.deck.key_image_format()["size"][0]-image_margins[0]-image_margins[2])
 
-        image = image.resize((image_width, image_height), Image.Resampling.LANCZOS)
+        match fill_mode:
+            case "cover": 
+                image = ImageOps.cover(image, (image_width, image_height), Image.Resampling.LANCZOS)
+
+            case "fit": 
+                # Create overlay
+                image = ImageOps.contain(image, (image_width, image_height), Image.Resampling.LANCZOS)
+
+            case "stretch": 
+                image = image.resize((image_width, image_height), Image.Resampling.LANCZOS)
 
         # Generate transparent background to draw everything on
         alpha_bg = Image.new("RGBA", self.deck.key_image_format()["size"], (0, 0, 0, 0))
@@ -497,7 +512,7 @@ class DeckController:
             load_screensaver(self)
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.ChangePage, path= self.active_page.json_path)
+        gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
 
     def reload_page(self, load_brightness: bool = True, load_background: bool = True, load_keys: bool = True, load_screensaver: bool = True):
         # Reset deck

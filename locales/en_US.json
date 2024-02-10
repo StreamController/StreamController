@@ -55,5 +55,11 @@
     "settings-store-settings-header": "Store",
     "settings-store-settings-auto-update": "Auto-update assets",
     "settings-ui-settings-title": "UI Settings",
-    "settings-ui-settings-key-grid-header": "Key Grid"
+    "settings-ui-settings-key-grid-header": "Key Grid",
+    "open-about": "About",
+    "store.plugins.section": "Plugins",
+    "store.icons.section": "Icons",
+    "store.wallpapers.section": "Wallpapers",
+    "store.badges.official": "Official",
+    "store.badges.verified": "Verified"
 }

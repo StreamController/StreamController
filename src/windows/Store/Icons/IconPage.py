@@ -27,7 +27,7 @@ import shutil
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
-from src.windows.Store.Batches import OfficialBatch, VerifiedBatch
+from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
@@ -114,5 +114,5 @@ class IconPreview(StorePreview):
 
         self.icon_page.info_page.set_license(self.icon_dict.get("license"))
         self.icon_page.info_page.set_copyright(self.icon_dict.get("copyright"))
-        self.icon_page.info_page.original_url.set_url(self.icon_dict.get("original_url"))
+        self.icon_page.info_page.set_original_url(self.icon_dict.get("original_url"))
         self.icon_page.info_page.set_license_description(self.icon_dict.get("license_description"))

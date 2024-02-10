@@ -17,10 +17,13 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk
 
-class OfficialBatch(Gtk.Button):
-    def __init__(self, *args, **kwargs):
-        super().__init__(label="Official", *args, **kwargs)
+# Import globals
+import globals as gl
 
-class VerifiedBatch(Gtk.Button):
+class OfficialBadge(Gtk.Button):
     def __init__(self, *args, **kwargs):
-        super().__init__(label="Verified", *args, **kwargs)
+        super().__init__(label=gl.lm.get("store.badges.official"), *args, **kwargs)
+
+class VerifiedBadge(Gtk.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(label=gl.lm.get("store.badges.verified"), *args, **kwargs)

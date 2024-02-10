@@ -174,5 +174,7 @@ Assets/AssetManager/Assets.json
 pages/
 settings/
 
+Pyro5
+
 # Keep .gitkeep files
 !/**/.gitkeep

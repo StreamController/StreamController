@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Gdk
 
 # Import python modules
 import os
@@ -27,6 +27,7 @@ from loguru import logger as log
 from src.windows.AssetManager.ChooserPage import ChooserPage
 from src.windows.AssetManager.CustomAssets.FlowBox import CustomAssetChooserFlowBox
 from src.windows.AssetManager.CustomAssets.AssetPreview import AssetPreview
+from src.backend.DeckManagement.HelperMethods import download_file
 
 # Import globals
 import globals as gl
@@ -76,10 +77,8 @@ class CustomAssetChooser(ChooserPage):
             self.asset_chooser.flow_box.append(AssetPreview(flow=self, asset=asset, width_request=100, height_request=100))
         return True
 
-    def show_for_path(self, path, callback_func=None, *callback_args, **callback_kwargs):
-        if not callable(callback_func):
-            log.error("callback_func is not callable")
-        self.asset_chooser.show_for_path(path, callback_func, *callback_args, **callback_kwargs)
+    def show_for_path(self, path):
+        self.asset_chooser.show_for_path(path)
 
     def on_video_toggled(self, button):
         settings = gl.settings_manager.load_settings_from_file("settings/ui/AssetManager.json")

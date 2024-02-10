@@ -28,7 +28,7 @@ import asyncio
 # Import own modules
 from src.windows.Store.StorePage import StorePage
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
-from src.windows.Store.Batches import OfficialBatch, VerifiedBatch
+from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
 
 class StorePreview(Gtk.FlowBoxChild):
     def __init__(self, store_page: StorePage):
@@ -86,8 +86,8 @@ class StorePreview(Gtk.FlowBoxChild):
         # self.overlay.add_overlay(self.batch_box)
         self.main_button_box.append(self.batch_box)
 
-        self.official_batch = OfficialBatch(margin_end=7, visible=False)
-        self.verified_batch = VerifiedBatch(visible=False)
+        self.official_batch = OfficialBadge(margin_end=7, visible=False)
+        self.verified_batch = VerifiedBadge(visible=False)
 
         self.batch_box.append(self.official_batch)
         self.batch_box.append(self.verified_batch)

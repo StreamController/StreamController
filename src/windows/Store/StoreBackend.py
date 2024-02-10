@@ -164,6 +164,20 @@ class StoreBackend:
 
         return icons
     
+    async def get_all_wallpapers(self):
+        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Wallpapers.json")
+        if isinstance(result, NoConnectionError):
+            return result
+        wallpapers_json = result.text
+        wallpapers_json = json.loads(wallpapers_json)
+
+        wallpapers = []
+        for wallpaper in wallpapers_json:
+            wallpapers.append(await self.prepare_wallpaper(wallpaper))
+        
+        return wallpapers
+    
+    @alru_cache(maxsize=None)
     async def get_manifest(self, url:str, commit:str) -> dict:
         url = self.build_url(url, "manifest.json", commit)
         # Look for cached manifest - if we have a file for the same commit we can safely assume it's the same
@@ -211,6 +225,10 @@ class StoreBackend:
         attribution = await self.request_from_url(url)
         if isinstance(attribution, NoConnectionError):
             return attribution
+        
+        if attribution is None:
+            return {}
+
         attribution = json.loads(attribution.text)
 
         # Save to cache
@@ -243,6 +261,11 @@ class StoreBackend:
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), plugin["verified-commit"]))
         if isinstance(manifest, NoConnectionError):
             return image
+        
+        attribution = await self.get_attribution(url, plugin["verified-commit"])
+        if isinstance(attribution, NoConnectionError):
+            return attribution
+        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
         description = manifest.get("description")
 
@@ -257,12 +280,17 @@ class StoreBackend:
             "url": url,
             "user_name": user_name,
             "repo_name": repo_name,
+            "version": manifest.get("version"),
             "image": image,
             "stargazers": stargazers,
             "official": user_name in self.official_authors,
             "commit_sha": plugin["verified-commit"],
             "id": manifest.get("id"),
-            "local-sha": await self.get_local_sha(os.path.join("plugins", manifest.get("id")))
+            "local-sha": await self.get_local_sha(os.path.join("plugins", manifest.get("id"))),
+            "license": attribution.get("license"),
+            "copyright": attribution.get("copyright"),
+            "license_description": attribution.get("description_description"),
+            "original_url": attribution.get("original-url"),
         }
     
     async def get_local_sha(self, git_dir: str):
@@ -283,7 +311,7 @@ class StoreBackend:
         attribution = await self.get_attribution(url, icon["verified-commit"])
         if isinstance(attribution, NoConnectionError):
             return attribution
-        attribution = attribution["generic"] #TODO: Choose correct attribution
+        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), icon["verified-commit"]))
         if isinstance(image, NoConnectionError):
@@ -314,6 +342,39 @@ class StoreBackend:
             "commit_sha": icon["verified-commit"],
             "local_sha": await self.get_local_sha(os.path.join("icons", f"{user_name}::{manifest.get('name')}")),
             "official": user_name in self.official_authors
+        }
+    
+    async def prepare_wallpaper(self, wallpaper):
+        url = wallpaper["url"]
+        manifest = await self.get_manifest(url, wallpaper["verified-commit"])
+        if isinstance(manifest, NoConnectionError):
+            return manifest
+        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), wallpaper["verified-commit"]))
+        if isinstance(image, NoConnectionError):
+            return image
+        attribution = await self.get_attribution(url, wallpaper["verified-commit"])
+        if isinstance(attribution, NoConnectionError):
+            return attribution
+        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
+        
+        user_name = self.get_user_name(url)
+
+        return {
+            "name": manifest.get("name"),
+            "description": manifest.get("description"),
+            "version": manifest.get("version"),
+            "url": url,
+            "user_name": user_name,
+            "repo_name": self.get_repo_name(url),
+            "image": image,
+            "stargazers": await self.get_stargazers(url),
+            "license": manifest.get("license"),
+            "copyright": manifest.get("copyright"),
+            "commit_sha": wallpaper["verified-commit"],
+            "original_url": attribution.get("original-url"),
+            "license_description": attribution.get("description"),
+            "local_sha": await self.get_local_sha(os.path.join("wallpapers", f"{user_name}::{manifest.get('name')}")),
+            "official": self.get_user_name(url) in self.official_authors
         }
 
     async def image_from_url(self, url):
@@ -428,11 +489,11 @@ class StoreBackend:
 
         # Set repository to the given commit_sha
         if commit_sha is not None:
-            await self.os_sys(f"cd {local_path} && git reset --hard {commit_sha}")
+            await self.os_sys(f"cd '{local_path}' && git reset --hard {commit_sha}")
             return
         
         if branch_name is not None:
-            await self.os_sys(f"cd {local_path} && git switch {branch_name}")
+            await self.os_sys(f"cd '{local_path}' && git switch {branch_name}")
             return
         
     async def install_plugin(self, plugin_dict:dict):
@@ -443,10 +504,10 @@ class StoreBackend:
 
         response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_dict["commit_sha"])
 
-        # Install all dependencies
-        if os.path.isfile(os.path.join(local_path, "requirements.txt")):
-            install(os.path.join(local_path, "requirements.txt"), requirements=True)
-
+        # Run install script if present
+        if os.path.isfile(os.path.join(local_path, "__install__.py")):
+            subprocess.Popen(f"python3 {os.path.join(local_path, '__install__.py')}", shell=True, start_new_session=True)
+            
         if response == 404:
             return 404
         

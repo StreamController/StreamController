@@ -21,6 +21,9 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
 
 # Import Python modules
 from loguru import logger as log
+import os
+
+# Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.mainWindow.mainWindow import MainWindow
@@ -77,9 +80,9 @@ class AssetManager(Gtk.ApplicationWindow):
         self.callback_args = callback_args
         self.callback_kwargs = callback_kwargs
         
-        self.asset_chooser.show_for_path(path, callback_func, *callback_args, **callback_kwargs)
+        self.asset_chooser.show_for_path(path)
         self.main_stack.set_visible_child(self.asset_chooser)
-        self.back_button.set_visible(False)
+        # self.back_button.set_visible(False)
         self.present()
 
     def show_info_for_asset(self, asset:dict):
@@ -96,7 +99,12 @@ class AssetManager(Gtk.ApplicationWindow):
         self.present()
 
     def on_back_button_click(self, button):
-        self.main_stack.set_visible_child(self.asset_chooser)
+        if self.main_stack.get_visible_child() == self.asset_info:
+            # Switch from info page to chooser page
+            self.main_stack.set_visible_child(self.asset_chooser)
+        elif self.asset_chooser.icon_pack_chooser.get_visible_child_name() == "icon-chooser":
+            # Switch from icon chooser to pack page
+            self.asset_chooser.icon_pack_chooser.set_visible_child_name("chooser")
         self.back_button.set_visible(False)
 
 
@@ -114,5 +122,11 @@ class AssetChooser(Gtk.Stack):
         self.icon_pack_chooser = IconPackChooserStack(self.asset_manager)
         self.add_titled(self.icon_pack_chooser, "icon-packs", "Icon Packs")
 
-    def show_for_path(self, *args, **kwargs):
-        self.custom_asset_chooser.show_for_path(*args, **kwargs)
+    def show_for_path(self, path):
+        if gl.asset_manager.has_by_internal_path(path):
+            # Is custom asset
+            self.custom_asset_chooser.show_for_path(path)
+            self.asset_manager.back_button.set_visible(False)
+        else:
+            # Check if really is a icon pack
+            self.icon_pack_chooser.show_for_path(path)

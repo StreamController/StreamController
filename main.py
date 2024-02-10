@@ -31,6 +31,7 @@ from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
+from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
 from src.windows.Store.StoreBackend import StoreBackend
 
 # Import globals
@@ -64,7 +65,7 @@ def load():
     log.info("Loading app")
     gl.deck_manager = DeckManager()
     gl.deck_manager.load_decks()
-    gl.main = Main(application_id="com.core447.StreamController", deck_manager=gl.deck_manager)
+    gl.main = Main(application_id="dev.core447.StreamController", deck_manager=gl.deck_manager)
 
 @log.catch
 def create_cache_folder():
@@ -77,6 +78,7 @@ def create_global_objects():
     gl.settings_manager = SettingsManager()
     gl.page_manager = PageManager(gl.settings_manager)
     gl.icon_pack_manager = IconPackManager()
+    gl.wallpaper_pack_manager = WallpaperPackManager()
 
     # Store
     gl.store_backend = StoreBackend()

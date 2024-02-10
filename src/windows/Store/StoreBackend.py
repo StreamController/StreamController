@@ -338,19 +338,22 @@ class StoreBackend:
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), wallpaper["verified-commit"]))
         if isinstance(image, NoConnectionError):
             return image
+        
+        user_name = self.get_user_name(url)
+
         return {
             "name": manifest.get("name"),
             "description": manifest.get("description"),
             "version": manifest.get("version"),
             "url": url,
-            "user_name": self.get_user_name(url),
+            "user_name": user_name,
             "repo_name": self.get_repo_name(url),
             "image": image,
             "stargazers": await self.get_stargazers(url),
             "license": manifest.get("license"),
             "copyright": manifest.get("copyright"),
             "commit_sha": wallpaper["verified-commit"],
-            "local_sha": await self.get_local_sha(os.path.join("wallpapers", manifest.get("name"))),
+            "local_sha": await self.get_local_sha(os.path.join("wallpapers", f"{user_name}::{manifest.get('name')}")),
             "official": self.get_user_name(url) in self.official_authors
         }
 

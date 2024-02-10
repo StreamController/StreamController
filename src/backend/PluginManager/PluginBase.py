@@ -108,6 +108,7 @@ class PluginBase:
         Internal method, do not call manually
         """
         self._backend = Pyro5.api.Proxy(backend_uri)
+        gl.plugin_manager.backends.append(self._backend)
 
     @property
     def backend(self):

@@ -466,11 +466,11 @@ class StoreBackend:
 
         # Set repository to the given commit_sha
         if commit_sha is not None:
-            await self.os_sys(f"cd {local_path} && git reset --hard {commit_sha}")
+            await self.os_sys(f"cd '{local_path}' && git reset --hard {commit_sha}")
             return
         
         if branch_name is not None:
-            await self.os_sys(f"cd {local_path} && git switch {branch_name}")
+            await self.os_sys(f"cd '{local_path}' && git switch {branch_name}")
             return
         
     async def install_plugin(self, plugin_dict:dict):

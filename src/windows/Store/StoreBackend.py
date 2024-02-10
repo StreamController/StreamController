@@ -225,6 +225,10 @@ class StoreBackend:
         attribution = await self.request_from_url(url)
         if isinstance(attribution, NoConnectionError):
             return attribution
+        
+        if attribution is None:
+            return {}
+
         attribution = json.loads(attribution.text)
 
         # Save to cache
@@ -307,7 +311,7 @@ class StoreBackend:
         attribution = await self.get_attribution(url, icon["verified-commit"])
         if isinstance(attribution, NoConnectionError):
             return attribution
-        attribution = attribution["generic"] #TODO: Choose correct attribution
+        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
         image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), icon["verified-commit"]))
         if isinstance(image, NoConnectionError):
@@ -351,6 +355,7 @@ class StoreBackend:
         attribution = await self.get_attribution(url, wallpaper["verified-commit"])
         if isinstance(attribution, NoConnectionError):
             return attribution
+        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
         
         user_name = self.get_user_name(url)
 

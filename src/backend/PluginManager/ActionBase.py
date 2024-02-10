@@ -216,7 +216,7 @@ class ActionBase:
         ## Launch
         command = ""
         if venv_activate_path is not None:
-            command = f"{venv_activate_path} && "
+            command = f"source{venv_activate_path} && "
         command += "python3 "
         command += f"{backend_path}"
         command += f" --uri={uri}"

@@ -406,7 +406,7 @@ class DeckController:
         def load_background(self):
             def get_from_deck_settings(self):
                 if self.deck_settings["background"]["enable"] == False:
-                    self.set_background_to_none(self)
+                    self.set_background_to_none()
                     return
                 if os.path.isfile(self.deck_settings["background"]["path"]) == False: return
                 path, loop, fps = self.deck_settings["background"].setdefault("path", None), self.deck_settings["background"].setdefault("loop", True), self.deck_settings["background"].setdefault("fps", 30)
@@ -414,10 +414,10 @@ class DeckController:
             
             def get_from_page(self, page):
                 if "background" not in page.dict: 
-                    self.set_background_to_none(self)
+                    self.set_background_to_none()
                     return
                 if page.dict["background"]["show"] == False: 
-                    self.set_background_to_none(self)
+                    self.set_background_to_none()
                     return
                 if os.path.isfile(page.dict["background"]["path"]) == False: return
                 path, loop, fps = page.dict["background"].setdefault("path", None), page.dict["background"].setdefault("loop", True), page.dict["background"].setdefault("fps", 30)

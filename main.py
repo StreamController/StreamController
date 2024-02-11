@@ -40,7 +40,7 @@ import globals as gl
 def config_logger():
     log.remove(0)
     # Create log files
-    log.add("logs/logs.log", rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
+    log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
 

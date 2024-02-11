@@ -25,9 +25,12 @@ from PIL import Image
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import is_video, sha256, file_in_dir, create_empty_json
 
+# Import globals
+import globals as gl
+
 
 class AssetManager(list):
-    JSON_PATH = os.path.join("Assets", "AssetManager", "Assets.json")
+    JSON_PATH = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets.json")
     def __init__(self):
         self.load_json()
 
@@ -90,7 +93,7 @@ class AssetManager(list):
         return asset["id"]
     
     def save_thumbnail(self, asset_path, asset_hash):
-        thumbnail_path = os.path.join("Assets", "AssetManager", "thumbnails", f"{asset_hash}.png")
+        thumbnail_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "thumbnails", f"{asset_hash}.png")
         if os.path.exists(thumbnail_path):
             return thumbnail_path
         if not is_video(asset_path):
@@ -107,13 +110,13 @@ class AssetManager(list):
         file_name = os.path.basename(asset_path)
         dst_path = None
         if not file_in_dir(file_name, "cache"):
-            dst_path = os.path.join("Assets", "AssetManager", "Assets", file_name)
+            dst_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets", file_name)
         else:
             log.warning(f"File with same name already exists but sha256 does not match, renaming: {asset_path}")
             index = 2
             while file_in_dir(file_name, "cache"):
                 file_name = f"{file_name}-{str(index).zfill(2)}"
-            dst_path = os.path.join("Assets", "AssetManager", "Assets", file_name)
+            dst_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets", file_name)
 
         if asset_path == dst_path:
             return asset_path
@@ -169,14 +172,7 @@ class AssetManager(list):
     
     def fill_missing_data(self):
         def fill_missing_folders():
-            if not os.path.exists("Assets"):
-                os.makedirs("Assets")
-            if not os.path.exists("Assets/AssetManager"):
-                os.makedirs("Assets/AssetManager")
-            if not os.path.exists("Assets/AssetManager/Assets"):
-                os.makedirs("Assets/AssetManager/Assets")
-            if not os.path.exists("Assets/AssetManager/thumbnails"):
-                os.makedirs("Assets/AssetManager/thumbnails")
+            os.makedirs(os.path.join(gl.DATA_PATH, "Assets", "thumbnails"), exist_ok=True)
 
         def fill_missing_thumbnails():
             for asset in self:

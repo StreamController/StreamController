@@ -41,39 +41,35 @@ class NoConnectionError:
 class StoreBackend:
     def __init__(self):
         # API cache file
-        if not os.path.exists("src/windows/Store/cache"):
-            os.mkdir("src/windows/Store/cache")
-        if not os.path.exists("src/windows/Store/cache/api.json"):
-            with open("src/windows/Store/cache/api.json", "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "src/windows/Store/cache"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/api.json")):
+            with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/api.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open("src/windows/Store/cache/api.json", "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/api.json"), "r") as f:
             self.api_cache = json.load(f)
         
         # Image cache file
-        if not os.path.exists("src/windows/Store/cache/images"):
-            os.mkdir("src/windows/Store/cache/images")
-        if not os.path.exists("src/windows/Store/cache/images.json"):
-            with open("src/windows/Store/cache/images.json", "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/images"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/images.json")):
+            with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/images.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open("src/windows/Store/cache/images.json", "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/images.json"), "r") as f:
             self.image_cache = json.load(f)
 
         # Manifest cache file
-        if not os.path.exists("src/windows/Store/cache/manifests"):
-            os.mkdir("src/windows/Store/cache/manifests")
-        if not os.path.exists("src/windows/Store/cache/manifests.json"):
-            with open("src/windows/Store/cache/manifests.json", "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests.json")):
+            with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open("src/windows/Store/cache/manifests.json", "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests.json"), "r") as f:
             self.manifest_cache = json.load(f)
 
         # Attribution cache file
-        if not os.path.exists("src/windows/Store/cache/attribution"):
-            os.mkdir("src/windows/Store/cache/attribution")
-        if not os.path.exists("src/windows/Store/cache/attribution.json"):
-            with open("src/windows/Store/cache/attribution.json", "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution.json")):
+            with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open("src/windows/Store/cache/attribution.json", "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution.json"), "r") as f:
             self.attribution_cache = json.load(f)
 
         self.official_authors = asyncio.run(self.get_official_authors())
@@ -286,7 +282,7 @@ class StoreBackend:
             "official": user_name in self.official_authors,
             "commit_sha": plugin["verified-commit"],
             "id": manifest.get("id"),
-            "local-sha": await self.get_local_sha(os.path.join("plugins", manifest.get("id"))),
+            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
             "license": attribution.get("license"),
             "copyright": attribution.get("copyright"),
             "license_description": attribution.get("description_description"),
@@ -340,7 +336,7 @@ class StoreBackend:
             "original_url": attribution.get("original-url"),
             "license_description": attribution.get("description"),
             "commit_sha": icon["verified-commit"],
-            "local_sha": await self.get_local_sha(os.path.join("icons", f"{user_name}::{manifest.get('name')}")),
+            "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "icons", f"{user_name}::{manifest.get('name')}")),
             "official": user_name in self.official_authors
         }
     
@@ -373,7 +369,7 @@ class StoreBackend:
             "commit_sha": wallpaper["verified-commit"],
             "original_url": attribution.get("original-url"),
             "license_description": attribution.get("description"),
-            "local_sha": await self.get_local_sha(os.path.join("wallpapers", f"{user_name}::{manifest.get('name')}")),
+            "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "wallpapers", f"{user_name}::{manifest.get('name')}")),
             "official": self.get_user_name(url) in self.official_authors
         }
 
@@ -485,6 +481,7 @@ class StoreBackend:
         await self.subp_call(["git", "clone", repo_url, local_path])
 
         # Add repository to the safe directory list to avoid dubious ownership warnings
+        # FIXME: Check if not already added
         await self.subp_call(["git", "config", "--global", "--add", "safe.directory", os.path.abspath(local_path)])
 
         # Set repository to the given commit_sha
@@ -500,7 +497,7 @@ class StoreBackend:
         url = plugin_dict["url"]
 
         PLUGINS_FOLDER = "plugins"
-        local_path = f"{PLUGINS_FOLDER}/{plugin_dict['id']}"
+        local_path = os.path.join(gl.DATA_PATH, PLUGINS_FOLDER, plugin_dict["id"])
 
         response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_dict["commit_sha"])
 

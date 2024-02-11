@@ -73,6 +73,7 @@ class DeckMediaHandler():
         self.progress_dir[id] = 0   
         if media_path is None:
             self.deck_controller.set_background_to_none()
+            return
 
         if os.path.splitext(media_path)[1] in [".png", ".jpg", ".jpeg"]:
             # Remove background video

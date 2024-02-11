@@ -2,6 +2,8 @@ import Pyro5.api
 import os
 from typing import TYPE_CHECKING
 
+DATA_PATH = os.path.join(os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "StreamController")
+
 if TYPE_CHECKING:
     from src.app import App
     from locales.LocaleManager import LocaleManager

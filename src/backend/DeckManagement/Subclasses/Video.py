@@ -18,18 +18,21 @@ import os
 import pickle
 import gzip
 
+# Import own modules
+import globals as gl
+
 class Video:
     def __init__(self):
         self.frames = []
 
     @log.catch
     def load_from_cache(self, file_name_without_extension):
-        path = os.path.join("cache", file_name_without_extension)
+        path = os.path.join(gl.DATA_PATH, "cache", file_name_without_extension)
         with gzip.open(path, "rb") as f:
             self.frames = pickle.load(f)
 
     @log.catch
     def save_to_cache(self, file_name_without_extension):
-        path = os.path.join("cache", file_name_without_extension)
+        path = os.path.join(gl.DATA_PATH, "cache", file_name_without_extension)
         with gzip.open(path, "wb") as f:
             pickle.dump(self.frames, f)

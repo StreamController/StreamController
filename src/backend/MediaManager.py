@@ -21,21 +21,22 @@ from PIL import Image, ImageSequence
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import sha256, file_in_dir
 
+# Import globals
+import globals as gl
+
 class MediaManager:
     def __init__(self):
         pass
 
     def get_thumbnail(self, file_path):
         hash = sha256(file_path)
-        if not os.path.exists("cache"):
-            os.mkdir("cache")
-        if not os.path.exists("cache/thumbnails"):
-            os.mkdir("cache/thumbnails")
+
+        os.makedirs(os.path.join(gl.DATA_PATH, "cache/thumbnails"), exist_ok=True)
         
         # Check if thumbnail has already been cached:
-        cached = file_in_dir(os.path.join("cache/thumbnails", f"{hash}.jpg"))
+        cached = file_in_dir(os.path.join(gl.DATA_PATH, "cache", "thumbnails", f"{hash}.jpg"))
         if cached:
-            return Image.open(os.path.join("cache/thumbnails", f"{hash}.jpg"))
+            return Image.open(os.path.join(gl.DATA_PATH, "cache", "thumbnails", f"{hash}.jpg"))
         else:
             return self.generate_thumbnail(file_path)
 

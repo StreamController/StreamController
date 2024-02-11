@@ -33,6 +33,9 @@ from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
 from src.windows.Store.StoreBackend import NoConnectionError
 
+# Import globals
+import globals as gl
+
 # Typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -88,7 +91,7 @@ class WallpaperPreview(StorePreview):
 
         asyncio.run(self.store.backend.clone_repo(
             repo_url=self.wallpaper_dict["url"],
-            local_path=os.path.join("wallpapers", folder_name),
+            local_path=os.path.join(gl.DATA_PATH, "wallpapers", folder_name),
             commit_sha=self.wallpaper_dict["commit_sha"]
         ))
         self.set_install_state(1)

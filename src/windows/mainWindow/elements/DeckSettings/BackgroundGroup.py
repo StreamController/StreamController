@@ -147,6 +147,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.update_image)
 
     def update_image(self, file_path):
+        print()
         self.set_thumbnail(file_path)
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("background", {})

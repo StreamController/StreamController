@@ -79,7 +79,8 @@ class PageSelector(Gtk.Box):
         self.connect_change_signal()
 
     def clear_model(self):
-        self.pages_model.clear
+        self.pages_model.clear()
+        return
         for i in range(self.pages_model.get_n_items()):
             self.pages_model.remove(0)
 

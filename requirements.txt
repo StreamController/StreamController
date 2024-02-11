@@ -3,7 +3,6 @@ async-lru==2.0.4
 certifi==2023.11.17
 charset-normalizer==3.3.2
 contourpy==1.2.0
-cPython==0.0.6
 cycler==0.12.1
 dbus-python==1.3.2
 decord==0.6.0

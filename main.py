@@ -37,6 +37,9 @@ from src.windows.Store.StoreBackend import StoreBackend
 # Import globals
 import globals as gl
 
+# Set working directory
+os.chdir(gl.top_level_dir)
+
 def config_logger():
     log.remove(0)
     # Create log files

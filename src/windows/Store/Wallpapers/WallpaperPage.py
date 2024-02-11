@@ -86,10 +86,9 @@ class WallpaperPreview(StorePreview):
 
     def install(self):
         folder_name = f"{self.wallpaper_dict['user_name']}::{self.wallpaper_dict['name']}"
-        if os.path.exists(os.path.join("wallpapers", folder_name)):
-            shutil.rmtree(os.path.join("wallpapers", folder_name))
-        if not os.path.exists("wallpapers"):
-            os.mkdir("wallpapers")
+        if os.path.exists(os.path.join(gl.DATA_PATH, "wallpapers", folder_name)):
+            shutil.rmtree(os.path.join(gl.DATA_PATH, "wallpapers", folder_name))
+        os.makedirs(os.path.join(gl.DATA_PATH, "wallpapers", folder_name))
 
         asyncio.run(self.store.backend.clone_repo(
             repo_url=self.wallpaper_dict["url"],

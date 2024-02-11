@@ -25,10 +25,10 @@ from src.windows.AssetManager.DynamicFlowBox import DynamicFlowBox
 # Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.windows.AssetManager.IconPacks.Icons.IconChooser import IconChooser
+    from src.windows.AssetManager.WallpaperPacks.Wallpapers.WallpaperChooser import WallpaperChooserPage
 
 class WallpaperFlowBox(DynamicFlowBox):
-    def __init__(self, base_class, icon_chooser: "IconChooser", *args, **kwargs):
+    def __init__(self, base_class, wallpaper_chooser: "WallpaperChooserPage", *args, **kwargs):
         super().__init__(base_class=base_class, *args, **kwargs)
         self.CHILDREN_PER_PAGE = 150
         self.set_hexpand(True)
@@ -37,4 +37,4 @@ class WallpaperFlowBox(DynamicFlowBox):
         self.callback_args = ()
         self.callback_kwargs = {}
 
-        self.icon_chooser = icon_chooser
+        self.wallpaper_chooser = wallpaper_chooser

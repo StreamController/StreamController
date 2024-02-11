@@ -21,8 +21,8 @@ from gi.repository import Gtk, Adw, GLib
 
 # Import own modules
 from src.windows.AssetManager.ChooserPage import ChooserPage
-from src.windows.AssetManager.IconPacks.Icons.IconFlowBox import WallpaperFlowBox
-from src.windows.AssetManager.IconPacks.Icons.IconPreview import IconPreview
+from src.windows.AssetManager.WallpaperPacks.Wallpapers.WallpaperFlowBox import WallpaperFlowBox
+from src.windows.AssetManager.WallpaperPacks.Wallpapers.WallpaperPreview import WallpaperPreview
 from src.windows.AssetManager.IconPacks.Preview import IconPackPreview
 
 # Import python modules
@@ -33,46 +33,46 @@ from fuzzywuzzy import fuzz
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.AssetManager.AssetManager import AssetManager
-    from src.backend.IconPackManagement.IconPack import IconPack
+    from src.backend.WallpaperPackManagement.WallpaperPack import WallpaperPack
 
-class IconChooserPage(ChooserPage):
+class WallpaperChooserPage(ChooserPage):
     def __init__(self, asset_manager: "AssetManager"):
         super().__init__()
         self.asset_manager = asset_manager
 
-        self.selected_icon: str = None
+        self.selected_wallpaper: str = None
 
         self.build()
 
     def build(self):
-        self.icon_flow = WallpaperFlowBox(IconPreview, self)
-        self.icon_flow.set_factory(self.preview_factory)
-        self.icon_flow.set_filter_func(self.filter_func)
-        self.icon_flow.set_sort_func(self.sort_func)
+        self.wallpaper_flow = WallpaperFlowBox(WallpaperPreview, self)
+        self.wallpaper_flow.set_factory(self.preview_factory)
+        self.wallpaper_flow.set_filter_func(self.filter_func)
+        self.wallpaper_flow.set_sort_func(self.sort_func)
         # Remove default scrolled window
         self.remove(self.scrolled_window)
         # Add dynamic flow box
-        self.append(self.icon_flow)
+        self.append(self.wallpaper_flow)
 
         # Connect flow box select signal
-        self.icon_flow.flow_box.connect("child-activated", self.on_child_activated)
+        self.wallpaper_flow.flow_box.connect("child-activated", self.on_child_activated)
 
-    def load_for_pack(self, pack: "IconPack"):
-        self.icon_flow.set_item_list(pack.get_icons())
-        self.icon_flow.show_range(0, 50)
+    def load_for_pack(self, pack: "WallpaperPack"):
+        self.wallpaper_flow.set_item_list(pack.get_wallpapers())
+        self.wallpaper_flow.show_range(0, 50)
 
-    def select_icon(self, path) -> None:
-        self.selected_icon = path
+    def select_wallpaper(self, path) -> None:
+        self.selected_wallpaper = path
 
     def on_child_activated(self, flow_box, child):
-        self.asset_manager.callback_func(child.icon.path, *self.asset_manager.callback_args, **self.asset_manager.callback_kwargs)
+        self.asset_manager.callback_func(child.wallpaper.path, *self.asset_manager.callback_args, **self.asset_manager.callback_kwargs)
         self.asset_manager.close()
         self.asset_manager.destroy()
 
-    def preview_factory(self, preview: IconPreview, icon):
-        preview.set_icon(icon)
-        if self.selected_icon == icon.path:
-            self.icon_flow.flow_box.select_child(preview)
+    def preview_factory(self, preview: WallpaperPreview, wallpaper):
+        preview.set_wallpaper(wallpaper)
+        if self.selected_wallpaper == wallpaper.path:
+            self.wallpaper_flow.flow_box.select_child(preview)
     
     def filter_func(self, item) -> bool:
         search = self.search_entry.get_text()
@@ -107,4 +107,4 @@ class IconChooserPage(ChooserPage):
         return 0
     
     def on_search_changed(self, entry):
-        self.icon_flow.show_range(0, 50)
+        self.wallpaper_flow.show_range(0, 50)

@@ -69,8 +69,7 @@ def load():
 
 @log.catch
 def create_cache_folder():
-    if not os.path.exists("cache"):
-        os.makedirs("cache")
+    os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
 
 def create_global_objects():
     gl.media_manager = MediaManager()

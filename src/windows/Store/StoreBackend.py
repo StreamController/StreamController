@@ -228,16 +228,16 @@ class StoreBackend:
 
         attribution = json.loads(attribution.text)
 
-        # Save to cache
         cache_file_name = f"{self.get_repo_name(url)}::{commit}"
-        with open(f"src/windows/Store/cache/attribution/{cache_file_name}.json", "w") as f:
+        path = os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution", f"{cache_file_name}.json")
+        with open(path, "w") as f:
             json.dump(attribution, f, indent=4)
 
         self.remove_old_attribution_cache(url, commit)
 
-        self.attribution_cache[url] = f"src/windows/Store/cache/attribution/{cache_file_name}.json"
+        self.attribution_cache[url] = os.path.join(gl.DATA_PATH, "src", "windows", "Store", "cache", "attribution", f"{cache_file_name}.json")
         # Save cache file
-        with open("src/windows/Store/cache/attribution.json", "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution.json"), "w") as f:
             json.dump(self.attribution_cache, f, indent=4)
 
         return attribution

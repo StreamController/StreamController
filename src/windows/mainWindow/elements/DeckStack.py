@@ -60,7 +60,12 @@ class DeckStack(Gtk.Stack):
             
     def get_page_attributes(self, deck_controller):
         deck_type = deck_controller.deck.deck_type()
-        self.deck_numbers.append(str(deck_controller.deck.get_serial_number()))
+        try:
+            serial_number = deck_controller.deck.get_serial_number()
+        except Exception as e:
+            log.error(e)
+            return
+        self.deck_numbers.append(serial_number)
         deck_number = str(deck_controller.deck.get_serial_number())
 
         if deck_type not in self.deck_names:

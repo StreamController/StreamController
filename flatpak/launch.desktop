@@ -19,7 +19,7 @@ Path=/
 Exec=launch.sh
 
 # The name of the icon that will be used to display this entry
-Icon=com.core447.StreamController
+Icon=com.core447.StreamController.png
 
 # Describes whether this application needs to be run in a terminal or not
 Terminal=true

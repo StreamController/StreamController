@@ -16,10 +16,10 @@ Comment=StreamController
 Path=/
 
 # The executable of the application, possibly with arguments.
-Exec=launch.sh
+Exec=/app/bin/launch.sh
 
 # The name of the icon that will be used to display this entry
-Icon=com.core447.StreamController.png
+Icon=com.core447.StreamController
 
 # Describes whether this application needs to be run in a terminal or not
 Terminal=true

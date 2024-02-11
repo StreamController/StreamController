@@ -38,7 +38,7 @@ class App(Adw.Application):
         self.connect("activate", self.on_activate)
 
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_path("style.css")
+        css_provider.load_from_path(os.path.join(gl.top_level_dir, "style.css"))
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def on_activate(self, app):

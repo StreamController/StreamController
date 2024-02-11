@@ -107,4 +107,5 @@ class PluginManager:
 
     def init_pyro5(self):
         self.pyro_daemon = Pyro5.api.Daemon()
+        log.info("Starting thread: pyro_daemon.requestLoop")
         threading.Thread(target=self.pyro_daemon.requestLoop).start()

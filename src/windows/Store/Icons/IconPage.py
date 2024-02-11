@@ -24,6 +24,7 @@ import asyncio
 import threading
 import os
 import shutil
+from loguru import logger as log
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
@@ -48,6 +49,7 @@ class IconPage(StorePage):
         self.store = store
         self.search_entry.set_placeholder_text("Search for icons")
 
+        log.info("Starting thread: load")
         threading.Thread(target=self.load).start()
 
     def load(self):

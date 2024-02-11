@@ -22,6 +22,7 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
 import webbrowser as web
 import asyncio
 import threading
+from loguru import logger as log
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
@@ -43,6 +44,7 @@ class PluginPage(StorePage):
         self.store = store
         self.search_entry.set_placeholder_text("Search for plugins")
 
+        log.info("Starting thread: load")
         threading.Thread(target=self.load).start()
 
     def load(self):

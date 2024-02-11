@@ -37,9 +37,6 @@ from src.windows.Store.StoreBackend import StoreBackend
 # Import globals
 import globals as gl
 
-# Set working directory
-os.chdir(gl.top_level_dir)
-
 def config_logger():
     log.remove(0)
     # Create log files
@@ -68,12 +65,12 @@ def load():
     log.info("Loading app")
     gl.deck_manager = DeckManager()
     gl.deck_manager.load_decks()
-    gl.main = Main(application_id="com.core447.StreamController", deck_manager=gl.deck_manager)
+    gl.main = Main(application_id="dev.core447.StreamController", deck_manager=gl.deck_manager)
 
 @log.catch
 def create_cache_folder():
-    if not os.path.exists(os.path.join(gl.DATA_PATH, "cache")):
-        os.makedirs(os.path.join(gl.DATA_PATH, "cache"))
+    if not os.path.exists("cache"):
+        os.makedirs("cache")
 
 def create_global_objects():
     gl.media_manager = MediaManager()
@@ -106,6 +103,7 @@ def update_assets():
 if __name__ == "__main__":
     create_global_objects()
     create_cache_folder()
+    log.info("Starting thread: update_assets")
     threading.Thread(target=update_assets).start()
     load()
 

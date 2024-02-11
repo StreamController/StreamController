@@ -63,6 +63,7 @@ class DeckMediaHandler():
         # Generate unique id to track processing progress
         id = str(uuid.uuid4())
         self.progress_dir[id] = 0
+        log.info("Starting thread: add_video_task")
         threading.Thread(target=add_video_task_thread, args=(self, id)).start()
         return id
 

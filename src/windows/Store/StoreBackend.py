@@ -190,14 +190,15 @@ class StoreBackend:
 
         # Save to cache
         cache_file_name = f"{self.get_repo_name(url)}::{commit}"
-        with open(f"src/windows/Store/cache/manifests/{cache_file_name}.json", "w") as f:
+        path = os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests", f"{cache_file_name}.json")
+        with open(path, "w") as f:
             json.dump(manifest, f, indent=4)
 
         self.remove_old_manifest_cache(url, commit)
 
-        self.manifest_cache[url] = f"src/windows/Store/cache/manifests/{cache_file_name}.json"
+        self.manifest_cache[url] = os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests", f"{cache_file_name}.json")
         # Save cache file
-        with open("src/windows/Store/cache/manifests.json", "w") as f:
+        with open(os.path.join("src/windows/Store/cache/manifests.json"), "w") as f:
             json.dump(self.manifest_cache, f, indent=4)
 
         return manifest

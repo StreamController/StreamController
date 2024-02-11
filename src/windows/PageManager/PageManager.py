@@ -98,7 +98,7 @@ class PageManager(Gtk.ApplicationWindow):
         dial.show(self.add_page_callback)
 
     def add_page_callback(self, name:str):
-        path = os.path.join("pages", f"{name}.json")
+        path = os.path.join(gl.DATA_PATH, "pages", f"{name}.json")
         gl.page_manager.add_page(name)
         self.page_box.append(PageButton(page_manager=self, page_path=path))
 

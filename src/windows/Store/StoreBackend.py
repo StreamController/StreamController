@@ -41,35 +41,35 @@ class NoConnectionError:
 class StoreBackend:
     def __init__(self):
         # API cache file
-        os.makedirs(os.path.join(gl.DATA_PATH, "src/windows/Store/cache"), exist_ok=True)
-        if not os.path.exists(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/api.json")):
-            with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/api.json"), "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "Store/cache"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "Store/cache/api.json")):
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/api.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/api.json"), "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/api.json"), "r") as f:
             self.api_cache = json.load(f)
         
         # Image cache file
-        os.makedirs(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/images"), exist_ok=True)
-        if not os.path.exists(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/images.json")):
-            with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/images.json"), "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "Store/cache/images"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "Store/cache/images.json")):
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/images.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/images.json"), "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/images.json"), "r") as f:
             self.image_cache = json.load(f)
 
         # Manifest cache file
-        os.makedirs(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests"), exist_ok=True)
-        if not os.path.exists(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests.json")):
-            with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests.json"), "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "Store/cache/manifests"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "Store/cache/manifests.json")):
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/manifests.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests.json"), "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/manifests.json"), "r") as f:
             self.manifest_cache = json.load(f)
 
         # Attribution cache file
-        os.makedirs(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution"), exist_ok=True)
-        if not os.path.exists(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution.json")):
-            with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution.json"), "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "Store/cache/attribution"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "Store/cache/attribution.json")):
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/attribution.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution.json"), "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/attribution.json"), "r") as f:
             self.attribution_cache = json.load(f)
 
         self.official_authors = asyncio.run(self.get_official_authors())
@@ -190,15 +190,15 @@ class StoreBackend:
 
         # Save to cache
         cache_file_name = f"{self.get_repo_name(url)}::{commit}"
-        path = os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests", f"{cache_file_name}.json")
+        path = os.path.join(gl.DATA_PATH, "Store/cache/manifests", f"{cache_file_name}.json")
         with open(path, "w") as f:
             json.dump(manifest, f, indent=4)
 
         self.remove_old_manifest_cache(url, commit)
 
-        self.manifest_cache[url] = os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests", f"{cache_file_name}.json")
+        self.manifest_cache[url] = os.path.join(gl.DATA_PATH, "Store/cache/manifests", f"{cache_file_name}.json")
         # Save cache file
-        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests.json"), "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/manifests.json"), "w") as f:
             json.dump(self.manifest_cache, f, indent=4)
 
         return manifest
@@ -229,15 +229,15 @@ class StoreBackend:
         attribution = json.loads(attribution.text)
 
         cache_file_name = f"{self.get_repo_name(url)}::{commit}"
-        path = os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution", f"{cache_file_name}.json")
+        path = os.path.join(gl.DATA_PATH, "Store/cache/attribution", f"{cache_file_name}.json")
         with open(path, "w") as f:
             json.dump(attribution, f, indent=4)
 
         self.remove_old_attribution_cache(url, commit)
 
-        self.attribution_cache[url] = os.path.join(gl.DATA_PATH, "src", "windows", "Store", "cache", "attribution", f"{cache_file_name}.json")
+        self.attribution_cache[url] = os.path.join(gl.DATA_PATH, "Store", "cache", "attribution", f"{cache_file_name}.json")
         # Save cache file
-        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/attribution.json"), "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/attribution.json"), "w") as f:
             json.dump(self.attribution_cache, f, indent=4)
 
         return attribution
@@ -387,7 +387,7 @@ class StoreBackend:
         
         ## Save to cache
         image_uuid = str(uuid.uuid4())
-        save_path = f"src/windows/Store/cache/images/{self.get_repo_name(url)}::{image_uuid}.png"
+        save_path = f"Store/cache/images/{self.get_repo_name(url)}::{image_uuid}.png"
         save_path = os.path.join(gl.DATA_PATH, save_path)
         if url in self.image_cache:
             # Remove the old file
@@ -395,7 +395,7 @@ class StoreBackend:
                 os.remove(self.image_cache[url])
         self.image_cache[url] = save_path
         # Update image cache json file
-        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/images.json"), "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/images.json"), "w") as f:
             json.dump(self.image_cache, f, indent=4)
 
         return img
@@ -419,7 +419,7 @@ class StoreBackend:
             self.api_cache[api_call_url] = {}
             self.api_cache[api_call_url]["answer"] = resp.json()
             self.api_cache[api_call_url]["time-code"] = datetime.now().strftime("%d-%m-%y-%H-%M")
-            with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/api.json"), "w") as f:
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/api.json"), "w") as f:
                 json.dump(self.api_cache, f, indent=4)
             return resp.json()
 

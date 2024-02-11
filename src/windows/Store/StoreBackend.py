@@ -198,7 +198,7 @@ class StoreBackend:
 
         self.manifest_cache[url] = os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests", f"{cache_file_name}.json")
         # Save cache file
-        with open(os.path.join("src/windows/Store/cache/manifests.json"), "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "src/windows/Store/cache/manifests.json"), "w") as f:
             json.dump(self.manifest_cache, f, indent=4)
 
         return manifest

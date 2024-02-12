@@ -140,6 +140,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.main_stack.set_visible_child(self.mainBox)
             self.header_bar.config_button.set_visible(True)
             self.header_bar.page_selector.set_visible(True)
+            self.header_bar.deckSwitcher.set_show_switcher(True)
             return
         
         elif error == "no-decks":
@@ -150,6 +151,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.header_bar.config_button.set_visible(False)
         self.header_bar.page_selector.set_visible(False)
+        self.header_bar.deckSwitcher.set_show_switcher(False)
 
     def check_for_errors(self):
         if len(gl.deck_manager.deck_controller) == 0:

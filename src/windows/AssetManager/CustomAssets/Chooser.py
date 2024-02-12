@@ -71,7 +71,7 @@ class CustomAssetChooser(ChooserPage):
                         modal=True
                     )
                     dial.show()
-                    return
+                    continue
 
                 os.makedirs(os.path.join(gl.DATA_PATH, "cache", "downloads"), exist_ok=True)
                 # Download file from url

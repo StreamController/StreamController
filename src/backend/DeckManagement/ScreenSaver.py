@@ -22,12 +22,12 @@ class ScreenSaver:
         # Time when last key state changed
         self.last_key_change_time = time.time()
 
-    def set_time(self, time_delay):
-        # return
+    def set_time(self, time_delay: int) -> None:
         self.time_delay = time_delay
         if hasattr(self, "timer"):
             self.timer.cancel()
-        self.timer = threading.Timer(time_delay, self.on_timer_end)
+        # *60 to go from minuts (how it is stored) to seconds (how the timer needs it)
+        self.timer = threading.Timer(time_delay*60, self.on_timer_end)
         if self.enable:
             self.timer.start()
 

@@ -131,11 +131,6 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Set config box state
         self.config_box.set_visible(overwrite)
 
-
-        if self.settings_page.deck_page.deck_controller.active_page.dict["background"]["path"] in [None, ""]:
-            self.connect_signals()
-            return
-
         self.set_thumbnail(file_path)
 
         self.connect_signals()
@@ -162,6 +157,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
     def set_thumbnail(self, file_path):
         if file_path == None:
+            self.media_selector_image.clear()
             return
         # return
         image = gl.media_manager.get_thumbnail(file_path)

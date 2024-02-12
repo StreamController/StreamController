@@ -420,6 +420,7 @@ class DeckController:
                 if page.dict["background"]["show"] == False: 
                     self.set_background_to_none()
                     return
+                if page.dict.get("background", {}).get("path") is None: return
                 if os.path.isfile(page.dict["background"]["path"]) == False: return
                 path, loop, fps = page.dict["background"].setdefault("path", None), page.dict["background"].setdefault("loop", True), page.dict["background"].setdefault("fps", 30)
                 return path, loop, fps

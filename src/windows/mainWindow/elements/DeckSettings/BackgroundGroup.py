@@ -123,10 +123,6 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Set config box state
         self.config_box.set_visible(overwrite)
 
-
-        if self.settings_page.deck_page.deck_controller.active_page.dict["background"]["path"] in [None, ""]:
-            return
-
         self.set_thumbnail(file_path)
 
     def on_toggle_enable(self, toggle_switch, state):

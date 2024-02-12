@@ -36,6 +36,8 @@ class AssetManager(list):
 
         self.fill_missing_data()
 
+        self.remove_invalid_data()
+
     def load_json(self):
         # Create file if it does not exist
         create_empty_json(self.JSON_PATH)
@@ -191,3 +193,7 @@ class AssetManager(list):
 
         # Save
         self.save_json()
+
+    def remove_invalid_data(self):
+        # TODO
+        pass

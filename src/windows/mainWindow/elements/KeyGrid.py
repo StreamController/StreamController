@@ -156,7 +156,7 @@ class KeyButton(Gtk.Frame):
 
     def simulate_press(self):
         ## Check if double click to emulate is turned on in the settings
-        settings = gl.settings_manager.load_settings_from_file("settings/settings.json")
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
         if not settings.get("key-grid", {}).get("emulate-at-double-click", True):
             return
         

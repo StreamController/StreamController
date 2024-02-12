@@ -75,7 +75,7 @@ class PageManager:
         return self.create_page(path, deck_controller)
 
     def get_default_page_for_deck(self, serial_number: str) -> str:
-        page_settings = self.settings_manager.load_settings_from_file("settings/pages.json")
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
         for page in page_settings.get("default-pages", []):
             if page["deck"] == serial_number:
                 path = page["path"]
@@ -96,13 +96,13 @@ class PageManager:
             page.json_path = new_path
             
             # Update default page settings
-            settings = gl.settings_manager.load_settings_from_file("settings/pages.json")
+            settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
             if settings.get("default-pages") is None:
                 continue
             for entry in settings["default-pages"]:
                 if entry["path"] == old_path:
                     entry["path"] = new_path
-                    gl.settings_manager.save_settings_to_file("settings/pages.json", settings)
+                    gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
 
         # Remove old page
         os.remove(old_path)
@@ -141,11 +141,11 @@ class PageManager:
         os.remove(page_path)
 
         # Remove default page entries
-        settings = gl.settings_manager.load_settings_from_file("settings/pages.json")
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
         for entry in copy(settings.get("default-pages",[])):
             if entry["path"] == page_path:
                 settings["default-pages"].remove(entry)
-        gl.settings_manager.save_settings_to_file("settings/pages.json", settings)
+        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
 
         # Update ui
         self.update_ui()

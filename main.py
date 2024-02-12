@@ -88,7 +88,7 @@ def create_global_objects():
     gl.plugin_manager.generate_action_index()
 
 def update_assets():
-    settings = gl.settings_manager.load_settings_from_file("settings/settings.json")
+    settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
     auto_update = settings.get("store", {}).get("auto-update", True)
     if not auto_update:
         log.info("Skipping store asset update")

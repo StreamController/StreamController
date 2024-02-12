@@ -18,6 +18,9 @@ import json
 import os
 import shutil
 
+# Import globals
+import globals as gl
+
 # Import own modules
 from src.backend.WallpaperPackManagement.WallpaperPack import WallpaperPack
 
@@ -27,8 +30,9 @@ class WallpaperPackManager:
 
     def get_wallpaper_packs(self) -> dir:
         packs = {}
-        for pack in os.listdir("wallpapers"):
-            packs[pack] = WallpaperPack(os.path.join("wallpapers", pack))
+        os.makedirs(os.path.join(gl.DATA_PATH, "wallpapers"), exist_ok=True)
+        for pack in os.listdir(os.path.join(gl.DATA_PATH, "wallpapers")):
+            packs[pack] = WallpaperPack(os.path.join(gl.DATA_PATH, "wallpapers", pack))
         return packs
 
     def get_pack_wallpapers(self, wallpaper_pack: dict):

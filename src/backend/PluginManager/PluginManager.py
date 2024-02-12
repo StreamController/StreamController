@@ -11,6 +11,9 @@ from streamcontroller_plugin_tools import BackendBase
 
 import globals as gl
 
+# Add data path to sys.path
+sys.path.append(gl.DATA_PATH)
+
 class PluginManager:
     action_index = {}
     def __init__(self):
@@ -24,9 +27,9 @@ class PluginManager:
 
     def load_plugins(self):
         # get all folders in plugins folder
-        if not os.path.exists("plugins"):
-            os.mkdir("plugins")
-        folders = os.listdir("plugins")
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "plugins")):
+            os.mkdir(os.path.join(gl.DATA_PATH, "plugins"))
+        folders = os.listdir(os.path.join(gl.DATA_PATH, "plugins"))
         for folder in folders:
             # Import main module
             import_string = f"plugins.{folder}.main"
@@ -107,4 +110,5 @@ class PluginManager:
 
     def init_pyro5(self):
         self.pyro_daemon = Pyro5.api.Daemon()
+        log.info("Starting thread: pyro_daemon.requestLoop")
         threading.Thread(target=self.pyro_daemon.requestLoop).start()

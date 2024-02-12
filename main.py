@@ -40,7 +40,7 @@ import globals as gl
 def config_logger():
     log.remove(0)
     # Create log files
-    log.add("logs/logs.log", rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
+    log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
 
@@ -69,8 +69,7 @@ def load():
 
 @log.catch
 def create_cache_folder():
-    if not os.path.exists("cache"):
-        os.makedirs("cache")
+    os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
 
 def create_global_objects():
     gl.media_manager = MediaManager()
@@ -103,7 +102,8 @@ def update_assets():
 if __name__ == "__main__":
     create_global_objects()
     create_cache_folder()
-    threading.Thread(target=update_assets).start()
+    log.info("Starting thread: update_assets")
+    # threading.Thread(target=update_assets).start()
     load()
 
 

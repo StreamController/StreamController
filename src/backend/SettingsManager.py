@@ -16,6 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import os, json
 from loguru import logger as log
 
+# Import own modules
+import globals as gl
+
 class SettingsManager:
     def load_settings_from_file(self, file_path: str) -> dict:
         if not os.path.exists(file_path):
@@ -44,7 +47,7 @@ class SettingsManager:
         Returns:
             dict: The deck settings loaded from the file.
         """
-        path = os.path.join("settings", "decks", f"{deck_serial_number}.json")
+        path = os.path.join(gl.DATA_PATH, "settings", "decks", f"{deck_serial_number}.json")
         settings =  self.load_settings_from_file(path)
         if settings == None:
             settings = {}
@@ -63,5 +66,5 @@ class SettingsManager:
         Returns:
             None
         """
-        path = os.path.join("settings", "decks", f"{deck_serial_number}.json")
+        path = os.path.join(gl.DATA_PATH, "settings", "decks", f"{deck_serial_number}.json")
         self.save_settings_to_file(path, settings)

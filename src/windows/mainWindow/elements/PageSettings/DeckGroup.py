@@ -232,13 +232,17 @@ class Screensaver(Adw.PreferencesRow):
         self.scale.connect("value-changed", self.on_change_brightness)
 
     def disconnect_signals(self):
-        self.overwrite_switch.disconnect_by_func(self.on_toggle_overwrite)
-        self.enable_switch.disconnect_by_func(self.on_toggle_enable)
-        self.time_spinner.disconnect_by_func(self.on_change_time)
-        self.media_selector_button.disconnect_by_func(self.on_choose_image)
-        self.loop_switch.disconnect_by_func(self.on_toggle_loop)
-        self.fps_spinner.disconnect_by_func(self.on_change_fps)
-        self.scale.disconnect_by_func(self.on_change_brightness)
+        try:
+            # FIXME: This doesn't work always
+            self.overwrite_switch.disconnect_by_func(self.on_toggle_overwrite)
+            self.enable_switch.disconnect_by_func(self.on_toggle_enable)
+            self.time_spinner.disconnect_by_func(self.on_change_time)
+            self.media_selector_button.disconnect_by_func(self.on_choose_image)
+            self.loop_switch.disconnect_by_func(self.on_toggle_loop)
+            self.fps_spinner.disconnect_by_func(self.on_change_fps)
+            self.scale.disconnect_by_func(self.on_change_brightness)
+        except:
+            pass
 
     def load_defaults_from_page(self):
         self.disconnect_signals()

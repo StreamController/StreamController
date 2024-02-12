@@ -207,6 +207,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
                     break
 
         # Start thread
+        log.info("Starting thread: set_background")
         threading.Thread(target=thread, args=(self,)).start()
 
 

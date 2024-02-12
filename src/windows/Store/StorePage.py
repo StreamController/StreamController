@@ -21,6 +21,7 @@ from gi.repository import Gtk
 # Import python modules
 from fuzzywuzzy import fuzz
 import threading
+from loguru import logger as log
 
 # Import own modules
 from src.windows.Store.InfoPage import InfoPage
@@ -158,6 +159,7 @@ class StorePage(Gtk.Stack):
         self.flow_box.set_visible(False)
         self.bottom_box.set_visible(False)
         self.loading_box.set_visible(True)
+        log.info("Starting thread: set_loading")
         threading.Thread(target=self.spinner.set_spinning, args=(True,)).start()
 
     def set_loaded(self):

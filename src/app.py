@@ -20,12 +20,16 @@ from gi.repository import Gtk, Adw, Gdk
 
 # Import Python modules
 from loguru import logger as log
+import os
 
 # Import own modules
 from src.windows.mainWindow.mainWindow import MainWindow
 from src.windows.AssetManager.AssetManager import AssetManager
 from src.windows.Store.Store import Store
 from src.windows.Shortcuts.Shortcuts import ShortcutsWindow
+
+# Import globals
+import globals as gl
 
 class App(Adw.Application):
     def __init__(self, deck_manager, **kwargs):
@@ -34,7 +38,7 @@ class App(Adw.Application):
         self.connect("activate", self.on_activate)
 
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_path("style.css")
+        css_provider.load_from_path(os.path.join(gl.top_level_dir, "style.css"))
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def on_activate(self, app):

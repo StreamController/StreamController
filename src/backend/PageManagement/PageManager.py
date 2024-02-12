@@ -41,11 +41,11 @@ class PageManager:
     def get_pages(self) -> list:
         pages = []
         # Create pages dir if it doesn't exist
-        os.makedirs("pages", exist_ok=True)
+        os.makedirs(os.path.join(gl.DATA_PATH, "pages"), exist_ok=True)
         # Get all pages
-        for page in os.listdir("pages"):
+        for page in os.listdir(os.path.join(gl.DATA_PATH, "pages")):
             if os.path.splitext(page)[1] == ".json":
-                pages.append(os.path.join("pages", page))
+                pages.append(os.path.join(gl.DATA_PATH, "pages", page))
 
         pages.extend(self.custom_pages)
 
@@ -155,7 +155,7 @@ class PageManager:
             "keys": {}
         }
 
-        with open(os.path.join("pages", f"{name}.json"), "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "pages", f"{name}.json"), "w") as f:
             json.dump(page, f)
 
         # Update ui

@@ -22,6 +22,8 @@ from gi.repository import Gtk, Adw, Gio
 # Import globals
 import globals as gl
 
+import os
+
 class Settings(Adw.PreferencesWindow):
     def __init__(self):
         super().__init__(title="Settings")
@@ -36,11 +38,11 @@ class Settings(Adw.PreferencesWindow):
 
     def load_json(self):
         # Load settings from file
-        settings = gl.settings_manager.load_settings_from_file("settings/settings.json")
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
         self.settings_json = settings
     
     def save_json(self):
-        gl.settings_manager.save_settings_to_file("settings/settings.json", self.settings_json)
+        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"), self.settings_json)
 
 
 class UIPage(Adw.PreferencesPage):

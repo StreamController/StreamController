@@ -63,6 +63,7 @@ class DeckMediaHandler():
         # Generate unique id to track processing progress
         id = str(uuid.uuid4())
         self.progress_dir[id] = 0
+        log.info("Starting thread: add_video_task")
         threading.Thread(target=add_video_task_thread, args=(self, id)).start()
         return id
 
@@ -73,6 +74,7 @@ class DeckMediaHandler():
         self.progress_dir[id] = 0   
         if media_path is None:
             self.deck_controller.set_background_to_none()
+            return
 
         if os.path.splitext(media_path)[1] in [".png", ".jpg", ".jpeg"]:
             # Remove background video

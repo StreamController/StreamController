@@ -61,8 +61,21 @@ class CustomAssetChooser(ChooserPage):
             path = path.get_path()
 
             if path is None and url is not None:
+                # Lower domain and remove point
+                extension = os.path.splitext(url)[1].lower().replace(".", "")
+                if extension not in (set(gl.video_extensions) | set(gl.image_extensions)):
+                    # Not a valid url
+                    dial = Gtk.AlertDialog(
+                        message="The image is invalid.",
+                        detail="You can only use urls directly pointing to images (not directly from Google).",
+                        modal=True
+                    )
+                    dial.show()
+                    return
+
+                os.makedirs(os.path.join(gl.DATA_PATH, "cache", "downloads"), exist_ok=True)
                 # Download file from url
-                path = download_file(url=url, path="cache/downloads")
+                path = download_file(url=url, path=os.path.join(gl.DATA_PATH, "cache", "downloads"))
 
             if path == None:
                 continue

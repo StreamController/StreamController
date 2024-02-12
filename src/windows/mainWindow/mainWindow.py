@@ -29,6 +29,9 @@ from src.windows.mainWindow.elements.leftArea import LeftArea
 from src.windows.mainWindow.elements.RightArea.RightArea import RightArea
 from src.windows.mainWindow.headerBar import HeaderBar
 from GtkHelper.GtkHelper import get_deepest_focused_widget, get_deepest_focused_widget_with_attr
+from src.windows.mainWindow.elements.NoPagesError import NoPagesError
+from src.windows.mainWindow.elements.NoDecksError import NoDecksError
+
 
 # Import globals
 import globals as gl
@@ -52,8 +55,11 @@ class MainWindow(Gtk.ApplicationWindow):
     def build(self):
         log.trace("Building main window")
 
+        self.main_stack = Gtk.Stack(hexpand=True, vexpand=True)
+        self.set_child(self.main_stack)
+
         self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.set_child(self.mainBox)
+        self.main_stack.add_titled(self.mainBox, "main", "Main")
 
         self.mainPaned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
         self.mainBox.append(self.mainPaned)
@@ -68,7 +74,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self.header_bar = HeaderBar(self.deck_manager, self, self.leftArea.deck_stack)
         self.set_titlebar(self.header_bar)
 
+        # Error pages
+        self.no_pages_error = NoPagesError()
+        self.main_stack.add_titled(self.no_pages_error, "no-pages-error", "No Pages Error")
+
+        self.no_decks_error = NoDecksError()
+        self.main_stack.add_titled(self.no_decks_error, "no-decks-error", "No Decks Error")
+
         self.do_after_build_tasks()
+
+        self.check_for_errors()
 
     def init_actions(self):
         # Copy paste actions
@@ -113,6 +128,39 @@ class MainWindow(Gtk.ApplicationWindow):
         self.leftArea.hide_no_decks_error()
         self.header_bar.config_button.set_visible(True)
         self.header_bar.page_selector.set_visible(True)
+
+    def set_main_error(self, error: str=None):
+        """"
+        error: str
+            no-decks: Shows the no decks available error
+            no-pages: Shows the no pages available error
+            None: Goes back to normal mode
+        """
+        if error is None:
+            self.main_stack.set_visible_child(self.mainBox)
+            self.header_bar.config_button.set_visible(True)
+            self.header_bar.page_selector.set_visible(True)
+            return
+        
+        elif error == "no-decks":
+            self.main_stack.set_visible_child(self.no_decks_error)
+
+        elif error == "no-pages":
+            self.main_stack.set_visible_child(self.no_pages_error)
+
+        self.header_bar.config_button.set_visible(False)
+        self.header_bar.page_selector.set_visible(False)
+
+    def check_for_errors(self):
+        if len(gl.deck_manager.deck_controller) == 0:
+            self.set_main_error("no-decks")
+
+        elif len(gl.page_manager.get_page_names()) == 0:
+            self.set_main_error("no-pages")
+
+        else:
+            self.set_main_error(None)
+
 
     def reload_right_area(self):
         if not hasattr(self, "rightArea"):

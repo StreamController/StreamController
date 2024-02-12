@@ -55,6 +55,7 @@ class DeckManager:
     def load_fake_decks(self):
         old_n_fake_decks = len(self.fake_deck_controller)
         n_fake_decks = int(gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json")).get("dev", {}).get("n-fake-decks", 0))
+
         if n_fake_decks > old_n_fake_decks:
             log.info(f"Loading {n_fake_decks - old_n_fake_decks} fake deck(s)")
             # Load difference in number of fake decks
@@ -86,6 +87,8 @@ class DeckManager:
                 if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
                     gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(False)
 
+            gl.app.main_win.check_for_errors()
+
 
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
@@ -106,6 +109,8 @@ class DeckManager:
             # Add deck
             self.add_newly_connected_deck(deck)
 
+        gl.app.main_win.check_for_errors()
+
 
     def on_disconnect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} disconnected")
@@ -118,6 +123,8 @@ class DeckManager:
                 controller.delete()
 
                 del controller
+
+        gl.app.main_win.check_for_errors()
 
     def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):
         deck_controller = DeckController(self, deck)
@@ -135,3 +142,5 @@ class DeckManager:
         self.deck_controller.append(deck_controller)
         if is_fake:
             self.fake_deck_controller.append(deck_controller)
+
+        gl.app.main_win.check_for_errors()

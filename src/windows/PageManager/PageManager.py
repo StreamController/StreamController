@@ -92,8 +92,10 @@ class PageManager(Gtk.ApplicationWindow):
         for page_path in pages:
             self.page_box.append(PageButton(page_manager=self, page_path = page_path))
 
-    def on_add_page(self, button):
-        dial = EntryDialog(parent_window=self, dialog_title="Add Page", entry_heading="Page name:", default_text="page",
+    def on_add_page(self, button, parent_window=None):
+        if parent_window is None:
+            parent_window = self
+        dial = EntryDialog(parent_window=parent_window, dialog_title="Add Page", entry_heading="Page name:", default_text="page",
                            forbid_answers=gl.page_manager.get_page_names())
         dial.show(self.add_page_callback)
 

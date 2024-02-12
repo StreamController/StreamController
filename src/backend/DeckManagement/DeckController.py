@@ -85,7 +85,14 @@ class DeckController:
         # Init screen saver
         self.screen_saver = ScreenSaver(self)
 
-        # Load default page #TODO: maybe remove from this class
+        self.load_default_page()
+
+        # Init the action tick timer
+        self.TICK_DELAY = 1 # seconds
+        self.action_tick_timer = threading.Timer(self.TICK_DELAY, self.tick_actions)
+        self.action_tick_timer.start()
+
+    def load_default_page(self):
         default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
         if default_page_path == None:
             # Use the first page if available
@@ -98,12 +105,6 @@ class DeckController:
             page = gl.page_manager.create_page(default_page_path, deck_controller=self)
             if page != None:
                 self.load_page(page)
-
-        # Init the action tick timer
-        self.TICK_DELAY = 1 # seconds
-        self.action_tick_timer = threading.Timer(self.TICK_DELAY, self.tick_actions)
-        self.action_tick_timer.start()
-
 
     @log.catch
     def generate_key_image(self, image_path=None, image=None, labels=None, image_margins=[0, 0, 0, 0], key=None, add_background=True, shrink=False, fill_mode:str = "cover"):

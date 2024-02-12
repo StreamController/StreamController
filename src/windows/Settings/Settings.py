@@ -37,9 +37,13 @@ class Settings(Adw.PreferencesWindow):
         self.settings_json:dict = None
         self.load_json()
 
-        self.add(UIPage(settings=self))
-        self.add(StorePage(settings=self))
-        self.add(DevPage(settings=self))
+        self.ui_page = UIPage(settings=self)
+        self.store_page = StorePage(settings=self)
+        self.dev_page = DevPage(settings=self)
+
+        self.add(self.ui_page)
+        self.add(self.store_page)
+        self.add(self.dev_page)
 
     def load_json(self):
         # Load settings from file

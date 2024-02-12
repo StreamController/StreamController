@@ -150,8 +150,8 @@ class PluginGroup(BetterPreferencesGroup):
         return 0
     
     def filter_func(self, expander, user_data):
-        MIN_ACTION_FUZZY_SCORE = 50
-        MIN_TITLE_FUZZY_SCORE = 40
+        MIN_ACTION_FUZZY_SCORE = 20
+        MIN_TITLE_FUZZY_SCORE = 20
 
         search_string = self.action_chooser.search_entry.get_text()
         if search_string == "":
@@ -236,7 +236,7 @@ class PluginExpander(BetterExpander):
 
         fuzz_score = fuzz.ratio(search_string.lower(), row.label.get_label().lower())
 
-        MIN_FUZZY_SCORE = 50
+        MIN_FUZZY_SCORE = 20
         if fuzz_score >= MIN_FUZZY_SCORE:
             # Expand
             self.set_expanded(True)

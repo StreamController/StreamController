@@ -38,7 +38,7 @@ def sha256(file_path):
             hash_sha256.update(chunk)
     return hash_sha256.hexdigest()
 
-def file_in_dir(file_path, dir=None):
+def file_in_dir(file_path, _dir=None) -> None:
     """
     Check if a file is present in a directory.
     
@@ -49,7 +49,12 @@ def file_in_dir(file_path, dir=None):
     Returns:
         bool: True if the file is present in the directory, False otherwise.
     """
-    return os.path.split(file_path)[1] in os.listdir(dir)
+    if _dir is None:
+        return
+    if not os.path.isdir(_dir):
+        return
+    
+    return os.path.split(file_path)[1] in os.listdir(_dir)
 
 def recursive_hasattr(obj, attr_string):
     """

@@ -31,10 +31,13 @@ class MediaManager:
     def get_thumbnail(self, file_path):
         hash = sha256(file_path)
 
-        os.makedirs(os.path.join(gl.DATA_PATH, "cache/thumbnails"), exist_ok=True)
+        os.makedirs(os.path.join(gl.DATA_PATH, "cache", "thumbnails"), exist_ok=True)
         
         # Check if thumbnail has already been cached:
         cached = file_in_dir(os.path.join(gl.DATA_PATH, "cache", "thumbnails", f"{hash}.jpg"))
+        if cached is None:
+            cached = False
+
         if cached:
             return Image.open(os.path.join(gl.DATA_PATH, "cache", "thumbnails", f"{hash}.jpg"))
         else:

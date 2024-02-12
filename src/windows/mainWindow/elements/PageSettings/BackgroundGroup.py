@@ -177,13 +177,9 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 
-    def set_deck_background(self, file_path):
+    def set_deck_background(self, file_path: str) -> None:
         self.set_thumbnail(file_path)
-        # Add background to assets
-        asset_id = gl.asset_manager.add(file_path)
-
-        local_path = gl.asset_manager.get_by_id(asset_id)["internal-path"]
-        self.set_background_to_page(local_path)
+        self.set_background_to_page(file_path)
 
     def set_background_to_page(self, file_path):
         self.settings_page.deck_page.deck_controller.active_page.set_background(file_path)

@@ -124,6 +124,9 @@ class AssetManager(list):
             return asset_path
 
         try:
+            # Ensure the dst dir is available
+            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+            # Copy file into internal asset dir
             shutil.copy(asset_path, dst_path)
         except shutil.SameFileError:
             log.warning(f"File already exists: {dst_path}")

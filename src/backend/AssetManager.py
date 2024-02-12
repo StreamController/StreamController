@@ -56,7 +56,7 @@ class AssetManager(list):
         
         # Copy asset to internal folder if it does not exist
         # This is checked before the sha comparison in case the user manually removed the asset and kept it in the Assets.json
-        if not file_in_dir(asset_path, "cache"):
+        if not file_in_dir(asset_path, os.path.join(gl.DATA_PATH, "cache")):
             internal_path = self.copy_asset(asset_path)
         
         hash = sha256(asset_path)

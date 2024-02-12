@@ -179,7 +179,7 @@ class Screensaver(Adw.PreferencesRow):
         
         # Set defaut values 
         original_values.setdefault("screensaver", {})
-        enable = original_values["screensaver"].setdefault("enable", True)
+        enable = original_values["screensaver"].setdefault("enable", False)
         path = original_values["screensaver"].setdefault("path", None)
         loop = original_values["screensaver"].setdefault("loop", False)
         fps = original_values["screensaver"].setdefault("fps", 30)

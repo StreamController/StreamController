@@ -100,11 +100,25 @@ class AssetManager(list):
             return thumbnail_path
         if not is_video(asset_path):
             return asset_path
+        
+        # Create missing directories
+        os.makedirs(os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "thumbnails"), exist_ok=True)
+        
         # Create thumbnail
-        vr = VideoReader(asset_path)
-        decord_image = vr[0]
-        thumbnail = Image.fromarray(decord_image.asnumpy())
-        thumbnail.save(thumbnail_path)
+        p = os.path.splitext(asset_path)[1].lower().replace(".", "")
+        if os.path.splitext(asset_path)[1].lower().replace(".", "") == "gif":
+            # Video is a gif
+            with Image.open(asset_path) as gif:
+                # Go to the first frame
+                gif.seek(0) 
+                # Save
+                gif.save(thumbnail_path)
+        else:
+            # No gif
+            vr = VideoReader(asset_path)
+            decord_image = vr[0]
+            thumbnail = Image.fromarray(decord_image.asnumpy())
+            thumbnail.save(thumbnail_path)
 
         return thumbnail_path
         

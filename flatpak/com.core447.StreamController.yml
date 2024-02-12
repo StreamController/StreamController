@@ -1,0 +1,99 @@
+id: com.core447.StreamController
+runtime: org.gnome.Sdk
+runtime-version: '45'
+sdk: org.gnome.Sdk
+command: /app/bin/launch.sh
+modules:
+  - name: StreamController
+    buildsystem: simple
+    build-commands:
+      - cp . /app/bin/StreamController -r
+
+      - "pip install -r requirements.txt --prefix=/app"
+      
+      - install -D flatpak/launch.sh /app/bin/launch.sh
+      - chmod +x /app/bin/launch.sh
+      - install -D flatpak/icon_256.png /app/share/icons/hicolor/256x256/apps/com.core447.StreamController.png
+      - install -D flatpak/launch.desktop /app/share/applications/com.core447.StreamController.desktop
+    sources:
+      - type: git
+        url: https://github.com/Core447/StreamController.git
+        branch: dev  # or use 'commit' or 'tag' to pin to a specific version
+
+    build-options:
+      build-args:
+        - "--share=network"
+
+    modules:
+
+
+    - name: libusb
+      buildsystem: autotools
+      sources:
+        - type: git
+          url: https://github.com/libusb/libusb.git
+
+    - name: hidapi-libusb
+      buildsystem: autotools
+      sources:
+        - type: git
+          url: https://github.com/libusb/hidapi.git
+
+    - name: gusb
+      buildsystem: meson
+      config-opts:
+        - -Ddocs=false
+        - -Dtests=false
+        - -Dvapi=false
+      sources:
+        - type: git
+          url: https://github.com/hughsie/libgusb.git
+          branch: main
+
+    - name: libpeas
+      buildsystem: meson
+      cleanup:
+        - /bin/*
+        - /lib/peas-demo
+      config-opts:
+        - -Dgtk_doc=false
+        - -Dlua51=false
+      sources:
+        - type: git
+          url: https://gitlab.gnome.org/GNOME/libpeas.git
+          branch: main
+
+    - name: libportal
+      buildsystem: meson
+      config-opts:
+        - -Dbackend-gtk3=disabled
+        - -Dbackend-gtk4=enabled
+        - -Dbackend-qt5=disabled
+        - -Ddocs=false
+        - -Dtests=false
+        - -Dvapi=false
+      sources:
+        - type: git
+          url: https://github.com/flatpak/libportal.git
+          commit: f7f3acf541087b30a200c5b738162e962fed4d4b
+
+
+    
+
+finish-args:
+  - --socket=x11
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --share=ipc
+  - --device=dri
+  - --filesystem=xdg-documents
+  - --filesystem=home
+  - --share=network
+  - --socket=pulseaudio
+  - --socket=session-bus
+  - --socket=system-bus
+  - --device=all
+  - --device=input
+  - --talk-name=org.freedesktop.Flatpak
+
+# Install via: flatpak-builder --repo=repo --force-clean --install --user build-dir com.core447.StreamController.yml

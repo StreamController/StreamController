@@ -563,7 +563,7 @@ class DeckController:
         if "media" in self.active_page.dict["keys"][coords]:
             if self.active_page.dict["keys"][coords] not in ["", None]:
                 media_path = self.active_page.dict["keys"][coords]["media"].get("path", None)
-                media_loop = self.active_page.dict["keys"][coords]["media"].get("loop", False)
+                media_loop = self.active_page.dict["keys"][coords]["media"].get("loop", True)
                 media_fps = self.active_page.dict["keys"][coords]["media"].get("fps", 30)
 
         if only_labels:

@@ -45,7 +45,6 @@ class DeckManager:
 
     def load_decks(self):
         decks=DeviceManager().enumerate()
-        decks = []
         for deck in decks:
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)

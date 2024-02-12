@@ -34,7 +34,7 @@ class KeyVideo(Video):
         hash = sha256(video_path)
         file_name = f"{hash}-single.cache"
         # Check if video has already been cached:
-        if file_in_dir(file_name, "cache"):
+        if file_in_dir(file_name, os.path.join(gl.DATA_PATH, "cache")):
             self.load_from_cache(file_name)
 
             log.success(f"Loaded {len(self.frames)} frames from cache: {video_path}")

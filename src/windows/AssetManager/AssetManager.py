@@ -134,4 +134,5 @@ class AssetChooser(Gtk.Stack):
             self.asset_manager.back_button.set_visible(False)
         else:
             # Check if really is a icon pack
+            # TODO
             self.icon_pack_chooser.show_for_path(path)

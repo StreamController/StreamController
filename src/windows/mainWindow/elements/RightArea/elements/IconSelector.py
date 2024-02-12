@@ -133,11 +133,11 @@ class IconSelector(Gtk.Box):
         controller.load_key(page_coords)
 
     def remove_media(self, *args):
-        self.set_media_path(None)
-        # Reload key
+        # Get keygrid of active controller
         controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        page_coords = f"{self.right_area.active_coords[0]}x{self.right_area.active_coords[1]}"
-        controller.load_key(page_coords)
+        grid = controller.get_own_key_grid()
+        # Call keys remove method
+        grid.selected_key.on_remove()
         # Hide remove button
         self.remove_button.set_visible(False)
 

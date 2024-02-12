@@ -29,6 +29,11 @@ class Settings(Adw.PreferencesWindow):
         super().__init__(title="Settings")
         self.set_default_size(800, 600)
 
+        # Center settings win over main_win (depends on DE)
+        self.set_transient_for(gl.app.main_win)
+        # Allow interaction with other windows
+        self.set_modal(False)
+
         self.settings_json:dict = None
         self.load_json()
 

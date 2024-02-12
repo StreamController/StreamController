@@ -22,6 +22,7 @@ from gi.repository import Gtk, Adw, Gdk, GLib, Gio
 
 # Import Python modules 
 from loguru import logger as log
+import os
 
 # Imort globals
 import globals as gl
@@ -52,7 +53,6 @@ class KeyGrid(Gtk.Grid):
         self.build()
 
         self.load_from_changes()
-
     
     def build(self):
         layout = self.deck_controller.deck.key_layout()
@@ -74,6 +74,10 @@ class KeyGrid(Gtk.Grid):
         tasks = self.deck_controller.ui_grid_buttons_changes_while_hidden
         for coords, pixbuf in tasks.items():
             self.buttons[coords[0]][coords[1]].show_pixbuf(pixbuf)
+
+    def select_key(self, x: int, y: int):
+        self.buttons[x][y].on_focus_in()
+        self.buttons[x][y].image.grab_focus()
 
 class KeyButton(Gtk.Frame):
     def __init__(self, key_grid:KeyGrid, coords, **kwargs):
@@ -180,6 +184,8 @@ class KeyButton(Gtk.Frame):
 
     def on_focus_in(self, *args):
         # Update settings on the righthand side of the screen
+        if not recursive_hasattr(gl, "app.main_win.rightArea"):
+            return
         right_area = gl.app.main_win.rightArea
         right_area.load_for_coords((self.coords[1], self.coords[0]))
         # Update preview

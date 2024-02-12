@@ -389,20 +389,20 @@ class DeckController:
         # Set active page
         self.active_page = page
 
-        # Update ui
+         # Update ui
         if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
-            gl.app.main_win.header_bar.page_selector.update_selected()
-            settings_page = gl.app.main_win.leftArea.deck_stack.get_visible_child().page_settings.settings_page
-            settings_group = settings_page.settings_group
-            background_group = settings_page.background_group
+            try:
+                gl.app.main_win.header_bar.page_selector.update_selected()
+                settings_page = gl.app.main_win.leftArea.deck_stack.get_visible_child().page_settings.settings_page
+                settings_group = settings_page.settings_group
+                background_group = settings_page.background_group
 
-            # Update ui
-            settings_group.screensaver.load_defaults_from_page()
-            background_group.media_row.load_defaults_from_page()
+                # Update ui
+                settings_group.screensaver.load_defaults_from_page()
+                background_group.media_row.load_defaults_from_page()
+            except AttributeError as e:
+                log.error(f"{e} -> This is okay if you just activated your first deck.")
 
-        # Update right area
-        if recursive_hasattr(gl, "app.main_win.rightArea"):
-            gl.app.main_win.rightArea.reload()
 
         def load_background(self):
             def get_from_deck_settings(self):

@@ -42,6 +42,9 @@ class MainWindow(Gtk.ApplicationWindow):
         # Store copied stuff
         self.key_dict = {}
 
+        # Add tasks to run if build is complete
+        self.on_finished: list = []
+
         self.build()
         self.init_actions()
 
@@ -64,6 +67,8 @@ class MainWindow(Gtk.ApplicationWindow):
         # Add header bar
         self.header_bar = HeaderBar(self.deck_manager, self, self.leftArea.deck_stack)
         self.set_titlebar(self.header_bar)
+
+        self.do_after_build_tasks()
 
     def init_actions(self):
         # Copy paste actions
@@ -89,6 +94,37 @@ class MainWindow(Gtk.ApplicationWindow):
         self.add_action(self.cut_action)
         self.add_action(self.paste_action)
         self.add_action(self.remove_action)
+
+
+    def change_ui_to_no_connected_deck(self):
+        if not hasattr(self, "leftArea"):
+            self.on_finished.append(self.change_ui_to_no_connected_deck)
+            return
+        
+        self.leftArea.show_no_decks_error()
+        self.header_bar.config_button.set_visible(False)
+        self.header_bar.page_selector.set_visible(False)
+
+    def change_ui_to_connected_deck(self):
+        if not hasattr(self, "leftArea"):
+            self.on_finished.append(self.change_ui_to_connected_deck)
+            return
+        
+        self.leftArea.hide_no_decks_error()
+        self.header_bar.config_button.set_visible(True)
+        self.header_bar.page_selector.set_visible(True)
+
+    def reload_right_area(self):
+        if not hasattr(self, "rightArea"):
+            self.on_finished.append(self.reload_right_area)
+            return
+        
+        self.rightArea.load_for_coords(self.rightArea.active_coords)
+
+    def do_after_build_tasks(self):
+        for task in self.on_finished:
+            if callable(task):
+                task()
 
     def on_copy(self, *args):
         child = get_deepest_focused_widget_with_attr(self, "on_copy")

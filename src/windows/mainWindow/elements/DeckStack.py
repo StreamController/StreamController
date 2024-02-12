@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
@@ -21,42 +22,57 @@ from gi.repository import Gtk, Adw
 # Import Python modules 
 from loguru import logger as log
 
+# Import globals
+import globals as gl
+
 # Import own modules
 from src.windows.mainWindow.elements.DeckStackChild import DeckStackChild
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+
+# Import typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.windows.mainWindow.elements.leftArea import LeftArea
 
 class DeckStack(Gtk.Stack):
     """
     A deck with childs for each connected deck
     """
-    def __init__(self, main_window, deck_manager, **kwargs):
+    def __init__(self, main_window, left_area: "LeftArea", deck_manager, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
         self.main_window = main_window
+        self.left_area = left_area
 
         self.deck_names = []
         self.deck_numbers = []
-
-        self.add_pages()
-        self.build()
-        self.connect("notify::visible-child-name", self.on_switch)
 
     def on_switch(self, widget, *args):
         # Update page selector
         self.main_window.header_bar.page_selector.update_selected()
 
     def build(self):
-        pass
+        self.connect("notify::visible-child-name", self.on_switch)
 
     def add_pages(self):
         for deck_controller in self.deck_manager.deck_controller:
             self.add_page(deck_controller)
 
+        if len(self.deck_manager.deck_controller) == 0:
+            self.main_window.change_ui_to_no_connected_deck()
+
     def add_page(self, deck_controller):
         deck_number, deck_type = self.get_page_attributes(deck_controller)
+        print(f"attributes: {deck_number}, {deck_type}")
 
         page = DeckStackChild(self, deck_controller)
         self.add_titled(page, deck_number, deck_type)
 
+        page.page_settings.grid_page.select_key(0, 0)
+
+        self.main_window.change_ui_to_connected_deck()
+
+        self.main_window.reload_right_area()
             
     def get_page_attributes(self, deck_controller):
         deck_type = deck_controller.deck.deck_type()
@@ -81,10 +97,34 @@ class DeckStack(Gtk.Stack):
         return deck_number, deck_type
 
     def remove_page(self, deck_controller) -> str:
-        for page in self.get_pages():
+        was_visible: bool = False
+        for i, page in enumerate(self.get_pages()):
             if page.get_child().deck_controller == deck_controller:
+                if self.get_visible_child() == page.get_child():
+                    was_visible = True
                 # Remove from deck_names
                 self.deck_names.remove(page.get_title())
                 # Remove page from stack
                 self.remove(page.get_child())
-                return
+                break
+
+        if not was_visible:
+            return
+        
+        # Reload righ area
+        self.main_window.reload_right_area()
+            
+        # Show message if no decks are connected
+        if len(self.get_pages()) == 0:
+            self.main_window.change_ui_to_no_connected_deck()
+            return
+
+
+        new_index = i - 1
+        if new_index < 0:
+            new_index = i + 1
+
+        print(f"was visible: {was_visible}")
+        
+        print(self.get_pages())
+        self.set_visible_child(self.get_pages()[new_index].get_child())

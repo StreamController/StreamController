@@ -45,6 +45,7 @@ class DeckManager:
 
     def load_decks(self):
         decks=DeviceManager().enumerate()
+        decks = []
         for deck in decks:
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)
@@ -58,7 +59,7 @@ class DeckManager:
         if n_fake_decks > old_n_fake_decks:
             log.info(f"Loading {n_fake_decks - old_n_fake_decks} fake deck(s)")
             # Load difference in number of fake decks
-            for i in range(n_fake_decks - old_n_fake_decks):
+            for controller in range(n_fake_decks - old_n_fake_decks):
                 a = f"Fake Deck {len(self.fake_deck_controller)+1}"
                 fake_deck = FakeDeck(serial_number = f"fake-deck-{len(self.fake_deck_controller)+1}", deck_type=f"Fake Deck {len(self.fake_deck_controller)+1}")
                 self.add_newly_connected_deck(fake_deck, is_fake=True)
@@ -72,13 +73,13 @@ class DeckManager:
         elif n_fake_decks < old_n_fake_decks:
             # Remove difference in number of fake decks
             log.info(f"Removing {old_n_fake_decks - n_fake_decks} fake deck(s)")
-            for i in self.fake_deck_controller[-(old_n_fake_decks - n_fake_decks):]:
+            for controller in self.fake_deck_controller[-(old_n_fake_decks - n_fake_decks):]:
                 # Remove controller from fake_decks
-                self.fake_deck_controller.remove(i)
+                self.fake_deck_controller.remove(controller)
                 # Remove controller from main list
-                self.deck_controller.remove(i)
+                self.deck_controller.remove(controller)
                 # Remove deck page on stack
-                gl.app.main_win.leftArea.deck_stack.remove_page(i)
+                gl.app.main_win.leftArea.deck_stack.remove_page(controller)
 
             # Update header deck switcher if there are no more decks
             if len(self.deck_controller) == 0:
@@ -125,7 +126,11 @@ class DeckManager:
         # Check if ui is loaded - if not it will grab the controller automatically
         if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
             # Add to deck stack
+            print("adding to deck stack")
             gl.app.main_win.leftArea.deck_stack.add_page(deck_controller)
+
+        if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
+            gl.app.main_win.header_bar.page_selector.update()
 
 
         self.deck_controller.append(deck_controller)

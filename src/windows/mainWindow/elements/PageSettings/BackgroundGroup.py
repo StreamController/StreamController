@@ -166,6 +166,14 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # return
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
+        if pixbuf is None:
+            # This usually means that the provided image is a non RGB one
+            dial = Gtk.AlertDialog(
+                message="The chosen image doesn't seem to have RGB color channels.",
+                modal=True
+            )
+            dial.show()
+            return
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 

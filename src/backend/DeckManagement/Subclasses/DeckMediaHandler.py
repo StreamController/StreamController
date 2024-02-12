@@ -37,14 +37,14 @@ class DeckMediaHandler():
         self.video_tasks = {}
         self.background_video_task = {}
 
+        self.only_background = False
+
         self.thread = DeckMediaThread(self)
         self.thread.start()
 
         self.background_playing = False
 
         self.progress_dir = {}
-
-        self.only_background = False
 
     def add_image_task(self, key, native_image, ui_image = None):
         self.image_tasks.append((key, native_image, ui_image))

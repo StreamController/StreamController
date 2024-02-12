@@ -22,6 +22,9 @@ import requests
 from urllib.parse import urlparse
 from PIL import Image
 
+# Import globals
+import globals as gl
+
 def sha256(file_path):
     """
     Calculates the sha256 hash of a file.
@@ -112,10 +115,8 @@ def get_sys_args_without_param(param_name: str) -> list:
     return args
 
 def is_video(path: str) -> bool:
-    video_formats = ["mkv", "mp4", "webm"]
-
     if os.path.isfile(path):
-        return os.path.splitext(path)[1][1:].lower() in video_formats
+        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.video_extensions
 
     return False
 

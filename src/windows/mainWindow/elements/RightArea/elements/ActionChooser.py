@@ -26,6 +26,7 @@ from fuzzywuzzy import fuzz, process
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import get_last_dir
 from GtkHelper.GtkHelper import BetterExpander, BetterPreferencesGroup
+from src.windows.Store.Store import Store
 
 
 # Import globals
@@ -69,6 +70,9 @@ class ActionChooser(Gtk.Box):
         self.plugin_group = PluginGroup(self, margin_top=40)
         self.main_box.append(self.plugin_group)
 
+        self.open_store_button = OpenStoreButton(margin_top=40)
+        self.main_box.append(self.open_store_button)
+
     def show(self, callback_function, current_stack_page, callback_args, callback_kwargs):
         # The current-stack_page is usefull in case the let_user_select_action is called by an plugin action in the action_configurator
 
@@ -93,6 +97,17 @@ class ActionChooser(Gtk.Box):
 
     def on_search_changed(self, search_entry):
         self.plugin_group.search()
+
+
+class OpenStoreButton(Gtk.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(label="Get More", css_classes=["open-store-button"],
+                         *args, **kwargs)
+        self.connect("clicked", self.on_click)
+
+    def on_click(self, button):
+        self.store = Store(application=gl.app, main_window=gl.app.main_win)
+        self.store.present()
 
 class PluginGroup(BetterPreferencesGroup):
     def __init__(self, action_chooser, **kwargs):

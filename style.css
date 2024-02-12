@@ -225,3 +225,17 @@
 .error-resolve-button:active {
   background-color: #7caae4;
 }
+
+.open-store-button {
+  padding: 10px 0px;
+  border-radius: 10px;
+  background-color: #4990E7;
+}
+
+.open-store-button:hover {
+  background-color: #5695e2;
+}
+
+.open-store-button:active {
+  background-color: #7caae4;
+}

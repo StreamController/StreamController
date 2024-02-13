@@ -78,6 +78,8 @@ def setup_autostart_desktop_entry():
     AUTOSTART_DIR = os.path.join(xdg_config_home, "autostart")
     AUTOSTART_DESKTOP_PATH = os.path.join(AUTOSTART_DIR, "StreamController.desktop")
 
-    shutil.copyfile(os.path.join("flatpak", "com.core447.StreamController.desktop"), AUTOSTART_DESKTOP_PATH)
-
-    log.info(f"Autostart set up at: {AUTOSTART_DESKTOP_PATH}")
+    try:
+        shutil.copyfile(os.path.join("flatpak", "com.core447.StreamController.desktop"), AUTOSTART_DESKTOP_PATH)
+        log.info(f"Autostart set up at: {AUTOSTART_DESKTOP_PATH}")
+    except:
+        log.error(f"Failed to set up autostart at: {AUTOSTART_DESKTOP_PATH}")

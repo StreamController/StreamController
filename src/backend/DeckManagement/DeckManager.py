@@ -149,4 +149,6 @@ class DeckManager:
         if is_fake:
             self.fake_deck_controller.append(deck_controller)
 
+        if not recursive_hasattr(gl, "app.main_win."):
+            return
         gl.app.main_win.check_for_errors()

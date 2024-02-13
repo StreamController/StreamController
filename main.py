@@ -42,12 +42,16 @@ from autostart import setup_autostart
 # Import globals
 import globals as gl
 
+def write_logs(record):
+    gl.logs.append(record)
+
 def config_logger():
     log.remove(0)
     # Create log files
     log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
+    log.add(write_logs, level="TRACE")
 
 class Main:
     def __init__(self, application_id, deck_manager):

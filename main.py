@@ -64,7 +64,7 @@ def load():
     # Setup locales
     localeManager = LocaleManager(locales_path="locales")
     localeManager.set_to_os_default()
-    # localeManager.set_fallback_language("en_US")
+    localeManager.set_fallback_language("en_US")
     gl.lm = localeManager
 
     log.info("Loading app")

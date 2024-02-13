@@ -124,7 +124,6 @@ class HeaderBar(Gtk.HeaderBar):
         self.about.set_website("https://github.com/Core447/StreamController")
         self.about.set_issue_url("https://github.com/Core447/StreamController/issues")
         self.about.add_credit_section("Contributors", ["Core447"])
-        self.about.set_translator_credits("Core447")
         self.about.set_copyright("Copyright (C) 2024 Core447")
         self.about.set_application_icon("com.core447.StreamController")
         self.about.set_visible(True)
@@ -135,3 +134,9 @@ class HeaderBar(Gtk.HeaderBar):
             Gtk.License.CUSTOM,
             license=None,
         )
+
+        self.about.set_debug_info("".join(gl.logs))
+        self.about.set_debug_info_filename(os.path.join(gl.DATA_PATH, "logs/logs.log"))
+
+        self.about.set_release_notes(gl.release_notes)  
+        self.about.set_release_notes_version(gl.app_version)

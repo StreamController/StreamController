@@ -51,5 +51,6 @@
     "store.icons.section": "Icônes",
     "store.wallpapers.section": "Fonds d'Écran",
     "store.badges.official": "Officiel",
-    "store.badges.verified": "Vérifié"
+    "store.badges.verified": "Vérifié",
+    "quit": "Quitter"
 }

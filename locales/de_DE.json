@@ -61,5 +61,6 @@
     "store.icons.section": "Icons",
     "store.wallpapers.section": "Hintergründe",
     "store.badges.official": "Offiziell",
-    "store.badges.verified": "Verifiziert"
+    "store.badges.verified": "Verifiziert",
+    "quit": "Quit"
 }

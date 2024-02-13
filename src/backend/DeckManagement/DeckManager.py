@@ -49,7 +49,7 @@ class DeckManager:
             try:
                 if not deck.is_open():
                     deck.open()
-            except StreamDeck.Transport.Transport.TransportError as e:
+            except:
                 log.error("Failed to open deck. Maybe it's already connected to another instance?")
                 continue
             deck_controller = DeckController(self, deck)

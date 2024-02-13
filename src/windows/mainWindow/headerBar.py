@@ -128,3 +128,10 @@ class HeaderBar(Gtk.HeaderBar):
         self.about.set_copyright("Copyright (C) 2024 Core447")
         self.about.set_application_icon("com.core447.StreamController")
         self.about.set_visible(True)
+
+        self.about.add_legal_section(
+            "Stream Deck",
+            "Stream Deck is a trademark owned by Elgato/Corsair Memory, Inc.",
+            Gtk.License.CUSTOM,
+            license=None,
+        )

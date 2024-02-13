@@ -51,4 +51,4 @@ class LocaleManager:
         self.load_fallback_language()
 
     def get(self, key: str) -> str:
-        return self.locales_json.get(key, self.fallback_json.get(key, "Not found"))
+        return self.locales_json.get(key, self.fallback_json.get(key, key))

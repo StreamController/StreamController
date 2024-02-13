@@ -37,12 +37,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.Store.Store import Store
 
+# Import globals
+import globals as gl
+
 
 class PluginPage(StorePage):
     def __init__(self, store: "Store"):
         super().__init__(store=store)
         self.store = store
-        self.search_entry.set_placeholder_text("Search for plugins")
+        self.search_entry.set_placeholder_text(gl.lm.get("store.plugins.search-placeholder"))
 
         log.info("Starting thread: load")
         threading.Thread(target=self.load).start()

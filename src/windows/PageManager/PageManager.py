@@ -37,7 +37,7 @@ from src.backend.PluginManager import Signals
 
 class PageManager(Gtk.ApplicationWindow):
     def __init__(self, app:"App"):
-        super().__init__(title="Page Manager", default_width=400, default_height=600)
+        super().__init__(title=gl.lm.get("page-manager.title"), default_width=400, default_height=600)
         self.set_transient_for(app.main_win)
 
         self.build()

@@ -46,7 +46,7 @@ class WallpaperPage(StorePage):
     def __init__(self, store: "Store"):
         super().__init__(store=store)
         self.store = store
-        self.search_entry.set_placeholder_text("Search for wallpapers")
+        self.search_entry.set_placeholder_text(gl.lm.get("store.wallpapers.search-placeholder"))
 
         log.info("Starting thread:  load")
         threading.Thread(target=self.load).start()

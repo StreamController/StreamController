@@ -54,10 +54,10 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.carousel.connect("page-changed", self.on_page_changed)
         self.overlay.set_child(self.carousel)
 
-        self.carousel.append(OnboardingScreen("Assets/Onboarding/logo.png", "Welcome to StreamController!", "The Linux app for the Elgato StreamDeck"))
-        self.carousel.append(OnboardingScreen("Assets/Onboarding/store.png", "Asset Store", "Download plugins, icons and wallpapers"))
-        self.carousel.append(OnboardingScreen("Assets/Onboarding/multiple.png", "Multi Deck Support", "Control multiple Elgato StreamDecks at once"))
-        self.carousel.append(OnboardingScreen("Assets/Onboarding/productive.png", "Be more productive", "With your personal shortcuts"))
+        self.carousel.append(OnboardingScreen("Assets/Onboarding/logo.png", gl.lm.get("onboarding.welcome.header"), gl.lm.get("onboarding.welcome.details")))
+        self.carousel.append(OnboardingScreen("Assets/Onboarding/store.png", gl.lm.get("onboarding.store.header"), gl.lm.get("onboarding.store.details")))
+        self.carousel.append(OnboardingScreen("Assets/Onboarding/multiple.png", gl.lm.get("onboarding.multiple.header"), gl.lm.get("onboarding.multiple.details")))
+        self.carousel.append(OnboardingScreen("Assets/Onboarding/productive.png", gl.lm.get("onboarding.productive.header"), gl.lm.get("onboarding.productive.details")))
         self.carousel.append(OnboardingScreen5(self))
 
         self.carousel_indicator_dots = Adw.CarouselIndicatorDots(carousel=self.carousel)
@@ -140,11 +140,11 @@ class OnboardingScreen5(Gtk.Box):
         self.build()
 
     def build(self):
-        self.label = Gtk.Label(label="Ready?", css_classes=["onboarding-welcome-label"],
+        self.label = Gtk.Label(label=gl.lm.get("onboarding.ready.header"), css_classes=["onboarding-welcome-label"],
                                margin_top=50)
         self.append(self.label)
 
-        self.start_button = Gtk.Button(label="Start", css_classes=["onboarding-start-button"], margin_top=20)
+        self.start_button = Gtk.Button(label=gl.lm.get("onboarding.ready.button"), css_classes=["onboarding-start-button"], margin_top=20)
         self.start_button.connect("clicked", self.on_start_button_click)
         self.append(self.start_button)
 

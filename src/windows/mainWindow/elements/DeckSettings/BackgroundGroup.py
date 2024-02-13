@@ -33,7 +33,7 @@ from src.backend.DeckManagement.ImageHelpers import image2pixbuf, is_transparent
 
 class BackgroundGroup(Adw.PreferencesGroup):
     def __init__(self, settings_page):
-        super().__init__(title="Background", description="Applies to the hole deck unless overwritten")
+        super().__init__(title=gl.lm.get("deck.background-group.title"), description=gl.lm.get("deck.background-group.description"))
         self.deck_serial_number = settings_page.deck_serial_number
         self.add(BackgroundMediaRow(settings_page, self.deck_serial_number))
 
@@ -53,7 +53,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.enable_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.enable_box)
         
-        self.enable_label = Gtk.Label(label="Enable Background", hexpand=True, xalign=0)
+        self.enable_label = Gtk.Label(label=gl.lm.get("deck.background-group.enable"), hexpand=True, xalign=0)
         self.enable_box.append(self.enable_label)
 
         self.enable_switch = Gtk.Switch()
@@ -70,7 +70,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
         self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
-        self.media_selector_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"])
+        self.media_selector_button = Gtk.Button(label=gl.lm.get("deck.background-group.media-select-label"), css_classes=["page-settings-media-selector"])
         self.media_selector_button.connect("clicked", self.on_choose_image)
         self.media_selector.append(self.media_selector_button)
 

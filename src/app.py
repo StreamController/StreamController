@@ -27,6 +27,7 @@ from src.windows.mainWindow.mainWindow import MainWindow
 from src.windows.AssetManager.AssetManager import AssetManager
 from src.windows.Store.Store import Store
 from src.windows.Shortcuts.Shortcuts import ShortcutsWindow
+from src.windows.Onboarding.OnboardingWindow import OnboardingWindow
 
 # Import globals
 import globals as gl
@@ -46,7 +47,8 @@ class App(Adw.Application):
         self.main_win = MainWindow(application=app, deck_manager=self.deck_manager)
         self.main_win.present()
 
-        
+        self.show_onboarding()
+
         self.shortcuts = ShortcutsWindow(app=app, application=app)
         # self.shortcuts.present()
 
@@ -55,3 +57,14 @@ class App(Adw.Application):
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
         self.asset_manager = AssetManager(application=self, main_window=self.main_win)
         self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)
+
+    def show_onboarding(self):
+        if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-onboarding")):
+            return
+
+        self.onboarding = OnboardingWindow(application=self, main_win=self.main_win)
+        self.onboarding.show()
+
+        # Disable onboarding for future sessions
+        with open(os.path.join(gl.DATA_PATH, ".skip-onboarding"), "w") as f:
+            f.write("")

@@ -51,6 +51,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.build()
         self.init_actions()
 
+        self.connect("close-request", self.on_close)
+
+    def on_close(self, *args, **kwargs):
+        self.hide()
+        return True
+
     @log.catch
     def build(self):
         log.trace("Building main window")

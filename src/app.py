@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk
+from gi.repository import Gtk, Adw, Gdk, Gio
 
 # Import Python modules
 from loguru import logger as log
@@ -52,7 +52,15 @@ class App(Adw.Application):
         self.shortcuts = ShortcutsWindow(app=app, application=app)
         # self.shortcuts.present()
 
+        on_reopen_action = Gio.SimpleAction.new("reopen", None)
+        on_reopen_action.connect("activate", self.on_reopen)
+        self.add_action(on_reopen_action)
+
         log.success("Finished loading app")
+
+    def on_reopen(self, *args, **kwargs):
+        self.main_win.show()
+        print("awake")
 
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
         self.asset_manager = AssetManager(application=self, main_window=self.main_win)

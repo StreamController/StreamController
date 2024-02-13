@@ -19,6 +19,9 @@ import os
 import time
 import asyncio
 import threading
+import dbus
+import dbus.service
+from dbus.mainloop.glib import DBusGMainLoop
 
 # Import own modules
 from src.app import App
@@ -100,6 +103,19 @@ def update_assets():
     log.info(f"Updating store assets took {time.time() - start} seconds")
 
 if __name__ == "__main__":
+    # Dbus
+    DBusGMainLoop(set_as_default=True)
+    session_bus = dbus.SessionBus()
+    try:
+        obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
+        action_interface = dbus.Interface(obj, "org.gtk.Actions")
+        action_interface.Activate("reopen", [], [])
+        log.info("Already running, exiting")
+        exit()
+    except dbus.exceptions.DBusException as e:
+        print(e)
+        log.info("No other instance running, continuing")
+
     create_global_objects()
     create_cache_folder()
     log.info("Starting thread: update_assets")

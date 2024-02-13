@@ -34,6 +34,7 @@ def setup_autostart(autostart):
     Documentation:
     https://libportal.org/method.Portal.request_background.html
     https://libportal.org/method.Portal.request_background_finish.html 
+    https://docs.flatpak.org/de/latest/portal-api-reference.html#gdbus-org.freedesktop.portal.Background
     """
 
     xdp = Xdp.Portal.new()

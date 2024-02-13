@@ -124,7 +124,7 @@ if __name__ == "__main__":
         print(e)
         log.info("No other instance running, continuing")
 
-    setup_autostart(True)
+    setup_autostart()
 
     create_global_objects()
     create_cache_folder()

@@ -101,7 +101,7 @@ class RightArea(Gtk.Stack):
 
         self.key_editor.load_for_coords(coords)
 
-        if self.get_visible_child() == self.action_configurator:
+        if self.get_visible_child() != self.key_editor:
             self.set_visible_child(self.key_editor)
 
     def show_error(self):

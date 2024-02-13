@@ -22,7 +22,7 @@ Exec=/app/bin/launch.sh
 Icon=com.core447.StreamController
 
 # Describes whether this application needs to be run in a terminal or not
-Terminal=true
+Terminal=false
 
 # Describes the categories in which this entry should be shown
-Categories=System
+Categories=System,Utility

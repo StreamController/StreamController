@@ -36,6 +36,7 @@ from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
 from src.windows.Store.StoreBackend import StoreBackend
+from autostart import setup_autostart
 
 # Import globals
 import globals as gl
@@ -115,6 +116,8 @@ if __name__ == "__main__":
     except dbus.exceptions.DBusException as e:
         print(e)
         log.info("No other instance running, continuing")
+
+    setup_autostart(True)
 
     create_global_objects()
     create_cache_folder()

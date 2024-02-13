@@ -46,6 +46,12 @@ class DeckManager:
     def load_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:
+            try:
+                if not deck.is_open():
+                    deck.open()
+            except StreamDeck.Transport.Transport.TransportError as e:
+                log.error("Failed to open deck. Maybe it's already connected to another instance?")
+                continue
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)
 

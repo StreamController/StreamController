@@ -25,6 +25,7 @@ from loguru import logger as log
 def is_flatpak():
     return os.path.isfile('/.flatpak-info')
 
+log.catch
 def setup_autostart():
     if is_flatpak():
         setup_autostart_flatpak()

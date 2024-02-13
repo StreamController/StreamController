@@ -21,6 +21,7 @@ import asyncio
 import threading
 import dbus
 import dbus.service
+import argparse
 from dbus.mainloop.glib import DBusGMainLoop
 
 # Import own modules
@@ -55,7 +56,7 @@ class Main:
 
         gl.app = self.app
 
-        self.app.run(sys.argv)
+        self.app.run(gl.argparser.parse_args().app_args)
 
 @log.catch
 def load():
@@ -76,6 +77,12 @@ def create_cache_folder():
     os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
 
 def create_global_objects():
+    # Argparser
+    gl.argparser = argparse.ArgumentParser()
+    gl.argparser.add_argument("-b", help="Open in background", action="store_true")
+    gl.argparser.add_argument("app_args", nargs="*")
+
+
     gl.media_manager = MediaManager()
     gl.asset_manager = AssetManager()
     gl.settings_manager = SettingsManager()

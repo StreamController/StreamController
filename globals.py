@@ -1,6 +1,7 @@
 import Pyro5.api
 import os
 from typing import TYPE_CHECKING
+import argparse
 
 DATA_PATH = os.path.join(os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "StreamController")
 
@@ -33,3 +34,4 @@ wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
 app_version: str = "0.0.2-alpha"
+argparser: argparse.ArgumentParser = None

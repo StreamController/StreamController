@@ -45,7 +45,8 @@ class App(Adw.Application):
     def on_activate(self, app):
         log.trace("running: on_activate")
         self.main_win = MainWindow(application=app, deck_manager=self.deck_manager)
-        self.main_win.present()
+        if not gl.argparser.parse_args().b:
+            self.main_win.present()
 
         self.show_onboarding()
 
@@ -59,7 +60,7 @@ class App(Adw.Application):
         log.success("Finished loading app")
 
     def on_reopen(self, *args, **kwargs):
-        self.main_win.show()
+        self.main_win.present()
         print("awake")
 
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):

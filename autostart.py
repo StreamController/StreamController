@@ -43,8 +43,7 @@ def setup_autostart(autostart):
     xdp.request_background(
         None,  # parent
         "Autostart StreamController",  # reason
-        # ["flatpak com.core447.StreamController"],  # commandline
-        ["/app/bin/launch.sh"],  # commandline
+        ["/app/bin/launch.sh", "-b"],  # commandline
         Xdp.BackgroundFlags.AUTOSTART if autostart else Xdp.BackgroundFlags.NONE,  # flags
         None,  # cancellable
         lambda portal, result, user_data: log.info(

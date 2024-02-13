@@ -15,10 +15,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
-
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
+
+# Import globals
+import globals as gl
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -149,3 +151,4 @@ class OnboardingScreen5(Gtk.Box):
     def on_start_button_click(self, button):
         self.onboarding_window.close()
         self.onboarding_window.destroy()
+        gl.app.main_win.show()

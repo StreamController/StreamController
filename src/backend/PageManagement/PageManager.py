@@ -112,7 +112,6 @@ class PageManager:
 
 
     def remove_page(self, page_path: str):
-        print()
         # Clear page objects
         for controller in gl.deck_manager.deck_controller:
             if controller.active_page is None:

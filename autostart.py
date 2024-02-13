@@ -44,7 +44,10 @@ def setup_autostart_flatpak():
     https://docs.flatpak.org/de/latest/portal-api-reference.html#gdbus-org.freedesktop.portal.Background
     """
     def request_background_callback(portal, result, user_data):
-        success = portal.request_background_finish(result)
+        try:
+            success = portal.request_background_finish(result)
+        except:
+            success = False
         log.info(f"request_background success={success}")
         if not success:
             setup_autostart_desktop_entry()

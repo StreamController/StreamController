@@ -8,6 +8,7 @@ from loguru import logger as log
 
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk
@@ -17,48 +18,54 @@ import globals as gl
 
 # Import own modules
 from locales.LocaleManager import LocaleManager
+from src.backend.PluginManager.ActionHolder import ActionHolder
 
 @Pyro5.api.expose
 class PluginBase:
     plugins = {}
     
-    def __init_subclass__(cls, *args, **kwargs) -> None:
-        super().__init_subclass__(*args, **kwargs)
-        # Change this variables in the subclasses constuctor to match your plugin
-        cls.PLUGIN_NAME = ""
-        cls.GITHUB_REPO = ""
-        cls.ATTRIBUTIONS = {}
-        cls.VERSION = "1.0"
-
-        ## Internal variables - do not change
-        cls.ACTIONS = {}
-        cls.PLUGIN = None
-
     def __init__(self):
         self._backend: Pyro5.api.Proxy = None
-        # Verify variables
-        if self.PLUGIN_NAME in ["", None]:
-            raise ValueError("Please specify a plugin name")
-        if self.GITHUB_REPO in ["", None]:
-            raise ValueError(f"Plugin: {self.PLUGIN_NAME}: Please specify a github repo")
-        if self.ATTRIBUTIONS in [{}, None]:
-            log.warning(f"Plugin: {self.PLUGIN_NAME}: Are you sure you don't want to add attributions?")
-        if self.PLUGIN_NAME in PluginBase.plugins.keys():
-            raise ValueError(f"Plugin: {self.PLUGIN_NAME}: Plugin already exists")
-        # Register plugin
-        PluginBase.plugins[self.PLUGIN_NAME] = {
-            "object": self,
-            "github": self.GITHUB_REPO,
-            "attributions": self.ATTRIBUTIONS,
-            "version": self.VERSION,
-            "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
-            "file_name": os.path.basename(inspect.getfile(self.__class__))
-        }
+
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
 
         self.locale_manager = LocaleManager(os.path.join(self.PATH, "locales"))
 
-    def add_action(self, action):
+        self.action_holders: dict = {}
+
+    def register(self, plugin_name: str, github_repo: str, version: str):
+        # Verify variables
+        if plugin_name in ["", None]:
+            raise ValueError("Please specify a plugin name")
+        if github_repo in ["", None]:
+            raise ValueError(f"Plugin: {plugin_name}: Please specify a github repo")
+        if plugin_name in PluginBase.plugins.keys():
+            raise ValueError(f"Plugin: {plugin_name}: Plugin already exists")
+        
+        # Register plugin
+        PluginBase.plugins[plugin_name] = {
+            "object": self,
+            "github": github_repo,
+            "version": version,
+            "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
+            "file_name": os.path.basename(inspect.getfile(self.__class__))
+        }
+
+        self.plugin_name = plugin_name
+        self.github_repo = github_repo
+        self.version = version
+
+
+    def add_action(self, action_class: type, action_id: str, action_name: str):
+        raise NotImplementedError
+        action_class.PLUGIN_BASE = self
+        self.ACTIONS[action_id] = {
+            "class": action_class,
+            "name": action_name
+        }
+
+
+        return
         if not self.verify_action(action):
             return
         action.PLUGIN_BASE = self
@@ -66,17 +73,23 @@ class PluginBase:
         self.ACTIONS[action.ACTION_ID] = action
         print(f"actions: {self.ACTIONS}")
 
+    def add_action_holder(self, action_holder: ActionHolder):
+        if not isinstance(action_holder, ActionHolder):
+            raise ValueError("Please pass an ActionHolder")
+        
+        self.action_holders[action_holder.action_id] = action_holder
+
     def verify_action(self, action) -> bool:
         if action.ACTION_ID in self.ACTIONS:
             log.error(f"Plugin: {self.PLUGIN_NAME}: Action ID already exists, skipping")
             return False
         
-        elif action.ACTION_NAME in [None, ""]:
+        elif action.get_name() in [None, ""]:
             log.error(f"Plugin: {self.PLUGIN_NAME}: Please specify an action name for action with id {action.ACTION_ID}, skipping")
             return False
         
         elif action.ACTION_ID in [None, ""]:
-            log.error(f"Plugin: {self.PLUGIN_NAME}: Please specify an action id for action with name {action.ACTION_NAME}, skipping")
+            log.error(f"Plugin: {self.PLUGIN_NAME}: Please specify an action id for action with name {action.get_name()}, skipping")
             return False
         
         return True

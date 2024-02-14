@@ -27,6 +27,7 @@ from fuzzywuzzy import fuzz, process
 from src.backend.DeckManagement.HelperMethods import get_last_dir
 from GtkHelper.GtkHelper import BetterExpander, BetterPreferencesGroup
 from src.windows.Store.Store import Store
+from src.backend.PluginManager.ActionHolder import ActionHolder
 
 
 # Import globals
@@ -195,9 +196,9 @@ class PluginExpander(BetterExpander):
 
         self.set_icon_name("view-paged")
 
-        for action_id, action_class in plugin_dir["object"].ACTIONS.items():
-            action_name = action_class.ACTION_NAME
-            action_row = ActionRow(self, action_name, action_id, action_class)
+        action_holders: list[ActionHolder] = self.plugin_dir["object"].action_holders.values()
+        for holder in action_holders:
+            action_row = ActionRow(self, holder)
             self.add_row(action_row)
 
         self.highest_fuzz_score = 0
@@ -261,12 +262,10 @@ class PluginExpander(BetterExpander):
 
 
 class ActionRow(Adw.PreferencesRow):
-    def __init__(self, expander, action_name: str, action_id: str, action_class, **kwargs):
+    def __init__(self, expander, action_holder: ActionHolder, **kwargs):
         super().__init__(**kwargs)
         self.expander = expander
-        self.action_name = action_name
-        self.action_id = action_id
-        self.action_class = action_class
+        self.action_holder = action_holder
 
         self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN,
                                  css_classes=["no-margin", "invisible"])
@@ -280,11 +279,11 @@ class ActionRow(Adw.PreferencesRow):
         self.icon = Gtk.Image(icon_name="insert-image", icon_size=Gtk.IconSize.LARGE, margin_start=5)
         self.main_box.append(self.icon)
 
-        self.label = Gtk.Label(label=self.action_name, margin_start=10, css_classes=["bold", "large-text"])
+        self.label = Gtk.Label(label=self.action_holder.action_name, margin_start=10, css_classes=["bold", "large-text"])
         self.main_box.append(self.label)
 
     def on_click(self, button):
-        if self.action_class == None:
+        if self.action_holder.action_base == None:
             return
         
         # Go back to old page
@@ -301,6 +300,4 @@ class ActionRow(Adw.PreferencesRow):
         kwargs = self.expander.plugin_group.action_chooser.callback_kwargs
 
         
-        callback(self.action_class, *args, **kwargs)
-
-        # self.expander.plugin_group.action_chooser.callback_function(self.action_object, *self.expander.plugin_group.action_chooser.callback_args, **self.expander.plugin_group.action_chooser.callback_kwargs)
+        callback(self.action_holder, *args, **kwargs)

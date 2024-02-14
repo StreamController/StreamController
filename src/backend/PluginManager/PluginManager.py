@@ -4,6 +4,9 @@ import sys
 from loguru import logger as log
 import Pyro5.api
 import threading
+
+# Import own modules
+from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import get_last_dir
 from src.backend.PluginManager.Signals import Signal
@@ -51,6 +54,17 @@ class PluginManager:
 
     def generate_action_index(self):
         plugins = self.get_plugins()
+        for plugin in plugins.values():
+            print(plugin)
+            plugin_base = plugin["object"]
+            holders = plugin_base.action_holders
+            print(holders)
+            self.action_index.update(plugin_base.action_holders)
+
+        print(self.action_index)
+
+        return
+        plugins = self.get_plugins()
         for plugin in plugins.keys():
             if plugin in self.action_index.keys():
                 continue
@@ -64,13 +78,13 @@ class PluginManager:
                 path = get_last_dir(path)
                 self.action_index[action_id] = plugins[plugin]["object"].ACTIONS[action_id]
 
-    def get_plugins(self):
+    def get_plugins(self) -> list[PluginBase]:
         return PluginBase.plugins
     
     def get_actions_for_plugin(self, plugin_name):
         return PluginBase.plugins[plugin_name]["object"].ACTIONS
     
-    def get_action_from_id(self, action_id: str):
+    def get_action_holder_from_id(self, action_id: str) -> ActionHolder:
         """
         Example string: dev_core447_MediaPlugin::Pause
         """

@@ -102,7 +102,7 @@ class ActionExpanderRow(BetterExpander):
         for i, key in enumerate(controller.active_page.action_objects[page_coords]):
             action = controller.active_page.action_objects[page_coords][key]
             if isinstance(action, ActionBase):
-                self.add_action_row(action.ACTION_NAME, action.ACTION_ID, action.PLUGIN_BASE.PLUGIN_NAME, action, i)
+                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, i)
             elif isinstance(action, str):
                 # No plugin installed for this action
                 missing_button_row = MissingActionButtonRow(action, page_coords, i)
@@ -361,7 +361,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         # Add action
         active_page.dict["keys"][page_coords]["actions"].append({
-            "id": action_class.ACTION_ID,
+            "id": action_class.action_id,
             "settings": {}
         })
 

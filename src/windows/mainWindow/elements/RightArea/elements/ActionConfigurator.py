@@ -22,6 +22,10 @@ from gi.repository import Gtk, Adw
 # Import globals
 import globals as gl
 
+# Import own modules
+from src.backend.PluginManager.ActionBase import ActionBase
+
+
 class ActionConfigurator(Gtk.Box):
     def __init__(self, right_area, **kwargs):
         super().__init__(**kwargs)
@@ -75,7 +79,7 @@ class ConfigGroup(Adw.PreferencesGroup):
     def build(self):
         pass
 
-    def load_for_action(self, action):
+    def load_for_action(self, action: ActionBase):
         if not hasattr(action, "get_config_rows"):
             self.hide()
             return
@@ -83,8 +87,8 @@ class ConfigGroup(Adw.PreferencesGroup):
             self.hide()
             return
         # Load labels
-        self.set_title(action.ACTION_NAME)
-        self.set_description(action.PLUGIN_BASE.PLUGIN_NAME)
+        self.set_title(action.action_name)
+        self.set_description(action.plugin_base.plugin_name)
 
         # Clear
         self.clear()

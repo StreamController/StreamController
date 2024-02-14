@@ -101,7 +101,8 @@ class Page:
                 if action.get("id") is None:
                     continue
 
-                action_class = gl.plugin_manager.get_action_from_id(action["id"])
+                action_holder = gl.plugin_manager.get_action_holder_from_id(action["id"])
+                action_class = action_holder.action_base
                 
                 self.action_objects.setdefault(key, {})
                 if action_class is None:
@@ -118,7 +119,7 @@ class Page:
                         self.action_objects[key][i] = self.loaded_action_objects[key][i]
                         continue
 
-                action_object = action_class(deck_controller=self.deck_controller, page=self, coords=key)
+                action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
                 self.action_objects[key][i] = action_object
 
     def remove_plugin_action_objects(self, plugin_id: str) -> bool:

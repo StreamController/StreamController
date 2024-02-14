@@ -6,6 +6,7 @@ import Pyro5.api
 
 # Import own modules
 from src.backend.PluginManager.Signals import Signal
+from src.backend.PageManagement.Page import Page
 
 # Import globals
 import globals as gl
@@ -17,26 +18,19 @@ from locales.LocaleManager import LocaleManager
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
+    from src.backend.DeckManagement.DeckController import DeckController
 
 @Pyro5.api.expose
 class ActionBase:
     # Change to match your action
     ACTION_ID: str = None
     ACTION_NAME: str = None
-    PLUGIN_BASE: "PluginBase" = None
     CONTROLS_KEY_IMAGE: bool = False
     KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
     LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
 
-    def __init__(self, deck_controller, page, coords):
-        # Verify variables
-        if self.ACTION_ID in ["", None]:
-            raise ValueError("Please specify an action id")
-
-
-        if self.ACTION_NAME in ["", None]:
-            raise ValueError("Please specify an action name")
-        
+    def __init__(self, action_id: str, action_name: str,
+                 deck_controller: "DeckController", page: Page, coords: str, plugin_base: "PluginBase"):
         self._backend: Pyro5.api.Proxy = None
         
         self.deck_controller = deck_controller
@@ -44,6 +38,9 @@ class ActionBase:
         self.page_coords = coords
         self.coords = int(coords.split("x")[0]), int(coords.split("x")[1])
         self.index = self.deck_controller.coords_to_index(self.coords)
+        self.action_id = action_id
+        self.action_name = action_name
+        self.plugin_base = plugin_base
 
         self.on_ready_called = False
 

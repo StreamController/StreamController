@@ -102,6 +102,8 @@ class Page:
                     continue
 
                 action_holder = gl.plugin_manager.get_action_holder_from_id(action["id"])
+                if action_holder is None:
+                    continue
                 action_class = action_holder.action_base
                 
                 self.action_objects.setdefault(key, {})

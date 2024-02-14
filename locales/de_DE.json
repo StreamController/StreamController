@@ -84,7 +84,7 @@
     "deck.deck-group.media-to-show": "Zu zeigendes Medium",
     "deck.deck-group.media-select-label": "Auswählen",
     "deck.deck-group.media-loop": "Wiederholen",
-    "deck.deck-group.fps": "FPS",
+    "deck.deck-group.media-fps": "FPS",
     "deck.background-group.title": "Hintergrund",
     "deck.background-group.description": "Betreffen das ganze Deck, sofern nicht überschrieben",
     "deck.background-group.enable": "Hintergrund aktivieren",

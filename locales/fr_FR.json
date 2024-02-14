@@ -74,7 +74,7 @@
     "deck.deck-group.media-to-show" : "Médias à montrer",
     "deck.deck-group.media-select-label" : "Sélectionner",
     "deck.deck-group.media-loop" : "Boucle",
-    "deck.deck-group.fps" : "FPS",
+    "deck.deck-group.media-fps" : "FPS",
     "deck.background-group.title" : "Fonds d'écran",
     "deck.background-group.description" : "S'applique à l'ensemble de la platine sauf en cas d'écrasement",
     "deck.background-group.enable" : "Activer l'arrière-plan",

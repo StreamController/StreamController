@@ -54,32 +54,32 @@ class PluginManager:
         for plugin in plugins.keys():
             if plugin in self.action_index.keys():
                 continue
-            for action in plugins[plugin]["object"].ACTIONS.keys():
+            for action_id in plugins[plugin]["object"].ACTIONS.keys():
+                if action_id is None:
+                    log.warning(f"Plugin {plugin} has an action with id None, skipping...")
+                    continue
+
                 path = plugins[plugin]["folder-path"]
                 # Remove everything except the last folder
                 path = get_last_dir(path)
-                self.action_index[f"{path}::{action}"] = plugins[plugin]["object"].ACTIONS[action]
-            
+                self.action_index[action_id] = plugins[plugin]["object"].ACTIONS[action_id]
+
     def get_plugins(self):
         return PluginBase.plugins
     
     def get_actions_for_plugin(self, plugin_name):
         return PluginBase.plugins[plugin_name]["object"].ACTIONS
     
-    def get_action_from_action_string(self, action_string: str):
+    def get_action_from_id(self, action_id: str):
         """
         Example string: dev_core447_MediaPlugin::Pause
         """
         try:
-            return self.action_index[action_string]
+            return self.action_index[action_id]
         except KeyError:
-            log.warning(f"Requested action {action_string} not found, skipping...")
+            log.warning(f"Requested action {action_id} not found, skipping...")
+            print(f"Index: {self.action_index}")
             return None
-        
-    def get_action_string_from_action(self, action):
-        for key, value in self.action_index.items():
-            if value == action:
-                return key
             
     def get_plugin_by_id(self, plugin_id:str) -> PluginBase:
         plugins = self.get_plugins()

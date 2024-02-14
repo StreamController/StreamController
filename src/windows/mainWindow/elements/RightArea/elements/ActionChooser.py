@@ -195,8 +195,9 @@ class PluginExpander(BetterExpander):
 
         self.set_icon_name("view-paged")
 
-        for action_name, action_class in plugin_dir["object"].ACTIONS.items():
-            action_row = ActionRow(self, action_name, action_class)
+        for action_id, action_class in plugin_dir["object"].ACTIONS.items():
+            action_name = action_class.ACTION_NAME
+            action_row = ActionRow(self, action_name, action_id, action_class)
             self.add_row(action_row)
 
         self.highest_fuzz_score = 0
@@ -260,10 +261,11 @@ class PluginExpander(BetterExpander):
 
 
 class ActionRow(Adw.PreferencesRow):
-    def __init__(self, expander, action_name, action_class, **kwargs):
+    def __init__(self, expander, action_name: str, action_id: str, action_class, **kwargs):
         super().__init__(**kwargs)
         self.expander = expander
         self.action_name = action_name
+        self.action_id = action_id
         self.action_class = action_class
 
         self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN,

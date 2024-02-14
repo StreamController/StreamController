@@ -59,9 +59,27 @@ class PluginBase:
         self.locale_manager = LocaleManager(os.path.join(self.PATH, "locales"))
 
     def add_action(self, action):
+        if not self.verify_action(action):
+            return
         action.PLUGIN_BASE = self
         action.locale_manager = self.locale_manager
-        self.ACTIONS[action.ACTION_NAME] = action
+        self.ACTIONS[action.ACTION_ID] = action
+        print(f"actions: {self.ACTIONS}")
+
+    def verify_action(self, action) -> bool:
+        if action.ACTION_ID in self.ACTIONS:
+            log.error(f"Plugin: {self.PLUGIN_NAME}: Action ID already exists, skipping")
+            return False
+        
+        elif action.ACTION_NAME in [None, ""]:
+            log.error(f"Plugin: {self.PLUGIN_NAME}: Please specify an action name for action with id {action.ACTION_ID}, skipping")
+            return False
+        
+        elif action.ACTION_ID in [None, ""]:
+            log.error(f"Plugin: {self.PLUGIN_NAME}: Please specify an action id for action with name {action.ACTION_NAME}, skipping")
+            return False
+        
+        return True
 
     def get_settings(self):
         if os.path.exists(os.path.join(gl.DATA_PATH, "settings.json")):

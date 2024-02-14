@@ -98,11 +98,14 @@ class Page:
             if "actions" not in self.dict["keys"][key]:
                 continue
             for i, action in enumerate(self.dict["keys"][key]["actions"]):
-                action_class = gl.plugin_manager.get_action_from_action_string(action["name"])
+                if action.get("id") is None:
+                    continue
+
+                action_class = gl.plugin_manager.get_action_from_id(action["id"])
                 
                 self.action_objects.setdefault(key, {})
                 if action_class is None:
-                    self.action_objects[key][i] = action["name"].split("::")[0]
+                    self.action_objects[key][i] = action["id"]
                     continue
 
                 old_object = self.action_objects[key].get(i)

@@ -13,17 +13,27 @@ import globals as gl
 # Import locale manager
 from locales.LocaleManager import LocaleManager
 
+# Import typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.PluginManager.PluginBase import PluginBase
+
 @Pyro5.api.expose
 class ActionBase:
     # Change to match your action
-    ACTION_NAME = ""
-    PLUGIN_BASE = None
-    CONTROLS_KEY_IMAGE = False
-    KEY_IMAGE_CAN_BE_OVERWRITTEN = True
-    LABELS_CAN_BE_OVERWRITTEN = [True, True, True]
+    ACTION_ID: str = None
+    ACTION_NAME: str = None
+    PLUGIN_BASE: "PluginBase" = None
+    CONTROLS_KEY_IMAGE: bool = False
+    KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
+    LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
 
     def __init__(self, deck_controller, page, coords):
         # Verify variables
+        if self.ACTION_ID in ["", None]:
+            raise ValueError("Please specify an action id")
+
+
         if self.ACTION_NAME in ["", None]:
             raise ValueError("Please specify an action name")
         

@@ -29,6 +29,9 @@ import uuid
 import shutil
 from install import install
 
+# Import own modules
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+
 # Import signals
 from src.backend.PluginManager import Signals
 
@@ -495,7 +498,7 @@ class StoreBackend:
             await self.os_sys(f"cd '{local_path}' && git switch {branch_name}")
             return
         
-    async def install_plugin(self, plugin_dict:dict):
+    async def install_plugin(self, plugin_dict:dict, auto_update: bool = False):
         url = plugin_dict["url"]
 
         PLUGINS_FOLDER = "plugins"
@@ -516,14 +519,18 @@ class StoreBackend:
         gl.plugin_manager.generate_action_index()
 
         # Update ui
-        gl.app.main_win.rightArea.action_chooser.plugin_group.build()
+        if recursive_hasattr(gl, "app.main_win.rightArea.action_chooser"):
+            gl.app.main_win.rightArea.action_chooser.plugin_group.build()
 
         ## Update page
         for controller in gl.deck_manager.deck_controller:
-            # Load action objects
-            controller.active_page.load_action_objects()
-            # Reload page to send new on_load events
-            controller.reload_page()
+            ## Checks required to prevent errors after auto-update
+            if hasattr(controller, "active_page"):
+                if controller.active_page is not None:
+                    # Load action objects
+                    controller.active_page.load_action_objects()
+                    # Reload page to send new on_load events
+                    controller.reload_page()
 
         # Notify plugin actions
         gl.plugin_manager.trigger_signal(signal= Signals.PluginInstall, id=plugin_dict["id"])

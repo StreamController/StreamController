@@ -144,7 +144,7 @@ class PageManager:
         for entry in copy(settings.get("default-pages",[])):
             if entry["path"] == page_path:
                 settings["default-pages"].remove(entry)
-        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)
 
         # Update ui
         self.update_ui()

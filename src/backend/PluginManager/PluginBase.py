@@ -74,8 +74,11 @@ class PluginBase:
             self.registered = True
 
         else:
-            log.warning(f"Plugin {plugin_name} is not compatible with this version of StreamController. Please update your assets! \
-                        Plugin requires version {plugin_version} and you are running version {app_version}. Disabling plugin.")
+            log.warning(
+                f"Plugin {plugin_name} is not compatible with this version of StreamController. "
+                f"Please update your assets! Plugin requires version {plugin_version} and you are "
+                f"running version {gl.app_version}. Disabling plugin."
+            )
             PluginBase.disabled_plugins[plugin_name] = {
                 "object": self,
                 "github": github_repo,

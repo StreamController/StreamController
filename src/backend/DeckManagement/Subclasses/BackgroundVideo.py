@@ -26,28 +26,35 @@ from decord import cpu, gpu
 
 class BackgroundVideo(Video):
     @log.catch
-    def __init__(self, deck_media_handler, deck, video_path, progress_id=None):
+    def __init__(self, deck_media_handler, deck, video_path, callback: callable = None):
         super().__init__()
-        self.progress_id = progress_id
         self.deck_media_handler = deck_media_handler
+        self.callback = callback
         hash = sha256(video_path)
         x, y = deck.key_layout()
         file_name = f"{hash}-{x}x{y}.cache"
         # Check if video has already been cached:
         if file_in_dir(file_name, os.path.join(gl.DATA_PATH, "cache")):
+            log.info(f"Loading video from cache: {video_path}")
             self.load_from_cache(file_name)
-            self.deck_media_handler.progress_dir[progress_id] = 1
+            self.call_callback(1)
         else:
+            log.info(f"Loading video from disk: {video_path}")
             self.load_from_video(deck, video_path)
             self.save_to_cache(file_name)
-            self.deck_media_handler.progress_dir[progress_id] = 1
+            self.call_callback(1)
 
     @log.catch
     def load_from_video(self, deck, video_path):
         with open(video_path, "rb") as f:
-            vr = VideoReader(f, ctx=cpu(0))
+            vr = VideoReader(f, ctx=cpu(0), num_threads=os.cpu_count())
             for frame in vr:
                 image = Image.fromarray(frame.asnumpy())
                 self.frames.append(create_wallpaper_image_array(deck, image=image))
                 # Update progress
-                self.deck_media_handler.progress_dir[self.progress_id] = float(len(self.frames)) / len(vr)
+                prog = float(len(self.frames)) / len(vr)
+                self.call_callback(prog)
+
+    def call_callback(self, progress: float):
+        if self.callback is not None:
+            GLib.idle_add(self.callback, round(progress, 2))

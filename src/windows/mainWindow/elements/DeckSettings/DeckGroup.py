@@ -197,6 +197,7 @@ class Screensaver(Adw.PreferencesRow):
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
         self.scale.set_value(brightness)
+        self.set_thumbnail(path)
         
     def on_toggle_enable(self, toggle_switch, state):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)

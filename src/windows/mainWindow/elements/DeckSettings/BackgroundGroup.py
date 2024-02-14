@@ -35,7 +35,8 @@ class BackgroundGroup(Adw.PreferencesGroup):
     def __init__(self, settings_page):
         super().__init__(title=gl.lm.get("deck.background-group.title"), description=gl.lm.get("deck.background-group.description"))
         self.deck_serial_number = settings_page.deck_serial_number
-        self.add(BackgroundMediaRow(settings_page, self.deck_serial_number))
+        self.media_row = BackgroundMediaRow(settings_page, self.deck_serial_number)
+        self.add(self.media_row)
 
 
 class BackgroundMediaRow(Adw.PreferencesRow):
@@ -149,6 +150,12 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         settings["background"]["path"] = file_path
         gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
 
+        controller = self.settings_page.deck_controller
+        print(controller)
+        print()
+        controller.reload_page()
+        # TODO: Reload page (this verifies that the correct overwriting is used)
+
     def set_thumbnail(self, file_path):
         if file_path in [None, ""]:
             return
@@ -158,51 +165,12 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 
-    def update_progress_bar(self):
-        #TODO: Thread is not the best solution
-        def thread(self):
-            if self.settings_page.deck_page.deck_controller.set_background_task_id == None:
-                return
-            # Return if task is directly finished
-            progress_dir = self.settings_page.deck_page.deck_controller.media_handler.progress_dir
-            if progress_dir[self.settings_page.deck_page.deck_controller.set_background_task_id] >= 1:
-                return
-            self.progress_bar.set_visible(True)
-            while True:
-                set_background_task_id = self.settings_page.deck_page.deck_controller.set_background_task_id
-                progress_dir = self.settings_page.deck_page.deck_controller.media_handler.progress_dir
-                self.progress_bar.set_fraction(floor(progress_dir[set_background_task_id]*10)/ 10) # floor to one decimal
-                sleep(0.25)
-
-                if progress_dir[set_background_task_id] >= 1:
-                    self.progress_bar.set_fraction(1)
-                    # Keep the progress bar visible for 2s
-                    sleep(2)
-                    self.progress_bar.set_visible(False)
-                    break
-
-        # Start thread
-        log.info("Starting thread: set_background")
-        threading.Thread(target=thread, args=(self,)).start()
-
     def set_deck_background(self, file_path):
         self.settings_page.deck_controller.set_background(file_path)
 
-
-class ChooseBackgroundDialog(Gtk.FileDialog):
-    def __init__(self, background_row: BackgroundMediaRow):
-        super().__init__(title="Select Background",
-                         accept_label="Select")
-        self.background_row = background_row
-        self.open(callback=self.callback)
-
-    def callback(self, dialog, result):
-        try:
-            selected_file = self.open_finish(result)
-            file_path = selected_file.get_path()
-        except GLib.Error as err:
-            log.error(err)
-            return
-        
-        self.background_row.set_thumbnail(file_path)
-        self.background_row.set_deck_background(file_path)
+    def callback(self, progress: float) -> None:
+        print(f"progress: {progress}")
+        if progress >= 1:
+            threading.Timer(2, self.progress_bar.set_visible, args=(False,)).start()
+        self.progress_bar.set_visible(True)
+        self.progress_bar.set_fraction(progress)

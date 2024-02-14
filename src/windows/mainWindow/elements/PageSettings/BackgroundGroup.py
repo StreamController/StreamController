@@ -180,37 +180,17 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
     def set_background_to_page(self, file_path):
         self.settings_page.deck_page.deck_controller.active_page.set_background(file_path)
-        self.settings_page.deck_page.deck_controller.set_background(file_path, bypass_task=True)
+        self.progress_bar.set_visible(True)
+        self.progress_bar.set_fraction(0)
+        # self.settings_page.deck_page.deck_controller.set_background(file_path, bypass_task=True,
+                                                                    # callback=self.callback)
 
-        # self.update_progress_bar()
-
-    def update_progress_bar(self):
-        #TODO: Thread is not the best solution
-        def thread(self):
-            if self.settings_page.deck_page.deck_controller.set_background_task_id == None:
-                return
-            # Return if task is directly finished
-            progress_dir = self.settings_page.deck_page.deck_controller.media_handler.progress_dir
-            if progress_dir[self.settings_page.deck_page.deck_controller.set_background_task_id] >= 1:
-                return
-            self.progress_bar.set_visible(True)
-            while True:
-                set_background_task_id = self.settings_page.deck_page.deck_controller.set_background_task_id
-                progress_dir = self.settings_page.deck_page.deck_controller.media_handler.progress_dir
-                self.progress_bar.set_fraction(floor(progress_dir[set_background_task_id]*10)/ 10) # floor to one decimal
-                sleep(0.25)
-
-                if progress_dir[set_background_task_id] >= 1:
-                    self.progress_bar.set_fraction(1)
-                    # Keep the progress bar visible for 2s
-                    sleep(2)
-                    self.progress_bar.set_visible(False)
-                    break
-
-        # Start thread
-        log.info("Starting thread: set_background")
-        threading.Thread(target=thread, args=(self,)).start()
-
+    def callback(self, progress: float) -> None:
+        print(f"progress: {progress}")
+        if progress >= 1:
+            threading.Timer(2, self.progress_bar.set_visible, args=(False,)).start()
+        self.progress_bar.set_visible(True)
+        self.progress_bar.set_fraction(progress)
 
 
 class ChooseBackgroundDialog(Gtk.FileDialog):

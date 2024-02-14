@@ -62,7 +62,10 @@ class DeckStack(Gtk.Stack):
             self.main_window.change_ui_to_no_connected_deck()
 
     def add_page(self, deck_controller):
-        deck_number, deck_type = self.get_page_attributes(deck_controller)
+        attr = self.get_page_attributes(deck_controller)
+        if attr is None:
+            return
+        deck_number, deck_type = attr
         print(f"attributes: {deck_number}, {deck_type}")
 
         page = DeckStackChild(self, deck_controller)

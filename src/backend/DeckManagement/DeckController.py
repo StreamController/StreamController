@@ -40,6 +40,11 @@ from src.backend.PluginManager.ActionBase import ActionBase
 # Import signals
 from src.backend.PluginManager import Signals
 
+# Import typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.windows.mainWindow.elements.DeckStackChild import DeckStackChild
+
 # Import globals
 import globals as gl
 
@@ -220,8 +225,8 @@ class DeckController:
     def set_video(self, key, video_path, labels=None, image_margins=[0, 0, 0, 0], add_background=True, loop=True, fps=30):
         self.media_handler.add_video_task(key, video_path, loop=loop, fps=fps, labels=labels)
 
-    def set_background(self, media_path, loop=True, fps=30, reload=True, bypass_task=False):
-        return self.media_handler.set_background(media_path, loop=loop, fps=fps, reload=reload, bypass_task=bypass_task)
+    def set_background(self, media_path, loop=True, fps=30, reload=True, bypass_task=False, callback: callable = None):
+        return self.media_handler.set_background(media_path, loop=loop, fps=fps, reload=reload, bypass_task=bypass_task, callback=callback)
 
     @log.catch
     def reload_keys(self, skip_gifs=True, bypass_task=False, update_ui=True):
@@ -244,6 +249,8 @@ class DeckController:
 
             image = self.key_images[i]
             original_bg_image = copy(self.background_key_tiles[i])
+            if original_bg_image == None:
+                original_bg_image = Image.new("RGB", self.deck.key_image_format()["size"], (0, 0, 0))
             if image == None:
                 if original_bg_image:
                     if self.deck.key_states()[i]:
@@ -425,19 +432,35 @@ class DeckController:
                 path, loop, fps = page.dict["background"].setdefault("path", None), page.dict["background"].setdefault("loop", True), page.dict["background"].setdefault("fps", 30)
                 return path, loop, fps
             
+            source = None
 
             page.dict["background"].setdefault("overwrite", False)
             if page.dict["background"]["overwrite"] == False and "background" in self.deck_settings:
+                source = "deck"
                 data = get_from_deck_settings(self)
                 if data == None: return
                 path, loop, fps = data
             else:
+                source = "page"
                 data = get_from_page(self, page)
                 if data == None: return
                 path, loop, fps = data
 
+            callback = None
+            if source == "deck":
+                stack_page = self.get_own_deck_stack_page()
+                if stack_page is not None:
+                    callback = stack_page.deck_settings.background_group.media_row.callback
+                print("vid: deck")
+
+            elif source == "page":
+                stack_page = self.get_own_deck_stack_page()
+                if stack_page is not None:
+                    callback = stack_page.page_settings.settings_page.background_group.media_row.callback
+                print("vid: page")
+
             # Add background task - no reload required if load_keys is True because load_keys() will do this later
-            self.set_background_task_id = self.set_background(path, loop=loop, fps=fps, reload=not load_keys)
+            self.set_background(path, loop=loop, fps=fps, reload=not load_keys, callback = callback) #TODO: Add callback
 
         
         # time.sleep(2)
@@ -702,6 +725,13 @@ class DeckController:
         if deck_stack_page == None:
             return
         return deck_stack_page.page_settings.grid_page
+    
+    def get_own_deck_stack_page(self) -> "DeckStackChild":
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"): return
+        serial_number = self.deck.get_serial_number()
+        deck_stack = gl.app.main_win.leftArea.deck_stack
+        deck_stack_page = deck_stack.get_child_by_name(serial_number)
+        return deck_stack_page
     
     def set_ui_key(self, index, image, force_add_background=False):
         if image == None or index == None:

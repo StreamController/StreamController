@@ -88,5 +88,6 @@
     "deck.background-group.title": "Hintergrund",
     "deck.background-group.description": "Betreffen das ganze Deck, sofern nicht überschrieben",
     "deck.background-group.enable": "Hintergrund aktivieren",
-    "deck.background-group-media-select-label": "Auswählen"
+    "deck.background-group-media-select-label": "Auswählen",
+    "background.processing": "Verarbeiten..."
 }

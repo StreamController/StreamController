@@ -89,5 +89,6 @@
     "deck.background-group.title": "Background",
     "deck.background-group.description": "Applies to the whole deck unless overwritten",
     "deck.background-group.enable": "Enable Background",
-    "deck.background-group-media-select-label": "Select"
+    "deck.background-group.media-select-label": "Select",
+    "background.processing": "Processing..."
 }

@@ -28,6 +28,7 @@ import os
 import uuid
 import shutil
 from install import install
+from packaging import version
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
@@ -136,7 +137,11 @@ class StoreBackend:
         authors_json = json.loads(authors_json)
         return authors_json
     
-    async def get_all_plugins_async(self):
+    async def get_all_plugins_async(self) -> int:
+        """
+        returns the number of assets that are new old for the current app version
+        """
+        n_too_new_assets = 0
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Plugins.json")
         if isinstance(result, NoConnectionError):
             return result
@@ -147,14 +152,21 @@ class StoreBackend:
 
         for plugin in plugins_json:
             plugin = await self.prepare_plugin(plugin)
+
+            if plugin == "asset_is_newer":
+                n_too_new_assets += 1
+                continue
             
-            # If plugin is None it usually means that no plugin version could be found for the current app version
-            if plugin is not None:
+            if isinstance(plugin, dict):
                 plugins.append(plugin)
 
         return plugins
     
-    async def get_all_icons(self):
+    async def get_all_icons(self) -> int:
+        """
+        returns the number of assets that are too new for the current app version
+        """
+        n_to_new_assets = 0
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Icons.json")
         if isinstance(result, NoConnectionError):
             return result
@@ -165,13 +177,20 @@ class StoreBackend:
         for icon in icons_json:
             icon = await self.prepare_icon(icon)
 
-            # If icon is None it usually means that no icon version could be found for the current app version
-            if icon is not None:
+            if icon == "asset_is_newer":
+                n_to_new_assets += 1
+                continue
+
+            if isinstance(icon, dict):
                 icons.append(icon)
 
         return icons
     
-    async def get_all_wallpapers(self):
+    async def get_all_wallpapers(self) -> int:
+        """
+        returns the number of assets that are too new for the current app version
+        """
+        n_to_new_assets = 0
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Wallpapers.json")
         if isinstance(result, NoConnectionError):
             return result
@@ -182,8 +201,11 @@ class StoreBackend:
         for wallpaper in wallpapers_json:
             wallpaper = await self.prepare_wallpaper(wallpaper)
 
-            # If wallpaper is None it usually means that no wallpaper version could be found for the current app version
-            if wallpaper is not None:
+            if wallpaper == "asset_is_newer":
+                n_to_new_assets += 1
+                continue
+
+            if isinstance(wallpaper, dict):
                 wallpapers.append(wallpaper)
         
         return wallpapers
@@ -268,11 +290,10 @@ class StoreBackend:
         url = plugin["url"]
 
         # Check if suitable version is available
-        if not gl.app_version in plugin["commits"]:
-            return None
+        version_check = self.make_version_check(plugin["commits"].keys())
+        if version_check is not True:
+            return version_check
         commit = plugin["commits"][gl.app_version]
-
-
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -327,8 +348,9 @@ class StoreBackend:
         url = icon["url"]
 
         # Check if suitable version is available
-        if not gl.app_version in icon["commits"]:
-            return None
+        version_check = self.make_version_check(icon["commits"].keys())
+        if version_check is not True:
+            return version_check
         commit = icon["commits"][gl.app_version]
 
         manifest = await self.get_manifest(url, commit)
@@ -374,8 +396,9 @@ class StoreBackend:
         url = wallpaper["url"]
 
         # Check if suitable version is available
-        if not gl.app_version in wallpaper["commits"]:
-            return None
+        version_check = self.make_version_check(wallpaper["commits"].keys())
+        if version_check is not True:
+            return version_check
         commit = wallpaper["commits"][gl.app_version]
 
         manifest = await self.get_manifest(url, commit)
@@ -488,6 +511,33 @@ class StoreBackend:
     def get_all_plugins(self):
         return asyncio.run(self.get_all_plugins_async())
     
+    def is_newer(self, newer: str, than: str):
+        return version.parse(newer) > version.parse(than)
+    
+    from packaging import version
+
+    def get_newest_version(self, versions: list[str]) -> str:
+        # Convert the version strings to (Version object, original string) tuples
+        parsed_versions = [(version.parse(v), v) for v in versions]
+
+        # Find the maximum using the Version object for comparison
+        latest_version_tuple = max(parsed_versions, key=lambda x: x[0])
+
+        # Extract the original string from the tuple
+        return latest_version_tuple[1]
+    
+    def make_version_check(self, available_versions: list[str]):
+        # Check if the asset is available for the current app version
+        if gl.app_version in available_versions:
+            return True
+        
+        # Check whether the app or the asset is outdated
+        newest_version = self.get_newest_version(available_versions)
+
+        if self.is_newer(gl.app_version, newest_version):
+            return "app_is_newer"
+        else:
+            return "asset_is_newer"
 
     ## Install
     async def subp_call(self, args):

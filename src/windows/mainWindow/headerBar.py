@@ -110,6 +110,8 @@ class HeaderBar(Gtk.HeaderBar):
         self.settings.present()
 
     def on_quit(self, action, parameter):
+        # Close all decks
+        gl.deck_manager.close_all()
         # TODO: Find better way - sys.exit doesn't work because it waits for the threads to finish
         os._exit(0)
 

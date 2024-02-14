@@ -152,3 +152,16 @@ class DeckManager:
         if not recursive_hasattr(gl, "app.main_win."):
             return
         gl.app.main_win.check_for_errors()
+
+    def close_all(self):
+        log.info("Closing all decks")
+        for controller in self.deck_controller:
+            with controller.deck as deck:
+                if deck is None:
+                    continue
+                if not deck.is_open():
+                    continue
+                
+                log.info(f"Closing deck: {deck.get_serial_number()}")
+                deck.reset()
+                deck.close()

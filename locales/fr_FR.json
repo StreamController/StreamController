@@ -79,5 +79,8 @@
     "deck.background-group.description" : "S'applique à l'ensemble de la platine sauf en cas d'écrasement",
     "deck.background-group.enable" : "Activer l'arrière-plan",
     "deck.background-group-media-select-label" : "Sélectionner",
-    "background.processing": "Traitement..."
+    "background.processing": "Traitement...",
+    "asset-chooser.custom.browse-files": "Parcourir les fichiers",
+    "asset-chooser.custom.browse-files.dialog.title": "Sélectionner les fichiers",
+    "asset-chooser.custom.browse-files.dialog.select-button": "Sélectionner"
 }

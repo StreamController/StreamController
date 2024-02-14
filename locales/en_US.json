@@ -90,5 +90,8 @@
     "deck.background-group.description": "Applies to the whole deck unless overwritten",
     "deck.background-group.enable": "Enable Background",
     "deck.background-group.media-select-label": "Select",
-    "background.processing": "Processing..."
+    "background.processing": "Processing...",
+    "asset-chooser.custom.browse-files": "Browse Files",
+    "asset-chooser.custom.browse-files.dialog.title": "Select Files",
+    "asset-chooser.custom.browse-files.dialog.select-button": "Select"
 }

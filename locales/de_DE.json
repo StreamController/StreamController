@@ -89,5 +89,8 @@
     "deck.background-group.description": "Betreffen das ganze Deck, sofern nicht überschrieben",
     "deck.background-group.enable": "Hintergrund aktivieren",
     "deck.background-group-media-select-label": "Auswählen",
-    "background.processing": "Verarbeiten..."
+    "background.processing": "Verarbeiten...",
+    "asset-chooser.custom.browse-files": "Durchsuchen",
+    "asset-chooser.custom.browse-files.dialog.title": "Dateien auswählen",
+    "asset-chooser.custom.browse-files.dialog.select-button": "Auswählen"
 }

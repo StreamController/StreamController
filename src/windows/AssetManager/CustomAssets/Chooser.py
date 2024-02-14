@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk
+from gi.repository import Gtk, Adw, Gdk, GLib
 
 # Import python modules
 import os
@@ -50,13 +50,20 @@ class CustomAssetChooser(ChooserPage):
         self.asset_chooser = CustomAssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.scrolled_box.prepend(self.asset_chooser)
 
+        self.browse_files_button = Gtk.Button(label=gl.lm.get("asset-chooser.custom.browse-files"), margin_top=15)
+        self.browse_files_button.connect("clicked", self.on_browse_files_clicked)
+        self.append(self.browse_files_button)
+
     def on_dnd_accept(self, drop, user_data):
         return True
     
     def on_dnd_drop(self, drop_target, value: Gdk.FileList, x, y):
         paths = value.get_files()
-        for path in paths:
-            # data = path.get_data()
+        self.add_files(paths)
+        return True
+    
+    def add_files(self, files: list) -> None:
+        for path in files:
             url = path.get_uri()
             path = path.get_path()
 
@@ -88,7 +95,6 @@ class CustomAssetChooser(ChooserPage):
                 continue
             asset = gl.asset_manager.get_by_id(asset_id)
             self.asset_chooser.flow_box.append(AssetPreview(flow=self, asset=asset, width_request=100, height_request=100))
-        return True
 
     def show_for_path(self, path):
         self.asset_chooser.show_for_path(path)
@@ -116,3 +122,23 @@ class CustomAssetChooser(ChooserPage):
 
     def on_search_changed(self, entry):
         self.asset_chooser.flow_box.invalidate_sort()
+
+    def on_browse_files_clicked(self, button):
+        ChooseFileDialog(self)
+
+
+class ChooseFileDialog(Gtk.FileDialog):
+    def __init__(self, custom_asset_chooser: CustomAssetChooser):
+        super().__init__(title=gl.lm.get("asset-chooser.custom.browse-files.dialog.title"),
+                         accept_label=gl.lm.get("asset-chooser.custom.browse-files.dialog.select-button"))
+        self.custom_asset_chooser = custom_asset_chooser
+        self.open_multiple(callback=self.callback)
+
+    def callback(self, dialog, result):
+        try:
+            selected_files = self.open_multiple_finish(result)
+        except GLib.Error as err:
+            log.error(err)
+            return
+        
+        self.custom_asset_chooser.add_files(selected_files)

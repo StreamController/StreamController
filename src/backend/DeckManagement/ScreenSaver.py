@@ -28,7 +28,7 @@ class ScreenSaver:
             self.timer.cancel()
         # *60 to go from minuts (how it is stored) to seconds (how the timer needs it)
         self.timer = threading.Timer(time_delay*60, self.on_timer_end)
-        if self.enable:
+        if self.enable and not self.showing:
             self.timer.start()
 
     def set_enable(self, enable):

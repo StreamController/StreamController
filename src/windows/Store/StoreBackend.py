@@ -146,7 +146,11 @@ class StoreBackend:
         plugins = []
 
         for plugin in plugins_json:
-            plugins.append(await self.prepare_plugin(plugin))
+            plugin = await self.prepare_plugin(plugin)
+            
+            # If plugin is None it usually means that no plugin version could be found for the current app version
+            if plugin is not None:
+                plugins.append(plugin)
 
         return plugins
     
@@ -159,7 +163,11 @@ class StoreBackend:
 
         icons = []
         for icon in icons_json:
-            icons.append(await self.prepare_icon(icon))
+            icon = await self.prepare_icon(icon)
+
+            # If icon is None it usually means that no icon version could be found for the current app version
+            if icon is not None:
+                icons.append(icon)
 
         return icons
     
@@ -172,7 +180,11 @@ class StoreBackend:
 
         wallpapers = []
         for wallpaper in wallpapers_json:
-            wallpapers.append(await self.prepare_wallpaper(wallpaper))
+            wallpaper = await self.prepare_wallpaper(wallpaper)
+
+            # If wallpaper is None it usually means that no wallpaper version could be found for the current app version
+            if wallpaper is not None:
+                wallpapers.append(wallpaper)
         
         return wallpapers
     
@@ -254,15 +266,23 @@ class StoreBackend:
 
     async def prepare_plugin(self, plugin):
         url = plugin["url"]
-        manifest = await self.get_manifest(url, plugin["verified-commit"])
+
+        # Check if suitable version is available
+        if not gl.app_version in plugin["commits"]:
+            return None
+        commit = plugin["commits"][gl.app_version]
+
+
+
+        manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
 
-        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), plugin["verified-commit"]))
+        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), commit))
         if isinstance(manifest, NoConnectionError):
             return image
         
-        attribution = await self.get_attribution(url, plugin["verified-commit"])
+        attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
@@ -284,7 +304,7 @@ class StoreBackend:
             "image": image,
             "stargazers": stargazers,
             "official": user_name in self.official_authors,
-            "commit_sha": plugin["verified-commit"],
+            "commit_sha": commit,
             "id": manifest.get("id"),
             "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
             "license": attribution.get("license"),
@@ -305,15 +325,21 @@ class StoreBackend:
     
     async def prepare_icon(self, icon):
         url = icon["url"]
-        manifest = await self.get_manifest(url, icon["verified-commit"])
+
+        # Check if suitable version is available
+        if not gl.app_version in icon["commits"]:
+            return None
+        commit = icon["commits"][gl.app_version]
+
+        manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
-        attribution = await self.get_attribution(url, icon["verified-commit"])
+        attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
-        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), icon["verified-commit"]))
+        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), commit))
         if isinstance(image, NoConnectionError):
             return image
 
@@ -339,20 +365,26 @@ class StoreBackend:
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
             "license_description": attribution.get("description"),
-            "commit_sha": icon["verified-commit"],
+            "commit_sha": commit,
             "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "icons", f"{user_name}::{manifest.get('name')}")),
             "official": user_name in self.official_authors
         }
     
     async def prepare_wallpaper(self, wallpaper):
         url = wallpaper["url"]
-        manifest = await self.get_manifest(url, wallpaper["verified-commit"])
+
+        # Check if suitable version is available
+        if not gl.app_version in wallpaper["commits"]:
+            return None
+        commit = wallpaper["commits"][gl.app_version]
+
+        manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
-        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), wallpaper["verified-commit"]))
+        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), commit))
         if isinstance(image, NoConnectionError):
             return image
-        attribution = await self.get_attribution(url, wallpaper["verified-commit"])
+        attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
@@ -370,7 +402,7 @@ class StoreBackend:
             "stargazers": await self.get_stargazers(url),
             "license": manifest.get("license"),
             "copyright": manifest.get("copyright"),
-            "commit_sha": wallpaper["verified-commit"],
+            "commit_sha": commit,
             "original_url": attribution.get("original-url"),
             "license_description": attribution.get("description"),
             "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "wallpapers", f"{user_name}::{manifest.get('name')}")),

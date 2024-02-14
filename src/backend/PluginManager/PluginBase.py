@@ -92,30 +92,22 @@ class PluginBase:
         self.version = plugin_version
 
     def add_action_holder(self, action_holder: ActionHolder):
-        if not self.registered: return
-
         if not isinstance(action_holder, ActionHolder):
             raise ValueError("Please pass an ActionHolder")
         
         self.action_holders[action_holder.action_id] = action_holder
 
     def get_settings(self):
-        if not self.registered: return
-
         if os.path.exists(os.path.join(gl.DATA_PATH, "settings.json")):
             with open(os.path.join(gl.DATA_PATH, "settings.json"), "r") as f:
                 return json.load(f)
         return {}
     
     def set_settings(self, settings):
-        if not self.registered: return
-
         with open(os.path.join(gl.DATA_PATH, "settings.json"), "w") as f:
             json.dump(settings, f, indent=4)
 
     def add_css_stylesheet(self, path):
-        if not self.registered: return
-
         css_provider = Gtk.CssProvider()
         css_provider.load_from_path(path)
         Gtk.StyleContext.add_provider_for_display(
@@ -125,13 +117,9 @@ class PluginBase:
         )
 
     def register_page(self, path: str) -> None:
-        if not self.registered: return 
-
         gl.page_manager.register_page(path)
 
     def launch_backend(self, backend_path: str, venv_path: str = None):
-        if not self.registered: return
-
         uri = self.add_to_pyro()
 
         ## Launch
@@ -145,8 +133,6 @@ class PluginBase:
         subprocess.Popen(command, shell=True, start_new_session=True)
 
     def add_to_pyro(self) -> str:
-        if not self.registered: return
-        
         daemon = gl.plugin_manager.pyro_daemon
         uri = daemon.register(self)
         return str(uri)
@@ -155,8 +141,6 @@ class PluginBase:
         """
         Internal method, do not call manually
         """
-        if not self.registered: return
-        
         self._backend = Pyro5.api.Proxy(backend_uri)
         gl.plugin_manager.backends.append(self._backend)
 

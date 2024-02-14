@@ -93,10 +93,7 @@ class DeckMediaHandler():
             self.background_video_task["loop"] = loop
             self.background_video_task["fps"] = fps
             self.background_video_task["active_frame"] = -1
-            self.progress_dir[id] = 1
 
-        # Generate unique id to track processing progress
-        return id
     
     def stop_all_tasks(self):
         self.image_tasks = []

@@ -489,6 +489,8 @@ class DeckController:
 
         def load_screensaver(self):
             def get_from_deck_settings(self):
+                self.screen_saver.set_source("deck")
+
                 ds = self.deck_settings.copy()
                 ds.setdefault("screensaver", {})
                 path = ds["screensaver"].setdefault("path", None)
@@ -501,6 +503,8 @@ class DeckController:
                 return overwrite, enable, loop, fps, time, path, brightness
             
             def get_from_page(self, page):
+                self.screen_saver.set_source("page")
+
                 p = page.dict.copy()
                 p.setdefault("screensaver", {})
                 path = p["screensaver"].setdefault("path", None)

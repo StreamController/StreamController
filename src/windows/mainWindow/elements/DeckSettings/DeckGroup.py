@@ -36,8 +36,11 @@ class DeckGroup(Adw.PreferencesGroup):
         super().__init__(title=gl.lm.get("deck.deck-group.title"), description=gl.lm.get("deck.deck-group.description"))
         self.deck_serial_number = settings_page.deck_serial_number
 
-        self.add(Brightness(settings_page, self.deck_serial_number))
-        self.add(Screensaver(settings_page, self.deck_serial_number))
+        self.brightness = Brightness(settings_page, self.deck_serial_number)
+        self.screensaver = Screensaver(settings_page, self.deck_serial_number)
+
+        self.add(self.brightness)
+        self.add(self.screensaver)
 
 class Brightness(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
@@ -140,6 +143,9 @@ class Screensaver(Adw.PreferencesRow):
         self.media_selector_button = Gtk.Button(label=gl.lm.get("deck.deck-group.media-select-label"), css_classes=["page-settings-media-selector"])
         self.media_selector_button.connect("clicked", self.on_choose_image)
         self.media_selector_box.append(self.media_selector_button)
+
+        self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text=gl.lm.get("background.processing"), fraction=0, show_text=True, visible=False)
+        self.config_box.append(self.progress_bar)
 
         self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
@@ -273,3 +279,10 @@ class Screensaver(Adw.PreferencesRow):
         settings.setdefault("screensaver", {})
         settings["screensaver"]["path"] = image_path
         gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
+
+    def callback(self, progress: float) -> None:
+        print(f"progress: {progress}")
+        if progress >= 1:
+            threading.Timer(2, self.progress_bar.set_visible, args=(False,)).start()
+        self.progress_bar.set_visible(True)
+        self.progress_bar.set_fraction(progress)

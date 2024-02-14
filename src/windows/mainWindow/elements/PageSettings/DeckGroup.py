@@ -188,6 +188,9 @@ class Screensaver(Adw.PreferencesRow):
         self.media_selector_button = Gtk.Button(label=gl.lm.get("select"), css_classes=["page-settings-media-selector"])
         self.media_selector_box.append(self.media_selector_button)
 
+        self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text=gl.lm.get("background.processing"), fraction=0, show_text=True, visible=False)
+        self.config_box.append(self.progress_bar)
+
         self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
         self.loop_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
@@ -344,3 +347,10 @@ class Screensaver(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["path"] = file_path
         # Save page
         self.settings_page.deck_page.deck_controller.active_page.save()
+
+    def callback(self, progress: float) -> None:
+        print(f"progress: {progress}")
+        if progress >= 1:
+            threading.Timer(2, self.progress_bar.set_visible, args=(False,)).start()
+        self.progress_bar.set_visible(True)
+        self.progress_bar.set_fraction(progress)

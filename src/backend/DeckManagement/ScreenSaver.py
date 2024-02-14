@@ -3,6 +3,12 @@ import time
 from loguru import logger as log
 import multiprocessing
 
+
+# typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from backend.DeckManagement.DeckController import DeckController
+
 class ScreenSaver:
     def __init__(self, deck_controller: "DeckController"):
         self.deck_controller = deck_controller
@@ -18,6 +24,7 @@ class ScreenSaver:
         self.time_delay = None # Default time
         self.showing = False
         self.media_path = None
+        self.source: str = None # "deck" or "page" used for displaying processing progress
 
         # Time when last key state changed
         self.last_key_change_time = time.time()
@@ -92,7 +99,7 @@ class ScreenSaver:
         # time.sleep(0.5)
         if self.brightness > 0:
             # No need for changing background if brightness is 0
-            self.deck_controller.set_background(media_path=self.media_path, bypass_task=True)
+            self.deck_controller.set_background(media_path=self.media_path, bypass_task=True, callback=self.get_callback())
 
         # time.sleep(0.2)
 
@@ -118,3 +125,17 @@ class ScreenSaver:
             self.hide()
         else:
             self.set_time(self.time_delay)
+
+    def set_source(self, source: str) -> None:
+        self.source = source
+
+    def get_callback(self) -> callable:
+        stack_page = self.deck_controller.get_own_deck_stack_page()
+        if stack_page is None:
+            return
+        
+        if self.source == "page":
+            return stack_page.page_settings.settings_page.settings_group.screensaver.callback
+            
+        elif self.source == "deck":
+            return stack_page.deck_settings.settings_group.screensaver.callback

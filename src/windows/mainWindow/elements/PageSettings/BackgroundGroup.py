@@ -191,22 +191,3 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             threading.Timer(2, self.progress_bar.set_visible, args=(False,)).start()
         self.progress_bar.set_visible(True)
         self.progress_bar.set_fraction(progress)
-
-
-class ChooseBackgroundDialog(Gtk.FileDialog):
-    def __init__(self, background_row: BackgroundMediaRow):
-        super().__init__(title="Select Background",
-                         accept_label="Select")
-        self.background_row = background_row
-        self.open(callback=self.callback)
-
-    def callback(self, dialog, result):
-        try:
-            selected_file = self.open_finish(result)
-            file_path = selected_file.get_path()
-        except GLib.Error as err:
-            log.error(err)
-            return
-        
-        self.background_row.set_thumbnail(file_path)
-        self.background_row.set_deck_background(file_path)

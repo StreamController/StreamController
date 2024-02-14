@@ -33,7 +33,7 @@ icon_pack_manager: "IconPackManager" = None
 wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
-app_version: str = "0.1.0-alpha"
+app_version: str = "0.1.1-alpha"
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []
 

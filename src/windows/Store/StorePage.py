@@ -139,8 +139,9 @@ class StorePage(Gtk.Stack):
         item_a_fuzz = fuzz.ratio(search_string.lower(), item_a.name_label.get_text().lower())
         item_b_fuzz = fuzz.ratio(search_string.lower(), item_b.name_label.get_text().lower())
 
-        item_a_stars = item_a.stars/item_b.stars
-        item_b_stars = item_a.stars/item_b.stars
+        # Set to 0 because stars are currently disabled for api rate limit reasons
+        item_a_stars = 0 # item_a.stars/item_b.stars
+        item_b_stars = 0 # item_a.stars/item_b.stars
 
         if item_a_stars > 1 or item_b_stars > 1:
             item_a_stars = item_b.stars/item_a.stars

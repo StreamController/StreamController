@@ -43,7 +43,7 @@ class WallpaperPackChooserStack(Gtk.Stack):
         self.add_titled(self.pack_chooser, "pack-chooser", "Chooser")
 
         self.wallpaper_chooser = WallpaperChooserPage(self.asset_manager)
-        self.add_titled(self.wallpaper_chooser, "wallpaper-chooser", "Icon Chooser")
+        self.add_titled(self.wallpaper_chooser, "wallpaper-chooser", "Wallpaper Chooser")
 
     def show_for_path(self, path):
         packs = gl.wallpaper_pack_manager.get_wallpaper_packs()

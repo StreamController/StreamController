@@ -45,6 +45,8 @@ class IconChooserPage(ChooserPage):
         self.build()
 
     def build(self):
+        self.type_box.set_visible(False)
+
         self.icon_flow = WallpaperFlowBox(IconPreview, self)
         self.icon_flow.set_factory(self.preview_factory)
         self.icon_flow.set_filter_func(self.filter_func)

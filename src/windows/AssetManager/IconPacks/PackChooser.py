@@ -46,6 +46,8 @@ class IconPackChooser(ChooserPage):
         self.load()
 
     def build(self):
+        self.type_box.set_visible(False)
+
         self.icon_pack_chooser = IconPackFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.scrolled_box.prepend(self.icon_pack_chooser)
 

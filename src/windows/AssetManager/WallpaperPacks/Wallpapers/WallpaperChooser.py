@@ -45,6 +45,8 @@ class WallpaperChooserPage(ChooserPage):
         self.build()
 
     def build(self):
+        self.type_box.set_visible(False)
+
         self.wallpaper_flow = WallpaperFlowBox(WallpaperPreview, self)
         self.wallpaper_flow.set_factory(self.preview_factory)
         self.wallpaper_flow.set_filter_func(self.filter_func)

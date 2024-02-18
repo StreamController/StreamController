@@ -46,6 +46,8 @@ class WallpaperPackChooser(ChooserPage):
         self.load()
 
     def build(self):
+        self.type_box.set_visible(False)
+
         self.wallpaper_pack_chooser = WallpaperPackFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.scrolled_box.prepend(self.wallpaper_pack_chooser)
 

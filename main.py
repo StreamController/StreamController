@@ -22,6 +22,9 @@ import threading
 import dbus
 import dbus.service
 import argparse
+import usb.core
+import usb.util
+from StreamDeck.DeviceManager import DeviceManager
 from dbus.mainloop.glib import DBusGMainLoop
 
 # Import own modules
@@ -114,6 +117,26 @@ def update_assets():
     asyncio.run(gl.store_backend.update_everything())
     log.info(f"Updating store assets took {time.time() - start} seconds")
 
+@log.catch
+def reset_all_decks():
+    # Find all USB devices
+    devices = usb.core.find(find_all=True)
+    for device in devices:
+        try:
+            # Check if it's a StreamDeck
+            if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in [
+                DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
+                DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
+                DeviceManager.USB_PID_STREAMDECK_MINI,
+                DeviceManager.USB_PID_STREAMDECK_XL,
+                DeviceManager.USB_PID_STREAMDECK_MK2,
+            ]:
+                # Reset deck
+                usb.util.dispose_resources(device)
+                device.reset()
+        except:
+            log.error("Failed to reset deck")
+
 if __name__ == "__main__":
     # Dbus
     DBusGMainLoop(set_as_default=True)
@@ -127,6 +150,8 @@ if __name__ == "__main__":
     except dbus.exceptions.DBusException as e:
         print(e)
         log.info("No other instance running, continuing")
+
+    reset_all_decks()
 
     setup_autostart()
 

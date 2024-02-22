@@ -49,7 +49,7 @@ requests==2.31.0
 serpent==1.41
 six==1.16.0
 smmap==5.0.1
-streamcontroller-plugin-tools>=0.0.4
+streamcontroller-plugin-tools==0.0.4
 streamdeck==0.9.5
 typing_extensions==4.9.0
 urllib3==2.1.0

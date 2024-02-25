@@ -135,7 +135,7 @@ def reset_all_decks():
                 usb.util.dispose_resources(device)
                 device.reset()
         except:
-            log.error("Failed to reset deck")
+            log.error("Failed to reset deck, maybe it's already connected to another instance? Skipping...")
 
 if __name__ == "__main__":
     # Dbus

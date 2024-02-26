@@ -157,7 +157,6 @@ if __name__ == "__main__":
 
     create_global_objects()
     create_cache_folder()
-    log.info("Starting thread: update_assets")
     threading.Thread(target=update_assets).start()
     load()
 

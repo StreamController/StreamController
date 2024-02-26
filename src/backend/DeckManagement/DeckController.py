@@ -312,7 +312,6 @@ class DeckController:
         self.handle_shrink_animation(deck, key, state)
 
         # Perform actions
-        log.info("Starting thread: perform_actions")
         threading.Thread(target=self.perform_actions, args=(deck, key, state)).start()
 
     def perform_actions(self, deck, key, state):

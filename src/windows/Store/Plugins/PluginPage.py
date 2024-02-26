@@ -47,7 +47,6 @@ class PluginPage(StorePage):
         self.store = store
         self.search_entry.set_placeholder_text(gl.lm.get("store.plugins.search-placeholder"))
 
-        log.info("Starting thread: load")
         threading.Thread(target=self.load).start()
 
     def load(self):

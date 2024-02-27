@@ -139,6 +139,7 @@ def reset_all_decks():
 
 if __name__ == "__main__":
     # Dbus
+    log.info("Checking if another instance is running")
     DBusGMainLoop(set_as_default=True)
     session_bus = dbus.SessionBus()
     try:

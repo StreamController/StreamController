@@ -272,7 +272,8 @@ class Background:
         elif self.video is not None:
             self.tiles = self.video.get_next_tiles()
         else:
-            self.tiles = [self.deck_controller.generate_alpha_key()] * self.deck_controller.deck.key_count()
+            self.tiles = [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
+
         
 
 class BackgroundImage:
@@ -461,13 +462,26 @@ class ControllerKey:
 
         background = self.deck_controller.background.tiles[self.key]
 
+
         if background is None:
-            background = self.deck_controller.generate_alpha_key()
+            if self.key == 13:
+                print()
+            background = self.deck_controller.generate_alpha_key().copy()
+
+        if self.key == 13:
+            tile = self.deck_controller.background.tiles[self.key]
+            if tile is not None:
+                tile.save("13_tile2.png")
+            foreground.save("13_foreground.png")
+            background.save("13_background.png")
 
         if foreground.mode == "RGBA":
             background.paste(foreground, (0, 0), foreground)
         else:
             background.paste(foreground, (0, 0))
+
+
+        return background
 
         labeled_image = self.add_labels_to_image(background)
 
@@ -614,6 +628,7 @@ class ControllerKey:
         ## Load media
         path = page_dict.get("media", {}).get("path", None)
         if path not in ["", None]:
+            print(f"media on key {self.key} is {path}")
             if is_image(path):
                 self.set_key_image(KeyImage(
                     controller_key=self,

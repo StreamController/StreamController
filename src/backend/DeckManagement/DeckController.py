@@ -255,6 +255,8 @@ class Background:
         self.deck_controller.update_all_keys()
 
     def set_from_path(self, path: str, update: bool = True) -> None:
+        if path == "":
+            path = None
         if path is None:
             self.image = None
             self.video = None

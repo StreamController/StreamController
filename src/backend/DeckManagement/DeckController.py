@@ -480,9 +480,6 @@ class ControllerKey:
         else:
             background.paste(foreground, (0, 0))
 
-
-        return background
-
         labeled_image = self.add_labels_to_image(background)
 
         if self.is_pressed():

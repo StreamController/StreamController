@@ -67,8 +67,6 @@ class DeckController:
 
         self.active_page: Page = None
 
-        self.deck_settings = self.get_deck_settings()
-
         self.deck.set_brightness(50)
 
         self.keys: list[ControllerKey] = []
@@ -144,11 +142,12 @@ class DeckController:
         self.load_page(page)
 
     def load_background(self, page: Page, update: bool = True):
+        deck_settings = self.get_deck_settings()
         def set_from_deck_settings(self: "DeckController"):
-            if not self.deck_settings.get("background", {}).get("enable", False):
-                self.background.set_from_path(None, update=update)
+            if deck_settings.get("background", {}).get("enable", False):
+                self.background.set_from_path(deck_settings.get("background", {}).get("path"), update=update)
             else:
-                self.background.set_from_path(self.deck_settings.get("background", {}).get("path"), update=update)
+                self.background.set_from_path(None, update=update)
 
         def set_from_page(self: "DeckController"):
             if not page.dict.get("background", {}).get("show", True):
@@ -156,19 +155,20 @@ class DeckController:
             else:
                 self.background.set_from_path(page.dict.get("background", {}).get("path"), update=update)
 
-        if page.dict.get("background", {}).get("overwrite", False) is False and "background" in self.deck_settings:
+        if page.dict.get("background", {}).get("overwrite", False) is False and "background" in deck_settings:
             set_from_deck_settings(self)
         else:
             set_from_page(self)
 
     def load_brightness(self, page: Page):
+        deck_settings = self.get_deck_settings()
         def set_from_deck_settings(self: "DeckController"):
-            self.deck.set_brightness(self.deck_settings.get("brightness", {}).get("value", 75))
+            self.deck.set_brightness(deck_settings.get("brightness", {}).get("value", 75))
 
         def set_from_page(self: "DeckController"):
             self.deck.set_brightness(page.dict.get("brightness", 75))
 
-        if "brightness" in self.deck_settings:
+        if "brightness" in deck_settings:
             set_from_deck_settings(self)
         else:
             set_from_page(self)

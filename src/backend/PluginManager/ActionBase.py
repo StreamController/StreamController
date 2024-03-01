@@ -120,6 +120,7 @@ class ActionBase:
 
     def set_key(self, image = None, media_path=None, margins=[0, 0, 0, 0],
                 add_background=True, loop=True, fps=30, bypass_task=False, update_ui=True, reload: bool = False):
+        return
         """
         Sets the key image for the key of the action.
 

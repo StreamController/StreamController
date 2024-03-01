@@ -180,3 +180,5 @@ Pyro5
 !/**/.gitkeep
 
 data/
+
+vid_cache/

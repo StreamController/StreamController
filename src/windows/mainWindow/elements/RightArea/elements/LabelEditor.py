@@ -263,7 +263,8 @@ class LabelRow(Adw.PreferencesRow):
         # controller.load_key(f"{self.active_coords[0]}x{self.active_coords[1]}", only_labels=True)
         controller.load_key(
             key=controller.coords_to_index(self.active_coords),
-            page=controller.active_page
+            page=controller.active_page,
+            load_media=False
         )
 
     def on_change_stroke_width(self, button):

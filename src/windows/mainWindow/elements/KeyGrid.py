@@ -72,8 +72,10 @@ class KeyGrid(Gtk.Grid):
         if not hasattr(self.deck_controller, "ui_grid_buttons_changes_while_hidden"):
             return
         tasks = self.deck_controller.ui_grid_buttons_changes_while_hidden
-        for coords, pixbuf in tasks.items():
-            self.buttons[coords[0]][coords[1]].show_pixbuf(pixbuf)
+        print("loop")
+        for coords, image in tasks.items():
+            self.buttons[coords[0]][coords[1]].set_image(image)
+        print("loop end")
 
     def select_key(self, x: int, y: int):
         self.buttons[x][y].on_focus_in()
@@ -112,18 +114,21 @@ class KeyButton(Gtk.Frame):
         self.image.set_focusable(True)
 
     def set_image(self, image):
-        # Check if this keygrid is on the screen
-        if self.key_grid.deck_page.stack.get_visible_child() != self.key_grid.deck_page.grid_page:
-            return
-        # Check if this deck is on the screen
-        if self.key_grid.deck_page.deck_stack.get_visible_child() != self.key_grid.deck_page:
-            return
+        # Check if we can perform the next checks
+        if recursive_hasattr(self, "key_grid.deck_page.grid_page"):
+            # Check if this keygrid is on the screen
+            if self.key_grid.deck_page.stack.get_visible_child() != self.key_grid.deck_page.grid_page:
+                return
+            # Check if this deck is on the screen
+            if self.key_grid.deck_page.deck_stack.get_visible_child() != self.key_grid.deck_page:
+                return
 
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         self.show_pixbuf(self.pixbuf)
 
-        # update righthand side key preview
-        self.set_right_preview(self.pixbuf)
+        # update righthand side key preview if possible
+        if recursive_hasattr(gl, "app.main_win.rightArea"):
+            self.set_right_preview(self.pixbuf)
 
     def set_right_preview(self, pixbuf):
         right_area = gl.app.main_win.rightArea

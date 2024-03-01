@@ -177,10 +177,10 @@ class DeckController:
         for key in self.keys:
             self.load_key(key.key, page, update)
 
-    def load_key(self, key: int, page: Page, update: bool = True):
+    def load_key(self, key: int, page: Page, update: bool = True, load_labels: bool = True, load_media: bool = True):
         coords = self.index_to_coords(key)
         key_dict = page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {})
-        self.keys[key].load_from_page_dict(key_dict, update)
+        self.keys[key].load_from_page_dict(key_dict, update, load_labels, load_media)
 
     def load_page(self, page: Page):
         self.active_page = page
@@ -598,7 +598,7 @@ class ControllerKey:
             self.hide_error_timer.cancel()
             self.hide_error_timer = None
 
-    def load_from_page_dict(self, page_dict, update: bool = True):
+    def load_from_page_dict(self, page_dict, update: bool = True, load_labels: bool = True, load_media: bool = True):
         if page_dict is None:
             self.clear(update=update)
 
@@ -645,14 +645,12 @@ class ControllerKey:
         
         x, y = self.deck_controller.index_to_coords(self.key)
         
-        pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
-
         if self.deck_controller.get_own_key_grid() is None:
             # Save to use later
-            self.deck_controller.ui_grid_buttons_changes_while_hidden[(y, x)] = pixbuf # The ui key coords are in reverse order
+            self.deck_controller.ui_grid_buttons_changes_while_hidden[(y, x)] = image # The ui key coords are in reverse order
         else:
             # self.get_own_key_grid().buttons[y][x].set_image(pixbuf)
-            GLib.idle_add(self.deck_controller.get_own_key_grid().buttons[y][x].set_image, pixbuf)
+            GLib.idle_add(self.deck_controller.get_own_key_grid().buttons[y][x].set_image, image)
         
 
     

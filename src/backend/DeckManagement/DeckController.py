@@ -260,6 +260,7 @@ class Background:
             self.video = None
             if update:
                 self.update_tiles()
+                self.deck_controller.update_all_keys()
         elif is_video(path):
             self.set_video(BackgroundVideo(self.deck_controller, path))
         else:
@@ -267,14 +268,11 @@ class Background:
 
     def update_tiles(self) -> None:
         if self.image is not None:
-            t = self.image.get_tiles()
-            self.tiles = t
+            self.tiles = self.image.get_tiles()
         elif self.video is not None:
-            t = self.video.get_next_tiles()
-            self.tiles = t
+            self.tiles = self.video.get_next_tiles()
         else:
-            t = [self.deck_controller.generate_alpha_key()] * self.deck_controller.deck.key_count()
-            self.tiles = t
+            self.tiles = [self.deck_controller.generate_alpha_key()] * self.deck_controller.deck.key_count()
         
 
 class BackgroundImage:
@@ -473,7 +471,6 @@ class ControllerKey:
 
         labeled_image = self.add_labels_to_image(background)
 
-        print(self.is_pressed())
         if self.is_pressed():
             labeled_image = self.shrink_image(labeled_image)
 

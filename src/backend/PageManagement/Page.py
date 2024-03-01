@@ -260,4 +260,4 @@ class Page:
                 page.deck_controller.reload_page()
             else:
                 # Reload only given key
-                page.deck_controller.load_key(page_coords)
+                page.deck_controller.load_key(page_coords, page.deck_controler.active_page)

@@ -242,10 +242,10 @@ class KeyButton(Gtk.Frame):
         active_page.save()
         active_page.load()
 
-        # Stop video/gif task if present
+
+        # Remove media from key
         key_index = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
-        if key_index in self.key_grid.deck_controller.media_handler.video_tasks.keys():
-            del self.key_grid.deck_controller.media_handler.video_tasks[key_index]
+        self.key_grid.deck_controller.keys[key_index].set_key_image(None)
 
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 

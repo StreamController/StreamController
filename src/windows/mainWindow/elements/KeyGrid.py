@@ -52,6 +52,8 @@ class KeyGrid(Gtk.Grid):
 
         self.build()
 
+        self.connect("map", self.on_map)
+
         self.load_from_changes()
     
     def build(self):
@@ -72,14 +74,18 @@ class KeyGrid(Gtk.Grid):
         if not hasattr(self.deck_controller, "ui_grid_buttons_changes_while_hidden"):
             return
         tasks = self.deck_controller.ui_grid_buttons_changes_while_hidden
-        print("loop")
         for coords, image in tasks.items():
             self.buttons[coords[0]][coords[1]].set_image(image)
-        print("loop end")
+        
+        # Clear tasks
+        self.deck_controller.ui_grid_buttons_changes_while_hidden = {}
 
     def select_key(self, x: int, y: int):
         self.buttons[x][y].on_focus_in()
         self.buttons[x][y].image.grab_focus()
+
+    def on_map(self, widget):
+        self.load_from_changes()
 
 class KeyButton(Gtk.Frame):
     def __init__(self, key_grid:KeyGrid, coords, **kwargs):
@@ -118,10 +124,10 @@ class KeyButton(Gtk.Frame):
         if recursive_hasattr(self, "key_grid.deck_page.grid_page"):
             # Check if this keygrid is on the screen
             if self.key_grid.deck_page.stack.get_visible_child() != self.key_grid.deck_page.grid_page:
-                return
+                self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
             # Check if this deck is on the screen
             if self.key_grid.deck_page.deck_stack.get_visible_child() != self.key_grid.deck_page:
-                return
+                self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
 
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         self.show_pixbuf(self.pixbuf)

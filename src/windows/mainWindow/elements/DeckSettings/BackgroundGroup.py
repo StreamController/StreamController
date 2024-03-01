@@ -58,7 +58,6 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.enable_box.append(self.enable_label)
 
         self.enable_switch = Gtk.Switch()
-        self.enable_switch.connect("state-set", self.on_toggle_enable)
         self.enable_box.append(self.enable_switch)
 
         self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, visible=False)
@@ -72,15 +71,25 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
         self.media_selector_button = Gtk.Button(label=gl.lm.get("deck.deck-group.media-select-label"), css_classes=["page-settings-media-selector"])
-        self.media_selector_button.connect("clicked", self.on_choose_image)
         self.media_selector.append(self.media_selector_button)
 
         self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text=gl.lm.get("background.processing"), fraction=0, show_text=True, visible=False)
         self.config_box.append(self.progress_bar)
 
+        self.connect_signals()
         self.load_defaults()
 
+    def connect_signals(self):
+        self.enable_switch.connect("state-set", self.on_toggle_enable)
+        self.media_selector_button.connect("clicked", self.on_choose_image)
+
+    def disconnect_signals(self):
+        self.enable_switch.disconnect_by_func(self.on_toggle_enable)
+        self.media_selector_button.disconnect_by_func(self.on_choose_image)
+
+
     def load_defaults(self):
+        self.disconnect_signals()
         original_values = gl.settings_manager.get_deck_settings(self.deck_serial_number)
 
         # Set defaut values
@@ -98,6 +107,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.enable_switch.set_active(enable)
         self.config_box.set_visible(enable)
         self.set_thumbnail(path)
+
+        self.connect_signals()
 
     def load_defaults_from_page(self):
         return
@@ -134,7 +145,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Update
         self.config_box.set_visible(state)
         # Update
-        self.settings_page.deck_controller.reload_page()
+        self.settings_page.deck_controller.load_background(page=self.settings_page.deck_controller.active_page)
 
     def on_choose_image(self, button):
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
@@ -151,10 +162,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
 
         controller = self.settings_page.deck_controller
-        print(controller)
-        print()
-        controller.reload_page()
-        # TODO: Reload page (this verifies that the correct overwriting is used)
+        controller.load_background(page=controller.active_page)
 
     def set_thumbnail(self, file_path):
         if file_path in [None, ""]:

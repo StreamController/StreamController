@@ -468,13 +468,7 @@ class ControllerKey:
                 print()
             background = self.deck_controller.generate_alpha_key().copy()
 
-        if self.key == 13:
-            tile = self.deck_controller.background.tiles[self.key]
-            if tile is not None:
-                tile.save("13_tile2.png")
-            foreground.save("13_foreground.png")
-            background.save("13_background.png")
-
+        
         if foreground.mode == "RGBA":
             background.paste(foreground, (0, 0), foreground)
         else:

@@ -3,10 +3,13 @@ from copy import copy
 import subprocess
 import os
 import Pyro5.api
+from PIL import Image
 
 # Import own modules
 from src.backend.PluginManager.Signals import Signal
 from src.backend.PageManagement.Page import Page
+from src.backend.DeckManagement.HelperMethods import is_image, is_video
+from src.backend.DeckManagement.DeckController import KeyImage, KeyVideo, BackgroundImage, BackgroundVideo
 
 # Import globals
 import globals as gl
@@ -120,7 +123,6 @@ class ActionBase:
 
     def set_key(self, image = None, media_path=None, margins=[0, 0, 0, 0],
                 add_background=True, loop=True, fps=30, bypass_task=False, update_ui=True, reload: bool = False):
-        return
         """
         Sets the key image for the key of the action.
 
@@ -154,7 +156,24 @@ class ActionBase:
         page_labels = copy(self.page.dict["keys"][self.page_coords]["labels"])
         page_labels.update(self.labels)
 
-        self.deck_controller.set_key(**self.current_key, labels=page_labels, shrink=self.deck_controller.deck.key_states()[self.index])
+        if is_image(media_path):
+            with Image.open(media_path) as img:
+                image = img.copy()
+
+        if image is not None:
+            self.deck_controller.keys[self.index].set_key_image(KeyImage(
+                controller_key=self.deck_controller.keys[self.index],
+                image=image,
+                margins=margins
+            ))
+        if is_video(media_path):
+            self.deck_controller.keys[self.index].set_key_video(KeyVideo(
+                controller_key=self.deck_controller.keys[self.index],
+                video_path=media_path,
+            ))
+
+        #TODO: Add labels
+        
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18, reload: bool = True):

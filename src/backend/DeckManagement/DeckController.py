@@ -36,7 +36,6 @@ from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
-from src.backend.PluginManager.ActionBase import ActionBase
 
 # Import signals
 from src.backend.PluginManager import Signals
@@ -48,6 +47,7 @@ from src.windows.mainWindow.elements.KeyGrid import KeyButton, KeyGrid
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.DeckStackChild import DeckStackChild
     from src.backend.DeckManagement.DeckManager import DeckManager
+    from src.backend.PluginManager.ActionBase import ActionBase
 
 # Import globals
 import globals as gl
@@ -163,7 +163,7 @@ class DeckController:
         if self.screen_saver.showing:
             return
 
-        self.keys[key].update()
+        self.keys[key].on_key_change(state)
 
     ### Helper methods
     def generate_alpha_key(self) -> None:
@@ -543,7 +543,6 @@ class ControllerKey:
 
         self.hide_error_timer: Timer = None
 
-
     def get_current_deck_image(self) -> Image.Image:
         foreground = None
 
@@ -695,10 +694,12 @@ class ControllerKey:
 
     def load_from_page_dict(self, page_dict, update: bool = True, load_labels: bool = True, load_media: bool = True):
         if page_dict in [None, {}]:
-            self.clear(update=True)
+            self.clear(update=update)
             return
         else:
             self.clear(update=update)
+                
+        self.own_actions_ready()
 
         ## Load labels
         if load_labels:
@@ -733,6 +734,7 @@ class ControllerKey:
                         video_path=path,
                     )) # Videos always update
 
+
         if update:
             self.update()
 
@@ -756,13 +758,44 @@ class ControllerKey:
             # self.get_own_key_grid().buttons[y][x].set_image(pixbuf)
             GLib.idle_add(self.deck_controller.get_own_key_grid().buttons[y][x].set_image, image)
         
-
-    
-
     def get_own_ui_key(self) -> KeyButton:
         x, y = self.deck_controller.index_to_coords(self.key)
         buttons = self.deck_controller.get_own_key_grid().buttons # The ui key coords are in reverse order
         return buttons[x][y]
+    
+    def get_own_actions(self) -> list["ActionBase"]:
+        active_page = self.deck_controller.active_page
+        own_coords = self.deck_controller.index_to_coords(self.key)
+        page_coords = f"{own_coords[0]}x{own_coords[1]}"
+        if page_coords == "0x2":
+            print()
+
+        actions = list(active_page.action_objects.get(page_coords, {}).values())
+        return actions
+    
+    def on_key_change(self, state) -> None:
+        self.update()
+
+        if state:
+            self.own_actions_key_down()
+        else:
+            self.own_actions_key_up()
+
+
+    def own_actions_ready(self) -> None:
+        for action in self.get_own_actions():
+            action.on_ready()
+            
+        if self.key_image is not None:
+            print()
+
+    def own_actions_key_down(self) -> None:
+        for action in self.get_own_actions():
+            action.on_key_down()
+
+    def own_actions_key_up(self) -> None:
+        for action in self.get_own_actions():
+            action.on_key_up()
 
 
 class KeyLabel:

@@ -35,7 +35,7 @@ from src.backend.DeckManagement.Subclasses.key_video_cache import VideoFrameCach
 from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
 from src.backend.PageManagement.Page import Page
-from src.backend.DeckManagement.ScreenSaver import ScreenSaver
+from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
 from src.backend.PluginManager.ActionBase import ActionBase
 
 # Import signals
@@ -83,12 +83,16 @@ class DeckController:
 
         self.load_default_page()
 
-
         # Start media player thread
         self.media_player_thread = threading.Thread(target=self.play_media)
         self.media_player_thread.start()
 
+        self.screen_saver = ScreenSaver(deck_controller=self)
+        self.screen_saver.set_enable(True)
+        self.screen_saver.set_time(2)
+
     def init_keys(self):
+        self.keys: list[ControllerKey] = []
         for i in range(self.deck.key_count()):
             self.keys.append(ControllerKey(self, i))
 
@@ -117,7 +121,6 @@ class DeckController:
             return
         for i in range(self.deck.key_count()):
             self.update_key(i)
-
     def play_media(self):
         while True:
             start = time.time()
@@ -140,19 +143,28 @@ class DeckController:
             time.sleep(wait)
 
     def perform_media_player_tasks(self):
-        for task in list(self.media_player_tasks.keys()):
-            key = self.media_player_tasks[task]["key"]
-            image = self.media_player_tasks[task]["image"]
+        tasks = copy(self.media_player_tasks)
+        for task in tasks:
+            key = tasks[task]["key"]
+            image = tasks[task]["image"]
 
             with self.deck:
                 # print(f"updating key {key}")
                 self.deck.set_key_image(key, image)
 
-            del self.media_player_tasks[task]
+            # Remove the task if still in the list - might be removed by clear_media_player_tasks()
+            if task in self.media_player_tasks:
+                del self.media_player_tasks[task]
 
     def key_change_callback(self, deck, key, state):
-        self.keys[key].update()
+        if state:
+            # Only on key down this allows plugins to control screen saver without directly deactivating it
+            self.screen_saver.on_key_change()
+        
+        if self.screen_saver.showing:
+            return
 
+        self.keys[key].update()
 
     ### Helper methods
     def generate_alpha_key(self) -> None:
@@ -237,7 +249,7 @@ class DeckController:
         self.load_all_keys(page, update=False)
 
         # Clear unfinished tasks from old page
-        self.media_player_tasks = {}
+        self.clear_media_player_tasks()
         # Load new page onto deck
         self.update_all_keys()
                 
@@ -271,6 +283,9 @@ class DeckController:
         if deck_stack_page == None:
             return
         return deck_stack_page.page_settings.grid_page
+    
+    def clear_media_player_tasks(self):
+        self.media_player_tasks = {}
 
 
 class Background:
@@ -506,7 +521,7 @@ class ControllerKey:
         if foreground is None:
             foreground = self.deck_controller.generate_alpha_key()
 
-        background = self.deck_controller.background.tiles[self.key]
+        background = copy(self.deck_controller.background.tiles[self.key])
 
 
         if background is None:

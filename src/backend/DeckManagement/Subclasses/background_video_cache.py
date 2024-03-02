@@ -1,6 +1,7 @@
 import hashlib
 import os
 import sys
+import threading
 import time
 from PIL import Image, ImageOps
 import cv2
@@ -10,6 +11,8 @@ VID_CACHE = "vid_cache"
 
 class BackgroundVideoCache:
     def __init__(self, video_path) -> None:
+        self.lock = threading.Lock()
+
         self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)
         self.n_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -36,45 +39,46 @@ class BackgroundVideoCache:
         print(f"Size of capture: {sys.getsizeof(self.cap) / 1024 / 1024:.2f} MB")
 
     def get_tiles(self, n):
-        if self.is_cache_complete():
-            print("Cache is complete. Retrieving frame from cache.")
-            return self.cache.get(n, None)
+        with self.lock:
+            if self.is_cache_complete():
+                print("Cache is complete. Retrieving frame from cache.")
+                return self.cache.get(n, None)
 
-        # Otherwise, continue with video capture
-        # Check if the frame is already decoded
-        if n in self.cache:
-            return self.cache[n]
+            # Otherwise, continue with video capture
+            # Check if the frame is already decoded
+            if n in self.cache:
+                return self.cache[n]
 
-        # If the requested frame is before the last decoded one, reset the capture
-        if n < self.last_frame_index:
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
-            self.last_frame_index = n - 1
+            # If the requested frame is before the last decoded one, reset the capture
+            if n < self.last_frame_index:
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
+                self.last_frame_index = n - 1
 
-        # Decode frames until the nth frame
-        while self.last_frame_index < n:
-            success, frame = self.cap.read()
-            if not success:
-                break  # Reached the end of the video
-            self.last_frame_index += 1
-            
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  
-            pil_image = Image.fromarray(frame_rgb)
+            # Decode frames until the nth frame
+            while self.last_frame_index < n:
+                success, frame = self.cap.read()
+                if not success:
+                    break  # Reached the end of the video
+                self.last_frame_index += 1
+                
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  
+                pil_image = Image.fromarray(frame_rgb)
 
-            # Resize the image
-            full_sized = self.create_full_deck_sized_image(pil_image)
+                # Resize the image
+                full_sized = self.create_full_deck_sized_image(pil_image)
 
-            tiles: list[Image.Image] = []
-            for key in range(15):
-                key_image = self.crop_key_image_from_deck_sized_image(full_sized, key)
-                tiles.append(key_image)
+                tiles: list[Image.Image] = []
+                for key in range(15):
+                    key_image = self.crop_key_image_from_deck_sized_image(full_sized, key)
+                    tiles.append(key_image)
 
-                # Write the tile to the cache
-                self.write_cache(key_image, self.last_frame_index, key)
+                    # Write the tile to the cache
+                    self.write_cache(key_image, self.last_frame_index, key)
 
-            self.cache[self.last_frame_index] = tiles
+                self.cache[self.last_frame_index] = tiles
 
-            full_sized.close()
-            pil_image.close()
+                full_sized.close()
+                pil_image.close()
 
 
         # Return the last decoded frame if the nth frame is not available
@@ -131,7 +135,8 @@ class BackgroundVideoCache:
         return segment
 
     def release(self):
-        self.cap.release()
+        with self.lock:
+            self.cap.release()
 
     def get_video_hash(self) -> str:
         sha1sum = hashlib.md5()

@@ -129,8 +129,8 @@ class IconSelector(Gtk.Box):
         self.set_media_path(path)
         # Reload key
         controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        page_coords = f"{self.right_area.active_coords[0]}x{self.right_area.active_coords[1]}"
-        controller.load_key(page_coords)
+        key_index = controller.coords_to_index(self.right_area.active_coords)
+        controller.load_key(key_index, page=controller.active_page)
 
     def remove_media(self, *args):
         # Get keygrid of active controller

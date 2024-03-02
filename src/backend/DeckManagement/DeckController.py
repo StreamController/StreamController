@@ -15,7 +15,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import Python modules
 from copy import copy
 import os
+import random
 from threading import Timer
+import threading
 import time
 from PIL import Image, ImageOps, ImageDraw, ImageFont
 from StreamDeck.DeviceManager import DeviceManager
@@ -63,6 +65,9 @@ class DeckController:
         # Clear the deck
         deck.reset()
 
+        # Tasks
+        self.media_player_tasks: dict = {}
+
         self.ui_grid_buttons_changes_while_hidden: dict = {}
 
         self.active_page: Page = None
@@ -78,14 +83,33 @@ class DeckController:
 
         self.load_default_page()
 
+
+        # Start media player thread
+        self.media_player_thread = threading.Thread(target=self.play_media)
+        self.media_player_thread.start()
+
     def init_keys(self):
         for i in range(self.deck.key_count()):
             self.keys.append(ControllerKey(self, i))
 
+    def add_media_player_task(self, method: callable, key: int, image):
+        _id = random.randint(0, 10000)
+        if _id in self.media_player_tasks:
+            self.add_media_player_task(method, key, image)
+
+        self.media_player_tasks[_id] = {
+            "method": method,
+            "key": key,
+            "image": image
+        }
+
     def update_key(self, index: int):
         image = self.keys[index].get_current_deck_image()
         native_image = PILHelper.to_native_format(self.deck, image.convert("RGB"))
-        self.deck.set_key_image(index, native_image)
+
+        self.add_media_player_task(self.deck.set_key_image, index, native_image)
+        with self.deck:
+            self.deck.set_key_image(index, native_image)
         
         self.keys[index].set_ui_key_image(image)
 
@@ -93,7 +117,7 @@ class DeckController:
         for i in range(self.deck.key_count()):
             self.update_key(i)
 
-    async def play_media(self):
+    def play_media(self):
         while True:
             start = time.time()
             if self.background.video is not None:
@@ -105,11 +129,25 @@ class DeckController:
                     continue
                 key.update()
 
+            # Perform media player tasks
+            self.perform_media_player_tasks()
+
             # Wait for approximately 1/30th of a second before the next call
             end = time.time()
             # print(f"possible FPS: {1 / (end - start)}")
             wait = max(0, 1/60 - (end - start))
-            await asyncio.sleep(wait)
+            time.sleep(wait)
+
+    def perform_media_player_tasks(self):
+        for task in list(self.media_player_tasks.keys()):
+            key = self.media_player_tasks[task]["key"]
+            image = self.media_player_tasks[task]["image"]
+
+            with self.deck:
+                # print(f"updating key {key}")
+                self.deck.set_key_image(key, image)
+
+            del self.media_player_tasks[task]
 
     def key_change_callback(self, deck, key, state):
         self.keys[key].update()
@@ -142,6 +180,7 @@ class DeckController:
         self.load_page(page)
 
     def load_background(self, page: Page, update: bool = True):
+        log.info(f"Loading background in thread: {threading.get_ident()}")
         deck_settings = self.get_deck_settings()
         def set_from_deck_settings(self: "DeckController"):
             if deck_settings.get("background", {}).get("enable", False):
@@ -466,8 +505,6 @@ class ControllerKey:
 
 
         if background is None:
-            if self.key == 13:
-                print()
             background = self.deck_controller.generate_alpha_key().copy()
 
         
@@ -633,8 +670,8 @@ class ControllerKey:
             elif is_video(path):
                 self.set_key_video(KeyVideo(
                     controller_key=self,
-                    path=path
-                ), update=update)
+                    video_path=path
+                )) # Videos always update
 
         if update:
             self.update()

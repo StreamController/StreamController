@@ -108,12 +108,13 @@ class DeckController:
         native_image = PILHelper.to_native_format(self.deck, image.convert("RGB"))
 
         self.add_media_player_task(self.deck.set_key_image, index, native_image)
-        with self.deck:
-            self.deck.set_key_image(index, native_image)
         
         self.keys[index].set_ui_key_image(image)
 
     def update_all_keys(self):
+        if self.background.video is not None:
+            log.debug("Skipping update_all_keys because there is a background video")
+            return
         for i in range(self.deck.key_count()):
             self.update_key(i)
 
@@ -235,6 +236,9 @@ class DeckController:
         self.load_background(page, update=False)
         self.load_all_keys(page, update=False)
 
+        # Clear unfinished tasks from old page
+        self.media_player_tasks = {}
+        # Load new page onto deck
         self.update_all_keys()
                 
                 
@@ -286,12 +290,13 @@ class Background:
         if update:
             self.deck_controller.update_all_keys()
 
-    def set_video(self, video: "BackgroundVideo") -> None:
+    def set_video(self, video: "BackgroundVideo", update: bool = True) -> None:
         self.image = None
         self.video = video
 
         self.update_tiles()
-        self.deck_controller.update_all_keys()
+        if update:
+            self.deck_controller.update_all_keys()
 
     def set_from_path(self, path: str, update: bool = True) -> None:
         if path == "":
@@ -299,11 +304,11 @@ class Background:
         if path is None:
             self.image = None
             self.video = None
+            self.update_tiles()
             if update:
-                self.update_tiles()
                 self.deck_controller.update_all_keys()
         elif is_video(path):
-            self.set_video(BackgroundVideo(self.deck_controller, path))
+            self.set_video(BackgroundVideo(self.deck_controller, path), update=update)
         else:
             self.set_image(BackgroundImage(self.deck_controller, Image.open(path)), update=update)
 
@@ -640,44 +645,52 @@ class ControllerKey:
             self.hide_error_timer = None
 
     def load_from_page_dict(self, page_dict, update: bool = True, load_labels: bool = True, load_media: bool = True):
-        if page_dict is None:
+        if page_dict in [None, {}]:
+            self.clear(update=True)
+            return
+        else:
             self.clear(update=update)
 
         ## Load labels
-        for label in page_dict.get("labels", []):
-            key_label = KeyLabel(
-                controller_key=self,
-                text=page_dict["labels"][label].get("text"),
-                font_size=page_dict["labels"][label].get("font-size"),
-                font_name=page_dict["labels"][label].get("font-family"),
-                color=page_dict["labels"][label].get("color"),
-                font_weight=page_dict["labels"][label].get("stroke-width")
-            )
-            self.add_label(key_label, position=label, update=update)
+        if load_labels:
+            for label in page_dict.get("labels", []):
+                key_label = KeyLabel(
+                    controller_key=self,
+                    text=page_dict["labels"][label].get("text"),
+                    font_size=page_dict["labels"][label].get("font-size"),
+                    font_name=page_dict["labels"][label].get("font-family"),
+                    color=page_dict["labels"][label].get("color"),
+                    font_weight=page_dict["labels"][label].get("stroke-width")
+                )
+                self.add_label(key_label, position=label, update=False)
+
 
         ## Load media
-        path = page_dict.get("media", {}).get("path", None)
-        if path not in ["", None]:
-            print(f"media on key {self.key} is {path}")
-            if is_image(path):
-                self.set_key_image(KeyImage(
-                    controller_key=self,
-                    image=Image.open(path),
-                    fill_mode=page_dict.get("media", {}).get("fill-mode", "cover"),
-                    margins=page_dict.get("media", {}).get("margins", [0, 0, 0, 0])
-                ), update=update)
+        if load_media:
+            path = page_dict.get("media", {}).get("path", None)
+            if path not in ["", None]:
+                print(f"media on key {self.key} is {path}")
+                if is_image(path):
+                    self.set_key_image(KeyImage(
+                        controller_key=self,
+                        image=Image.open(path),
+                        fill_mode=page_dict.get("media", {}).get("fill-mode", "cover"),
+                        margins=page_dict.get("media", {}).get("margins", [0, 0, 0, 0])
+                    ), update=False)
 
-            elif is_video(path):
-                self.set_key_video(KeyVideo(
-                    controller_key=self,
-                    video_path=path
-                )) # Videos always update
+                elif is_video(path) and True:
+                    self.set_key_video(KeyVideo(
+                        controller_key=self,
+                        video_path=path,
+                    )) # Videos always update
 
         if update:
             self.update()
 
     def clear(self, update: bool = True):
-        return
+        self.key_image = None
+        self.key_video = None
+        self.labels = {}
         if update:
             self.update()
 
@@ -769,7 +782,7 @@ class KeyVideo(VideoFrameCache):
         if self.active_frame >= self.n_frames:
             self.active_frame = 0
         
-        return self.get_frame(self.active_frame)
+        return self.get_frame(self.active_frame).resize(self.controller_key.deck_controller.get_key_image_size(), Image.Resampling.LANCZOS)
 
         frame = self.frames[self.active_frame]
         print(type(frame))

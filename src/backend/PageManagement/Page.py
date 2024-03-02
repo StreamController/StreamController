@@ -78,14 +78,9 @@ class Page:
             value = self.dict.pop(key)
             self.dict[key] = value
 
-    def set_background(self, file_path, loop=True, fps=30, show=True):
-        background = {
-            "show": show,
-            "path": file_path,
-            "loop": loop,
-            "fps": fps
-        }
-        self.dict["background"] = background
+    def set_background(self, file_path):
+        self.dict.setdefault("background", {})
+        self.dict["background"]["path"] = file_path
         self.save()
 
     def load_action_objects(self):
@@ -259,5 +254,6 @@ class Page:
             if page_coords is None:
                 page.deck_controller.reload_page()
             else:
+                key_index = page.deck_controller.coords_to_index(page_coords.split("x"))
                 # Reload only given key
-                page.deck_controller.load_key(page_coords, page.deck_controler.active_page)
+                page.deck_controller.load_key(key_index, page.deck_controller.active_page)

@@ -181,11 +181,14 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.set_background_to_page(file_path)
 
     def set_background_to_page(self, file_path):
-        self.settings_page.deck_page.deck_controller.active_page.set_background(file_path)
+        deck_controller = self.settings_page.deck_page.deck_controller
+        deck_controller.active_page.set_background(file_path)
         self.progress_bar.set_visible(True)
         self.progress_bar.set_fraction(0)
         # self.settings_page.deck_page.deck_controller.set_background(file_path, bypass_task=True,
                                                                     # callback=self.callback)
+        deck_controller.load_background(page=deck_controller.active_page)
+
 
     def callback(self, progress: float) -> None:
         print(f"progress: {progress}")

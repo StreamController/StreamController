@@ -42,45 +42,41 @@ class VideoFrameCache:
         print(f"Size of capture: {sys.getsizeof(self.cap) / 1024 / 1024:.2f} MB")
 
     def get_frame(self, n):
-        with self.lock:
-            if self.is_cache_complete():
-                # print("Cache is complete. Retrieving frame from cache.")
-                return self.cache.get(n, None)
+        if self.is_cache_complete():
+            # print("Cache is complete. Retrieving frame from cache.")
+            return self.cache.get(n, None)
 
-            # Otherwise, continue with video capture
-            # Check if the frame is already decoded
-            if n in self.cache:
-                return self.cache[n]
+        # Otherwise, continue with video capture
+        # Check if the frame is already decoded
+        if n in self.cache:
+            return self.cache[n]
 
-            # If the requested frame is before the last decoded one, reset the capture
-            if n < self.last_frame_index:
+        # If the requested frame is before the last decoded one, reset the capture
+        if n < self.last_frame_index:
+            with self.lock:
                 self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
-                self.last_frame_index = n - 1
+            self.last_frame_index = n - 1
 
-            # Decode frames until the nth frame
-            while self.last_frame_index < n:
+        # Decode frames until the nth frame
+        while self.last_frame_index < n:
+            with self.lock:
                 success, frame = self.cap.read()
-                if not success:
-                    break  # Reached the end of the video
-                self.last_frame_index += 1
-                
-                # Calculate the new height to maintain aspect ratio
-                aspect_ratio = frame.shape[0] / frame.shape[1]
-                new_height = int(self.frame_width * aspect_ratio)
-                
-                # Resize the frame while maintaining aspect ratio
-                frame_resized = cv2.resize(frame, (self.frame_width, new_height))
-                frame_rgb = cv2.cvtColor(frame_resized, cv2.COLOR_BGR2RGB)
-                pil_image = Image.fromarray(frame_rgb)
+            if not success:
+                break  # Reached the end of the video
+            self.last_frame_index += 1
+            
+            # Calculate the new height to maintain aspect ratio
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(frame_rgb)
 
-                # Fill a 72x72 square completely with the image, keeping the aspect ratio
-                pil_image = ImageOps.fit(pil_image, (self.frame_width, self.frame_width), Image.Resampling.LANCZOS)
+            # Fill a 72x72 square completely with the image, keeping the aspect ratio
+            pil_image = ImageOps.fit(pil_image, (self.frame_width, self.frame_width), Image.Resampling.LANCZOS)
 
-                self.last_decoded_frame = pil_image
-                self.cache[self.last_frame_index] = pil_image
+            self.last_decoded_frame = pil_image
+            self.cache[self.last_frame_index] = pil_image
 
-                # Write the frame to the cache
-                self.write_cache(pil_image, self.last_frame_index)
+            # Write the frame to the cache
+            self.write_cache(pil_image, self.last_frame_index)
 
         # Return the last decoded frame if the nth frame is not available
         return self.cache.get(n, self.last_decoded_frame)
@@ -140,10 +136,6 @@ class VideoFrameCache:
                         self.cache[int(file.split(".")[0])] = img.copy()
 
             log.info(f"Loaded cache in {time.time() - start:.2f} seconds")
-
-            size_of_one_frame_pil = sys.getsizeof(self.cache[0])
-            print(f"Size of one frame in memory: {size_of_one_frame_pil / 1024 / 1024:.2f} MB")
-            print()
 
     @lru_cache(maxsize=None)
     def is_cache_complete(self) -> bool:

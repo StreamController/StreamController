@@ -237,7 +237,9 @@ class KeyButton(Gtk.Frame):
         if active_page is None:
             return
         y, x = self.coords
-
+        
+        if f"{x}x{y}" not in active_page.dict["keys"]:
+            return
         del active_page.dict["keys"][f"{x}x{y}"]
         active_page.save()
         active_page.load()

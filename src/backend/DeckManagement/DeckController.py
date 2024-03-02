@@ -65,6 +65,8 @@ class DeckController:
         # Clear the deck
         deck.reset()
 
+        self.screen_saver = ScreenSaver(deck_controller=self)
+
         # Tasks
         self.media_player_tasks: dict = {}
 
@@ -72,7 +74,8 @@ class DeckController:
 
         self.active_page: Page = None
 
-        self.deck.set_brightness(50)
+        self.brightness:int = 75
+        self.set_brightness(self.brightness)
 
         self.keys: list[ControllerKey] = []
         self.init_keys()
@@ -86,10 +89,6 @@ class DeckController:
         # Start media player thread
         self.media_player_thread = threading.Thread(target=self.play_media)
         self.media_player_thread.start()
-
-        self.screen_saver = ScreenSaver(deck_controller=self)
-        self.screen_saver.set_enable(True)
-        self.screen_saver.set_time(2)
 
     def init_keys(self):
         self.keys: list[ControllerKey] = []
@@ -225,6 +224,39 @@ class DeckController:
         else:
             set_from_page(self)
 
+    def load_screensaver(self, page: Page):
+        deck_settings = self.get_deck_settings()
+        def set_from_deck_settings(self: "DeckController"):
+            path = deck_settings.get("screensaver", {}).get("path")
+            enable = deck_settings.get("screensaver", {}).get("enable", False)
+            loop = deck_settings.get("screensaver", {}).get("loop", False)
+            fps = deck_settings.get("screensaver", {}).get("fps", 30)
+            time = deck_settings.get("screensaver", {}).get("time-delay", 5)
+
+            self.screen_saver.set_media_path(path)
+            self.screen_saver.set_enable(enable)
+            self.screen_saver.set_time(time)
+            # self.screen_saver.set_loop(loop) # TODO: implement
+            # self.screen_saver.set_fps(fps) # TODO: implement
+
+        def set_from_page(self: "DeckController"):
+            path = page.dict.get("screensaver", {}).get("path")
+            enable = page.dict.get("screensaver", {}).get("enable", False)
+            loop = page.dict.get("screensaver", {}).get("loop", False)
+            fps = page.dict.get("screensaver", {}).get("fps", 30)
+            time = page.dict.get("screensaver", {}).get("time-delay", 5)
+
+            self.screen_saver.set_media_path(path)
+            self.screen_saver.set_enable(enable)
+            self.screen_saver.set_time(time)
+            # self.screen_saver.set_loop(loop) # TODO: implement
+            # self.screen_saver.set_fps(fps) # TODO: implement
+
+        if self.active_page.dict.get("screensaver", {}).get("overwrite", False) is False and "screensaver" in deck_settings:
+            set_from_deck_settings(self)
+        else:
+            set_from_page(self)
+
     def load_all_keys(self, page: Page, update: bool = True):
         for key in self.keys:
             self.load_key(key.key, page, update)
@@ -245,6 +277,7 @@ class DeckController:
         log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()}")
 
         self.load_brightness(page)
+        self.load_screensaver(page)
         self.load_background(page, update=False)
         self.load_all_keys(page, update=False)
 
@@ -252,9 +285,10 @@ class DeckController:
         self.clear_media_player_tasks()
         # Load new page onto deck
         self.update_all_keys()
-                
-                
 
+    def set_brightness(self, value):
+        self.deck.set_brightness(value)
+        self.brightness = value
 
 
     # -------------- #

@@ -30,6 +30,7 @@ class ScreenSaver:
         # Init vars
         self.original_keys: list["ControllerKey"] = []
         self.original_background: "Background" = None
+        self.original_brightness: int = 0
 
         # Time when last key state changed
         self.last_key_change_time = time.time()
@@ -41,6 +42,7 @@ class ScreenSaver:
         self.showing: bool = False
 
         self.media_path: str = None
+        self.brightness: int = 25
 
     def set_time(self, time_delay: int) -> None:
         self.time_delay = time_delay
@@ -55,15 +57,18 @@ class ScreenSaver:
     def set_media_path(self, media_path: str) -> None:
         self.media_path = media_path
 
+        if self.showing:
+            self.deck_controller.background.set_from_path(self.media_path)
+
     def set_enable(self, enable: bool) -> None:
         self.enable = enable
 
         if not hasattr(self, "timer"):
             return
         
-        # Hide if showing and enable == False
-        if not self.showing and enable:
-            self.timer.start()
+        # Hide if showing
+        if self.showing and not enable:
+            self.hide()
         
         # Stop timer if enable == False
         if enable:
@@ -87,7 +92,9 @@ class ScreenSaver:
         self.original_keys = self.deck_controller.keys
         self.deck_controller.init_keys()
         self.original_background = copy(self.deck_controller.background)
-        # TODO: Add brightness
+        self.original_brightness = self.deck_controller.brightness
+
+        self.deck_controller.set_brightness(self.brightness)
 
         # Clear all keys
         for key in self.deck_controller.keys:
@@ -104,11 +111,9 @@ class ScreenSaver:
         # Restore original keys and background
         self.deck_controller.keys = self.original_keys
         self.deck_controller.background = self.original_background
+        self.deck_controller.set_brightness(self.original_brightness)
         self.deck_controller.update_all_keys()
         self.showing = False
-
-        print(self.deck_controller.keys[-1].key_image)
-        print()
 
         self.set_time(self.time_delay)
 
@@ -118,3 +123,9 @@ class ScreenSaver:
             self.hide()
         else:
             self.set_time(self.time_delay)
+
+    def set_brightness(self, brightness: int) -> None:
+        self.brightness = int(brightness)
+
+        if self.showing:
+            self.deck_controller.set_brightness(self.brightness)

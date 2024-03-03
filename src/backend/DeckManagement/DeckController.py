@@ -668,7 +668,7 @@ class ControllerKey:
             self.hide_error_timer = Timer(duration, self.hide_error, args=[self.key_image, self.key_video, self.labels])
             self.hide_error_timer.start()
 
-        with Image.open("error.png") as image:
+        with Image.open(os.path.join("Assets", "images", "error.png")) as image:
             image = image.copy()
 
         new_key_image = KeyImage(

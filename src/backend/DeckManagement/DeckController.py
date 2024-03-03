@@ -709,13 +709,13 @@ class ControllerKey:
         if page_dict in [None, {}]:
             self.clear(update=update)
             return
-        else:
-            self.clear(update=update)
                 
         self.own_actions_ready()
 
         ## Load labels
         if load_labels:
+            self.labels = {}
+
             for label in page_dict.get("labels", []):
                 key_label = KeyLabel(
                     controller_key=self,
@@ -730,6 +730,9 @@ class ControllerKey:
 
         ## Load media
         if load_media:
+            self.key_image = None
+            self.key_video = None
+
             path = page_dict.get("media", {}).get("path", None)
             if path not in ["", None]:
                 print(f"media on key {self.key} is {path}")

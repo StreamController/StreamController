@@ -90,6 +90,10 @@ class DeckController:
         self.media_player_thread = threading.Thread(target=self.play_media)
         self.media_player_thread.start()
 
+        self.TICK_DELAY = 1
+        self.tick_timer = Timer(self.TICK_DELAY, self.tick_actions)
+        self.tick_timer.start()
+
     def init_keys(self):
         self.keys: list[ControllerKey] = []
         for i in range(self.deck.key_count()):
@@ -289,6 +293,14 @@ class DeckController:
     def set_brightness(self, value):
         self.deck.set_brightness(value)
         self.brightness = value
+
+    def tick_actions(self) -> None:
+        for key in self.keys:
+            key.own_actions_tick()
+        
+        # Restart timer
+        self.tick_timer = Timer(self.TICK_DELAY, self.tick_actions)
+        self.tick_timer.start()
 
 
     # -------------- #
@@ -796,6 +808,10 @@ class ControllerKey:
     def own_actions_key_up(self) -> None:
         for action in self.get_own_actions():
             action.on_key_up()
+
+    def own_actions_tick(self) -> None:
+        for action in self.get_own_actions():
+            action.on_tick()
 
 
 class KeyLabel:

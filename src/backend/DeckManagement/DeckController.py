@@ -630,21 +630,22 @@ class ControllerKey:
             font_size = self.labels[label].font_size
             font = ImageFont.truetype(font_path, font_size)
             font_weight = self.labels[label].font_weight
+
+            if text is None:
+                continue
             
             if label == "top":
-                draw.text((image.width / 2, font_size -3),
-                          text=text, font=font, anchor="ms",
-                          fill=color, stroke_width=font_weight)
+                position = (image.width / 2, font_size - 3)
 
             if label == "center":
-                draw.text((image.width / 2, (image.height + font_size) / 2 - 3),
-                          text=text, font=font, anchor="ms",
-                          fill=color, stroke_width=font_weight)
+                position = (image.width / 2, (image.height + font_size) / 2 - 3)
 
             if label == "bottom":
-                draw.text((image.width / 2, image.height - 3),
-                          text=text, font=font, anchor="ms",
-                          fill=color, stroke_width=font_weight)
+                position = (image.width / 2, image.height - 3)
+
+            draw.text(position,
+                        text=text, font=font, anchor="ms",
+                        fill=color, stroke_width=font_weight)
 
         return image
     

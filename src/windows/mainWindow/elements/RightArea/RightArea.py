@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
@@ -28,6 +29,7 @@ from src.windows.mainWindow.elements.RightArea.elements.LabelEditor import Label
 from src.windows.mainWindow.elements.RightArea.elements.ActionManager import ActionManager
 from src.windows.mainWindow.elements.RightArea.elements.ActionChooser import ActionChooser
 from src.windows.mainWindow.elements.RightArea.elements.ActionConfigurator import ActionConfigurator
+from src.windows.mainWindow.elements.RightArea.elements.BackgroundEditor import BackgroundEditor
 from GtkHelper.GtkHelper import ErrorPage
 
 # Import globals
@@ -134,6 +136,9 @@ class RightAreaKeyEditor(Gtk.Box):
         self.icon_selector = IconSelector(right_area, halign=Gtk.Align.CENTER, margin_top=75)
         self.main_box.append(self.icon_selector)
 
+        self.background_editor = BackgroundEditor(right_area, margin_top=25)
+        self.main_box.append(self.background_editor)
+
         self.label_editor = LabelEditor(right_area, margin_top=25)
         self.main_box.append(self.label_editor)
 
@@ -145,3 +150,4 @@ class RightAreaKeyEditor(Gtk.Box):
         self.icon_selector.load_for_coords(coords)
         self.label_editor.load_for_coords(coords)
         self.action_editor.load_for_coords(coords)
+        self.background_editor.load_for_coords(coords)

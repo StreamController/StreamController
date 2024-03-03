@@ -93,5 +93,10 @@
     "background.processing": "Processing...",
     "asset-chooser.custom.browse-files": "Browse Files",
     "asset-chooser.custom.browse-files.dialog.title": "Select Files",
-    "asset-chooser.custom.browse-files.dialog.select-button": "Select"
+    "asset-chooser.custom.browse-files.dialog.select-button": "Select",
+    "background-editor.header": "Background",
+    "background-editor-expander.subtitle": "Background for this key",
+    "background-editor.color.label": "Color",
+    "background-editor.color.dialog.title": "Select Background Color",
+    "background-editor.color.reset": "Reset color"
 }

@@ -92,5 +92,10 @@
     "background.processing": "Verarbeiten...",
     "asset-chooser.custom.browse-files": "Durchsuchen",
     "asset-chooser.custom.browse-files.dialog.title": "Dateien auswählen",
-    "asset-chooser.custom.browse-files.dialog.select-button": "Auswählen"
+    "asset-chooser.custom.browse-files.dialog.select-button": "Auswählen",
+    "background-editor.header": "Hintergrund",
+    "background-editor-expander.subtitle": "Hintergrund für diese Taste",
+    "background-editor.color.label": "Farbe",
+    "background-editor.color.dialog.title": "Hintergrundfarbe auswählen",
+    "background-editor.color.reset": "Farbe zurücksetzen"
 }

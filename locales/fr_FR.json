@@ -82,5 +82,10 @@
     "background.processing": "Traitement...",
     "asset-chooser.custom.browse-files": "Parcourir les fichiers",
     "asset-chooser.custom.browse-files.dialog.title": "Sélectionner les fichiers",
-    "asset-chooser.custom.browse-files.dialog.select-button": "Sélectionner"
+    "asset-chooser.custom.browse-files.dialog.select-button": "Sélectionner",
+    "background-editor.header": "L'arrière-plan",
+    "background-editor-expander.subtitle": "L'arrière-plan pour cette touche",
+    "background-editor.color.label": "Couleur",
+    "background-editor.color.dialog.title": "Sélectionner une couleur",
+    "background-editor.color.reset": "Réinitialiser la couleur"
 }

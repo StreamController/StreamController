@@ -547,6 +547,10 @@ class ControllerKey:
         self.key = key
 
         self.image_margins = [0, 0, 0, 0] # left, top, right, bottom
+        self.background_color = [0, 0, 0, 0]
+
+        # Keep track of the current state of the key because self.deck_controller.deck.key_states seams to give inverted values in get_current_deck_image
+        self.press_state: bool = self.deck_controller.deck.key_states()[self.key]
 
         self.labels: dict = {}
 
@@ -566,7 +570,19 @@ class ControllerKey:
         if foreground is None:
             foreground = self.deck_controller.generate_alpha_key()
 
-        background = copy(self.deck_controller.background.tiles[self.key])
+        background: Image.Image = None
+        # Only load the background image if it's not gonna be hidden by the background color
+        if self.background_color[-1] < 255:
+            background = copy(self.deck_controller.background.tiles[self.key])
+
+        if self.background_color[-1] > 0:
+            background_color_img = Image.new("RGBA", self.deck_controller.get_key_image_size(), color=tuple(self.background_color))
+            
+            if background is None:
+                # Use the color as the only background - happens if background color alpha is 255
+                background = background_color_img
+            else:
+                background.paste(background_color_img, (0, 0))
 
 
         if background is None:
@@ -650,7 +666,7 @@ class ControllerKey:
         return image
     
     def is_pressed(self) -> bool:
-        return self.deck_controller.deck.key_states()[self.key]
+        return self.press_state
     
     def add_border(self, image: Image.Image) -> Image.Image:
         image = image.copy()
@@ -705,11 +721,16 @@ class ControllerKey:
             self.hide_error_timer.cancel()
             self.hide_error_timer = None
 
-    def load_from_page_dict(self, page_dict, update: bool = True, load_labels: bool = True, load_media: bool = True):
+    def load_from_page_dict(self, page_dict, update: bool = True, load_labels: bool = True, load_media: bool = True, load_background_color: bool = True):
         if page_dict in [None, {}]:
             self.clear(update=update)
             return
-                
+        
+        ## Load media - why here? so that it doesn't overwrite the images chosen by the actions
+        if load_media:
+            self.key_image = None
+            self.key_video = None
+
         self.own_actions_ready()
 
         ## Load labels
@@ -730,9 +751,6 @@ class ControllerKey:
 
         ## Load media
         if load_media:
-            self.key_image = None
-            self.key_video = None
-
             path = page_dict.get("media", {}).get("path", None)
             if path not in ["", None]:
                 print(f"media on key {self.key} is {path}")
@@ -749,6 +767,12 @@ class ControllerKey:
                         controller_key=self,
                         video_path=path,
                     )) # Videos always update
+
+        if load_background_color:
+            self.background_color = page_dict.get("background", {}).get("color", [0, 0, 0, 0])
+            # Ensure the background color has an alpha channel
+            if len(self.background_color) == 3:
+                self.background_color.append(255)
 
 
         if update:
@@ -783,13 +807,13 @@ class ControllerKey:
         active_page = self.deck_controller.active_page
         own_coords = self.deck_controller.index_to_coords(self.key)
         page_coords = f"{own_coords[0]}x{own_coords[1]}"
-        if page_coords == "0x2":
-            print()
 
         actions = list(active_page.action_objects.get(page_coords, {}).values())
         return actions
     
     def on_key_change(self, state) -> None:
+        self.press_state = state
+
         self.update()
 
         if state:
@@ -801,9 +825,6 @@ class ControllerKey:
     def own_actions_ready(self) -> None:
         for action in self.get_own_actions():
             action.on_ready()
-            
-        if self.key_image is not None:
-            print()
 
     def own_actions_key_down(self) -> None:
         for action in self.get_own_actions():

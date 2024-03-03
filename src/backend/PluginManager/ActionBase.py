@@ -138,18 +138,6 @@ class ActionBase:
                 video_path=media_path,
             ))
 
-        #TODO: Add labels
-        for label in self.labels:
-            key_label = KeyLabel(
-                controller_key=self.deck_controller.keys[self.index],
-                text=self.labels[label]["text"],
-                font_size=self.labels[label]["font-size"],
-                font_name=self.labels[label]["font-family"],
-                color=self.labels[label]["color"],
-                font_weight=self.labels[label]["stroke-width"]
-            )
-            self.deck_controller.keys[self.index].add_label(key_label, position=label, update=False)
-
         if update:
             self.deck_controller.update_key(self.index)
             

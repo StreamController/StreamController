@@ -9,7 +9,7 @@ from PIL import Image
 from src.backend.PluginManager.Signals import Signal
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.HelperMethods import is_image, is_video
-from src.backend.DeckManagement.DeckController import KeyImage, KeyVideo, BackgroundImage, BackgroundVideo
+from src.backend.DeckManagement.DeckController import KeyImage, KeyVideo, BackgroundImage, BackgroundVideo, KeyLabel
 
 # Import globals
 import globals as gl
@@ -121,41 +121,7 @@ class ActionBase:
                 "font-size": font_size
             }
 
-    def set_key(self, image = None, media_path=None, margins=[0, 0, 0, 0],
-                add_background=True, loop=True, fps=30, bypass_task=False, update_ui=True, reload: bool = False):
-        """
-        Sets the key image for the key of the action.
-
-        Parameters:
-            image (optional): The image to be displayed.
-            media_path (optional): The path to the media file.
-            margins (optional): The margins for the image.
-            add_background (optional): Whether to add a background.
-            loop (optional): Whether to loop the video. (does only work for videos)
-            fps (optional): The frames per second. (does only work for videos)
-            bypass_task (optional): Whether to bypass the task.
-            update_ui (optional): Whether to update the UI.
-        """
-        if not reload:
-            self.current_key = {
-                "key": self.index,
-                "image": image,
-                "media_path": media_path,
-                "margins": margins,
-                "add_background": add_background,
-                "loop": loop,
-                "fps": fps,
-                "bypass_task": bypass_task,
-                "update_ui": update_ui
-            }
-        elif self.current_key == {}:
-            log.warning("No key to reload")
-            return
-        
-        # Fill unset labels with labels set in the ui
-        page_labels = copy(self.page.dict["keys"][self.page_coords]["labels"])
-        page_labels.update(self.labels)
-
+    def set_media(self, image = None, media_path=None, margins=[0, 0, 0, 0], update: bool = True):
         if is_image(media_path):
             with Image.open(media_path) as img:
                 image = img.copy()
@@ -165,7 +131,7 @@ class ActionBase:
                 controller_key=self.deck_controller.keys[self.index],
                 image=image,
                 margins=margins
-            ))
+            ), update=False)
         if is_video(media_path):
             self.deck_controller.keys[self.index].set_key_video(KeyVideo(
                 controller_key=self.deck_controller.keys[self.index],
@@ -173,40 +139,48 @@ class ActionBase:
             ))
 
         #TODO: Add labels
+        for label in self.labels:
+            key_label = KeyLabel(
+                controller_key=self.deck_controller.keys[self.index],
+                text=self.labels[label]["text"],
+                font_size=self.labels[label]["font-size"],
+                font_name=self.labels[label]["font-family"],
+                color=self.labels[label]["color"],
+                font_weight=self.labels[label]["stroke-width"]
+            )
+            self.deck_controller.keys[self.index].add_label(key_label, position=label, update=False)
+
+        if update:
+            self.deck_controller.update_key(self.index)
+            
+    def show_error(self, duration: int = -1) -> None:
+        self.deck_controller.keys[self.index].show_error(duration=duration)
         
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
-                      font_family: str = "", font_size = 18, reload: bool = True):
-        if position not in ["top", "center", "bottom"]:
-            raise ValueError("Position must be 'top', 'center' or 'bottom'")
+                      font_family: str = "", font_size = 18, update: bool = True):
         
-        if text == None:
-            if position in self.labels:
-                del self.labels[position]
-        else:
-            self.labels[position] = {
-                "text": text,
-                "color": color,
-                "stroke-width": stroke_width,
-                "font-family": font_family,
-                "font-size": font_size
-            }
-
-        # Reload key
-        if reload:
-            self.set_key(reload=True)
+        key_label = KeyLabel(
+            controller_key=self.deck_controller.keys[self.index],
+            text=text,
+            font_size=font_size,
+            font_name=font_family,
+            color=color,
+            font_weight=stroke_width
+        )
+        self.deck_controller.keys[self.index].add_label(key_label, position=position, update=update)
 
     def set_top_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
-                      font_family: str = "", font_size = 18, reload: bool = True):
-        self.set_label(text, "top", color, stroke_width, font_family, font_size, reload)
+                      font_family: str = "", font_size = 18, update: bool = True):
+        self.set_label(text, "top", color, stroke_width, font_family, font_size, update)
     
     def set_center_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
-                      font_family: str = "", font_size = 18, reload: bool = True):
-        self.set_label(text, "center", color, stroke_width, font_family, font_size, reload)
+                      font_family: str = "", font_size = 18, update: bool = True):
+        self.set_label(text, "center", color, stroke_width, font_family, font_size, update)
     
     def set_bottom_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
-                      font_family: str = "", font_size = 18, reload: bool = True):
-        self.set_label(text, "bottom", color, stroke_width, font_family, font_size, reload)
+                      font_family: str = "", font_size = 18, update: bool = True):
+        self.set_label(text, "bottom", color, stroke_width, font_family, font_size, update)
 
     def on_labels_changed_in_ui(self):
         self.set_key(reload=True)

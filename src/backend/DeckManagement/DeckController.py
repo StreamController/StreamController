@@ -280,6 +280,24 @@ class DeckController:
 
         log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()}")
 
+        # Stop queued tasks
+        self.clear_media_player_tasks()
+        print(self.media_player_tasks)
+
+        # Update ui
+        if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
+            try:
+                gl.app.main_win.header_bar.page_selector.update_selected()
+                settings_page = gl.app.main_win.leftArea.deck_stack.get_visible_child().page_settings.settings_page
+                settings_group = settings_page.settings_group
+                background_group = settings_page.background_group
+
+                # Update ui
+                settings_group.screensaver.load_defaults_from_page()
+                background_group.media_row.load_defaults_from_page()
+            except AttributeError as e:
+                log.error(f"{e} -> This is okay if you just activated your first deck.")
+
         self.load_brightness(page)
         self.load_screensaver(page)
         self.load_background(page, update=False)
@@ -289,6 +307,9 @@ class DeckController:
         self.clear_media_player_tasks()
         # Load new page onto deck
         self.update_all_keys()
+
+        # Notify plugin actions
+        gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
 
     def set_brightness(self, value):
         self.deck.set_brightness(value)

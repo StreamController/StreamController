@@ -582,7 +582,7 @@ class ControllerKey:
                 # Use the color as the only background - happens if background color alpha is 255
                 background = background_color_img
             else:
-                background.paste(background_color_img, (0, 0))
+                background.paste(background_color_img, (0, 0), background_color_img)
 
 
         if background is None:

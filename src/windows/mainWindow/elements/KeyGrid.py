@@ -134,9 +134,9 @@ class KeyButton(Gtk.Frame):
 
         # update righthand side key preview if possible
         if recursive_hasattr(gl, "app.main_win.rightArea"):
-            self.set_right_preview(self.pixbuf)
+            self.set_icon_selector_previews(self.pixbuf)
 
-    def set_right_preview(self, pixbuf):
+    def set_icon_selector_previews(self, pixbuf):
         right_area = gl.app.main_win.rightArea
         if pixbuf is None:
             return
@@ -146,7 +146,10 @@ class KeyButton(Gtk.Frame):
             return
         if gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller != self.key_grid.deck_controller:
             return
+        # Update icon selector on the top of the right are
         GLib.idle_add(right_area.key_editor.icon_selector.image.set_from_pixbuf, pixbuf)
+        # Update icon selector in margin editor
+        GLib.idle_add(right_area.key_editor.image_editor.image_group.expander.margin_row.icon_selector.image.set_from_pixbuf, pixbuf)
 
     def show_pixbuf(self, pixbuf):
         self.pixbuf = pixbuf
@@ -201,7 +204,7 @@ class KeyButton(Gtk.Frame):
         right_area.load_for_coords((self.coords[1], self.coords[0]))
         # Update preview
         if self.pixbuf is not None:
-            self.set_right_preview(self.pixbuf)
+            self.set_icon_selector_previews(self.pixbuf)
         # self.set_css_classes(["key-button-frame"])
         # self.button.set_css_classes(["key-button-new-small"])
         self.set_visible(True)

@@ -878,7 +878,7 @@ class KeyImage:
         self.controller_key = controller_key
         self.image: Image = image
         self.fill_mode = fill_mode
-        self.margins = margins
+        self.margins = list(map(int, margins)) # Ensure margins are ints
 
 
     def get_composite_image(self, background: Image = None) -> Image:
@@ -886,8 +886,13 @@ class KeyImage:
             background = self.controller_key.deck_controller.generate_alpha_key()
 
         # Calculate the box where the inner image should be fitted
-        box = (self.margins[3], self.margins[0], background.width - self.margins[1], background.height - self.margins[2])
+        box = (self.margins[3],
+               self.margins[0],
+               background.width - self.margins[1],
+               background.height - self.margins[2])
         box_size = (box[2] - box[0], box[3] - box[1])
+
+        print(box_size)
 
 
         if self.fill_mode == "stretch":
@@ -902,6 +907,8 @@ class KeyImage:
         
         else:
             raise ValueError(f"Unknown fill mode: {self.fill_mode}")
+        
+        print(f"image_resized: {image_resized.size}")
 
         background.paste(image_resized, self.margins[0:2])
 

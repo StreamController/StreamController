@@ -22,6 +22,7 @@ from gi.repository import Gtk, Adw, Gdk, GLib, Gio
 
 # Import Python modules 
 from loguru import logger as log
+import os
 
 # Imort globals
 import globals as gl
@@ -51,8 +52,9 @@ class KeyGrid(Gtk.Grid):
 
         self.build()
 
-        self.load_from_changes()
+        self.connect("map", self.on_map)
 
+        self.load_from_changes()
     
     def build(self):
         layout = self.deck_controller.deck.key_layout()
@@ -72,8 +74,18 @@ class KeyGrid(Gtk.Grid):
         if not hasattr(self.deck_controller, "ui_grid_buttons_changes_while_hidden"):
             return
         tasks = self.deck_controller.ui_grid_buttons_changes_while_hidden
-        for coords, pixbuf in tasks.items():
-            self.buttons[coords[0]][coords[1]].show_pixbuf(pixbuf)
+        for coords, image in tasks.items():
+            self.buttons[coords[0]][coords[1]].set_image(image)
+        
+        # Clear tasks
+        self.deck_controller.ui_grid_buttons_changes_while_hidden = {}
+
+    def select_key(self, x: int, y: int):
+        self.buttons[x][y].on_focus_in()
+        self.buttons[x][y].image.grab_focus()
+
+    def on_map(self, widget):
+        self.load_from_changes()
 
 class KeyButton(Gtk.Frame):
     def __init__(self, key_grid:KeyGrid, coords, **kwargs):
@@ -108,20 +120,23 @@ class KeyButton(Gtk.Frame):
         self.image.set_focusable(True)
 
     def set_image(self, image):
-        # Check if this keygrid is on the screen
-        if self.key_grid.deck_page.stack.get_visible_child() != self.key_grid.deck_page.grid_page:
-            return
-        # Check if this deck is on the screen
-        if self.key_grid.deck_page.deck_stack.get_visible_child() != self.key_grid.deck_page:
-            return
+        # Check if we can perform the next checks
+        if recursive_hasattr(self, "key_grid.deck_page.grid_page"):
+            # Check if this keygrid is on the screen
+            if self.key_grid.deck_page.stack.get_visible_child() != self.key_grid.deck_page.grid_page:
+                self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
+            # Check if this deck is on the screen
+            if self.key_grid.deck_page.deck_stack.get_visible_child() != self.key_grid.deck_page:
+                self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
 
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         self.show_pixbuf(self.pixbuf)
 
-        # update righthand side key preview
-        self.set_right_preview(self.pixbuf)
+        # update righthand side key preview if possible
+        if recursive_hasattr(gl, "app.main_win.rightArea"):
+            self.set_icon_selector_previews(self.pixbuf)
 
-    def set_right_preview(self, pixbuf):
+    def set_icon_selector_previews(self, pixbuf):
         right_area = gl.app.main_win.rightArea
         if pixbuf is None:
             return
@@ -131,7 +146,10 @@ class KeyButton(Gtk.Frame):
             return
         if gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller != self.key_grid.deck_controller:
             return
+        # Update icon selector on the top of the right are
         GLib.idle_add(right_area.key_editor.icon_selector.image.set_from_pixbuf, pixbuf)
+        # Update icon selector in margin editor
+        # GLib.idle_add(right_area.key_editor.image_editor.image_group.expander.margin_row.icon_selector.image.set_from_pixbuf, pixbuf)
 
     def show_pixbuf(self, pixbuf):
         self.pixbuf = pixbuf
@@ -156,7 +174,7 @@ class KeyButton(Gtk.Frame):
 
     def simulate_press(self):
         ## Check if double click to emulate is turned on in the settings
-        settings = gl.settings_manager.load_settings_from_file("settings/settings.json")
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
         if not settings.get("key-grid", {}).get("emulate-at-double-click", True):
             return
         
@@ -180,11 +198,13 @@ class KeyButton(Gtk.Frame):
 
     def on_focus_in(self, *args):
         # Update settings on the righthand side of the screen
+        if not recursive_hasattr(gl, "app.main_win.rightArea"):
+            return
         right_area = gl.app.main_win.rightArea
         right_area.load_for_coords((self.coords[1], self.coords[0]))
         # Update preview
         if self.pixbuf is not None:
-            self.set_right_preview(self.pixbuf)
+            self.set_icon_selector_previews(self.pixbuf)
         # self.set_css_classes(["key-button-frame"])
         # self.button.set_css_classes(["key-button-new-small"])
         self.set_visible(True)
@@ -220,10 +240,17 @@ class KeyButton(Gtk.Frame):
         if active_page is None:
             return
         y, x = self.coords
-
+        
+        if f"{x}x{y}" not in active_page.dict["keys"]:
+            return
         del active_page.dict["keys"][f"{x}x{y}"]
         active_page.save()
         active_page.load()
+
+
+        # Remove media from key
+        key_index = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
+        self.key_grid.deck_controller.keys[key_index].set_key_image(None)
 
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 

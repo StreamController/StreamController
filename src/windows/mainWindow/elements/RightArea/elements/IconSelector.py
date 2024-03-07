@@ -113,11 +113,10 @@ class IconSelector(Gtk.Box):
         active_page.dict.setdefault("keys", {})
         active_page.dict["keys"].setdefault(page_coords, {})
         active_page.dict["keys"][page_coords].setdefault("media", {
-            "path": None,
-            "loop": False,
+            "path": path,
+            "loop": True,
             "fps": 30
         })
-        active_page.dict["keys"][page_coords]["media"]["path"] = path
 
         # Save page
         active_page.save()
@@ -130,15 +129,15 @@ class IconSelector(Gtk.Box):
         self.set_media_path(path)
         # Reload key
         controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        page_coords = f"{self.right_area.active_coords[0]}x{self.right_area.active_coords[1]}"
-        controller.load_key(page_coords)
+        key_index = controller.coords_to_index(self.right_area.active_coords)
+        controller.load_key(key_index, page=controller.active_page)
 
     def remove_media(self, *args):
-        self.set_media_path(None)
-        # Reload key
+        # Get keygrid of active controller
         controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        page_coords = f"{self.right_area.active_coords[0]}x{self.right_area.active_coords[1]}"
-        controller.load_key(page_coords)
+        grid = controller.get_own_key_grid()
+        # Call keys remove method
+        grid.selected_key.on_remove()
         # Hide remove button
         self.remove_button.set_visible(False)
 

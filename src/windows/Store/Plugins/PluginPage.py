@@ -22,6 +22,7 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
 import webbrowser as web
 import asyncio
 import threading
+from loguru import logger as log
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
@@ -36,12 +37,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.Store.Store import Store
 
+# Import globals
+import globals as gl
+
 
 class PluginPage(StorePage):
     def __init__(self, store: "Store"):
         super().__init__(store=store)
         self.store = store
-        self.search_entry.set_placeholder_text("Search for plugins")
+        self.search_entry.set_placeholder_text(gl.lm.get("store.plugins.search-placeholder"))
 
         threading.Thread(target=self.load).start()
 

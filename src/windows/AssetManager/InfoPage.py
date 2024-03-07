@@ -28,7 +28,7 @@ from PIL import Image
 from videoprops import get_video_properties
 
 # Import own modules
-from GtkHelper.GtkHelper import AttributeRow
+from GtkHelper.GtkHelper import AttributeRow, OriginalURL
 from src.backend.DeckManagement.HelperMethods import is_video, get_image_aspect_ratio
 
 class InfoPage(Gtk.Box):
@@ -81,10 +81,14 @@ class InfoPage(Gtk.Box):
         self.license_url_row = AttributeRow(title="URL:", attr="Error")
         self.license_group.add(self.license_url_row)
 
+        self.original_url_row = OriginalURL()
+        self.license_group.add(self.original_url_row)
+
         self.license_comment_row = AttributeRow(title="Comment:", attr="Error")
         self.license_group.add(self.license_comment_row)
 
-    def show_info(self, internal_path:str = None, licence_name: str = None, license_url: str = None, author: str = None, license_comment: str = None):
+    def show_info(self, internal_path:str = None, licence_name: str = None, license_url: str = None, author: str = None, license_comment: str = None,
+                  original_url: str = None):
         if internal_path is None:
             self.image_group.set_visible(False)
             self.video_group.set_visible(False)
@@ -97,6 +101,7 @@ class InfoPage(Gtk.Box):
         self.license_author_row.set_url(author)
         self.license_url_row.set_url(license_url)
         self.license_comment_row.set_url(license_comment)
+        self.original_url_row.set_url(original_url)
 
 
     def show_for_asset(self, asset:dict):

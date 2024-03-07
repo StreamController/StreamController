@@ -61,7 +61,11 @@ class WallpaperPack:
         wallpapers: list[Wallpaper] = []
 
         manifest = self.get_manifest()
-        wallpapers_path = manifest.get("wallpapers")
+        wallpapers_path = manifest.get("images")
+        
+        if wallpapers_path is None:
+            return wallpapers
+        
         wallpapers_path = os.path.join(self.path, wallpapers_path)
 
         if not os.path.exists(wallpapers_path):

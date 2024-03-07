@@ -22,6 +22,9 @@ import requests
 from urllib.parse import urlparse
 from PIL import Image
 
+# Import globals
+import globals as gl
+
 def sha256(file_path):
     """
     Calculates the sha256 hash of a file.
@@ -38,7 +41,7 @@ def sha256(file_path):
             hash_sha256.update(chunk)
     return hash_sha256.hexdigest()
 
-def file_in_dir(file_path, dir=None):
+def file_in_dir(file_path, _dir=None) -> None:
     """
     Check if a file is present in a directory.
     
@@ -49,7 +52,12 @@ def file_in_dir(file_path, dir=None):
     Returns:
         bool: True if the file is present in the directory, False otherwise.
     """
-    return os.path.split(file_path)[1] in os.listdir(dir)
+    if _dir is None:
+        return
+    if not os.path.isdir(_dir):
+        return
+    
+    return os.path.split(file_path)[1] in os.listdir(_dir)
 
 def recursive_hasattr(obj, attr_string):
     """
@@ -107,10 +115,18 @@ def get_sys_args_without_param(param_name: str) -> list:
     return args
 
 def is_video(path: str) -> bool:
-    video_formats = ["mkv", "mp4", "webm"]
-
+    if path is None:
+        return
     if os.path.isfile(path):
-        return os.path.splitext(path)[1][1:].lower() in video_formats
+        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.video_extensions
+
+    return False
+
+def is_image(path: str) -> bool:
+    if path is None:
+        return
+    if os.path.isfile(path):
+        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.image_extensions
 
     return False
 

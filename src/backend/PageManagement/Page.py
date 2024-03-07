@@ -58,10 +58,10 @@ class Page:
             json.dump(without_objects, f, indent=4)
 
     def make_backup(self):
-        os.makedirs(os.path.join("pages","backups"), exist_ok=True)
+        os.makedirs(os.path.join(gl.DATA_PATH, "pages","backups"), exist_ok=True)
 
         src_path = self.json_path
-        dst_path = os.path.join("pages","backups", os.path.basename(src_path))
+        dst_path = os.path.join(gl.DATA_PATH, "pages","backups", os.path.basename(src_path))
 
         # Check if json in src is valid
         with open(src_path) as f:
@@ -78,14 +78,9 @@ class Page:
             value = self.dict.pop(key)
             self.dict[key] = value
 
-    def set_background(self, file_path, loop=True, fps=30, show=True):
-        background = {
-            "show": show,
-            "path": file_path,
-            "loop": loop,
-            "fps": fps
-        }
-        self.dict["background"] = background
+    def set_background(self, file_path):
+        self.dict.setdefault("background", {})
+        self.dict["background"]["path"] = file_path
         self.save()
 
     def load_action_objects(self):
@@ -98,11 +93,17 @@ class Page:
             if "actions" not in self.dict["keys"][key]:
                 continue
             for i, action in enumerate(self.dict["keys"][key]["actions"]):
-                action_class = gl.plugin_manager.get_action_from_action_string(action["name"])
+                if action.get("id") is None:
+                    continue
+
+                action_holder = gl.plugin_manager.get_action_holder_from_id(action["id"])
+                if action_holder is None:
+                    continue
+                action_class = action_holder.action_base
                 
                 self.action_objects.setdefault(key, {})
                 if action_class is None:
-                    self.action_objects[key][i] = action["name"].split("::")[0]
+                    self.action_objects[key][i] = action["id"]
                     continue
 
                 old_object = self.action_objects[key].get(i)
@@ -115,7 +116,7 @@ class Page:
                         self.action_objects[key][i] = self.loaded_action_objects[key][i]
                         continue
 
-                action_object = action_class(deck_controller=self.deck_controller, page=self, coords=key)
+                action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
                 self.action_objects[key][i] = action_object
 
     def remove_plugin_action_objects(self, plugin_id: str) -> bool:
@@ -253,5 +254,6 @@ class Page:
             if page_coords is None:
                 page.deck_controller.reload_page()
             else:
+                key_index = page.deck_controller.coords_to_index(page_coords.split("x"))
                 # Reload only given key
-                page.deck_controller.load_key(page_coords)
+                page.deck_controller.load_key(key_index, page.deck_controller.active_page)

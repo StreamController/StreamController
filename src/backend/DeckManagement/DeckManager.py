@@ -18,6 +18,7 @@ from StreamDeck.Devices import StreamDeck
 from StreamDeck.ImageHelpers import PILHelper
 from loguru import logger as log
 from usbmonitor import USBMonitor
+import os
 
 # Import own modules
 from src.backend.DeckManagement.DeckController import DeckController
@@ -45,6 +46,12 @@ class DeckManager:
     def load_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:
+            try:
+                if not deck.is_open():
+                    deck.open()
+            except:
+                log.error("Failed to open deck. Maybe it's already connected to another instance?")
+                continue
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)
 
@@ -53,11 +60,12 @@ class DeckManager:
 
     def load_fake_decks(self):
         old_n_fake_decks = len(self.fake_deck_controller)
-        n_fake_decks = int(gl.settings_manager.load_settings_from_file("settings/settings.json").get("dev", {}).get("n-fake-decks", 0))
+        n_fake_decks = int(gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json")).get("dev", {}).get("n-fake-decks", 0))
+
         if n_fake_decks > old_n_fake_decks:
             log.info(f"Loading {n_fake_decks - old_n_fake_decks} fake deck(s)")
             # Load difference in number of fake decks
-            for i in range(n_fake_decks - old_n_fake_decks):
+            for controller in range(n_fake_decks - old_n_fake_decks):
                 a = f"Fake Deck {len(self.fake_deck_controller)+1}"
                 fake_deck = FakeDeck(serial_number = f"fake-deck-{len(self.fake_deck_controller)+1}", deck_type=f"Fake Deck {len(self.fake_deck_controller)+1}")
                 self.add_newly_connected_deck(fake_deck, is_fake=True)
@@ -71,19 +79,21 @@ class DeckManager:
         elif n_fake_decks < old_n_fake_decks:
             # Remove difference in number of fake decks
             log.info(f"Removing {old_n_fake_decks - n_fake_decks} fake deck(s)")
-            for i in self.fake_deck_controller[-(old_n_fake_decks - n_fake_decks):]:
+            for controller in self.fake_deck_controller[-(old_n_fake_decks - n_fake_decks):]:
                 # Remove controller from fake_decks
-                self.fake_deck_controller.remove(i)
+                self.fake_deck_controller.remove(controller)
                 # Remove controller from main list
-                self.deck_controller.remove(i)
+                self.deck_controller.remove(controller)
                 # Remove deck page on stack
-                gl.app.main_win.leftArea.deck_stack.remove_page(i)
+                gl.app.main_win.leftArea.deck_stack.remove_page(controller)
 
             # Update header deck switcher if there are no more decks
             if len(self.deck_controller) == 0:
                 # Check if ui is loaded - if not it will grab the controller automatically
                 if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
                     gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(False)
+
+            gl.app.main_win.check_for_errors()
 
 
     def on_connect(self, device_id, device_info):
@@ -105,6 +115,8 @@ class DeckManager:
             # Add deck
             self.add_newly_connected_deck(deck)
 
+        gl.app.main_win.check_for_errors()
+
 
     def on_disconnect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} disconnected")
@@ -118,15 +130,38 @@ class DeckManager:
 
                 del controller
 
+        gl.app.main_win.check_for_errors()
+
     def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):
         deck_controller = DeckController(self, deck)
 
         # Check if ui is loaded - if not it will grab the controller automatically
         if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
             # Add to deck stack
+            print("adding to deck stack")
             gl.app.main_win.leftArea.deck_stack.add_page(deck_controller)
+
+        if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
+            gl.app.main_win.header_bar.page_selector.update()
 
 
         self.deck_controller.append(deck_controller)
         if is_fake:
             self.fake_deck_controller.append(deck_controller)
+
+        if not recursive_hasattr(gl, "app.main_win."):
+            return
+        gl.app.main_win.check_for_errors()
+
+    def close_all(self):
+        log.info("Closing all decks")
+        for controller in self.deck_controller:
+            with controller.deck as deck:
+                if deck is None:
+                    continue
+                if not deck.is_open():
+                    continue
+                
+                log.info(f"Closing deck: {deck.get_serial_number()}")
+                deck.reset()
+                deck.close()

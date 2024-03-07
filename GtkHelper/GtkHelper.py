@@ -21,6 +21,7 @@ from gi.repository import Gtk, Adw
 
 # Import Python modules
 from loguru import logger as log
+import webbrowser as web
 
 # Import globals
 import globals as gl
@@ -327,3 +328,29 @@ class ErrorPage(Gtk.Box):
 
     def set_reload_args(self, reload_args):
         self.reload_args = reload_args
+
+
+class OriginalURL(Adw.ActionRow):
+    def __init__(self):
+        super().__init__(title="Original URL:", subtitle="N/A")
+        self.set_activatable(False)
+
+        self.suffix_box = Gtk.Box(valign=Gtk.Align.CENTER)
+        self.add_suffix(self.suffix_box)
+
+        self.open_button = Gtk.Button(icon_name="web-browser-symbolic")
+        self.open_button.connect("clicked", self.on_open_clicked)
+        self.suffix_box.append(self.open_button)
+
+    def set_url(self, url:str):
+        if url is None:
+            self.set_subtitle("N/A")
+            self.open_button.set_sensitive(False)
+            return
+        self.set_subtitle(url)
+        self.open_button.set_sensitive(True)
+
+    def on_open_clicked(self, button:Gtk.Button):
+        if self.get_subtitle() in [None, "N/A"]:
+            return
+        web.open(self.get_subtitle())

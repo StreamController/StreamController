@@ -80,7 +80,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_button = Gtk.Button(label=gl.lm.get("select"), css_classes=["page-settings-media-selector"])
         self.media_selector.append(self.media_selector_button)
 
-        self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text="Caching...", fraction=0, show_text=True, visible=False)
+        self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text=gl.lm.get("background.processing"), fraction=0, show_text=True, visible=False)
         self.config_box.append(self.progress_bar)
 
         # Signals get directly disconnected by disconnect_signals() but we have to connect them beforehand to prevent errors
@@ -131,28 +131,25 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Set config box state
         self.config_box.set_visible(overwrite)
 
-
-        if self.settings_page.deck_page.deck_controller.active_page.dict["background"]["path"] in [None, ""]:
-            self.connect_signals()
-            return
-
         self.set_thumbnail(file_path)
 
         self.connect_signals()
 
     def on_toggle_enable(self, toggle_switch, state):
         # Change setting in the active deck page
-        self.settings_page.deck_page.deck_controller.active_page.dict["background"]["show"] = state
-        self.settings_page.deck_page.deck_controller.active_page.save()
-        self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screensaver=False)
+        deck_controller = self.settings_page.deck_page.deck_controller
+        deck_controller.active_page.dict["background"]["show"] = state
+        deck_controller.active_page.save()
+        deck_controller.load_background(page=deck_controller.active_page)
 
     def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)
         # Update page
-        self.settings_page.deck_page.deck_controller.active_page.dict["background"]["overwrite"] = state
+        deck_controller = self.settings_page.deck_page.deck_controller
+        deck_controller.active_page.dict["background"]["overwrite"] = state
         # Save
-        self.settings_page.deck_page.deck_controller.active_page.save()
-        self.settings_page.deck_page.deck_controller.reload_page(load_background=False, load_keys=False, load_screensaver=False)
+        deck_controller.active_page.save()
+        deck_controller.load_background(page=deck_controller.active_page)
 
     def on_choose_image(self, button):
         self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("background", {})
@@ -162,69 +159,40 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
     def set_thumbnail(self, file_path):
         if file_path == None:
+            self.media_selector_image.clear()
             return
         # return
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
+        if pixbuf is None:
+            # This usually means that the provided image is a non RGB one
+            dial = Gtk.AlertDialog(
+                message="The chosen image doesn't seem to have RGB color channels.",
+                detail="Please convert it an an app like GIMP.",
+                modal=True
+            )
+            dial.show()
+            return
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 
-    def set_deck_background(self, file_path):
+    def set_deck_background(self, file_path: str) -> None:
         self.set_thumbnail(file_path)
-        # Add background to assets
-        asset_id = gl.asset_manager.add(file_path)
-
-        local_path = gl.asset_manager.get_by_id(asset_id)["internal-path"]
-        self.set_background_to_page(local_path)
+        self.set_background_to_page(file_path)
 
     def set_background_to_page(self, file_path):
-        self.settings_page.deck_page.deck_controller.active_page.set_background(file_path)
-        self.settings_page.deck_page.deck_controller.set_background(file_path, bypass_task=True)
-
-        # self.update_progress_bar()
-
-    def update_progress_bar(self):
-        #TODO: Thread is not the best solution
-        def thread(self):
-            if self.settings_page.deck_page.deck_controller.set_background_task_id == None:
-                return
-            # Return if task is directly finished
-            progress_dir = self.settings_page.deck_page.deck_controller.media_handler.progress_dir
-            if progress_dir[self.settings_page.deck_page.deck_controller.set_background_task_id] >= 1:
-                return
-            self.progress_bar.set_visible(True)
-            while True:
-                set_background_task_id = self.settings_page.deck_page.deck_controller.set_background_task_id
-                progress_dir = self.settings_page.deck_page.deck_controller.media_handler.progress_dir
-                self.progress_bar.set_fraction(floor(progress_dir[set_background_task_id]*10)/ 10) # floor to one decimal
-                sleep(0.25)
-
-                if progress_dir[set_background_task_id] >= 1:
-                    self.progress_bar.set_fraction(1)
-                    # Keep the progress bar visible for 2s
-                    sleep(2)
-                    self.progress_bar.set_visible(False)
-                    break
-
-        # Start thread
-        threading.Thread(target=thread, args=(self,)).start()
+        deck_controller = self.settings_page.deck_page.deck_controller
+        deck_controller.active_page.set_background(file_path)
+        self.progress_bar.set_visible(True)
+        self.progress_bar.set_fraction(0)
+        # self.settings_page.deck_page.deck_controller.set_background(file_path, bypass_task=True,
+                                                                    # callback=self.callback)
+        deck_controller.load_background(page=deck_controller.active_page)
 
 
-
-class ChooseBackgroundDialog(Gtk.FileDialog):
-    def __init__(self, background_row: BackgroundMediaRow):
-        super().__init__(title="Select Background",
-                         accept_label="Select")
-        self.background_row = background_row
-        self.open(callback=self.callback)
-
-    def callback(self, dialog, result):
-        try:
-            selected_file = self.open_finish(result)
-            file_path = selected_file.get_path()
-        except GLib.Error as err:
-            log.error(err)
-            return
-        
-        self.background_row.set_thumbnail(file_path)
-        self.background_row.set_deck_background(file_path)
+    def callback(self, progress: float) -> None:
+        print(f"progress: {progress}")
+        if progress >= 1:
+            threading.Timer(2, self.progress_bar.set_visible, args=(False,)).start()
+        self.progress_bar.set_visible(True)
+        self.progress_bar.set_fraction(progress)

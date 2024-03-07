@@ -26,6 +26,8 @@ from fuzzywuzzy import fuzz, process
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import get_last_dir
 from GtkHelper.GtkHelper import BetterExpander, BetterPreferencesGroup
+from src.windows.Store.Store import Store
+from src.backend.PluginManager.ActionHolder import ActionHolder
 
 
 # Import globals
@@ -69,6 +71,9 @@ class ActionChooser(Gtk.Box):
         self.plugin_group = PluginGroup(self, margin_top=40)
         self.main_box.append(self.plugin_group)
 
+        self.open_store_button = OpenStoreButton(margin_top=40)
+        self.main_box.append(self.open_store_button)
+
     def show(self, callback_function, current_stack_page, callback_args, callback_kwargs):
         # The current-stack_page is usefull in case the let_user_select_action is called by an plugin action in the action_configurator
 
@@ -93,6 +98,17 @@ class ActionChooser(Gtk.Box):
 
     def on_search_changed(self, search_entry):
         self.plugin_group.search()
+
+
+class OpenStoreButton(Gtk.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(label="Get More", css_classes=["open-store-button"],
+                         *args, **kwargs)
+        self.connect("clicked", self.on_click)
+
+    def on_click(self, button):
+        self.store = Store(application=gl.app, main_window=gl.app.main_win)
+        self.store.present()
 
 class PluginGroup(BetterPreferencesGroup):
     def __init__(self, action_chooser, **kwargs):
@@ -150,8 +166,8 @@ class PluginGroup(BetterPreferencesGroup):
         return 0
     
     def filter_func(self, expander, user_data):
-        MIN_ACTION_FUZZY_SCORE = 50
-        MIN_TITLE_FUZZY_SCORE = 40
+        MIN_ACTION_FUZZY_SCORE = 20
+        MIN_TITLE_FUZZY_SCORE = 20
 
         search_string = self.action_chooser.search_entry.get_text()
         if search_string == "":
@@ -180,8 +196,9 @@ class PluginExpander(BetterExpander):
 
         self.set_icon_name("view-paged")
 
-        for action_name, action_class in plugin_dir["object"].ACTIONS.items():
-            action_row = ActionRow(self, action_name, action_class)
+        action_holders: list[ActionHolder] = self.plugin_dir["object"].action_holders.values()
+        for holder in action_holders:
+            action_row = ActionRow(self, holder)
             self.add_row(action_row)
 
         self.highest_fuzz_score = 0
@@ -236,7 +253,7 @@ class PluginExpander(BetterExpander):
 
         fuzz_score = fuzz.ratio(search_string.lower(), row.label.get_label().lower())
 
-        MIN_FUZZY_SCORE = 50
+        MIN_FUZZY_SCORE = 20
         if fuzz_score >= MIN_FUZZY_SCORE:
             # Expand
             self.set_expanded(True)
@@ -245,11 +262,10 @@ class PluginExpander(BetterExpander):
 
 
 class ActionRow(Adw.PreferencesRow):
-    def __init__(self, expander, action_name, action_class, **kwargs):
+    def __init__(self, expander, action_holder: ActionHolder, **kwargs):
         super().__init__(**kwargs)
         self.expander = expander
-        self.action_name = action_name
-        self.action_class = action_class
+        self.action_holder = action_holder
 
         self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN,
                                  css_classes=["no-margin", "invisible"])
@@ -263,11 +279,11 @@ class ActionRow(Adw.PreferencesRow):
         self.icon = Gtk.Image(icon_name="insert-image", icon_size=Gtk.IconSize.LARGE, margin_start=5)
         self.main_box.append(self.icon)
 
-        self.label = Gtk.Label(label=self.action_name, margin_start=10, css_classes=["bold", "large-text"])
+        self.label = Gtk.Label(label=self.action_holder.action_name, margin_start=10, css_classes=["bold", "large-text"])
         self.main_box.append(self.label)
 
     def on_click(self, button):
-        if self.action_class == None:
+        if self.action_holder.action_base == None:
             return
         
         # Go back to old page
@@ -284,6 +300,4 @@ class ActionRow(Adw.PreferencesRow):
         kwargs = self.expander.plugin_group.action_chooser.callback_kwargs
 
         
-        callback(self.action_class, *args, **kwargs)
-
-        # self.expander.plugin_group.action_chooser.callback_function(self.action_object, *self.expander.plugin_group.action_chooser.callback_args, **self.expander.plugin_group.action_chooser.callback_kwargs)
+        callback(self.action_holder, *args, **kwargs)

@@ -33,11 +33,14 @@ from src.backend.DeckManagement.ImageHelpers import image2pixbuf, is_transparent
 
 class DeckGroup(Adw.PreferencesGroup):
     def __init__(self, settings_page):
-        super().__init__(title="Deck Settings", description="Applies to the hole deck unless overwritten")
+        super().__init__(title=gl.lm.get("deck.deck-group.title"), description=gl.lm.get("deck.deck-group.description"))
         self.deck_serial_number = settings_page.deck_serial_number
 
-        self.add(Brightness(settings_page, self.deck_serial_number))
-        self.add(Screensaver(settings_page, self.deck_serial_number))
+        self.brightness = Brightness(settings_page, self.deck_serial_number)
+        self.screensaver = Screensaver(settings_page, self.deck_serial_number)
+
+        self.add(self.brightness)
+        self.add(self.screensaver)
 
 class Brightness(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
@@ -53,7 +56,7 @@ class Brightness(Adw.PreferencesRow):
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
-        self.label = Gtk.Label(label="Brightness", hexpand=True, xalign=0)
+        self.label = Gtk.Label(label=gl.lm.get("deck.deck-group.brightness"), hexpand=True, xalign=0)
         self.main_box.append(self.label)
 
         self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min=0, max=100, step=1)
@@ -108,7 +111,7 @@ class Screensaver(Adw.PreferencesRow):
         self.enable_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.enable_box)
 
-        self.enable_label = Gtk.Label(label="Enable Screensaver", hexpand=True, xalign=0)
+        self.enable_label = Gtk.Label(label=gl.lm.get("deck.deck-group.enable-screensaver"), hexpand=True, xalign=0)
         self.enable_box.append(self.enable_label)
 
         self.enable_switch = Gtk.Switch()
@@ -124,29 +127,32 @@ class Screensaver(Adw.PreferencesRow):
         self.time_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.config_box.append(self.time_box)
 
-        self.time_label = Gtk.Label(label="Enable after (mins)", hexpand=True, xalign=0)
+        self.time_label = Gtk.Label(label=gl.lm.get("screensaver-delay"), hexpand=True, xalign=0)
         self.time_box.append(self.time_label)
 
         self.time_spinner = Gtk.SpinButton.new_with_range(1, 60, 1)
         self.time_spinner.connect("value-changed", self.on_change_time)
         self.time_box.append(self.time_spinner)
 
-        self.media_selector_label = Gtk.Label(label="Media to show:", hexpand=True, xalign=0)
+        self.media_selector_label = Gtk.Label(label=gl.lm.get("deck.deck-group.media-to-show"), hexpand=True, xalign=0)
         self.config_box.append(self.media_selector_label)
 
         self.media_selector_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.CENTER)
         self.config_box.append(self.media_selector_box)
 
-        self.media_selector_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"])
+        self.media_selector_button = Gtk.Button(label=gl.lm.get("deck.deck-group.media-select-label"), css_classes=["page-settings-media-selector"])
         self.media_selector_button.connect("clicked", self.on_choose_image)
         self.media_selector_box.append(self.media_selector_button)
+
+        self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text=gl.lm.get("background.processing"), fraction=0, show_text=True, visible=False)
+        self.config_box.append(self.progress_bar)
 
         self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
 
         self.loop_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
         self.config_box.append(self.loop_box)
 
-        self.loop_label = Gtk.Label(label="Loop", hexpand=True, xalign=0)
+        self.loop_label = Gtk.Label(label=gl.lm.get("deck.deck-group.media-loop"), hexpand=True, xalign=0)
         self.loop_box.append(self.loop_label)
 
         self.loop_switch = Gtk.Switch()
@@ -156,7 +162,7 @@ class Screensaver(Adw.PreferencesRow):
         self.fps_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.config_box.append(self.fps_box)
 
-        self.fps_label = Gtk.Label(label="FPS", hexpand=True, xalign=0)
+        self.fps_label = Gtk.Label(label=gl.lm.get("deck.deck-group.media-fps"), hexpand=True, xalign=0)
         self.fps_box.append(self.fps_label)
 
         self.fps_spinner = Gtk.SpinButton.new_with_range(1, 30, 1)
@@ -166,7 +172,7 @@ class Screensaver(Adw.PreferencesRow):
         self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.config_box.append(self.brightness_box)
 
-        self.brightness_label = Gtk.Label(label="Brightness", hexpand=True, xalign=0)
+        self.brightness_label = Gtk.Label(label=gl.lm.get("deck.deck-group.brightness"), hexpand=True, xalign=0)
         self.brightness_box.append(self.brightness_label)
 
         self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min=0, max=100, step=1)
@@ -179,7 +185,7 @@ class Screensaver(Adw.PreferencesRow):
         
         # Set defaut values 
         original_values.setdefault("screensaver", {})
-        enable = original_values["screensaver"].setdefault("enable", True)
+        enable = original_values["screensaver"].setdefault("enable", False)
         path = original_values["screensaver"].setdefault("path", None)
         loop = original_values["screensaver"].setdefault("loop", False)
         fps = original_values["screensaver"].setdefault("fps", 30)
@@ -197,6 +203,7 @@ class Screensaver(Adw.PreferencesRow):
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
         self.scale.set_value(brightness)
+        self.set_thumbnail(path)
         
     def on_toggle_enable(self, toggle_switch, state):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
@@ -272,3 +279,6 @@ class Screensaver(Adw.PreferencesRow):
         settings.setdefault("screensaver", {})
         settings["screensaver"]["path"] = image_path
         gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
+
+        deck_controller = self.settings_page.deck_controller
+        deck_controller.load_screensaver(deck_controller.active_page)

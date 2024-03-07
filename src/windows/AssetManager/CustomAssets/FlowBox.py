@@ -21,6 +21,7 @@ from gi.repository import Gtk, Adw
 
 # Import python modules
 from fuzzywuzzy import fuzz
+import threading
 
 # Import globals
 import globals as gl
@@ -115,7 +116,13 @@ class CustomAssetChooserFlowBox(Gtk.Box):
     
     def on_child_activated(self, flow_box, child):
         if callable(self.asset_chooser.asset_manager.callback_func):
-            self.asset_chooser.asset_manager.callback_func(child.asset["internal-path"],
-                                                           *self.asset_chooser.asset_manager.callback_args,
-                                                           **self.asset_chooser.asset_manager.callback_kwargs)
+            callback_thread = threading.Thread(target=self.callback_thread, args=())
+            callback_thread.start()
+
         self.asset_chooser.asset_manager.close()
+
+    def callback_thread(self):
+        child = self.flow_box.get_selected_children()[0]
+        self.asset_chooser.asset_manager.callback_func(child.asset["internal-path"],
+                                                *self.asset_chooser.asset_manager.callback_args,
+                                                **self.asset_chooser.asset_manager.callback_kwargs)

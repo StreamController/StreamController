@@ -178,3 +178,7 @@ Pyro5
 
 # Keep .gitkeep files
 !/**/.gitkeep
+
+data/
+
+vid_cache/

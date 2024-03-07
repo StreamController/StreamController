@@ -79,7 +79,8 @@ class PageSelector(Gtk.Box):
         self.connect_change_signal()
 
     def clear_model(self):
-        self.pages_model.clear
+        self.pages_model.clear()
+        return
         for i in range(self.pages_model.get_n_items()):
             self.pages_model.remove(0)
 
@@ -105,9 +106,17 @@ class PageSelector(Gtk.Box):
         self.set_selected(page_path)
 
     def on_change_page(self, drop_down, *args):
-        active_controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        active_child = self.main_window.leftArea.deck_stack.get_visible_child()
+        if active_child is None:
+            return
+        
+        active_controller = active_child.deck_controller
+        if active_controller is None:
+            return
+        
         page_path = self.pages_model[drop_down.get_active()][1]
         page = gl.page_manager.get_page(path=page_path, deck_controller = active_controller)
+        print(f"load page: {page}")
         active_controller.load_page(page)
 
     def on_click_open_page_manager(self, button):

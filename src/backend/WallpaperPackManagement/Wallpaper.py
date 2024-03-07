@@ -29,8 +29,11 @@ class Wallpaper:
 
     def get_attribution(self):
         attribution = self.wallpaper_pack.get_attribution_json()
+        pack_path = self.wallpaper_pack.path
 
-        if os.path.basename(self.path) in attribution:
-            return attribution[os.path.basename(self.path)]
+        rel_path = os.path.relpath(self.path, pack_path)
+
+        if rel_path in attribution:
+            return attribution[rel_path]
         else:
-            return attribution.get("default", attribution.get("general", attribution.get("generic")))
+            return attribution.get("default", attribution.get("general", attribution.get("generic", {})))

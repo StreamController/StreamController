@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk
+from gi.repository import Gtk, Adw, Gdk, GLib
 
 # Import python modules
 import os
@@ -50,19 +50,39 @@ class CustomAssetChooser(ChooserPage):
         self.asset_chooser = CustomAssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.scrolled_box.prepend(self.asset_chooser)
 
+        self.browse_files_button = Gtk.Button(label=gl.lm.get("asset-chooser.custom.browse-files"), margin_top=15)
+        self.browse_files_button.connect("clicked", self.on_browse_files_clicked)
+        self.append(self.browse_files_button)
+
     def on_dnd_accept(self, drop, user_data):
         return True
     
     def on_dnd_drop(self, drop_target, value: Gdk.FileList, x, y):
         paths = value.get_files()
-        for path in paths:
-            # data = path.get_data()
+        self.add_files(paths)
+        return True
+    
+    def add_files(self, files: list) -> None:
+        for path in files:
             url = path.get_uri()
             path = path.get_path()
 
             if path is None and url is not None:
+                # Lower domain and remove point
+                extension = os.path.splitext(url)[1].lower().replace(".", "")
+                if extension not in (set(gl.video_extensions) | set(gl.image_extensions)):
+                    # Not a valid url
+                    dial = Gtk.AlertDialog(
+                        message="The image is invalid.",
+                        detail="You can only use urls directly pointing to images (not directly from Google).",
+                        modal=True
+                    )
+                    dial.show()
+                    continue
+
+                os.makedirs(os.path.join(gl.DATA_PATH, "cache", "downloads"), exist_ok=True)
                 # Download file from url
-                path = download_file(url=url, path="cache/downloads")
+                path = download_file(url=url, path=os.path.join(gl.DATA_PATH, "cache", "downloads"))
 
             if path == None:
                 continue
@@ -75,31 +95,50 @@ class CustomAssetChooser(ChooserPage):
                 continue
             asset = gl.asset_manager.get_by_id(asset_id)
             self.asset_chooser.flow_box.append(AssetPreview(flow=self, asset=asset, width_request=100, height_request=100))
-        return True
 
     def show_for_path(self, path):
         self.asset_chooser.show_for_path(path)
 
     def on_video_toggled(self, button):
-        settings = gl.settings_manager.load_settings_from_file("settings/ui/AssetManager.json")
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"))
         settings["video-toggle"] = button.get_active()
-        gl.settings_manager.save_settings_to_file("settings/ui/AssetManager.json", settings)
+        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"), settings)
 
         # Update ui
         self.asset_chooser.flow_box.invalidate_filter()
 
     def on_image_toggled(self, button):
-        settings = gl.settings_manager.load_settings_from_file("settings/ui/AssetManager.json")
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"))
         settings["image-toggle"] = button.get_active()
-        gl.settings_manager.save_settings_to_file("settings/ui/AssetManager.json", settings)
+        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"), settings)
 
         # Update ui
         self.asset_chooser.flow_box.invalidate_filter()
 
     def load_defaults(self):
-        settings = gl.settings_manager.load_settings_from_file("settings/ui/AssetManager.json")
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"))
         self.video_button.set_active(settings.get("video-toggle", True))
         self.image_button.set_active(settings.get("image-toggle", True))
 
     def on_search_changed(self, entry):
         self.asset_chooser.flow_box.invalidate_sort()
+
+    def on_browse_files_clicked(self, button):
+        ChooseFileDialog(self)
+
+
+class ChooseFileDialog(Gtk.FileDialog):
+    def __init__(self, custom_asset_chooser: CustomAssetChooser):
+        super().__init__(title=gl.lm.get("asset-chooser.custom.browse-files.dialog.title"),
+                         accept_label=gl.lm.get("asset-chooser.custom.browse-files.dialog.select-button"))
+        self.custom_asset_chooser = custom_asset_chooser
+        self.open_multiple(callback=self.callback)
+
+    def callback(self, dialog, result):
+        try:
+            selected_files = self.open_multiple_finish(result)
+        except GLib.Error as err:
+            log.error(err)
+            return
+        
+        self.custom_asset_chooser.add_files(selected_files)

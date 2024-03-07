@@ -37,7 +37,7 @@ from src.backend.PluginManager import Signals
 
 class PageManager(Gtk.ApplicationWindow):
     def __init__(self, app:"App"):
-        super().__init__(title="Page Manager", default_width=400, default_height=600)
+        super().__init__(title=gl.lm.get("page-manager.title"), default_width=400, default_height=600)
         self.set_transient_for(app.main_win)
 
         self.build()
@@ -92,13 +92,15 @@ class PageManager(Gtk.ApplicationWindow):
         for page_path in pages:
             self.page_box.append(PageButton(page_manager=self, page_path = page_path))
 
-    def on_add_page(self, button):
-        dial = EntryDialog(parent_window=self, dialog_title="Add Page", entry_heading="Page name:", default_text="page",
+    def on_add_page(self, button, parent_window=None):
+        if parent_window is None:
+            parent_window = self
+        dial = EntryDialog(parent_window=parent_window, dialog_title="Add Page", entry_heading="Page name:", default_text="page",
                            forbid_answers=gl.page_manager.get_page_names())
         dial.show(self.add_page_callback)
 
     def add_page_callback(self, name:str):
-        path = os.path.join("pages", f"{name}.json")
+        path = os.path.join(gl.DATA_PATH, "pages", f"{name}.json")
         gl.page_manager.add_page(name)
         self.page_box.append(PageButton(page_manager=self, page_path=path))
 

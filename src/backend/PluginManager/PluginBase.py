@@ -8,6 +8,7 @@ from loguru import logger as log
 
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk
@@ -17,60 +18,93 @@ import globals as gl
 
 # Import own modules
 from locales.LocaleManager import LocaleManager
+from src.backend.PluginManager.ActionHolder import ActionHolder
 
 @Pyro5.api.expose
 class PluginBase:
     plugins = {}
+    disabled_plugins = {}
     
-    def __init_subclass__(cls, *args, **kwargs) -> None:
-        super().__init_subclass__(*args, **kwargs)
-        # Change this variables in the subclasses constuctor to match your plugin
-        cls.PLUGIN_NAME = ""
-        cls.GITHUB_REPO = ""
-        cls.ATTRIBUTIONS = {}
-        cls.VERSION = "1.0"
-
-        ## Internal variables - do not change
-        cls.ACTIONS = {}
-        cls.PLUGIN = None
-
     def __init__(self):
         self._backend: Pyro5.api.Proxy = None
-        # Verify variables
-        if self.PLUGIN_NAME in ["", None]:
-            raise ValueError("Please specify a plugin name")
-        if self.GITHUB_REPO in ["", None]:
-            raise ValueError(f"Plugin: {self.PLUGIN_NAME}: Please specify a github repo")
-        if self.ATTRIBUTIONS in [{}, None]:
-            log.warning(f"Plugin: {self.PLUGIN_NAME}: Are you sure you don't want to add attributions?")
-        if self.PLUGIN_NAME in PluginBase.plugins.keys():
-            raise ValueError(f"Plugin: {self.PLUGIN_NAME}: Plugin already exists")
-        # Register plugin
-        PluginBase.plugins[self.PLUGIN_NAME] = {
-            "object": self,
-            "github": self.GITHUB_REPO,
-            "attributions": self.ATTRIBUTIONS,
-            "version": self.VERSION,
-            "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
-            "file_name": os.path.basename(inspect.getfile(self.__class__))
-        }
+
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
 
         self.locale_manager = LocaleManager(os.path.join(self.PATH, "locales"))
 
-    def add_action(self, action):
-        action.PLUGIN_BASE = self
-        action.locale_manager = self.locale_manager
-        self.ACTIONS[action.ACTION_NAME] = action
+        self.action_holders: dict = {}
+
+        self.registered: bool = False
+
+    def register(self, plugin_name: str, github_repo: str, plugin_version: str, app_version: str):
+        """
+        Registers a plugin with the given information.
+
+        Args:
+            plugin_name (str): The name of the plugin.
+            github_repo (str): The GitHub repository URL of the plugin.
+            plugin_version (str): The version of the plugin.
+            app_version (str): The version of the application. Do NOT set it programmatically (e.g. by using gl.app_version).
+
+        Raises:
+            ValueError: If the plugin name is not specified or if the plugin already exists.
+
+        Returns:
+            None
+        """
+        
+        # Verify variables
+        if plugin_name in ["", None]:
+            raise ValueError("Please specify a plugin name")
+        if github_repo in ["", None]:
+            raise ValueError(f"Plugin: {plugin_name}: Please specify a github repo")
+        if plugin_name in PluginBase.plugins.keys():
+            raise ValueError(f"Plugin: {plugin_name}: Plugin already exists")
+        
+        
+        if app_version == gl.app_version:
+            # Register plugin
+            PluginBase.plugins[plugin_name] = {
+                "object": self,
+                "github": github_repo,
+                "version": plugin_version,
+                "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
+                "file_name": os.path.basename(inspect.getfile(self.__class__))
+            }
+            self.registered = True
+
+        else:
+            log.warning(
+                f"Plugin {plugin_name} is not compatible with this version of StreamController. "
+                f"Please update your assets! Plugin requires version {plugin_version} and you are "
+                f"running version {gl.app_version}. Disabling plugin."
+            )
+            PluginBase.disabled_plugins[plugin_name] = {
+                "object": self,
+                "github": github_repo,
+                "version": plugin_version,
+                "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
+                "file_name": os.path.basename(inspect.getfile(self.__class__))
+            }
+
+        self.plugin_name = plugin_name
+        self.github_repo = github_repo
+        self.version = plugin_version
+
+    def add_action_holder(self, action_holder: ActionHolder):
+        if not isinstance(action_holder, ActionHolder):
+            raise ValueError("Please pass an ActionHolder")
+        
+        self.action_holders[action_holder.action_id] = action_holder
 
     def get_settings(self):
-        if os.path.exists(os.path.join(self.PATH, "settings.json")):
-            with open(os.path.join(self.PATH, "settings.json"), "r") as f:
+        if os.path.exists(os.path.join(gl.DATA_PATH, "settings.json")):
+            with open(os.path.join(gl.DATA_PATH, "settings.json"), "r") as f:
                 return json.load(f)
         return {}
     
     def set_settings(self, settings):
-        with open(os.path.join(self.PATH, "settings.json"), "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "settings.json"), "w") as f:
             json.dump(settings, f, indent=4)
 
     def add_css_stylesheet(self, path):

@@ -26,7 +26,7 @@ import webbrowser as web
 if TYPE_CHECKING:
     from src.windows.Store.StorePage import StorePage
 
-from GtkHelper.GtkHelper import AttributeRow
+from GtkHelper.GtkHelper import AttributeRow, OriginalURL
 
 class InfoPage(Gtk.Box):
     def __init__(self, store_page:"StorePage"):
@@ -97,32 +97,6 @@ class InfoPage(Gtk.Box):
     def set_original_url(self, url:str):
         self.original_url.set_url(url)
 
-    
-
-class OriginalURL(Adw.ActionRow):
-    def __init__(self):
-        super().__init__(title="Original URL:", subtitle="N/A")
-        self.set_activatable(False)
-
-        self.suffix_box = Gtk.Box(valign=Gtk.Align.CENTER)
-        self.add_suffix(self.suffix_box)
-
-        self.open_button = Gtk.Button(icon_name="web-browser-symbolic")
-        self.open_button.connect("clicked", self.on_open_clicked)
-        self.suffix_box.append(self.open_button)
-
-    def set_url(self, url:str):
-        if url is None:
-            self.set_subtitle("N/A")
-            self.open_button.set_sensitive(False)
-            return
-        self.set_subtitle(url)
-        self.open_button.set_sensitive(True)
-
-    def on_open_clicked(self, button:Gtk.Button):
-        if self.get_subtitle() in [None, "N/A"]:
-            return
-        web.open(self.get_subtitle())
 
 class DescriptionRow(Adw.PreferencesRow):
     def __init__(self, title:str, desc:str, *args, **kwargs):

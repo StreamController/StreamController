@@ -29,6 +29,9 @@ from src.windows.mainWindow.elements.leftArea import LeftArea
 from src.windows.mainWindow.elements.RightArea.RightArea import RightArea
 from src.windows.mainWindow.headerBar import HeaderBar
 from GtkHelper.GtkHelper import get_deepest_focused_widget, get_deepest_focused_widget_with_attr
+from src.windows.mainWindow.elements.NoPagesError import NoPagesError
+from src.windows.mainWindow.elements.NoDecksError import NoDecksError
+
 
 # Import globals
 import globals as gl
@@ -42,15 +45,27 @@ class MainWindow(Gtk.ApplicationWindow):
         # Store copied stuff
         self.key_dict = {}
 
+        # Add tasks to run if build is complete
+        self.on_finished: list = []
+
         self.build()
         self.init_actions()
+
+        self.connect("close-request", self.on_close)
+
+    def on_close(self, *args, **kwargs):
+        self.hide()
+        return True
 
     @log.catch
     def build(self):
         log.trace("Building main window")
 
+        self.main_stack = Gtk.Stack(hexpand=True, vexpand=True)
+        self.set_child(self.main_stack)
+
         self.mainBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.set_child(self.mainBox)
+        self.main_stack.add_titled(self.mainBox, "main", "Main")
 
         self.mainPaned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
         self.mainBox.append(self.mainPaned)
@@ -64,6 +79,17 @@ class MainWindow(Gtk.ApplicationWindow):
         # Add header bar
         self.header_bar = HeaderBar(self.deck_manager, self, self.leftArea.deck_stack)
         self.set_titlebar(self.header_bar)
+
+        # Error pages
+        self.no_pages_error = NoPagesError()
+        self.main_stack.add_titled(self.no_pages_error, "no-pages-error", "No Pages Error")
+
+        self.no_decks_error = NoDecksError()
+        self.main_stack.add_titled(self.no_decks_error, "no-decks-error", "No Decks Error")
+
+        self.do_after_build_tasks()
+
+        self.check_for_errors()
 
     def init_actions(self):
         # Copy paste actions
@@ -89,6 +115,72 @@ class MainWindow(Gtk.ApplicationWindow):
         self.add_action(self.cut_action)
         self.add_action(self.paste_action)
         self.add_action(self.remove_action)
+
+
+    def change_ui_to_no_connected_deck(self):
+        if not hasattr(self, "leftArea"):
+            self.on_finished.append(self.change_ui_to_no_connected_deck)
+            return
+        
+        self.leftArea.show_no_decks_error()
+        self.header_bar.config_button.set_visible(False)
+        self.header_bar.page_selector.set_visible(False)
+
+    def change_ui_to_connected_deck(self):
+        if not hasattr(self, "leftArea"):
+            self.on_finished.append(self.change_ui_to_connected_deck)
+            return
+        
+        self.leftArea.hide_no_decks_error()
+        self.header_bar.config_button.set_visible(True)
+        self.header_bar.page_selector.set_visible(True)
+
+    def set_main_error(self, error: str=None):
+        """"
+        error: str
+            no-decks: Shows the no decks available error
+            no-pages: Shows the no pages available error
+            None: Goes back to normal mode
+        """
+        if error is None:
+            self.main_stack.set_visible_child(self.mainBox)
+            self.header_bar.config_button.set_visible(True)
+            self.header_bar.page_selector.set_visible(True)
+            self.header_bar.deckSwitcher.set_show_switcher(True)
+            return
+        
+        elif error == "no-decks":
+            self.main_stack.set_visible_child(self.no_decks_error)
+
+        elif error == "no-pages":
+            self.main_stack.set_visible_child(self.no_pages_error)
+
+        self.header_bar.config_button.set_visible(False)
+        self.header_bar.page_selector.set_visible(False)
+        self.header_bar.deckSwitcher.set_show_switcher(False)
+
+    def check_for_errors(self):
+        if len(gl.deck_manager.deck_controller) == 0:
+            self.set_main_error("no-decks")
+
+        elif len(gl.page_manager.get_page_names()) == 0:
+            self.set_main_error("no-pages")
+
+        else:
+            self.set_main_error(None)
+
+
+    def reload_right_area(self):
+        if not hasattr(self, "rightArea"):
+            self.on_finished.append(self.reload_right_area)
+            return
+        
+        self.rightArea.load_for_coords(self.rightArea.active_coords)
+
+    def do_after_build_tasks(self):
+        for task in self.on_finished:
+            if callable(task):
+                task()
 
     def on_copy(self, *args):
         child = get_deepest_focused_widget_with_attr(self, "on_copy")

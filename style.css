@@ -204,3 +204,78 @@
 .confirm-button-error { 
 	background-color: #EA735D;
 }
+
+.error-label {
+  color: #a5a5a5;
+  font-size: 50px;
+}
+
+.error-resolve-button {
+  background-color: #3584E4;
+  font-size: 25px;
+  padding: 20px 0px;
+  border-radius: 9999px;
+  transition: background-color 0.25s;
+}
+
+.error-resolve-button:hover {
+  background-color: #5695e2;
+}
+
+.error-resolve-button:active {
+  background-color: #7caae4;
+}
+
+.open-store-button {
+  padding: 10px 0px;
+  border-radius: 10px;
+  background-color: #4990E7;
+}
+
+.open-store-button:hover {
+  background-color: #5695e2;
+}
+
+.open-store-button:active {
+  background-color: #7caae4;
+}
+
+.onboarding-icon {
+  min-width: 300px;
+  min-height: 300px;
+}
+
+.onboarding-welcome-label {
+  font-size: 35px;
+  font-weight: bold;
+}
+
+.onboarding-welcome-detail-label {
+  color: #a5a5a5;
+  font-size: 20px;
+}
+
+.onboarding-nav-button {
+  background-color: #3584E4;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.onboarding-start-button {
+  background-color: #3584E4;
+  font-size: 25px;
+  border-radius: 999px;
+}
+
+.reset-button {
+  background-color: #C01C28;
+  transition: background-color 0.25s;
+}
+.reset-button:hover {
+  background-color: #9b1720;
+  transition: background-color 0.25s;
+}
+.reset-button:active {
+  background-color: #f33e4a;
+  transition: background-color 0.25s;
+}

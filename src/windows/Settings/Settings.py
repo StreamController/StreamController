@@ -22,25 +22,36 @@ from gi.repository import Gtk, Adw, Gio
 # Import globals
 import globals as gl
 
+import os
+
 class Settings(Adw.PreferencesWindow):
     def __init__(self):
         super().__init__(title="Settings")
         self.set_default_size(800, 600)
 
+        # Center settings win over main_win (depends on DE)
+        self.set_transient_for(gl.app.main_win)
+        # Allow interaction with other windows
+        self.set_modal(False)
+
         self.settings_json:dict = None
         self.load_json()
 
-        self.add(UIPage(settings=self))
-        self.add(StorePage(settings=self))
-        self.add(DevPage(settings=self))
+        self.ui_page = UIPage(settings=self)
+        self.store_page = StorePage(settings=self)
+        self.dev_page = DevPage(settings=self)
+
+        self.add(self.ui_page)
+        self.add(self.store_page)
+        self.add(self.dev_page)
 
     def load_json(self):
         # Load settings from file
-        settings = gl.settings_manager.load_settings_from_file("settings/settings.json")
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
         self.settings_json = settings
     
     def save_json(self):
-        gl.settings_manager.save_settings_to_file("settings/settings.json", self.settings_json)
+        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"), self.settings_json)
 
 
 class UIPage(Adw.PreferencesPage):

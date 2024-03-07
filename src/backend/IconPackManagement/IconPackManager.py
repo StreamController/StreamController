@@ -21,14 +21,18 @@ import shutil
 # Import own modules
 from src.backend.IconPackManagement.IconPack import IconPack
 
+# Import globals
+import globals as gl
+
 class IconPackManager:
     def __init__(self):
         self.packs = {}
 
     def get_icon_packs(self) -> dir:
         packs = {}
-        for pack in os.listdir("icons"):
-            packs[pack] = IconPack(os.path.join("icons", pack))
+        os.makedirs(os.path.join(gl.DATA_PATH, "icons"), exist_ok=True)
+        for pack in os.listdir(os.path.join(gl.DATA_PATH, "icons")):
+            packs[pack] = IconPack(os.path.join(gl.DATA_PATH, "icons", pack))
         return packs
 
     def get_pack_icons(self, icon_pack: dict):

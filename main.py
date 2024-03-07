@@ -19,6 +19,13 @@ import os
 import time
 import asyncio
 import threading
+import dbus
+import dbus.service
+import argparse
+import usb.core
+import usb.util
+from StreamDeck.DeviceManager import DeviceManager
+from dbus.mainloop.glib import DBusGMainLoop
 
 # Import own modules
 from src.app import App
@@ -33,16 +40,21 @@ from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
 from src.windows.Store.StoreBackend import StoreBackend
+from autostart import setup_autostart
 
 # Import globals
 import globals as gl
 
+def write_logs(record):
+    gl.logs.append(record)
+
 def config_logger():
     log.remove(0)
     # Create log files
-    log.add("logs/logs.log", rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
+    log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
+    log.add(write_logs, level="TRACE")
 
 class Main:
     def __init__(self, application_id, deck_manager):
@@ -51,7 +63,7 @@ class Main:
 
         gl.app = self.app
 
-        self.app.run(sys.argv)
+        self.app.run(gl.argparser.parse_args().app_args)
 
 @log.catch
 def load():
@@ -59,20 +71,25 @@ def load():
     # Setup locales
     localeManager = LocaleManager(locales_path="locales")
     localeManager.set_to_os_default()
-    # localeManager.set_fallback_language("en_US")
+    localeManager.set_fallback_language("en_US")
     gl.lm = localeManager
 
     log.info("Loading app")
     gl.deck_manager = DeckManager()
     gl.deck_manager.load_decks()
-    gl.main = Main(application_id="dev.core447.StreamController", deck_manager=gl.deck_manager)
+    gl.main = Main(application_id="com.core447.StreamController", deck_manager=gl.deck_manager)
 
 @log.catch
 def create_cache_folder():
-    if not os.path.exists("cache"):
-        os.makedirs("cache")
+    os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
 
 def create_global_objects():
+    # Argparser
+    gl.argparser = argparse.ArgumentParser()
+    gl.argparser.add_argument("-b", help="Open in background", action="store_true")
+    gl.argparser.add_argument("app_args", nargs="*")
+
+
     gl.media_manager = MediaManager()
     gl.asset_manager = AssetManager()
     gl.settings_manager = SettingsManager()
@@ -89,7 +106,7 @@ def create_global_objects():
     gl.plugin_manager.generate_action_index()
 
 def update_assets():
-    settings = gl.settings_manager.load_settings_from_file("settings/settings.json")
+    settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
     auto_update = settings.get("store", {}).get("auto-update", True)
     if not auto_update:
         log.info("Skipping store asset update")
@@ -100,7 +117,45 @@ def update_assets():
     asyncio.run(gl.store_backend.update_everything())
     log.info(f"Updating store assets took {time.time() - start} seconds")
 
+@log.catch
+def reset_all_decks():
+    # Find all USB devices
+    devices = usb.core.find(find_all=True)
+    for device in devices:
+        try:
+            # Check if it's a StreamDeck
+            if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in [
+                DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
+                DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
+                DeviceManager.USB_PID_STREAMDECK_MINI,
+                DeviceManager.USB_PID_STREAMDECK_XL,
+                DeviceManager.USB_PID_STREAMDECK_MK2,
+            ]:
+                # Reset deck
+                usb.util.dispose_resources(device)
+                device.reset()
+        except:
+            log.error("Failed to reset deck, maybe it's already connected to another instance? Skipping...")
+
 if __name__ == "__main__":
+    # Dbus
+    log.info("Checking if another instance is running")
+    DBusGMainLoop(set_as_default=True)
+    session_bus = dbus.SessionBus()
+    try:
+        obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
+        action_interface = dbus.Interface(obj, "org.gtk.Actions")
+        action_interface.Activate("reopen", [], [])
+        log.info("Already running, exiting")
+        exit()
+    except dbus.exceptions.DBusException as e:
+        print(e)
+        log.info("No other instance running, continuing")
+
+    reset_all_decks()
+
+    setup_autostart()
+
     create_global_objects()
     create_cache_folder()
     threading.Thread(target=update_assets).start()

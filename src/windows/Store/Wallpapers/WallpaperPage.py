@@ -24,6 +24,7 @@ import asyncio
 import threading
 import os
 import shutil
+from loguru import logger as log
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
@@ -32,6 +33,9 @@ from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
 from src.windows.Store.StoreBackend import NoConnectionError
+
+# Import globals
+import globals as gl
 
 # Typing
 from typing import TYPE_CHECKING
@@ -42,7 +46,7 @@ class WallpaperPage(StorePage):
     def __init__(self, store: "Store"):
         super().__init__(store=store)
         self.store = store
-        self.search_entry.set_placeholder_text("Search for wallpapers")
+        self.search_entry.set_placeholder_text(gl.lm.get("store.wallpapers.search-placeholder"))
 
         threading.Thread(target=self.load).start()
 
@@ -81,14 +85,13 @@ class WallpaperPreview(StorePreview):
 
     def install(self):
         folder_name = f"{self.wallpaper_dict['user_name']}::{self.wallpaper_dict['name']}"
-        if os.path.exists(os.path.join("wallpapers", folder_name)):
-            shutil.rmtree(os.path.join("wallpapers", folder_name))
-        if not os.path.exists("wallpapers"):
-            os.mkdir("wallpapers")
+        if os.path.exists(os.path.join(gl.DATA_PATH, "wallpapers", folder_name)):
+            shutil.rmtree(os.path.join(gl.DATA_PATH, "wallpapers", folder_name))
+        os.makedirs(os.path.join(gl.DATA_PATH, "wallpapers", folder_name))
 
         asyncio.run(self.store.backend.clone_repo(
             repo_url=self.wallpaper_dict["url"],
-            local_path=os.path.join("wallpapers", folder_name),
+            local_path=os.path.join(gl.DATA_PATH, "wallpapers", folder_name),
             commit_sha=self.wallpaper_dict["commit_sha"]
         ))
         self.set_install_state(1)

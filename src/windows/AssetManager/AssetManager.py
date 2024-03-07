@@ -35,6 +35,7 @@ import globals as gl
 from src.windows.AssetManager.InfoPage import InfoPage
 from src.windows.AssetManager.CustomAssets.Chooser import CustomAssetChooser
 from src.windows.AssetManager.IconPacks.Stack import IconPackChooserStack
+from src.windows.AssetManager.WallpaperPacks.Stack import WallpaperPackChooserStack
 
 
 class AssetManager(Gtk.ApplicationWindow):
@@ -91,8 +92,9 @@ class AssetManager(Gtk.ApplicationWindow):
         self.back_button.set_visible(True)
         self.present()
 
-    def show_info(self, internal_path:str = None , licence_name: str = None, license_url: str = None, author: str = None, license_comment: str = None):
-        self.asset_info.show_info(internal_path, licence_name, license_url, author, license_comment)
+    def show_info(self, internal_path:str = None , licence_name: str = None, license_url: str = None, author: str = None, license_comment: str = None,
+                  original_url: str = None):
+        self.asset_info.show_info(internal_path, licence_name, license_url, author, license_comment, original_url)
 
         self.main_stack.set_visible_child(self.asset_info)
         self.back_button.set_visible(True)
@@ -102,9 +104,20 @@ class AssetManager(Gtk.ApplicationWindow):
         if self.main_stack.get_visible_child() == self.asset_info:
             # Switch from info page to chooser page
             self.main_stack.set_visible_child(self.asset_chooser)
-        elif self.asset_chooser.icon_pack_chooser.get_visible_child_name() == "icon-chooser":
-            # Switch from icon chooser to pack page
-            self.asset_chooser.icon_pack_chooser.set_visible_child_name("chooser")
+
+        elif self.main_stack.get_visible_child() == self.asset_chooser:
+            if self.asset_chooser.get_visible_child_name() == "icon-packs":
+                if self.asset_chooser.icon_pack_chooser.get_visible_child_name() == "icon-chooser":
+                    # Switch from icon chooser to pack page
+                    self.asset_chooser.icon_pack_chooser.set_visible_child_name("pack-chooser")
+
+            elif self.asset_chooser.get_visible_child_name() == "wallpaper-packs":
+                print("wallpaper packs")
+                if self.asset_chooser.wallpaper_pack_chooser.get_visible_child_name() == "wallpaper-chooser":
+                    print("pack-chooser")
+                    # Switch from pack chooser to icon chooser
+                    self.asset_chooser.wallpaper_pack_chooser.set_visible_child_name("pack-chooser")
+
         self.back_button.set_visible(False)
 
 
@@ -122,6 +135,11 @@ class AssetChooser(Gtk.Stack):
         self.icon_pack_chooser = IconPackChooserStack(self.asset_manager)
         self.add_titled(self.icon_pack_chooser, "icon-packs", "Icon Packs")
 
+        self.wallpaper_pack_chooser = WallpaperPackChooserStack(self.asset_manager)
+        self.add_titled(self.wallpaper_pack_chooser, "wallpaper-packs", "Wallpaper Packs")
+
+        self.connect("notify::visible-child-name", self.on_switch)
+
     def show_for_path(self, path):
         if gl.asset_manager.has_by_internal_path(path):
             # Is custom asset
@@ -129,4 +147,16 @@ class AssetChooser(Gtk.Stack):
             self.asset_manager.back_button.set_visible(False)
         else:
             # Check if really is a icon pack
+            # TODO
             self.icon_pack_chooser.show_for_path(path)
+
+
+    def on_switch(self, stack, name):
+        self.asset_manager.back_button.set_visible(False)
+
+        if self.get_visible_child() is self.icon_pack_chooser:
+            if self.icon_pack_chooser.get_visible_child_name() == "icon-chooser":
+                self.asset_manager.back_button.set_visible(True)
+        elif self.get_visible_child() is self.wallpaper_pack_chooser:
+            if self.wallpaper_pack_chooser.get_visible_child_name() == "wallpaper-chooser":
+                self.asset_manager.back_button.set_visible(True)

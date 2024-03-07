@@ -88,8 +88,8 @@ class ActionExpanderRow(BetterExpander):
         self.add_action_button = AddActionButtonRow(self)
         self.add_row(self.add_action_button)
 
-    def add_action_row(self, action_name, action_category, action_object, index):
-        action_row = ActionRow(action_name, action_category, action_object, self.action_group.right_area, index)
+    def add_action_row(self, action_name: str, action_id: str, action_category, action_object, index):
+        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.right_area, index)
         self.add_row(action_row)
 
     def load_for_coords(self, coords):
@@ -100,9 +100,9 @@ class ActionExpanderRow(BetterExpander):
         if page_coords not in controller.active_page.action_objects:
             return
         for i, key in enumerate(controller.active_page.action_objects[page_coords]):
-            action =  controller.active_page.action_objects[page_coords][key]
+            action = controller.active_page.action_objects[page_coords][key]
             if isinstance(action, ActionBase):
-                self.add_action_row(action.ACTION_NAME, action.PLUGIN_BASE.PLUGIN_NAME, action, i)
+                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, i)
             elif isinstance(action, str):
                 # No plugin installed for this action
                 missing_button_row = MissingActionButtonRow(action, page_coords, i)
@@ -139,9 +139,10 @@ class ActionExpanderRow(BetterExpander):
         self.reorder_child_after(self.preview, self.get_rows()[index])
 
 class ActionRow(Adw.PreferencesRow):
-    def __init__(self, action_name, action_category, action_object, right_area, index, **kwargs):
+    def __init__(self, action_name, action_id, action_category, action_object, right_area, index, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding"])
         self.action_name = action_name
+        self.action_id = action_id
         self.action_category = action_category
         self.right_area = right_area
         self.action_object = action_object
@@ -347,7 +348,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         log.trace(f"Adding action: {action_class}")
 
         # Gather data
-        action_string = gl.plugin_manager.get_action_string_from_action(action_class)
+        # action_string = gl.plugin_manager.get_action_string_from_action(action_class)
         active_controller = self.expander.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         active_page = active_controller.active_page
         page_coords = f"{self.expander.active_coords[0]}x{self.expander.active_coords[1]}"
@@ -359,7 +360,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         # Add action
         active_page.dict["keys"][page_coords]["actions"].append({
-            "name": action_string,
+            "id": action_class.action_id,
             "settings": {}
         })
 
@@ -375,4 +376,5 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         # Reload key
         controller = self.expander.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        controller.load_key(page_coords)
+        key_index = controller.coords_to_index(self.expander.active_coords)
+        controller.load_key(key_index, page=controller.active_page)

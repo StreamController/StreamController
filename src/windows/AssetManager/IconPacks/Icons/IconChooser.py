@@ -21,7 +21,7 @@ from gi.repository import Gtk, Adw, GLib
 
 # Import own modules
 from src.windows.AssetManager.ChooserPage import ChooserPage
-from src.windows.AssetManager.IconPacks.Icons.IconFlowBox import IconFlowBox
+from src.windows.AssetManager.IconPacks.Icons.IconFlowBox import WallpaperFlowBox
 from src.windows.AssetManager.IconPacks.Icons.IconPreview import IconPreview
 from src.windows.AssetManager.IconPacks.Preview import IconPackPreview
 
@@ -45,7 +45,9 @@ class IconChooserPage(ChooserPage):
         self.build()
 
     def build(self):
-        self.icon_flow = IconFlowBox(IconPreview, self)
+        self.type_box.set_visible(False)
+
+        self.icon_flow = WallpaperFlowBox(IconPreview, self)
         self.icon_flow.set_factory(self.preview_factory)
         self.icon_flow.set_filter_func(self.filter_func)
         self.icon_flow.set_sort_func(self.sort_func)

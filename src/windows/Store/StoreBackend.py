@@ -28,6 +28,10 @@ import os
 import uuid
 import shutil
 from install import install
+from packaging import version
+
+# Import own modules
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
 # Import signals
 from src.backend.PluginManager import Signals
@@ -41,39 +45,35 @@ class NoConnectionError:
 class StoreBackend:
     def __init__(self):
         # API cache file
-        if not os.path.exists("src/windows/Store/cache"):
-            os.mkdir("src/windows/Store/cache")
-        if not os.path.exists("src/windows/Store/cache/api.json"):
-            with open("src/windows/Store/cache/api.json", "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "Store/cache"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "Store/cache/api.json")):
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/api.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open("src/windows/Store/cache/api.json", "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/api.json"), "r") as f:
             self.api_cache = json.load(f)
         
         # Image cache file
-        if not os.path.exists("src/windows/Store/cache/images"):
-            os.mkdir("src/windows/Store/cache/images")
-        if not os.path.exists("src/windows/Store/cache/images.json"):
-            with open("src/windows/Store/cache/images.json", "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "Store/cache/images"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "Store/cache/images.json")):
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/images.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open("src/windows/Store/cache/images.json", "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/images.json"), "r") as f:
             self.image_cache = json.load(f)
 
         # Manifest cache file
-        if not os.path.exists("src/windows/Store/cache/manifests"):
-            os.mkdir("src/windows/Store/cache/manifests")
-        if not os.path.exists("src/windows/Store/cache/manifests.json"):
-            with open("src/windows/Store/cache/manifests.json", "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "Store/cache/manifests"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "Store/cache/manifests.json")):
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/manifests.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open("src/windows/Store/cache/manifests.json", "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/manifests.json"), "r") as f:
             self.manifest_cache = json.load(f)
 
         # Attribution cache file
-        if not os.path.exists("src/windows/Store/cache/attribution"):
-            os.mkdir("src/windows/Store/cache/attribution")
-        if not os.path.exists("src/windows/Store/cache/attribution.json"):
-            with open("src/windows/Store/cache/attribution.json", "w") as f:
+        os.makedirs(os.path.join(gl.DATA_PATH, "Store/cache/attribution"), exist_ok=True)
+        if not os.path.exists(os.path.join(gl.DATA_PATH, "Store/cache/attribution.json")):
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/attribution.json"), "w") as f:
                 json.dump({}, f, indent=4)
-        with open("src/windows/Store/cache/attribution.json", "r") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/attribution.json"), "r") as f:
             self.attribution_cache = json.load(f)
 
         self.official_authors = asyncio.run(self.get_official_authors())
@@ -137,7 +137,11 @@ class StoreBackend:
         authors_json = json.loads(authors_json)
         return authors_json
     
-    async def get_all_plugins_async(self):
+    async def get_all_plugins_async(self) -> int:
+        """
+        returns the number of assets that are new old for the current app version
+        """
+        n_too_new_assets = 0
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Plugins.json")
         if isinstance(result, NoConnectionError):
             return result
@@ -147,11 +151,22 @@ class StoreBackend:
         plugins = []
 
         for plugin in plugins_json:
-            plugins.append(await self.prepare_plugin(plugin))
+            plugin = await self.prepare_plugin(plugin)
+
+            if plugin == "asset_is_newer":
+                n_too_new_assets += 1
+                continue
+            
+            if isinstance(plugin, dict):
+                plugins.append(plugin)
 
         return plugins
     
-    async def get_all_icons(self):
+    async def get_all_icons(self) -> int:
+        """
+        returns the number of assets that are too new for the current app version
+        """
+        n_to_new_assets = 0
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Icons.json")
         if isinstance(result, NoConnectionError):
             return result
@@ -160,11 +175,22 @@ class StoreBackend:
 
         icons = []
         for icon in icons_json:
-            icons.append(await self.prepare_icon(icon))
+            icon = await self.prepare_icon(icon)
+
+            if icon == "asset_is_newer":
+                n_to_new_assets += 1
+                continue
+
+            if isinstance(icon, dict):
+                icons.append(icon)
 
         return icons
     
-    async def get_all_wallpapers(self):
+    async def get_all_wallpapers(self) -> int:
+        """
+        returns the number of assets that are too new for the current app version
+        """
+        n_to_new_assets = 0
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Wallpapers.json")
         if isinstance(result, NoConnectionError):
             return result
@@ -173,7 +199,14 @@ class StoreBackend:
 
         wallpapers = []
         for wallpaper in wallpapers_json:
-            wallpapers.append(await self.prepare_wallpaper(wallpaper))
+            wallpaper = await self.prepare_wallpaper(wallpaper)
+
+            if wallpaper == "asset_is_newer":
+                n_to_new_assets += 1
+                continue
+
+            if isinstance(wallpaper, dict):
+                wallpapers.append(wallpaper)
         
         return wallpapers
     
@@ -194,14 +227,15 @@ class StoreBackend:
 
         # Save to cache
         cache_file_name = f"{self.get_repo_name(url)}::{commit}"
-        with open(f"src/windows/Store/cache/manifests/{cache_file_name}.json", "w") as f:
+        path = os.path.join(gl.DATA_PATH, "Store/cache/manifests", f"{cache_file_name}.json")
+        with open(path, "w") as f:
             json.dump(manifest, f, indent=4)
 
         self.remove_old_manifest_cache(url, commit)
 
-        self.manifest_cache[url] = f"src/windows/Store/cache/manifests/{cache_file_name}.json"
+        self.manifest_cache[url] = os.path.join(gl.DATA_PATH, "Store/cache/manifests", f"{cache_file_name}.json")
         # Save cache file
-        with open("src/windows/Store/cache/manifests.json", "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/manifests.json"), "w") as f:
             json.dump(self.manifest_cache, f, indent=4)
 
         return manifest
@@ -231,16 +265,16 @@ class StoreBackend:
 
         attribution = json.loads(attribution.text)
 
-        # Save to cache
         cache_file_name = f"{self.get_repo_name(url)}::{commit}"
-        with open(f"src/windows/Store/cache/attribution/{cache_file_name}.json", "w") as f:
+        path = os.path.join(gl.DATA_PATH, "Store/cache/attribution", f"{cache_file_name}.json")
+        with open(path, "w") as f:
             json.dump(attribution, f, indent=4)
 
         self.remove_old_attribution_cache(url, commit)
 
-        self.attribution_cache[url] = f"src/windows/Store/cache/attribution/{cache_file_name}.json"
+        self.attribution_cache[url] = os.path.join(gl.DATA_PATH, "Store", "cache", "attribution", f"{cache_file_name}.json")
         # Save cache file
-        with open("src/windows/Store/cache/attribution.json", "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/attribution.json"), "w") as f:
             json.dump(self.attribution_cache, f, indent=4)
 
         return attribution
@@ -254,15 +288,22 @@ class StoreBackend:
 
     async def prepare_plugin(self, plugin):
         url = plugin["url"]
-        manifest = await self.get_manifest(url, plugin["verified-commit"])
+
+        # Check if suitable version is available
+        version_check = self.make_version_check(plugin["commits"].keys())
+        if version_check is not True:
+            return version_check
+        commit = plugin["commits"][gl.app_version]
+
+        manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
 
-        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), plugin["verified-commit"]))
+        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), commit))
         if isinstance(manifest, NoConnectionError):
             return image
         
-        attribution = await self.get_attribution(url, plugin["verified-commit"])
+        attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
@@ -284,9 +325,9 @@ class StoreBackend:
             "image": image,
             "stargazers": stargazers,
             "official": user_name in self.official_authors,
-            "commit_sha": plugin["verified-commit"],
+            "commit_sha": commit,
             "id": manifest.get("id"),
-            "local-sha": await self.get_local_sha(os.path.join("plugins", manifest.get("id"))),
+            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
             "license": attribution.get("license"),
             "copyright": attribution.get("copyright"),
             "license_description": attribution.get("description_description"),
@@ -305,15 +346,22 @@ class StoreBackend:
     
     async def prepare_icon(self, icon):
         url = icon["url"]
-        manifest = await self.get_manifest(url, icon["verified-commit"])
+
+        # Check if suitable version is available
+        version_check = self.make_version_check(icon["commits"].keys())
+        if version_check is not True:
+            return version_check
+        commit = icon["commits"][gl.app_version]
+
+        manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
-        attribution = await self.get_attribution(url, icon["verified-commit"])
+        attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
-        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), icon["verified-commit"]))
+        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), commit))
         if isinstance(image, NoConnectionError):
             return image
 
@@ -339,20 +387,27 @@ class StoreBackend:
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
             "license_description": attribution.get("description"),
-            "commit_sha": icon["verified-commit"],
-            "local_sha": await self.get_local_sha(os.path.join("icons", f"{user_name}::{manifest.get('name')}")),
+            "commit_sha": commit,
+            "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "icons", f"{user_name}::{manifest.get('name')}")),
             "official": user_name in self.official_authors
         }
     
     async def prepare_wallpaper(self, wallpaper):
         url = wallpaper["url"]
-        manifest = await self.get_manifest(url, wallpaper["verified-commit"])
+
+        # Check if suitable version is available
+        version_check = self.make_version_check(wallpaper["commits"].keys())
+        if version_check is not True:
+            return version_check
+        commit = wallpaper["commits"][gl.app_version]
+
+        manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
-        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), wallpaper["verified-commit"]))
+        image = await self.image_from_url(self.build_url(url, manifest.get("thumbnail"), commit))
         if isinstance(image, NoConnectionError):
             return image
-        attribution = await self.get_attribution(url, wallpaper["verified-commit"])
+        attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
@@ -370,10 +425,10 @@ class StoreBackend:
             "stargazers": await self.get_stargazers(url),
             "license": manifest.get("license"),
             "copyright": manifest.get("copyright"),
-            "commit_sha": wallpaper["verified-commit"],
+            "commit_sha": commit,
             "original_url": attribution.get("original-url"),
             "license_description": attribution.get("description"),
-            "local_sha": await self.get_local_sha(os.path.join("wallpapers", f"{user_name}::{manifest.get('name')}")),
+            "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "wallpapers", f"{user_name}::{manifest.get('name')}")),
             "official": self.get_user_name(url) in self.official_authors
         }
 
@@ -390,14 +445,15 @@ class StoreBackend:
         
         ## Save to cache
         image_uuid = str(uuid.uuid4())
-        save_path = f"src/windows/Store/cache/images/{self.get_repo_name(url)}::{image_uuid}.png"
+        save_path = f"Store/cache/images/{self.get_repo_name(url)}::{image_uuid}.png"
+        save_path = os.path.join(gl.DATA_PATH, save_path)
         if url in self.image_cache:
             # Remove the old file
             if os.path.isfile(self.image_cache[url]):
                 os.remove(self.image_cache[url])
         self.image_cache[url] = save_path
         # Update image cache json file
-        with open("src/windows/Store/cache/images.json", "w") as f:
+        with open(os.path.join(gl.DATA_PATH, "Store/cache/images.json"), "w") as f:
             json.dump(self.image_cache, f, indent=4)
 
         return img
@@ -421,7 +477,7 @@ class StoreBackend:
             self.api_cache[api_call_url] = {}
             self.api_cache[api_call_url]["answer"] = resp.json()
             self.api_cache[api_call_url]["time-code"] = datetime.now().strftime("%d-%m-%y-%H-%M")
-            with open("src/windows/Store/cache/api.json", "w") as f:
+            with open(os.path.join(gl.DATA_PATH, "Store/cache/api.json"), "w") as f:
                 json.dump(self.api_cache, f, indent=4)
             return resp.json()
 
@@ -455,6 +511,33 @@ class StoreBackend:
     def get_all_plugins(self):
         return asyncio.run(self.get_all_plugins_async())
     
+    def is_newer(self, newer: str, than: str):
+        return version.parse(newer) > version.parse(than)
+    
+    from packaging import version
+
+    def get_newest_version(self, versions: list[str]) -> str:
+        # Convert the version strings to (Version object, original string) tuples
+        parsed_versions = [(version.parse(v), v) for v in versions]
+
+        # Find the maximum using the Version object for comparison
+        latest_version_tuple = max(parsed_versions, key=lambda x: x[0])
+
+        # Extract the original string from the tuple
+        return latest_version_tuple[1]
+    
+    def make_version_check(self, available_versions: list[str]):
+        # Check if the asset is available for the current app version
+        if gl.app_version in available_versions:
+            return True
+        
+        # Check whether the app or the asset is outdated
+        newest_version = self.get_newest_version(available_versions)
+
+        if self.is_newer(gl.app_version, newest_version):
+            return "app_is_newer"
+        else:
+            return "asset_is_newer"
 
     ## Install
     async def subp_call(self, args):
@@ -485,6 +568,7 @@ class StoreBackend:
         await self.subp_call(["git", "clone", repo_url, local_path])
 
         # Add repository to the safe directory list to avoid dubious ownership warnings
+        # FIXME: Check if not already added
         await self.subp_call(["git", "config", "--global", "--add", "safe.directory", os.path.abspath(local_path)])
 
         # Set repository to the given commit_sha
@@ -496,11 +580,11 @@ class StoreBackend:
             await self.os_sys(f"cd '{local_path}' && git switch {branch_name}")
             return
         
-    async def install_plugin(self, plugin_dict:dict):
+    async def install_plugin(self, plugin_dict:dict, auto_update: bool = False):
         url = plugin_dict["url"]
 
         PLUGINS_FOLDER = "plugins"
-        local_path = f"{PLUGINS_FOLDER}/{plugin_dict['id']}"
+        local_path = os.path.join(gl.DATA_PATH, PLUGINS_FOLDER, plugin_dict["id"])
 
         response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_dict["commit_sha"])
 
@@ -517,14 +601,18 @@ class StoreBackend:
         gl.plugin_manager.generate_action_index()
 
         # Update ui
-        gl.app.main_win.rightArea.action_chooser.plugin_group.build()
+        if recursive_hasattr(gl, "app.main_win.rightArea.action_chooser"):
+            gl.app.main_win.rightArea.action_chooser.plugin_group.build()
 
         ## Update page
         for controller in gl.deck_manager.deck_controller:
-            # Load action objects
-            controller.active_page.load_action_objects()
-            # Reload page to send new on_load events
-            controller.reload_page()
+            ## Checks required to prevent errors after auto-update
+            if hasattr(controller, "active_page"):
+                if controller.active_page is not None:
+                    # Load action objects
+                    controller.active_page.load_action_objects()
+                    # Reload page to send new on_load events
+                    controller.load_page(controller.active_page)
 
         # Notify plugin actions
         gl.plugin_manager.trigger_signal(signal= Signals.PluginInstall, id=plugin_dict["id"])

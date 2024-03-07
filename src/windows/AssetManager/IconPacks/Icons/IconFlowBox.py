@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.AssetManager.IconPacks.Icons.IconChooser import IconChooser
 
-class IconFlowBox(DynamicFlowBox):
+class WallpaperFlowBox(DynamicFlowBox):
     def __init__(self, base_class, icon_chooser: "IconChooser", *args, **kwargs):
         super().__init__(base_class=base_class, *args, **kwargs)
         self.CHILDREN_PER_PAGE = 150

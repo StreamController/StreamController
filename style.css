@@ -266,3 +266,16 @@
   font-size: 25px;
   border-radius: 999px;
 }
+
+.reset-button {
+  background-color: #C01C28;
+  transition: background-color 0.25s;
+}
+.reset-button:hover {
+  background-color: #9b1720;
+  transition: background-color 0.25s;
+}
+.reset-button:active {
+  background-color: #f33e4a;
+  transition: background-color 0.25s;
+}

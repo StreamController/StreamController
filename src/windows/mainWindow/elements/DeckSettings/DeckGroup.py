@@ -280,9 +280,5 @@ class Screensaver(Adw.PreferencesRow):
         settings["screensaver"]["path"] = image_path
         gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
 
-    def callback(self, progress: float) -> None:
-        print(f"progress: {progress}")
-        if progress >= 1:
-            threading.Timer(2, self.progress_bar.set_visible, args=(False,)).start()
-        self.progress_bar.set_visible(True)
-        self.progress_bar.set_fraction(progress)
+        deck_controller = self.settings_page.deck_controller
+        deck_controller.load_screensaver(deck_controller.active_page)

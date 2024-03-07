@@ -376,4 +376,5 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         # Reload key
         controller = self.expander.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        controller.load_key(page_coords)
+        key_index = controller.coords_to_index(self.expander.active_coords)
+        controller.load_key(key_index, page=controller.active_page)

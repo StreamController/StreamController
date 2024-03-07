@@ -57,6 +57,8 @@ class LocaleManager:
     
     def get_availbale_locales(self) -> list:
         locales: list[str] = []
+        if not os.path.exists(self.locales_path):
+            return locales
         for file in os.listdir(self.locales_path):
             if file.endswith(".json"):
                 locales.append(os.path.splitext(file)[0])

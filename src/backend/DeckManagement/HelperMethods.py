@@ -115,8 +115,18 @@ def get_sys_args_without_param(param_name: str) -> list:
     return args
 
 def is_video(path: str) -> bool:
+    if path is None:
+        return
     if os.path.isfile(path):
         return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.video_extensions
+
+    return False
+
+def is_image(path: str) -> bool:
+    if path is None:
+        return
+    if os.path.isfile(path):
+        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.image_extensions
 
     return False
 

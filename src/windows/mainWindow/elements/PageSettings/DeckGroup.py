@@ -287,25 +287,27 @@ class Screensaver(Adw.PreferencesRow):
 
 
     def on_toggle_enable(self, toggle_switch, state):
-        self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["enable"] = state
-        self.settings_page.deck_page.deck_controller.active_page.save()
+        deck_controller = self.settings_page.deck_page.deck_controller
+        deck_controller.active_page.dict["screensaver"]["enable"] = state
+        deck_controller.active_page.save()
 
-        self.settings_page.deck_page.deck_controller.screen_saver.set_enable(state)
+        deck_controller.screen_saver.set_enable(state)
 
-        # Reload page
-        self.settings_page.deck_page.deck_controller.reload_page(load_brightness=False, load_background=False, load_keys=False)
+        # Load screensaver onto controller
+        deck_controller.load_screensaver(deck_controller.active_page)
 
 
     def on_toggle_overwrite(self, toggle_switch, state):
-        self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["overwrite"] = state
+        deck_controller = self.settings_page.deck_page.deck_controller
+        deck_controller.active_page.dict["screensaver"]["overwrite"] = state
         # Save
-        self.settings_page.deck_page.deck_controller.active_page.save()
+        deck_controller.active_page.save()
 
         # Update screensaver config box's visibility
         self.config_box.set_visible(state)
 
-        # Reload page
-        self.settings_page.deck_page.deck_controller.reload_page(load_brightness=False, load_background=False, load_keys=False)
+        # Load screensaver onto controller
+        deck_controller.load_screensaver(deck_controller.active_page)
 
     def on_toggle_loop(self, toggle_switch, state):
         self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["loop"] = state
@@ -343,14 +345,10 @@ class Screensaver(Adw.PreferencesRow):
 
     def update_image(self, file_path):
         self.set_thumbnail(file_path)
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})
-        self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["path"] = file_path
+        deck_controller = self.settings_page.deck_page.deck_controller
+        deck_controller.active_page.dict.setdefault("screensaver", {})
+        deck_controller.active_page.dict["screensaver"]["path"] = file_path
         # Save page
-        self.settings_page.deck_page.deck_controller.active_page.save()
+        deck_controller.active_page.save()
 
-    def callback(self, progress: float) -> None:
-        print(f"progress: {progress}")
-        if progress >= 1:
-            threading.Timer(2, self.progress_bar.set_visible, args=(False,)).start()
-        self.progress_bar.set_visible(True)
-        self.progress_bar.set_fraction(progress)
+        deck_controller.load_screensaver(deck_controller.active_page)

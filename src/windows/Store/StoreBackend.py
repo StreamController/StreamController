@@ -612,7 +612,7 @@ class StoreBackend:
                     # Load action objects
                     controller.active_page.load_action_objects()
                     # Reload page to send new on_load events
-                    controller.reload_page()
+                    controller.load_page(controller.active_page)
 
         # Notify plugin actions
         gl.plugin_manager.trigger_signal(signal= Signals.PluginInstall, id=plugin_dict["id"])

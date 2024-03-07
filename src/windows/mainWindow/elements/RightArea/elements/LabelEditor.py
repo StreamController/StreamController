@@ -260,7 +260,12 @@ class LabelRow(Adw.PreferencesRow):
         page = controller.active_page
         page.load()
 
-        controller.load_key(f"{self.active_coords[0]}x{self.active_coords[1]}", only_labels=True)
+        # controller.load_key(f"{self.active_coords[0]}x{self.active_coords[1]}", only_labels=True)
+        controller.load_key(
+            key=controller.coords_to_index(self.active_coords),
+            page=controller.active_page,
+            load_media=False
+        )
 
     def on_change_stroke_width(self, button):
         page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page

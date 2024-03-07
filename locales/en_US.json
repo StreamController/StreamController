@@ -100,7 +100,7 @@
     "background-editor.color.dialog.title": "Select Background Color",
     "background-editor.color.reset": "Reset color",
     "right-area.image-editor.layout.header": "Layout",
-    "right-area.image-editor.layout.subtitle": "Layout for this key",
+    "right-area.image-editor.layout.subtitle": "Layout for this key (only affecting custom media)",
     "right-area.image-editor.layout.size.label": "Size (%)",
     "right-area.image-editor.layout.valign.label": "VAlign",
     "right-area.image-editor.layout.halign.label": "HAlign"

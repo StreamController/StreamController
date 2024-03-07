@@ -99,7 +99,7 @@
     "background-editor.color.dialog.title": "Hintergrundfarbe auswählen",
     "background-editor.color.reset": "Farbe zurücksetzen",
     "right-area.image-editor.layout.header": "Layout",
-    "right-area.image-editor.layout.subtitle": "Layout für diese Taste",
+    "right-area.image-editor.layout.subtitle": "Layout für diese Taste (nur bei benutzerdefinierten Medien)",
     "right-area.image-editor.layout.size.label": "Größe (%)",
     "right-area.image-editor.layout.valign.label": "VAlign",
     "right-area.image-editor.layout.halign.label": "HAlign"

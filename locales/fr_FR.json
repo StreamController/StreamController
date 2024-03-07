@@ -89,7 +89,7 @@
     "background-editor.color.dialog.title": "Sélectionner une couleur",
     "background-editor.color.reset": "Réinitialiser la couleur",
     "right-area.image-editor.layout.header": "Layout",
-    "right-area.image-editor.layout.subtitle": "Layout pour cette touche",
+    "right-area.image-editor.layout.subtitle": "Layout pour cette touche (les médias utilisés par défaut ne sont pas modifiables)",
     "right-area.image-editor.layout.size.label": "Taille (%)",
     "right-area.image-editor.layout.valign.label": "VAlign",
     "right-area.image-editor.layout.halign.label": "HAlign"

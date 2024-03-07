@@ -154,3 +154,6 @@ class PluginBase:
     @backend.setter
     def backend(self, value):
         self._backend = value
+
+    def get_selector_icon(self) -> Gtk.Widget:
+        return Gtk.Image(icon_name="view-paged")

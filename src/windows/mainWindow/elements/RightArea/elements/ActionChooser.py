@@ -194,7 +194,7 @@ class PluginExpander(BetterExpander):
         self.set_title(plugin_name)
         self.set_subtitle(get_last_dir(plugin_dir["folder-path"]))
 
-        self.set_icon_name("view-paged")
+        self.add_prefix(self.plugin_dir["object"].get_selector_icon())
 
         action_holders: list[ActionHolder] = self.plugin_dir["object"].action_holders.values()
         for holder in action_holders:
@@ -276,7 +276,8 @@ class ActionRow(Adw.PreferencesRow):
                                 margin_top=10, margin_bottom=10)
         self.button.set_child(self.main_box)
 
-        self.icon = Gtk.Image(icon_name="insert-image", icon_size=Gtk.IconSize.LARGE, margin_start=5)
+        # self.icon = Gtk.Image(icon_name="insert-image", icon_size=Gtk.IconSize.LARGE, margin_start=5)
+        self.icon = action_holder.icon
         self.main_box.append(self.icon)
 
         self.label = Gtk.Label(label=self.action_holder.action_name, margin_start=10, css_classes=["bold", "large-text"])

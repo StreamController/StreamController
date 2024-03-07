@@ -80,9 +80,6 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_button = Gtk.Button(label=gl.lm.get("select"), css_classes=["page-settings-media-selector"])
         self.media_selector.append(self.media_selector_button)
 
-        self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text=gl.lm.get("background.processing"), fraction=0, show_text=True, visible=False)
-        self.config_box.append(self.progress_bar)
-
         # Signals get directly disconnected by disconnect_signals() but we have to connect them beforehand to prevent errors
         self.connect_signals()
 
@@ -183,16 +180,5 @@ class BackgroundMediaRow(Adw.PreferencesRow):
     def set_background_to_page(self, file_path):
         deck_controller = self.settings_page.deck_page.deck_controller
         deck_controller.active_page.set_background(file_path)
-        self.progress_bar.set_visible(True)
-        self.progress_bar.set_fraction(0)
-        # self.settings_page.deck_page.deck_controller.set_background(file_path, bypass_task=True,
                                                                     # callback=self.callback)
         deck_controller.load_background(page=deck_controller.active_page)
-
-
-    def callback(self, progress: float) -> None:
-        print(f"progress: {progress}")
-        if progress >= 1:
-            threading.Timer(2, self.progress_bar.set_visible, args=(False,)).start()
-        self.progress_bar.set_visible(True)
-        self.progress_bar.set_fraction(progress)

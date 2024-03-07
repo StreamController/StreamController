@@ -295,6 +295,8 @@ class DeckController:
                 # Update ui
                 settings_group.screensaver.load_defaults_from_page()
                 background_group.media_row.load_defaults_from_page()
+
+                gl.app.main_win.rightArea.reload()
             except AttributeError as e:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
 
@@ -805,6 +807,7 @@ class ControllerKey:
         self.key_image = None
         self.key_video = None
         self.labels = {}
+        self.background_color = [0, 0, 0, 0]
         if update:
             self.update()
 

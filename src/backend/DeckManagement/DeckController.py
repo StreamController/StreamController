@@ -726,7 +726,7 @@ class ControllerKey:
         new_key_image = KeyImage(
             controller_key=self,
             image=image,
-            margins=[10, 10, 10, 10]
+            size=0.9
         )
 
         self.set_key_image(new_key_image)

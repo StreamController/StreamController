@@ -173,7 +173,8 @@ class ActionBase:
         self.set_label(text, "bottom", color, stroke_width, font_family, font_size, update)
 
     def on_labels_changed_in_ui(self):
-        self.set_key(reload=True)
+        # TODO
+        pass
 
     def get_config_rows(self) -> "list[Adw.PreferencesRow]":
         return []

@@ -121,7 +121,7 @@ class ActionBase:
                 "font-size": font_size
             }
 
-    def set_media(self, image = None, media_path=None, margins=[0, 0, 0, 0], update: bool = True):
+    def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, update: bool = True):
         if is_image(media_path):
             with Image.open(media_path) as img:
                 image = img.copy()
@@ -130,7 +130,9 @@ class ActionBase:
             self.deck_controller.keys[self.index].set_key_image(KeyImage(
                 controller_key=self.deck_controller.keys[self.index],
                 image=image,
-                margins=margins
+                size=size,
+                valign=valign,
+                halign=halign
             ), update=False)
         if is_video(media_path):
             self.deck_controller.keys[self.index].set_key_video(KeyVideo(

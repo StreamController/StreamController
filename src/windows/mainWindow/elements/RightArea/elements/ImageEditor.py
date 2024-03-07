@@ -15,8 +15,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
-
-
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, Pango
@@ -60,7 +58,7 @@ class ImageGroup(Adw.PreferencesGroup):
         self.build()
 
     def build(self):
-        self.expander = MarginExpanderRow(self)
+        self.expander = Layout(self)
         self.add(self.expander)
 
         return
@@ -68,120 +66,181 @@ class ImageGroup(Adw.PreferencesGroup):
     def load_for_coords(self, coords):
         self.expander.load_for_coords(coords)
 
-class MarginExpanderRow(Adw.ExpanderRow):
+
+class Layout(Adw.ExpanderRow):
     def __init__(self, margin_group):
-        super().__init__(title=gl.lm.get("image-editor.header"), subtitle=gl.lm.get("image-editor-expander.subtitle"))
+        super().__init__(title=gl.lm.get("right-area.image-editor.layout.header"), subtitle=gl.lm.get("right-area.image-editor.layout.subtitle"))
         self.margin_group = margin_group
         self.active_coords = None
         self.build()
 
     def build(self):
-        self.margin_row = MarginRow(right_area=self.margin_group.right_area)
-        self.add_row(self.margin_row)
+        self.size_row = SizeRow(right_area=self.margin_group.right_area)
+        self.add_row(self.size_row)
+
+        self.valign_row = ValignRow(right_area=self.margin_group.right_area)
+        self.add_row(self.valign_row)
+
+        self.halign_row = HalignRow(right_area=self.margin_group.right_area)
+        self.add_row(self.halign_row)
 
     def load_for_coords(self, coords):
         self.active_coords = coords
 
-        self.margin_row.load_for_coords(coords)
+        self.size_row.load_for_coords(coords)
+        self.valign_row.load_for_coords(coords)
+        self.halign_row.load_for_coords(coords)
 
-class MarginRow(Adw.PreferencesRow):
+
+class SizeRow(Adw.PreferencesRow):
     def __init__(self, right_area, **kwargs):
         super().__init__(**kwargs)
         self.right_area = right_area
         self.active_coords = None
         self.build()
 
+        self.connect_signals()
+
     def build(self):
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
-        self.label = Gtk.Label(label=gl.lm.get("image-editor.margin.label"), hexpand=True, xalign=0, margin_bottom=15)
+        self.label = Gtk.Label(label=gl.lm.get("right-area.image-editor.layout.size.label"), hexpand=True, xalign=0)
         self.main_box.append(self.label)
 
-        self.top_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=False, halign=Gtk.Align.CENTER)
-        self.main_box.append(self.top_box)
-
-        self.top_spinner = Gtk.SpinButton()
-        self.top_spinner.set_range(0, 40)
-        self.top_spinner.set_increments(1, 5)
-        self.top_box.append(self.top_spinner)
-
-        self.center_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=False, halign=Gtk.Align.CENTER, homogeneous=False)
-        self.main_box.append(self.center_box)
-
-        self.left_spinner = Gtk.SpinButton(orientation=Gtk.Orientation.VERTICAL, vexpand=False, valign=Gtk.Align.CENTER)
-        self.left_spinner.set_range(0, 40)
-        self.left_spinner.set_increments(1, 5)
-        self.center_box.append(self.left_spinner)
-
-        self.icon_selector = IconSelector(self.right_area)
-        self.center_box.append(self.icon_selector)
-
-        self.right_spinner = Gtk.SpinButton(orientation=Gtk.Orientation.VERTICAL, vexpand=False, valign=Gtk.Align.CENTER)
-        self.right_spinner.set_range(0, 40)
-        self.right_spinner.set_increments(1, 5)
-        self.center_box.append(self.right_spinner)
-
-        self.bottom_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=False, halign=Gtk.Align.CENTER)
-        self.main_box.append(self.bottom_box)
-
-        self.bottom_spinner = Gtk.SpinButton()
-        self.bottom_spinner.set_range(0, 40)
-        self.bottom_spinner.set_increments(1, 5)
-        self.bottom_box.append(self.bottom_spinner)
-
-        self.connect_signals()
+        self.size_spinner = Gtk.SpinButton.new_with_range(0, 100, 1)
+        self.main_box.append(self.size_spinner)
 
     def load_for_coords(self, coords):
         self.disconnect_signals()
-
         self.active_coords = coords
-        page = self.get_page()
 
-        x, y = coords
+        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        margins = page.dict.get("keys").get(f"{x}x{y}", {}).get("media", {}).get("margins", [0, 0, 0, 0])
-
-        self.top_spinner.set_value(margins[0])
-        self.left_spinner.set_value(margins[1])
-        self.right_spinner.set_value(margins[2])
-        self.bottom_spinner.set_value(margins[3])
+        self.size_spinner.set_value(deck_controller.active_page.dict.get("keys").get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("size", 1) * 100)
 
         self.connect_signals()
 
-    def get_deck_controller(self) -> DeckController:
-        return self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+    def on_size_changed(self, widget):
+        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-    def get_page(self) -> Page:
-        return self.get_deck_controller().active_page
+        deck_controller.active_page.dict.setdefault("keys", {})
+        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
 
-    def connect_signals(self):
-        self.top_spinner.connect("value-changed", self.on_margin_changed)
-        self.left_spinner.connect("value-changed", self.on_margin_changed)
-        self.right_spinner.connect("value-changed", self.on_margin_changed)
-        self.bottom_spinner.connect("value-changed", self.on_margin_changed)
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["size"] = widget.get_value() / 100
 
-    def disconnect_signals(self):
-        self.top_spinner.disconnect_by_func(self.on_margin_changed)
-        self.left_spinner.disconnect_by_func(self.on_margin_changed)
-        self.right_spinner.disconnect_by_func(self.on_margin_changed)
-        self.bottom_spinner.disconnect_by_func(self.on_margin_changed)
-
-    def on_margin_changed(self, spinner):
-        page = self.get_page()
-
-        page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
-
-        page.dict.setdefault("keys", {})
-        page.dict["keys"].setdefault(page_coords, {})
-        page.dict["keys"][page_coords].setdefault("media", {})
-        
-        margins = [int(self.left_spinner.get_value()), int(self.top_spinner.get_value()), int(self.right_spinner.get_value()), int(self.bottom_spinner.get_value())]
-        page.dict["keys"][page_coords]["media"]["margins"] = margins
-
-        page.save()
+        deck_controller.active_page.save()
 
         # Reload key
-        deck_controller = self.get_deck_controller()
         deck_controller.load_key(key=deck_controller.coords_to_index(self.active_coords), page=deck_controller.active_page)
+
+    def connect_signals(self):
+        self.size_spinner.connect("value-changed", self.on_size_changed)
+
+    def disconnect_signals(self):
+        self.size_spinner.disconnect_by_func(self.on_size_changed)
+
+
+class ValignRow(Adw.PreferencesRow):
+    def __init__(self, right_area, **kwargs):
+        super().__init__(**kwargs)
+        self.right_area = right_area
+        self.active_coords = None
+        self.build()
+
+        self.connect_signals()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.label = Gtk.Label(label=gl.lm.get("right-area.image-editor.layout.valign.label"), hexpand=True, xalign=0)
+        self.main_box.append(self.label)
+
+        self.valign_spinner = Gtk.SpinButton.new_with_range(-1, 1, 0.1)
+        self.main_box.append(self.valign_spinner)
+
+    def load_for_coords(self, coords):
+        self.disconnect_signals()
+        self.active_coords = coords
+
+        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+
+        self.valign_spinner.set_value(deck_controller.active_page.dict.get("keys").get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("valign", 0))
+
+        self.connect_signals()
+
+    def on_valign_changed(self, widget):
+        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+
+        deck_controller.active_page.dict.setdefault("keys", {})
+        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
+
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["valign"] = widget.get_value()
+
+        deck_controller.active_page.save()
+
+        # Reload key
+        deck_controller.load_key(key=deck_controller.coords_to_index(self.active_coords), page=deck_controller.active_page)
+
+    def connect_signals(self):
+        self.valign_spinner.connect("value-changed", self.on_valign_changed)
+
+    def disconnect_signals(self):
+        self.valign_spinner.disconnect_by_func(self.on_valign_changed)
+
+
+class HalignRow(Adw.PreferencesRow):
+    def __init__(self, right_area, **kwargs):
+        super().__init__(**kwargs)
+        self.right_area = right_area
+        self.active_coords = None
+        self.build()
+
+        self.connect_signals()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.label = Gtk.Label(label=gl.lm.get("right-area.image-editor.layout.halign.label"), hexpand=True, xalign=0)
+        self.main_box.append(self.label)
+
+        self.halign_spinner = Gtk.SpinButton.new_with_range(-1, 1, 0.1)
+        self.main_box.append(self.halign_spinner)
+
+    def load_for_coords(self, coords):
+        self.disconnect_signals()
+        
+        self.active_coords = coords
+
+        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+
+        self.halign_spinner.set_value(deck_controller.active_page.dict.get("keys").get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("halign", 0))
+
+        self.connect_signals()
+
+    def on_halign_changed(self, widget):
+        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+
+        deck_controller.active_page.dict.setdefault("keys", {})
+        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
+
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["halign"] = widget.get_value()
+
+        deck_controller.active_page.save()
+
+        # Reload key
+        deck_controller.load_key(key=deck_controller.coords_to_index(self.active_coords), page=deck_controller.active_page)
+
+    def connect_signals(self):
+        self.halign_spinner.connect("value-changed", self.on_halign_changed)
+
+    def disconnect_signals(self):
+        self.halign_spinner.disconnect_by_func(self.on_halign_changed)

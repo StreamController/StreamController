@@ -149,7 +149,7 @@ class KeyButton(Gtk.Frame):
         # Update icon selector on the top of the right are
         GLib.idle_add(right_area.key_editor.icon_selector.image.set_from_pixbuf, pixbuf)
         # Update icon selector in margin editor
-        GLib.idle_add(right_area.key_editor.image_editor.image_group.expander.margin_row.icon_selector.image.set_from_pixbuf, pixbuf)
+        # GLib.idle_add(right_area.key_editor.image_editor.image_group.expander.margin_row.icon_selector.image.set_from_pixbuf, pixbuf)
 
     def show_pixbuf(self, pixbuf):
         self.pixbuf = pixbuf

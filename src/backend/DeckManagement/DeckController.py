@@ -170,7 +170,7 @@ class DeckController:
         self.keys[key].on_key_change(state)
 
     ### Helper methods
-    def generate_alpha_key(self) -> None:
+    def generate_alpha_key(self) -> Image.Image:
         return Image.new("RGBA", self.get_key_image_size(), (0, 0, 0, 0))
     
     def get_key_image_size(self) -> tuple[int]:
@@ -780,7 +780,9 @@ class ControllerKey:
                         controller_key=self,
                         image=Image.open(path),
                         fill_mode=page_dict.get("media", {}).get("fill-mode", "cover"),
-                        margins=page_dict.get("media", {}).get("margins", [0, 0, 0, 0])
+                        size=page_dict.get("media", {}).get("size", 1),
+                        valign=page_dict.get("media", {}).get("valign", 0),
+                        halign=page_dict.get("media", {}).get("halign", 0),
                     ), update=False)
 
                 elif is_video(path) and True:
@@ -874,43 +876,50 @@ class KeyLabel:
 
 
 class KeyImage:
-    def __init__(self, controller_key: ControllerKey, image: Image, fill_mode: str = "cover", margins: list[int] = [0, 0, 0, 0]):
+    def __init__(self, controller_key: ControllerKey, image: Image.Image, fill_mode: str = "cover", size: float = 1, valign: float = 0, halign: float = 0):
+        """
+        Initialize the class with the given controller key, image, fill mode, size, vertical alignment, and horizontal alignment.
+
+        Parameters:
+            controller_key (ControllerKey): The key of the controller.
+            image (Image.Image): The image to be displayed.
+            fill_mode (str, optional): The mode for filling the image. Defaults to "cover".
+            size (float, optional): The size of the image. Defaults to 1.
+            valign (float, optional): The vertical alignment of the image. Defaults to 0. Ranges from -1 to 1.
+            halign (float, optional): The horizontal alignment of the image. Defaults to 0. Ranges from -1 to 1.
+        """
         self.controller_key = controller_key
-        self.image: Image = image
+        self.image: Image.Image = image
         self.fill_mode = fill_mode
-        self.margins = list(map(int, margins)) # Ensure margins are ints
+        self.size = size
+        self.valign = valign
+        self.halign = halign
 
-
-    def get_composite_image(self, background: Image = None) -> Image:
+    def get_composite_image(self, background: Image.Image = None) -> Image.Image:
         if background is None:
             background = self.controller_key.deck_controller.generate_alpha_key()
 
         # Calculate the box where the inner image should be fitted
-        box = (self.margins[3],
-               self.margins[0],
-               background.width - self.margins[1],
-               background.height - self.margins[2])
-        box_size = (box[2] - box[0], box[3] - box[1])
+        img_size = self.controller_key.deck_controller.get_key_image_size()
+        img_size = (int(img_size[0] * self.size), int(img_size[1] * self.size)) # Calculate scaled size of the image
 
-        print(box_size)
-
+        left_margin = int((background.width - img_size[0]) * (self.halign + 1) / 2)
+        top_margin = int((background.height - img_size[1]) * (self.valign + 1) / 2)
 
         if self.fill_mode == "stretch":
             image_size = [background.width - self.margins[0] - self.margins[2], background.height - self.margins[1] - self.margins[3]]
             image_resized = self.image.resize(image_size, Image.Resampling.HAMMING)
 
         elif self.fill_mode == "cover":
-            image_resized = ImageOps.cover(self.image, box_size, Image.Resampling.HAMMING)
+            image_resized = ImageOps.cover(self.image, img_size, Image.Resampling.HAMMING)
 
         elif self.fill_mode == "contain":
-            image_resized = ImageOps.contain(self.image, box_size, Image.Resampling.HAMMING)
+            image_resized = ImageOps.contain(self.image, img_size, Image.Resampling.HAMMING)
         
         else:
             raise ValueError(f"Unknown fill mode: {self.fill_mode}")
         
-        print(f"image_resized: {image_resized.size}")
-
-        background.paste(image_resized, self.margins[0:2])
+        background.paste(image_resized, (left_margin, top_margin))
 
         return background
     

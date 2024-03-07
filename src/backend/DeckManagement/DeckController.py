@@ -753,14 +753,18 @@ class ControllerKey:
         if load_media:
             self.key_image = None
             self.key_video = None
+        
+        if load_labels:
+            self.labels = {}
 
         self.own_actions_ready()
 
         ## Load labels
         if load_labels:
-            self.labels = {}
-
             for label in page_dict.get("labels", []):
+                if label in self.labels:
+                    # Chosen by an action
+                    continue
                 key_label = KeyLabel(
                     controller_key=self,
                     text=page_dict["labels"][label].get("text"),

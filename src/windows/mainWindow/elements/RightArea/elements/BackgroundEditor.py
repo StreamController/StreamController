@@ -69,7 +69,7 @@ class BackgroundExpanderRow(Adw.ExpanderRow):
         self.build()
 
     def build(self):
-        self.color_row = ColorRow(right_area=self.label_group.right_area)
+        self.color_row = ColorRow(right_area=self.label_group.right_area, expander=self)
         self.add_row(self.color_row)
 
         self.reset_color_button = ResetColorButton(color_row=self.color_row)
@@ -79,11 +79,13 @@ class BackgroundExpanderRow(Adw.ExpanderRow):
         self.active_coords = coords
 
         self.color_row.load_for_coords(coords)
+        self.reset_color_button.update()
 
 class ColorRow(Adw.PreferencesRow):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, right_area, expander: BackgroundExpanderRow, **kwargs):
         super().__init__(**kwargs)
         self.right_area = right_area
+        self.expander = expander
         self.active_coords = None
         self.build()
 
@@ -134,6 +136,8 @@ class ColorRow(Adw.PreferencesRow):
         key_index = controller.coords_to_index(self.active_coords)
         controller.load_key(key_index, page=controller.active_page)
 
+        self.expander.reset_color_button.update()
+
     def load_for_coords(self, coords):
         self.disconnect_signals()
 
@@ -162,3 +166,16 @@ class ResetColorButton(Adw.PreferencesRow):
 
     def on_click(self, button):
         self.color_row.color_chooser_button.set_rgba(Gdk.RGBA(0, 0, 0, 0))
+
+    def update(self):
+        color = self.color_row.color_chooser_button.get_rgba()
+        green = round(color.green * 255)
+        blue = round(color.blue * 255)
+        red = round(color.red * 255)
+        alpha = round(color.alpha * 255)
+
+        # Only show button if color is not the default of [0, 0, 0, 0]
+        if [red, green, blue, alpha] == [0, 0, 0, 0]:
+            self.set_visible(False)
+        else:
+            self.set_visible(True)

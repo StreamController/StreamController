@@ -86,6 +86,8 @@ class DeckController:
 
         self.load_default_page()
 
+        self.media_ticks = 0
+
         # Start media player thread
         self.media_player_thread = threading.Thread(target=self.play_media)
         self.media_player_thread.start()
@@ -125,24 +127,32 @@ class DeckController:
         for i in range(self.deck.key_count()):
             self.update_key(i)
     def play_media(self):
+        FPS = 60
         while True:
             start = time.time()
             if self.background.video is not None:
                 # There is a background video
-                self.background.update_tiles()
+                video_each_nth_frame = FPS // self.background.video.fps
+                if self.media_ticks % video_each_nth_frame == 0:
+                    self.background.update_tiles()
 
             for key in self.keys:
-                if self.background.video is None and key.key_video is None:
-                    continue
-                key.update()
+                if key.key_video is not None:
+                    video_each_nth_frame = FPS // key.key_video.fps
+                    if self.media_ticks % video_each_nth_frame == 0:
+                        key.update()
+                elif self.background.video is not None:
+                    key.update()
 
             # Perform media player tasks
             self.perform_media_player_tasks()
 
+            self.media_ticks += 1
+
             # Wait for approximately 1/30th of a second before the next call
             end = time.time()
             # print(f"possible FPS: {1 / (end - start)}")
-            wait = max(0, 1/60 - (end - start))
+            wait = max(0, 1/FPS - (end - start))
             time.sleep(wait)
 
     def perform_media_player_tasks(self):
@@ -240,8 +250,8 @@ class DeckController:
             self.screen_saver.set_media_path(path)
             self.screen_saver.set_enable(enable)
             self.screen_saver.set_time(time)
-            # self.screen_saver.set_loop(loop) # TODO: implement
-            # self.screen_saver.set_fps(fps) # TODO: implement
+            self.screen_saver.set_loop(loop)
+            self.screen_saver.set_fps(fps)
 
         def set_from_page(self: "DeckController"):
             path = page.dict.get("screensaver", {}).get("path")
@@ -253,8 +263,8 @@ class DeckController:
             self.screen_saver.set_media_path(path)
             self.screen_saver.set_enable(enable)
             self.screen_saver.set_time(time)
-            # self.screen_saver.set_loop(loop) # TODO: implement
-            # self.screen_saver.set_fps(fps) # TODO: implement
+            self.screen_saver.set_loop(loop)
+            self.screen_saver.set_fps(fps)
 
         if self.active_page.dict.get("screensaver", {}).get("overwrite", False) is False and "screensaver" in deck_settings:
             set_from_deck_settings(self)
@@ -270,7 +280,7 @@ class DeckController:
         key_dict = page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {})
         self.keys[key].load_from_page_dict(key_dict, update, load_labels, load_media)
 
-    def load_page(self, page: Page):
+    def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
         self.active_page = page
 
         if page is None:
@@ -299,11 +309,15 @@ class DeckController:
                 gl.app.main_win.rightArea.reload()
             except AttributeError as e:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
-
-        self.load_brightness(page)
-        self.load_screensaver(page)
-        self.load_background(page, update=False)
-        self.load_all_keys(page, update=False)
+        
+        if load_brigtness:
+            self.load_brightness(page)
+        if load_screensaver:
+            self.load_screensaver(page)
+        if load_background:
+            self.load_background(page, update=False)
+        if load_keys:
+            self.load_all_keys(page, update=False)
 
         # Clear unfinished tasks from old page
         self.clear_media_player_tasks()
@@ -475,9 +489,11 @@ class BackgroundImage:
 
 
 class BackgroundVideo(BackgroundVideoCache):
-    def __init__(self, deck_controller: DeckController, video_path: str):
+    def __init__(self, deck_controller: DeckController, video_path: str, loop: bool = True, fps: int = 30) -> None:
         self.deck_controller = deck_controller
         self.video_path = video_path
+        self.loop = loop
+        self.fps = fps
 
         self.active_frame: int = -1
 
@@ -487,7 +503,8 @@ class BackgroundVideo(BackgroundVideoCache):
         self.active_frame += 1
 
         if self.active_frame >= self.n_frames:
-            self.active_frame = 0
+            if self.loop:
+                self.active_frame = 0
 
         return self.get_tiles(self.active_frame)
 
@@ -661,6 +678,7 @@ class ControllerKey:
         image = image.copy()
 
         draw = ImageDraw.Draw(image)
+        draw.fontmode = "1" # Anti-aliased - this prevents frayed/noisy labels on the deck
 
         for label in self.labels:
             text = self.labels[label].text
@@ -795,6 +813,8 @@ class ControllerKey:
                     self.set_key_video(KeyVideo(
                         controller_key=self,
                         video_path=path,
+                        loop = page_dict.get("media", {}).get("loop", True),
+                        fps = page_dict.get("media", {}).get("fps", 30)
                     )) # Videos always update
 
         if load_background_color:
@@ -879,6 +899,9 @@ class KeyLabel:
         self.font_weight = font_weight
 
     def get_font_path(self) -> str:
+        if self.font_name is None and False:
+            FALLBACK = os.path.join("Assets", "Fonts", "Roboto-Regular.ttf")
+            return FALLBACK
         return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=self.font_name))
 
 
@@ -932,11 +955,16 @@ class KeyImage:
     
 
 class KeyVideo(VideoFrameCache):
-    def __init__(self, controller_key: ControllerKey, video_path: str, fill_mode: str = "cover", margins: list[int] = [0, 0, 0, 0]):
+    def __init__(self, controller_key: ControllerKey, video_path: str, fill_mode: str = "cover", size: float = 1,
+                 valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
         self.controller_key = controller_key
         self.video_path = video_path
         self.fill_mode = fill_mode
-        self.margins = margins
+        self.size = size
+        self.valign = valign
+        self.halign = halign
+        self.fps = fps
+        self.loop = loop
 
         self.active_frame: int = -1
 
@@ -947,7 +975,8 @@ class KeyVideo(VideoFrameCache):
         self.active_frame += 1
 
         if self.active_frame >= self.n_frames:
-            self.active_frame = 0
+            if self.loop:
+                self.active_frame = 0
         
         return self.get_frame(self.active_frame).resize(self.controller_key.deck_controller.get_key_image_size(), Image.Resampling.LANCZOS)
 

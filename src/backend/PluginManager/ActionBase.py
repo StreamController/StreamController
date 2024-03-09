@@ -21,7 +21,7 @@ from locales.LocaleManager import LocaleManager
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
-    from src.backend.DeckManagement.DeckController import DeckController
+    from src.backend.DeckManagement.DeckController import DeckController, ControllerKey
 
 @Pyro5.api.expose
 class ActionBase:
@@ -237,3 +237,6 @@ class ActionBase:
     @backend.setter
     def backend(self, value):
         self._backend = value
+
+    def get_own_key(self) -> "ControllerKey":
+        return self.deck_controller.keys[self.index]

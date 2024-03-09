@@ -39,6 +39,7 @@ class BackgroundVideoCache:
         print(f"Size of capture: {sys.getsizeof(self.cap) / 1024 / 1024:.2f} MB")
 
     def get_tiles(self, n):
+        n = min(n, self.n_frames - 1)
         with self.lock:
             if self.is_cache_complete():
                 print("Cache is complete. Retrieving frame from cache.")

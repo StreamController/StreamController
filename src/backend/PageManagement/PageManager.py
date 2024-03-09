@@ -33,7 +33,7 @@ class PageManager:
         self.created_pages = {}
 
         self.custom_pages = []
-    
+
     def save_pages(self) -> None:
         for page in self.pages.values():
             page.save()
@@ -163,6 +163,7 @@ class PageManager:
     def register_page(self, path: str):
         if not os.path.exists(path):
             log.error(f"Page {path} does not exist")
+            return
         log.trace(f"Registering page: {path}")
         self.custom_pages.append(path)
 

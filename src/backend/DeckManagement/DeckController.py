@@ -280,20 +280,7 @@ class DeckController:
         key_dict = page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {})
         self.keys[key].load_from_page_dict(key_dict, update, load_labels, load_media)
 
-    def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
-        self.active_page = page
-
-        if page is None:
-            # Clear deck
-            self.deck.reset()
-            return
-
-        log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()}")
-
-        # Stop queued tasks
-        self.clear_media_player_tasks()
-        print(self.media_player_tasks)
-
+    def update_ui_on_page_change(self):
         # Update ui
         if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
             try:
@@ -309,7 +296,24 @@ class DeckController:
                 gl.app.main_win.rightArea.reload()
             except AttributeError as e:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
-        
+
+
+    def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
+        self.active_page = page
+
+        if page is None:
+            # Clear deck
+            self.deck.reset()
+            return
+
+        log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()}")
+
+        # Stop queued tasks
+        self.clear_media_player_tasks()
+
+        # Update ui
+        GLib.idle_add(self.update_ui_on_page_change)
+
         if load_brigtness:
             self.load_brightness(page)
         if load_screensaver:

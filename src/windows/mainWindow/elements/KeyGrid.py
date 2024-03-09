@@ -53,6 +53,7 @@ class KeyGrid(Gtk.Grid):
         self.build()
 
         self.connect("map", self.on_map)
+        self.connect("unmap", self.on_unmap)
 
         self.load_from_changes()
 
@@ -67,6 +68,7 @@ class KeyGrid(Gtk.Grid):
             for y in range(layout[1]):
                 button = KeyButton(self, (layout[0] - x - 1, y))
                 self.attach(button, y, layout[0] - x, 1, 1)
+                button._set_visible(False) # Hide buttons per default - they will be shown when the the grid is mapped to prevent large grids to resize every child
                 x = layout[0] - 1 - x
                 self.buttons[x][y] = button
         return
@@ -96,9 +98,21 @@ class KeyGrid(Gtk.Grid):
     def on_map(self, widget):
         self.load_from_changes()
 
+        # Only show buttons when the grid is mapped to prevent large grids to resize every child
+        self.set_buttons_visible(True)
+
+    def on_unmap(self, widget):
+        # Only show buttons when the grid is mapped to prevent large grids to resize every child
+        self.set_buttons_visible(False)
+
     def clear(self):
         while self.get_first_child() is not None:
             self.remove(self.get_first_child())
+
+    def set_buttons_visible(self, visible):
+        for x in range(self.deck_controller.deck.key_layout()[0]):
+            for y in range(self.deck_controller.deck.key_layout()[1]):
+                self.buttons[x][y]._set_visible(visible)
 
 
 class KeyButton(Gtk.Frame):
@@ -270,6 +284,10 @@ class KeyButton(Gtk.Frame):
 
         # Reload ui
         gl.app.main_win.rightArea.load_for_coords((x, y))
+
+    def _set_visible(self, visible: bool):
+        self.set_visible(visible)
+        self.image.set_visible(visible)
 
 
 class KeyButtonContextMenu(Gtk.PopoverMenu):

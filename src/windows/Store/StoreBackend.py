@@ -615,7 +615,6 @@ class StoreBackend:
         gl.plugin_manager.trigger_signal(signal= Signals.PluginInstall, id=plugin_dict["id"])
 
         log.success(f"Plugin {plugin_dict['id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
-
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False) -> bool:
         ## 1. Remove all action objects in all pages
         for deck_controller in gl.deck_manager.deck_controller:
@@ -630,11 +629,14 @@ class StoreBackend:
             for key in keys:
                 deck_controller.load_key(key)
 
-        ## 2. Remove plugin folder
-        plugin_dir = gl.plugin_manager.get_plugin_by_id(plugin_id).PATH
-        shutil.rmtree(plugin_dir)
+        ## 2. Inform plugin base
+        plugin = gl.plugin_manager.get_plugin_by_id(plugin_id)
+        plugin.on_uninstall()
+        
+        ## 3. Remove plugin folder
+        shutil.rmtree(plugin.PATH)
 
-        ## 3. Delete plugin base object
+        ## 4. Delete plugin base object
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
         del plugin_obj
 

@@ -172,7 +172,7 @@ class RemoveButton(Gtk.Button):
         # Check whether we have to reload the key
         load = not page.has_key_an_image_controlling_action(self.action.page_coords)
         if load:
-            controller.load_key(self.action.page_coords)
+            controller.load_key(self.action.page_coords, page=page)
             # Reload key on similar pages
             page.reload_similar_pages(page_coords=self.action.page_coords)
 

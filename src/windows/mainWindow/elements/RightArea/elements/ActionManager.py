@@ -33,6 +33,10 @@ from src.backend.PluginManager.ActionBase import ActionBase
 from GtkHelper.GtkHelper import BetterExpander
 from src.backend.PageManagement.Page import NoActionHolderFound
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.windows.mainWindow.elements.RightArea.RightArea import RightArea
+
 class ActionManager(Gtk.Box):
     def __init__(self, right_area, **kwargs):
         self.right_area = right_area
@@ -86,8 +90,8 @@ class ActionExpanderRow(BetterExpander):
         self.add_action_button = AddActionButtonRow(self)
         self.add_row(self.add_action_button)
 
-    def add_action_row(self, action_name: str, action_id: str, action_category, action_object, index):
-        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.right_area, index)
+    def add_action_row(self, action_name: str, action_id: str, action_category, action_object, index, total_rows: int):
+        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.right_area, index, total_rows, self)
         self.add_row(action_row)
 
     def load_for_coords(self, coords):
@@ -97,10 +101,13 @@ class ActionExpanderRow(BetterExpander):
         controller = self.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         if page_coords not in controller.active_page.action_objects:
             return
+        print()
+        
+        number_of_actions = len(controller.active_page.action_objects[page_coords])
         for i, key in enumerate(controller.active_page.action_objects[page_coords]):
             action = controller.active_page.action_objects[page_coords][key]
             if isinstance(action, ActionBase):
-                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, i)
+                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
                 missing_button_row = MissingActionButtonRow(action.id, page_coords, i)
                 self.add_row(missing_button_row)
@@ -141,23 +148,89 @@ class ActionExpanderRow(BetterExpander):
 
         self.reorder_child_after(self.preview, self.get_rows()[index])
 
+    def update_indices(self):
+        for i, row in enumerate(self.get_rows()):
+            row.index = i
+            print(row.action_name)
+
+    def reorder_index_after(self, lst, move_index, after_index):
+        if move_index < 0 or move_index >= len(lst):
+            raise ValueError("Move index out of range.")
+        
+        if after_index < 0 or after_index >= len(lst):
+            raise ValueError("After index out of range.")
+
+        move_item = lst.pop(move_index)
+        lst.insert(after_index + 1 if move_index > after_index else after_index, move_item)
+        
+        return lst
+    
+    def reorder_action_objects(self, action_objects, move_index, after_index):
+        objects = list(action_objects.values())
+        reordered = self.reorder_index_after(objects, move_index, after_index)
+
+        new = {}
+        for i, obj in enumerate(reordered):
+            new[i] = obj
+
+        return new
+
+
+    def update_action_objects_order(self) -> None:
+        new_objects = {}
+        for i, row in enumerate(self.get_rows()):
+            if not isinstance(row, ActionRow):
+                continue
+            new_objects[i] = row.action_object
+
+
+    def reorder_actions(self, move_index, after_index):
+        controller = self.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
+
+        actions = controller.active_page.dict["keys"][page_coords]["actions"]
+
+        reordered = self.reorder_index_after(actions, move_index, after_index)
+        controller.active_page.dict["keys"][page_coords]["actions"] = reordered
+        controller.active_page.save()
+        # a = controller.active_page.action_objects
+        # controller.active_page.action_objects = {}
+        # controller.active_page.load_action_objects()
+
+        action_objects = controller.active_page.action_objects[page_coords]
+
+        reordered = self.reorder_action_objects(action_objects, move_index, after_index)
+        controller.active_page.action_objects[page_coords] = reordered
+
+
+        controller.load_page(controller.active_page)
+
+
+        
+
 class ActionRow(Adw.PreferencesRow):
-    def __init__(self, action_name, action_id, action_category, action_object, right_area, index, **kwargs):
+    def __init__(self, action_name, action_id, action_category, action_object, right_area: "RightArea", index, total_rows: int, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding"])
         self.action_name = action_name
         self.action_id = action_id
         self.action_category = action_category
-        self.right_area = right_area
+        self.right_area: "RightArea" = right_area
         self.action_object = action_object
         self.index = index
         self.active_coords = None
+        self.total_rows = total_rows
+        self.expander = expander
         self.build()
         self.init_dnd()
 
     def build(self):
+        self.overlay = Gtk.Overlay()
+        self.set_child(self.overlay)
+
         self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN, css_classes=["no-margin", "invisible"])
         self.button.connect("clicked", self.on_click)
-        self.set_child(self.button)
+        self.overlay.set_child(self.button)
+
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.button.set_child(self.main_box)
@@ -171,10 +244,51 @@ class ActionRow(Adw.PreferencesRow):
         self.category_label = Gtk.Label(label=self.action_category, xalign=0, sensitive=False)
         self.left_box.append(self.category_label)
 
-        # self.remove_button = Gtk.Button(label="Remove Action")
-        # self.left_box.append(self.remove_button)
+        ## Move buttons
+        self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.END, valign=Gtk.Align.CENTER, margin_end=10, css_classes=["linked"])
+        self.overlay.add_overlay(self.button_box)
 
-        self.main_box.append(Gtk.Image(icon_name="draw-arrow-forward"))
+        self.up_button = Gtk.Button(icon_name="go-up")
+        self.up_button.connect("clicked", self.on_click_up)
+        self.button_box.append(self.up_button)
+
+        self.down_button = Gtk.Button(icon_name="go-down")
+        self.down_button.connect("clicked", self.on_click_down)
+        self.button_box.append(self.down_button)
+
+        return
+
+        if self.index == 0:
+            self.up_button.set_sensitive(False)
+
+        if self.index == self.total_rows - 1:
+            self.down_button.set_sensitive(False)
+
+    def get_own_index(self) -> int:
+        return self.expander.get_index_of_child(self)
+
+    def on_click_up(self, button):
+        print("up")
+        one_up_child = self.expander.get_rows()[self.index - 1]
+        print(f"{type(self)} and {type(one_up_child)}")
+        print(f"{self.action_name} below {one_up_child.action_name}")
+        self.expander.reorder_child_after(self, one_up_child)
+        self.expander.reorder_actions(self.index - 1, self.index)
+
+        # self.expander.update_indices()
+
+
+    def on_click_down(self, button):
+        print("down")
+        one_down_child = self.expander.get_rows()[self.index + 1]
+        print(f"{type(self)} and {type(one_down_child)}")
+        print(f"{self.action_name} below {one_down_child.action_name}")
+        self.expander.reorder_child_after(self, one_down_child)
+        self.expander.reorder_actions(self.index, self.index + 1)
+
+        # self.expander.update_indices()
+        
+            
         
     def init_dnd(self):
         if self.index == None:
@@ -348,6 +462,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
                                  label=gl.lm.get("action-editor-add-new-action"),
                                  margin_bottom=5, margin_top=5)
         self.button.connect("clicked", self.on_click)
+        self.action_name = "Add Action"
         self.set_child(self.button)
 
     def on_click(self, button):

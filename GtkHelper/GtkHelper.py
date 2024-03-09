@@ -101,6 +101,13 @@ class BetterExpander(Adw.ExpanderRow):
     def remove_child(self, child:Gtk.Widget) -> None:
         self.get_list_box().remove(child)
 
+    def get_index_of_child(self, child):
+        for i, action in enumerate(self.actions):
+            if action == child:
+                return i
+        
+        raise ValueError("Child not found")
+
 
 class BetterPreferencesGroup(Adw.PreferencesGroup):
     def __init__(self, *args, **kwargs):

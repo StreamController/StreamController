@@ -877,20 +877,33 @@ class ControllerKey:
         else:
             self.own_actions_key_up()
 
-
     def own_actions_ready(self) -> None:
+        threading.Thread(target=self.own_actions_ready_threaded).start()
+
+    def own_actions_key_down(self) -> None:
+        threading.Thread(target=self.own_actions_key_down_threaded).start()
+
+    def own_actions_key_up(self) -> None:
+        threading.Thread(target=self.own_actions_key_up_threaded).start()
+
+    def own_actions_tick(self) -> None:
+        threading.Thread(target=self.own_actions_tick_threaded).start()
+
+
+
+    def own_actions_ready_threaded(self) -> None:
         for action in self.get_own_actions():
             action.on_ready()
 
-    def own_actions_key_down(self) -> None:
+    def own_actions_key_down_threaded(self) -> None:
         for action in self.get_own_actions():
             action.on_key_down()
 
-    def own_actions_key_up(self) -> None:
+    def own_actions_key_up_threaded(self) -> None:
         for action in self.get_own_actions():
             action.on_key_up()
 
-    def own_actions_tick(self) -> None:
+    def own_actions_tick_threaded(self) -> None:
         for action in self.get_own_actions():
             action.on_tick()
 

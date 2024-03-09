@@ -207,7 +207,6 @@ class StoreBackend:
         
         return wallpapers
     
-    @alru_cache(maxsize=None)
     async def get_manifest(self, url:str, commit:str) -> dict:
         url = self.build_url(url, "manifest.json", commit)
         # Look for cached manifest - if we have a file for the same commit we can safely assume it's the same

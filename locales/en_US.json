@@ -103,5 +103,9 @@
     "right-area.image-editor.layout.subtitle": "Layout for this key (only affecting custom media)",
     "right-area.image-editor.layout.size.label": "Size (%)",
     "right-area.image-editor.layout.valign.label": "VAlign",
-    "right-area.image-editor.layout.halign.label": "HAlign"
+    "right-area.image-editor.layout.halign.label": "HAlign",
+    "deck.fake-deck-group.title": "Fake Deck",
+    "deck.fake-deck-group.description": "Configure fake deck settings",
+    "deck.fake-deck-group.layout.columns.label": "Columns",
+    "deck.fake-deck-group.layout.rows.label": "Rows"
 }

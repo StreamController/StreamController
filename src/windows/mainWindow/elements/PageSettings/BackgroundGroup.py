@@ -140,6 +140,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         deck_controller.active_page.save()
         deck_controller.load_background(page=deck_controller.active_page)
 
+        deck_controller.active_page.reload_similar_pages()
+
     def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)
         # Update page
@@ -148,6 +150,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Save
         deck_controller.active_page.save()
         deck_controller.load_background(page=deck_controller.active_page)
+
+        deck_controller.active_page.reload_similar_pages()
 
     def on_choose_image(self, button):
         self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("background", {})
@@ -182,3 +186,5 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         deck_controller = self.settings_page.deck_page.deck_controller
         deck_controller.active_page.set_background(file_path)
         deck_controller.load_background(page=deck_controller.active_page)
+
+        deck_controller.active_page.reload_similar_pages()

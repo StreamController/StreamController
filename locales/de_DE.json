@@ -102,5 +102,9 @@
     "right-area.image-editor.layout.subtitle": "Layout für diese Taste (nur bei benutzerdefinierten Medien)",
     "right-area.image-editor.layout.size.label": "Größe (%)",
     "right-area.image-editor.layout.valign.label": "VAlign",
-    "right-area.image-editor.layout.halign.label": "HAlign"
+    "right-area.image-editor.layout.halign.label": "HAlign",
+    "deck.fake-deck-group.title": "Fake Deck",
+    "deck.fake-deck-group.description": "Konfiguration des Fake Decks",
+    "deck.fake-deck-group.layout.columns.label": "Spalten",
+    "deck.fake-deck-group.layout.rows.label": "Zeilen"
 }

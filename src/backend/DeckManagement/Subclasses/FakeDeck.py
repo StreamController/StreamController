@@ -15,22 +15,29 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import uuid
 
+import globals as gl
+
 class FakeDeck:
     def __init__(self, serial_number = None, deck_type = None):
         self.serial_number = serial_number
         self._deck_type = deck_type
+
+        self.is_fake = True
+
+        self._key_layout = gl.settings_manager.get_deck_settings(self.serial_number).get("key-layout", [3, 5])
+
     def deck_type(self):
         return self._deck_type
     def get_serial_number(self):
         return self.serial_number
     def key_layout(self):
-        return (3, 5)
+        return self._key_layout
     def is_open(self):
         return True
     def reset(self):
         return
     def key_count(self):
-        return 15
+        return self.key_layout()[0] * self.key_layout()[1]
     def set_key_callback(self, *args, **kwargs):
         return
     def set_brightness(self, *args, **kwargs):
@@ -38,7 +45,7 @@ class FakeDeck:
     def set_key_image(self, *args, **kwargs):
         return
     def key_states(self):
-        return [False] * 15
+        return [False] * self.key_count()
     def key_image_format(self):
         return {'size': (72, 72), 'format': 'JPEG', 'flip': (True, True), 'rotation': 0}
     def id(self):
@@ -49,3 +56,13 @@ class FakeDeck:
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         return True
+    
+    def set_key_layout(self, layout: list[int]):
+        """
+        Sets and saves a new key layout
+        """
+        self._key_layout = layout
+
+        settings = gl.settings_manager.get_deck_settings(self.serial_number)
+        settings["key-layout"] = layout
+        gl.settings_manager.save_deck_settings(self.serial_number, settings)

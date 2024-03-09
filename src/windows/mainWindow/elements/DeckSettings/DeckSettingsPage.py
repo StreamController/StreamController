@@ -24,6 +24,7 @@ from loguru import logger as log
 # Import own modules
 from src.windows.mainWindow.elements.DeckSettings.DeckGroup import DeckGroup
 from src.windows.mainWindow.elements.DeckSettings.BackgroundGroup import BackgroundGroup
+from src.windows.mainWindow.elements.DeckSettings.FakeDeckGroup import FakeDeckGroup
 
 # Import globals
 import globals as gl
@@ -57,6 +58,19 @@ class DeckSettingsPage(Gtk.Box):
 
         self.background_group = BackgroundGroup(self)
         main_box.append(self.background_group)
+
+        self.fake_deck_group = FakeDeckGroup(self)
+        main_box.append(self.fake_deck_group)
+
+        ## Hide the fake deck group if own deck is not fake
+        deck = self.deck_controller.deck
+        fake = False
+        if hasattr(deck, "is_fake"):
+            fake = deck.is_fake
+
+        self.fake_deck_group.set_visible(fake)
+
+
 
     def show_no_page_error(self):
         self.clear()

@@ -55,8 +55,13 @@ class KeyGrid(Gtk.Grid):
         self.connect("map", self.on_map)
 
         self.load_from_changes()
+
+    def regenerate_buttons(self):
+        self.buttons = [[None] * self.deck_controller.deck.key_layout()[1] for i in range(self.deck_controller.deck.key_layout()[0])]
     
     def build(self):
+        self.clear()
+
         layout = self.deck_controller.deck.key_layout()
         for x in range(layout[0]):
             for y in range(layout[1]):
@@ -75,7 +80,11 @@ class KeyGrid(Gtk.Grid):
             return
         tasks = self.deck_controller.ui_grid_buttons_changes_while_hidden
         for coords, image in tasks.items():
-            self.buttons[coords[0]][coords[1]].set_image(image)
+            try:
+                self.buttons[coords[0]][coords[1]].set_image(image)
+            except IndexError:
+                # This happens if the fake deck layout got changed while the app was running
+                pass
         
         # Clear tasks
         self.deck_controller.ui_grid_buttons_changes_while_hidden = {}
@@ -86,6 +95,11 @@ class KeyGrid(Gtk.Grid):
 
     def on_map(self, widget):
         self.load_from_changes()
+
+    def clear(self):
+        while self.get_first_child() is not None:
+            self.remove(self.get_first_child())
+
 
 class KeyButton(Gtk.Frame):
     def __init__(self, key_grid:KeyGrid, coords, **kwargs):

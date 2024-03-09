@@ -17,7 +17,7 @@ modules:
       - install -D flatpak/launch.desktop /app/share/applications/com.core447.StreamController.desktop
     sources:
       - type: git
-        url: https://github.com/Core447/StreamController.git
+        url: https://github.com/StreamController/StreamController.git
         branch: dev  # or use 'commit' or 'tag' to pin to a specific version
 
     build-options:

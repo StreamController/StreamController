@@ -127,7 +127,7 @@ class StoreBackend:
         return answer
     
     async def get_official_authors(self) -> list:
-        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "OfficialAuthors.json")
+        result = await self.get_remote_file("https://github.com/StreamController/StreamController-Store", "OfficialAuthors.json")
         if isinstance(result, NoConnectionError):
             return result
         authors_json = result.text
@@ -139,7 +139,7 @@ class StoreBackend:
         returns the number of assets that are new old for the current app version
         """
         n_too_new_assets = 0
-        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Plugins.json")
+        result = await self.get_remote_file("https://github.com/StreamController/StreamController-Store", "Plugins.json")
         if isinstance(result, NoConnectionError):
             return result
         plugins_json = result.text
@@ -164,7 +164,7 @@ class StoreBackend:
         returns the number of assets that are too new for the current app version
         """
         n_to_new_assets = 0
-        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Icons.json")
+        result = await self.get_remote_file("https://github.com/StreamController/StreamController-Store", "Icons.json")
         if isinstance(result, NoConnectionError):
             return result
         icons_json = result.text
@@ -188,7 +188,7 @@ class StoreBackend:
         returns the number of assets that are too new for the current app version
         """
         n_to_new_assets = 0
-        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Wallpapers.json")
+        result = await self.get_remote_file("https://github.com/StreamController/StreamController-Store", "Wallpapers.json")
         if isinstance(result, NoConnectionError):
             return result
         wallpapers_json = result.text

@@ -2,6 +2,7 @@ import os
 import inspect
 import json
 import Pyro5.api
+import Pyro5.errors
 import subprocess
 
 from loguru import logger as log
@@ -157,3 +158,13 @@ class PluginBase:
 
     def get_selector_icon(self) -> Gtk.Widget:
         return Gtk.Image(icon_name="view-paged")
+    
+    def on_uninstall(self) -> None:
+        try:
+            # Stop backend if running
+            if self.backend is not None:
+                self.backend.stop()
+                self.backend._pyroRelease()
+                self._backend = None
+        except Exception as e:
+            log.error(e)

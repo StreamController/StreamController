@@ -52,6 +52,8 @@ class Store(Gtk.ApplicationWindow):
 
         self.backend = gl.store_backend
 
+        self.currently_downloading: bool = False # Used to prevent multiple downloads because this may lead to errors during plugin initialization
+
         self.build()
 
     def build(self):

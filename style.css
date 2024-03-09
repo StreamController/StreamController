@@ -191,6 +191,26 @@
 .border-round {
   border-radius: 6px;
 }
+.round-left {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+.round-right {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+.round-top-left {
+  border-top-left-radius: 6px;
+}
+.round-top-right {
+  border-top-right-radius: 6px;
+}
+.round-bottom-left {
+  border-bottom-left-radius: 6px;
+}
+.round-bottom-right {
+  border-bottom-right-radius: 6px;
+}
 .error {
   background-color: #C01C28;
   transition: background-color 0.25s;
@@ -278,4 +298,8 @@
 .reset-button:active {
   background-color: #f33e4a;
   transition: background-color 0.25s;
+}
+
+.button-color {
+  background-color: #393939;
 }

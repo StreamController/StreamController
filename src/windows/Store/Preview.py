@@ -12,6 +12,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import time
 import gi
 
 
@@ -24,6 +25,7 @@ from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
 from PIL import Image
 import webbrowser as web
 import asyncio
+import threading
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
@@ -112,6 +114,25 @@ class StorePreview(Gtk.FlowBoxChild):
         self.install_uninstall_button.connect("clicked", self.on_download_clicked)
         self.button_box.append(self.install_uninstall_button)
 
+        self.install_spinner_box = Gtk.Box(hexpand=True,
+                                           css_classes=["round-bottom-right", "button-color"],
+                                           overflow=Gtk.Overflow.HIDDEN, visible=False)
+        self.button_box.append(self.install_spinner_box)
+
+        self.install_spinner = Gtk.Spinner(spinning=False, visible=True, halign=Gtk.Align.CENTER, hexpand=True)
+        self.install_spinner_box.append(self.install_spinner)
+
+    def show_install_spinner(self, show: bool = True):
+        print(f"Spinner: {show}")
+        if show:
+            self.install_uninstall_button.set_visible(False)
+            self.install_spinner_box.set_visible(True)
+            self.install_spinner.set_spinning(True)
+        else:
+            self.install_uninstall_button.set_visible(True)
+            self.install_spinner_box.set_visible(False)
+            self.install_spinner.set_spinning(False)
+
     def set_image(self, image:Image):
         image.thumbnail((250, 90))
         pixbuf = image2pixbuf(image, force_transparency=True)
@@ -138,6 +159,15 @@ class StorePreview(Gtk.FlowBoxChild):
         web.open(self.url)
 
     def on_download_clicked(self, button: Gtk.Button):
+        threading.Thread(target=self.show_install_spinner, args=(True,)).start()
+        
+        threading.Thread(target=self.perform_download_threaded, args=()).start()
+
+    def perform_download_threaded(self):
+        # Prevent multiple downloads because this may lead to errors during plugin initialization
+        while self.store_page.store.currently_downloading:
+            time.sleep(0.1)
+        self.store_page.store.currently_downloading = True
         if self.install_state == 0:
             # Install
             self.install()
@@ -147,6 +177,10 @@ class StorePreview(Gtk.FlowBoxChild):
         elif self.install_state == 2:
             # Update
             self.update()
+
+        self.store_page.store.currently_downloading = False
+
+        self.show_install_spinner(False)
 
     def install(self):
         pass

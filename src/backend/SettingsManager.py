@@ -24,8 +24,12 @@ class SettingsManager:
         if not os.path.exists(file_path):
             log.warning(f"Settings file {file_path} not found.")
             return {}
-        with open(file_path) as f:
-            return json.load(f)
+        try:
+            with open(file_path) as f:
+                return json.load(f)
+        except json.decoder.JSONDecodeError as e:
+            log.error(f"Invalid json in {file_path}: {e}")
+            return {}
         
         
     def save_settings_to_file(self, file_path: str, settings: dict) -> None:

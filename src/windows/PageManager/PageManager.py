@@ -90,6 +90,8 @@ class PageManager(Gtk.ApplicationWindow):
     def load_pages(self):
         pages = gl.page_manager.get_pages()
         for page_path in pages:
+            if os.path.dirname(page_path) != os.path.join(gl.DATA_PATH, "pages"):
+                continue
             self.page_box.append(PageButton(page_manager=self, page_path = page_path))
 
     def on_add_page(self, button, parent_window=None):

@@ -252,7 +252,7 @@ class Page:
         for page in self.get_pages_with_same_json(get_self=reload_self):
             page.load(load_from_file=True)
             if page_coords is None:
-                page.deck_controller.reload_page()
+                page.deck_controller.load_page(page)
             else:
                 key_index = page.deck_controller.coords_to_index(page_coords.split("x"))
                 # Reload only given key

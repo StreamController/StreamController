@@ -38,7 +38,10 @@ class PluginManager:
             import_string = f"plugins.{folder}.main"
             if import_string not in sys.modules.keys():
                 # Import module only if it's not already imported
-                importlib.import_module(f"plugins.{folder}.main")
+                try:
+                    importlib.import_module(f"plugins.{folder}.main")
+                except Exception as e:
+                    log.error(f"Error importing plugin {folder}: {e}")
 
         # Get all classes inheriting from PluginBase and generate objects for them
         self.init_plugins()

@@ -24,6 +24,7 @@ from loguru import logger as log
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import font_path_from_name, font_name_from_path
+from src.backend.PageManagement.Page import NoActionHolderFound
 
 # Import globals
 import globals as gl
@@ -188,7 +189,7 @@ class LabelRow(Adw.PreferencesRow):
 
         # Set sensitive = False if label is set by an action
         for action in action_objects:
-            if isinstance(action, str):
+            if isinstance(action, NoActionHolderFound):
                 # No plugin installed for this action
                 continue
             for key in action.labels:

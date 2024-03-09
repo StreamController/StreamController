@@ -96,12 +96,14 @@ class Page:
                 if action.get("id") is None:
                     continue
 
+                self.action_objects.setdefault(key, {})
+
                 action_holder = gl.plugin_manager.get_action_holder_from_id(action["id"])
                 if action_holder is None:
+                    self.action_objects[key][i] = NoActionHolderFound(id=action["id"])
                     continue
                 action_class = action_holder.action_base
                 
-                self.action_objects.setdefault(key, {})
                 if action_class is None:
                     self.action_objects[key][i] = action["id"]
                     continue
@@ -112,7 +114,7 @@ class Page:
                     continue
                 
                 if i in self.loaded_action_objects.get(key, []):
-                    if not isinstance(self.loaded_action_objects.get(key, [i])[i], str):
+                    if not isinstance(self.loaded_action_objects.get(key, [i])[i], NoActionHolderFound):
                         self.action_objects[key][i] = self.loaded_action_objects[key][i]
                         continue
 
@@ -257,3 +259,7 @@ class Page:
                 key_index = page.deck_controller.coords_to_index(page_coords.split("x"))
                 # Reload only given key
                 page.deck_controller.load_key(key_index, page.deck_controller.active_page)
+
+class NoActionHolderFound:
+    def __init__(self, id: str):
+        self.id = id

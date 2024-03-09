@@ -34,7 +34,7 @@ from src.backend.DeckManagement.Subclasses.key_video_cache import VideoFrameCach
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
-from src.backend.PageManagement.Page import Page
+from src.backend.PageManagement.Page import Page, NoActionHolderFound
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
 
 # Import signals
@@ -866,6 +866,8 @@ class ControllerKey:
         page_coords = f"{own_coords[0]}x{own_coords[1]}"
 
         actions = list(active_page.action_objects.get(page_coords, {}).values())
+        # Remove all NoActionHolderFound objects
+        actions = [action for action in actions if not isinstance(action, NoActionHolderFound)]
         return actions
     
     def on_key_change(self, state) -> None:

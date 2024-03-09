@@ -598,6 +598,8 @@ class StoreBackend:
                     # Reload page to send new on_load events
                     controller.load_page(controller.active_page)
 
+                    controller.active_page.reload_similar_pages()
+
         # Notify plugin actions
         gl.plugin_manager.trigger_signal(signal= Signals.PluginInstall, id=plugin_dict["id"])
 
@@ -614,7 +616,8 @@ class StoreBackend:
 
             # Clear all keys in this page which were controlled by this plugin
             for key in keys:
-                deck_controller.load_key(key)
+                key_index = deck_controller.coords_to_index(key.split("x"))
+                deck_controller.load_key(key_index, deck_controller.active_page)
 
         ## 2. Inform plugin base
         plugin = gl.plugin_manager.get_plugin_by_id(plugin_id)

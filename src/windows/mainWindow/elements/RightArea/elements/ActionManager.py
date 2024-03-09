@@ -15,9 +15,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
-
-
-
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, GLib
@@ -34,6 +31,7 @@ import globals as gl
 # Import own modules
 from src.backend.PluginManager.ActionBase import ActionBase
 from GtkHelper.GtkHelper import BetterExpander
+from src.backend.PageManagement.Page import NoActionHolderFound
 
 class ActionManager(Gtk.Box):
     def __init__(self, right_area, **kwargs):
@@ -103,10 +101,15 @@ class ActionExpanderRow(BetterExpander):
             action = controller.active_page.action_objects[page_coords][key]
             if isinstance(action, ActionBase):
                 self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, i)
+            elif isinstance(action, NoActionHolderFound):
+                missing_button_row = MissingActionButtonRow(action.id, page_coords, i)
+                self.add_row(missing_button_row)
             elif isinstance(action, str):
                 # No plugin installed for this action
                 missing_button_row = MissingActionButtonRow(action, page_coords, i)
                 self.add_row(missing_button_row)
+            else:
+                print()
 
         # Place add button at the end
         if len(self.get_rows()) > 0:
@@ -251,7 +254,7 @@ class MissingActionButtonRow(Adw.PreferencesRow):
         self.main_overlay.set_child(self.main_button)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
-                                margin_bottom=10, margin_top=10)
+                                margin_bottom=15, margin_top=15)
         self.main_button.set_child(self.main_box)
 
         # Counter part for the button on the right - other wise the label is not centered
@@ -285,17 +288,23 @@ class MissingActionButtonRow(Adw.PreferencesRow):
 
     def install(self):
         # Get missing plugin from id
-        plugin = asyncio.run(gl.app.store.backend.get_plugin_for_id(self.action_id))
+        plugin = asyncio.run(gl.store_backend.get_plugin_for_id(self.action_id.split("::")[0]))
+        if plugin is None:
+            self.show_install_error()
+            return
         # Install plugin
-        success = asyncio.run(gl.app.store.backend.install_plugin(plugin))
+        success = asyncio.run(gl.store_backend.install_plugin(plugin))
         if success == 404:
             self.show_install_error()
             return
-
+        
         # Reset ui
         self.spinner.set_visible(False)
         self.spinner.stop()
         self.label.set_text("Install Missing Plugin")
+
+        # Reload pages
+        
 
     def show_install_error(self):
         self.spinner.set_visible(False)

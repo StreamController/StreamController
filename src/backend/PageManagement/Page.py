@@ -127,7 +127,7 @@ class Page:
             for index in list(self.action_objects[key].keys()):
                 if isinstance(self.action_objects[key][index], str):
                     continue
-                if self.action_objects[key][index].PLUGIN_BASE == plugin_obj:
+                if self.action_objects[key][index].plugin_base == plugin_obj:
                     # Remove object
                     action = self.action_objects[key][index]
                     del action
@@ -147,7 +147,7 @@ class Page:
             for action in self.action_objects[key].values():
                 if isinstance(action, str):
                     continue
-                if action.PLUGIN_BASE == plugin_obj:
+                if action.plugin_base == plugin_obj:
                     keys.append(key)
 
         return keys

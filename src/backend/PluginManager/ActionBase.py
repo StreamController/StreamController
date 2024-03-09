@@ -192,7 +192,7 @@ class ActionBase:
 
     def connect(self, signal:Signal = None, callback: callable = None) -> None:
         # Verify signal
-        if not isinstance(signal, Signal):
+        if not issubclass(signal, Signal):
             raise TypeError("signal_name must be of type Signal")
         
         # Verify callback

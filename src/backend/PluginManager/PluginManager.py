@@ -107,7 +107,7 @@ class PluginManager:
             
     def connect_signal(self, signal: Signal = None, callback: callable = None) -> None:
         # Verify signal
-        if not isinstance(signal, Signal):
+        if not issubclass(signal, Signal):
             raise TypeError("signal_name must be of type Signal")
         
         # Verify callback
@@ -119,7 +119,7 @@ class PluginManager:
 
     def trigger_signal(self, signal: Signal = None, *args, **kwargs) -> None:
         # Verify signal
-        if not isinstance(signal, Signal):
+        if not issubclass(signal, Signal):
             raise TypeError("signal_name must be of type Signal")
         
         for callback in self.connected_signals.get(signal, []):

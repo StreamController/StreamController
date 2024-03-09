@@ -1,34 +1,36 @@
 class Signal:
-    def __init__(self, code):
-        self.code = code
+    pass
 
-PageRename = Signal(0)
-PageDelete = Signal(1)
-PageAdd = Signal(2)
-ChangePage = Signal(3)
-PluginInstall = Signal(4)
 
-"""
-PageRename:
+class PageRename(Signal):
+    """
     Callback:
     old_path: str
     new_path: str
+    """
 
-PageDelete:
+class PageDelete(Signal):
+    """
     Callback:
     path: str
+    """
 
-PageAdd:
+class PageAdd(Signal):
+    """
     Callback:
     path: str
+    """
 
-ChangePage:
+class ChangePage(Signal):
+    """
     Callback:
     controller: DeckController
     old_path: str
     new_path: str
+    """
 
-PluginInstall:
+class PluginInstall(Signal):
+    """
     Callback:
     id: str
-"""
+    """

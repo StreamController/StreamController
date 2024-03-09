@@ -684,13 +684,15 @@ class ControllerKey:
         draw = ImageDraw.Draw(image)
         draw.fontmode = "1" # Anti-aliased - this prevents frayed/noisy labels on the deck
 
-        for label in self.labels:
-            text = self.labels[label].text
-            font_path = self.labels[label].get_font_path()
-            color = tuple(self.labels[label].color)
-            font_size = self.labels[label].font_size
+        labels = copy(self.labels) # Prevent crash if labels change during iteration
+
+        for label in labels:
+            text = labels[label].text
+            font_path = labels[label].get_font_path()
+            color = tuple(labels[label].color)
+            font_size = labels[label].font_size
             font = ImageFont.truetype(font_path, font_size)
-            font_weight = self.labels[label].font_weight
+            font_weight = labels[label].font_weight
 
             if text is None:
                 continue

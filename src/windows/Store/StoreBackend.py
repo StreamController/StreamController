@@ -150,10 +150,9 @@ class StoreBackend:
         for plugin in plugins_json:
             plugin = await self.prepare_plugin(plugin)
 
-            if plugin == "asset_is_newer":
-                n_too_new_assets += 1
+            if plugin == NoConnectionError:
                 continue
-            
+
             if isinstance(plugin, dict):
                 plugins.append(plugin)
 
@@ -174,8 +173,7 @@ class StoreBackend:
         for icon in icons_json:
             icon = await self.prepare_icon(icon)
 
-            if icon == "asset_is_newer":
-                n_to_new_assets += 1
+            if icon == NoConnectionError:
                 continue
 
             if isinstance(icon, dict):
@@ -198,8 +196,7 @@ class StoreBackend:
         for wallpaper in wallpapers_json:
             wallpaper = await self.prepare_wallpaper(wallpaper)
 
-            if wallpaper == "asset_is_newer":
-                n_to_new_assets += 1
+            if wallpaper == NoConnectionError:
                 continue
 
             if isinstance(wallpaper, dict):
@@ -286,10 +283,10 @@ class StoreBackend:
         url = plugin["url"]
 
         # Check if suitable version is available
-        version_check = self.make_version_check(plugin["commits"].keys())
-        if version_check is not True:
-            return version_check
-        commit = plugin["commits"][gl.app_version]
+        version = self.get_newest_compatible_version(plugin["commits"])
+        if version is None:
+            return NoCompatibleVersion
+        commit = plugin["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -344,10 +341,10 @@ class StoreBackend:
         url = icon["url"]
 
         # Check if suitable version is available
-        version_check = self.make_version_check(icon["commits"].keys())
-        if version_check is not True:
-            return version_check
-        commit = icon["commits"][gl.app_version]
+        version = self.get_newest_compatible_version(icon["commits"])
+        if version is None:
+            return NoCompatibleVersion
+        commit = icon["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -392,10 +389,10 @@ class StoreBackend:
         url = wallpaper["url"]
 
         # Check if suitable version is available
-        version_check = self.make_version_check(wallpaper["commits"].keys())
-        if version_check is not True:
-            return version_check
-        commit = wallpaper["commits"][gl.app_version]
+        version = self.get_newest_compatible_version(wallpaper["commits"])
+        if version is None:
+            return NoCompatibleVersion
+        commit = wallpaper["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -507,33 +504,20 @@ class StoreBackend:
     def get_all_plugins(self):
         return asyncio.run(self.get_all_plugins_async())
     
-    def is_newer(self, newer: str, than: str):
-        return version.parse(newer) > version.parse(than)
-    
-    from packaging import version
+    def get_newest_compatible_version(self, available_versions: list[str]) -> str:
+        if gl.exact_app_version_check:
+            if gl.app_version in available_versions:
+                return gl.app_version
+            else:
+                return None
+            
+        current_major = version.parse(gl.app_version).major
 
-    def get_newest_version(self, versions: list[str]) -> str:
-        # Convert the version strings to (Version object, original string) tuples
-        parsed_versions = [(version.parse(v), v) for v in versions]
-
-        # Find the maximum using the Version object for comparison
-        latest_version_tuple = max(parsed_versions, key=lambda x: x[0])
-
-        # Extract the original string from the tuple
-        return latest_version_tuple[1]
-    
-    def make_version_check(self, available_versions: list[str]):
-        # Check if the asset is available for the current app version
-        if gl.app_version in available_versions:
-            return True
-        
-        # Check whether the app or the asset is outdated
-        newest_version = self.get_newest_version(available_versions)
-
-        if self.is_newer(gl.app_version, newest_version):
-            return "app_is_newer"
+        compatible_versions = [v for v in available_versions if version.parse(v).major == current_major]
+        if compatible_versions:
+            return max(compatible_versions)
         else:
-            return "asset_is_newer"
+            return None
 
     ## Install
     async def subp_call(self, args):
@@ -692,6 +676,8 @@ class StoreBackend:
         await self.update_all_plugins()
         await self.update_all_icons()
 
+class NoCompatibleVersion:
+    pass
             
 
         

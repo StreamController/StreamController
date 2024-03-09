@@ -34,7 +34,8 @@ icon_pack_manager: "IconPackManager" = None
 wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
-app_version: str = "1.0.0-alpha" # In breaking.feature.fix-state format
+app_version: str = "1.1.1-alpha" # In breaking.feature.fix-state format
+exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []
 

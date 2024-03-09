@@ -4,6 +4,7 @@ import json
 import Pyro5.api
 import Pyro5.errors
 import subprocess
+from packaging import version
 
 from loguru import logger as log
 
@@ -63,7 +64,7 @@ class PluginBase:
             raise ValueError(f"Plugin: {plugin_name}: Plugin already exists")
         
         
-        if app_version == gl.app_version:
+        if self.do_versions_match(app_version):
             # Register plugin
             PluginBase.plugins[plugin_name] = {
                 "object": self,
@@ -91,6 +92,18 @@ class PluginBase:
         self.plugin_name = plugin_name
         self.github_repo = github_repo
         self.version = plugin_version
+
+    def do_versions_match(self, app_version_to_check: str):
+        if gl.exact_app_version_check:
+            gl.app_version == app_version
+            return
+        
+        # Only compare major version
+        app_version = version.parse(gl.app_version)
+        app_version_to_check = version.parse(app_version_to_check)
+
+        return app_version.major == app_version_to_check.major
+        
 
     def add_action_holder(self, action_holder: ActionHolder):
         if not isinstance(action_holder, ActionHolder):

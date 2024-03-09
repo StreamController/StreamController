@@ -874,37 +874,37 @@ class ControllerKey:
         self.update()
 
         if state:
-            self.own_actions_key_down()
+            self.own_actions_key_down_threaded()
         else:
-            self.own_actions_key_up()
-
-    def own_actions_ready(self) -> None:
-        threading.Thread(target=self.own_actions_ready_threaded).start()
-
-    def own_actions_key_down(self) -> None:
-        threading.Thread(target=self.own_actions_key_down_threaded).start()
-
-    def own_actions_key_up(self) -> None:
-        threading.Thread(target=self.own_actions_key_up_threaded).start()
-
-    def own_actions_tick(self) -> None:
-        threading.Thread(target=self.own_actions_tick_threaded).start()
-
-
+            self.own_actions_key_up_threaded()
 
     def own_actions_ready_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_ready).start()
+
+    def own_actions_key_down_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_key_down).start()
+
+    def own_actions_key_up_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_key_up).start()
+
+    def own_actions_tick_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_tick).start()
+
+
+
+    def own_actions_ready(self) -> None:
         for action in self.get_own_actions():
             action.on_ready()
 
-    def own_actions_key_down_threaded(self) -> None:
+    def own_actions_key_down(self) -> None:
         for action in self.get_own_actions():
             action.on_key_down()
 
-    def own_actions_key_up_threaded(self) -> None:
+    def own_actions_key_up(self) -> None:
         for action in self.get_own_actions():
             action.on_key_up()
 
-    def own_actions_tick_threaded(self) -> None:
+    def own_actions_tick(self) -> None:
         for action in self.get_own_actions():
             action.on_tick()
 

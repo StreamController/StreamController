@@ -78,7 +78,6 @@ class StoreBackend:
 
         self.official_authors = asyncio.run(self.get_official_authors())
 
-    @alru_cache(maxsize=None)
     async def request_from_url(self, url: str) -> requests.Response:
         try:
             req = requests.get(url, stream=True)
@@ -103,7 +102,6 @@ class StoreBackend:
         repo_url = repo_url.replace("github.com", "raw.githubusercontent.com")
         return f"{repo_url}/{branch_name}/{file_path}"
 
-    @alru_cache(maxsize=None)
     async def get_remote_file(self, repo_url: str, file_path: str, branch_name: str = "main") -> requests.Response:
         """
         This function retrieves the content of a remote file from a GitHub repository.
@@ -128,7 +126,6 @@ class StoreBackend:
 
         return answer
     
-    @alru_cache(maxsize=None)
     async def get_official_authors(self) -> list:
         result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "OfficialAuthors.json")
         if isinstance(result, NoConnectionError):

@@ -303,3 +303,6 @@
 .button-color {
   background-color: #393939;
 }
+.action-row-button {
+  min-height: 75px;
+}

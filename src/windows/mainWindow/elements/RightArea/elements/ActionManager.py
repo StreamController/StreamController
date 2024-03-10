@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk, GLib
+from gi.repository import Gtk, Adw, Gdk, GLib, Pango
 
 # Import Python modules
 from loguru import logger as log
@@ -52,6 +52,8 @@ class ActionManager(Gtk.Box):
 
         self.action_group = ActionGroup(self.right_area)
         self.main_box.append(self.action_group)
+
+        self.main_box.set_margin_bottom(50)
 
     def load_for_coords(self, coords):
         self.action_group.load_for_coords(coords)
@@ -90,8 +92,8 @@ class ActionExpanderRow(BetterExpander):
         self.add_action_button = AddActionButtonRow(self)
         self.add_row(self.add_action_button)
 
-    def add_action_row(self, action_name: str, action_id: str, action_category, action_object, index, total_rows: int):
-        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.right_area, index, total_rows, self)
+    def add_action_row(self, action_name: str, action_id: str, action_category, action_object, comment: str, index: int, total_rows: int):
+        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.right_area, comment, index, total_rows, self)
         self.add_row(action_row)
 
     def load_for_coords(self, coords):
@@ -107,7 +109,10 @@ class ActionExpanderRow(BetterExpander):
         for i, key in enumerate(controller.active_page.action_objects[page_coords]):
             action = controller.active_page.action_objects[page_coords][key]
             if isinstance(action, ActionBase):
-                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, i, total_rows=number_of_actions)
+                # Get action comment
+                comment = controller.active_page.get_action_comment(page_coords=page_coords, index=key)
+
+                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, comment=comment, index=i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
                 missing_button_row = MissingActionButtonRow(action.id, page_coords, i)
                 self.add_row(missing_button_row)
@@ -205,17 +210,24 @@ class ActionExpanderRow(BetterExpander):
 
         controller.load_page(controller.active_page)
 
+    def update_comment_for_index(self, action_index):
+        controller = self.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
+        comment = controller.active_page.get_action_comment(page_coords=page_coords, index=action_index)
+        self.get_rows()[action_index].set_comment(comment)
+
 
         
 
 class ActionRow(Adw.PreferencesRow):
-    def __init__(self, action_name, action_id, action_category, action_object, right_area: "RightArea", index, total_rows: int, expander: ActionExpanderRow, **kwargs):
+    def __init__(self, action_name, action_id, action_category, action_object, right_area: "RightArea", comment: str, index, total_rows: int, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding"])
         self.action_name = action_name
         self.action_id = action_id
         self.action_category = action_category
         self.right_area: "RightArea" = right_area
         self.action_object = action_object
+        self.comment = comment
         self.index = index
         self.active_coords = None
         self.total_rows = total_rows
@@ -227,7 +239,7 @@ class ActionRow(Adw.PreferencesRow):
         self.overlay = Gtk.Overlay()
         self.set_child(self.overlay)
 
-        self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN, css_classes=["no-margin", "invisible"])
+        self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN, css_classes=["no-margin", "invisible", "action-row-button"])
         self.button.connect("clicked", self.on_click)
         self.overlay.set_child(self.button)
 
@@ -235,14 +247,27 @@ class ActionRow(Adw.PreferencesRow):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.button.set_child(self.main_box)
 
-        self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, valign=Gtk.Align.CENTER)
         self.main_box.append(self.left_box)
 
-        self.name_label = Gtk.Label(label=self.action_name, xalign=0, css_classes=["bold"])
-        self.left_box.append(self.name_label)
+        self.left_top_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.left_box.append(self.left_top_box)
 
-        self.category_label = Gtk.Label(label=self.action_category, xalign=0, sensitive=False)
-        self.left_box.append(self.category_label)
+        self.left_bottom_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.left_box.append(self.left_bottom_box)
+
+        self.name_label = Gtk.Label(label=self.action_name, xalign=0, css_classes=["bold"], hexpand=False, margin_end=5)
+        self.left_top_box.append(self.name_label)
+
+        self.category_label = Gtk.Label(label=f"({self.action_category})", xalign=0, sensitive=False, hexpand=False)
+        self.left_top_box.append(self.category_label)
+
+        self.comment_label = Gtk.Label(label=self.comment, xalign=0, sensitive=False, ellipsize=Pango.EllipsizeMode.END, margin_end=60)
+        self.left_bottom_box.append(self.comment_label)
+
+        if self.comment in ["", None]:
+            self.left_bottom_box.set_visible(False)
+            # self.left_top_box.set_
 
         ## Move buttons
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.END, valign=Gtk.Align.CENTER, margin_end=10, css_classes=["linked"])
@@ -256,13 +281,6 @@ class ActionRow(Adw.PreferencesRow):
         self.down_button.connect("clicked", self.on_click_down)
         self.button_box.append(self.down_button)
 
-        return
-
-        if self.index == 0:
-            self.up_button.set_sensitive(False)
-
-        if self.index == self.total_rows - 1:
-            self.down_button.set_sensitive(False)
 
     def get_own_index(self) -> int:
         return self.expander.get_index_of_child(self)
@@ -272,6 +290,8 @@ class ActionRow(Adw.PreferencesRow):
         one_up_child = self.expander.get_rows()[self.index - 1]
         print(f"{type(self)} and {type(one_up_child)}")
         print(f"{self.action_name} below {one_up_child.action_name}")
+        if isinstance(one_up_child, AddActionButtonRow):
+            return
         self.expander.reorder_child_after(self, one_up_child)
         self.expander.reorder_actions(self.index - 1, self.index)
 
@@ -283,6 +303,8 @@ class ActionRow(Adw.PreferencesRow):
         one_down_child = self.expander.get_rows()[self.index + 1]
         print(f"{type(self)} and {type(one_down_child)}")
         print(f"{self.action_name} below {one_down_child.action_name}")
+        if isinstance(one_down_child, AddActionButtonRow):
+            return
         self.expander.reorder_child_after(self, one_down_child)
         self.expander.reorder_actions(self.index, self.index + 1)
 
@@ -351,6 +373,18 @@ class ActionRow(Adw.PreferencesRow):
     def on_click(self, button):
         self.right_area.action_configurator.load_for_action(self.action_object, self.index)
         self.right_area.show_action_configurator()
+
+    def update_comment(self, comment: str):
+        self.comment = comment
+        # Update ui
+        if comment is None:
+            comment = ""
+            self.left_bottom_box.set_visible(False)
+        else:
+            self.left_bottom_box.set_visible(True)
+
+        self.comment_row.set_text(comment)
+
 
 
 class MissingActionButtonRow(Adw.PreferencesRow):

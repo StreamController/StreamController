@@ -260,6 +260,17 @@ class Page:
                 # Reload only given key
                 page.deck_controller.load_key(key_index, page.deck_controller.active_page)
 
+    def get_action_comment(self, page_coords: str, index: int):
+        if page_coords in self.action_objects:
+            if index in self.action_objects[page_coords]:
+                return self.dict["keys"][page_coords]["actions"][index].get("comment")
+            
+    def set_action_comment(self, page_coords: str, index: int, comment: str):
+        if page_coords in self.action_objects:
+            if index in self.action_objects[page_coords]:
+                self.dict["keys"][page_coords]["actions"][index]["comment"] = comment
+                self.save()
+
 class NoActionHolderFound:
     def __init__(self, id: str):
         self.id = id

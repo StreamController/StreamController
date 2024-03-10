@@ -52,6 +52,9 @@ class ActionConfigurator(Gtk.Box):
         self.header = Gtk.Label(label=gl.lm.get("action-configurator-header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
         self.main_box.append(self.header)
 
+        self.comment_group = CommentGroup(self, margin_top=20)
+        self.main_box.append(self.comment_group)
+
         self.config_group = ConfigGroup(self, margin_top=40)
         self.main_box.append(self.config_group)
 
@@ -61,13 +64,65 @@ class ActionConfigurator(Gtk.Box):
         self.remove_button = RemoveButton(self, margin_top=12)
         self.main_box.append(self.remove_button)
 
+
     def load_for_action(self, action, index):
         self.config_group.load_for_action(action)
         self.custom_configs.load_for_action(action)
         self.remove_button.load_for_action(action, index)
+        self.comment_group.load_for_action(action, index)
 
     def on_back_button_click(self, button):
         self.right_area.set_visible_child_name("key_editor")
+
+class CommentGroup(Adw.PreferencesGroup):
+    def __init__(self, parent, **kwargs):
+        super().__init__(**kwargs)
+        self.parent = parent
+        self.action: ActionBase = None
+        self.index: int = None
+        self.build()
+
+    def build(self):
+        self.comment_row = Adw.EntryRow(title="Comment")
+        self.connect_signals()
+        self.add(self.comment_row)
+
+    def load_for_action(self, action, index):
+        self.disconnect_signals()
+        self.action = action
+        self.index = index
+
+        comment = self.get_comment()
+        if comment is None:
+            comment = ""
+        self.comment_row.set_text(comment)
+
+        self.connect_signals()
+
+    def on_comment_changed(self, entry):
+        self.set_comment(entry.get_text())
+
+        # Update ActionManager - A full reload is not efficient but ensures correct behavior if the ActionConfigurator is triggered from a plugin action
+        gl.app.main_win.rightArea.key_editor.action_editor.load_for_coords(self.action.page_coords.split("x"))
+
+    def connect_signals(self):
+        self.comment_row.connect("changed", self.on_comment_changed)
+
+    def disconnect_signals(self):
+        self.comment_row.disconnect_by_func(self.on_comment_changed)
+    
+
+    def get_comment(self) -> str:
+        controller = self.parent.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page = controller.active_page
+        return page.get_action_comment(self.action.page_coords, self.index)
+    
+    def set_comment(self, comment: str) -> None:
+        controller = self.parent.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page = controller.active_page
+        page.set_action_comment(self.action.page_coords, self.index, comment)
+    
+
 
 class ConfigGroup(Adw.PreferencesGroup):
     def __init__(self, parent, **kwargs):

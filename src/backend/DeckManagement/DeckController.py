@@ -332,7 +332,7 @@ class DeckController:
         gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
 
     def set_brightness(self, value):
-        self.deck.set_brightness(value)
+        self.deck.set_brightness(int(value))
         self.brightness = value
 
     def tick_actions(self) -> None:

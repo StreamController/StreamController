@@ -40,7 +40,7 @@ class ActionBase:
         self.page = page
         self.page_coords = coords
         self.coords = int(coords.split("x")[0]), int(coords.split("x")[1])
-        self.index = self.deck_controller.coords_to_index(self.coords)
+        self.key_index = self.deck_controller.coords_to_index(self.coords)
         self.action_id = action_id
         self.action_name = action_name
         self.plugin_base = plugin_base
@@ -49,7 +49,7 @@ class ActionBase:
 
         self.labels = {}
         self.current_key = {
-            "key": self.index,
+            "key": self.key_index,
             "image": None,
          }
         
@@ -127,38 +127,38 @@ class ActionBase:
                 image = img.copy()
 
         if image is not None:
-            self.deck_controller.keys[self.index].set_key_image(KeyImage(
-                controller_key=self.deck_controller.keys[self.index],
+            self.deck_controller.keys[self.key_index].set_key_image(KeyImage(
+                controller_key=self.deck_controller.keys[self.key_index],
                 image=image,
                 size=size,
                 valign=valign,
                 halign=halign
             ), update=False)
         if is_video(media_path):
-            self.deck_controller.keys[self.index].set_key_video(KeyVideo(
-                controller_key=self.deck_controller.keys[self.index],
+            self.deck_controller.keys[self.key_index].set_key_video(KeyVideo(
+                controller_key=self.deck_controller.keys[self.key_index],
                 video_path=media_path,
             ))
 
         if update:
-            self.deck_controller.update_key(self.index)
+            self.deck_controller.update_key(self.key_index)
             
     def show_error(self, duration: int = -1) -> None:
-        self.deck_controller.keys[self.index].show_error(duration=duration)
+        self.deck_controller.keys[self.key_index].show_error(duration=duration)
         
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18, update: bool = True):
         
         key_label = KeyLabel(
-            controller_key=self.deck_controller.keys[self.index],
+            controller_key=self.deck_controller.keys[self.key_index],
             text=text,
             font_size=font_size,
             font_name=font_family,
             color=color,
             font_weight=stroke_width
         )
-        self.deck_controller.keys[self.index].add_label(key_label, position=position, update=update)
+        self.deck_controller.keys[self.key_index].add_label(key_label, position=position, update=update)
 
     def set_top_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18, update: bool = True):
@@ -239,4 +239,4 @@ class ActionBase:
         self._backend = value
 
     def get_own_key(self) -> "ControllerKey":
-        return self.deck_controller.keys[self.index]
+        return self.deck_controller.keys[self.key_index]

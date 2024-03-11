@@ -73,9 +73,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.split_view.set_content(self.main_content_page)
         self.split_view.set_show_content(self.main_content_page)
 
+        # Main toast
+        self.toast_overlay = Adw.ToastOverlay()
+        self.main_stack.add_titled(self.toast_overlay, "main", "Main")
+
         # Add a box for the main content (right side)
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        self.main_stack.add_titled(self.main_box, "main", "Main")
+        self.toast_overlay.set_child(self.main_box)
 
         self.leftArea = LeftArea(self, deck_manager=self.deck_manager, margin_end=3, width_request=500, margin_bottom=10)
         self.main_box.append(self.leftArea)
@@ -115,6 +119,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.do_after_build_tasks()
         self.check_for_errors()
+        
 
     def on_toggle_sidebar(self, button):
         if button.get_active():
@@ -181,6 +186,8 @@ class MainWindow(Adw.ApplicationWindow):
         if error is None:
             self.main_stack.set_visible_child(self.main_box)
             self.deck_switcher.set_show_switcher(True)
+            self.split_view.set_collapsed(False)
+            self.sidebar_toggle_button.set_visible(True)
             return
         
         elif error == "no-decks":
@@ -190,6 +197,8 @@ class MainWindow(Adw.ApplicationWindow):
             self.main_stack.set_visible_child(self.no_pages_error)
 
         self.deck_switcher.set_show_switcher(False)
+        self.split_view.set_collapsed(True)
+        self.sidebar_toggle_button.set_visible(False)
 
     def check_for_errors(self):
         if len(gl.deck_manager.deck_controller) == 0:
@@ -245,6 +254,14 @@ class MainWindow(Adw.ApplicationWindow):
         child = get_deepest_focused_widget_with_attr(self, "on_remove")
         if hasattr(child, "on_remove"):
             child.on_remove()
+
+    def show_info_toast(self, text: str) -> None:
+        toast = Adw.Toast(
+            title=text,
+            timeout=3,
+            priority=Adw.ToastPriority.NORMAL
+        )
+        self.toast_overlay.add_toast(toast)
 
 
 class PageManagerNavPage(Adw.NavigationPage):

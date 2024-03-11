@@ -601,7 +601,7 @@ class StoreBackend:
                     controller.active_page.reload_similar_pages()
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.PluginInstall, id=plugin_dict["id"])
+        gl.signal_manager.trigger_signal(signal=Signals.PluginInstall, id=plugin_dict["id"])
 
         log.success(f"Plugin {plugin_dict['id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False) -> bool:
@@ -651,10 +651,15 @@ class StoreBackend:
 
         return plugins_to_update
     
-    async def update_all_plugins(self):
+    async def update_all_plugins(self) -> int:
+        """
+        Returns number of updated plugins
+        """
         plugins_to_update = await self.get_plugins_to_update()
         for plugin in plugins_to_update:
             await self.install_plugin(plugin)
+        
+        return len(plugins_to_update)
 
     async def get_icons_to_update(self):
         icons = await self.get_all_icons()
@@ -670,14 +675,24 @@ class StoreBackend:
                 
         return icons_to_update
     
-    async def update_all_icons(self):
+    async def update_all_icons(self) -> int:
+        """
+        Returns number of updated icons
+        """
         icons_to_update = await self.get_icons_to_update()
         for icon in icons_to_update:
             await self.install_icon(icon)
 
-    async def update_everything(self):
-        await self.update_all_plugins()
-        await self.update_all_icons()
+        return len(icons_to_update)
+
+    async def update_everything(self) -> int:
+        """
+        Returns number of updated assets
+        """
+        n_plugins = await self.update_all_plugins()
+        n_icons = await self.update_all_icons()
+
+        return n_plugins + n_icons
 
 class NoCompatibleVersion:
     pass

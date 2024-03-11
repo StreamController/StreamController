@@ -147,6 +147,8 @@ class KeyButton(Gtk.Frame):
         self.set_focus_child(self.image)
         self.image.set_focusable(True)
 
+        self.init_actions()
+
     def set_image(self, image):
         # Check if we can perform the next checks
         if recursive_hasattr(self, "key_grid.deck_page.grid_page"):
@@ -154,7 +156,7 @@ class KeyButton(Gtk.Frame):
             if self.key_grid.deck_page.stack.get_visible_child() != self.key_grid.deck_page.grid_page:
                 self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
             # Check if this deck is on the screen
-            if self.key_grid.deck_page.deck_stack.get_visible_child() != self.key_grid.deck_page:
+            if self.key_grid.deck_page.deck_stack_child.stack.get_visible_child() != self.key_grid.deck_page:
                 self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
 
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
@@ -165,7 +167,7 @@ class KeyButton(Gtk.Frame):
             self.set_icon_selector_previews(self.pixbuf)
 
     def set_icon_selector_previews(self, pixbuf):
-        right_area = gl.app.main_win.rightArea
+        right_area = gl.app.main_win.sidebar
         if pixbuf is None:
             return
         if not recursive_hasattr(gl, "app.main_win.rightArea"):
@@ -198,6 +200,7 @@ class KeyButton(Gtk.Frame):
             # Single right click
             # Open context menu
             popover = KeyButtonContextMenu(self)
+            popover.on_open()
             popover.popup()
 
     def simulate_press(self):
@@ -228,7 +231,7 @@ class KeyButton(Gtk.Frame):
         # Update settings on the righthand side of the screen
         if not recursive_hasattr(gl, "app.main_win.rightArea"):
             return
-        right_area = gl.app.main_win.rightArea
+        right_area = gl.app.main_win.sidebar
         right_area.load_for_coords((self.coords[1], self.coords[0]))
         # Update preview
         if self.pixbuf is not None:
@@ -261,7 +264,7 @@ class KeyButton(Gtk.Frame):
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
         # Reload ui
-        gl.app.main_win.rightArea.load_for_coords((x, y))
+        gl.app.main_win.sidebar.load_for_coords((x, y))
 
     def on_remove(self):
         active_page = self.key_grid.deck_controller.active_page
@@ -283,11 +286,24 @@ class KeyButton(Gtk.Frame):
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
         # Reload ui
-        gl.app.main_win.rightArea.load_for_coords((x, y))
+        gl.app.main_win.sidebar.load_for_coords((x, y))
 
     def _set_visible(self, visible: bool):
         self.set_visible(visible)
         self.image.set_visible(visible)
+
+    def init_actions(self):
+        self.action_group = Gio.SimpleActionGroup()
+        self.insert_action_group("key", self.action_group)
+
+        self.update_action = Gio.SimpleAction.new("update", None)
+        self.update_action.connect("activate", self.on_update)
+        self.action_group.add_action(self.update_action)
+
+        gl.app.set_accels_for_action("key.update", ["<Primary>u"])
+
+    def on_update(self, *args, **kwargs):
+        print("update")
 
 
 class KeyButtonContextMenu(Gtk.PopoverMenu):
@@ -295,6 +311,13 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         super().__init__(**kwargs)
         self.key_button = key_button
         self.build()
+
+        self.connect("closed", self.on_close)
+
+        # gl.app.set_accels_for_action("context.test", ["<Primary>t"])
+
+    def on_test(self, *args, **kwargs):
+        print("test")
 
     def build(self):
         self.set_parent(self.key_button)
@@ -310,9 +333,18 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         self.copy_paste_menu.append("Cut", "win.cut")
         self.copy_paste_menu.append("Paste", "win.paste")
         self.remove_menu.append("Remove", "win.remove")
+        self.remove_menu.append("Update", "key.update")
 
         # Add sections to menu
         self.main_menu.append_section(None, self.copy_paste_menu)
         self.main_menu.append_section(None, self.remove_menu)
 
         self.set_menu_model(self.main_menu)
+
+    def on_close(self, *args, **kwargs):
+        return
+        gl.app.main_win.remove_accel_actions()
+    
+    def on_open(self, *args, **kwargs):
+        return
+        gl.app.main_win.add_accel_actions()

@@ -35,7 +35,7 @@ from src.backend.PageManagement.Page import NoActionHolderFound
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.windows.mainWindow.elements.RightArea.RightArea import RightArea
+    from src.windows.mainWindow.elements.Sidebar.RightArea import Sidebar
 
 class ActionManager(Gtk.Box):
     def __init__(self, right_area, **kwargs):
@@ -220,12 +220,12 @@ class ActionExpanderRow(BetterExpander):
         
 
 class ActionRow(Adw.PreferencesRow):
-    def __init__(self, action_name, action_id, action_category, action_object, right_area: "RightArea", comment: str, index, total_rows: int, expander: ActionExpanderRow, **kwargs):
+    def __init__(self, action_name, action_id, action_category, action_object, right_area: "Sidebar", comment: str, index, total_rows: int, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding"])
         self.action_name = action_name
         self.action_id = action_id
         self.action_category = action_category
-        self.right_area: "RightArea" = right_area
+        self.right_area: "Sidebar" = right_area
         self.action_object = action_object
         self.comment = comment
         self.index = index
@@ -483,7 +483,7 @@ class MissingActionButtonRow(Adw.PreferencesRow):
         page.save()
 
         # Reload configurator ui
-        gl.app.main_win.rightArea.key_editor.action_editor.load_for_coords(self.page_coords.split("x"))
+        gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.page_coords.split("x"))
 
 
 class AddActionButtonRow(Adw.PreferencesRow):

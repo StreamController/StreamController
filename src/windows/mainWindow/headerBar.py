@@ -44,12 +44,12 @@ class HeaderBar(Gtk.HeaderBar):
     def build(self):
         # Page selector
         self.page_selector = PageSelector(self.main_window, self.deck_manager.page_manager)
-        self.pack_start(self.page_selector)
+        # self.pack_start(self.page_selector)
 
         # Deck selector
         self.deckSwitcher = DeckSwitcher(main_window = self.main_window)
         self.deckSwitcher.switcher.set_stack(self.deckStack)
-        self.set_title_widget(self.deckSwitcher)
+        # self.set_title_widget(self.deckSwitcher)
 
         ## Hamburger menu actions
         # Open store

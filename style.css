@@ -306,3 +306,7 @@
 .action-row-button {
   min-height: 75px;
 }
+.sidebar-color {
+  /* background-color: sidebar_bg_color; */
+  background-color: #303030;
+}

@@ -26,7 +26,7 @@ from loguru import logger as log
 import globals as gl
 
 # Import own modules
-from src.windows.mainWindow.elements.RightArea.elements.IconSelector import IconSelector
+from src.windows.mainWindow.elements.Sidebar.elements.IconSelector import IconSelector
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.DeckController import DeckController
 

@@ -29,9 +29,9 @@ from src.windows.mainWindow.elements.DeckSettings.FakeDeckGroup import FakeDeckG
 # Import globals
 import globals as gl
 
-class DeckSettingsPage(Gtk.Box):
+class DeckSettingsPage(Gtk.Overlay):
     def __init__(self, deck_stack_child, deck_controller, **kwargs):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
+        super().__init__(hexpand=True, vexpand=True,
                          margin_start=50, margin_end=50,
                          margin_top=50, margin_bottom=50, **kwargs)
         self.deck_stack_child = deck_stack_child
@@ -44,23 +44,26 @@ class DeckSettingsPage(Gtk.Box):
         self.build()
 
     def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.set_child(self.main_box)
+
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
-        self.append(self.scrolled_window)
+        self.main_box.append(self.scrolled_window)
 
-        clamp = Adw.Clamp()
-        self.scrolled_window.set_child(clamp)
+        self.clamp = Adw.Clamp()
+        self.scrolled_window.set_child(self.clamp)
 
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        clamp.set_child(main_box)
+        self.clamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.clamp.set_child(self.clamp_box)
         
         self.settings_group = DeckGroup(self)
-        main_box.append(self.settings_group)
+        self.clamp_box.append(self.settings_group)
 
         self.background_group = BackgroundGroup(self)
-        main_box.append(self.background_group)
+        self.clamp_box.append(self.background_group)
 
         self.fake_deck_group = FakeDeckGroup(self)
-        main_box.append(self.fake_deck_group)
+        self.clamp_box.append(self.fake_deck_group)
 
         ## Hide the fake deck group if own deck is not fake
         deck = self.deck_controller.deck
@@ -69,6 +72,13 @@ class DeckSettingsPage(Gtk.Box):
             fake = deck.is_fake
 
         self.fake_deck_group.set_visible(fake)
+
+        
+
+    def on_open_page_settings_button_click(self, button):
+        self.deck_stack_child.set_visible_child_name("page-settings")
+        gl.app.main_win.split_view.set_collapsed(True)
+        gl.app.main_win.sidebar_toggle_button.set_visible(False)
 
 
 

@@ -29,10 +29,10 @@ import globals as gl
 from src.windows.PageManager.PageManager import PageManager
 
 class PageSelector(Gtk.Box):
-    def __init__(self, main_window, page_manager):
+    def __init__(self, main_window, page_manager, **kwargs):
         self.main_window = main_window
         self.page_manager = page_manager
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, **kwargs)
         self.build()
 
     def build(self):

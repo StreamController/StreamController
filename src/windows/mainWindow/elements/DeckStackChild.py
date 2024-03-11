@@ -27,7 +27,7 @@ from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
 # Import globals
 import globals as gl
 
-class DeckStackChild(Gtk.Stack):
+class DeckStackChild(Gtk.Overlay):
     """
     Child of DeckStack
     This stack features one page for the page specific settings and one for the deck settings
@@ -40,8 +40,30 @@ class DeckStackChild(Gtk.Stack):
         self.build()
 
     def build(self):
+        self.stack = Gtk.Stack(hexpand=True, vexpand=True)
+        self.set_child(self.stack)
+
         self.page_settings = PageSettingsPage(self, self.deck_controller)
         self.deck_settings = DeckSettingsPage(self, self.deck_controller)
 
-        self.add_named(self.page_settings, "Page Settings")
-        self.add_named(self.deck_settings, "Deck Settings")
+        self.stack.add_titled(self.page_settings, "page-settings", "Page Settings")
+        self.stack.add_titled(self.deck_settings, "deck-settings", "Deck Settings")
+
+        # Switch overlay button
+        self.toggle_settings_button = Gtk.Button(icon_name="configure", css_classes=["circular"],
+                                  halign=Gtk.Align.END, valign=Gtk.Align.END, margin_end=50, margin_bottom=50)
+        self.toggle_settings_button.connect("clicked", self.on_toggle_settings_button_click)
+        self.add_overlay(self.toggle_settings_button)
+
+    def on_toggle_settings_button_click(self, button):
+        if self.stack.get_visible_child_name() == "page-settings":
+            self.stack.set_visible_child_name("deck-settings")
+            self.toggle_settings_button.set_icon_name("view-paged")
+            gl.app.main_win.sidebar_toggle_button.set_visible(False)
+            gl.app.main_win.split_view.set_collapsed(True)
+
+        else:
+            self.stack.set_visible_child_name("page-settings")
+            self.toggle_settings_button.set_icon_name("configure")
+            gl.app.main_win.sidebar_toggle_button.set_visible(True)
+            gl.app.main_win.split_view.set_collapsed(False)

@@ -293,7 +293,7 @@ class DeckController:
                 settings_group.screensaver.load_defaults_from_page()
                 background_group.media_row.load_defaults_from_page()
 
-                gl.app.main_win.rightArea.reload()
+                gl.app.main_win.sidebar.reload()
             except AttributeError as e:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
 

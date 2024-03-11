@@ -586,7 +586,7 @@ class StoreBackend:
 
         # Update ui
         if recursive_hasattr(gl, "app.main_win.rightArea.action_chooser"):
-            gl.app.main_win.rightArea.action_chooser.plugin_group.build()
+            gl.app.main_win.sidebar.action_chooser.plugin_group.build()
 
         ## Update page
         for controller in gl.deck_manager.deck_controller:

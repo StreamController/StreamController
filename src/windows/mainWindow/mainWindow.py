@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.windows.mainWindow.elements.PageSelector import PageSelector
+
 
 
 gi.require_version("Gtk", "4.0")
@@ -96,6 +98,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.deck_switcher.switcher.set_stack(self.leftArea.deck_stack)
         self.header.set_title_widget(self.deck_switcher)
 
+        self.page_selector = PageSelector(self, gl.page_manager)
+        # self.header.set_title_widget(self.page_selector)
+        self.header.pack_start(self.page_selector)
+
         # Add menu button to the header bar
         menu_button = Gtk.MenuButton(icon_name="open-menu-symbolic")
         self.header.pack_end(menu_button)
@@ -103,7 +109,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Add sidebar toggle button to the header bar
         self.sidebar_toggle_button = Gtk.ToggleButton(icon_name="sidebar", active=True)
         self.sidebar_toggle_button.connect("toggled", self.on_toggle_sidebar)
-        self.header.pack_start(self.sidebar_toggle_button)
+        # self.header.pack_start(self.sidebar_toggle_button)
 
 
         # Error pages

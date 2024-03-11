@@ -310,3 +310,21 @@
   /* background-color: sidebar_bg_color; */
   background-color: #303030;
 }
+
+.no-border {
+  border: none;
+}
+
+.no-outline {
+  outline-width: 0px;
+  outline: none;
+}
+
+.active-border {
+  border: 2px solid @accent_color;
+}
+
+.page-row-active {
+  /* background-color: #5e5e5e; */
+  background-color: #6A6A6A;
+}

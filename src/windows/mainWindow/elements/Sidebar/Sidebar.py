@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import os
 import gi
 
 from src.windows.mainWindow.elements.PageSelector import PageSelector
@@ -33,7 +34,7 @@ from src.windows.mainWindow.elements.Sidebar.elements.ActionChooser import Actio
 from src.windows.mainWindow.elements.Sidebar.elements.ActionConfigurator import ActionConfigurator
 from src.windows.mainWindow.elements.Sidebar.elements.BackgroundEditor import BackgroundEditor
 from src.windows.mainWindow.elements.Sidebar.elements.ImageEditor import ImageEditor
-from GtkHelper.GtkHelper import ErrorPage
+from GtkHelper.GtkHelper import BetterPreferencesGroup, ErrorPage
 
 # Import globals
 import globals as gl
@@ -143,14 +144,15 @@ class KeyEditor(Gtk.Box):
         self.stack.add_titled(self.key_box, "key", "Key")
 
         self.page_editor = PageEditor()
-        self.stack.add_titled(self.page_editor2, "pages", "Pages")
+        self.stack.add_titled(self.page_editor, "pages", "Pages")
 
-        self.stack.set_visible_child_name("key")
+        self.stack.set_visible_child_name("pages")
 
 
         # Page selector
         # self.page_selector = PageSelector(right_area.main_window, gl.page_manager, halign=Gtk.Align.CENTER, margin_top=5)
         # self.append(self.page_selector)
+
 
     def load_for_coords(self, coords):
         self.key_box.load_for_coords(coords)
@@ -169,41 +171,140 @@ class PageEditor(Gtk.Box):
         self.main_box.append(self.pages_group)
 
 
-class PagesGroup(Adw.PreferencesGroup):
+class PagesGroup(BetterPreferencesGroup):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.load_pages()
 
-        for i in range(5):
-            page_row = AdwPageRow()
+    def load_pages(self):
+        pages = gl.page_manager.get_pages()
+        for page_path in pages:
+            if os.path.dirname(page_path) != os.path.join(gl.DATA_PATH, "pages"):
+                continue
+            page_row = AdwPageRow(pages_group=self, page_path=page_path)
             self.add(page_row)
+
+        row1 = Adw.EntryRow(title="Title")
+        self.add(row1)
+
+        child:Gtk.Box = row1.get_child() # Box
+        prefix_box:Gtk.Box = child.get_first_child()
+        gizmo = prefix_box.get_next_sibling()
+        print(f"gizmo type: {type(gizmo)}")
+        empty_title = gizmo.get_first_child()
+        title = empty_title.get_next_sibling()
+
+        empty_title.set_visible(False)
+        title.set_visible(False)
+
+        row1.add_suffix(Gtk.Button(icon_name="open-menu-symbolic", css_classes=["flat"], vexpand=False, valign=Gtk.Align.CENTER))
 
 
 class AdwPageRow(Adw.PreferencesRow):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.set_overflow(Gtk.Overflow.HIDDEN)
-        self.set_css_classes(["no-padding"])
+    def __init__(self, pages_group:PagesGroup, page_path:str = None):
+        super().__init__(overflow=Gtk.Overflow.HIDDEN, css_classes=["no-padding"])
 
-        self.toggle_button = Gtk.ToggleButton(hexpand=True, vexpand=True, css_classes=["no-rounded-corners", "flat"])
-        self.toggle_button.connect("toggled", self.on_toggled)
-        self.set_child(self.toggle_button)
+        self.pages_group = pages_group
+        self.page_path = page_path
+
+        # self.toggle_button = Gtk.ToggleButton(hexpand=True, vexpand=True, css_classes=["no-rounded-corners", "flat"])
+        # self.toggle_button.connect("toggled", self.on_toggled)
+        # self.set_child(self.toggle_button)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=6, margin_top=6,
                                 margin_start=10, margin_end=10)
-        # self.set_child(self.main_box)
-        self.toggle_button.set_child(self.main_box)
+        self.set_child(self.main_box)
+        # self.toggle_button.set_child(self.main_box)
 
-        self.label = Gtk.Label(xalign=0, label="Page Row", hexpand=False)
+        self.label = Gtk.Label(xalign=0, label=os.path.splitext(os.path.basename(page_path))[0], hexpand=False,
+                               visible=True, margin_start=2)
         self.main_box.append(self.label)
+
+        self.entry = Gtk.Entry(text=os.path.splitext(os.path.basename(page_path))[0], hexpand=False, xalign=0,
+                               css_classes=["flat", "no-border", "no-outline"], has_frame=False,
+                               visible=False)
+        self.main_box.append(self.entry)
 
         self.active_icon = Gtk.Image(icon_name="object-select-symbolic", css_classes=["flat"], margin_start=3, visible=False)
         self.main_box.append(self.active_icon)
 
         self.edit_button = Gtk.Button(icon_name="edit-symbolic", halign=Gtk.Align.END, css_classes=["flat"], hexpand=True)
+        self.edit_button.connect("clicked", self.on_edit_clicked)
         self.main_box.append(self.edit_button)
+
+        # Click ctrl
+        self.click_ctrl = Gtk.GestureClick.new()
+        self.click_ctrl.set_button(1)
+        self.click_ctrl.connect("pressed", self.on_click)
+        self.main_box.add_controller(self.click_ctrl)
+
+        # Focus ctrl
+        self.focus_ctrl = Gtk.EventControllerFocus()
+        self.main_box.add_controller(self.focus_ctrl)
+        # self.focus_ctrl.connect("enter", self.on_focus_in)
+        self.focus_ctrl.connect("leave", self.on_focus_out)
 
     def on_toggled(self, button):
         self.active_icon.set_visible(button.get_active())
+
+    def on_loose_focus(self, *args):
+        self.set_active(False)
+        self.remove_css_class("active-border")
+        self.label.set_visible(True)
+        self.entry.set_visible(False)
+        self.entry.set_hexpand(False)
+        self.active_icon.set_visible(False)
+        self.active_icon.set_hexpand(True)
+
+
+    def on_focus_out(self, *args):
+        return
+        self.on_loose_focus()
+
+    def remove_focus_from_other_pages(self):
+        page_rows = self.pages_group.get_rows()
+        for row in page_rows:
+            if row != self:
+                row.on_loose_focus()
+
+    def on_click(self, gesture, n_press, x, y):
+        self.remove_focus_from_other_pages()
+        if n_press == 1:
+            self.set_active(True)
+            return
+
+        elif n_press == 2:
+            self.on_edit_clicked(self)
+
+    def on_edit_clicked(self, button):
+        self.add_css_class("active-border")
+        show_label = not self.label.get_visible()
+        self.label.set_visible(show_label)
+        self.entry.set_visible(not show_label)
+        print(f"label visibility: {show_label}")
+        self.entry.grab_focus_without_selecting()
+        self.entry.set_position(-1)
+        self.active_icon.set_hexpand(False)
+        self.entry.set_hexpand(True)
+
+    def set_active(self, active: bool):
+        if active:
+            self.set_other_rows_inactive()
+
+        self.active_icon.set_visible(active)
+        if active:
+            self.add_css_class("page-row-active")
+        else:
+            self.remove_css_class("page-row-active")
+
+    def set_other_rows_inactive(self):
+        page_rows = self.pages_group.get_rows()
+        for row in page_rows:
+            if row != self:
+                if hasattr(row, "set_active"):
+                    row.set_active(False)
+        
+
 
 
 

@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from src.backend.IconPackManagement.IconPackManager import IconPackManager
     from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
     from src.windows.Store.StoreBackend import StoreBackend
+    from src.Signals.SignalManager import SignalManager
 
 top_level_dir:str = os.path.dirname(__file__)
 lm:"LocaleManager" = None
@@ -34,6 +35,9 @@ icon_pack_manager: "IconPackManager" = None
 wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
+signal_manager: "SignalManager" = None
+
+
 app_version: str = "1.1.1-alpha" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None

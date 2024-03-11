@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 from GtkHelper.GtkHelper import EntryDialog
 
 # Import signals
-from src.backend.PluginManager import Signals
+from src.Signals import Signals
 
 class PageManager(Gtk.ApplicationWindow):
     def __init__(self, app:"App"):

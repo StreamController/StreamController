@@ -38,7 +38,7 @@ from src.backend.PageManagement.Page import Page, NoActionHolderFound
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
 
 # Import signals
-from src.backend.PluginManager import Signals
+from src.Signals import Signals
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -299,6 +299,7 @@ class DeckController:
 
 
     def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
+        old_path = copy(self.active_page)
         self.active_page = page
 
         if page is None:
@@ -312,7 +313,7 @@ class DeckController:
         self.clear_media_player_tasks()
 
         # Update ui
-        GLib.idle_add(self.update_ui_on_page_change)
+        # GLib.idle_add(self.update_ui_on_page_change)
 
         if load_brigtness:
             self.load_brightness(page)
@@ -329,7 +330,8 @@ class DeckController:
         self.update_all_keys()
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
+        # gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
+        gl.signal_manager.trigger_signal(signal=Signals.ChangePage, controller=self, old_page=old_path, new_page=self.active_page)
 
     def set_brightness(self, value):
         self.deck.set_brightness(int(value))

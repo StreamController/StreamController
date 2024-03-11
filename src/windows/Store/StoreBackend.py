@@ -34,7 +34,7 @@ from packaging import version
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
 # Import signals
-from src.backend.PluginManager import Signals
+from src.Signals import Signals
 
 # Import globals
 import globals as gl
@@ -585,7 +585,7 @@ class StoreBackend:
         gl.plugin_manager.generate_action_index()
 
         # Update ui
-        if recursive_hasattr(gl, "app.main_win.rightArea.action_chooser"):
+        if recursive_hasattr(gl, "app.main_win.sidebar.action_chooser"):
             gl.app.main_win.sidebar.action_chooser.plugin_group.build()
 
         ## Update page

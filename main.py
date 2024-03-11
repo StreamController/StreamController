@@ -41,6 +41,7 @@ from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
 from src.windows.Store.StoreBackend import StoreBackend
 from autostart import setup_autostart
+from src.Signals.SignalManager import SignalManager
 
 # Import globals
 import globals as gl
@@ -89,6 +90,7 @@ def create_global_objects():
     gl.argparser.add_argument("-b", help="Open in background", action="store_true")
     gl.argparser.add_argument("app_args", nargs="*")
 
+    gl.signal_manager = SignalManager()
 
     gl.media_manager = MediaManager()
     gl.asset_manager = AssetManager()

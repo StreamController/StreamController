@@ -28,6 +28,7 @@ import globals as gl
 
 # Import own modules
 from src.windows.PageManager.PageManager import PageManager
+from src.Signals import Signals
 
 class PageSelector(Gtk.Box):
     def __init__(self, main_window, page_manager, **kwargs):
@@ -64,9 +65,10 @@ class PageSelector(Gtk.Box):
         self.settings_button = Gtk.Button(icon_name="settings", tooltip_text=gl.lm.get("header-page-selector-page-manager-hint"))
         self.settings_button.connect("clicked", self.on_click_open_page_manager)
         self.sidebar.append(self.settings_button)
-        self.right_area.append(self.settings_button)
+
+        gl.signal_manager.connect_signal(signal=Signals.ChangePage, callback=self.update)
     
-    def update(self):
+    def update(self, *args, **kwargs):
         self.disconnect_change_signal()
         pages = self.page_manager.get_pages()
         # self.clear_model()

@@ -6,7 +6,7 @@ import Pyro5.api
 from PIL import Image
 
 # Import own modules
-from src.backend.PluginManager.Signals import Signal
+from src.Signals.Signals import Signal
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.HelperMethods import is_image, is_video
 from src.backend.DeckManagement.DeckController import KeyImage, KeyVideo, BackgroundImage, BackgroundVideo, KeyLabel
@@ -191,16 +191,8 @@ class ActionBase:
         self.page.save()
 
     def connect(self, signal:Signal = None, callback: callable = None) -> None:
-        # Verify signal
-        if not issubclass(signal, Signal):
-            raise TypeError("signal_name must be of type Signal")
-        
-        # Verify callback
-        if not callable(callback):
-            raise TypeError("callback must be callable")
-        
         # Connect
-        gl.plugin_manager.connect_signal(signal = signal, callback = callback)
+        gl.signal_manager.connect_signal(signal = signal, callback = callback)
 
     def launch_backend(self, backend_path: str, venv_activate_path: str = None):
         uri = self.add_to_pyro()

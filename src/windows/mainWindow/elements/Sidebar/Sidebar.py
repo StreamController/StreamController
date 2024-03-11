@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import os
 import gi
+from numpy import half
 
 from src.windows.mainWindow.elements.PageSelector import PageSelector
 
@@ -126,12 +127,14 @@ class Sidebar(Adw.NavigationPage):
 
 
 class KeyEditor(Gtk.Box):
-    def __init__(self, right_area: Sidebar, **kwargs):
+    def __init__(self, sidebar: Sidebar, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
-        self.right_area:Sidebar = right_area
+        self.sidebar: Sidebar = sidebar
 
         self.stack_switcher = Gtk.StackSwitcher(margin_top=15, margin_start=50, margin_end=50, halign=Gtk.Align.CENTER)
-        self.append(self.stack_switcher)
+        # self.append(self.stack_switcher)
+        self.page_selector = PageSelector(self.sidebar.main_window, gl.page_manager, margin_top=5, halign=Gtk.Align.CENTER)
+        self.append(self.page_selector)
 
         # self.test_stack = TestStack()
         # self.stack_switcher.set_stack(self.test_stack)
@@ -140,13 +143,13 @@ class KeyEditor(Gtk.Box):
         self.append(self.stack)
         self.stack_switcher.set_stack(self.stack)
 
-        self.key_box = KeyEditorKeyBox(self.right_area)
+        self.key_box = KeyEditorKeyBox(self.sidebar)
         self.stack.add_titled(self.key_box, "key", "Key")
 
         self.page_editor = PageEditor()
         self.stack.add_titled(self.page_editor, "pages", "Pages")
 
-        self.stack.set_visible_child_name("pages")
+        self.stack.set_visible_child_name("key")
 
 
         # Page selector

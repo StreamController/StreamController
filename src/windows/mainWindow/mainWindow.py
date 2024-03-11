@@ -15,10 +15,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
-from src.windows.mainWindow.elements.PageSelector import PageSelector
-
-
-
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib, Gio
@@ -35,6 +31,8 @@ from GtkHelper.GtkHelper import get_deepest_focused_widget, get_deepest_focused_
 from src.windows.mainWindow.elements.NoPagesError import NoPagesError
 from src.windows.mainWindow.elements.NoDecksError import NoDecksError
 from src.windows.mainWindow.deckSwitcher import DeckSwitcher
+from src.windows.mainWindow.elements.PageSelector import PageSelector
+from src.windows.mainWindow.elements.HeaderHamburgerMenuButton import HeaderHamburgerMenuButton
 
 
 # Import globals
@@ -83,7 +81,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.main_box.append(self.leftArea)
 
         self.sidebar = Sidebar(main_window=self, margin_start=4, width_request=300, margin_end=4)
-        # self.mainPaned.set_end_child(self.rightArea)
+        # self.mainPaned.set_end_child(self.sidebar)
         self.split_view.set_sidebar(self.sidebar)
         self.split_view.set_sidebar_width_fraction(0.4)
         self.split_view.set_min_sidebar_width(450)
@@ -99,8 +97,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.header.set_title_widget(self.deck_switcher)
 
         # Add menu button to the header bar
-        menu_button = Gtk.MenuButton(icon_name="open-menu-symbolic")
-        self.header.pack_end(menu_button)
+        self.menu_button = HeaderHamburgerMenuButton(main_window=self)
+        self.header.pack_end(self.menu_button)
 
         # Add sidebar toggle button to the header bar
         self.sidebar_toggle_button = Gtk.ToggleButton(icon_name="sidebar", active=True)

@@ -27,9 +27,9 @@ from src.backend.PluginManager.ActionBase import ActionBase
 
 
 class ActionConfigurator(Gtk.Box):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
         self.build()
 
     def build(self):
@@ -72,7 +72,7 @@ class ActionConfigurator(Gtk.Box):
         self.comment_group.load_for_action(action, index)
 
     def on_back_button_click(self, button):
-        self.right_area.set_visible_child_name("key_editor")
+        self.sidebar.main_stack.set_visible_child_name("key_editor")
 
 class CommentGroup(Adw.PreferencesGroup):
     def __init__(self, parent, **kwargs):
@@ -113,12 +113,12 @@ class CommentGroup(Adw.PreferencesGroup):
     
 
     def get_comment(self) -> str:
-        controller = self.parent.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.parent.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page = controller.active_page
         return page.get_action_comment(self.action.page_coords, self.index)
     
     def set_comment(self, comment: str) -> None:
-        controller = self.parent.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.parent.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page = controller.active_page
         page.set_action_comment(self.action.page_coords, self.index, comment)
     
@@ -208,11 +208,11 @@ class RemoveButton(Gtk.Button):
         self.index = None
 
     def on_remove_button_click(self, button):
-        controller = self.configurator.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.configurator.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page = controller.active_page
 
         # Swtich to main editor page
-        self.configurator.right_area.set_visible_child_name("key_editor")
+        self.configurator.sidebar.set_visible_child_name("key_editor")
 
         # Remove from action_objects
         del page.action_objects[self.action.page_coords][self.index]
@@ -222,7 +222,7 @@ class RemoveButton(Gtk.Button):
         page.save()
 
         # Reload configurator
-        self.configurator.right_area.load_for_coords(self.action.page_coords.split("x"))
+        self.configurator.sidebar.load_for_coords(self.action.page_coords.split("x"))
 
         # Check whether we have to reload the key
         load = not page.has_key_an_image_controlling_action(self.action.page_coords)

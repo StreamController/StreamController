@@ -163,29 +163,30 @@ class KeyButton(Gtk.Frame):
         self.show_pixbuf(self.pixbuf)
 
         # update righthand side key preview if possible
-        if recursive_hasattr(gl, "app.main_win.rightArea"):
+        if recursive_hasattr(gl, "app.main_win.sidebar"):
             self.set_icon_selector_previews(self.pixbuf)
 
     def set_icon_selector_previews(self, pixbuf):
-        right_area = gl.app.main_win.sidebar
+        sidebar = gl.app.main_win.sidebar
         if pixbuf is None:
             return
-        if not recursive_hasattr(gl, "app.main_win.rightArea"):
+        if not recursive_hasattr(gl, "app.main_win.sidebar"):
             return
-        if right_area.key_editor.label_editor.label_group.expander.active_coords != (self.coords[1], self.coords[0]):
+        if sidebar.key_editor.label_editor.label_group.expander.active_coords != (self.coords[1], self.coords[0]):
             return
         if gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller != self.key_grid.deck_controller:
             return
         # Update icon selector on the top of the right are
-        GLib.idle_add(right_area.key_editor.icon_selector.image.set_from_pixbuf, pixbuf)
+        GLib.idle_add(sidebar.key_editor.icon_selector.image.set_from_pixbuf, pixbuf)
         # Update icon selector in margin editor
-        # GLib.idle_add(right_area.key_editor.image_editor.image_group.expander.margin_row.icon_selector.image.set_from_pixbuf, pixbuf)
+        # GLib.idle_add(sidebar.key_editor.image_editor.image_group.expander.margin_row.icon_selector.image.set_from_pixbuf, pixbuf)
 
     def show_pixbuf(self, pixbuf):
         self.pixbuf = pixbuf
         GLib.idle_add(self.image.set_from_pixbuf, self.pixbuf)
 
     def on_click(self, gesture, n_press, x, y):
+        print("on_click")
         if gesture.get_current_button() == 1 and n_press == 1:
             # Single left click
             # Select key
@@ -229,10 +230,10 @@ class KeyButton(Gtk.Frame):
 
     def on_focus_in(self, *args):
         # Update settings on the righthand side of the screen
-        if not recursive_hasattr(gl, "app.main_win.rightArea"):
+        if not recursive_hasattr(gl, "app.main_win.sidebar"):
             return
-        right_area = gl.app.main_win.sidebar
-        right_area.load_for_coords((self.coords[1], self.coords[0]))
+        sidebar = gl.app.main_win.sidebar
+        sidebar.load_for_coords((self.coords[1], self.coords[0]))
         # Update preview
         if self.pixbuf is not None:
             self.set_icon_selector_previews(self.pixbuf)

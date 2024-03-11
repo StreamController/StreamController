@@ -31,7 +31,7 @@ from loguru import logger as log
 import globals as gl
 
 # Import signals
-from src.backend.PluginManager import Signals
+from src.Signals import Signals
 
 class NoPagesError(Gtk.Box):
     """

@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GObject
@@ -41,8 +42,8 @@ class PageSelector(Gtk.Box):
         self.append(self.label)
 
         # Right area
-        self.right_area = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["linked"])
-        self.append(self.right_area)
+        self.sidebar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["linked"])
+        self.append(self.sidebar)
 
         # Dropdown
         self.pages_model = Gtk.ListStore.new([str, str])
@@ -57,11 +58,12 @@ class PageSelector(Gtk.Box):
         self.drop_down.set_tooltip_text(gl.lm.get("header-page-selector-drop-down-hint"))
         self.drop_down.connect("changed", self.on_change_page)
         self.update()
-        self.right_area.append(self.drop_down)
+        self.sidebar.append(self.drop_down)
 
         # Settings button
         self.settings_button = Gtk.Button(icon_name="settings", tooltip_text=gl.lm.get("header-page-selector-page-manager-hint"))
         self.settings_button.connect("clicked", self.on_click_open_page_manager)
+        self.sidebar.append(self.settings_button)
         self.right_area.append(self.settings_button)
     
     def update(self):

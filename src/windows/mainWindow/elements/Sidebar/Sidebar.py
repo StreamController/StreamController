@@ -81,17 +81,17 @@ class Sidebar(Adw.NavigationPage):
         Returns:
             None
         """
-        self.action_chooser.show(callback_function=callback_function, current_stack_page=self.get_visible_child(), callback_args=callback_args, callback_kwargs=callback_kwargs)
+        self.action_chooser.show(callback_function=callback_function, current_stack_page=self.main_stack.get_visible_child(), callback_args=callback_args, callback_kwargs=callback_kwargs)
 
     def show_action_configurator(self):
-        self.set_visible_child(self.action_configurator)
+        self.main_stack.set_visible_child(self.action_configurator)
 
     def load_for_coords(self, coords):
         self.active_coords = coords
         # Verify that a controller is selected
         if self.main_window.leftArea.deck_stack.get_visible_child() is None:
             self.error_page.set_error_text(gl.lm.get("right-area-no-deck-selected-error"))
-            # self.error_page.set_reload_func(self.main_window.rightArea.load_for_coords)
+            # self.error_page.set_reload_func(self.main_window.sidebar.load_for_coords)
             # self.error_page.set_reload_args([coords])
             self.show_error()
             return
@@ -128,37 +128,37 @@ class Sidebar(Adw.NavigationPage):
 
 class KeyEditor(Gtk.Box):
     def __init__(self, sidebar: Sidebar, **kwargs):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
-        self.sidebar: Sidebar = sidebar
+        super().__init__(**kwargs)
+        self.sidebar:Sidebar = sidebar
 
-        self.stack_switcher = Gtk.StackSwitcher(margin_top=15, margin_start=50, margin_end=50, halign=Gtk.Align.CENTER)
-        # self.append(self.stack_switcher)
-        self.page_selector = PageSelector(self.sidebar.main_window, gl.page_manager, margin_top=5, halign=Gtk.Align.CENTER)
-        self.append(self.page_selector)
+        self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
+        self.append(self.scrolled_window)
 
-        # self.test_stack = TestStack()
-        # self.stack_switcher.set_stack(self.test_stack)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
+        self.scrolled_window.set_child(self.main_box)
 
-        self.stack = Gtk.Stack(hexpand=True, vexpand=True)
-        self.append(self.stack)
-        self.stack_switcher.set_stack(self.stack)
+        self.icon_selector = IconSelector(sidebar, halign=Gtk.Align.CENTER, margin_top=75)
+        self.main_box.append(self.icon_selector)
 
-        self.key_box = KeyEditorKeyBox(self.sidebar)
-        self.stack.add_titled(self.key_box, "key", "Key")
+        self.image_editor = ImageEditor(sidebar, margin_top=25)
+        self.main_box.append(self.image_editor)
 
-        self.page_editor = PageEditor()
-        self.stack.add_titled(self.page_editor, "pages", "Pages")
+        self.background_editor = BackgroundEditor(sidebar, margin_top=25)
+        self.main_box.append(self.background_editor)
 
-        self.stack.set_visible_child_name("key")
+        self.label_editor = LabelEditor(sidebar, margin_top=25)
+        self.main_box.append(self.label_editor)
 
-
-        # Page selector
-        # self.page_selector = PageSelector(right_area.main_window, gl.page_manager, halign=Gtk.Align.CENTER, margin_top=5)
-        # self.append(self.page_selector)
-
+        self.action_editor = ActionManager(sidebar, margin_top=25, width_request=400)
+        self.main_box.append(self.action_editor)
 
     def load_for_coords(self, coords):
-        self.key_box.load_for_coords(coords)
+        self.sidebar.active_coords = coords
+        self.icon_selector.load_for_coords(coords)
+        self.image_editor.load_for_coords(coords)
+        self.label_editor.load_for_coords(coords)
+        self.action_editor.load_for_coords(coords)
+        self.background_editor.load_for_coords(coords)
 
 class PageEditor(Gtk.Box):
     def __init__(self, **kwargs):
@@ -330,9 +330,9 @@ class PageRow(Gtk.Overlay):
 
 
 class KeyEditorKeyBox(Gtk.Box):
-    def __init__(self, right_area: Sidebar, **kwargs):
+    def __init__(self, sidebar: Sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area:Sidebar = right_area
+        self.sidebar:Sidebar = sidebar
 
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
         self.append(self.scrolled_window)
@@ -340,23 +340,23 @@ class KeyEditorKeyBox(Gtk.Box):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.scrolled_window.set_child(self.main_box)
 
-        self.icon_selector = IconSelector(right_area, halign=Gtk.Align.CENTER, margin_top=75)
+        self.icon_selector = IconSelector(sidebar, halign=Gtk.Align.CENTER, margin_top=75)
         self.main_box.append(self.icon_selector)
 
-        self.image_editor = ImageEditor(right_area, margin_top=25)
+        self.image_editor = ImageEditor(sidebar, margin_top=25)
         self.main_box.append(self.image_editor)
 
-        self.background_editor = BackgroundEditor(right_area, margin_top=25)
+        self.background_editor = BackgroundEditor(sidebar, margin_top=25)
         self.main_box.append(self.background_editor)
 
-        self.label_editor = LabelEditor(right_area, margin_top=25)
+        self.label_editor = LabelEditor(sidebar, margin_top=25)
         self.main_box.append(self.label_editor)
 
-        self.action_editor = ActionManager(right_area, margin_top=25, width_request=400)
+        self.action_editor = ActionManager(sidebar, margin_top=25, width_request=400)
         self.main_box.append(self.action_editor)
 
     def load_for_coords(self, coords):
-        self.right_area.active_coords = coords
+        self.sidebar.active_coords = coords
         self.icon_selector.load_for_coords(coords)
         self.image_editor.load_for_coords(coords)
         self.label_editor.load_for_coords(coords)

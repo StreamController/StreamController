@@ -38,8 +38,8 @@ if TYPE_CHECKING:
     from src.windows.mainWindow.elements.Sidebar.RightArea import Sidebar
 
 class ActionManager(Gtk.Box):
-    def __init__(self, right_area, **kwargs):
-        self.right_area = right_area
+    def __init__(self, sidebar, **kwargs):
+        self.sidebar = sidebar
         super().__init__(**kwargs)
         self.build()
 
@@ -50,7 +50,7 @@ class ActionManager(Gtk.Box):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.main_box)
 
-        self.action_group = ActionGroup(self.right_area)
+        self.action_group = ActionGroup(self.sidebar)
         self.main_box.append(self.action_group)
 
         self.main_box.set_margin_bottom(50)
@@ -59,9 +59,9 @@ class ActionManager(Gtk.Box):
         self.action_group.load_for_coords(coords)
 
 class ActionGroup(Adw.PreferencesGroup):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
 
         self.active_coords = None
 
@@ -93,14 +93,14 @@ class ActionExpanderRow(BetterExpander):
         self.add_row(self.add_action_button)
 
     def add_action_row(self, action_name: str, action_id: str, action_category, action_object, comment: str, index: int, total_rows: int):
-        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.right_area, comment, index, total_rows, self)
+        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.sidebar, comment, index, total_rows, self)
         self.add_row(action_row)
 
     def load_for_coords(self, coords):
         self.clear_actions(keep_add_button=True)
         self.active_coords = coords
         page_coords = f"{coords[0]}x{coords[1]}"
-        controller = self.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         if page_coords not in controller.active_page.action_objects:
             return
         print()
@@ -190,7 +190,7 @@ class ActionExpanderRow(BetterExpander):
 
 
     def reorder_actions(self, move_index, after_index):
-        controller = self.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
 
         actions = controller.active_page.dict["keys"][page_coords]["actions"]
@@ -211,7 +211,7 @@ class ActionExpanderRow(BetterExpander):
         controller.load_page(controller.active_page)
 
     def update_comment_for_index(self, action_index):
-        controller = self.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
         comment = controller.active_page.get_action_comment(page_coords=page_coords, index=action_index)
         self.get_rows()[action_index].set_comment(comment)
@@ -220,12 +220,12 @@ class ActionExpanderRow(BetterExpander):
         
 
 class ActionRow(Adw.PreferencesRow):
-    def __init__(self, action_name, action_id, action_category, action_object, right_area: "Sidebar", comment: str, index, total_rows: int, expander: ActionExpanderRow, **kwargs):
+    def __init__(self, action_name, action_id, action_category, action_object, sidebar: "Sidebar", comment: str, index, total_rows: int, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding"])
         self.action_name = action_name
         self.action_id = action_id
         self.action_category = action_category
-        self.right_area: "Sidebar" = right_area
+        self.sidebar: "Sidebar" = sidebar
         self.action_object = action_object
         self.comment = comment
         self.index = index
@@ -350,29 +350,29 @@ class ActionRow(Adw.PreferencesRow):
         if not isinstance(value, ActionRow):
             return False
         
-        self.right_area.key_editor.action_editor.action_group.expander.reorder_child_after(value, self)
+        self.sidebar.key_editor.action_editor.action_group.expander.reorder_child_after(value, self)
         return True
         # Remove preview
-        index = self.right_area.key_editor.action_editor.action_group.expander.get_index_of_child(self.right_area.key_editor.action_editor.action_group.expander.preview)
-        self.right_area.key_editor.action_editor.action_group.expander.remove(self.right_area.key_editor.action_editor.action_group.expander.preview)
-        self.right_area.key_editor.action_editor.action_group.expander.actions.pop(index)
+        index = self.sidebar.key_editor.action_editor.action_group.expander.get_index_of_child(self.sidebar.key_editor.action_editor.action_group.expander.preview)
+        self.sidebar.key_editor.action_editor.action_group.expander.remove(self.sidebar.key_editor.action_editor.action_group.expander.preview)
+        self.sidebar.key_editor.action_editor.action_group.expander.actions.pop(index)
         return True
     
     def on_dnd_motion(self, drop_target, x, y):
         if y > self.get_height() / 2:
-            self.right_area.key_editor.action_editor.action_group.expander.add_drop_preview(self.index-1)
+            self.sidebar.key_editor.action_editor.action_group.expander.add_drop_preview(self.index-1)
         else:
-            self.right_area.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
+            self.sidebar.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
         return Gdk.DragAction.MOVE
 
 
-        self.right_area.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
+        self.sidebar.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
 
         return Gdk.DragAction.MOVE
 
     def on_click(self, button):
-        self.right_area.action_configurator.load_for_action(self.action_object, self.index)
-        self.right_area.show_action_configurator()
+        self.sidebar.action_configurator.load_for_action(self.action_object, self.index)
+        self.sidebar.show_action_configurator()
 
     def update_comment(self, comment: str):
         self.comment = comment
@@ -500,14 +500,14 @@ class AddActionButtonRow(Adw.PreferencesRow):
         self.set_child(self.button)
 
     def on_click(self, button):
-        self.expander.action_group.right_area.let_user_select_action(callback_function=self.add_action)
+        self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action)
 
     def add_action(self, action_class):
         log.trace(f"Adding action: {action_class}")
 
         # Gather data
         # action_string = gl.plugin_manager.get_action_string_from_action(action_class)
-        active_controller = self.expander.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        active_controller = self.expander.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         active_page = active_controller.active_page
         page_coords = f"{self.expander.active_coords[0]}x{self.expander.active_coords[1]}"
 
@@ -533,6 +533,6 @@ class AddActionButtonRow(Adw.PreferencesRow):
         self.expander.load_for_coords(self.expander.active_coords)
 
         # Reload key
-        controller = self.expander.action_group.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.expander.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         key_index = controller.coords_to_index(self.expander.active_coords)
         controller.load_key(key_index, page=controller.active_page)

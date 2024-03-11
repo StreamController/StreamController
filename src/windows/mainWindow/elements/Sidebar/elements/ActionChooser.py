@@ -29,14 +29,18 @@ from GtkHelper.GtkHelper import BetterExpander, BetterPreferencesGroup
 from src.windows.Store.Store import Store
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
+# Import typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.windows.mainWindow.elements.Sidebar import Sidebar
 
 # Import globals
 import globals as gl
 
 class ActionChooser(Gtk.Box):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar: "Sidebar", **kwargs):
         super().__init__(hexpand=True, vexpand=True, **kwargs)
-        self.right_area = right_area
+        self.sidebar: "Sidebar" = sidebar
 
         self.callback_function = None
         self.callback_args = None
@@ -91,10 +95,10 @@ class ActionChooser(Gtk.Box):
         self.callback_args = callback_args
         self.callback_kwargs = callback_kwargs
 
-        self.right_area.set_visible_child(self)
+        self.sidebar.main_stack.set_visible_child(self)
 
     def on_back_button_click(self, button):
-        self.right_area.set_visible_child_name("key_editor")
+        self.sidebar.main_stack.set_visible_child_name("key_editor")
 
     def on_search_changed(self, search_entry):
         self.plugin_group.search()
@@ -288,7 +292,7 @@ class ActionRow(Adw.PreferencesRow):
             return
         
         # Go back to old page
-        self.expander.plugin_group.action_chooser.right_area.set_visible_child(self.expander.plugin_group.action_chooser.current_stack_page)
+        self.expander.plugin_group.action_chooser.sidebar.main_stack.set_visible_child(self.expander.plugin_group.action_chooser.current_stack_page)
 
         # Verify the callback function
         if not callable(self.expander.plugin_group.action_chooser.callback_function):

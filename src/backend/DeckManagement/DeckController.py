@@ -318,7 +318,7 @@ class DeckController:
 
 
     def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
-        old_path = copy(self.active_page)
+        old_path = self.active_page.json_path if self.active_page is not None else None
         self.active_page = page
 
         if page is None:
@@ -354,7 +354,7 @@ class DeckController:
 
         # Notify plugin actions
         # gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
-        gl.signal_manager.trigger_signal(signal=Signals.ChangePage, controller=self, old_page=old_path, new_page=self.active_page)
+        gl.signal_manager.trigger_signal(signal=Signals.ChangePage, controller=self, old_path=old_path, new_path=self.active_page.json_path)
 
     def set_brightness(self, value):
         self.deck.set_brightness(int(value))

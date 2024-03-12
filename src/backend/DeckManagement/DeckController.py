@@ -84,10 +84,15 @@ class DeckController:
 
         self.deck.set_key_callback(self.key_change_callback)
 
-        self.load_default_page()
 
         self.media_ticks = 0
 
+        self.stop_media_player_thread = False
+        self.media_player_running = False
+
+        self.deactivate_media_player = False
+
+        self.load_default_page()
         # Start media player thread
         self.media_player_thread = threading.Thread(target=self.play_media)
         self.media_player_thread.start()
@@ -101,22 +106,23 @@ class DeckController:
         for i in range(self.deck.key_count()):
             self.keys.append(ControllerKey(self, i))
 
-    def add_media_player_task(self, method: callable, key: int, image):
+    def add_media_player_task(self, method: callable, *args, **kwargs):
         _id = random.randint(0, 10000)
         if _id in self.media_player_tasks:
-            self.add_media_player_task(method, key, image)
+            self.add_media_player_task(method, *args, **kwargs)
 
         self.media_player_tasks[_id] = {
             "method": method,
-            "key": key,
-            "image": image
+            "args": args,
+            "kwargs": kwargs,
+            "page": self.active_page
         }
 
     def update_key(self, index: int):
         image = self.keys[index].get_current_deck_image()
         native_image = PILHelper.to_native_format(self.deck, image.convert("RGB"))
 
-        self.add_media_player_task(self.deck.set_key_image, index, native_image)
+        self.add_media_player_task(self.set_deck_key_image, index, native_image)
         
         self.keys[index].set_ui_key_image(image)
 
@@ -128,24 +134,27 @@ class DeckController:
             self.update_key(i)
     def play_media(self):
         FPS = 60
+        self.media_player_running = True
         while True:
             start = time.time()
-            if self.background.video is not None:
-                # There is a background video
-                video_each_nth_frame = FPS // self.background.video.fps
-                if self.media_ticks % video_each_nth_frame == 0:
-                    self.background.update_tiles()
+            if not self.deactivate_media_player:
+                if self.background.video is not None:
+                    if self.background.video.page is self.active_page:
+                        # There is a background video
+                        video_each_nth_frame = FPS // self.background.video.fps
+                        if self.media_ticks % video_each_nth_frame == 0:
+                            self.background.update_tiles()
 
-            for key in self.keys:
-                if key.key_video is not None:
-                    video_each_nth_frame = FPS // key.key_video.fps
-                    if self.media_ticks % video_each_nth_frame == 0:
+                for key in self.keys:
+                    if key.key_video is not None:
+                        video_each_nth_frame = FPS // key.key_video.fps
+                        if self.media_ticks % video_each_nth_frame == 0:
+                            key.update()
+                    elif self.background.video is not None:
                         key.update()
-                elif self.background.video is not None:
-                    key.update()
 
-            # Perform media player tasks
-            self.perform_media_player_tasks()
+                # Perform media player tasks
+                self.perform_media_player_tasks()
 
             self.media_ticks += 1
 
@@ -155,19 +164,29 @@ class DeckController:
             wait = max(0, 1/FPS - (end - start))
             time.sleep(wait)
 
+            if self.stop_media_player_thread:
+                break
+
+        self.media_player_running = False
+
     def perform_media_player_tasks(self):
         tasks = copy(self.media_player_tasks)
         for task in tasks:
-            key = tasks[task]["key"]
-            image = tasks[task]["image"]
+            _callable = tasks[task]["method"]
+            args = tasks[task]["args"]
+            kwargs = tasks[task]["kwargs"]
+            page = tasks[task]["page"]
 
-            with self.deck:
-                # print(f"updating key {key}")
-                self.deck.set_key_image(key, image)
+            if page is self.active_page:
+                _callable(*args, **kwargs)
 
             # Remove the task if still in the list - might be removed by clear_media_player_tasks()
             if task in self.media_player_tasks:
                 del self.media_player_tasks[task]
+
+    def set_deck_key_image(self, key: int, image) -> None:
+        with self.deck:
+            self.deck.set_key_image(key, image)
 
     def key_change_callback(self, deck, key, state):
         if state:
@@ -313,21 +332,25 @@ class DeckController:
         self.clear_media_player_tasks()
 
         # Update ui
-        # GLib.idle_add(self.update_ui_on_page_change)
+        GLib.idle_add(self.update_ui_on_page_change) #TODO: Use new signal manager instead
 
+        if load_background:
+            # self.load_background(page, update=False)
+            self.add_media_player_task(self.load_background, page, update=False)
         if load_brigtness:
             self.load_brightness(page)
         if load_screensaver:
             self.load_screensaver(page)
-        if load_background:
-            self.load_background(page, update=False)
         if load_keys:
-            self.load_all_keys(page, update=False)
+            # self.background.update_tiles()
+            self.add_media_player_task(self.background.update_tiles)
+            # self.load_all_keys(page, update=False)
+            self.add_media_player_task(self.load_all_keys, page, update=False)
+            
 
-        # Clear unfinished tasks from old page
-        self.clear_media_player_tasks()
-        # Load new page onto deck
-        self.update_all_keys()
+        # Load page onto deck
+        # self.update_all_keys()
+        self.add_media_player_task(self.update_all_keys)
 
         # Notify plugin actions
         # gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
@@ -501,6 +524,8 @@ class BackgroundVideo(BackgroundVideoCache):
         self.video_path = video_path
         self.loop = loop
         self.fps = fps
+
+        self.page: Page = self.deck_controller.active_page
 
         self.active_frame: int = -1
 

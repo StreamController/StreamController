@@ -301,9 +301,9 @@ class DeckController:
 
     def update_ui_on_page_change(self):
         # Update ui
-        if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
+        if recursive_hasattr(gl, "app.main_win.sidebar"):
             try:
-                gl.app.main_win.header_bar.page_selector.update_selected()
+                # gl.app.main_win.header_bar.page_selector.update_selected()
                 settings_page = gl.app.main_win.leftArea.deck_stack.get_visible_child().page_settings.settings_page
                 settings_group = settings_page.settings_group
                 background_group = settings_page.background_group

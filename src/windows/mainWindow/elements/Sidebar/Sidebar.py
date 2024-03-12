@@ -128,8 +128,12 @@ class Sidebar(Adw.NavigationPage):
 
 class KeyEditor(Gtk.Box):
     def __init__(self, sidebar: Sidebar, **kwargs):
-        super().__init__(**kwargs)
         self.sidebar:Sidebar = sidebar
+        super().__init__(**kwargs)
+        self.set_orientation(Gtk.Orientation.VERTICAL)
+
+        self.page_selector = PageSelector(self.sidebar.main_window, gl.page_manager, margin_top=5, halign=Gtk.Align.CENTER)
+        self.append(self.page_selector)
 
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
         self.append(self.scrolled_window)

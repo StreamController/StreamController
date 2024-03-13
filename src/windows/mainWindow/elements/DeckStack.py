@@ -51,7 +51,7 @@ class DeckStack(Gtk.Stack):
 
     def on_switch(self, widget, *args):
         # Update page selector
-        self.main_window.header_bar.page_selector.update_selected()
+        self.main_window.sidebar.key_editor.page_selector.update()
 
         child: DeckStackChild = self.get_visible_child()
         if child.stack.get_visible_child_name() == "page-settings":

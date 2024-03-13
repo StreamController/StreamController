@@ -100,8 +100,7 @@ class DeckManager:
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device
         if device_info["ID_VENDOR"] != "Elgato":
-            pass
-            # return
+            return
 
         # Get already loaded deck serial ids
         loaded_deck_ids = []

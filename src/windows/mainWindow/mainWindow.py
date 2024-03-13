@@ -184,7 +184,7 @@ class MainWindow(Adw.ApplicationWindow):
             None: Goes back to normal mode
         """
         if error is None:
-            self.main_stack.set_visible_child(self.main_box)
+            self.main_stack.set_visible_child(self.toast_overlay)
             self.deck_switcher.set_show_switcher(True)
             self.split_view.set_collapsed(False)
             self.sidebar_toggle_button.set_visible(True)

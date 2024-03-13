@@ -149,13 +149,16 @@ class DeckController:
     def __init__(self, deck_manager: "DeckManager", deck: StreamDeck.StreamDeck):
         self.deck_manager: DeckManager = deck_manager
         self.deck: StreamDeck = deck
-        # Check if deck is already open
-        if not deck.is_open:
-            # Open deck
-            deck.open()
+        # Open the deck
+        deck.open()
         
-        # Clear the deck
-        deck.reset()
+        try:
+            # Clear the deck
+            deck.reset()
+        except Exception as e:
+            log.error(f"Failed to reset deck, maybe it's already connected to another instance? Skipping... Error: {e}")
+            del self
+            return
 
         self.screen_saver = ScreenSaver(deck_controller=self)
 
@@ -202,6 +205,7 @@ class DeckController:
         self.keys[index].set_ui_key_image(image)
 
     def update_all_keys(self):
+        if not self.get_alive(): return
         if self.background.video is not None:
             log.debug("Skipping update_all_keys because there is a background video")
             return
@@ -212,8 +216,12 @@ class DeckController:
     
 
     def set_deck_key_image(self, key: int, image) -> None:
-        with self.deck:
-            self.deck.set_key_image(key, image)
+        if not self.get_alive(): return
+        try:
+            with self.deck:
+                self.deck.set_key_image(key, image)
+        except StreamDeck.TransportError as e:
+            log.error(f"Failed to set deck key image. Error: {e}")
 
     def key_change_callback(self, deck, key, state):
         if state:
@@ -230,6 +238,7 @@ class DeckController:
         return Image.new("RGBA", self.get_key_image_size(), (0, 0, 0, 0))
     
     def get_key_image_size(self) -> tuple[int]:
+        if not self.get_alive(): return
         return self.deck.key_image_format()["size"]
     
     # ------------ #
@@ -237,6 +246,7 @@ class DeckController:
     # ------------ #
 
     def load_default_page(self):
+        if not self.get_alive(): return
         default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
         if default_page_path is None:
             # Use the first page
@@ -272,6 +282,7 @@ class DeckController:
             set_from_page(self)
 
     def load_brightness(self, page: Page):
+        if not self.get_alive(): return
         deck_settings = self.get_deck_settings()
         def set_from_deck_settings(self: "DeckController"):
             self.deck.set_brightness(deck_settings.get("brightness", {}).get("value", 75))
@@ -345,6 +356,8 @@ class DeckController:
 
 
     def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
+        if not self.get_alive(): return
+
         old_path = self.active_page.json_path if self.active_page is not None else None
         self.active_page = page
 
@@ -381,6 +394,7 @@ class DeckController:
         gl.signal_manager.trigger_signal(signal=Signals.ChangePage, controller=self, old_path=old_path, new_path=self.active_page.json_path)
 
     def set_brightness(self, value):
+        if not self.get_alive(): return
         self.deck.set_brightness(int(value))
         self.brightness = value
 
@@ -399,17 +413,20 @@ class DeckController:
     # -------------- #
         
     def index_to_coords(self, index):
+        if not self.get_alive(): return
         rows, cols = self.deck.key_layout()    
         y = index // cols
         x = index % cols
         return x, y
     
     def coords_to_index(self, coords):
+        if not self.get_alive(): return
         x, y = map(int, coords)
         rows, cols = self.deck.key_layout()
         return y * cols + x
     
     def get_deck_settings(self):
+        if not self.get_alive(): return {}
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())
     
     def get_own_key_grid(self) -> KeyGrid:
@@ -433,6 +450,22 @@ class DeckController:
             kwargs={},
         ))
 
+    def delete(self):
+        self.active_page.action_objects = {}
+        del self.active_page
+
+        self.media_player.stop()
+
+        if self.tick_timer is not None:
+            if self.tick_timer.is_alive():
+                self.tick_timer.cancel()
+
+    def get_alive(self) -> bool:
+        try:
+            return self.deck.is_open
+        except Exception as e:
+            log.debug(f"Cougth dead deck error. Error: {e}")
+            return False
 
 
 class Background:

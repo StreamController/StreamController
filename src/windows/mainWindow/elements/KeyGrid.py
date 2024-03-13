@@ -174,7 +174,10 @@ class KeyButton(Gtk.Frame):
             return
         if sidebar.key_editor.label_editor.label_group.expander.active_coords != (self.coords[1], self.coords[0]):
             return
-        if gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller != self.key_grid.deck_controller:
+        child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if child is None:
+            return
+        if child.deck_controller != self.key_grid.deck_controller:
             return
         # Update icon selector on the top of the right are
         GLib.idle_add(sidebar.key_editor.icon_selector.image.set_from_pixbuf, pixbuf)

@@ -73,9 +73,9 @@ class LabelExpanderRow(Adw.ExpanderRow):
         self.build()
 
     def build(self):
-        self.top_row = LabelRow(gl.lm.get("label-editor-top-name"), self.label_group.sidebar)
-        self.center_row = LabelRow(gl.lm.get("label-editor-center-name"), self.label_group.sidebar)
-        self.bottom_row = LabelRow(gl.lm.get("label-editor-bottom-name"), self.label_group.sidebar)
+        self.top_row = LabelRow(gl.lm.get("label-editor-top-name"), 0, self.label_group.sidebar)
+        self.center_row = LabelRow(gl.lm.get("label-editor-center-name"), 1, self.label_group.sidebar)
+        self.bottom_row = LabelRow(gl.lm.get("label-editor-bottom-name"), 2, self.label_group.sidebar)
 
         self.add_row(self.top_row)
         self.add_row(self.center_row)
@@ -89,11 +89,12 @@ class LabelExpanderRow(Adw.ExpanderRow):
         self.bottom_row.load_for_coords(coords)
 
 class LabelRow(Adw.PreferencesRow):
-    def __init__(self, label_text, sidebar, **kwargs):
+    def __init__(self, label_text, label_index: int, sidebar, **kwargs):
         super().__init__(**kwargs)
         self.label_text = label_text
         self.sidebar = sidebar
         self.active_coords = None
+        self.label_index = label_index
         self.build()
 
     def build(self):
@@ -192,6 +193,8 @@ class LabelRow(Adw.PreferencesRow):
             if isinstance(action, NoActionHolderFound):
                 # No plugin installed for this action
                 continue
+            if not action.LABELS_CAN_BE_OVERWRITTEN[self.label_index]:
+                pass
             for key in action.labels:
                 if key == self.label_text.lower():
                     self.set_sensitive(False)

@@ -33,7 +33,7 @@ import globals as gl
 class DeckManager:
     def __init__(self):
         #TODO: Maybe outsource some objects
-        self.deck_controller = []
+        self.deck_controller: list[DeckController] = []
         self.fake_deck_controller = []
         self.settings_manager = SettingsManager()
         self.page_manager = gl.page_manager

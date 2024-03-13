@@ -154,6 +154,14 @@ class ActionBase:
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18, update: bool = True):
         
+        self.labels[position] = {
+            "text": text,
+            "color": color,
+            "stroke-width": stroke_width,
+            "font-family": font_family,
+            "font-size": font_size
+        }
+        
         key_label = KeyLabel(
             controller_key=self.deck_controller.keys[self.key_index],
             text=text,

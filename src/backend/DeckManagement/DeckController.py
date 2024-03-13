@@ -360,9 +360,6 @@ class DeckController:
         if load_screensaver:
             self.load_screensaver(page)
         if load_keys:
-            # self.background.update_tiles()
-            self.add_media_player_task(self.background.update_tiles)
-            # self.load_all_keys(page, update=False)
             self.add_media_player_task(self.load_all_keys, page, update=False)
             
 

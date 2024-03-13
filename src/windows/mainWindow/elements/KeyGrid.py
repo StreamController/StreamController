@@ -81,7 +81,7 @@ class KeyGrid(Gtk.Grid):
         if not hasattr(self.deck_controller, "ui_grid_buttons_changes_while_hidden"):
             return
         tasks = self.deck_controller.ui_grid_buttons_changes_while_hidden
-        for coords, image in tasks.items():
+        for coords, image in list(tasks.items()):
             try:
                 self.buttons[coords[0]][coords[1]].set_image(image)
             except IndexError:

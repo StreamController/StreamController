@@ -30,6 +30,7 @@ import asyncio
 import matplotlib.font_manager
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
 from src.backend.DeckManagement.Subclasses.key_video_cache import VideoFrameCache
+from dataclasses import dataclass
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import *
@@ -51,6 +52,17 @@ if TYPE_CHECKING:
 
 # Import globals
 import globals as gl
+
+@dataclass
+class MediaPlayerTask:
+    deck_controller: "DeckController"
+    page: Page
+    _callable: callable
+    args: tuple
+    kwargs: dict
+
+    def run(self):
+        self._callable(*self.args, **self.kwargs)
 
 
 class DeckController:
@@ -170,19 +182,25 @@ class DeckController:
         self.media_player_running = False
 
     def perform_media_player_tasks(self):
-        tasks = copy(self.media_player_tasks)
-        for task in tasks:
-            _callable = tasks[task]["method"]
-            args = tasks[task]["args"]
-            kwargs = tasks[task]["kwargs"]
-            page = tasks[task]["page"]
+        for task in copy(self.media_player_tasks):
+            _callable = task._callable
+            args = task.args
+            kwargs = task.kwargs
+            page = task.page
 
-            if page is self.active_page:
-                _callable(*args, **kwargs)
+            # Skip task if it has been removed
+            if task not in self.media_player_tasks:
+                return
+            
+            # Remove task from list
+            self.media_player_tasks.remove(task)
 
-            # Remove the task if still in the list - might be removed by clear_media_player_tasks()
-            if task in self.media_player_tasks:
-                del self.media_player_tasks[task]
+            # Skip task if dedicated to another page
+            if page is not self.active_page:
+                continue
+            
+            # Run the task
+            task.run()
 
     def set_deck_key_image(self, key: int, image) -> None:
         with self.deck:
@@ -398,7 +416,17 @@ class DeckController:
         return deck_stack_page.page_settings.grid_page
     
     def clear_media_player_tasks(self):
-        self.media_player_tasks = {}
+        self.media_player_tasks.clear()
+
+    def clear_media_player_tasks_via_task(self):
+        self.media_player_tasks.append(MediaPlayerTask(
+            deck_controller=self,
+            page=self.active_page,
+            _callable=self.clear_media_player_tasks,
+            args=(),
+            kwargs={},
+        ))
+
 
 
 class Background:

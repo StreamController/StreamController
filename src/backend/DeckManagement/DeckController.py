@@ -80,7 +80,7 @@ class DeckController:
         self.screen_saver = ScreenSaver(deck_controller=self)
 
         # Tasks
-        self.media_player_tasks: dict = {}
+        self.media_player_tasks: list[MediaPlayerTask] = []
 
         self.ui_grid_buttons_changes_while_hidden: dict = {}
 

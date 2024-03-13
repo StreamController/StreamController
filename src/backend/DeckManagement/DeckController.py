@@ -144,8 +144,9 @@ class DeckController:
             return
         for i in range(self.deck.key_count()):
             self.update_key(i)
+
     def play_media(self):
-        FPS = 60
+        FPS = 30 # Max refresh rate of the internal displays
         self.media_player_running = True
         while True:
             start = time.time()

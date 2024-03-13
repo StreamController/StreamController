@@ -49,6 +49,8 @@ class DeckStack(Gtk.Stack):
         self.deck_names = []
         self.deck_numbers = []
 
+        self.deck_attributes: dict = {}
+
     def on_switch(self, widget, *args):
         # Update page selector
         self.main_window.sidebar.key_editor.page_selector.update()
@@ -86,7 +88,10 @@ class DeckStack(Gtk.Stack):
 
         self.main_window.reload_sidebar()
             
-    def get_page_attributes(self, deck_controller):
+    def get_page_attributes(self, deck_controller) -> tuple:
+        if deck_controller in self.deck_attributes:
+            return self.deck_attributes[deck_controller]
+        
         deck_type = deck_controller.deck.deck_type()
         try:
             serial_number = deck_controller.deck.get_serial_number()
@@ -98,6 +103,7 @@ class DeckStack(Gtk.Stack):
 
         if deck_type not in self.deck_names:
             self.deck_names.append(deck_type)
+            self.deck_attributes[deck_controller] = deck_number, deck_type
             return deck_number, deck_type
         # name already exists
         while deck_type in self.deck_names:
@@ -105,6 +111,8 @@ class DeckStack(Gtk.Stack):
                 deck_type = deck_type[:-1] + chr(ord(deck_type[-1]) + 1)
             else:
                 deck_type = deck_type + " 2"
+
+        self.deck_attributes[deck_controller] = deck_number, deck_type
 
         return deck_number, deck_type
 

@@ -9,8 +9,14 @@ from StreamDeck.ImageHelpers import PILHelper
 
 VID_CACHE = "vid_cache"
 
+# Import typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.DeckManagement.DeckController import DeckController
+
 class BackgroundVideoCache:
-    def __init__(self, video_path) -> None:
+    def __init__(self, video_path, deck_controller: "DeckController") -> None:
+        self.deck_controller = deck_controller
         self.lock = threading.Lock()
 
         self.video_path = video_path
@@ -22,8 +28,10 @@ class BackgroundVideoCache:
 
         self.video_md5 = self.get_video_hash()
 
-        self.frame_size: tuple[int] = (72, 72)
-        self.spacing = 36
+        self.key_layout = self.deck_controller.deck.key_layout()
+        self.key_count = self.deck_controller.deck.key_count()
+        self.key_size = self.deck_controller.deck.key_image_format()['size']
+        self.spacing = self.deck_controller.spacing
 
         self.load_cache()
 
@@ -69,7 +77,7 @@ class BackgroundVideoCache:
                 full_sized = self.create_full_deck_sized_image(pil_image)
 
                 tiles: list[Image.Image] = []
-                for key in range(15):
+                for key in range(self.key_count):
                     key_image = self.crop_key_image_from_deck_sized_image(full_sized, key)
                     tiles.append(key_image)
 
@@ -86,17 +94,13 @@ class BackgroundVideoCache:
         return self.cache.get(n, tiles)
     
     def create_full_deck_sized_image(self, frame: Image.Image) -> Image.Image:
-        key_rows, key_cols = 3, 5
-        key_width, key_height = 72, 72
-        spacing_x, spacing_y = 36, 36
-
-        key_width *= key_cols
-        key_height *= key_rows
+        key_width *= self.key_layout[0]
+        key_height *= self.key_layout[1]
 
         # Compute the total number of extra non-visible pixels that are obscured by
         # the bezel of the StreamDeck.
-        spacing_x *= key_cols - 1
-        spacing_y *= key_rows - 1
+        spacing_x *= self.key_layout[0] - 1
+        spacing_y *= self.key_layout[1] - 1
 
         # Compute final full deck image size, based on the number of buttons and
         # obscured pixels.
@@ -108,13 +112,10 @@ class BackgroundVideoCache:
         return ImageOps.fit(frame, full_deck_image_size, Image.Resampling.HAMMING)
     
     def crop_key_image_from_deck_sized_image(self, image: Image.Image, key):
-        key_spacing = (36, 36)
         # deck = self.deck_controller.deck
-
-
-        key_rows, key_cols = 3, 5
-        key_width, key_height = 72, 72
-        spacing_x, spacing_y = key_spacing
+        key_rows, key_cols = self.key_layout
+        key_width, key_height = self.key_size
+        spacing_x, spacing_y = self.spacing
 
         # Determine which row and column the requested key is located on.
         row = key // key_cols

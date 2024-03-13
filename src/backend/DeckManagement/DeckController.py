@@ -162,6 +162,8 @@ class DeckController:
 
         self.screen_saver = ScreenSaver(deck_controller=self)
 
+        self.spacing = (36, 36)
+
         # Tasks
         self.media_player_tasks: list[MediaPlayerTask] = []
 
@@ -596,7 +598,7 @@ class BackgroundVideo(BackgroundVideoCache):
 
         self.active_frame: int = -1
 
-        super().__init__(video_path)
+        super().__init__(video_path, deck_controller=deck_controller)
 
     def get_next_tiles(self) -> list[Image.Image]:
         self.active_frame += 1

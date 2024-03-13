@@ -920,6 +920,12 @@ class ControllerKey:
                         fps = page_dict.get("media", {}).get("fps", 30)
                     )) # Videos always update
 
+            elif len(self.get_own_actions()) > 1:
+                self.set_key_image(KeyImage(
+                    controller_key=self,
+                    image=Image.open(os.path.join("Assets", "images", "multi_action.png")),
+                ), update=False)
+
         if load_background_color:
             self.background_color = page_dict.get("background", {}).get("color", [0, 0, 0, 0])
             # Ensure the background color has an alpha channel

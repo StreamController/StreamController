@@ -122,6 +122,10 @@ class ActionBase:
             }
 
     def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, update: bool = True):
+        # Block for multi actions
+        if self.get_is_multi_action():
+            return
+        
         if is_image(media_path):
             with Image.open(media_path) as img:
                 image = img.copy()
@@ -232,3 +236,7 @@ class ActionBase:
 
     def get_own_key(self) -> "ControllerKey":
         return self.deck_controller.keys[self.key_index]
+    
+    def get_is_multi_action(self) -> bool:
+        actions = self.page.action_objects[self.page_coords]
+        return len(actions) > 1

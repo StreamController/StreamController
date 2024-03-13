@@ -212,10 +212,11 @@ class RemoveButton(Gtk.Button):
         page = controller.active_page
 
         # Swtich to main editor page
-        self.configurator.sidebar.set_visible_child_name("key_editor")
+        self.configurator.sidebar.main_stack.set_visible_child_name("key_editor")
 
         # Remove from action_objects
         del page.action_objects[self.action.page_coords][self.index]
+        page.fix_action_objects_order(self.action.page_coords)
 
         # Remove from page json
         page.dict["keys"][self.action.page_coords]["actions"].pop(self.index)
@@ -227,7 +228,8 @@ class RemoveButton(Gtk.Button):
         # Check whether we have to reload the key
         load = not page.has_key_an_image_controlling_action(self.action.page_coords)
         if load:
-            controller.load_key(self.action.page_coords, page=page)
+            key_index = page.deck_controller.coords_to_index(self.action.page_coords.split("x"))
+            controller.load_key(key_index, page=page)
             # Reload key on similar pages
             page.reload_similar_pages(page_coords=self.action.page_coords)
 

@@ -263,13 +263,33 @@ class Page:
     def get_action_comment(self, page_coords: str, index: int):
         if page_coords in self.action_objects:
             if index in self.action_objects[page_coords]:
-                return self.dict["keys"][page_coords]["actions"][index].get("comment")
+                try:
+                    return self.dict["keys"][page_coords]["actions"][index].get("comment")
+                except:
+                    return ""
             
     def set_action_comment(self, page_coords: str, index: int, comment: str):
         if page_coords in self.action_objects:
             if index in self.action_objects[page_coords]:
                 self.dict["keys"][page_coords]["actions"][index]["comment"] = comment
                 self.save()
+
+    def fix_action_objects_order(self, page_coords) -> None:
+        """
+        #TODO: Switch to list instead of dict to avoid this
+        """
+        if page_coords not in self.action_objects:
+            return
+        
+        actions = list(self.action_objects[page_coords].values())
+
+        d = self.dict.copy()
+
+        self.action_objects[page_coords] = {}
+        for i, action in enumerate(actions):
+            self.action_objects[page_coords][i] = action
+
+        new_d = self.dict
 
 class NoActionHolderFound:
     def __init__(self, id: str):

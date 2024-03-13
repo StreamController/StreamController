@@ -181,3 +181,6 @@ class PluginBase:
                 self._backend = None
         except Exception as e:
             log.error(e)
+
+    def ping(self) -> bool:
+        return True

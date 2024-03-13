@@ -26,12 +26,6 @@ if TYPE_CHECKING:
 @Pyro5.api.expose
 class ActionBase:
     # Change to match your action
-    ACTION_ID: str = None
-    ACTION_NAME: str = None
-    CONTROLS_KEY_IMAGE: bool = False
-    KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
-    LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
-
     def __init__(self, action_id: str, action_name: str,
                  deck_controller: "DeckController", page: Page, coords: str, plugin_base: "PluginBase"):
         self._backend: Pyro5.api.Proxy = None
@@ -47,6 +41,10 @@ class ActionBase:
 
         self.on_ready_called = False
 
+        self.CONTROLS_KEY_IMAGE: bool = False
+        self.KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
+        self.LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
+
         self.labels = {}
         self.current_key = {
             "key": self.key_index,
@@ -58,7 +56,7 @@ class ActionBase:
 
         self.locale_manager: LocaleManager = None
 
-        log.info(f"Loaded action {self.ACTION_NAME}")
+        log.info(f"Loaded action {self.action_name} with id {self.action_id}")
         
     def set_deck_controller(self, deck_controller):
         """

@@ -72,3 +72,15 @@ class SettingsManager:
         """
         path = os.path.join(gl.DATA_PATH, "settings", "decks", f"{deck_serial_number}.json")
         self.save_settings_to_file(path, settings)
+
+    def get_app_settings(self) -> dict:
+        path = os.path.join(gl.DATA_PATH, "settings", "settings.json")
+        settings =  self.load_settings_from_file(path)
+        if settings == None:
+            settings = {}
+            self.save_settings_to_file(path, settings)
+        return settings
+    
+    def save_app_settings(self, settings: dict) -> None:
+        path = os.path.join(gl.DATA_PATH, "settings", "settings.json")
+        self.save_settings_to_file(path, settings)

@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from copy import copy
 import os
 import random
+import statistics
 from threading import Timer
 import threading
 import time
@@ -78,6 +79,11 @@ class MediaPlayerThread(threading.Thread):
 
         self.tasks: list[MediaPlayerTask] = []
 
+        self.fps: list[float] = []
+        self.old_warning_state = False
+
+        self.show_fps_warnings = gl.settings_manager.get_app_settings().get("warnings", {}).get("enable-fps-warnings", True)
+
     def run(self):
         self.running = True
         while True:
@@ -106,6 +112,8 @@ class MediaPlayerThread(threading.Thread):
             # Wait for approximately 1/30th of a second before the next call
             end = time.time()
             # print(f"possible FPS: {1 / (end - start)}")
+            self.append_fps(1 / (end - start))
+            self.update_low_fps_warning()
             wait = max(0, 1/self.FPS - (end - start))
             time.sleep(wait)
 
@@ -113,6 +121,42 @@ class MediaPlayerThread(threading.Thread):
                 break
 
         self.running = False
+
+    def append_fps(self, fps: float) -> None:
+        self.fps.append(fps)
+        if len(self.fps) > self.FPS *2:
+            self.fps.pop(0)
+
+    def get_median_fps(self) -> float:
+        return statistics.median(self.fps)
+    
+    def update_low_fps_warning(self):
+        if not self.show_fps_warnings:
+            return
+        
+        show_warning = self.get_median_fps() < self.FPS * 0.8
+        if self.old_warning_state == show_warning:
+            return
+        self.old_warning_state = show_warning
+
+        self.set_banner_revealed(show_warning)
+
+
+    def set_show_fps_warnings(self, state: bool) -> None:
+        self.show_fps_warnings = state
+        if state:
+            self.old_warning_state = False
+        else:
+            self.set_banner_revealed(False)
+
+    def set_banner_revealed(self, state: bool) -> None:
+        deck_stack_child: "DeckStackChild" = self.deck_controller.get_own_deck_stack_child()
+        if deck_stack_child is None:
+            return
+        
+        # deck_stack_child.low_fps_banner.set_revealed(show_warning)
+        GLib.idle_add(deck_stack_child.low_fps_banner.set_revealed, state)
+
 
     def stop(self) -> None:
         self._stop = True
@@ -431,14 +475,32 @@ class DeckController:
         if not self.get_alive(): return {}
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())
     
-    def get_own_key_grid(self) -> KeyGrid:
+    def get_own_deck_stack_child(self) -> "DeckStackChild":
+        # Why not just lru_cache this? Because this would also cache the None that gets returned while the ui is still loading
+        if self.own_deck_stack_child is not None:
+            return self.own_deck_stack_child
+        
         if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"): return
         serial_number = self.deck.get_serial_number()
         deck_stack = gl.app.main_win.leftArea.deck_stack
-        deck_stack_page = deck_stack.get_child_by_name(serial_number)
-        if deck_stack_page == None:
+        deck_stack_child = deck_stack.get_child_by_name(serial_number)
+        if deck_stack_child == None:
             return
-        return deck_stack_page.page_settings.grid_page
+        
+        self.own_deck_stack_child = deck_stack_child
+        return deck_stack_child
+    
+    def get_own_key_grid(self) -> KeyGrid:
+        # Why not just lru_cache this? Because this would also cache the None that gets returned while the ui is still loading
+        if self.own_key_grid is not None:
+            return self.own_key_grid
+        
+        deck_stack_child = self.get_own_deck_stack_child()
+        if deck_stack_child == None:
+            return
+        
+        self.own_key_grid = deck_stack_child.page_settings.grid_page
+        return deck_stack_child.page_settings.grid_page
     
     def clear_media_player_tasks(self):
         self.media_player_tasks.clear()

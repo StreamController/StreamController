@@ -71,13 +71,18 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.emulate_row = Adw.SwitchRow(title=gl.lm.get("settings-emulate-at-double-click"), active=True)
         self.add(self.emulate_row)
 
+        self.enable_fps_warnings_row = Adw.SwitchRow(title=gl.lm.get("settings-enable-fps-warnings"), active=True)
+        self.add(self.enable_fps_warnings_row)
+
         self.load_defaults()
 
         # Connect signals
         self.emulate_row.connect("notify::active", self.on_emulate_row_toggled)
+        self.enable_fps_warnings_row.connect("notify::active", self.on_enable_fps_warnings_row_toggled)
 
     def load_defaults(self):
         self.emulate_row.set_active(self.settings.settings_json.get("key-grid", {}).get("emulate-at-double-click", True))
+        self.enable_fps_warnings_row.set_active(self.settings.settings_json.get("warnings", {}).get("enable-fps-warnings", True))
 
     def on_emulate_row_toggled(self, *args):
         self.settings.settings_json.setdefault("key-grid", {})
@@ -85,6 +90,17 @@ class UIPageGroup(Adw.PreferencesGroup):
 
         # Save
         self.settings.save_json()
+
+    def on_enable_fps_warnings_row_toggled(self, *args):
+        self.settings.settings_json.setdefault("warnings", {})
+        self.settings.settings_json["warnings"]["enable-fps-warnings"] = self.enable_fps_warnings_row.get_active()
+
+        # Save
+        self.settings.save_json()
+
+        # Inform all deck controllers
+        for controller in gl.deck_manager.deck_controller:
+            controller.media_player.set_show_fps_warnings(self.enable_fps_warnings_row.get_active())
 
 
 class DevPage(Adw.PreferencesPage):

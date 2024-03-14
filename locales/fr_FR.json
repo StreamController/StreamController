@@ -96,5 +96,9 @@
     "deck.fake-deck-group.title": "Fake Deck",
     "deck.fake-deck-group.description": "Configuration du Fake Deck",
     "deck.fake-deck-group.layout.columns.label": "Colonnes",
-    "deck.fake-deck-group.layout.rows.label": "Rangees"
+    "deck.fake-deck-group.layout.rows.label": "Rangees",
+    "warning.low-fps": "Faible FPS détecté. Peut-être dû à votre vidéo d'arrière-plan. Le problème pourrait disparaître après mise en cache.",
+    "warning.low-fps.fix": "Désactiver",
+    "warning.dismiss": "Décrisser",
+    "enable-fps-warnings": "Activer les avertissements FPS"
 }

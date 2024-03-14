@@ -107,5 +107,9 @@
     "deck.fake-deck-group.title": "Fake Deck",
     "deck.fake-deck-group.description": "Configure fake deck settings",
     "deck.fake-deck-group.layout.columns.label": "Columns",
-    "deck.fake-deck-group.layout.rows.label": "Rows"
+    "deck.fake-deck-group.layout.rows.label": "Rows",
+    "warning.low-fps": "Low FPS detected. This might be caused by your background video. This may dissapear after the caching is finished.",
+    "warning.low-fps.fix": "Deactivate",
+    "warning.dismiss": "Dismiss",
+    "enable-fps-warnings": "Enable FPS warnings"
 }

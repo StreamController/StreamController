@@ -128,7 +128,7 @@ class ActionBase:
             with Image.open(media_path) as img:
                 image = img.copy()
 
-        if image is not None:
+        if image is not None or media_path is None:
             self.deck_controller.keys[self.key_index].set_key_image(KeyImage(
                 controller_key=self.deck_controller.keys[self.key_index],
                 image=image,
@@ -136,7 +136,7 @@ class ActionBase:
                 valign=valign,
                 halign=halign
             ), update=False)
-        if is_video(media_path):
+        elif is_video(media_path):
             self.deck_controller.keys[self.key_index].set_key_video(KeyVideo(
                 controller_key=self.deck_controller.keys[self.key_index],
                 video_path=media_path,

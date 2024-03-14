@@ -141,10 +141,10 @@ class KeyEditor(Gtk.Box):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.scrolled_window.set_child(self.main_box)
 
-        self.icon_selector = IconSelector(sidebar, halign=Gtk.Align.CENTER, margin_top=75)
+        self.icon_selector = IconSelector(sidebar, halign=Gtk.Align.CENTER, margin_top=40)
         self.main_box.append(self.icon_selector)
 
-        self.image_editor = ImageEditor(sidebar, margin_top=25)
+        self.image_editor = ImageEditor(sidebar, margin_top=100)
         self.main_box.append(self.image_editor)
 
         self.background_editor = BackgroundEditor(sidebar, margin_top=25)

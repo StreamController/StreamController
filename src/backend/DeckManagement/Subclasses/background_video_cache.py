@@ -36,6 +36,7 @@ class BackgroundVideoCache:
         self.video_md5 = self.get_video_hash()
 
         self.key_layout = self.deck_controller.deck.key_layout()
+        self.key_layout_str = f"{self.key_layout[0]}x{self.key_layout[1]}"
         self.key_count = self.deck_controller.deck.key_count()
         self.key_size = self.deck_controller.deck.key_image_format()['size']
         self.spacing = self.deck_controller.spacing
@@ -165,7 +166,7 @@ class BackgroundVideoCache:
             return
         
         start = time.time()
-        cache_path = os.path.join(VID_CACHE, "3x5", f"{self.video_md5}.cache")
+        cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
         os.makedirs(os.path.dirname(cache_path), exist_ok=True)
 
         data = self.cache.copy()
@@ -179,7 +180,7 @@ class BackgroundVideoCache:
 
 
     def load_cache(self, key_index: int = None):
-        cache_path = os.path.join(VID_CACHE, "3x5", f"{self.video_md5}.cache")
+        cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
         if not os.path.exists(cache_path):
             return
         
@@ -202,7 +203,7 @@ class BackgroundVideoCache:
             return False
         
         for key in self.cache:
-            if len(self.cache[key]) != 15:
+            if len(self.cache[key]) != self.key_count:
                 return False
 
         return True

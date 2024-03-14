@@ -570,11 +570,11 @@ class StoreBackend:
 
         # Run install script if present
         if os.path.isfile(os.path.join(local_path, "__install__.py")):
-            subprocess.Popen(f"python3 {os.path.join(local_path, '__install__.py')}", shell=True, start_new_session=True)
+            subprocess.run(f"python3 {os.path.join(local_path, '__install__.py')}", shell=True, start_new_session=True)
 
         # Install requirements from requirements.txt
         if os.path.isfile(os.path.join(local_path, "requirements.txt")):
-            subprocess.Popen(f"pip install -r {os.path.join(local_path, 'requirements.txt')}", shell=True, start_new_session=True)
+            subprocess.run(f"pip install -r {os.path.join(local_path, 'requirements.txt')}", shell=True, start_new_session=True)
             
         if response == 404:
             return 404

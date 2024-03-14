@@ -931,6 +931,9 @@ class ControllerKey:
             self.hide_error_timer = None
 
     def load_from_page_dict(self, page_dict, update: bool = True, load_labels: bool = True, load_media: bool = True, load_background_color: bool = True):
+        """
+        Attention: Disabling load_media might result into disabling custom user assets
+        """
         if page_dict in [None, {}]:
             self.clear(update=update)
             return
@@ -1064,8 +1067,11 @@ class ControllerKey:
 
 
     def own_actions_ready(self) -> None:
+        start = time.time()
         for action in self.get_own_actions():
             action.on_ready()
+            action.on_ready_called = True
+        log.info(f"Actions ready took {time.time() - start} seconds")
 
     def own_actions_key_down(self) -> None:
         for action in self.get_own_actions():

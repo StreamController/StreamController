@@ -1116,6 +1116,9 @@ class KeyImage:
         self.valign = valign
         self.halign = halign
 
+        if self.image is None:
+            self.image = self.controller_key.deck_controller.generate_alpha_key()
+
     def get_composite_image(self, background: Image.Image = None) -> Image.Image:
         if background is None:
             background = self.controller_key.deck_controller.generate_alpha_key()

@@ -203,6 +203,9 @@ class DeckController:
             log.error(f"Failed to reset deck, maybe it's already connected to another instance? Skipping... Error: {e}")
             del self
             return
+        
+        self.own_deck_stack_child: "DeckStackChild" = None
+        self.own_key_grid: "KeyGridChild" = None
 
         self.screen_saver = ScreenSaver(deck_controller=self)
 

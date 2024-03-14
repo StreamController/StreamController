@@ -71,7 +71,7 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.emulate_row = Adw.SwitchRow(title=gl.lm.get("settings-emulate-at-double-click"), active=True)
         self.add(self.emulate_row)
 
-        self.enable_fps_warnings_row = Adw.SwitchRow(title=gl.lm.get("settings-enable-fps-warnings"), active=True)
+        self.enable_fps_warnings_row = Adw.SwitchRow(title=gl.lm.get("settings.enable-fps-warnings"), active=True)
         self.add(self.enable_fps_warnings_row)
 
         self.load_defaults()

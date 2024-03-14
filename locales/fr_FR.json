@@ -100,5 +100,5 @@
     "warning.low-fps": "Faible FPS détecté. Peut-être dû à votre vidéo d'arrière-plan. Le problème pourrait disparaître après mise en cache.",
     "warning.low-fps.fix": "Désactiver",
     "warning.dismiss": "Décrisser",
-    "enable-fps-warnings": "Activer les avertissements FPS"
+    "settings.enable-fps-warnings": "Activer les avertissements FPS"
 }

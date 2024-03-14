@@ -110,5 +110,5 @@
     "warning.low-fps": "Niedrige FPS erkannt. Dies kann durch Hintergrundvideos verursacht werden. Nach dem Caching kann diese Warnung verschwinden.",
     "warning.low-fps.fix": "Deaktivieren",
     "warning.dismiss": "Verwerfen",
-    "enable-fps-warnings": "FPS Warnungen aktivieren"
+    "settings.enable-fps-warnings": "FPS Warnungen aktivieren"
 }

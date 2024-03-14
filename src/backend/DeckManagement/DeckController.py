@@ -943,7 +943,7 @@ class ControllerKey:
         if load_labels:
             self.labels = {}
 
-        self.own_actions_ready()
+        self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
 
         ## Load labels
         if load_labels:

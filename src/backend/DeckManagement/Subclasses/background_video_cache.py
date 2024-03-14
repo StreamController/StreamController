@@ -164,6 +164,7 @@ class BackgroundVideoCache:
         """
         if self.cache_stored:
             return
+        self.cache_stored = True
         
         start = time.time()
         cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
@@ -176,7 +177,6 @@ class BackgroundVideoCache:
 
         log.success(f"Saved cache in {time.time() - start:.2f} seconds")
         self.last_save = time.time()
-        self.cache_stored = True
 
 
     def load_cache(self, key_index: int = None):

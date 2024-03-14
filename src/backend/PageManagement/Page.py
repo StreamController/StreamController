@@ -14,12 +14,19 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import os
 import json
+import threading
+import time
 from loguru import logger as log
 from copy import copy
 import shutil
 
 # Import globals
 import globals as gl
+
+# Import typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.PluginManager.ActionHolder import ActionHolder
 
 class Page:
     def __init__(self, json_path, deck_controller, *args, **kwargs):
@@ -87,6 +94,8 @@ class Page:
         # Store loaded action objects
         self.loaded_action_objects = copy(self.action_objects)
 
+        add_threads: list[threading.Thread] = []
+
         # Load action objects
         self.action_objects = {}
         for key in self.dict.get("keys", {}):
@@ -118,8 +127,23 @@ class Page:
                         self.action_objects[key][i] = self.loaded_action_objects[key][i]
                         continue
 
-                action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
-                self.action_objects[key][i] = action_object
+                # action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
+                # self.action_objects[key][i] = action_object
+                thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, key, i))
+                thread.start()
+                add_threads.append(thread)
+
+        all_threads_finished = False
+        while not all_threads_finished:
+            for thread in add_threads:
+                if thread.is_alive():
+                    time.sleep(0.01)
+                    continue
+            all_threads_finished = True
+
+    def add_action_object_from_holder(self, action_holder: "ActionHolder", key: str, i: int):
+        action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
+        self.action_objects[key][i] = action_object
 
     def remove_plugin_action_objects(self, plugin_id: str) -> bool:
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)

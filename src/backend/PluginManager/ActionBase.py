@@ -120,6 +120,9 @@ class ActionBase:
             }
 
     def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, update: bool = True):
+        if not self.on_ready_called:
+            update = False
+
         # Block for multi actions
         if self.get_is_multi_action():
             return
@@ -151,6 +154,8 @@ class ActionBase:
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18, update: bool = True):
+        if not self.on_ready_called:
+            update = False
         
         self.labels[position] = {
             "text": text,

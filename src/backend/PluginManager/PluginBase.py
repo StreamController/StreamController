@@ -139,12 +139,13 @@ class PluginBase:
         ## Launch
         command = ""
         if venv_path is not None:
-            command = f"source {venv_path}/bin/activate && "
+            command = f"kitty --hold -- bash -c 'source {venv_path}/bin/activate && "
         command += "python3 "
         command += f"{backend_path}"
-        command += f" --uri={uri}"
-
+        command += f" --uri={uri}'"
+        print(command)
         subprocess.Popen(command, shell=True, start_new_session=True)
+        print()
 
     def add_to_pyro(self) -> str:
         daemon = gl.plugin_manager.pyro_daemon

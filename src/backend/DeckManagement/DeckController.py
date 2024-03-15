@@ -560,7 +560,7 @@ class Background:
         if update:
             self.deck_controller.update_all_keys()
 
-    def set_from_path(self, path: str, update: bool = True) -> None:
+    def set_from_path(self, path: str, update: bool = True, allow_keep: bool = True) -> None:
         if path == "":
             path = None
         if path is None:
@@ -570,6 +570,10 @@ class Background:
             if update:
                 self.deck_controller.update_all_keys()
         elif is_video(path):
+            if allow_keep:
+                if self.video is not None and self.video.video_path == path:
+                    self.video.page = self.deck_controller.active_page
+                    return
             self.set_video(BackgroundVideo(self.deck_controller, path), update=update)
         else:
             self.set_image(BackgroundImage(self.deck_controller, Image.open(path)), update=update)

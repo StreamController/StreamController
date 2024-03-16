@@ -156,7 +156,10 @@ class ActionBase:
                       font_family: str = "", font_size = 18, update: bool = True):
         if not self.on_ready_called:
             update = False
-        
+
+        if text is None:
+            text = ""
+
         self.labels[position] = {
             "text": text,
             "color": color,

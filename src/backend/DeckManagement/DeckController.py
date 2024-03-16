@@ -1092,6 +1092,9 @@ class ControllerKey:
 
 class KeyLabel:
     def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 16, font_name: str = None, color: list[int] = [255, 255, 255, 255], font_weight: int = 1):
+        if text is None:
+            text = ""
+
         self.controller_key = controller_key
         self.text = text
         self.font_size = font_size

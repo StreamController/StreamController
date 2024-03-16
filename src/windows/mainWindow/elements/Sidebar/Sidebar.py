@@ -15,7 +15,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import os
 import gi
-from numpy import half
 
 from src.windows.mainWindow.elements.PageSelector import PageSelector
 

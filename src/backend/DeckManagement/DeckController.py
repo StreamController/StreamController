@@ -864,13 +864,13 @@ class ControllerKey:
                 continue
             
             if label == "top":
-                position = (image.width / 2, font_size - 3)
+                position = (image.width / 2, font_size*1.125)
 
             if label == "center":
                 position = (image.width / 2, (image.height + font_size) / 2 - 3)
 
             if label == "bottom":
-                position = (image.width / 2, image.height - 3)
+                position = (image.width / 2, image.height*0.875)
 
             draw.text(position,
                         text=text, font=font, anchor="ms",

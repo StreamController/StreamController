@@ -107,7 +107,7 @@ class PageManager(Gtk.ApplicationWindow):
         self.page_box.append(PageButton(page_manager=self, page_path=path))
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.PageAdd, path= path)
+        gl.signal_manager.trigger_signal(signal=Signals.PageAdd, path=path)
 
     def on_search_changed(self, *args):
         self.page_box.invalidate_filter()

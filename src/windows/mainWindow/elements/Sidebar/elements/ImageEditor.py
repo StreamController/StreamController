@@ -118,7 +118,7 @@ class SizeRow(Adw.PreferencesRow):
 
         deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        self.size_spinner.set_value(deck_controller.active_page.dict.get("keys").get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("size", 1) * 100)
+        self.size_spinner.set_value(deck_controller.active_page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("size", 1) * 100)
 
         self.connect_signals()
 
@@ -169,7 +169,7 @@ class ValignRow(Adw.PreferencesRow):
 
         deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        self.valign_spinner.set_value(deck_controller.active_page.dict.get("keys").get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("valign", 0))
+        self.valign_spinner.set_value(deck_controller.active_page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("valign", 0))
 
         self.connect_signals()
 
@@ -221,7 +221,7 @@ class HalignRow(Adw.PreferencesRow):
 
         deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        self.halign_spinner.set_value(deck_controller.active_page.dict.get("keys").get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("halign", 0))
+        self.halign_spinner.set_value(deck_controller.active_page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("halign", 0))
 
         self.connect_signals()
 

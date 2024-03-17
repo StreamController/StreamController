@@ -50,7 +50,7 @@ class MediaManager:
             cached = False
 
         if cached:
-            with Image.open() as img:
+            with Image.open(thumbnail_path) as img:
                 image = img.copy()
             return image
         else:

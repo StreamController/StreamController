@@ -579,7 +579,8 @@ class Background:
                     return
             self.set_video(BackgroundVideo(self.deck_controller, path), update=update)
         else:
-            self.set_image(BackgroundImage(self.deck_controller, Image.open(path)), update=update)
+            with Image.open(path) as image:
+                self.set_image(BackgroundImage(self.deck_controller, image.copy()), update=update)
 
     def update_tiles(self) -> None:
         if self.image is not None:
@@ -978,14 +979,15 @@ class ControllerKey:
             if path not in ["", None]:
                 print(f"media on key {self.key} is {path}")
                 if is_image(path):
-                    self.set_key_image(KeyImage(
-                        controller_key=self,
-                        image=Image.open(path),
-                        fill_mode=page_dict.get("media", {}).get("fill-mode", "cover"),
-                        size=page_dict.get("media", {}).get("size", 1),
-                        valign=page_dict.get("media", {}).get("valign", 0),
-                        halign=page_dict.get("media", {}).get("halign", 0),
-                    ), update=False)
+                    with Image.open(path) as image:
+                        self.set_key_image(KeyImage(
+                            controller_key=self,
+                            image=image.copy(),
+                            fill_mode=page_dict.get("media", {}).get("fill-mode", "cover"),
+                            size=page_dict.get("media", {}).get("size", 1),
+                            valign=page_dict.get("media", {}).get("valign", 0),
+                            halign=page_dict.get("media", {}).get("halign", 0),
+                        ), update=False)
 
                 elif is_video(path) and True:
                     self.set_key_video(KeyVideo(

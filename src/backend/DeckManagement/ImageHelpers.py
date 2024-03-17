@@ -46,7 +46,8 @@ def create_full_deck_sized_image(deck, image_filename = None, image = None):
         # helper function in Pillow's ImageOps module so that the image's aspect
         # ratio is preserved.
         if image_filename != None:
-            image = Image.open(image_filename).convert("RGBA")
+            with Image.open(image_filename) as image:
+                image = image.copy().convert("RGBA")
         elif image != None:
             image = image.convert("RGBA")
         image = ImageOps.fit(image, full_deck_image_size, Image.Resampling.LANCZOS)

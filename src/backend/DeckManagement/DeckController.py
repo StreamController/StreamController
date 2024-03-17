@@ -385,6 +385,8 @@ class DeckController:
             self.load_key(key.key, page, update)
 
     def load_key(self, key: int, page: Page, update: bool = True, load_labels: bool = True, load_media: bool = True):
+        if key >= self.deck.key_count():
+            return
         coords = self.index_to_coords(key)
         key_dict = page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {})
         self.keys[key].load_from_page_dict(key_dict, update, load_labels, load_media)

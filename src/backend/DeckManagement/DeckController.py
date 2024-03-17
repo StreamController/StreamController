@@ -1137,9 +1137,19 @@ class KeyImage:
         if self.image is None:
             self.image = self.controller_key.deck_controller.generate_alpha_key()
 
+        try:
+            # Raises an exception if self.image is not valid
+            self.image.verify()
+        except:
+            # log.warning("Set image is not valid, clearing...") #TODO: maybe keep old one if that happens
+            self.image = self.controller_key.deck_controller.generate_alpha_key()
+
     def get_composite_image(self, background: Image.Image = None) -> Image.Image:
         if background is None:
             background = self.controller_key.deck_controller.generate_alpha_key()
+
+        if self.image is None:
+            self.image = self.controller_key.deck_controller.generate_alpha_key()
 
         # Calculate the box where the inner image should be fitted
         img_size = self.controller_key.deck_controller.get_key_image_size()

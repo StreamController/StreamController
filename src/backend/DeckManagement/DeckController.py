@@ -1043,6 +1043,8 @@ class ControllerKey:
         active_page = self.deck_controller.active_page
         if active_page is None:
             return []
+        if active_page.action_objects is None:
+            return []
         own_coords = self.deck_controller.index_to_coords(self.key)
         page_coords = f"{own_coords[0]}x{own_coords[1]}"
 

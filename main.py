@@ -42,6 +42,7 @@ from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPa
 from src.windows.Store.StoreBackend import StoreBackend
 from autostart import setup_autostart
 from src.Signals.SignalManager import SignalManager
+from src.backend.DesktopGrabber import DesktopGrabber
 
 # Import globals
 import globals as gl
@@ -90,11 +91,12 @@ def create_global_objects():
     gl.argparser.add_argument("-b", help="Open in background", action="store_true")
     gl.argparser.add_argument("app_args", nargs="*")
 
+    gl.settings_manager = SettingsManager()
+
     gl.signal_manager = SignalManager()
 
     gl.media_manager = MediaManager()
     gl.asset_manager = AssetManager()
-    gl.settings_manager = SettingsManager()
     gl.page_manager = PageManager(gl.settings_manager)
     gl.icon_pack_manager = IconPackManager()
     gl.wallpaper_pack_manager = WallpaperPackManager()
@@ -106,6 +108,9 @@ def create_global_objects():
     gl.plugin_manager = PluginManager()
     gl.plugin_manager.load_plugins()
     gl.plugin_manager.generate_action_index()
+
+    
+    gl.dekstop_grabber = DesktopGrabber()
 
 def update_assets():
     settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))

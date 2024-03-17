@@ -236,6 +236,9 @@ class DeckController:
         self.tick_timer = Timer(self.TICK_DELAY, self.tick_actions)
         self.tick_timer.start()
 
+        self.page_auto_loaded: bool = False
+        self.last_manual_loaded_page_path: str = None
+
         self.load_default_page()
 
     def init_keys(self):

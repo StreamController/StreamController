@@ -407,9 +407,14 @@ class DeckController:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
 
 
-    def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
+    def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
+                  allow_reload: bool = True):
         if not self.get_alive(): return
 
+        if not allow_reload:
+            if self.active_page is page:
+                return
+        
         old_path = self.active_page.json_path if self.active_page is not None else None
         self.active_page = page
 

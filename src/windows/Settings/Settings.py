@@ -40,10 +40,12 @@ class Settings(Adw.PreferencesWindow):
         self.ui_page = UIPage(settings=self)
         self.store_page = StorePage(settings=self)
         self.dev_page = DevPage(settings=self)
+        self.performance_page = PerformancePage(settings=self)
 
         self.add(self.ui_page)
         self.add(self.store_page)
         self.add(self.dev_page)
+        self.add(self.performance_page)
 
     def load_json(self):
         # Load settings from file
@@ -173,3 +175,42 @@ class StorePageGroup(Adw.PreferencesGroup):
 
         # Save
         self.settings.save_json()
+
+class PerformancePage(Adw.PreferencesPage):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__()
+        self.set_title(gl.lm.get("settings.performance.title"))
+        self.set_icon_name("speedometer")
+
+        self.add(PerformancePageGroup(settings=settings))
+
+class PerformancePageGroup(Adw.PreferencesGroup):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__(title=gl.lm.get("settings.performance.header"))
+
+        self.n_cached_pages = Adw.SpinRow.new_with_range(min=0, max=50, step=1)
+        self.n_cached_pages.set_title(gl.lm.get("settings.performance.n-cached-pages.title"))
+        self.n_cached_pages.set_subtitle(gl.lm.get("settings.performance.n-cached-pages.subtitle"))
+        self.n_cached_pages.set_tooltip_text(gl.lm.get("settings.performance.n-cached-pages.tooltip"))
+        self.add(self.n_cached_pages)
+
+        self.load_defaults()
+
+        # Connect signals
+        self.n_cached_pages.connect("changed", self.on_n_cached_pages_changed)
+
+    def load_defaults(self):
+        settings = self.settings.settings_json
+        self.n_cached_pages.set_value(settings.get("performance", {}).get("n-cached-pages", 3))
+
+    def on_n_cached_pages_changed(self, *args):
+        self.settings.settings_json.setdefault("performance", {})
+        self.settings.settings_json["performance"]["n-cached-pages"] = int(self.n_cached_pages.get_value())
+
+        # Save
+        self.settings.save_json()
+
+        # Update value in page manager
+        gl.page_manager.set_n_pages_to_cache(int(self.n_cached_pages.get_value()))

@@ -100,5 +100,10 @@
     "warning.low-fps": "Faible FPS détecté. Peut-être dû à votre vidéo d'arrière-plan. Le problème pourrait disparaître après mise en cache.",
     "warning.low-fps.fix": "Désactiver",
     "warning.dismiss": "Décrisser",
-    "settings.enable-fps-warnings": "Activer les avertissements FPS"
+    "settings.enable-fps-warnings": "Activer les avertissements FPS",
+    "settings.performance.title": "Performance",
+    "settings.performance.header": "Performance & Optimisations",
+    "settings.performance.n-cached-pages.title": "Nombre de pages en cache",
+    "settings.performance.n-cached-pages.subtitle": "Nombre de pages à garder en cache",
+    "settings.performance.n-cached-pages.tooltip": "Un nombre plus élevé signifie une utilisation de mémoire plus importante mais un chargement de page plus rapide."
 }

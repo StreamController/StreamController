@@ -31,8 +31,23 @@ class PageManager:
         self.settings_manager = settings_manager
 
         self.created_pages = {}
+        self.created_pages_order = []
+
+        self.max_pages = 3
+
+        settings = gl.settings_manager.get_app_settings()
+        self.set_n_pages_to_cache(int(settings.get("performance", {}).get("n-cached-pages", self.max_pages)))
+
+        self.page_number: int = 0
 
         self.custom_pages = []
+
+    def set_n_pages_to_cache(self, n_pages):
+        old_max_pages = self.max_pages
+        self.max_pages = n_pages + 1 # +1 to keep the active page
+
+        if old_max_pages > self.max_pages:
+            self.clear_old_cached_pages()
 
     def save_pages(self) -> None:
         for page in self.pages.values():
@@ -64,15 +79,41 @@ class PageManager:
             return None
         page = Page(json_path=path, deck_controller=deck_controller)
         self.created_pages.setdefault(deck_controller, {})
-        self.created_pages[deck_controller][path] = page
+        self.created_pages[deck_controller][path] = {
+            "page": page,
+            "page_number": self.page_number
+        }
+        self.page_number += 1
+
         return page
     
     def get_page(self, path: str, deck_controller: "DeckController") -> Page:
         if deck_controller in self.created_pages:
             if path in self.created_pages[deck_controller]:
-                return self.created_pages[deck_controller][path]
-            
-        return self.create_page(path, deck_controller)
+                self.created_pages[deck_controller][path]["page_number"] = self.page_number
+                self.page_number += 1
+                return self.created_pages[deck_controller][path]["page"]
+        
+        new_page = self.create_page(path, deck_controller)
+        self.clear_old_cached_pages()
+        return new_page
+
+    def clear_old_cached_pages(self):
+        n_pages = 0
+        for controller in self.created_pages:
+            for p in self.created_pages[controller]:
+                n_pages += 1
+
+        for _ in range(n_pages - self.max_pages):
+            if n_pages > self.max_pages:
+                # Remove entry with lowest page number
+                lowest_page = min(self.created_pages[controller][p]["page_number"] for controller in self.created_pages for p in self.created_pages[controller])
+                for controller in self.created_pages:
+                    for p in self.created_pages[controller]:
+                        if self.created_pages[controller][p]["page_number"] == lowest_page:
+                            del self.created_pages[controller][p]
+                            break
+
 
     def get_default_page_for_deck(self, serial_number: str) -> str:
         page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))

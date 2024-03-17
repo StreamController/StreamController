@@ -111,5 +111,10 @@
     "warning.low-fps": "Low FPS detected. This might be caused by your background video. This may dissapear after the caching is finished.",
     "warning.low-fps.fix": "Deactivate",
     "warning.dismiss": "Dismiss",
-    "settings.enable-fps-warnings": "Enable FPS warnings"
+    "settings.enable-fps-warnings": "Enable FPS warnings",
+    "settings.performance.title": "Performance",
+    "settings.performance.header": "Performance & Optimizations",
+    "settings.performance.n-cached-pages.title": "Number of cached pages",
+    "settings.performance.n-cached-pages.subtitle": "Number of pages to keep in cache",
+    "settings.performance.n-cached-pages.tooltip": "A higher number means more memory usage but faster page loading"
 }

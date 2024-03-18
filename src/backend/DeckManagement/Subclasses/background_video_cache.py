@@ -56,6 +56,7 @@ class BackgroundVideoCache:
         n = min(n, self.n_frames - 1)
         with self.lock:
             if self.is_cache_complete():
+                self.release()
                 return self.cache.get(n, None)
 
             # Otherwise, continue with video capture
@@ -83,8 +84,8 @@ class BackgroundVideoCache:
 
                 tiles: list[Image.Image] = []
                 for key in range(self.key_count):
-                    key_image = self.crop_key_image_from_deck_sized_image(full_sized, key)
-                    tiles.append(key_image)
+                    current_tiles = self.crop_key_image_from_deck_sized_image(full_sized, key)
+                    tiles.append(current_tiles)
 
                     if n >= self.n_frames - 1:
                         self.save_cache_threaded()
@@ -177,9 +178,11 @@ class BackgroundVideoCache:
 
         log.success(f"Saved cache in {time.time() - start:.2f} seconds")
         self.last_save = time.time()
+        del data
 
 
     def load_cache(self, key_index: int = None):
+        return
         cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
         if not os.path.exists(cache_path):
             return
@@ -207,3 +210,24 @@ class BackgroundVideoCache:
                 return False
 
         return True
+    
+    def close(self) -> None:
+        import gc
+        self.release()
+        print(len(gc.get_referrers(self)), len(gc.get_referrers(self.cache)))
+        print(gc.get_referrers(self.cache))
+
+        for n in self.cache:
+            for f in self.cache[n]:
+                # ref = gc.get_referrers(f)
+                # if len(ref) > 1:
+                    # 
+                f.close()
+                f = None
+
+
+        self.cache = None
+        del self.cache
+        del self.cap
+        gc.collect()
+        del self

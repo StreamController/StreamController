@@ -244,6 +244,7 @@ class DeckController:
         self.active_page: Page = None
 
         self.brightness:int = 75
+        #TODO: Load brightness from settings
         self.set_brightness(self.brightness)
 
         self.keys: list[ControllerKey] = []

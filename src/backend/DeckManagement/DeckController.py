@@ -195,7 +195,7 @@ class MediaPlayerThread(threading.Thread):
         )
 
     def perform_media_player_tasks(self):
-        for task in copy(self.tasks):
+        for task in list(self.tasks):
             # Skip task if it has been removed
             if task not in self.tasks:
                 continue

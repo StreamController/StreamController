@@ -120,6 +120,7 @@ class ActionBase:
             }
 
     def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, update: bool = True):
+        if not self.get_is_present(): return
         if self.key_index >= self.deck_controller.deck.key_count():
             return
         if not self.on_ready_called:
@@ -149,6 +150,17 @@ class ActionBase:
 
         if update:
             self.deck_controller.update_key(self.key_index)
+
+    def set_background_color(self, color: list[int] = [255, 255, 255, 255], update: bool = True):
+        if self.key_index >= self.deck_controller.deck.key_count():
+            return
+        if not self.on_ready_called:
+            update = False
+
+        self.deck_controller.keys[self.key_index].background_color = color
+        if update:
+            self.deck_controller.update_key(self.key_index)
+
             
     def show_error(self, duration: int = -1) -> None:
         self.deck_controller.keys[self.key_index].show_error(duration=duration)
@@ -156,6 +168,7 @@ class ActionBase:
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18, update: bool = True):
+        if not self.get_is_present(): return
         if not self.on_ready_called:
             update = False
 
@@ -254,5 +267,10 @@ class ActionBase:
         return self.deck_controller.keys[self.key_index]
     
     def get_is_multi_action(self) -> bool:
-        actions = self.page.action_objects[self.page_coords]
+        if not self.get_is_present(): return
+        actions = self.page.action_objects.get(self.page_coords, [])
         return len(actions) > 1
+    
+    def get_is_present(self):
+        if self.page is None: return False
+        return self in self.page.get_all_actions()

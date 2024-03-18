@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 import os
 import random
@@ -412,6 +413,11 @@ class DeckController:
 
     def load_all_keys(self, page: Page, update: bool = True):
         start = time.time()
+        keys_to_load = self.keys
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(self.load_key, key.key, page, update) for key in keys_to_load]
+            for future in futures:
+                future.result()
         log.info(f"Loading all keys took {time.time() - start} seconds")
         print()
 
@@ -1139,11 +1145,10 @@ class ControllerKey:
 
 
     def own_actions_ready(self) -> None:
-        start = time.time()
-        for action in self.get_own_actions():
-            action.on_ready()
-            action.on_ready_called = True
-        log.info(f"Actions ready took {time.time() - start} seconds")
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(action.on_ready) for action in self.get_own_actions()]
+            for future in futures:
+                future.result()
 
     def own_actions_key_down(self) -> None:
         for action in self.get_own_actions():

@@ -65,6 +65,18 @@ class MediaPlayerTask:
     def run(self):
         self._callable(*self.args, **self.kwargs)
 
+
+@dataclass
+class MediaPlayerSetImageTask:
+    deck_controller: "DeckController"
+    page: Page
+    key_index: int
+    native_image: bytes
+
+    def run(self):
+        self.deck_controller.deck.set_key_image(self.key_index, self.native_image)
+
+
 class MediaPlayerThread(threading.Thread):
     def __init__(self, deck_controller: "DeckController"):
         super().__init__()
@@ -78,6 +90,8 @@ class MediaPlayerThread(threading.Thread):
         self._stop = False
 
         self.tasks: list[MediaPlayerTask] = []
+        # self.tasks = {}
+        self.image_tasks = {}
 
         self.fps: list[float] = []
         self.old_warning_state = False
@@ -172,6 +186,14 @@ class MediaPlayerThread(threading.Thread):
             kwargs=kwargs
         ))
 
+    def add_image_task(self, key_index: int, native_image: bytes):
+        self.image_tasks[key_index] = MediaPlayerSetImageTask(
+            deck_controller=self.deck_controller,
+            page=self.deck_controller.active_page,
+            key_index=key_index,
+            native_image=native_image
+        )
+
     def perform_media_player_tasks(self):
         for task in copy(self.tasks):
             # Skip task if it has been removed
@@ -188,6 +210,9 @@ class MediaPlayerThread(threading.Thread):
             # Run the task
             task.run()
 
+        for key in list(self.image_tasks.keys()):
+            self.image_tasks[key].run()
+            del self.image_tasks[key]
 
 class DeckController:
     def __init__(self, deck_manager: "DeckManager", deck: StreamDeck.StreamDeck):
@@ -252,8 +277,8 @@ class DeckController:
         image = self.keys[index].get_current_deck_image()
         native_image = PILHelper.to_native_format(self.deck, image.convert("RGB"))
 
-        self.media_player.add_task(self.set_deck_key_image, index, native_image)
-        
+        self.media_player.add_image_task(index, native_image)
+
         self.keys[index].set_ui_key_image(image)
 
     def update_all_keys(self):

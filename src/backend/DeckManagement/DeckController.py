@@ -17,7 +17,7 @@ from copy import copy
 import os
 import random
 import statistics
-from threading import Timer
+from threading import Thread, Timer
 import threading
 import time
 from PIL import Image, ImageOps, ImageDraw, ImageFont

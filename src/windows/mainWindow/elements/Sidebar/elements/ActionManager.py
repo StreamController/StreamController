@@ -103,7 +103,7 @@ class ActionExpanderRow(BetterExpander):
         controller = self.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         if page_coords not in controller.active_page.action_objects:
             return
-        print()
+        
         
         number_of_actions = len(controller.active_page.action_objects[page_coords])
         for i, key in enumerate(controller.active_page.action_objects[page_coords]):
@@ -120,8 +120,7 @@ class ActionExpanderRow(BetterExpander):
                 # No plugin installed for this action
                 missing_button_row = MissingActionButtonRow(action, page_coords, i)
                 self.add_row(missing_button_row)
-            else:
-                print()
+                
 
         # Place add button at the end
         if len(self.get_rows()) > 0:

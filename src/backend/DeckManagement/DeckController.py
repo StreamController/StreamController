@@ -179,7 +179,7 @@ class MediaPlayerThread(threading.Thread):
 
     def add_task(self, method: callable, *args, **kwargs):
         self.tasks.append(MediaPlayerTask(
-            deck_controller=self,
+            deck_controller=self.deck_controller,
             page=self.deck_controller.active_page,
             _callable=method,
             args=args,

@@ -110,7 +110,7 @@ def create_global_objects():
     gl.plugin_manager.generate_action_index()
 
     
-    gl.dekstop_grabber = DesktopGrabber()
+    # gl.dekstop_grabber = DesktopGrabber()
 
 def update_assets():
     settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))

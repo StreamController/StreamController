@@ -276,7 +276,7 @@ class DeckController:
 
     def update_key(self, index: int):
         image = self.keys[index].get_current_deck_image()
-        native_image = PILHelper.to_native_format(self.deck, image.convert("RGB"))
+        native_image = PILHelper.to_native_key_format(self.deck, image)
 
         self.media_player.add_image_task(index, native_image)
 

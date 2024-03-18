@@ -283,12 +283,16 @@ class DeckController:
         self.keys[index].set_ui_key_image(image)
 
     def update_all_keys(self):
+        start = time.time()
         if not self.get_alive(): return
         if self.background.video is not None:
             log.debug("Skipping update_all_keys because there is a background video")
             return
         for i in range(self.deck.key_count()):
             self.update_key(i)
+
+        log.debug(f"Updating all keys took {time.time() - start} seconds")
+        print()
 
 
     
@@ -407,8 +411,9 @@ class DeckController:
             set_from_page(self)
 
     def load_all_keys(self, page: Page, update: bool = True):
-        for key in self.keys:
-            self.load_key(key.key, page, update)
+        start = time.time()
+        log.info(f"Loading all keys took {time.time() - start} seconds")
+        print()
 
     def load_key(self, key: int, page: Page, update: bool = True, load_labels: bool = True, load_media: bool = True):
         if key >= self.deck.key_count():
@@ -438,6 +443,8 @@ class DeckController:
     def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
                   allow_reload: bool = True):
         if not self.get_alive(): return
+
+        start = time.time()
 
         if not allow_reload:
             if self.active_page is page:
@@ -477,6 +484,9 @@ class DeckController:
         # Notify plugin actions
         # gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
         gl.signal_manager.trigger_signal(signal=Signals.ChangePage, controller=self, old_path=old_path, new_path=self.active_page.json_path)
+
+        log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()} took {time.time() - start} seconds")
+        print()
 
     def set_brightness(self, value):
         if not self.get_alive(): return
@@ -993,8 +1003,12 @@ class ControllerKey:
         if load_labels:
             self.labels = {}
 
+        start = time.time()
         self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
+        print(f"Own actions ready took {time.time() - start} seconds")
+        actions = self.get_own_actions()
 
+        start = time.time()
         ## Load labels
         if load_labels:
             for label in page_dict.get("labels", []):
@@ -1010,8 +1024,10 @@ class ControllerKey:
                     font_weight=page_dict["labels"][label].get("stroke-width")
                 )
                 self.add_label(key_label, position=label, update=False)
+        print(f"Labels took {time.time() - start} seconds")
 
 
+        start = time.time()
         ## Load media
         if load_media:
             path = page_dict.get("media", {}).get("path", None)
@@ -1042,11 +1058,17 @@ class ControllerKey:
                     image=Image.open(os.path.join("Assets", "images", "multi_action.png")),
                 ), update=False)
 
+        print(f"Media took {time.time() - start} seconds")
+
+        start = time.time()
         if load_background_color:
             self.background_color = page_dict.get("background", {}).get("color", [0, 0, 0, 0])
             # Ensure the background color has an alpha channel
             if len(self.background_color) == 3:
                 self.background_color.append(255)
+
+        print(f"Background took {time.time() - start} seconds")
+        print()
 
 
         if update:

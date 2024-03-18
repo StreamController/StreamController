@@ -128,6 +128,9 @@ class ActionExpanderRow(BetterExpander):
             self.reorder_child_after(self.add_action_button, self.get_rows()[-1])
 
     def clear_actions(self, keep_add_button=False):
+        for child in self.get_rows():
+            if hasattr(child, "action_object"):
+                child.action_object = None
         self.clear()
         if keep_add_button:
             self.add_row(self.add_action_button)

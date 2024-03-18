@@ -259,8 +259,8 @@ class DeckController:
         self.media_player.start()
 
         self.TICK_DELAY = 1
-        self.tick_timer = Timer(self.TICK_DELAY, self.tick_actions)
-        self.tick_timer.start()
+        self.tick_thread = Thread(target=self.tick_actions)
+        self.tick_thread.start()
 
         self.page_auto_loaded: bool = False
         self.last_manual_loaded_page_path: str = None
@@ -484,9 +484,15 @@ class DeckController:
         self.brightness = value
 
     def tick_actions(self) -> None:
-        if not self.screen_saver.showing:
-            for key in self.keys:
-                key.own_actions_tick()
+        while True:
+            time.sleep(self.TICK_DELAY)
+            if not self.screen_saver.showing and True:
+                for key in self.keys:
+                    key.own_actions_tick()
+            else:
+                for key in self.keys:
+                    key.update()
+            
         
         # Restart timer
         self.tick_timer = Timer(self.TICK_DELAY, self.tick_actions)

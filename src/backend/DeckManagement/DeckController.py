@@ -33,12 +33,16 @@ import matplotlib.font_manager
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
 from src.backend.DeckManagement.Subclasses.key_video_cache import VideoFrameCache
 from dataclasses import dataclass
+import gc
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
 from src.backend.PageManagement.Page import Page, NoActionHolderFound
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
+
+import psutil
+process = psutil.Process()
 
 # Import signals
 from src.Signals import Signals
@@ -104,7 +108,7 @@ class MediaPlayerThread(threading.Thread):
         while True:
             start = time.time()
             if not self.pause:
-                if self.deck_controller.background.video is not None:
+                if self.deck_controller.background.video is not None and True:
                     if self.deck_controller.background.video.page is self.deck_controller.active_page:
                         # There is a background video
                         video_each_nth_frame = self.FPS // self.deck_controller.background.video.fps
@@ -112,12 +116,15 @@ class MediaPlayerThread(threading.Thread):
                             self.deck_controller.background.update_tiles()
 
                 for key in self.deck_controller.keys:
+                    # break
                     if key.key_video is not None:
                         video_each_nth_frame = self.FPS // key.key_video.fps
                         if self.media_ticks % video_each_nth_frame == 0:
                             key.update()
                     elif self.deck_controller.background.video is not None:
                         key.update()
+
+                # self.deck_controller.update_all_keys()
 
                 # Perform media player tasks
                 self.perform_media_player_tasks()
@@ -203,6 +210,8 @@ class MediaPlayerThread(threading.Thread):
             
             # Remove task from list
             self.tasks.remove(task)
+            # if len(self.tasks) == before:
+                # print()
 
             # Skip task if dedicated to another page
             if task.page is not self.deck_controller.active_page:
@@ -457,6 +466,11 @@ class DeckController:
                 return
         
         old_path = self.active_page.json_path if self.active_page is not None else None
+
+        if self.active_page is not None and False:
+            self.active_page.clear_action_index()
+        # self.active_page = None
+
         self.active_page = page
 
         if page is None:
@@ -604,15 +618,21 @@ class Background:
 
     def set_image(self, image: "BackgroundImage", update: bool = True) -> None:
         self.image = image
+        if self.video is not None:
+            self.video.close()
         self.video = None
+        gc.collect()
 
         self.update_tiles()
         if update:
             self.deck_controller.update_all_keys()
 
     def set_video(self, video: "BackgroundVideo", update: bool = True) -> None:
+        if self.video is not None:
+            self.video.close()
         self.image = None
         self.video = video
+        gc.collect()
 
         self.update_tiles()
         if update:
@@ -623,7 +643,8 @@ class Background:
             path = None
         if path is None:
             self.image = None
-            self.video = None
+            # self.video = None
+            self.set_video(None, update=False)
             self.update_tiles()
             if update:
                 self.deck_controller.update_all_keys()
@@ -729,13 +750,19 @@ class BackgroundVideo(BackgroundVideoCache):
         super().__init__(video_path, deck_controller=deck_controller)
 
     def get_next_tiles(self) -> list[Image.Image]:
+        # return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
         self.active_frame += 1
 
         if self.active_frame >= self.n_frames:
             if self.loop:
                 self.active_frame = 0
 
-        return self.get_tiles(self.active_frame)
+        tiles =  self.get_tiles(self.active_frame)
+        try:
+            copied_tiles = [tile.copy() for tile in tiles]
+        except:
+            copied_tiles = [None for _ in range(len(tiles))]
+        return copied_tiles
 
         frame = self.get_next_frame()
         frame_full_sized_image = self.create_full_deck_sized_image(frame)
@@ -828,6 +855,8 @@ class ControllerKey:
 
         self.hide_error_timer: Timer = None
 
+        # self.pressed_on_page: Page = None #TODO: Block release on different page than press
+
     def get_current_deck_image(self) -> Image.Image:
         foreground = None
 
@@ -835,6 +864,9 @@ class ControllerKey:
             foreground = self.key_image.get_composite_image()
         elif self.key_video is not None:
             foreground = self.key_video.get_next_frame()
+
+        # return foreground
+        
 
         if foreground is None:
             foreground = self.deck_controller.generate_alpha_key()
@@ -865,8 +897,15 @@ class ControllerKey:
 
         labeled_image = self.add_labels_to_image(background)
 
+        if background is not None:
+            background.close()
+        # return
         if self.is_pressed():
             labeled_image = self.shrink_image(labeled_image)
+
+        # Close no longer needed images
+        foreground.close()
+        background.close()
 
         return labeled_image
     
@@ -874,6 +913,9 @@ class ControllerKey:
         self.deck_controller.update_key(self.key)
 
     def set_key_image(self, key_image: "KeyImage", update: bool = True) -> None:
+        if self.key_image is not None:
+            self.key_image.close()
+
         self.key_image = key_image
         self.key_video = None
 
@@ -882,6 +924,8 @@ class ControllerKey:
 
     def set_key_video(self, key_video: "KeyVideo") -> None:
         self.key_video = key_video
+        if self.key_image is not None:
+            self.key_image.close()
         self.key_image = None
 
     def add_label(self, key_label: "KeyLabel", position: str = "center", update: bool = True) -> None:
@@ -903,16 +947,25 @@ class ControllerKey:
         if update:
             self.update()
 
-    def add_labels_to_image(self, image: Image.Image) -> Image.Image:
-        image = image.copy()
+    def add_labels_to_image(self, _image: Image.Image) -> Image.Image:
+        # image = _image.copy()
+        # _image.close()
+        image = _image
+        # image = Image.new("RGBA", _image.size, (0, 0, 0, 0))
+
+        # image = Image.frombytes("RGBA", _image.size, _image.tobytes())
 
         draw = ImageDraw.Draw(image)
         draw.fontmode = "1" # Anti-aliased - this prevents frayed/noisy labels on the deck
 
-        labels = copy(self.labels) # Prevent crash if labels change during iteration
+        # labels = copy(self.labels) # Prevent crash if labels change during iteration
+        labels = self.labels
 
-        for label in labels:
+        for label in dict(labels):
             text = labels[label].text
+            if text in [None, ""]:
+                continue
+            # text = "text"
             font_path = labels[label].get_font_path()
             color = tuple(labels[label].color)
             font_size = labels[label].font_size
@@ -931,11 +984,20 @@ class ControllerKey:
             if label == "bottom":
                 position = (image.width / 2, image.height*0.875)
 
+
+            start_mem = process.memory_info().rss
+            if text is None:
+                print()
             draw.text(position,
                         text=text, font=font, anchor="ms",
                         fill=color, stroke_width=font_weight)
+            end = process.memory_info().rss
+      
+            
+        draw = None
+        del draw
 
-        return image
+        return image.copy()
     
     def is_pressed(self) -> bool:
         return self.press_state
@@ -956,6 +1018,8 @@ class ControllerKey:
         background = Image.new("RGBA", self.deck_controller.get_key_image_size(), (0, 0, 0, 0))
 
         background.paste(image, (int((self.deck_controller.get_key_image_size()[0] - width) / 2), int((self.deck_controller.get_key_image_size()[1] - height) / 2)))
+
+        image.close()
 
         return background
     
@@ -1059,10 +1123,11 @@ class ControllerKey:
                     )) # Videos always update
 
             elif len(self.get_own_actions()) > 1:
-                self.set_key_image(KeyImage(
-                    controller_key=self,
-                    image=Image.open(os.path.join("Assets", "images", "multi_action.png")),
-                ), update=False)
+                with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
+                    self.set_key_image(KeyImage(
+                        controller_key=self,
+                        image=image.copy(),
+                    ), update=False)
 
         print(f"Media took {time.time() - start} seconds")
 
@@ -1117,7 +1182,7 @@ class ControllerKey:
 
         actions = list(active_page.action_objects.get(page_coords, {}).values())
         # Remove all NoActionHolderFound objects
-        actions = [action for action in actions if not isinstance(action, NoActionHolderFound)]
+        actions = [action for action in actions if not (isinstance(action, NoActionHolderFound) or action is None)]
         return actions
     
     def on_key_change(self, state) -> None:
@@ -1212,6 +1277,11 @@ class KeyImage:
             # log.warning("Set image is not valid, clearing...") #TODO: maybe keep old one if that happens
             self.image = self.controller_key.deck_controller.generate_alpha_key()
 
+    def close(self):
+        if self.image is not None:
+            self.image.close()
+            self.image = None
+
     def get_composite_image(self, background: Image.Image = None) -> Image.Image:
         if background is None:
             background = self.controller_key.deck_controller.generate_alpha_key()
@@ -1241,6 +1311,7 @@ class KeyImage:
         
         background.paste(image_resized, (left_margin, top_margin))
 
+        image_resized.close()
         return background
     
 

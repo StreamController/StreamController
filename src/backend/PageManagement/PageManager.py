@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
+import gc
 import os
 import shutil
 import json
@@ -111,7 +112,17 @@ class PageManager:
                 for controller in self.created_pages:
                     for p in self.created_pages[controller]:
                         if self.created_pages[controller][p]["page_number"] == lowest_page:
+                            page_object: Page = self.created_pages[controller][p]["page"]
+                            page_object.clear_action_index()
+
+                            refs = gc.get_referrers(page_object)
+
+                            n = len(gc.get_referrers(page_object))
+                            print()
+
+                            self.created_pages[controller][p] = None
                             del self.created_pages[controller][p]
+                            
                             break
 
 

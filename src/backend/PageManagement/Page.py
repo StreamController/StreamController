@@ -12,6 +12,7 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+import gc
 import os
 import json
 import threading
@@ -118,9 +119,10 @@ class Page:
                     continue
 
                 old_object = self.action_objects[key].get(i)
-                if isinstance(old_object, action_class):
-                    # Action already exists - keep it
-                    continue
+                if old_object is not None:
+                    if isinstance(old_object, action_class):
+                        # Action already exists - keep it
+                        continue
                 
                 if i in self.loaded_action_objects.get(key, []):
                     if not isinstance(self.loaded_action_objects.get(key, [i])[i], NoActionHolderFound):
@@ -129,20 +131,25 @@ class Page:
 
                 # action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
                 # self.action_objects[key][i] = action_object
+                if self.deck_controller.coords_to_index(key.split("x")) > self.deck_controller.deck.key_count():
+                    continue
                 thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, key, i))
                 thread.start()
                 add_threads.append(thread)
 
         all_threads_finished = False
         while not all_threads_finished:
+            all_threads_finished = True
             for thread in add_threads:
                 if thread.is_alive():
-                    time.sleep(0.01)
-                    continue
-            all_threads_finished = True
+                    all_threads_finished = False
+                    break
+            time.sleep(0.02)
 
     def add_action_object_from_holder(self, action_holder: "ActionHolder", key: str, i: int):
         action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
+        if action_object is None:
+            return
         self.action_objects[key][i] = action_object
 
     def remove_plugin_action_objects(self, plugin_id: str) -> bool:
@@ -151,7 +158,7 @@ class Page:
             return False
         for key in list(self.action_objects.keys()):
             for index in list(self.action_objects[key].keys()):
-                if isinstance(self.action_objects[key][index], str):
+                if isinstance(self.action_objects[key][index], NoActionHolderFound):
                     continue
                 if self.action_objects[key][index].plugin_base == plugin_obj:
                     # Remove object
@@ -166,12 +173,12 @@ class Page:
     def get_keys_with_plugin(self, plugin_id: str):
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
         if plugin_obj is None:
-            return
+            return []
         
         keys = []
         for key in self.action_objects:
             for action in self.action_objects[key].values():
-                if isinstance(action, str):
+                if isinstance(action, NoActionHolderFound):
                     continue
                 if action.plugin_base == plugin_obj:
                     keys.append(key)
@@ -202,6 +209,8 @@ class Page:
         actions = []
         for key in self.action_objects:
             for action in self.action_objects[key].values():
+                if action is None:
+                    continue
                 actions.append(action)
         return actions
     
@@ -258,6 +267,18 @@ class Page:
                 if not action.on_ready_called:
                     action.on_ready()
                     action.on_ready_called = True
+
+    def clear_action_index(self):
+        for key in self.action_objects:
+            for i, action in enumerate(list(self.action_objects[key])):
+                self.action_objects[key][i].page = None
+                self.action_objects[key][i] = None
+                refs = gc.get_referrers(self.action_objects[key][i])
+                r2 = gc.get_referents(self.action_objects[key][i])
+                n = len(refs)
+                del self.action_objects[key][i]
+        self.action_objects = {}
+        print()
 
     def get_name(self):
         return os.path.splitext(os.path.basename(self.json_path))[0]

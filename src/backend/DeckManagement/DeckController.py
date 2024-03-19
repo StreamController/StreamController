@@ -1270,13 +1270,6 @@ class KeyImage:
         if self.image is None:
             self.image = self.controller_key.deck_controller.generate_alpha_key()
 
-        try:
-            # Raises an exception if self.image is not valid
-            self.image.verify()
-        except:
-            # log.warning("Set image is not valid, clearing...") #TODO: maybe keep old one if that happens
-            self.image = self.controller_key.deck_controller.generate_alpha_key()
-
     def close(self):
         if self.image is not None:
             self.image.close()

@@ -47,11 +47,12 @@ class ScreenSaver:
         self.loop: bool = True
 
     def set_time(self, time_delay: int) -> None:
+        if time_delay != self.time_delay:
+            log.info(f"Setting screen saver time delay to {time_delay} minutes")
         self.time_delay = time_delay
         if hasattr(self, "timer"):
             self.timer.cancel()
         # *60 to go from minuts (how it is stored) to seconds (how the timer needs it)
-        log.info(f"Screen saver timer set to {time_delay} min(s)")
         self.timer = threading.Timer(time_delay*60, self.on_timer_end)
         if self.enable and not self.showing:
             self.timer.start()

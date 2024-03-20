@@ -152,15 +152,61 @@ class KeyButton(Gtk.Frame):
         self.init_dnd()
 
     def init_dnd(self) -> None:
-        self.file_dnd_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
-        self.file_dnd_target.connect("drop", self.on_dnd_drop)
-        self.file_dnd_target.connect("accept", self.on_dnd_accept)
-        self.add_controller(self.file_dnd_target)
+        self.drag_source = Gtk.DragSource()
+        self.drag_source.connect("prepare", self.on_drag_prepare)
+        self.drag_source.connect("drag-begin", self.on_drag_begin)
+        # self.drag_source.connect("drag-end", self.on_drag_end)
+        self.add_controller(self.drag_source)
 
-    def on_dnd_accept(self, drop, user_data):
+        self.button_dnd_target = Gtk.DropTarget.new(KeyButton, Gdk.DragAction.COPY)
+        self.button_dnd_target.set_gtypes([KeyButton, Gdk.FileList])
+        self.button_dnd_target.connect("accept", self.on_button_accept)
+        self.button_dnd_target.connect("drop", self.on_button_drop)
+        self.add_controller(self.button_dnd_target)
+
+    def on_button_accept(self, drop: Gtk.DropTarget, user_data):
         return True
 
-    def on_dnd_drop(self, drop: Gtk.DropTarget, value: Gdk.FileList, x, y):
+    def on_button_drop(self, drop: Gtk.DropTarget, value: Gdk.ContentProvider, x, y):
+        if isinstance(drop.get_value(), KeyButton):
+            self.handle_key_button_drop()
+       
+        elif isinstance(drop.get_value(), Gdk.FileList):
+            self.handle_file_drop(drop, value, x, y)
+
+        else:
+            drop.reject()
+            return False
+        
+    def handle_key_button_drop(self, drop: Gtk.DropTarget, value: Gdk.ContentProvider, x, y):
+        active_page = self.key_grid.deck_controller.active_page
+        if active_page is None:
+            return
+        
+        ## Fetch own key_dict
+        target_y, target_x = self.coords
+        target_key_dict = active_page.dict.get("keys", {}).get(f"{target_x}x{target_y}", {})
+
+        ## Fetch dropped key_dict
+        dropped_button = drop.get_value()
+        dropped_y, dropped_x = dropped_button.coords
+        dropped_key_dict = active_page.dict.get("keys", {}).get(f"{dropped_x}x{dropped_y}", {})
+
+        # Swap keys in the page dict
+        active_page.dict.setdefault("keys", {})
+        active_page.dict["keys"][f"{target_x}x{target_y}"] = dropped_key_dict
+        active_page.dict["keys"][f"{dropped_x}x{dropped_y}"] = target_key_dict
+        active_page.save()
+
+        active_page.switch_actions_of_keys(f"{target_x}x{target_y}", f"{dropped_x}x{dropped_y}")
+
+        active_page.reload_similar_pages(page_coords=f"{target_x}x{target_y}", reload_self=True)
+        active_page.reload_similar_pages(page_coords=f"{dropped_x}x{dropped_y}", reload_self=True)
+
+        # Reload sidebar
+        gl.app.main_win.sidebar.load_for_coords(gl.app.main_win.sidebar.active_coords)
+
+    def handle_file_drop(self, drop: Gtk.DropTarget, value: Gdk.ContentProvider, x, y):
         files = value.get_files()
         if len(files) > 1:
             drop.reject()
@@ -170,7 +216,9 @@ class KeyButton(Gtk.Frame):
         url = file.get_uri()
         path = file.get_path()
 
-        gl.asset_manager_backend.add_custom_media_set_by_ui(url=url, path=path)
+        result = gl.asset_manager_backend.add_custom_media_set_by_ui(url=url, path=path)
+        if result == -1:
+            return False
 
         # Set media to key
         active_page = self.key_grid.deck_controller.active_page
@@ -194,6 +242,19 @@ class KeyButton(Gtk.Frame):
         active_coords = gl.app.main_win.sidebar.active_coords
         if active_coords == (self.coords[1], self.coords[0]):
             gl.app.main_win.sidebar.key_editor.icon_selector.load_for_coords((self.coords[1], self.coords[0]))
+
+        
+    def on_drag_begin(self, drag_source, data):
+        content = data.get_content()
+
+    def on_drag_prepare(self, drag_source, x, y):
+        drag_source.set_icon(self.image.get_paintable(), self.get_width() // 2, self.get_height() // 2)
+        content = Gdk.ContentProvider.new_for_value(self)
+        return content
+
+    def on_dnd_accept(self, drop, user_data):
+        return True
+
         
 
     def set_image(self, image):

@@ -28,6 +28,7 @@ import globals as gl
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager.ActionHolder import ActionHolder
+    from src.backend.PluginManager.ActionBase import ActionBase
 
 class Page:
     def __init__(self, json_path, deck_controller, *args, **kwargs):
@@ -145,6 +146,34 @@ class Page:
                     all_threads_finished = False
                     break
             time.sleep(0.02)
+
+    def move_actions(self, from_key: str, to_key: str):
+        from_actions = self.action_objects.get(from_key, {})
+
+        for action in from_actions.values():
+            action: "ActionBase" = action
+            action.key_index = self.deck_controller.coords_to_index(to_key.split("x"))
+            action.page_coords = to_key
+
+
+    def switch_actions_of_keys(self, key_1: str, key_2: str):
+        key_1_actions = self.action_objects.get(key_1, {})
+        key_2_actions = self.action_objects.get(key_2, {})
+
+        for action in key_1_actions.values():
+            action: "ActionBase" = action
+            action.key_index = self.deck_controller.coords_to_index(key_2.split("x"))
+            action.page_coords = key_2
+
+        for action in key_2_actions.values():
+            action: "ActionBase" = action
+            action.key_index = self.deck_controller.coords_to_index(key_1.split("x"))
+            action.page_coords = key_1
+
+        # Change in action_objects
+        self.action_objects[key_1] = key_2_actions
+        self.action_objects[key_2] = key_1_actions
+
 
     def add_action_object_from_holder(self, action_holder: "ActionHolder", key: str, i: int):
         action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)

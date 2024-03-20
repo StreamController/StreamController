@@ -233,21 +233,27 @@ class AssetManagerBackend(list):
                     modal=True
                 )
                 dial.show()
-                return
+                return -1
 
             os.makedirs(os.path.join(gl.DATA_PATH, "cache", "downloads"), exist_ok=True)
             # Download file from url
             path = download_file(url=url, path=os.path.join(gl.DATA_PATH, "cache", "downloads"))
 
         if path == None:
-            return
+            return -1
         if not os.path.exists(path):
-            return
+            return -1
         if not is_video(path) and not is_image(path):
-            return
+            dial = Gtk.AlertDialog(
+                    message="No valid image or video.",
+                    detail="Only images and videos are supported.",
+                    modal=True
+                )
+            dial.show()
+            return -1
         asset_id = gl.asset_manager_backend.add(asset_path=path)
         if asset_id == None:
-            return
+            return -1
         
         print()
         # Add to asset chooser ui if opened

@@ -62,7 +62,7 @@ class CustomAssetChooser(ChooserPage):
         return True
     
     def add_asset(self, asset: dict) -> None:
-        preview = AssetPreview(self, asset, width_request=100, height_request=100)
+        preview = AssetPreview(self.asset_chooser, asset, width_request=100, height_request=100)
         self.asset_chooser.flow_box.append(preview)
     
     def add_files(self, files: list) -> None:

@@ -268,7 +268,7 @@ class Page:
                     action.on_ready()
                     action.on_ready_called = True
 
-    def clear_action_index(self):
+    def clear_action_objects(self):
         for key in self.action_objects:
             for i, action in enumerate(list(self.action_objects[key])):
                 self.action_objects[key][i].page = None

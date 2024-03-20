@@ -468,7 +468,7 @@ class DeckController:
         old_path = self.active_page.json_path if self.active_page is not None else None
 
         if self.active_page is not None and False:
-            self.active_page.clear_action_index()
+            self.active_page.clear_action_objects()
         # self.active_page = None
 
         self.active_page = page

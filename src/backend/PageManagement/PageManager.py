@@ -113,7 +113,7 @@ class PageManager:
                     for p in self.created_pages[controller]:
                         if self.created_pages[controller][p]["page_number"] == lowest_page:
                             page_object: Page = self.created_pages[controller][p]["page"]
-                            page_object.clear_action_index()
+                            page_object.clear_action_objects()
 
                             refs = gc.get_referrers(page_object)
 

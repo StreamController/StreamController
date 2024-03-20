@@ -35,7 +35,7 @@ from src.backend.PageManagement.Page import NoActionHolderFound
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.windows.mainWindow.elements.Sidebar.RightArea import Sidebar
+    from src.windows.mainWindow.elements.Sidebar.Sidebar import Sidebar
 
 class ActionManager(Gtk.Box):
     def __init__(self, sidebar, **kwargs):

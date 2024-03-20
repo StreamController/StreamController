@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GdkPixbuf
+from gi.repository import Gtk, Adw, GdkPixbuf, Pango
 
 class Preview(Gtk.FlowBoxChild):
     def __init__(self, image_path: str = None, text:str = None):
@@ -50,7 +50,8 @@ class Preview(Gtk.FlowBoxChild):
         self.picture.set_pixbuf(self.pixbuf)
         self.main_box.append(self.picture)
 
-        self.label = Gtk.Label(xalign=Gtk.Align.CENTER)
+        self.label = Gtk.Label(xalign=Gtk.Align.CENTER, hexpand=False, ellipsize=Pango.EllipsizeMode.END, max_width_chars=20,
+                               margin_start=20, margin_end=20)
         self.main_box.append(self.label)
 
         self.info_button = Gtk.Button(icon_name="help-info-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.END, margin_end=5, margin_bottom=5)

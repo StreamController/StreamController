@@ -138,7 +138,9 @@ class ConfigGroup(Adw.PreferencesGroup):
         if not hasattr(action, "get_config_rows"):
             self.hide()
             return
-        if action.get_config_rows() is None:
+        
+        config_rows = action.get_config_rows()
+        if config_rows is None:
             self.hide()
             return
         # Load labels
@@ -149,8 +151,7 @@ class ConfigGroup(Adw.PreferencesGroup):
         self.clear()
 
         # Load rows
-        rows = action.get_config_rows()
-        for row in rows:
+        for row in config_rows:
             self.add(row)
             self.loaded_rows.append(row)
         

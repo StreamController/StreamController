@@ -32,7 +32,7 @@ from src.app import App
 from src.backend.DeckManagement.DeckManager import DeckManager
 from locales.LocaleManager import LocaleManager
 from src.backend.MediaManager import MediaManager
-from src.backend.AssetManager import AssetManager
+from src.backend.AssetManagerBackend import AssetManagerBackend
 from src.backend.PageManagement.PageManager import PageManager
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
@@ -96,7 +96,7 @@ def create_global_objects():
     gl.signal_manager = SignalManager()
 
     gl.media_manager = MediaManager()
-    gl.asset_manager = AssetManager()
+    gl.asset_manager_backend = AssetManagerBackend()
     gl.page_manager = PageManager(gl.settings_manager)
     gl.icon_pack_manager = IconPackManager()
     gl.wallpaper_pack_manager = WallpaperPackManager()

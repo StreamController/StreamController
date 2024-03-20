@@ -65,6 +65,7 @@ class App(Adw.Application):
 
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
         self.asset_manager = AssetManager(application=self, main_window=self.main_win)
+        gl.asset_manager = self.asset_manager
         self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)
 
     def show_onboarding(self):

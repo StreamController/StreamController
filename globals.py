@@ -9,7 +9,8 @@ DATA_PATH = "data"
 if TYPE_CHECKING:
     from src.app import App
     from locales.LocaleManager import LocaleManager
-    from src.backend.AssetManager import AssetManager
+    from src.backend.AssetManagerBackend import AssetManagerBackend
+    from src.windows.AssetManager.AssetManager import AssetManager
     from src.backend.MediaManager import MediaManager
     from src.backend.PageManagement.PageManager import PageManager
     from src.backend.SettingsManager import SettingsManager
@@ -21,10 +22,12 @@ if TYPE_CHECKING:
     from src.Signals.SignalManager import SignalManager
     from src.backend.DesktopGrabber import DesktopGrabber
 
+
 top_level_dir:str = os.path.dirname(__file__)
 lm:"LocaleManager" = None
 media_manager:"MediaManager" = None #MediaManager
-asset_manager:"AssetManager" = None #AssetManager
+asset_manager_backend:"AssetManagerBackend" = None #AssetManager
+asset_manager: "AssetManager" = None
 page_manager:"PageManager" = None #PageManager
 settings_manager:"SettingsManager" = None #SettingsManager
 app:"App" = None #App

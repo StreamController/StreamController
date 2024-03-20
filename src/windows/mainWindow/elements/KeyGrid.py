@@ -149,6 +149,53 @@ class KeyButton(Gtk.Frame):
 
         self.init_actions()
 
+        self.init_dnd()
+
+    def init_dnd(self) -> None:
+        self.file_dnd_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
+        self.file_dnd_target.connect("drop", self.on_dnd_drop)
+        self.file_dnd_target.connect("accept", self.on_dnd_accept)
+        self.add_controller(self.file_dnd_target)
+
+    def on_dnd_accept(self, drop, user_data):
+        return True
+
+    def on_dnd_drop(self, drop: Gtk.DropTarget, value: Gdk.FileList, x, y):
+        files = value.get_files()
+        if len(files) > 1:
+            drop.reject()
+            return False
+        
+        file = files[0]
+        url = file.get_uri()
+        path = file.get_path()
+
+        gl.asset_manager_backend.add_custom_media_set_by_ui(url=url, path=path)
+
+        # Set media to key
+        active_page = self.key_grid.deck_controller.active_page
+
+        page_coords = f"{self.coords[1]}x{self.coords[0]}"
+        
+        active_page.dict.setdefault("keys", {})
+        active_page.dict["keys"].setdefault(page_coords, {})
+        active_page.dict["keys"][page_coords].setdefault("media", {
+            "path": None,
+            "loop": True,
+            "fps": 30
+        })
+        active_page.dict["keys"][page_coords]["media"]["path"] = path
+        # Save page
+        active_page.save()
+        key_index = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
+        self.key_grid.deck_controller.load_key(key_index, page=active_page)
+
+        # Update icon selector if current key is selected
+        active_coords = gl.app.main_win.sidebar.active_coords
+        if active_coords == (self.coords[1], self.coords[0]):
+            gl.app.main_win.sidebar.key_editor.icon_selector.load_for_coords((self.coords[1], self.coords[0]))
+        
+
     def set_image(self, image):
         # Check if we can perform the next checks
         if recursive_hasattr(self, "key_grid.deck_page.grid_page"):

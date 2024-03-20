@@ -56,6 +56,12 @@ class AssetManager(Gtk.ApplicationWindow):
 
         self.build()
 
+        self.connect("close-request", self.on_close)
+
+    def on_close(self, *args, **kwargs):
+        gl.asset_manager = None
+        print("close")
+
     def build(self):
         self.main_stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, hexpand=True, vexpand=True)
         self.set_child(self.main_stack)
@@ -141,7 +147,7 @@ class AssetChooser(Gtk.Stack):
         self.connect("notify::visible-child-name", self.on_switch)
 
     def show_for_path(self, path):
-        if gl.asset_manager.has_by_internal_path(path):
+        if gl.asset_manager_backend.has_by_internal_path(path):
             # Is custom asset
             self.custom_asset_chooser.show_for_path(path)
             self.asset_manager.back_button.set_visible(False)

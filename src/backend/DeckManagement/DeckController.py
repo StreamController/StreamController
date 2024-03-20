@@ -358,7 +358,9 @@ class DeckController:
         deck_settings = self.get_deck_settings()
         def set_from_deck_settings(self: "DeckController"):
             if deck_settings.get("background", {}).get("enable", False):
-                self.background.set_from_path(deck_settings.get("background", {}).get("path"), update=update)
+                loop = deck_settings.get("background", {}).get("loop", True)
+                fps = deck_settings.get("background", {}).get("fps", 30)
+                self.background.set_from_path(deck_settings.get("background", {}).get("path"), update=update, loop=loop, fps=fps)
             else:
                 self.background.set_from_path(None, update=update)
 
@@ -366,7 +368,9 @@ class DeckController:
             if not page.dict.get("background", {}).get("show", True):
                 self.background.set_from_path(None, update=update)
             else:
-                self.background.set_from_path(page.dict.get("background", {}).get("path"), update=update)
+                loop = page.dict.get("background", {}).get("loop", True)
+                fps = page.dict.get("background", {}).get("fps", 30)
+                self.background.set_from_path(page.dict.get("background", {}).get("path"), update=update, loop=loop, fps=fps)
 
         if page.dict.get("background", {}).get("overwrite", False) is False and "background" in deck_settings:
             set_from_deck_settings(self)
@@ -638,7 +642,7 @@ class Background:
         if update:
             self.deck_controller.update_all_keys()
 
-    def set_from_path(self, path: str, update: bool = True, allow_keep: bool = True) -> None:
+    def set_from_path(self, path: str, fps: int = 30, loop: bool = True, update: bool = True, allow_keep: bool = True) -> None:
         if path == "":
             path = None
         if path is None:
@@ -652,8 +656,10 @@ class Background:
             if allow_keep:
                 if self.video is not None and self.video.video_path == path:
                     self.video.page = self.deck_controller.active_page
+                    self.video.fps = fps
+                    self.video.loop = loop
                     return
-            self.set_video(BackgroundVideo(self.deck_controller, path), update=update)
+            self.set_video(BackgroundVideo(self.deck_controller, path, loop=loop, fps=fps), update=update)
         else:
             with Image.open(path) as image:
                 self.set_image(BackgroundImage(self.deck_controller, image.copy()), update=update)
@@ -1290,14 +1296,23 @@ class KeyImage:
         top_margin = int((background.height - img_size[1]) * (self.valign + 1) / 2)
 
         if self.fill_mode == "stretch":
-            image_size = [background.width - self.margins[0] - self.margins[2], background.height - self.margins[1] - self.margins[3]]
-            image_resized = self.image.resize(image_size, Image.Resampling.HAMMING)
+            try:
+                image_size = [background.width - self.margins[0] - self.margins[2], background.height - self.margins[1] - self.margins[3]]
+                image_resized = self.image.resize(image_size, Image.Resampling.HAMMING)
+            except:
+                self.image = self.controller_key.deck_controller.generate_alpha_key()
 
         elif self.fill_mode == "cover":
-            image_resized = ImageOps.cover(self.image, img_size, Image.Resampling.HAMMING)
+            try:
+                image_resized = ImageOps.cover(self.image, img_size, Image.Resampling.HAMMING)
+            except:
+                self.image = self.controller_key.deck_controller.generate_alpha_key()
 
         elif self.fill_mode == "contain":
-            image_resized = ImageOps.contain(self.image, img_size, Image.Resampling.HAMMING)
+            try:
+                image_resized = ImageOps.contain(self.image, img_size, Image.Resampling.HAMMING)
+            except:
+                self.image = self.controller_key.deck_controller.generate_alpha_key()
         
         else:
             raise ValueError(f"Unknown fill mode: {self.fill_mode}")

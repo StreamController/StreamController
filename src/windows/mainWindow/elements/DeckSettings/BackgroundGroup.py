@@ -74,16 +74,39 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector_button = Gtk.Button(label=gl.lm.get("deck.deck-group.media-select-label"), css_classes=["page-settings-media-selector"])
         self.media_selector.append(self.media_selector_button)
 
+        self.loop_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
+        self.config_box.append(self.loop_box)
+
+        self.loop_label = Gtk.Label(label=gl.lm.get("media-loop"), hexpand=True, xalign=0)
+        self.loop_box.append(self.loop_label)
+
+        self.loop_switch = Gtk.Switch()
+        self.loop_box.append(self.loop_switch)
+
+        self.fps_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.config_box.append(self.fps_box)
+
+        self.fps_label = Gtk.Label(label=gl.lm.get("fps"), hexpand=True, xalign=0)
+        self.fps_box.append(self.fps_label)
+
+        self.fps_spinner = Gtk.SpinButton.new_with_range(1, 30, 1)
+        self.fps_box.append(self.fps_spinner)
+
         self.connect_signals()
         self.load_defaults()
 
     def connect_signals(self):
         self.enable_switch.connect("state-set", self.on_toggle_enable)
         self.media_selector_button.connect("clicked", self.on_choose_image)
+        self.loop_switch.connect("state-set", self.on_toggle_loop)
+        self.fps_spinner.connect("value-changed", self.on_change_fps)
+        
 
     def disconnect_signals(self):
         self.enable_switch.disconnect_by_func(self.on_toggle_enable)
         self.media_selector_button.disconnect_by_func(self.on_choose_image)
+        self.loop_switch.disconnect_by_func(self.on_toggle_loop)
+        self.fps_spinner.disconnect_by_func(self.on_change_fps)
 
 
     def load_defaults(self):
@@ -94,7 +117,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         original_values.setdefault("background", {})
         path = original_values["background"].setdefault("path", "")
         enable = original_values["background"].setdefault("enable", False)
-        loop = original_values["background"].setdefault("loop", False)
+        loop = original_values["background"].setdefault("loop", True)
         fps = original_values["background"].setdefault("fps", 30)
 
         # Save if changed
@@ -104,6 +127,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Update ui
         self.enable_switch.set_active(enable)
         self.config_box.set_visible(enable)
+        self.loop_switch.set_active(loop)
+        self.fps_spinner.set_value(fps)
         self.set_thumbnail(path)
 
         self.connect_signals()
@@ -145,6 +170,26 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Update
         self.settings_page.deck_controller.load_background(page=self.settings_page.deck_controller.active_page)
 
+    def on_toggle_loop(self, toggle_switch, state):
+        settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        settings["background"]["loop"] = state
+
+        # Save
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
+
+        # Update
+        self.settings_page.deck_controller.load_background(page=self.settings_page.deck_controller.active_page)
+
+    def on_change_fps(self, spinner):
+        settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        settings["background"]["fps"] = spinner.get_value_as_int()
+
+        # Save
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
+
+        # Update
+        self.settings_page.deck_controller.load_background(page=self.settings_page.deck_controller.active_page)
+
     def on_choose_image(self, button):
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("background", {})
@@ -153,7 +198,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.update_image)
 
     def update_image(self, file_path):
-        self.set_thumbnail(file_path)
+        self.set_thumbnail(file_path)   
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("background", {})
         settings["background"]["path"] = file_path

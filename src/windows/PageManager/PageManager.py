@@ -232,7 +232,7 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         self.page_button.main_button.set_label(os.path.splitext(os.path.basename(new_path))[0])
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.PageRename, old_path= old_path, new_path= new_path)
+        gl.signal_manager.trigger_signal(signal=Signals.PageRename, old_path=old_path, new_path=new_path)
 
 
     def on_remove(self, action, param):
@@ -240,4 +240,4 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         self.page_button.page_manager.page_box.remove(self.page_button)
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.PageDelete, path= self.page_button.page_path)
+        gl.signal_manager.trigger_signal(signal=Signals.PageRemove, path=self.page_button.page_path)

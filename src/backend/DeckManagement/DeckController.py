@@ -21,7 +21,7 @@ import statistics
 from threading import Thread, Timer
 import threading
 import time
-from PIL import Image, ImageOps, ImageDraw, ImageFont
+from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageSequence
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
 from StreamDeck.Devices import StreamDeck
@@ -839,9 +839,39 @@ class BackgroundVideo(BackgroundVideoCache):
         key_image.paste(segment)
 
         return key_image
+    
 
+@dataclass
+class KeyGIF:
+    controller_key: "ControllerKey"
+    gif_path: str
+    fill_mode: str = "cover"
+    size: float = 1
+    valign: float = 0
+    halign: float = 0
+    fps: int = 30
+    loop: bool = True
 
+    def __post_init__(self):
+        self.active_frame: int = -1
+        self.gif = Image.open(self.gif_path)
+        self.n_frames = self.gif.n_frames
+        
+    def get_next_frame(self) -> Image.Image:
+        self.active_frame += 1
 
+        if self.active_frame >= self.n_frames:
+            if self.loop:
+                self.active_frame = 0
+            else:
+                self.active_frame = self.n_frames - 1
+
+        self.gif.seek(self.active_frame)
+        return self.scale_image(self.gif.convert("RGBA"))
+    
+    def scale_image(self, image: Image.Image) -> Image.Image:
+        size = self.controller_key.deck_controller.get_key_image_size()
+        return image.resize((int(size[0] * self.size), int(size[1] * self.size)), Image.Resampling.LANCZOS)
 
 class ControllerKey:
     def __init__(self, deck_controller: DeckController, key: int):
@@ -1121,12 +1151,20 @@ class ControllerKey:
                         ), update=False)
 
                 elif is_video(path) and True:
-                    self.set_key_video(KeyVideo(
-                        controller_key=self,
-                        video_path=path,
-                        loop = page_dict.get("media", {}).get("loop", True),
-                        fps = page_dict.get("media", {}).get("fps", 30)
-                    )) # Videos always update
+                    if os.path.splitext(path)[1].lower() == ".gif" and True:
+                        self.set_key_video(KeyGIF(
+                            controller_key=self,
+                            gif_path=path,
+                            loop=page_dict.get("media", {}).get("loop", True),
+                            fps=page_dict.get("media", {}).get("fps", 30)
+                        )) # GIFs always update
+                    else:
+                        self.set_key_video(KeyVideo(
+                            controller_key=self,
+                            video_path=path,
+                            loop = page_dict.get("media", {}).get("loop", True),
+                            fps = page_dict.get("media", {}).get("fps", 30)
+                        )) # Videos always update
 
             elif len(self.get_own_actions()) > 1:
                 with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:

@@ -216,8 +216,8 @@ class KeyButton(Gtk.Frame):
         url = file.get_uri()
         path = file.get_path()
 
-        result = gl.asset_manager_backend.add_custom_media_set_by_ui(url=url, path=path)
-        if result == -1:
+        internal_path = gl.asset_manager_backend.add_custom_media_set_by_ui(url=url, path=path)
+        if internal_path is None:
             return False
 
         # Set media to key
@@ -232,7 +232,7 @@ class KeyButton(Gtk.Frame):
             "loop": True,
             "fps": 30
         })
-        active_page.dict["keys"][page_coords]["media"]["path"] = path
+        active_page.dict["keys"][page_coords]["media"]["path"] = internal_path
         # Save page
         active_page.save()
         key_index = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))

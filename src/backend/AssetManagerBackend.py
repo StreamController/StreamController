@@ -240,9 +240,9 @@ class AssetManagerBackend(list):
             path = download_file(url=url, path=os.path.join(gl.DATA_PATH, "cache", "downloads"))
 
         if path == None:
-            return -1
+            return
         if not os.path.exists(path):
-            return -1
+            return
         if not is_video(path) and not is_image(path):
             dial = Gtk.AlertDialog(
                     message="No valid image or video.",
@@ -250,13 +250,15 @@ class AssetManagerBackend(list):
                     modal=True
                 )
             dial.show()
-            return -1
+            return
         asset_id = gl.asset_manager_backend.add(asset_path=path)
         if asset_id == None:
-            return -1
+            return
         
         print()
+        asset = self.get_by_id(asset_id)
         # Add to asset chooser ui if opened
         if gl.asset_manager is not None:
-            asset = self.get_by_id(asset_id)
             gl.asset_manager.asset_chooser.custom_asset_chooser.add_asset(asset)
+
+        return asset.get("internal-path")

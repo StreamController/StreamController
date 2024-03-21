@@ -324,12 +324,12 @@ class Page:
         return pages
     
     def reload_similar_pages(self, page_coords=None, reload_self: bool = False,
-                             load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
+                             load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
         self.save()
         for page in self.get_pages_with_same_json(get_self=reload_self):
             page.load(load_from_file=True)
             if page_coords is None:
-                page.deck_controller.load_page(page, load_brigtness, load_screensaver, load_background, load_keys)
+                page.deck_controller.load_page(page, load_brightness, load_screensaver, load_background, load_keys)
             else:
                 key_index = page.deck_controller.coords_to_index(page_coords.split("x"))
                 # Reload only given key

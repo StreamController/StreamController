@@ -459,7 +459,7 @@ class DeckController:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
 
 
-    def load_page(self, page: Page, load_brigtness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
+    def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
                   allow_reload: bool = True):
         if not self.get_alive(): return
 
@@ -493,7 +493,7 @@ class DeckController:
         if load_background:
             # self.load_background(page, update=False)
             self.media_player.add_task(self.load_background, page, update=False)
-        if load_brigtness:
+        if load_brightness:
             self.load_brightness(page)
         if load_screensaver:
             self.load_screensaver(page)

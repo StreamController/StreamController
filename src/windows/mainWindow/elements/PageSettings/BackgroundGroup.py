@@ -168,7 +168,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         deck_controller.active_page.save()
 
         deck_controller.active_page.reload_similar_pages(reload_self=True,
-                                                         load_brigtness=False, load_screensaver=False, load_keys=False)
+                                                         load_brightness=False, load_screensaver=False, load_keys=False)
 
     def on_toggle_loop(self, toggle_switch, state):
         deck_controller = self.settings_page.deck_page.deck_controller
@@ -177,7 +177,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         deck_controller.active_page.save()
 
         deck_controller.active_page.reload_similar_pages(reload_self=True,
-                                                         load_brigtness=False, load_screensaver=False, load_keys=False)
+                                                         load_brightness=False, load_screensaver=False, load_keys=False)
         
     def on_change_fps(self, spinner):
         deck_controller = self.settings_page.deck_page.deck_controller
@@ -186,7 +186,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         deck_controller.active_page.save()
 
         deck_controller.active_page.reload_similar_pages(reload_self=True,
-                                                         load_brigtness=False, load_screensaver=False, load_keys=False)
+                                                         load_brightness=False, load_screensaver=False, load_keys=False)
 
     def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)

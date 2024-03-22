@@ -26,6 +26,7 @@ from loguru import logger as log
 # Import own modules
 from src.windows.Store.InfoPage import InfoPage
 from GtkHelper.GtkHelper import ErrorPage
+from src.windows.Store.NoConnectionError import NoConnectionError
 
 # Typing
 from typing import TYPE_CHECKING
@@ -89,7 +90,7 @@ class StorePage(Gtk.Stack):
         self.add_titled(self.info_page, "Info", "Info")
 
         # Error page
-        self.no_connection_page = ErrorPage(error_text="No connection")
+        self.no_connection_page = NoConnectionError()
         self.add_titled(self.no_connection_page, "Error", "Error")
 
     def on_search_changed(self, entry: Gtk.SearchEntry):

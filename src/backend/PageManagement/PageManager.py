@@ -168,16 +168,12 @@ class PageManager:
         for controller in gl.deck_manager.deck_controller:
             if controller.active_page is None:
                 continue
-            page = self.get_page(path=page_path, deck_controller=controller)
-            if page is None:
-                continue
 
             if controller.active_page.json_path != page_path:
                 continue
 
-
             deck_default_page = self.get_default_page_for_deck(controller.deck.get_serial_number())
-            if page_path != deck_default_page:
+            if page_path != deck_default_page and deck_default_page is not None:
                 new_page = self.get_page(deck_default_page, controller)
                 controller.load_page(new_page)
                 continue

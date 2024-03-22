@@ -183,6 +183,13 @@ class PageButton(Gtk.FlowBoxChild):
         context = KeyButtonContextMenu(self)
         context.popup()
 
+    def delete_page(self):
+        gl.page_manager.remove_page(self.page_path)
+        self.page_manager.page_box.remove(self)
+
+        # Notify plugin actions
+        gl.signal_manager.trigger_signal(signal=Signals.PageDelete, path=self.page_path)
+
 
 class KeyButtonContextMenu(Gtk.PopoverMenu):
     def __init__(self, page_button:PageButton):
@@ -236,8 +243,29 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
 
 
     def on_remove(self, action, param):
-        gl.page_manager.remove_page(self.page_button.page_path)
-        self.page_button.page_manager.page_box.remove(self.page_button)
+        dial = DeleteFileConfirmationDialog(self.page_button)
+        dial.present()
 
-        # Notify plugin actions
-        gl.signal_manager.trigger_signal(signal=Signals.PageRemove, path=self.page_button.page_path)
+
+class DeleteFileConfirmationDialog(Adw.MessageDialog):
+    def __init__(self, page_button: PageButton):
+        super().__init__()
+        self.page_button = page_button
+
+        self.build()
+
+    def build(self):
+        self.set_title("Delete Confirmation")
+        self.add_response("cancel", "Cancel")
+        self.add_response("delete", "Delete")
+        self.set_default_response("cancel")
+        self.set_close_response("cancel")
+        self.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        self.set_body(f'Are you sure you want to delete the page: "{self.page_button.main_button.get_label()}"?')
+
+        self.connect("response", self.on_response)
+
+    def on_response(self, dialog, response):
+        if response == "delete":
+            self.page_button.delete_page()
+        dialog.destroy()

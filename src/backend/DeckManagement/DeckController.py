@@ -30,6 +30,7 @@ import usb.util
 from loguru import logger as log
 import asyncio
 import matplotlib.font_manager
+from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
 from src.backend.DeckManagement.Subclasses.key_video_cache import VideoFrameCache
 from dataclasses import dataclass
@@ -841,22 +842,19 @@ class BackgroundVideo(BackgroundVideoCache):
         return key_image
     
 
-@dataclass
-class KeyGIF:
-    controller_key: "ControllerKey"
-    gif_path: str
-    fill_mode: str = "cover"
-    size: float = 1
-    valign: float = 0
-    halign: float = 0
-    fps: int = 30
-    loop: bool = True
+class KeyGIF(SingleKeyAsset):
+    def __init__(self, controller_key: "ControllerKey", gif_path: str, fill_mode: str = "cover", size: float = 1,
+                valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
+        super().__init__(controller_key, fill_mode, size, valign, halign)
+        self.gif_path = gif_path
+        self.fps = fps
+        self.loop = loop
 
-    def __post_init__(self):
         self.active_frame: int = -1
+
         self.gif = Image.open(self.gif_path)
         self.n_frames = self.gif.n_frames
-        
+
     def get_next_frame(self) -> Image.Image:
         self.active_frame += 1
 
@@ -867,18 +865,22 @@ class KeyGIF:
                 self.active_frame = self.n_frames - 1
 
         self.gif.seek(self.active_frame)
-        return self.scale_image(self.gif.convert("RGBA"))
+        return self.gif.convert("RGBA")
     
-    def scale_image(self, image: Image.Image) -> Image.Image:
-        size = self.controller_key.deck_controller.get_key_image_size()
-        return image.resize((int(size[0] * self.size), int(size[1] * self.size)), Image.Resampling.LANCZOS)
+    def get_raw_image(self) -> Image.Image:
+        return self.get_next_frame()
+    
 
 class ControllerKey:
     def __init__(self, deck_controller: DeckController, key: int):
         self.deck_controller = deck_controller
         self.key = key
 
-        self.image_margins = [0, 0, 0, 0] # left, top, right, bottom
+        self.valign = 0
+        self.halign = 0
+        self.fill_mode = "cover"
+        self.size = 0.1
+
         self.background_color = [0, 0, 0, 0]
 
         # Keep track of the current state of the key because self.deck_controller.deck.key_states seams to give inverted values in get_current_deck_image
@@ -888,6 +890,7 @@ class ControllerKey:
 
         self.key_image: KeyImage = None
         self.key_video: KeyVideo = None
+        # self.key_asset: SingleKeyAsset = SingleKeyAsset(self)
 
         self.hide_error_timer: Timer = None
 
@@ -896,16 +899,6 @@ class ControllerKey:
     def get_current_deck_image(self) -> Image.Image:
         foreground = None
 
-        if self.key_image is not None:
-            foreground = self.key_image.get_composite_image()
-        elif self.key_video is not None:
-            foreground = self.key_video.get_next_frame()
-
-        # return foreground
-        
-
-        if foreground is None:
-            foreground = self.deck_controller.generate_alpha_key()
 
         background: Image.Image = None
         # Only load the background image if it's not gonna be hidden by the background color
@@ -925,11 +918,23 @@ class ControllerKey:
         if background is None:
             background = self.deck_controller.generate_alpha_key().copy()
 
-        
-        if foreground.mode == "RGBA":
-            background.paste(foreground, (0, 0), foreground)
+        image: Image.Image = None
+        if self.key_image is not None:
+            image = self.key_image.generate_final_image(background=background, labels=self.labels)
+        elif self.key_video is not None:
+            image = self.key_video.generate_final_image(background=background, labels=self.labels)
         else:
-            background.paste(foreground, (0, 0))
+            image = self.deck_controller.generate_alpha_key()
+
+        labeled_image = self.add_labels_to_image(image)
+        return labeled_image
+        
+        # if foreground.mode == "RGBA":
+        #     background.paste(foreground, (0, 0), foreground)
+        # else:
+        #     background.paste(foreground, (0, 0))
+            
+        background = self.paste_foreground(background, foreground)
 
         labeled_image = self.add_labels_to_image(background)
 
@@ -940,10 +945,31 @@ class ControllerKey:
             labeled_image = self.shrink_image(labeled_image)
 
         # Close no longer needed images
-        foreground.close()
+        # foreground.close()
         background.close()
 
         return labeled_image
+    
+    def paste_foreground(self, background: Image.Image, foreground: Image.Image) -> Image.Image:
+        img_size = self.deck_controller.get_key_image_size()
+        img_size = (int(img_size[0] * self.size), int(img_size[1] * self.size)) # Calculate scaled size of the image
+        if self.fill_mode == "stretch":
+            foreground_resized = foreground.resize(img_size, Image.Resampling.HAMMING)
+
+        elif self.fill_mode == "cover":
+            foreground_resized = ImageOps.cover(foreground, img_size, Image.Resampling.HAMMING)
+
+        elif self.fill_mode == "contain":
+            foreground_resized = ImageOps.contain(foreground, img_size, Image.Resampling.HAMMING)
+
+        left_margin = int((background.width - img_size[0]) * (self.halign + 1) / 2)
+        top_margin = int((background.height - img_size[1]) * (self.valign + 1) / 2)
+
+        if foreground.mode == "RGBA":
+            background.paste(foreground_resized, (left_margin, top_margin), foreground_resized)
+        else:
+            background.paste(foreground_resized, (left_margin, top_margin))
+        return background
     
     def update(self) -> None:
         self.deck_controller.update_key(self.key)
@@ -1151,19 +1177,25 @@ class ControllerKey:
                         ), update=False)
 
                 elif is_video(path) and True:
-                    if os.path.splitext(path)[1].lower() == ".gif" and True:
+                    if os.path.splitext(path)[1].lower() == ".gif":
                         self.set_key_video(KeyGIF(
                             controller_key=self,
                             gif_path=path,
                             loop=page_dict.get("media", {}).get("loop", True),
-                            fps=page_dict.get("media", {}).get("fps", 30)
+                            fps=page_dict.get("media", {}).get("fps", 30),
+                            size=page_dict.get("media", {}).get("size", 1),
+                            valign=page_dict.get("media", {}).get("valign", 0),
+                            halign=page_dict.get("media", {}).get("halign", 0),
                         )) # GIFs always update
                     else:
                         self.set_key_video(KeyVideo(
                             controller_key=self,
                             video_path=path,
                             loop = page_dict.get("media", {}).get("loop", True),
-                            fps = page_dict.get("media", {}).get("fps", 30)
+                            fps = page_dict.get("media", {}).get("fps", 30),
+                            size = page_dict.get("media", {}).get("size", 1),
+                            valign = page_dict.get("media", {}).get("valign", 0),
+                            halign = page_dict.get("media", {}).get("halign", 0),
                         )) # Videos always update
 
             elif len(self.get_own_actions()) > 1:
@@ -1294,7 +1326,7 @@ class KeyLabel:
         return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=self.font_name))
 
 
-class KeyImage:
+class KeyImage(SingleKeyAsset):
     def __init__(self, controller_key: ControllerKey, image: Image.Image, fill_mode: str = "cover", size: float = 1, valign: float = 0, halign: float = 0):
         """
         Initialize the class with the given controller key, image, fill mode, size, vertical alignment, and horizontal alignment.
@@ -1307,89 +1339,50 @@ class KeyImage:
             valign (float, optional): The vertical alignment of the image. Defaults to 0. Ranges from -1 to 1.
             halign (float, optional): The horizontal alignment of the image. Defaults to 0. Ranges from -1 to 1.
         """
-        self.controller_key = controller_key
-        self.image: Image.Image = image
-        self.fill_mode = fill_mode
-        self.size = size
-        self.valign = valign
-        self.halign = halign
+        super().__init__(controller_key, fill_mode, size, valign, halign)
+        self.image = image
 
         if self.image is None:
             self.image = self.controller_key.deck_controller.generate_alpha_key()
 
-    def close(self):
-        if self.image is not None:
-            self.image.close()
-            self.image = None
-
-    def get_composite_image(self, background: Image.Image = None) -> Image.Image:
-        if background is None:
-            background = self.controller_key.deck_controller.generate_alpha_key()
-
-        if self.image is None:
-            self.image = self.controller_key.deck_controller.generate_alpha_key()
-
-        # Calculate the box where the inner image should be fitted
-        img_size = self.controller_key.deck_controller.get_key_image_size()
-        img_size = (int(img_size[0] * self.size), int(img_size[1] * self.size)) # Calculate scaled size of the image
-
-        left_margin = int((background.width - img_size[0]) * (self.halign + 1) / 2)
-        top_margin = int((background.height - img_size[1]) * (self.valign + 1) / 2)
-
-        if self.fill_mode == "stretch":
-            try:
-                image_size = [background.width - self.margins[0] - self.margins[2], background.height - self.margins[1] - self.margins[3]]
-                image_resized = self.image.resize(image_size, Image.Resampling.HAMMING)
-            except:
-                self.image = self.controller_key.deck_controller.generate_alpha_key()
-
-        elif self.fill_mode == "cover":
-            try:
-                image_resized = ImageOps.cover(self.image, img_size, Image.Resampling.HAMMING)
-            except:
-                self.image = self.controller_key.deck_controller.generate_alpha_key()
-
-        elif self.fill_mode == "contain":
-            try:
-                image_resized = ImageOps.contain(self.image, img_size, Image.Resampling.HAMMING)
-            except:
-                self.image = self.controller_key.deck_controller.generate_alpha_key()
-        
-        else:
-            raise ValueError(f"Unknown fill mode: {self.fill_mode}")
-        
-        background.paste(image_resized, (left_margin, top_margin))
-
-        image_resized.close()
-        return background
+    def get_raw_image(self) -> Image.Image:
+        return self.image
     
+    def close(self) -> None:
+        self.image.close()
+        self.image = None
+        del self.image
 
-class KeyVideo(VideoFrameCache):
+class KeyVideo(SingleKeyAsset):
     def __init__(self, controller_key: ControllerKey, video_path: str, fill_mode: str = "cover", size: float = 1,
                  valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
-        self.controller_key = controller_key
+        if not isinstance(controller_key, ControllerKey):
+            print()
+        super().__init__(
+            controller_key=controller_key,
+            fill_mode=fill_mode,
+            size=size,
+            valign=valign,
+            halign=halign
+        )
         self.video_path = video_path
-        self.fill_mode = fill_mode
-        self.size = size
-        self.valign = valign
-        self.halign = halign
         self.fps = fps
         self.loop = loop
 
-        self.active_frame: int = -1
+        self.video_cache = VideoFrameCache(video_path)
 
-        super().__init__(video_path)
+        self.active_frame: int = -1
 
 
     def get_next_frame(self) -> Image:
         self.active_frame += 1
 
-        if self.active_frame >= self.n_frames:
+        if self.active_frame >= self.video_cache.n_frames:
             if self.loop:
                 self.active_frame = 0
         
-        return self.get_frame(self.active_frame).resize(self.controller_key.deck_controller.get_key_image_size(), Image.Resampling.LANCZOS)
-
-        frame = self.frames[self.active_frame]
-        print(type(frame))
-        return frame
+        return self.video_cache.get_frame(self.active_frame).resize(self.controller_key.deck_controller.get_key_image_size(), Image.Resampling.LANCZOS)
+    
+    def get_raw_image(self) -> Image.Image:
+        return self.get_next_frame()
+     

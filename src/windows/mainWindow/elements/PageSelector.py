@@ -67,6 +67,8 @@ class PageSelector(Gtk.Box):
         self.sidebar.append(self.settings_button)
 
         gl.signal_manager.connect_signal(signal=Signals.ChangePage, callback=self.update)
+        gl.signal_manager.connect_signal(signal=Signals.PageAdd, callback=self.update)
+        gl.signal_manager.connect_signal(signal=Signals.PageDelete, callback=self.update)
     
     def update(self, *args, **kwargs):
         self.disconnect_change_signal()

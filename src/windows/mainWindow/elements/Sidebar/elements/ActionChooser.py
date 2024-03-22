@@ -121,17 +121,23 @@ class PluginGroup(BetterPreferencesGroup):
 
         self.expander = []
 
-        self.build()
+        self.update()
 
         self.set_sort_func(self.sort_func, None)
         self.set_filter_func(self.filter_func, None)
 
-    def build(self):
+    def update(self):
+        print()
         self.clear()
+        self.expander = []
+        print()
         for plugin_name, plugin_dir in gl.plugin_manager.get_plugins().items():
             expander = PluginExpander(self, plugin_name, plugin_dir)
+            # if expander.get_parent() is not None:
+                # print()
             self.add(expander)
             self.expander.append(expander)
+        print()
 
     def search(self):
         # Let the expanders search
@@ -282,6 +288,8 @@ class ActionRow(Adw.PreferencesRow):
 
         # self.icon = Gtk.Image(icon_name="insert-image", icon_size=Gtk.IconSize.LARGE, margin_start=5)
         self.icon = action_holder.icon
+        if action_holder.icon.get_parent() is not None:
+            self.action_holder.icon.get_parent().remove(self.action_holder.icon)
         self.main_box.append(self.icon)
 
         self.label = Gtk.Label(label=self.action_holder.action_name, margin_start=10, css_classes=["bold", "large-text"])

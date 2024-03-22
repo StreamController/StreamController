@@ -116,12 +116,12 @@ class Page:
                 action_class = action_holder.action_base
                 
                 if action_class is None:
-                    self.action_objects[key][i] = action["id"]
+                    self.action_objects[key][i] = NoActionHolderFound(id=action["id"])
                     continue
 
                 old_object = self.action_objects[key].get(i)
                 if old_object is not None:
-                    if isinstance(old_object, action_class):
+                    if isinstance(old_object, action_class) and not isinstance(old_object, NoActionHolderFound):    
                         # Action already exists - keep it
                         continue
                 
@@ -240,6 +240,8 @@ class Page:
             for action in self.action_objects[key].values():
                 if action is None:
                     continue
+                if isinstance(action, NoActionHolderFound):
+                    continue
                 actions.append(action)
         return actions
     
@@ -247,6 +249,8 @@ class Page:
         actions = []
         if key in self.action_objects:
             for action in self.action_objects[key].values():
+                if isinstance(action, NoActionHolderFound) or action is None:
+                    continue
                 actions.append(action)
         return actions
     

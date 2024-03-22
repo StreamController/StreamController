@@ -1223,6 +1223,9 @@ class ControllerKey:
             return []
         own_coords = self.deck_controller.index_to_coords(self.key)
         page_coords = f"{own_coords[0]}x{own_coords[1]}"
+        actions =  active_page.get_all_actions_for_key(page_coords)
+
+        return actions
 
         actions = list(active_page.action_objects.get(page_coords, {}).values())
         # Remove all NoActionHolderFound objects

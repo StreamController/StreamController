@@ -120,11 +120,12 @@ class ActionBase:
             }
 
     def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, update: bool = True):
-        if not self.get_is_present(): return
+        if not self.get_is_present():
+            return
         if self.key_index >= self.deck_controller.deck.key_count():
             return
-        if not self.on_ready_called:
-            update = False
+        # if not self.on_ready_called:
+            # update = False
 
         # Block for multi actions
         if self.get_is_multi_action():

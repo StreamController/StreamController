@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
  
+import sys
 from git import Repo
 import requests
 from async_lru import alru_cache
@@ -31,6 +32,7 @@ from install import install
 from packaging import version
 
 # Import own modules
+from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
 # Import signals
@@ -583,10 +585,13 @@ class StoreBackend:
         gl.plugin_manager.load_plugins()
         gl.plugin_manager.init_plugins()
         gl.plugin_manager.generate_action_index()
+        plugins = gl.plugin_manager.get_plugins()
+        if "Clocks" not in plugins:
+            print()
 
         # Update ui
         if recursive_hasattr(gl, "app.main_win.sidebar.action_chooser"):
-            gl.app.main_win.sidebar.action_chooser.plugin_group.build()
+            gl.app.main_win.sidebar.action_chooser.plugin_group.update()
 
         ## Update page
         for controller in gl.deck_manager.deck_controller:
@@ -594,11 +599,10 @@ class StoreBackend:
             if hasattr(controller, "active_page"):
                 if controller.active_page is not None:
                     # Load action objects
+                    controller.active_page.action_objects = {}
                     controller.active_page.load_action_objects()
-                    # Reload page to send new on_load events
+                    # Reload page to send new on_ready events
                     controller.load_page(controller.active_page)
-
-                    controller.active_page.reload_similar_pages()
 
         # Notify plugin actions
         gl.signal_manager.trigger_signal(signal=Signals.PluginInstall, id=plugin_dict["id"])
@@ -620,15 +624,27 @@ class StoreBackend:
                 deck_controller.load_key(key_index, deck_controller.active_page)
 
         ## 2. Inform plugin base
+        plugins = gl.plugin_manager.get_plugins()
         plugin = gl.plugin_manager.get_plugin_by_id(plugin_id)
+        if plugin is None:
+            return
         plugin.on_uninstall()
         
         ## 3. Remove plugin folder
         shutil.rmtree(plugin.PATH)
 
         ## 4. Delete plugin base object
-        plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
-        del plugin_obj
+        # plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
+        gl.plugin_manager.remove_plugin_from_list(plugin)
+
+        del plugin
+
+        gl.app.main_win.sidebar.action_chooser.plugin_group.update()
+
+        # Remove from sys.modules
+        module_name = f"plugins.{plugin_id}.main"
+        if module_name in sys.modules:
+            del sys.modules[module_name]
 
     async def get_plugin_for_id(self, plugin_id):
         plugins = await self.get_all_plugins_async()

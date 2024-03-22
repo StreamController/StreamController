@@ -101,6 +101,10 @@ class PluginManager:
             _id = get_last_dir(plugins[plugin]["folder-path"])
             if _id == plugin_id:
                 return plugins[plugin]["object"]
+            
+    def remove_plugin_from_list(self, plugin_base: PluginBase):
+        del PluginBase.plugins[plugin_base.plugin_name]
+    
 
     def init_pyro5(self):
         self.pyro_daemon = Pyro5.api.Daemon()

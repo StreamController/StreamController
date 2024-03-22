@@ -137,7 +137,7 @@ class IconSelector(Gtk.Box):
         controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         grid = controller.get_own_key_grid()
         # Call keys remove method
-        grid.selected_key.on_remove()
+        grid.selected_key.remove_media()
         # Hide remove button
         self.remove_button.set_visible(False)
 

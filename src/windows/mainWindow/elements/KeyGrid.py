@@ -400,6 +400,22 @@ class KeyButton(Gtk.Frame):
         # Reload ui
         gl.app.main_win.sidebar.load_for_coords((x, y))
 
+    def remove_media(self):
+        active_page = self.key_grid.deck_controller.active_page
+        if active_page is None:
+            return
+        y, x = self.coords
+
+        if f"{x}x{y}" not in active_page.dict["keys"]:
+            return
+        
+        active_page.dict["keys"][f"{x}x{y}"]["media"]["path"] = None
+        active_page.save()
+
+        active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
+
+        # Reload ui
+
     def _set_visible(self, visible: bool):
         self.set_visible(visible)
         self.image.set_visible(visible)

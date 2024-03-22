@@ -639,6 +639,8 @@ class StoreBackend:
     ## Updates
     async def get_plugins_to_update(self):
         plugins = await self.get_all_plugins_async()
+        if isinstance(plugins, NoConnectionError):
+            return plugins
 
         plugins_to_update: list[dict] = []
 
@@ -656,6 +658,8 @@ class StoreBackend:
         Returns number of updated plugins
         """
         plugins_to_update = await self.get_plugins_to_update()
+        if isinstance(plugins_to_update, NoConnectionError):
+            return plugins_to_update
         for plugin in plugins_to_update:
             await self.install_plugin(plugin)
         
@@ -663,6 +667,8 @@ class StoreBackend:
 
     async def get_icons_to_update(self):
         icons = await self.get_all_icons()
+        if isinstance(icons, NoConnectionError):
+            return icons
 
         icons_to_update: list[dict] = []
 
@@ -680,6 +686,8 @@ class StoreBackend:
         Returns number of updated icons
         """
         icons_to_update = await self.get_icons_to_update()
+        if isinstance(icons_to_update, NoConnectionError):
+            return icons_to_update
         for icon in icons_to_update:
             await self.install_icon(icon)
 
@@ -691,6 +699,9 @@ class StoreBackend:
         """
         n_plugins = await self.update_all_plugins()
         n_icons = await self.update_all_icons()
+
+        if isinstance(n_plugins, NoConnectionError) or isinstance(n_icons, NoConnectionError):
+            return NoConnectionError()
 
         return n_plugins + n_icons
 

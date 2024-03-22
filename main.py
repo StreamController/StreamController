@@ -39,7 +39,7 @@ from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
-from src.windows.Store.StoreBackend import StoreBackend
+from src.windows.Store.StoreBackend import StoreBackend, NoConnectionError
 from autostart import setup_autostart
 from src.Signals.SignalManager import SignalManager
 from src.backend.DesktopGrabber import DesktopGrabber
@@ -122,6 +122,11 @@ def update_assets():
     log.info("Updating store assets")
     start = time.time()
     number_of_installed_updates = asyncio.run(gl.store_backend.update_everything())
+    if isinstance(number_of_installed_updates, NoConnectionError):
+        log.error("Failed to update store assets")
+        if hasattr(gl.app, "main_win"):
+            gl.app.main_win.show_error_toast("Failed to update store assets")
+        return
     log.info(f"Updating {number_of_installed_updates} store assets took {time.time() - start} seconds")
 
     if number_of_installed_updates <= 0:

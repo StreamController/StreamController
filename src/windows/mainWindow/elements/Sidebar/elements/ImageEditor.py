@@ -133,8 +133,18 @@ class SizeRow(Adw.PreferencesRow):
 
         deck_controller.active_page.save()
 
-        # Reload key
-        deck_controller.load_key(key=deck_controller.coords_to_index(self.active_coords), page=deck_controller.active_page)
+        # Reload key on all decks that have this page loaded
+        for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+            if controller_key.key_image is not None:
+                controller_key.key_image.size = widget.get_value() / 100
+                controller_key.update()
+            if controller_key.key_video is not None:
+                controller_key.key_video.size = widget.get_value() / 100
+                controller_key.update()
 
     def connect_signals(self):
         self.size_spinner.connect("value-changed", self.on_size_changed)
@@ -184,8 +194,18 @@ class ValignRow(Adw.PreferencesRow):
 
         deck_controller.active_page.save()
 
-        # Reload key
-        deck_controller.load_key(key=deck_controller.coords_to_index(self.active_coords), page=deck_controller.active_page)
+        # Reload key on all decks that have this page loaded
+        for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+            if controller_key.key_image is not None:
+                controller_key.key_image.valign = widget.get_value()
+                controller_key.update()
+            if controller_key.key_video is not None:
+                controller_key.key_video.valign = widget.get_value()
+                controller_key.update()
 
     def connect_signals(self):
         self.valign_spinner.connect("value-changed", self.on_valign_changed)
@@ -236,8 +256,18 @@ class HalignRow(Adw.PreferencesRow):
 
         deck_controller.active_page.save()
 
-        # Reload key
-        deck_controller.load_key(key=deck_controller.coords_to_index(self.active_coords), page=deck_controller.active_page)
+        # Reload key on all decks that have this page loaded
+        for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+            if controller_key.key_image is not None:
+                controller_key.key_image.halign = widget.get_value()
+                controller_key.update()
+            if controller_key.key_video is not None:
+                controller_key.key_video.halign = widget.get_value()
+                controller_key.update()
 
     def connect_signals(self):
         self.halign_spinner.connect("value-changed", self.on_halign_changed)

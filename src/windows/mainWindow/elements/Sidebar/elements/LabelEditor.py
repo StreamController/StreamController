@@ -226,7 +226,17 @@ class LabelRow(Adw.PreferencesRow):
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["color"] = [red, green, blue]
         page.save()
 
-        self.update_key()
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+
+            controller_key.labels[self.label_text.lower()].color = [red, green, blue]
+            controller_key.update()
+
 
     def on_change_font(self, button):
         font = self.font_chooser_button.get_font()
@@ -244,38 +254,59 @@ class LabelRow(Adw.PreferencesRow):
 
         page.save()
 
-        self.update_key()
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+
+            controller_key.labels[self.label_text.lower()].font_name = pango_font.get_family()
+            controller_key.labels[self.label_text.lower()].font_size = round(font_size/1000)
+
+            controller_key.update()
+
 
     def on_change_text(self, entry):
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["text"] = entry.get_text()
         page.save()
 
-        self.update_key()
+        # self.update_key(_property=f"text-{self.label_text.lower()}", value=entry.get_text())
 
         # Hide settings if text is empty
         vis = entry.get_text() != ""
         self.font_chooser_box.set_visible(vis)
         self.stroke_width_box.set_visible(vis)
 
-    def update_key(self):
-        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        # controller.reload_keys()
-        page = controller.active_page
-        page.load()
-
-        # controller.load_key(f"{self.active_coords[0]}x{self.active_coords[1]}", only_labels=True)
-        controller.load_key(
-            key=controller.coords_to_index(self.active_coords),
-            page=controller.active_page
-        )
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+            
+            controller_key.labels[self.label_text.lower()].text = entry.get_text()
+            controller_key.update()
 
     def on_change_stroke_width(self, button):
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["stroke-width"] = round(self.stroke_width_button.get_value())
         page.save()
 
-        self.update_key()
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+
+            controller_key.labels[self.label_text.lower()].font_weight = round(self.stroke_width_button.get_value())
+            controller_key.update()
+
 
     def load_defaults(self):
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page

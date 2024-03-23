@@ -95,12 +95,13 @@ class Brightness(Adw.PreferencesRow):
             self.main_box.append(Gtk.Label(label="Error", hexpand=True, xalign=0, css_classes=["red-color"]))
             return
 
-        brightness = page.dict["brightness"]["value"]
+        brightness = page.dict.get("brightness", {}).get("value", 75)
         self.scale.set_value(brightness)
 
     def on_value_changed(self, scale):
         value = round(scale.get_value())
         # update value in page
+        self.settings_page.deck_page.deck_controller.active_page.setdefault("brightness", {})
         self.settings_page.deck_page.deck_controller.active_page.dict["brightness"]["value"] = value
         self.settings_page.deck_page.deck_controller.active_page.save()
         # update deck without reload of page
@@ -111,6 +112,7 @@ class Brightness(Adw.PreferencesRow):
 
         deck_controller = self.settings_page.deck_page.deck_controller
         # Update page
+        deck_controller.active_page.dict.setdefault("brightness", {})
         deck_controller.active_page.dict["brightness"]["overwrite"] = state
         # Save
         deck_controller.active_page.save()

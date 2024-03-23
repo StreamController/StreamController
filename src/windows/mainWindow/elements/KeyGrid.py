@@ -151,6 +151,8 @@ class KeyButton(Gtk.Frame):
 
         self.init_dnd()
 
+        self.init_shortcuts()
+
     def init_dnd(self) -> None:
         self.drag_source = Gtk.DragSource()
         self.drag_source.connect("prepare", self.on_drag_prepare)
@@ -353,7 +355,7 @@ class KeyButton(Gtk.Frame):
         self.set_visible(True)
 
     # Modifier
-    def on_copy(self):
+    def on_copy(self, *args):
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
@@ -362,11 +364,11 @@ class KeyButton(Gtk.Frame):
 
         gl.app.main_win.key_dict = key_dict
 
-    def on_cut(self):
+    def on_cut(self, *args):
         self.on_copy()
         self.on_remove()
 
-    def on_paste(self):
+    def on_paste(self, *args):
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
@@ -378,7 +380,7 @@ class KeyButton(Gtk.Frame):
         # Reload ui
         gl.app.main_win.sidebar.load_for_coords((x, y))
 
-    def on_remove(self):
+    def on_remove(self, *args):
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
@@ -424,11 +426,41 @@ class KeyButton(Gtk.Frame):
         self.action_group = Gio.SimpleActionGroup()
         self.insert_action_group("key", self.action_group)
 
-        self.update_action = Gio.SimpleAction.new("update", None)
-        self.update_action.connect("activate", self.on_update)
-        self.action_group.add_action(self.update_action)
+        self.copy_action = Gio.SimpleAction.new("copy", None)
+        self.cut_action = Gio.SimpleAction.new("cut", None)
+        self.paste_action = Gio.SimpleAction.new("paste", None)
+        self.remove_action = Gio.SimpleAction.new("remove", None)
 
-        gl.app.set_accels_for_action("key.update", ["<Primary>u"])
+        self.copy_action.connect("activate", self.on_copy)
+        self.cut_action.connect("activate", self.on_cut)
+        self.paste_action.connect("activate", self.on_paste)
+        self.remove_action.connect("activate", self.on_remove)
+
+        self.action_group.add_action(self.copy_action)
+        self.action_group.add_action(self.cut_action)
+        self.action_group.add_action(self.paste_action)
+        self.action_group.add_action(self.remove_action)
+
+
+    def init_shortcuts(self):
+        self.shortcut_controller = Gtk.ShortcutController()
+
+        self.copy_shortcut_action = Gtk.CallbackAction.new(self.on_copy)
+        self.cut_shortcut_action = Gtk.CallbackAction.new(self.on_cut)
+        self.paste_shortcut_action = Gtk.CallbackAction.new(self.on_paste)
+        self.remove_shortcut_action = Gtk.CallbackAction.new(self.on_remove)
+
+        self.copy_shortcut = Gtk.Shortcut.new(Gtk.ShortcutTrigger.parse_string("<Primary>c"), self.copy_shortcut_action)
+        self.cut_shortcut = Gtk.Shortcut.new(Gtk.ShortcutTrigger.parse_string("<Primary>x"), self.cut_shortcut_action)
+        self.paste_shortcut = Gtk.Shortcut.new(Gtk.ShortcutTrigger.parse_string("<Primary>v"), self.paste_shortcut_action)
+        self.remove_shortcut = Gtk.Shortcut.new(Gtk.ShortcutTrigger.parse_string("Delete"), self.remove_shortcut_action)
+
+        self.shortcut_controller.add_shortcut(self.copy_shortcut)
+        self.shortcut_controller.add_shortcut(self.cut_shortcut)
+        self.shortcut_controller.add_shortcut(self.paste_shortcut)
+        self.shortcut_controller.add_shortcut(self.remove_shortcut)
+
+        self.add_controller(self.shortcut_controller)
 
     def on_update(self, *args, **kwargs):
         print("update")
@@ -457,10 +489,10 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         self.remove_menu = Gio.Menu.new()
 
         # Add actions to menus
-        self.copy_paste_menu.append("Copy", "win.copy")
-        self.copy_paste_menu.append("Cut", "win.cut")
-        self.copy_paste_menu.append("Paste", "win.paste")
-        self.remove_menu.append("Remove", "win.remove")
+        self.copy_paste_menu.append("Copy", "key.copy")
+        self.copy_paste_menu.append("Cut", "key.cut")
+        self.copy_paste_menu.append("Paste", "key.paste")
+        self.remove_menu.append("Remove", "key.remove")
         self.remove_menu.append("Update", "key.update")
 
         # Add sections to menu

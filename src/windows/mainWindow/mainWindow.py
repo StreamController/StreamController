@@ -149,12 +149,14 @@ class MainWindow(Adw.ApplicationWindow):
 
 
     def add_accel_actions(self):
+        return
         self.add_action(self.copy_action)
         self.add_action(self.cut_action)
         self.add_action(self.paste_action)
         self.add_action(self.remove_action)
 
     def remove_accel_actions(self):
+        return
         self.remove_action(self.copy_action)
         self.remove_action("win.cut")
         self.remove_action("win.paste")
@@ -243,6 +245,8 @@ class MainWindow(Adw.ApplicationWindow):
         if hasattr(child, "on_cut"):
             child.on_cut()
 
+        return False
+
     def on_paste(self, *args):
         child = get_deepest_focused_widget_with_attr(self, "on_paste")
         if hasattr(child, "on_paste"):
@@ -254,6 +258,8 @@ class MainWindow(Adw.ApplicationWindow):
         child = get_deepest_focused_widget_with_attr(self, "on_remove")
         if hasattr(child, "on_remove"):
             child.on_remove()
+
+        return False
 
     def show_info_toast(self, text: str) -> None:
         toast = Adw.Toast(

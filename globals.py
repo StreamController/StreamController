@@ -3,8 +3,8 @@ import os
 from typing import TYPE_CHECKING
 import argparse
 
-DATA_PATH = os.path.join(os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "StreamController")
-DATA_PATH = "data"
+DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data")
+# DATA_PATH = "data"
 
 if TYPE_CHECKING:
     from src.app import App

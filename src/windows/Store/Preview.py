@@ -180,7 +180,7 @@ class StorePreview(Gtk.FlowBoxChild):
 
         self.store_page.store.currently_downloading = False
 
-        self.show_install_spinner(False)
+        GLib.idle_add(self.show_install_spinner, False)
 
     def install(self):
         pass

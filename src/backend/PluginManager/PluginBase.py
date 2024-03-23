@@ -133,19 +133,23 @@ class PluginBase:
     def register_page(self, path: str) -> None:
         gl.page_manager.register_page(path)
 
-    def launch_backend(self, backend_path: str, venv_path: str = None):
+    def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
         uri = self.add_to_pyro()
 
         ## Launch
-        command = ""
-        if venv_path is not None:
-            command = f"kitty --hold -- bash -c 'source {venv_path}/bin/activate && "
-        command += "python3 "
-        command += f"{backend_path}"
-        command += f" --uri={uri}'"
-        print(command)
-        subprocess.Popen(command, shell=True, start_new_session=True)
-        print()
+        if open_in_terminal:
+            command = "gnome-terminal -- bash -c '"
+            if venv_path is not None:
+                command += "source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --uri={uri}; exec $SHELL'"
+        else:
+            command = ""
+            if venv_path is not None:
+                command = f"source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --uri={uri}"
+
+        log.info(f"Launching backend: {command}")
+        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
 
     def add_to_pyro(self) -> str:
         daemon = gl.plugin_manager.pyro_daemon

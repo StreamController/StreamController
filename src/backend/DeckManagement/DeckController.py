@@ -382,10 +382,10 @@ class DeckController:
         if not self.get_alive(): return
         deck_settings = self.get_deck_settings()
         def set_from_deck_settings(self: "DeckController"):
-            self.deck.set_brightness(deck_settings.get("brightness", {}).get("value", 75))
+            self.set_brightness(deck_settings.get("brightness", {}).get("value", 75))
 
         def set_from_page(self: "DeckController"):
-            self.deck.set_brightness(page.dict.get("brightness", 75))
+            self.set_brightness(page.dict.get("brightness", 75))
 
         if "brightness" in deck_settings:
             set_from_deck_settings(self)

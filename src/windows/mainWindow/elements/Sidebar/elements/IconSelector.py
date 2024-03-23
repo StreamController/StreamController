@@ -113,10 +113,11 @@ class IconSelector(Gtk.Box):
         active_page.dict.setdefault("keys", {})
         active_page.dict["keys"].setdefault(page_coords, {})
         active_page.dict["keys"][page_coords].setdefault("media", {
-            "path": path,
+            "path": None,
             "loop": True,
             "fps": 30
         })
+        active_page.dict["keys"][page_coords]["media"]["path"] = path
 
         # Save page
         active_page.save()

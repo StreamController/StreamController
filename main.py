@@ -13,6 +13,9 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
+import setproctitle
+setproctitle.setproctitle("StreamController")
+
 import sys
 from loguru import logger as log
 import os

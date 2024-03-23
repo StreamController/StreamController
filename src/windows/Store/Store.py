@@ -58,7 +58,7 @@ class Store(Gtk.ApplicationWindow):
 
     def build(self):
         # Header bar
-        self.header = Gtk.HeaderBar()
+        self.header = Gtk.HeaderBar(css_classes=["flat"])
         self.set_titlebar(self.header)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)

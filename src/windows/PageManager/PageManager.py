@@ -44,7 +44,7 @@ class PageManager(Gtk.ApplicationWindow):
 
     def build(self):
         # Title bar
-        self.title_bar = Gtk.HeaderBar()
+        self.title_bar = Gtk.HeaderBar(css_classes=["flat"])
         self.set_titlebar(self.title_bar)
 
         # Main box

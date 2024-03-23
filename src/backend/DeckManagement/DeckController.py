@@ -844,7 +844,7 @@ class BackgroundVideo(BackgroundVideoCache):
 
 class KeyGIF(SingleKeyAsset):
     def __init__(self, controller_key: "ControllerKey", gif_path: str, fill_mode: str = "cover", size: float = 1,
-                valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
+                 valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
         super().__init__(controller_key, fill_mode, size, valign, halign)
         self.gif_path = gif_path
         self.fps = fps
@@ -853,19 +853,20 @@ class KeyGIF(SingleKeyAsset):
         self.active_frame: int = -1
 
         self.gif = Image.open(self.gif_path)
-        self.n_frames = self.gif.n_frames
+        self.gif = ImageSequence.Iterator(self.gif)
+        self.frames = [frame.convert("RGBA") for frame in self.gif]
 
     def get_next_frame(self) -> Image.Image:
         self.active_frame += 1
 
-        if self.active_frame >= self.n_frames:
+        if self.active_frame >= len(self.frames):
             if self.loop:
                 self.active_frame = 0
             else:
-                self.active_frame = self.n_frames - 1
+                self.active_frame = len(self.frames) - 1
 
-        self.gif.seek(self.active_frame)
-        return self.gif.convert("RGBA")
+        return self.frames[self.active_frame]
+        self.gif.convert("RGBA")
     
     def get_raw_image(self) -> Image.Image:
         return self.get_next_frame()
@@ -927,26 +928,9 @@ class ControllerKey:
             image = self.deck_controller.generate_alpha_key()
 
         labeled_image = self.add_labels_to_image(image)
-        return labeled_image
-        
-        # if foreground.mode == "RGBA":
-        #     background.paste(foreground, (0, 0), foreground)
-        # else:
-        #     background.paste(foreground, (0, 0))
-            
-        background = self.paste_foreground(background, foreground)
 
-        labeled_image = self.add_labels_to_image(background)
-
-        if background is not None:
-            background.close()
-        # return
         if self.is_pressed():
             labeled_image = self.shrink_image(labeled_image)
-
-        # Close no longer needed images
-        # foreground.close()
-        background.close()
 
         return labeled_image
     

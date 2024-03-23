@@ -42,7 +42,6 @@ class MainWindow(Adw.ApplicationWindow):
     def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
-        self.set_size_request(1000, 600)
 
         # Store copied stuff
         self.key_dict = {}
@@ -53,6 +52,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.build()
         self.init_actions()
 
+        self.set_size_request(1000, 900)
         self.connect("close-request", self.on_close)
 
     def on_close(self, *args, **kwargs):

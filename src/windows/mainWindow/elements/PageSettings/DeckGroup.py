@@ -101,7 +101,7 @@ class Brightness(Adw.PreferencesRow):
     def on_value_changed(self, scale):
         value = round(scale.get_value())
         # update value in page
-        self.settings_page.deck_page.deck_controller.active_page.setdefault("brightness", {})
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("brightness", {})
         self.settings_page.deck_page.deck_controller.active_page.dict["brightness"]["value"] = value
         self.settings_page.deck_page.deck_controller.active_page.save()
         # update deck without reload of page

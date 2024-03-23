@@ -112,13 +112,13 @@ class PluginBase:
         self.action_holders[action_holder.action_id] = action_holder
 
     def get_settings(self):
-        if os.path.exists(os.path.join(gl.DATA_PATH, "settings.json")):
-            with open(os.path.join(gl.DATA_PATH, "settings.json"), "r") as f:
+        if os.path.exists(os.path.join(self.PATH, "settings.json")):
+            with open(os.path.join(self.PATH, "settings.json"), "r") as f:
                 return json.load(f)
         return {}
     
     def set_settings(self, settings):
-        with open(os.path.join(gl.DATA_PATH, "settings.json"), "w") as f:
+        with open(os.path.join(self.PATH, "settings.json"), "w") as f:
             json.dump(settings, f, indent=4)
 
     def add_css_stylesheet(self, path):

@@ -1329,6 +1329,7 @@ class KeyImage(SingleKeyAsset):
         return self.image
     
     def close(self) -> None:
+        return
         self.image.close()
         self.image = None
         del self.image

@@ -328,3 +328,7 @@
   /* background-color: #5e5e5e; */
   background-color: #6A6A6A;
 }
+
+.header-page-dropdown {
+  max-width: 50px;
+}

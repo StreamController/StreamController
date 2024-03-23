@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio, GObject
+from gi.repository import Gtk, Adw, Gio, GObject, Pango
 
 # Import Python modules
 from loguru import logger as log
@@ -49,8 +49,10 @@ class PageSelector(Gtk.Box):
         # Dropdown
         self.pages_model = Gtk.ListStore.new([str, str])
         self.drop_down = Gtk.ComboBox.new_with_model(self.pages_model)
+        self.drop_down.set_css_classes(["header-page-dropdown"])
+        self.drop_down.set_hexpand(False)
 
-        self.renderer_text = Gtk.CellRendererText()
+        self.renderer_text = Gtk.CellRendererText(ellipsize=Pango.EllipsizeMode.END)
         self.drop_down.pack_start(self.renderer_text, True)
         # Use first column for text
         self.drop_down.add_attribute(self.renderer_text, "text", 0)

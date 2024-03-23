@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
+from copy import copy
 import os
 import cv2
 import imageio
@@ -25,7 +26,6 @@ process = psutil.Process()
 from src.backend.DeckManagement.HelperMethods import sha256, file_in_dir
 
 from pyffmpeg import FFmpeg
-from moviepy.editor import VideoFileClip
 
 
 # Import globals
@@ -68,13 +68,13 @@ class MediaManager:
             return thumbnail
 
     def generate_video_thumbnail(self, video_path: str) -> Image.Image:
-        before = process.memory_info().rss/1024/1024
-        with VideoFileClip(video_path) as video:
-            first_frame = video.get_frame(0)  # Get the first frame
-        
-        pil_image = Image.fromarray(first_frame)
-        pil_image.thumbnail((500, 500))
-        after = process.memory_info().rss/1024/1024
+        cap = cv2.VideoCapture(video_path)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, 1)
+        ret, frame = cap.read()
+        cap.release()
+
+        frame_rgb = cv2.cvtColor(copy(frame), cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(frame_rgb)
         return pil_image
             
 

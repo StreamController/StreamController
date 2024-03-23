@@ -36,7 +36,6 @@ matplotlib==3.8.3
 mdit-py-plugins==0.4.0
 mdurl==0.1.2
 memray==1.11.0
-moviepy==1.0.3
 nltk==3.8.1
 numpy==1.26.4
 opencv-python==4.9.0.80

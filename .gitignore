@@ -182,3 +182,5 @@ Pyro5
 data/
 
 vid_cache/
+
+**/.flatpak-builder/

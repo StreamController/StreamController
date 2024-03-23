@@ -50,6 +50,7 @@ class Brightness(Adw.PreferencesRow):
         self.build()
 
         self.load_default()
+        self.scale.connect("value-changed", self.on_value_changed)
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -61,7 +62,6 @@ class Brightness(Adw.PreferencesRow):
 
         self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min=0, max=100, step=1)
         self.scale.set_draw_value(True)
-        self.scale.connect("value-changed", self.on_value_changed)
         self.main_box.append(self.scale)
 
     def on_value_changed(self, scale):
@@ -115,9 +115,7 @@ class Screensaver(Adw.PreferencesRow):
         self.enable_box.append(self.enable_label)
 
         self.enable_switch = Gtk.Switch()
-        self.enable_switch.connect("state-set", self.on_toggle_enable)
         self.enable_box.append(self.enable_switch)
-
 
         self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, visible=False)
         self.main_box.append(self.config_box)
@@ -131,7 +129,6 @@ class Screensaver(Adw.PreferencesRow):
         self.time_box.append(self.time_label)
 
         self.time_spinner = Gtk.SpinButton.new_with_range(1, 60, 1)
-        self.time_spinner.connect("value-changed", self.on_change_time)
         self.time_box.append(self.time_spinner)
 
         self.media_selector_label = Gtk.Label(label=gl.lm.get("deck.deck-group.media-to-show"), hexpand=True, xalign=0)
@@ -141,7 +138,6 @@ class Screensaver(Adw.PreferencesRow):
         self.config_box.append(self.media_selector_box)
 
         self.media_selector_button = Gtk.Button(label=gl.lm.get("deck.deck-group.media-select-label"), css_classes=["page-settings-media-selector"])
-        self.media_selector_button.connect("clicked", self.on_choose_image)
         self.media_selector_box.append(self.media_selector_button)
 
         self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text=gl.lm.get("background.processing"), fraction=0, show_text=True, visible=False)
@@ -156,7 +152,6 @@ class Screensaver(Adw.PreferencesRow):
         self.loop_box.append(self.loop_label)
 
         self.loop_switch = Gtk.Switch()
-        self.loop_switch.connect("state-set", self.on_toggle_loop)
         self.loop_box.append(self.loop_switch)
 
         self.fps_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
@@ -166,7 +161,6 @@ class Screensaver(Adw.PreferencesRow):
         self.fps_box.append(self.fps_label)
 
         self.fps_spinner = Gtk.SpinButton.new_with_range(1, 30, 1)
-        self.fps_spinner.connect("value-changed", self.on_change_fps)
         self.fps_box.append(self.fps_spinner)
 
         self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
@@ -176,11 +170,30 @@ class Screensaver(Adw.PreferencesRow):
         self.brightness_box.append(self.brightness_label)
 
         self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min=0, max=100, step=1)
-        self.scale.connect("value-changed", self.on_change_brightness)
         self.brightness_box.append(self.scale)
+
+        self.connect_signals()
+
+    def connect_signals(self) -> None:
+        self.enable_switch.connect("state-set", self.on_toggle_enable)
+        self.time_spinner.connect("value-changed", self.on_change_time)
+        self.media_selector_button.connect("clicked", self.on_choose_image)
+        self.loop_switch.connect("state-set", self.on_toggle_loop)
+        self.fps_spinner.connect("value-changed", self.on_change_fps)
+        self.scale.connect("value-changed", self.on_change_brightness)
+
+    def disconnect_signals(self) -> None:
+        self.enable_switch.disconnect_by_func(self.on_toggle_enable)
+        self.time_spinner.disconnect_by_func(self.on_change_time)
+        self.media_selector_button.disconnect_by_func(self.on_choose_image)
+        self.loop_switch.disconnect_by_func(self.on_toggle_loop)
+        self.fps_spinner.disconnect_by_func(self.on_change_fps)
+        self.scale.disconnect_by_func(self.on_change_brightness)
+
 
 
     def load_defaults(self):
+        self.disconnect_signals()
         original_values = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         
         # Set defaut values 
@@ -204,6 +217,8 @@ class Screensaver(Adw.PreferencesRow):
         self.fps_spinner.set_value(fps)
         self.scale.set_value(brightness)
         self.set_thumbnail(path)
+
+        self.connect_signals()
 
 
     def on_toggle_enable(self, toggle_switch, state):

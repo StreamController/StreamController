@@ -95,7 +95,7 @@ class ActionBase:
     def on_tick(self):
         pass
 
-    def set_default_image(self, image: "PIL.Image"):
+    def set_default_image(self, image: Image.Image):
         self.default_image = image
 
     def set_default_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0, 
@@ -119,7 +119,7 @@ class ActionBase:
                 "font-size": font_size
             }
 
-    def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, update: bool = True):
+    def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True, update: bool = True):
         if not self.get_is_present():
             return
         if self.key_index >= self.deck_controller.deck.key_count():
@@ -147,6 +147,8 @@ class ActionBase:
             self.deck_controller.keys[self.key_index].set_key_video(KeyVideo(
                 controller_key=self.deck_controller.keys[self.key_index],
                 video_path=media_path,
+                fps=fps,
+                loop=loop
             ))
 
         if update:
@@ -228,18 +230,23 @@ class ActionBase:
         # Connect
         gl.signal_manager.connect_signal(signal = signal, callback = callback)
 
-    def launch_backend(self, backend_path: str, venv_activate_path: str = None):
+    def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
         uri = self.add_to_pyro()
 
         ## Launch
-        command = ""
-        if venv_activate_path is not None:
-            command = f"source{venv_activate_path} && "
-        command += "python3 "
-        command += f"{backend_path}"
-        command += f" --uri={uri}"
+        if open_in_terminal:
+            command = "gnome-terminal -- bash -c '"
+            if venv_path is not None:
+                command += "source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --uri={uri}; exec $SHELL'"
+        else:
+            command = ""
+            if venv_path is not None:
+                command = f"source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --uri={uri}"
 
-        subprocess.Popen(command, shell=True, start_new_session=True)
+        log.info(f"Launching backend: {command}")
+        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
 
     def add_to_pyro(self) -> str:
         daemon = gl.plugin_manager.pyro_daemon

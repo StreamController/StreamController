@@ -159,7 +159,7 @@ class StorePreview(Gtk.FlowBoxChild):
         web.open(self.url)
 
     def on_download_clicked(self, button: Gtk.Button):
-        threading.Thread(target=self.show_install_spinner, args=(True,)).start()
+        GLib.idle_add(self.show_install_spinner, True)
         
         threading.Thread(target=self.perform_download_threaded, args=()).start()
 

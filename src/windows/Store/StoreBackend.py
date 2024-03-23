@@ -31,6 +31,10 @@ import shutil
 from install import install
 from packaging import version
 
+# Import GLib
+import gi
+from gi.repository import GLib
+
 # Import own modules
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
@@ -591,7 +595,7 @@ class StoreBackend:
 
         # Update ui
         if recursive_hasattr(gl, "app.main_win.sidebar.action_chooser"):
-            gl.app.main_win.sidebar.action_chooser.plugin_group.update()
+            GLib.idle_add(gl.app.main_win.sidebar.action_chooser.plugin_group.update)
 
         ## Update page
         for controller in gl.deck_manager.deck_controller:
@@ -639,7 +643,7 @@ class StoreBackend:
 
         del plugin
 
-        gl.app.main_win.sidebar.action_chooser.plugin_group.update()
+        GLib.idle_add(gl.app.main_win.sidebar.action_chooser.plugin_group.update)
 
         # Remove from sys.modules
         module_name = f"plugins.{plugin_id}.main"

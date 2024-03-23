@@ -93,6 +93,4 @@ class SingleKeyAsset:
         else:
             background.paste(foreground_resized, (left_margin, top_margin))
         
-        labeled_image = self.controller_key.add_labels_to_image(background)
-
-        return labeled_image
+        return background

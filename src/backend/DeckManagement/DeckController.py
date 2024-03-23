@@ -898,9 +898,6 @@ class ControllerKey:
         # self.pressed_on_page: Page = None #TODO: Block release on different page than press
 
     def get_current_deck_image(self) -> Image.Image:
-        foreground = None
-
-
         background: Image.Image = None
         # Only load the background image if it's not gonna be hidden by the background color
         if self.background_color[-1] < 255:
@@ -925,8 +922,7 @@ class ControllerKey:
         elif self.key_video is not None:
             image = self.key_video.generate_final_image(background=background, labels=self.labels)
         else:
-            image = self.deck_controller.generate_alpha_key()
-
+            image = background
         labeled_image = self.add_labels_to_image(image)
 
         if self.is_pressed():

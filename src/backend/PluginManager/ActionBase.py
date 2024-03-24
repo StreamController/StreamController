@@ -131,6 +131,9 @@ class ActionBase:
         if self.get_is_multi_action():
             return
         
+        if self.has_custom_user_asset():
+            return
+        
         if is_image(media_path):
             with Image.open(media_path) as img:
                 image = img.copy()
@@ -282,3 +285,7 @@ class ActionBase:
     def get_is_present(self):
         if self.page is None: return False
         return self in self.page.get_all_actions()
+    
+    def has_custom_user_asset(self) -> bool:
+        media = self.page.dict["keys"][self.page_coords].get("media", {})
+        return media.get("path", None) is not None

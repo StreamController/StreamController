@@ -1,4 +1,4 @@
-- multi_action.png:
+- multi_action.png & error.png:
     - source: fonts.google.com
     - licence: Apache License 2.0
     - licence_link: https://www.apache.org/licenses/LICENSE-2.0

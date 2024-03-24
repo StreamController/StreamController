@@ -13,6 +13,8 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import sys
+import threading
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -24,6 +26,7 @@ import globals as gl
 
 # Import python modules
 import  os
+from loguru import logger as log
 
 # Import own modules
 from src.windows.Store.Store import Store
@@ -80,12 +83,29 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
     def on_open_settings(self, action, parameter):
         self.settings = Settings()
         self.settings.present()
-
     def on_quit(self, action, parameter):
+        for ctrl in gl.deck_manager.deck_controller:
+            media_manager = ctrl.media_player
+            ctrl.keep_actions_ticking = False
+            media_manager.stop()
+            ctrl.deck.run_read_thread = False
+
+        gl.plugin_manager.loop_daemon = False
+        gl.plugin_manager.pyro_daemon.close()
+        gl.plugin_manager.pyro_daemon.shutdown()
+        log.debug("non-daemon threads:")
+        for thread in threading.enumerate():
+            if thread.daemon:
+                continue
+            log.debug(f"name: {thread.name}, id: {thread.ident} id2: {thread.native_id}")
+            
+
         # Close all decks
         gl.deck_manager.close_all()
         # TODO: Find better way - sys.exit doesn't work because it waits for the threads to finish
-        os._exit(0)
+        # os._exit(0)
+        log.success("Stopped StreamController. Have a nice day!")
+        sys.exit(0)
 
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutWindow(transient_for=self.main_window)

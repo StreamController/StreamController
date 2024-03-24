@@ -1,3 +1,4 @@
 # StreamController
 
-A nice GTK4 app to control your StreamDecks.
+A nice GTK4 app to control your Elgato StreamDecks.
+Release: coming soon

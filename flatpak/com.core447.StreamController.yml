@@ -9,7 +9,7 @@ modules:
     build-commands:
       - cp . /app/bin/StreamController -r
 
-      - "pip install -r requirements.txt --prefix=/app"
+      - "pip install -r requirements.txt --ignore-installed --prefix=/app"
       
       - install -D flatpak/launch.sh /app/bin/launch.sh
       - chmod +x /app/bin/launch.sh

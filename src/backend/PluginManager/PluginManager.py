@@ -23,6 +23,8 @@ class PluginManager:
 
         self.pyro_daemon:Pyro5.api.Daemon = None
         self.backends:list[BackendBase] = []
+
+        self.loop_daemon = True
         self.init_pyro5()
 
     def load_plugins(self):
@@ -109,4 +111,4 @@ class PluginManager:
     def init_pyro5(self):
         self.pyro_daemon = Pyro5.api.Daemon()
         #TODO: Stop daemon on close
-        threading.Thread(target=self.pyro_daemon.requestLoop, daemon=True, name="pyro_daemon_requestLoop").start()
+        threading.Thread(target=self.pyro_daemon.requestLoop, kwargs={"loopCondition": lambda: self.loop_daemon}, name="pyro_daemon_requestLoop").start()

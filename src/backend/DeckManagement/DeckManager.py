@@ -155,12 +155,11 @@ class DeckManager:
     def close_all(self):
         log.info("Closing all decks")
         for controller in self.deck_controller:
-            with controller.deck as deck:
-                if deck is None:
-                    continue
-                if not deck.is_open():
-                    continue
-                
-                log.info(f"Closing deck: {deck.get_serial_number()}")
-                deck.reset()
-                deck.close()
+            if controller.deck is None:
+                return
+            if not controller.deck.is_open():
+                return
+            
+            log.info(f"Closing deck: {controller.deck.get_serial_number()}")
+            controller.deck.reset()
+            controller.deck.close()

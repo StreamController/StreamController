@@ -42,6 +42,7 @@ class VideoFrameCache:
         print(f"Size of capture: {sys.getsizeof(self.cap) / 1024 / 1024:.2f} MB")
 
     def get_frame(self, n):
+        n = min(n, self.n_frames - 1)
         if self.is_cache_complete():
             # print("Cache is complete. Retrieving frame from cache.")
             return self.cache.get(n, None)

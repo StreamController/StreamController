@@ -101,6 +101,13 @@ class BetterExpander(Adw.ExpanderRow):
     def remove_child(self, child:Gtk.Widget) -> None:
         self.get_list_box().remove(child)
 
+    def get_index_of_child(self, child):
+        for i, action in enumerate(self.actions):
+            if action == child:
+                return i
+        
+        raise ValueError("Child not found")
+
 
 class BetterPreferencesGroup(Adw.PreferencesGroup):
     def __init__(self, *args, **kwargs):
@@ -354,3 +361,18 @@ class OriginalURL(Adw.ActionRow):
         if self.get_subtitle() in [None, "N/A"]:
             return
         web.open(self.get_subtitle())
+
+
+class EntryRowWithoutTitle(Adw.EntryRow):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Make title invisible
+        child:Gtk.Box = self.get_child() # Box
+        prefix_box:Gtk.Box = child.get_first_child()
+        gizmo = prefix_box.get_next_sibling()
+        empty_title = gizmo.get_first_child()
+        title = empty_title.get_next_sibling()
+
+        empty_title.set_visible(False)
+        title.set_visible(False)

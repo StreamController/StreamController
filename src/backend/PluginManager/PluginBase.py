@@ -2,7 +2,9 @@ import os
 import inspect
 import json
 import Pyro5.api
+import Pyro5.errors
 import subprocess
+from packaging import version
 
 from loguru import logger as log
 
@@ -62,7 +64,7 @@ class PluginBase:
             raise ValueError(f"Plugin: {plugin_name}: Plugin already exists")
         
         
-        if app_version == gl.app_version:
+        if self.do_versions_match(app_version):
             # Register plugin
             PluginBase.plugins[plugin_name] = {
                 "object": self,
@@ -91,6 +93,18 @@ class PluginBase:
         self.github_repo = github_repo
         self.version = plugin_version
 
+    def do_versions_match(self, app_version_to_check: str):
+        if gl.exact_app_version_check:
+            gl.app_version == app_version
+            return
+        
+        # Only compare major version
+        app_version = version.parse(gl.app_version)
+        app_version_to_check = version.parse(app_version_to_check)
+
+        return app_version.major == app_version_to_check.major
+        
+
     def add_action_holder(self, action_holder: ActionHolder):
         if not isinstance(action_holder, ActionHolder):
             raise ValueError("Please pass an ActionHolder")
@@ -98,13 +112,13 @@ class PluginBase:
         self.action_holders[action_holder.action_id] = action_holder
 
     def get_settings(self):
-        if os.path.exists(os.path.join(gl.DATA_PATH, "settings.json")):
-            with open(os.path.join(gl.DATA_PATH, "settings.json"), "r") as f:
+        if os.path.exists(os.path.join(self.PATH, "settings.json")):
+            with open(os.path.join(self.PATH, "settings.json"), "r") as f:
                 return json.load(f)
         return {}
     
     def set_settings(self, settings):
-        with open(os.path.join(gl.DATA_PATH, "settings.json"), "w") as f:
+        with open(os.path.join(self.PATH, "settings.json"), "w") as f:
             json.dump(settings, f, indent=4)
 
     def add_css_stylesheet(self, path):
@@ -119,18 +133,23 @@ class PluginBase:
     def register_page(self, path: str) -> None:
         gl.page_manager.register_page(path)
 
-    def launch_backend(self, backend_path: str, venv_path: str = None):
+    def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
         uri = self.add_to_pyro()
 
         ## Launch
-        command = ""
-        if venv_path is not None:
-            command = f"source {venv_path}/bin/activate && "
-        command += "python3 "
-        command += f"{backend_path}"
-        command += f" --uri={uri}"
+        if open_in_terminal:
+            command = "gnome-terminal -- bash -c '"
+            if venv_path is not None:
+                command += f"source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --uri={uri}; exec $SHELL'"
+        else:
+            command = ""
+            if venv_path is not None:
+                command = f"source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --uri={uri}"
 
-        subprocess.Popen(command, shell=True, start_new_session=True)
+        log.info(f"Launching backend: {command}")
+        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
 
     def add_to_pyro(self) -> str:
         daemon = gl.plugin_manager.pyro_daemon
@@ -154,3 +173,19 @@ class PluginBase:
     @backend.setter
     def backend(self, value):
         self._backend = value
+
+    def get_selector_icon(self) -> Gtk.Widget:
+        return Gtk.Image(icon_name="view-paged")
+    
+    def on_uninstall(self) -> None:
+        try:
+            # Stop backend if running
+            if self.backend is not None:
+                self.backend.stop()
+                self.backend._pyroRelease()
+                self._backend = None
+        except Exception as e:
+            log.error(e)
+
+    def ping(self) -> bool:
+        return True

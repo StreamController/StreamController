@@ -23,22 +23,31 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
 
+# Import gtk
+import gi
+gi.require_version("Gtk", "4.0")
+from gi.repository import Gtk
+
 class ActionHolder:
     """
     Holder for ActionBase containing important information that can be used as long as the ActionBase is not initialized
     """
-    def __init__(self, plugin_base: "PluginBase", action_base: ActionBase, action_id: str, action_name: str):
+    def __init__(self, plugin_base: "PluginBase", action_base: ActionBase, action_id: str, action_name: str, icon: Gtk.Widget = None):
         
         ## Verify variables
         if action_id in ["", None]:
             raise ValueError("Please specify an action id")
         if action_name in ["", None]:
             raise ValueError("Please specify an action name")
+        
+        if icon is None:
+            icon = Gtk.Image(icon_name="insert-image")
 
         self.plugin_base = plugin_base
         self.action_base = action_base
         self.action_id = action_id
         self.action_name = action_name
+        self.icon = icon
 
     def init_and_get_action(self, deck_controller: DeckController, page: Page, coords: str) -> ActionBase:
         return self.action_base(

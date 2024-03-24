@@ -26,13 +26,13 @@ from loguru import logger as log
 import globals as gl
 
 # Import own modules
-from src.windows.mainWindow.elements.RightArea.elements.IconSelector import IconSelector
+from src.windows.mainWindow.elements.Sidebar.elements.IconSelector import IconSelector
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.DeckController import DeckController
 
 class ImageEditor(Gtk.Box):
-    def __init__(self, right_area, **kwargs):
-        self.right_area = right_area
+    def __init__(self, sidebar, **kwargs):
+        self.sidebar = sidebar
         super().__init__(**kwargs)
         self.build()
 
@@ -43,7 +43,7 @@ class ImageEditor(Gtk.Box):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.main_box)
 
-        self.image_group = ImageGroup(self.right_area)
+        self.image_group = ImageGroup(self.sidebar)
         self.main_box.append(self.image_group)
 
     def load_for_coords(self, coords):
@@ -51,9 +51,9 @@ class ImageEditor(Gtk.Box):
 
 
 class ImageGroup(Adw.PreferencesGroup):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
 
         self.build()
 
@@ -75,13 +75,13 @@ class Layout(Adw.ExpanderRow):
         self.build()
 
     def build(self):
-        self.size_row = SizeRow(right_area=self.margin_group.right_area)
+        self.size_row = SizeRow(sidebar=self.margin_group.sidebar)
         self.add_row(self.size_row)
 
-        self.valign_row = ValignRow(right_area=self.margin_group.right_area)
+        self.valign_row = ValignRow(sidebar=self.margin_group.sidebar)
         self.add_row(self.valign_row)
 
-        self.halign_row = HalignRow(right_area=self.margin_group.right_area)
+        self.halign_row = HalignRow(sidebar=self.margin_group.sidebar)
         self.add_row(self.halign_row)
 
     def load_for_coords(self, coords):
@@ -93,9 +93,9 @@ class Layout(Adw.ExpanderRow):
 
 
 class SizeRow(Adw.PreferencesRow):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
         self.active_coords = None
         self.build()
 
@@ -116,14 +116,14 @@ class SizeRow(Adw.PreferencesRow):
         self.disconnect_signals()
         self.active_coords = coords
 
-        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        self.size_spinner.set_value(deck_controller.active_page.dict.get("keys").get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("size", 1) * 100)
+        self.size_spinner.set_value(deck_controller.active_page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("size", 1) * 100)
 
         self.connect_signals()
 
     def on_size_changed(self, widget):
-        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
         deck_controller.active_page.dict.setdefault("keys", {})
         deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
@@ -133,8 +133,18 @@ class SizeRow(Adw.PreferencesRow):
 
         deck_controller.active_page.save()
 
-        # Reload key
-        deck_controller.load_key(key=deck_controller.coords_to_index(self.active_coords), page=deck_controller.active_page)
+        # Reload key on all decks that have this page loaded
+        for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+            if controller_key.key_image is not None:
+                controller_key.key_image.size = widget.get_value() / 100
+                controller_key.update()
+            if controller_key.key_video is not None:
+                controller_key.key_video.size = widget.get_value() / 100
+                controller_key.update()
 
     def connect_signals(self):
         self.size_spinner.connect("value-changed", self.on_size_changed)
@@ -144,9 +154,9 @@ class SizeRow(Adw.PreferencesRow):
 
 
 class ValignRow(Adw.PreferencesRow):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
         self.active_coords = None
         self.build()
 
@@ -167,14 +177,14 @@ class ValignRow(Adw.PreferencesRow):
         self.disconnect_signals()
         self.active_coords = coords
 
-        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        self.valign_spinner.set_value(deck_controller.active_page.dict.get("keys").get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("valign", 0))
+        self.valign_spinner.set_value(deck_controller.active_page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("valign", 0))
 
         self.connect_signals()
 
     def on_valign_changed(self, widget):
-        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
         deck_controller.active_page.dict.setdefault("keys", {})
         deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
@@ -184,8 +194,18 @@ class ValignRow(Adw.PreferencesRow):
 
         deck_controller.active_page.save()
 
-        # Reload key
-        deck_controller.load_key(key=deck_controller.coords_to_index(self.active_coords), page=deck_controller.active_page)
+        # Reload key on all decks that have this page loaded
+        for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+            if controller_key.key_image is not None:
+                controller_key.key_image.valign = widget.get_value()
+                controller_key.update()
+            if controller_key.key_video is not None:
+                controller_key.key_video.valign = widget.get_value()
+                controller_key.update()
 
     def connect_signals(self):
         self.valign_spinner.connect("value-changed", self.on_valign_changed)
@@ -195,9 +215,9 @@ class ValignRow(Adw.PreferencesRow):
 
 
 class HalignRow(Adw.PreferencesRow):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
         self.active_coords = None
         self.build()
 
@@ -219,14 +239,14 @@ class HalignRow(Adw.PreferencesRow):
         
         self.active_coords = coords
 
-        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        self.halign_spinner.set_value(deck_controller.active_page.dict.get("keys").get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("halign", 0))
+        self.halign_spinner.set_value(deck_controller.active_page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("halign", 0))
 
         self.connect_signals()
 
     def on_halign_changed(self, widget):
-        deck_controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
         deck_controller.active_page.dict.setdefault("keys", {})
         deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
@@ -236,8 +256,18 @@ class HalignRow(Adw.PreferencesRow):
 
         deck_controller.active_page.save()
 
-        # Reload key
-        deck_controller.load_key(key=deck_controller.coords_to_index(self.active_coords), page=deck_controller.active_page)
+        # Reload key on all decks that have this page loaded
+        for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+            if controller_key.key_image is not None:
+                controller_key.key_image.halign = widget.get_value()
+                controller_key.update()
+            if controller_key.key_video is not None:
+                controller_key.key_video.halign = widget.get_value()
+                controller_key.update()
 
     def connect_signals(self):
         self.halign_spinner.connect("value-changed", self.on_halign_changed)

@@ -24,44 +24,68 @@ from loguru import logger as log
 # Import own modules
 from src.windows.mainWindow.elements.DeckSettings.DeckGroup import DeckGroup
 from src.windows.mainWindow.elements.DeckSettings.BackgroundGroup import BackgroundGroup
+from src.windows.mainWindow.elements.DeckSettings.FakeDeckGroup import FakeDeckGroup
 
 # Import globals
 import globals as gl
 
-class DeckSettingsPage(Gtk.Box):
+class DeckSettingsPage(Gtk.Overlay):
     def __init__(self, deck_stack_child, deck_controller, **kwargs):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
+        super().__init__(hexpand=True, vexpand=True,
                          margin_start=50, margin_end=50,
                          margin_top=50, margin_bottom=50, **kwargs)
         self.deck_stack_child = deck_stack_child
         self.deck_controller = deck_controller
         self.deck_serial_number = deck_controller.deck.get_serial_number()
+        self.build()
         if self.deck_controller.active_page == None:
             # TODO: Fix: Error not showing up
             self.show_no_page_error()
             return
-        self.build()
 
     def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.set_child(self.main_box)
+
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
-        self.append(self.scrolled_window)
+        self.main_box.append(self.scrolled_window)
 
-        clamp = Adw.Clamp()
-        self.scrolled_window.set_child(clamp)
+        self.clamp = Adw.Clamp()
+        self.scrolled_window.set_child(self.clamp)
 
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        clamp.set_child(main_box)
+        self.clamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.clamp.set_child(self.clamp_box)
         
         self.settings_group = DeckGroup(self)
-        main_box.append(self.settings_group)
+        self.clamp_box.append(self.settings_group)
 
         self.background_group = BackgroundGroup(self)
-        main_box.append(self.background_group)
+        self.clamp_box.append(self.background_group)
+
+        self.fake_deck_group = FakeDeckGroup(self)
+        self.clamp_box.append(self.fake_deck_group)
+
+        ## Hide the fake deck group if own deck is not fake
+        deck = self.deck_controller.deck
+        fake = False
+        if hasattr(deck, "is_fake"):
+            fake = deck.is_fake
+
+        self.fake_deck_group.set_visible(fake)
+
+        
+
+    def on_open_page_settings_button_click(self, button):
+        self.deck_stack_child.set_visible_child_name("page-settings")
+        gl.app.main_win.split_view.set_collapsed(True)
+        gl.app.main_win.sidebar_toggle_button.set_visible(False)
+
+
 
     def show_no_page_error(self):
         self.clear()
         self.error_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-        self.append(self.error_box)
+        self.main_box.append(self.error_box)
 
         self.error_label = Gtk.Label(label="No page selected for this deck")
         self.error_box.append(self.error_label)
@@ -79,5 +103,5 @@ class DeckSettingsPage(Gtk.Box):
         self.build()
 
     def clear(self):
-        while self.get_first_child() is not None:
-            self.remove(self.get_first_child())
+        while self.main_box.get_first_child() is not None:
+            self.main_box.remove(self.main_box.get_first_child())

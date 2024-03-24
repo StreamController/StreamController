@@ -33,7 +33,7 @@ import globals as gl
 class DeckManager:
     def __init__(self):
         #TODO: Maybe outsource some objects
-        self.deck_controller = []
+        self.deck_controller: list[DeckController] = []
         self.fake_deck_controller = []
         self.settings_manager = SettingsManager()
         self.page_manager = gl.page_manager
@@ -100,8 +100,7 @@ class DeckManager:
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device
         if device_info["ID_VENDOR"] != "Elgato":
-            pass
-            # return
+            return
 
         # Get already loaded deck serial ids
         loaded_deck_ids = []
@@ -156,12 +155,11 @@ class DeckManager:
     def close_all(self):
         log.info("Closing all decks")
         for controller in self.deck_controller:
-            with controller.deck as deck:
-                if deck is None:
-                    continue
-                if not deck.is_open():
-                    continue
-                
-                log.info(f"Closing deck: {deck.get_serial_number()}")
-                deck.reset()
-                deck.close()
+            if controller.deck is None:
+                return
+            if not controller.deck.is_open():
+                return
+            
+            log.info(f"Closing deck: {controller.deck.get_serial_number()}")
+            controller.deck.reset()
+            controller.deck.close()

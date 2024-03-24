@@ -24,13 +24,14 @@ from loguru import logger as log
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import font_path_from_name, font_name_from_path
+from src.backend.PageManagement.Page import NoActionHolderFound
 
 # Import globals
 import globals as gl
 
 class LabelEditor(Gtk.Box):
-    def __init__(self, right_area, **kwargs):
-        self.right_area = right_area
+    def __init__(self, sidebar, **kwargs):
+        self.sidebar = sidebar
         super().__init__(**kwargs)
         self.build()
 
@@ -41,7 +42,7 @@ class LabelEditor(Gtk.Box):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.main_box)
 
-        self.label_group = LabelGroup(self.right_area)
+        self.label_group = LabelGroup(self.sidebar)
         self.main_box.append(self.label_group)
 
     def load_for_coords(self, coords):
@@ -49,9 +50,9 @@ class LabelEditor(Gtk.Box):
 
 
 class LabelGroup(Adw.PreferencesGroup):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
 
         self.build()
 
@@ -72,9 +73,9 @@ class LabelExpanderRow(Adw.ExpanderRow):
         self.build()
 
     def build(self):
-        self.top_row = LabelRow(gl.lm.get("label-editor-top-name"), self.label_group.right_area)
-        self.center_row = LabelRow(gl.lm.get("label-editor-center-name"), self.label_group.right_area)
-        self.bottom_row = LabelRow(gl.lm.get("label-editor-bottom-name"), self.label_group.right_area)
+        self.top_row = LabelRow(gl.lm.get("label-editor-top-name"), 0, self.label_group.sidebar)
+        self.center_row = LabelRow(gl.lm.get("label-editor-center-name"), 1, self.label_group.sidebar)
+        self.bottom_row = LabelRow(gl.lm.get("label-editor-bottom-name"), 2, self.label_group.sidebar)
 
         self.add_row(self.top_row)
         self.add_row(self.center_row)
@@ -88,11 +89,12 @@ class LabelExpanderRow(Adw.ExpanderRow):
         self.bottom_row.load_for_coords(coords)
 
 class LabelRow(Adw.PreferencesRow):
-    def __init__(self, label_text, right_area, **kwargs):
+    def __init__(self, label_text, label_index: int, sidebar, **kwargs):
         super().__init__(**kwargs)
         self.label_text = label_text
-        self.right_area = right_area
+        self.sidebar = sidebar
         self.active_coords = None
+        self.label_index = label_index
         self.build()
 
     def build(self):
@@ -140,7 +142,7 @@ class LabelRow(Adw.PreferencesRow):
 
     def load_for_coords(self, coords):
         self.active_coords = coords
-        page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
 
         x, y = coords
 
@@ -177,7 +179,7 @@ class LabelRow(Adw.PreferencesRow):
         self.controlled_by_action_label.set_visible(False)
 
         # Get all actions for this key - This allows us to see which labels are set by actions and set the sensivity to False
-        controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         if controller == None:
             return
         action_objects = controller.active_page.get_all_actions_for_key(f"{x}x{y}")
@@ -188,9 +190,11 @@ class LabelRow(Adw.PreferencesRow):
 
         # Set sensitive = False if label is set by an action
         for action in action_objects:
-            if isinstance(action, str):
+            if isinstance(action, NoActionHolderFound):
                 # No plugin installed for this action
                 continue
+            if not action.LABELS_CAN_BE_OVERWRITTEN[self.label_index]:
+                pass
             for key in action.labels:
                 if key == self.label_text.lower():
                     self.set_sensitive(False)
@@ -218,11 +222,21 @@ class LabelRow(Adw.PreferencesRow):
         red = round(color.red * 255)
 
         # Get active page
-        page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["color"] = [red, green, blue]
         page.save()
 
-        self.update_key()
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+
+            controller_key.labels[self.label_text.lower()].color = [red, green, blue]
+            controller_key.update()
+
 
     def on_change_font(self, button):
         font = self.font_chooser_button.get_font()
@@ -233,49 +247,69 @@ class LabelRow(Adw.PreferencesRow):
         font_size = pango_font.get_size()
 
         # Get active page
-        page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
 
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["font-family"] = pango_font.get_family()
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["font-size"] = round(font_size/1000)
 
         page.save()
 
-        self.update_key()
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+
+            controller_key.labels[self.label_text.lower()].font_name = pango_font.get_family()
+            controller_key.labels[self.label_text.lower()].font_size = round(font_size/1000)
+
+            controller_key.update()
+
 
     def on_change_text(self, entry):
-        page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["text"] = entry.get_text()
         page.save()
 
-        self.update_key()
+        # self.update_key(_property=f"text-{self.label_text.lower()}", value=entry.get_text())
 
         # Hide settings if text is empty
         vis = entry.get_text() != ""
         self.font_chooser_box.set_visible(vis)
         self.stroke_width_box.set_visible(vis)
 
-    def update_key(self):
-        controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        # controller.reload_keys()
-        page = controller.active_page
-        page.load()
-
-        # controller.load_key(f"{self.active_coords[0]}x{self.active_coords[1]}", only_labels=True)
-        controller.load_key(
-            key=controller.coords_to_index(self.active_coords),
-            page=controller.active_page,
-            load_media=False
-        )
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+            
+            controller_key.labels[self.label_text.lower()].text = entry.get_text()
+            controller_key.update()
 
     def on_change_stroke_width(self, button):
-        page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["stroke-width"] = round(self.stroke_width_button.get_value())
         page.save()
 
-        self.update_key()
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+
+            controller_key.labels[self.label_text.lower()].font_weight = round(self.stroke_width_button.get_value())
+            controller_key.update()
+
 
     def load_defaults(self):
-        page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
 
         # Update ui
         self.entry.set_text(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.label_text.lower()]["text"])

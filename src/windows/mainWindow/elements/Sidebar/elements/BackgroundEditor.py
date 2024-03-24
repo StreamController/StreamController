@@ -26,8 +26,8 @@ from loguru import logger as log
 import globals as gl
 
 class BackgroundEditor(Gtk.Box):
-    def __init__(self, right_area, **kwargs):
-        self.right_area = right_area
+    def __init__(self, sidebar, **kwargs):
+        self.sidebar = sidebar
         super().__init__(**kwargs)
         self.build()
 
@@ -38,7 +38,7 @@ class BackgroundEditor(Gtk.Box):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.main_box)
 
-        self.label_group = BackgroundGroup(self.right_area)
+        self.label_group = BackgroundGroup(self.sidebar)
         self.main_box.append(self.label_group)
 
     def load_for_coords(self, coords):
@@ -46,9 +46,9 @@ class BackgroundEditor(Gtk.Box):
 
 
 class BackgroundGroup(Adw.PreferencesGroup):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
 
         self.build()
 
@@ -69,7 +69,7 @@ class BackgroundExpanderRow(Adw.ExpanderRow):
         self.build()
 
     def build(self):
-        self.color_row = ColorRow(right_area=self.label_group.right_area)
+        self.color_row = ColorRow(sidebar=self.label_group.sidebar, expander=self)
         self.add_row(self.color_row)
 
         self.reset_color_button = ResetColorButton(color_row=self.color_row)
@@ -79,11 +79,13 @@ class BackgroundExpanderRow(Adw.ExpanderRow):
         self.active_coords = coords
 
         self.color_row.load_for_coords(coords)
+        self.reset_color_button.update()
 
 class ColorRow(Adw.PreferencesRow):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, expander: BackgroundExpanderRow, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
+        self.expander = expander
         self.active_coords = None
         self.build()
 
@@ -124,15 +126,17 @@ class ColorRow(Adw.PreferencesRow):
         alpha = round(color.alpha * 255)
 
         # Get active page
-        page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("background", {})
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["background"]["color"] = [red, green, blue, alpha]
         page.save()
 
         # Reload key
-        controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         key_index = controller.coords_to_index(self.active_coords)
         controller.load_key(key_index, page=controller.active_page)
+
+        self.expander.reset_color_button.update()
 
     def load_for_coords(self, coords):
         self.disconnect_signals()
@@ -140,7 +144,7 @@ class ColorRow(Adw.PreferencesRow):
         self.active_coords = coords
 
         # Get active page
-        page = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         if page is None:
             return
 
@@ -162,3 +166,16 @@ class ResetColorButton(Adw.PreferencesRow):
 
     def on_click(self, button):
         self.color_row.color_chooser_button.set_rgba(Gdk.RGBA(0, 0, 0, 0))
+
+    def update(self):
+        color = self.color_row.color_chooser_button.get_rgba()
+        green = round(color.green * 255)
+        blue = round(color.blue * 255)
+        red = round(color.red * 255)
+        alpha = round(color.alpha * 255)
+
+        # Only show button if color is not the default of [0, 0, 0, 0]
+        if [red, green, blue, alpha] == [0, 0, 0, 0]:
+            self.set_visible(False)
+        else:
+            self.set_visible(True)

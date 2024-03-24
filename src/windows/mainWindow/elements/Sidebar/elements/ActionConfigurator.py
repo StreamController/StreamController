@@ -27,16 +27,16 @@ from src.backend.PluginManager.ActionBase import ActionBase
 
 
 class ActionConfigurator(Gtk.Box):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
         self.build()
 
     def build(self):
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True, margin_end=4)
         self.append(self.scrolled_window)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_top=4)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_top=4, margin_start=25, margin_end=25)
         self.scrolled_window.set_child(self.main_box)
 
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
@@ -52,6 +52,9 @@ class ActionConfigurator(Gtk.Box):
         self.header = Gtk.Label(label=gl.lm.get("action-configurator-header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
         self.main_box.append(self.header)
 
+        self.comment_group = CommentGroup(self, margin_top=20)
+        self.main_box.append(self.comment_group)
+
         self.config_group = ConfigGroup(self, margin_top=40)
         self.main_box.append(self.config_group)
 
@@ -61,13 +64,65 @@ class ActionConfigurator(Gtk.Box):
         self.remove_button = RemoveButton(self, margin_top=12)
         self.main_box.append(self.remove_button)
 
+
     def load_for_action(self, action, index):
         self.config_group.load_for_action(action)
         self.custom_configs.load_for_action(action)
         self.remove_button.load_for_action(action, index)
+        self.comment_group.load_for_action(action, index)
 
     def on_back_button_click(self, button):
-        self.right_area.set_visible_child_name("key_editor")
+        self.sidebar.main_stack.set_visible_child_name("key_editor")
+
+class CommentGroup(Adw.PreferencesGroup):
+    def __init__(self, parent, **kwargs):
+        super().__init__(**kwargs)
+        self.parent = parent
+        self.action: ActionBase = None
+        self.index: int = None
+        self.build()
+
+    def build(self):
+        self.comment_row = Adw.EntryRow(title="Comment")
+        self.connect_signals()
+        self.add(self.comment_row)
+
+    def load_for_action(self, action, index):
+        self.disconnect_signals()
+        self.action = action
+        self.index = index
+
+        comment = self.get_comment()
+        if comment is None:
+            comment = ""
+        self.comment_row.set_text(comment)
+
+        self.connect_signals()
+
+    def on_comment_changed(self, entry):
+        self.set_comment(entry.get_text())
+
+        # Update ActionManager - A full reload is not efficient but ensures correct behavior if the ActionConfigurator is triggered from a plugin action
+        gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.action.page_coords.split("x"))
+
+    def connect_signals(self):
+        self.comment_row.connect("changed", self.on_comment_changed)
+
+    def disconnect_signals(self):
+        self.comment_row.disconnect_by_func(self.on_comment_changed)
+    
+
+    def get_comment(self) -> str:
+        controller = self.parent.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page = controller.active_page
+        return page.get_action_comment(self.action.page_coords, self.index)
+    
+    def set_comment(self, comment: str) -> None:
+        controller = self.parent.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        page = controller.active_page
+        page.set_action_comment(self.action.page_coords, self.index, comment)
+    
+
 
 class ConfigGroup(Adw.PreferencesGroup):
     def __init__(self, parent, **kwargs):
@@ -83,7 +138,9 @@ class ConfigGroup(Adw.PreferencesGroup):
         if not hasattr(action, "get_config_rows"):
             self.hide()
             return
-        if action.get_config_rows() is None:
+        
+        config_rows = action.get_config_rows()
+        if config_rows is None:
             self.hide()
             return
         # Load labels
@@ -94,8 +151,7 @@ class ConfigGroup(Adw.PreferencesGroup):
         self.clear()
 
         # Load rows
-        rows = action.get_config_rows()
-        for row in rows:
+        for row in config_rows:
             self.add(row)
             self.loaded_rows.append(row)
         
@@ -153,26 +209,28 @@ class RemoveButton(Gtk.Button):
         self.index = None
 
     def on_remove_button_click(self, button):
-        controller = self.configurator.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.configurator.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page = controller.active_page
 
         # Swtich to main editor page
-        self.configurator.right_area.set_visible_child_name("key_editor")
+        self.configurator.sidebar.main_stack.set_visible_child_name("key_editor")
 
         # Remove from action_objects
         del page.action_objects[self.action.page_coords][self.index]
+        page.fix_action_objects_order(self.action.page_coords)
 
         # Remove from page json
         page.dict["keys"][self.action.page_coords]["actions"].pop(self.index)
         page.save()
 
         # Reload configurator
-        self.configurator.right_area.load_for_coords(self.action.page_coords.split("x"))
+        self.configurator.sidebar.load_for_coords(self.action.page_coords.split("x"))
 
         # Check whether we have to reload the key
         load = not page.has_key_an_image_controlling_action(self.action.page_coords)
         if load:
-            controller.load_key(self.action.page_coords)
+            key_index = page.deck_controller.coords_to_index(self.action.page_coords.split("x"))
+            controller.load_key(key_index, page=page)
             # Reload key on similar pages
             page.reload_similar_pages(page_coords=self.action.page_coords)
 

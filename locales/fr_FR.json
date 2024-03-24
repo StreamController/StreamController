@@ -92,5 +92,18 @@
     "right-area.image-editor.layout.subtitle": "Layout pour cette touche (les médias utilisés par défaut ne sont pas modifiables)",
     "right-area.image-editor.layout.size.label": "Taille (%)",
     "right-area.image-editor.layout.valign.label": "VAlign",
-    "right-area.image-editor.layout.halign.label": "HAlign"
+    "right-area.image-editor.layout.halign.label": "HAlign",
+    "deck.fake-deck-group.title": "Fake Deck",
+    "deck.fake-deck-group.description": "Configuration du Fake Deck",
+    "deck.fake-deck-group.layout.columns.label": "Colonnes",
+    "deck.fake-deck-group.layout.rows.label": "Rangees",
+    "warning.low-fps": "Faible FPS détecté. Peut-être dû à votre vidéo d'arrière-plan. Le problème pourrait disparaître après mise en cache.",
+    "warning.low-fps.fix": "Désactiver",
+    "warning.dismiss": "Décrisser",
+    "settings.enable-fps-warnings": "Activer les avertissements FPS",
+    "settings.performance.title": "Performance",
+    "settings.performance.header": "Performance & Optimisations",
+    "settings.performance.n-cached-pages.title": "Nombre de pages en cache",
+    "settings.performance.n-cached-pages.subtitle": "Nombre de pages à garder en cache",
+    "settings.performance.n-cached-pages.tooltip": "Un nombre plus élevé signifie une utilisation de mémoire plus importante mais un chargement de page plus rapide."
 }

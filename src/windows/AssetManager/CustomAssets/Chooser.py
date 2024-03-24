@@ -27,7 +27,6 @@ from loguru import logger as log
 from src.windows.AssetManager.ChooserPage import ChooserPage
 from src.windows.AssetManager.CustomAssets.FlowBox import CustomAssetChooserFlowBox
 from src.windows.AssetManager.CustomAssets.AssetPreview import AssetPreview
-from src.backend.DeckManagement.HelperMethods import download_file
 
 # Import globals
 import globals as gl
@@ -62,10 +61,18 @@ class CustomAssetChooser(ChooserPage):
         self.add_files(paths)
         return True
     
+    def add_asset(self, asset: dict) -> None:
+        preview = AssetPreview(self.asset_chooser, asset, width_request=100, height_request=100)
+        self.asset_chooser.flow_box.append(preview)
+    
     def add_files(self, files: list) -> None:
         for path in files:
+
             url = path.get_uri()
             path = path.get_path()
+
+            gl.asset_manager_backend.add_custom_media_set_by_ui(url=url, path=path)
+            continue
 
             if path is None and url is not None:
                 # Lower domain and remove point
@@ -90,10 +97,10 @@ class CustomAssetChooser(ChooserPage):
                 continue
             if not os.path.splitext(path)[1] not in ["png", "jpg", "jpeg", "gif", "GIF", "MP4", "mp4", "mov", "MOV"]:
                 continue
-            asset_id = gl.asset_manager.add(asset_path=path)
+            asset_id = gl.asset_manager_backend.add(asset_path=path)
             if asset_id == None:
                 continue
-            asset = gl.asset_manager.get_by_id(asset_id)
+            asset = gl.asset_manager_backend.get_by_id(asset_id)
             self.asset_chooser.flow_box.append(AssetPreview(flow=self, asset=asset, width_request=100, height_request=100))
 
     def show_for_path(self, path):

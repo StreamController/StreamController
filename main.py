@@ -13,6 +13,9 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
+import setproctitle
+setproctitle.setproctitle("StreamController")
+
 import sys
 from loguru import logger as log
 import os
@@ -32,15 +35,17 @@ from src.app import App
 from src.backend.DeckManagement.DeckManager import DeckManager
 from locales.LocaleManager import LocaleManager
 from src.backend.MediaManager import MediaManager
-from src.backend.AssetManager import AssetManager
+from src.backend.AssetManagerBackend import AssetManagerBackend
 from src.backend.PageManagement.PageManager import PageManager
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
-from src.windows.Store.StoreBackend import StoreBackend
+from src.windows.Store.StoreBackend import StoreBackend, NoConnectionError
 from autostart import setup_autostart
+from src.Signals.SignalManager import SignalManager
+from src.backend.DesktopGrabber import DesktopGrabber
 
 # Import globals
 import globals as gl
@@ -89,10 +94,12 @@ def create_global_objects():
     gl.argparser.add_argument("-b", help="Open in background", action="store_true")
     gl.argparser.add_argument("app_args", nargs="*")
 
+    gl.settings_manager = SettingsManager()
+
+    gl.signal_manager = SignalManager()
 
     gl.media_manager = MediaManager()
-    gl.asset_manager = AssetManager()
-    gl.settings_manager = SettingsManager()
+    gl.asset_manager_backend = AssetManagerBackend()
     gl.page_manager = PageManager(gl.settings_manager)
     gl.icon_pack_manager = IconPackManager()
     gl.wallpaper_pack_manager = WallpaperPackManager()
@@ -105,6 +112,9 @@ def create_global_objects():
     gl.plugin_manager.load_plugins()
     gl.plugin_manager.generate_action_index()
 
+    
+    # gl.dekstop_grabber = DesktopGrabber()
+
 def update_assets():
     settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
     auto_update = settings.get("store", {}).get("auto-update", True)
@@ -114,8 +124,20 @@ def update_assets():
 
     log.info("Updating store assets")
     start = time.time()
-    asyncio.run(gl.store_backend.update_everything())
-    log.info(f"Updating store assets took {time.time() - start} seconds")
+    number_of_installed_updates = asyncio.run(gl.store_backend.update_everything())
+    if isinstance(number_of_installed_updates, NoConnectionError):
+        log.error("Failed to update store assets")
+        if hasattr(gl.app, "main_win"):
+            gl.app.main_win.show_error_toast("Failed to update store assets")
+        return
+    log.info(f"Updating {number_of_installed_updates} store assets took {time.time() - start} seconds")
+
+    if number_of_installed_updates <= 0:
+        return
+
+    # Show toast in ui
+    if hasattr(gl.app, "main_win"):
+        gl.app.main_win.show_info_toast(f"{number_of_installed_updates} assets updated")
 
 @log.catch
 def reset_all_decks():
@@ -158,7 +180,7 @@ if __name__ == "__main__":
 
     create_global_objects()
     create_cache_folder()
-    threading.Thread(target=update_assets).start()
+    threading.Thread(target=update_assets, name="update_assets").start()
     load()
 
 

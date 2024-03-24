@@ -1,16 +1,29 @@
+import bz2
 import hashlib
 import os
+import pickle
 import sys
 import threading
 import time
 from PIL import Image, ImageOps
 import cv2
 from StreamDeck.ImageHelpers import PILHelper
+import indexed_bzip2 as ibz2
+from loguru import logger as log
 
-VID_CACHE = "vid_cache"
+import globals as gl
+
+VID_CACHE = os.path.join(gl.DATA_PATH, "cache", "videos")
+os.makedirs(VID_CACHE, exist_ok=True)
+
+# Import typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.DeckManagement.DeckController import DeckController
 
 class BackgroundVideoCache:
-    def __init__(self, video_path) -> None:
+    def __init__(self, video_path, deck_controller: "DeckController") -> None:
+        self.deck_controller = deck_controller
         self.lock = threading.Lock()
 
         self.video_path = video_path
@@ -22,26 +35,28 @@ class BackgroundVideoCache:
 
         self.video_md5 = self.get_video_hash()
 
-        self.frame_size: tuple[int] = (72, 72)
-        self.spacing = 36
+        self.key_layout = self.deck_controller.deck.key_layout()
+        self.key_layout_str = f"{self.key_layout[0]}x{self.key_layout[1]}"
+        self.key_count = self.deck_controller.deck.key_count()
+        self.key_size = self.deck_controller.deck.key_image_format()['size']
+        self.spacing = self.deck_controller.spacing
 
-        self.load_cache()
+        self.cache_stored = False
+
+        thread = threading.Thread(target=self.load_cache, name="load_video_cache")
+        thread.start()
 
         if self.is_cache_complete():
-            print("Cache is complete. Closing the video capture.")
+            log.info("Cache is complete. Closing the video capture.")
             self.release()
         else:
-            print("Cache is not complete. Continuing with video capture.")
-
-        # Print size of cache in memory in mb:
-        print(f"Size of cache in memory: {sys.getsizeof(self.cache) / 1024 / 1024:.2f} MB")
-
-        print(f"Size of capture: {sys.getsizeof(self.cap) / 1024 / 1024:.2f} MB")
+            log.info("Cache is not complete. Continuing with video capture.")
 
     def get_tiles(self, n):
+        n = min(n, self.n_frames - 1)
         with self.lock:
             if self.is_cache_complete():
-                print("Cache is complete. Retrieving frame from cache.")
+                self.release()
                 return self.cache.get(n, None)
 
             # Otherwise, continue with video capture
@@ -68,12 +83,12 @@ class BackgroundVideoCache:
                 full_sized = self.create_full_deck_sized_image(pil_image)
 
                 tiles: list[Image.Image] = []
-                for key in range(15):
-                    key_image = self.crop_key_image_from_deck_sized_image(full_sized, key)
-                    tiles.append(key_image)
+                for key in range(self.key_count):
+                    current_tiles = self.crop_key_image_from_deck_sized_image(full_sized, key)
+                    tiles.append(current_tiles)
 
-                    # Write the tile to the cache
-                    self.write_cache(key_image, self.last_frame_index, key)
+                    if n >= self.n_frames - 1:
+                        self.save_cache_threaded()
 
                 self.cache[self.last_frame_index] = tiles
 
@@ -85,17 +100,13 @@ class BackgroundVideoCache:
         return self.cache.get(n, tiles)
     
     def create_full_deck_sized_image(self, frame: Image.Image) -> Image.Image:
-        key_rows, key_cols = 3, 5
-        key_width, key_height = 72, 72
-        spacing_x, spacing_y = 36, 36
-
-        key_width *= key_cols
-        key_height *= key_rows
+        key_width *= self.key_layout[0]
+        key_height *= self.key_layout[1]
 
         # Compute the total number of extra non-visible pixels that are obscured by
         # the bezel of the StreamDeck.
-        spacing_x *= key_cols - 1
-        spacing_y *= key_rows - 1
+        spacing_x *= self.key_layout[0] - 1
+        spacing_y *= self.key_layout[1] - 1
 
         # Compute final full deck image size, based on the number of buttons and
         # obscured pixels.
@@ -107,13 +118,10 @@ class BackgroundVideoCache:
         return ImageOps.fit(frame, full_deck_image_size, Image.Resampling.HAMMING)
     
     def crop_key_image_from_deck_sized_image(self, image: Image.Image, key):
-        key_spacing = (36, 36)
         # deck = self.deck_controller.deck
-
-
-        key_rows, key_cols = 3, 5
-        key_width, key_height = 72, 72
-        spacing_x, spacing_y = key_spacing
+        key_rows, key_cols = self.key_layout
+        key_width, key_height = self.key_size
+        spacing_x, spacing_y = self.spacing
 
         # Determine which row and column the requested key is located on.
         row = key // key_cols
@@ -146,78 +154,80 @@ class BackgroundVideoCache:
                 sha1sum.update(block)
                 block = video.read(2**16)
             return sha1sum.hexdigest()
+        
+    def save_cache_threaded(self):
+        t = threading.Thread(target=self.save_cache, name="save_video_cache")
+        t.start()
+        
+    def save_cache(self):
+        """
+        Store cache using pickle
+        """
+        if self.cache_stored:
+            return
+        self.cache_stored = True
+        
+        start = time.time()
+        cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
 
-    def write_cache(self, image: Image, frame_index: int, key_index: int = None):
-        # Create the directory if it doesn't exist
-        cache_dir = os.path.join(VID_CACHE, "3x5", self.video_md5, str(key_index))
-        os.makedirs(cache_dir, exist_ok=True)
-        
-        # Construct the file path
-        frame_file_path = os.path.join(cache_dir, f"{frame_index}.png")
-        
-        # Save the image as a PNG file
-        image.save(frame_file_path)
+        data = self.cache.copy()
+
+        with bz2.open(cache_path, "wb") as f:
+            pickle.dump(data, f)
+
+        log.success(f"Saved cache in {time.time() - start:.2f} seconds")
+        self.last_save = time.time()
+        del data
+
 
     def load_cache(self, key_index: int = None):
-        """
-        #TODO: Too slow
-        #TODO: Catch corrupt image errors
-        """
         return
-        # Path to the cache directory
-        cache_dir = os.path.join(VID_CACHE, "3x5", self.video_md5, str(key_index) if key_index is not None else "")
+        cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
+        if not os.path.exists(cache_path):
+            return
         
-        # Check if cache directory exists
-        if os.path.exists(cache_dir) and os.path.isdir(cache_dir):
-            # Iterate over each file in the directory
-            for frame in os.listdir(os.path.join(cache_dir, "0")):
-                tiles: list[Image.Image] = []
-                s = sorted(os.listdir(cache_dir), key=lambda x: int(x))
-                for key in s:
-                    with Image.open(os.path.join(cache_dir, key, frame)) as img:
-                        tiles.append(img.copy())
-
-                self.cache[int(frame.split(".")[0])] = tiles
-
+        # with open(os.path.join(VID_CACHE, "3x5", f"{self.video_md5}.pkl"), "rb") as f:
+            # self.cache = pickle.load(f)
+        
+        # return
+        _time = time.time()
+        try:
+            with ibz2.open(cache_path, parallelization=os.cpu_count()) as f:
+                self.cache = pickle.load(f)
+            log.success(f"Loaded cache in {time.time() - _time:.2f} seconds")
+        except Exception as e:
+            os.remove(cache_path)
+            log.error(f"Failed to load cache: {e}")
+            return
 
     def is_cache_complete(self) -> bool:
-        return False
-           # Path to the video's cache directory
-        video_cache_dir = os.path.join(VID_CACHE, "3x5", self.video_md5)
-        
-        # Check if the video's cache directory exists
-        if not os.path.exists(video_cache_dir):
+        if self.n_frames != len(self.cache):
             return False
         
-        # Check each key's folder
-        for key_index in range(15):  # Assuming 15 keys as per the provided code
-            key_cache_dir = os.path.join(video_cache_dir, str(key_index))
-            
-            # Check if the key's folder exists and is a directory
-            if not os.path.exists(key_cache_dir) or not os.path.isdir(key_cache_dir):
+        for key in self.cache:
+            if len(self.cache[key]) != self.key_count:
                 return False
-            
-            # Get the list of files in the key's folder
-            frame_files = [f for f in os.listdir(key_cache_dir) if f.endswith('.png')]
-            
-            # Check if the number of frame images is equal to the expected number of frames
-            if len(frame_files) != self.n_frames:
-                print(f"Key {key_index} has {len(frame_files)} frame images, expected {self.n_frames}")
-                return False
-        
-        # If all checks passed, the cache is complete
+
         return True
+    
+    def close(self) -> None:
+        import gc
+        self.release()
+        print(len(gc.get_referrers(self)), len(gc.get_referrers(self.cache)))
+        print(gc.get_referrers(self.cache))
 
-if __name__ == "__main__":
-    vid = BackgroundVideoCache("Kugelbahn.mp4")
+        for n in self.cache:
+            for f in self.cache[n]:
+                # ref = gc.get_referrers(f)
+                # if len(ref) > 1:
+                    # 
+                f.close()
+                f = None
 
-    s = time.time()
 
-    print("getting")
-    frame = vid.get_tiles(1000)
-    print(frame)
-
-    e = time.time()
-    print(e - s)
-
-# frame.show()
+        self.cache = None
+        del self.cache
+        del self.cap
+        gc.collect()
+        del self

@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
  
+import sys
 from git import Repo
 import requests
 from async_lru import alru_cache
@@ -30,11 +31,16 @@ import shutil
 from install import install
 from packaging import version
 
+# Import GLib
+import gi
+from gi.repository import GLib
+
 # Import own modules
+from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
 # Import signals
-from src.backend.PluginManager import Signals
+from src.Signals import Signals
 
 # Import globals
 import globals as gl
@@ -78,7 +84,6 @@ class StoreBackend:
 
         self.official_authors = asyncio.run(self.get_official_authors())
 
-    @alru_cache(maxsize=None)
     async def request_from_url(self, url: str) -> requests.Response:
         try:
             req = requests.get(url, stream=True)
@@ -103,7 +108,6 @@ class StoreBackend:
         repo_url = repo_url.replace("github.com", "raw.githubusercontent.com")
         return f"{repo_url}/{branch_name}/{file_path}"
 
-    @alru_cache(maxsize=None)
     async def get_remote_file(self, repo_url: str, file_path: str, branch_name: str = "main") -> requests.Response:
         """
         This function retrieves the content of a remote file from a GitHub repository.
@@ -128,9 +132,8 @@ class StoreBackend:
 
         return answer
     
-    @alru_cache(maxsize=None)
     async def get_official_authors(self) -> list:
-        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "OfficialAuthors.json")
+        result = await self.get_remote_file("https://github.com/StreamController/StreamController-Store", "OfficialAuthors.json")
         if isinstance(result, NoConnectionError):
             return result
         authors_json = result.text
@@ -142,7 +145,7 @@ class StoreBackend:
         returns the number of assets that are new old for the current app version
         """
         n_too_new_assets = 0
-        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Plugins.json")
+        result = await self.get_remote_file("https://github.com/StreamController/StreamController-Store", "Plugins.json")
         if isinstance(result, NoConnectionError):
             return result
         plugins_json = result.text
@@ -153,10 +156,9 @@ class StoreBackend:
         for plugin in plugins_json:
             plugin = await self.prepare_plugin(plugin)
 
-            if plugin == "asset_is_newer":
-                n_too_new_assets += 1
+            if plugin == NoConnectionError:
                 continue
-            
+
             if isinstance(plugin, dict):
                 plugins.append(plugin)
 
@@ -167,7 +169,7 @@ class StoreBackend:
         returns the number of assets that are too new for the current app version
         """
         n_to_new_assets = 0
-        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Icons.json")
+        result = await self.get_remote_file("https://github.com/StreamController/StreamController-Store", "Icons.json")
         if isinstance(result, NoConnectionError):
             return result
         icons_json = result.text
@@ -177,8 +179,7 @@ class StoreBackend:
         for icon in icons_json:
             icon = await self.prepare_icon(icon)
 
-            if icon == "asset_is_newer":
-                n_to_new_assets += 1
+            if icon == NoConnectionError:
                 continue
 
             if isinstance(icon, dict):
@@ -191,7 +192,7 @@ class StoreBackend:
         returns the number of assets that are too new for the current app version
         """
         n_to_new_assets = 0
-        result = await self.get_remote_file("https://github.com/Core447/StreamController-Store", "Wallpapers.json")
+        result = await self.get_remote_file("https://github.com/StreamController/StreamController-Store", "Wallpapers.json")
         if isinstance(result, NoConnectionError):
             return result
         wallpapers_json = result.text
@@ -201,8 +202,7 @@ class StoreBackend:
         for wallpaper in wallpapers_json:
             wallpaper = await self.prepare_wallpaper(wallpaper)
 
-            if wallpaper == "asset_is_newer":
-                n_to_new_assets += 1
+            if wallpaper == NoConnectionError:
                 continue
 
             if isinstance(wallpaper, dict):
@@ -210,7 +210,6 @@ class StoreBackend:
         
         return wallpapers
     
-    @alru_cache(maxsize=None)
     async def get_manifest(self, url:str, commit:str) -> dict:
         url = self.build_url(url, "manifest.json", commit)
         # Look for cached manifest - if we have a file for the same commit we can safely assume it's the same
@@ -290,10 +289,10 @@ class StoreBackend:
         url = plugin["url"]
 
         # Check if suitable version is available
-        version_check = self.make_version_check(plugin["commits"].keys())
-        if version_check is not True:
-            return version_check
-        commit = plugin["commits"][gl.app_version]
+        version = self.get_newest_compatible_version(plugin["commits"])
+        if version is None:
+            return NoCompatibleVersion
+        commit = plugin["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -348,10 +347,10 @@ class StoreBackend:
         url = icon["url"]
 
         # Check if suitable version is available
-        version_check = self.make_version_check(icon["commits"].keys())
-        if version_check is not True:
-            return version_check
-        commit = icon["commits"][gl.app_version]
+        version = self.get_newest_compatible_version(icon["commits"])
+        if version is None:
+            return NoCompatibleVersion
+        commit = icon["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -396,10 +395,10 @@ class StoreBackend:
         url = wallpaper["url"]
 
         # Check if suitable version is available
-        version_check = self.make_version_check(wallpaper["commits"].keys())
-        if version_check is not True:
-            return version_check
-        commit = wallpaper["commits"][gl.app_version]
+        version = self.get_newest_compatible_version(wallpaper["commits"])
+        if version is None:
+            return NoCompatibleVersion
+        commit = wallpaper["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -511,33 +510,20 @@ class StoreBackend:
     def get_all_plugins(self):
         return asyncio.run(self.get_all_plugins_async())
     
-    def is_newer(self, newer: str, than: str):
-        return version.parse(newer) > version.parse(than)
-    
-    from packaging import version
+    def get_newest_compatible_version(self, available_versions: list[str]) -> str:
+        if gl.exact_app_version_check:
+            if gl.app_version in available_versions:
+                return gl.app_version
+            else:
+                return None
+            
+        current_major = version.parse(gl.app_version).major
 
-    def get_newest_version(self, versions: list[str]) -> str:
-        # Convert the version strings to (Version object, original string) tuples
-        parsed_versions = [(version.parse(v), v) for v in versions]
-
-        # Find the maximum using the Version object for comparison
-        latest_version_tuple = max(parsed_versions, key=lambda x: x[0])
-
-        # Extract the original string from the tuple
-        return latest_version_tuple[1]
-    
-    def make_version_check(self, available_versions: list[str]):
-        # Check if the asset is available for the current app version
-        if gl.app_version in available_versions:
-            return True
-        
-        # Check whether the app or the asset is outdated
-        newest_version = self.get_newest_version(available_versions)
-
-        if self.is_newer(gl.app_version, newest_version):
-            return "app_is_newer"
+        compatible_versions = [v for v in available_versions if version.parse(v).major == current_major]
+        if compatible_versions:
+            return max(compatible_versions)
         else:
-            return "asset_is_newer"
+            return None
 
     ## Install
     async def subp_call(self, args):
@@ -590,7 +576,11 @@ class StoreBackend:
 
         # Run install script if present
         if os.path.isfile(os.path.join(local_path, "__install__.py")):
-            subprocess.Popen(f"python3 {os.path.join(local_path, '__install__.py')}", shell=True, start_new_session=True)
+            subprocess.run(f"python3 {os.path.join(local_path, '__install__.py')}", shell=True, start_new_session=True)
+
+        # Install requirements from requirements.txt
+        if os.path.isfile(os.path.join(local_path, "requirements.txt")):
+            subprocess.run(f"pip install -r {os.path.join(local_path, 'requirements.txt')}", shell=True, start_new_session=True)
             
         if response == 404:
             return 404
@@ -599,10 +589,13 @@ class StoreBackend:
         gl.plugin_manager.load_plugins()
         gl.plugin_manager.init_plugins()
         gl.plugin_manager.generate_action_index()
+        plugins = gl.plugin_manager.get_plugins()
+        if "Clocks" not in plugins:
+            print()
 
         # Update ui
-        if recursive_hasattr(gl, "app.main_win.rightArea.action_chooser"):
-            gl.app.main_win.rightArea.action_chooser.plugin_group.build()
+        if recursive_hasattr(gl, "app.main_win.sidebar.action_chooser"):
+            GLib.idle_add(gl.app.main_win.sidebar.action_chooser.plugin_group.update)
 
         ## Update page
         for controller in gl.deck_manager.deck_controller:
@@ -610,15 +603,15 @@ class StoreBackend:
             if hasattr(controller, "active_page"):
                 if controller.active_page is not None:
                     # Load action objects
+                    controller.active_page.action_objects = {}
                     controller.active_page.load_action_objects()
-                    # Reload page to send new on_load events
+                    # Reload page to send new on_ready events
                     controller.load_page(controller.active_page)
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.PluginInstall, id=plugin_dict["id"])
+        gl.signal_manager.trigger_signal(signal=Signals.PluginInstall, id=plugin_dict["id"])
 
         log.success(f"Plugin {plugin_dict['id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
-
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False) -> bool:
         ## 1. Remove all action objects in all pages
         for deck_controller in gl.deck_manager.deck_controller:
@@ -631,15 +624,31 @@ class StoreBackend:
 
             # Clear all keys in this page which were controlled by this plugin
             for key in keys:
-                deck_controller.load_key(key)
+                key_index = deck_controller.coords_to_index(key.split("x"))
+                deck_controller.load_key(key_index, deck_controller.active_page)
 
-        ## 2. Remove plugin folder
-        plugin_dir = gl.plugin_manager.get_plugin_by_id(plugin_id).PATH
-        shutil.rmtree(plugin_dir)
+        ## 2. Inform plugin base
+        plugins = gl.plugin_manager.get_plugins()
+        plugin = gl.plugin_manager.get_plugin_by_id(plugin_id)
+        if plugin is None:
+            return
+        plugin.on_uninstall()
+        
+        ## 3. Remove plugin folder
+        shutil.rmtree(plugin.PATH)
 
-        ## 3. Delete plugin base object
-        plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
-        del plugin_obj
+        ## 4. Delete plugin base object
+        # plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
+        gl.plugin_manager.remove_plugin_from_list(plugin)
+
+        del plugin
+
+        GLib.idle_add(gl.app.main_win.sidebar.action_chooser.plugin_group.update)
+
+        # Remove from sys.modules
+        module_name = f"plugins.{plugin_id}.main"
+        if module_name in sys.modules:
+            del sys.modules[module_name]
 
     async def get_plugin_for_id(self, plugin_id):
         plugins = await self.get_all_plugins_async()
@@ -650,6 +659,8 @@ class StoreBackend:
     ## Updates
     async def get_plugins_to_update(self):
         plugins = await self.get_all_plugins_async()
+        if isinstance(plugins, NoConnectionError):
+            return plugins
 
         plugins_to_update: list[dict] = []
 
@@ -662,13 +673,22 @@ class StoreBackend:
 
         return plugins_to_update
     
-    async def update_all_plugins(self):
+    async def update_all_plugins(self) -> int:
+        """
+        Returns number of updated plugins
+        """
         plugins_to_update = await self.get_plugins_to_update()
+        if isinstance(plugins_to_update, NoConnectionError):
+            return plugins_to_update
         for plugin in plugins_to_update:
             await self.install_plugin(plugin)
+        
+        return len(plugins_to_update)
 
     async def get_icons_to_update(self):
         icons = await self.get_all_icons()
+        if isinstance(icons, NoConnectionError):
+            return icons
 
         icons_to_update: list[dict] = []
 
@@ -681,15 +701,32 @@ class StoreBackend:
                 
         return icons_to_update
     
-    async def update_all_icons(self):
+    async def update_all_icons(self) -> int:
+        """
+        Returns number of updated icons
+        """
         icons_to_update = await self.get_icons_to_update()
+        if isinstance(icons_to_update, NoConnectionError):
+            return icons_to_update
         for icon in icons_to_update:
             await self.install_icon(icon)
 
-    async def update_everything(self):
-        await self.update_all_plugins()
-        await self.update_all_icons()
+        return len(icons_to_update)
 
+    async def update_everything(self) -> int:
+        """
+        Returns number of updated assets
+        """
+        n_plugins = await self.update_all_plugins()
+        n_icons = await self.update_all_icons()
+
+        if isinstance(n_plugins, NoConnectionError) or isinstance(n_icons, NoConnectionError):
+            return NoConnectionError()
+
+        return n_plugins + n_icons
+
+class NoCompatibleVersion:
+    pass
             
 
         

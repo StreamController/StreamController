@@ -6,7 +6,7 @@ import Pyro5.api
 from PIL import Image
 
 # Import own modules
-from src.backend.PluginManager.Signals import Signal
+from src.Signals.Signals import Signal
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.HelperMethods import is_image, is_video
 from src.backend.DeckManagement.DeckController import KeyImage, KeyVideo, BackgroundImage, BackgroundVideo, KeyLabel
@@ -21,17 +21,11 @@ from locales.LocaleManager import LocaleManager
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
-    from src.backend.DeckManagement.DeckController import DeckController
+    from src.backend.DeckManagement.DeckController import DeckController, ControllerKey
 
 @Pyro5.api.expose
 class ActionBase:
     # Change to match your action
-    ACTION_ID: str = None
-    ACTION_NAME: str = None
-    CONTROLS_KEY_IMAGE: bool = False
-    KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
-    LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
-
     def __init__(self, action_id: str, action_name: str,
                  deck_controller: "DeckController", page: Page, coords: str, plugin_base: "PluginBase"):
         self._backend: Pyro5.api.Proxy = None
@@ -40,16 +34,20 @@ class ActionBase:
         self.page = page
         self.page_coords = coords
         self.coords = int(coords.split("x")[0]), int(coords.split("x")[1])
-        self.index = self.deck_controller.coords_to_index(self.coords)
+        self.key_index = self.deck_controller.coords_to_index(self.coords)
         self.action_id = action_id
         self.action_name = action_name
         self.plugin_base = plugin_base
 
         self.on_ready_called = False
 
+        self.CONTROLS_KEY_IMAGE: bool = False
+        self.KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
+        self.LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
+
         self.labels = {}
         self.current_key = {
-            "key": self.index,
+            "key": self.key_index,
             "image": None,
          }
         
@@ -58,7 +56,7 @@ class ActionBase:
 
         self.locale_manager: LocaleManager = None
 
-        log.info(f"Loaded action {self.ACTION_NAME}")
+        log.info(f"Loaded action {self.action_name} with id {self.action_id}")
         
     def set_deck_controller(self, deck_controller):
         """
@@ -97,7 +95,7 @@ class ActionBase:
     def on_tick(self):
         pass
 
-    def set_default_image(self, image: "PIL.Image"):
+    def set_default_image(self, image: Image.Image):
         self.default_image = image
 
     def set_default_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0, 
@@ -121,44 +119,85 @@ class ActionBase:
                 "font-size": font_size
             }
 
-    def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, update: bool = True):
+    def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True, update: bool = True):
+        if not self.get_is_present():
+            return
+        if self.key_index >= self.deck_controller.deck.key_count():
+            return
+        # if not self.on_ready_called:
+            # update = False
+
+        # Block for multi actions
+        if self.get_is_multi_action():
+            return
+        
+        if self.has_custom_user_asset():
+            return
+        
         if is_image(media_path):
             with Image.open(media_path) as img:
                 image = img.copy()
 
-        if image is not None:
-            self.deck_controller.keys[self.index].set_key_image(KeyImage(
-                controller_key=self.deck_controller.keys[self.index],
+        if image is not None or media_path is None:
+            self.deck_controller.keys[self.key_index].set_key_image(KeyImage(
+                controller_key=self.deck_controller.keys[self.key_index],
                 image=image,
                 size=size,
                 valign=valign,
                 halign=halign
             ), update=False)
-        if is_video(media_path):
-            self.deck_controller.keys[self.index].set_key_video(KeyVideo(
-                controller_key=self.deck_controller.keys[self.index],
+        elif is_video(media_path):
+            self.deck_controller.keys[self.key_index].set_key_video(KeyVideo(
+                controller_key=self.deck_controller.keys[self.key_index],
                 video_path=media_path,
+                fps=fps,
+                loop=loop
             ))
 
         if update:
-            self.deck_controller.update_key(self.index)
+            self.deck_controller.update_key(self.key_index)
+
+    def set_background_color(self, color: list[int] = [255, 255, 255, 255], update: bool = True):
+        if self.key_index >= self.deck_controller.deck.key_count():
+            return
+        if not self.on_ready_called:
+            update = False
+
+        self.deck_controller.keys[self.key_index].background_color = color
+        if update:
+            self.deck_controller.update_key(self.key_index)
+
             
     def show_error(self, duration: int = -1) -> None:
-        self.deck_controller.keys[self.index].show_error(duration=duration)
+        self.deck_controller.keys[self.key_index].show_error(duration=duration)
         
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18, update: bool = True):
+        if not self.get_is_present(): return
+        if not self.on_ready_called:
+            update = False
+
+        if text is None:
+            text = ""
+
+        self.labels[position] = {
+            "text": text,
+            "color": color,
+            "stroke-width": stroke_width,
+            "font-family": font_family,
+            "font-size": font_size
+        }
         
         key_label = KeyLabel(
-            controller_key=self.deck_controller.keys[self.index],
+            controller_key=self.deck_controller.keys[self.key_index],
             text=text,
             font_size=font_size,
             font_name=font_family,
             color=color,
             font_weight=stroke_width
         )
-        self.deck_controller.keys[self.index].add_label(key_label, position=position, update=update)
+        self.deck_controller.keys[self.key_index].add_label(key_label, position=position, update=update)
 
     def set_top_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
                       font_family: str = "", font_size = 18, update: bool = True):
@@ -191,29 +230,26 @@ class ActionBase:
         self.page.save()
 
     def connect(self, signal:Signal = None, callback: callable = None) -> None:
-        # Verify signal
-        if not isinstance(signal, Signal):
-            raise TypeError("signal_name must be of type Signal")
-        
-        # Verify callback
-        if not callable(callback):
-            raise TypeError("callback must be callable")
-        
         # Connect
-        gl.plugin_manager.connect_signal(signal = signal, callback = callback)
+        gl.signal_manager.connect_signal(signal = signal, callback = callback)
 
-    def launch_backend(self, backend_path: str, venv_activate_path: str = None):
+    def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
         uri = self.add_to_pyro()
 
         ## Launch
-        command = ""
-        if venv_activate_path is not None:
-            command = f"source{venv_activate_path} && "
-        command += "python3 "
-        command += f"{backend_path}"
-        command += f" --uri={uri}"
+        if open_in_terminal:
+            command = "gnome-terminal -- bash -c '"
+            if venv_path is not None:
+                command += "source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --uri={uri}; exec $SHELL'"
+        else:
+            command = ""
+            if venv_path is not None:
+                command = f"source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --uri={uri}"
 
-        subprocess.Popen(command, shell=True, start_new_session=True)
+        log.info(f"Launching backend: {command}")
+        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
 
     def add_to_pyro(self) -> str:
         daemon = gl.plugin_manager.pyro_daemon
@@ -237,3 +273,19 @@ class ActionBase:
     @backend.setter
     def backend(self, value):
         self._backend = value
+
+    def get_own_key(self) -> "ControllerKey":
+        return self.deck_controller.keys[self.key_index]
+    
+    def get_is_multi_action(self) -> bool:
+        if not self.get_is_present(): return
+        actions = self.page.action_objects.get(self.page_coords, [])
+        return len(actions) > 1
+    
+    def get_is_present(self):
+        if self.page is None: return False
+        return self in self.page.get_all_actions()
+    
+    def has_custom_user_asset(self) -> bool:
+        media = self.page.dict["keys"][self.page_coords].get("media", {})
+        return media.get("path", None) is not None

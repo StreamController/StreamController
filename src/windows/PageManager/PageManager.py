@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 from GtkHelper.GtkHelper import EntryDialog
 
 # Import signals
-from src.backend.PluginManager import Signals
+from src.Signals import Signals
 
 class PageManager(Gtk.ApplicationWindow):
     def __init__(self, app:"App"):
@@ -44,7 +44,7 @@ class PageManager(Gtk.ApplicationWindow):
 
     def build(self):
         # Title bar
-        self.title_bar = Gtk.HeaderBar()
+        self.title_bar = Gtk.HeaderBar(css_classes=["flat"])
         self.set_titlebar(self.title_bar)
 
         # Main box
@@ -90,6 +90,8 @@ class PageManager(Gtk.ApplicationWindow):
     def load_pages(self):
         pages = gl.page_manager.get_pages()
         for page_path in pages:
+            if os.path.dirname(page_path) != os.path.join(gl.DATA_PATH, "pages"):
+                continue
             self.page_box.append(PageButton(page_manager=self, page_path = page_path))
 
     def on_add_page(self, button, parent_window=None):
@@ -105,7 +107,7 @@ class PageManager(Gtk.ApplicationWindow):
         self.page_box.append(PageButton(page_manager=self, page_path=path))
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.PageAdd, path= path)
+        gl.signal_manager.trigger_signal(signal=Signals.PageAdd, path=path)
 
     def on_search_changed(self, *args):
         self.page_box.invalidate_filter()
@@ -181,6 +183,13 @@ class PageButton(Gtk.FlowBoxChild):
         context = KeyButtonContextMenu(self)
         context.popup()
 
+    def delete_page(self):
+        gl.page_manager.remove_page(self.page_path)
+        self.page_manager.page_box.remove(self)
+
+        # Notify plugin actions
+        gl.signal_manager.trigger_signal(signal=Signals.PageDelete, path=self.page_path)
+
 
 class KeyButtonContextMenu(Gtk.PopoverMenu):
     def __init__(self, page_button:PageButton):
@@ -230,12 +239,33 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         self.page_button.main_button.set_label(os.path.splitext(os.path.basename(new_path))[0])
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.PageRename, old_path= old_path, new_path= new_path)
+        gl.signal_manager.trigger_signal(signal=Signals.PageRename, old_path=old_path, new_path=new_path)
 
 
     def on_remove(self, action, param):
-        gl.page_manager.remove_page(self.page_button.page_path)
-        self.page_button.page_manager.page_box.remove(self.page_button)
+        dial = DeleteFileConfirmationDialog(self.page_button)
+        dial.present()
 
-        # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.PageDelete, path= self.page_button.page_path)
+
+class DeleteFileConfirmationDialog(Adw.MessageDialog):
+    def __init__(self, page_button: PageButton):
+        super().__init__()
+        self.page_button = page_button
+
+        self.build()
+
+    def build(self):
+        self.set_title("Delete Confirmation")
+        self.add_response("cancel", "Cancel")
+        self.add_response("delete", "Delete")
+        self.set_default_response("cancel")
+        self.set_close_response("cancel")
+        self.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        self.set_body(f'Are you sure you want to delete the page: "{self.page_button.main_button.get_label()}"?')
+
+        self.connect("response", self.on_response)
+
+    def on_response(self, dialog, response):
+        if response == "delete":
+            self.page_button.delete_page()
+        dialog.destroy()

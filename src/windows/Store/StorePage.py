@@ -16,7 +16,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 # Import python modules
 from fuzzywuzzy import fuzz
@@ -26,6 +26,7 @@ from loguru import logger as log
 # Import own modules
 from src.windows.Store.InfoPage import InfoPage
 from GtkHelper.GtkHelper import ErrorPage
+from src.windows.Store.NoConnectionError import NoConnectionError
 
 # Typing
 from typing import TYPE_CHECKING
@@ -65,7 +66,7 @@ class StorePage(Gtk.Stack):
         self.scrolled_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.scrolled_window.set_child(self.scrolled_box)
 
-        self.flow_box = Gtk.FlowBox(orientation=Gtk.Orientation.HORIZONTAL)
+        self.flow_box = Gtk.FlowBox(orientation=Gtk.Orientation.HORIZONTAL, selection_mode=Gtk.SelectionMode.NONE)
         self.flow_box.set_filter_func(self.filter_func)
         self.flow_box.set_sort_func(self.sort_func)
         self.scrolled_box.append(self.flow_box)
@@ -89,7 +90,7 @@ class StorePage(Gtk.Stack):
         self.add_titled(self.info_page, "Info", "Info")
 
         # Error page
-        self.no_connection_page = ErrorPage(error_text="No connection")
+        self.no_connection_page = NoConnectionError()
         self.add_titled(self.no_connection_page, "Error", "Error")
 
     def on_search_changed(self, entry: Gtk.SearchEntry):
@@ -160,7 +161,8 @@ class StorePage(Gtk.Stack):
         self.flow_box.set_visible(False)
         self.bottom_box.set_visible(False)
         self.loading_box.set_visible(True)
-        threading.Thread(target=self.spinner.set_spinning, args=(True,)).start()
+        # threading.Thread(target=self.spinner.set_spinning, args=(True,), name="spinner_thread").start()
+        GLib.idle_add(self.spinner.set_spinning, True)
 
     def set_loaded(self):
         self.flow_box.set_visible(True)

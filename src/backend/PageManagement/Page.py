@@ -12,14 +12,23 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+import gc
 import os
 import json
+import threading
+import time
 from loguru import logger as log
 from copy import copy
 import shutil
 
 # Import globals
 import globals as gl
+
+# Import typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.PluginManager.ActionHolder import ActionHolder
+    from src.backend.PluginManager.ActionBase import ActionBase
 
 class Page:
     def __init__(self, json_path, deck_controller, *args, **kwargs):
@@ -87,6 +96,8 @@ class Page:
         # Store loaded action objects
         self.loaded_action_objects = copy(self.action_objects)
 
+        add_threads: list[threading.Thread] = []
+
         # Load action objects
         self.action_objects = {}
         for key in self.dict.get("keys", {}):
@@ -96,28 +107,79 @@ class Page:
                 if action.get("id") is None:
                     continue
 
+                self.action_objects.setdefault(key, {})
+
                 action_holder = gl.plugin_manager.get_action_holder_from_id(action["id"])
                 if action_holder is None:
+                    self.action_objects[key][i] = NoActionHolderFound(id=action["id"])
                     continue
                 action_class = action_holder.action_base
                 
-                self.action_objects.setdefault(key, {})
                 if action_class is None:
-                    self.action_objects[key][i] = action["id"]
+                    self.action_objects[key][i] = NoActionHolderFound(id=action["id"])
                     continue
 
                 old_object = self.action_objects[key].get(i)
-                if isinstance(old_object, action_class):
-                    # Action already exists - keep it
-                    continue
+                if old_object is not None:
+                    if isinstance(old_object, action_class) and not isinstance(old_object, NoActionHolderFound):    
+                        # Action already exists - keep it
+                        continue
                 
                 if i in self.loaded_action_objects.get(key, []):
-                    if not isinstance(self.loaded_action_objects.get(key, [i])[i], str):
+                    if not isinstance(self.loaded_action_objects.get(key, [i])[i], NoActionHolderFound):
                         self.action_objects[key][i] = self.loaded_action_objects[key][i]
                         continue
 
-                action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
-                self.action_objects[key][i] = action_object
+                # action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
+                # self.action_objects[key][i] = action_object
+                if self.deck_controller.coords_to_index(key.split("x")) > self.deck_controller.deck.key_count():
+                    continue
+                thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, key, i), name=f"add_action_object_from_holder_{key}_{i}")
+                thread.start()
+                add_threads.append(thread)
+
+        all_threads_finished = False
+        while not all_threads_finished:
+            all_threads_finished = True
+            for thread in add_threads:
+                if thread.is_alive():
+                    all_threads_finished = False
+                    break
+            time.sleep(0.02)
+
+    def move_actions(self, from_key: str, to_key: str):
+        from_actions = self.action_objects.get(from_key, {})
+
+        for action in from_actions.values():
+            action: "ActionBase" = action
+            action.key_index = self.deck_controller.coords_to_index(to_key.split("x"))
+            action.page_coords = to_key
+
+
+    def switch_actions_of_keys(self, key_1: str, key_2: str):
+        key_1_actions = self.action_objects.get(key_1, {})
+        key_2_actions = self.action_objects.get(key_2, {})
+
+        for action in key_1_actions.values():
+            action: "ActionBase" = action
+            action.key_index = self.deck_controller.coords_to_index(key_2.split("x"))
+            action.page_coords = key_2
+
+        for action in key_2_actions.values():
+            action: "ActionBase" = action
+            action.key_index = self.deck_controller.coords_to_index(key_1.split("x"))
+            action.page_coords = key_1
+
+        # Change in action_objects
+        self.action_objects[key_1] = key_2_actions
+        self.action_objects[key_2] = key_1_actions
+
+
+    def add_action_object_from_holder(self, action_holder: "ActionHolder", key: str, i: int):
+        action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
+        if action_object is None:
+            return
+        self.action_objects[key][i] = action_object
 
     def remove_plugin_action_objects(self, plugin_id: str) -> bool:
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
@@ -125,9 +187,9 @@ class Page:
             return False
         for key in list(self.action_objects.keys()):
             for index in list(self.action_objects[key].keys()):
-                if isinstance(self.action_objects[key][index], str):
+                if isinstance(self.action_objects[key][index], NoActionHolderFound):
                     continue
-                if self.action_objects[key][index].PLUGIN_BASE == plugin_obj:
+                if self.action_objects[key][index].plugin_base == plugin_obj:
                     # Remove object
                     action = self.action_objects[key][index]
                     del action
@@ -140,14 +202,14 @@ class Page:
     def get_keys_with_plugin(self, plugin_id: str):
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
         if plugin_obj is None:
-            return
+            return []
         
         keys = []
         for key in self.action_objects:
             for action in self.action_objects[key].values():
-                if isinstance(action, str):
+                if isinstance(action, NoActionHolderFound):
                     continue
-                if action.PLUGIN_BASE == plugin_obj:
+                if action.plugin_base == plugin_obj:
                     keys.append(key)
 
         return keys
@@ -176,6 +238,10 @@ class Page:
         actions = []
         for key in self.action_objects:
             for action in self.action_objects[key].values():
+                if action is None:
+                    continue
+                if isinstance(action, NoActionHolderFound):
+                    continue
                 actions.append(action)
         return actions
     
@@ -183,6 +249,8 @@ class Page:
         actions = []
         if key in self.action_objects:
             for action in self.action_objects[key].values():
+                if isinstance(action, NoActionHolderFound) or action is None:
+                    continue
                 actions.append(action)
         return actions
     
@@ -233,6 +301,18 @@ class Page:
                     action.on_ready()
                     action.on_ready_called = True
 
+    def clear_action_objects(self):
+        for key in self.action_objects:
+            for i, action in enumerate(list(self.action_objects[key])):
+                self.action_objects[key][i].page = None
+                self.action_objects[key][i] = None
+                refs = gc.get_referrers(self.action_objects[key][i])
+                r2 = gc.get_referents(self.action_objects[key][i])
+                n = len(refs)
+                del self.action_objects[key][i]
+        self.action_objects = {}
+        print()
+
     def get_name(self):
         return os.path.splitext(os.path.basename(self.json_path))[0]
     
@@ -247,13 +327,49 @@ class Page:
                 pages.append(controller.active_page)
         return pages
     
-    def reload_similar_pages(self, page_coords=None, reload_self: bool = False):
+    def reload_similar_pages(self, page_coords=None, reload_self: bool = False,
+                             load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
         self.save()
         for page in self.get_pages_with_same_json(get_self=reload_self):
             page.load(load_from_file=True)
             if page_coords is None:
-                page.deck_controller.reload_page()
+                page.deck_controller.load_page(page, load_brightness, load_screensaver, load_background, load_keys)
             else:
                 key_index = page.deck_controller.coords_to_index(page_coords.split("x"))
                 # Reload only given key
                 page.deck_controller.load_key(key_index, page.deck_controller.active_page)
+
+    def get_action_comment(self, page_coords: str, index: int):
+        if page_coords in self.action_objects:
+            if index in self.action_objects[page_coords]:
+                try:
+                    return self.dict["keys"][page_coords]["actions"][index].get("comment")
+                except:
+                    return ""
+            
+    def set_action_comment(self, page_coords: str, index: int, comment: str):
+        if page_coords in self.action_objects:
+            if index in self.action_objects[page_coords]:
+                self.dict["keys"][page_coords]["actions"][index]["comment"] = comment
+                self.save()
+
+    def fix_action_objects_order(self, page_coords) -> None:
+        """
+        #TODO: Switch to list instead of dict to avoid this
+        """
+        if page_coords not in self.action_objects:
+            return
+        
+        actions = list(self.action_objects[page_coords].values())
+
+        d = self.dict.copy()
+
+        self.action_objects[page_coords] = {}
+        for i, action in enumerate(actions):
+            self.action_objects[page_coords][i] = action
+
+        new_d = self.dict
+
+class NoActionHolderFound:
+    def __init__(self, id: str):
+        self.id = id

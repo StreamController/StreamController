@@ -12,6 +12,11 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+# Import gtk modules
+import gi
+
+gi.require_version("Gtk", "4.0")
+from gi.repository import Gtk
 
 # Import Python modules
 import json
@@ -23,13 +28,13 @@ from decord import VideoReader
 from PIL import Image
 
 # Import own modules
-from src.backend.DeckManagement.HelperMethods import is_video, sha256, file_in_dir, create_empty_json
+from src.backend.DeckManagement.HelperMethods import is_video, is_image, sha256, file_in_dir, create_empty_json, download_file
 
 # Import globals
 import globals as gl
 
 
-class AssetManager(list):
+class AssetManagerBackend(list):
     JSON_PATH = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets.json")
     def __init__(self):
         self.load_json()
@@ -214,3 +219,46 @@ class AssetManager(list):
     def remove_invalid_data(self):
         # TODO
         pass
+
+    def add_custom_media_set_by_ui(self, url: str, path: str):
+        print()
+        if path is None and url is not None:
+            # Lower domain and remove point
+            extension = os.path.splitext(url)[1].lower().replace(".", "")
+            if extension not in (set(gl.video_extensions) | set(gl.image_extensions)):
+                # Not a valid url
+                dial = Gtk.AlertDialog(
+                    message="The image is invalid.",
+                    detail="You can only use urls directly pointing to images (not directly from Google).",
+                    modal=True
+                )
+                dial.show()
+                return -1
+
+            os.makedirs(os.path.join(gl.DATA_PATH, "cache", "downloads"), exist_ok=True)
+            # Download file from url
+            path = download_file(url=url, path=os.path.join(gl.DATA_PATH, "cache", "downloads"))
+
+        if path == None:
+            return
+        if not os.path.exists(path):
+            return
+        if not is_video(path) and not is_image(path):
+            dial = Gtk.AlertDialog(
+                    message="No valid image or video.",
+                    detail="Only images and videos are supported.",
+                    modal=True
+                )
+            dial.show()
+            return
+        asset_id = gl.asset_manager_backend.add(asset_path=path)
+        if asset_id == None:
+            return
+        
+        print()
+        asset = self.get_by_id(asset_id)
+        # Add to asset chooser ui if opened
+        if gl.asset_manager is not None:
+            gl.asset_manager.asset_chooser.custom_asset_chooser.add_asset(asset)
+
+        return asset.get("internal-path")

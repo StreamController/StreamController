@@ -9,7 +9,6 @@ import threading
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import get_last_dir
-from src.backend.PluginManager.Signals import Signal
 from streamcontroller_plugin_tools import BackendBase
 
 import globals as gl
@@ -24,9 +23,9 @@ class PluginManager:
 
         self.pyro_daemon:Pyro5.api.Daemon = None
         self.backends:list[BackendBase] = []
-        self.init_pyro5()
 
-        self.connected_signals: dict = {}
+        self.loop_daemon = True
+        self.init_pyro5()
 
     def load_plugins(self):
         # get all folders in plugins folder
@@ -38,7 +37,10 @@ class PluginManager:
             import_string = f"plugins.{folder}.main"
             if import_string not in sys.modules.keys():
                 # Import module only if it's not already imported
-                importlib.import_module(f"plugins.{folder}.main")
+                try:
+                    importlib.import_module(f"plugins.{folder}.main")
+                except Exception as e:
+                    log.error(f"Error importing plugin {folder}: {e}")
 
         # Get all classes inheriting from PluginBase and generate objects for them
         self.init_plugins()
@@ -102,26 +104,11 @@ class PluginManager:
             if _id == plugin_id:
                 return plugins[plugin]["object"]
             
-    def connect_signal(self, signal: Signal = None, callback: callable = None) -> None:
-        # Verify signal
-        if not isinstance(signal, Signal):
-            raise TypeError("signal_name must be of type Signal")
-        
-        # Verify callback
-        if not callable(callback):
-            raise TypeError("callback must be callable")
-        
-        self.connected_signals.setdefault(signal, [])
-        self.connected_signals[signal].append(callback)
-
-    def trigger_signal(self, signal: Signal = None, *args, **kwargs) -> None:
-        # Verify signal
-        if not isinstance(signal, Signal):
-            raise TypeError("signal_name must be of type Signal")
-        
-        for callback in self.connected_signals.get(signal, []):
-            callback(*args, **kwargs)
+    def remove_plugin_from_list(self, plugin_base: PluginBase):
+        del PluginBase.plugins[plugin_base.plugin_name]
+    
 
     def init_pyro5(self):
         self.pyro_daemon = Pyro5.api.Daemon()
-        threading.Thread(target=self.pyro_daemon.requestLoop).start()
+        #TODO: Stop daemon on close
+        threading.Thread(target=self.pyro_daemon.requestLoop, kwargs={"loopCondition": lambda: self.loop_daemon}, name="pyro_daemon_requestLoop").start()

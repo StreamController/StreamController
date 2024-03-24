@@ -24,8 +24,12 @@ class SettingsManager:
         if not os.path.exists(file_path):
             log.warning(f"Settings file {file_path} not found.")
             return {}
-        with open(file_path) as f:
-            return json.load(f)
+        try:
+            with open(file_path) as f:
+                return json.load(f)
+        except json.decoder.JSONDecodeError as e:
+            log.error(f"Invalid json in {file_path}: {e}")
+            return {}
         
         
     def save_settings_to_file(self, file_path: str, settings: dict) -> None:
@@ -67,4 +71,16 @@ class SettingsManager:
             None
         """
         path = os.path.join(gl.DATA_PATH, "settings", "decks", f"{deck_serial_number}.json")
+        self.save_settings_to_file(path, settings)
+
+    def get_app_settings(self) -> dict:
+        path = os.path.join(gl.DATA_PATH, "settings", "settings.json")
+        settings =  self.load_settings_from_file(path)
+        if settings == None:
+            settings = {}
+            self.save_settings_to_file(path, settings)
+        return settings
+    
+    def save_app_settings(self, settings: dict) -> None:
+        path = os.path.join(gl.DATA_PATH, "settings", "settings.json")
         self.save_settings_to_file(path, settings)

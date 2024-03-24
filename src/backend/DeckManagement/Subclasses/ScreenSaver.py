@@ -43,13 +43,16 @@ class ScreenSaver:
 
         self.media_path: str = None
         self.brightness: int = 25
+        self.fps: int = 30
+        self.loop: bool = True
 
     def set_time(self, time_delay: int) -> None:
+        if time_delay != self.time_delay:
+            log.info(f"Setting screen saver time delay to {time_delay} minutes")
         self.time_delay = time_delay
         if hasattr(self, "timer"):
             self.timer.cancel()
         # *60 to go from minuts (how it is stored) to seconds (how the timer needs it)
-        log.info(f"Screen saver timer set to {time_delay} min(s)")
         self.timer = threading.Timer(time_delay*60, self.on_timer_end)
         if self.enable and not self.showing:
             self.timer.start()
@@ -105,6 +108,10 @@ class ScreenSaver:
         # Set background
         self.deck_controller.background.set_from_path(self.media_path, update=True)
 
+        if self.deck_controller.background.video is not None:
+            self.deck_controller.background.video.fps = self.fps
+            self.deck_controller.background.video.loop = self.loop
+
     def hide(self):
         log.info("Hiding screen saver")
 
@@ -129,3 +136,19 @@ class ScreenSaver:
 
         if self.showing:
             self.deck_controller.set_brightness(self.brightness)
+
+    def set_fps(self, fps: int) -> None:
+        self.fps = fps
+        if not self.showing:
+            return
+        if self.deck_controller.background.video is not None:
+            self.deck_controller.background.video.fps = fps
+            print(f"FPS: {self.deck_controller.background.video.fps}")
+
+    def set_loop(self, loop: bool) -> None:
+        self.loop = loop
+        if not self.showing:
+            return
+        if self.deck_controller.background.video is not None:
+            self.deck_controller.background.video.loop = loop
+            print(f"Loop: {self.deck_controller.background.video.loop}")

@@ -29,9 +29,9 @@ from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 import globals as gl
 
 class IconSelector(Gtk.Box):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
-        self.right_area = right_area
+        self.sidebar = sidebar
         self.build()
 
     def build(self):
@@ -91,8 +91,8 @@ class IconSelector(Gtk.Box):
         gl.app.let_user_select_asset(default_path = media_path, callback_func=self.set_media_callback)
 
     def get_media_path(self):
-        active_page_dict = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page.dict
-        active_coords:tuple = self.right_area.active_coords
+        active_page_dict = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page.dict
+        active_coords:tuple = self.sidebar.active_coords
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
         if "keys" not in active_page_dict:
@@ -106,17 +106,18 @@ class IconSelector(Gtk.Box):
         return active_page_dict["keys"][page_coords]["media"]["path"]
     
     def set_media_path(self, path):
-        active_page:dict = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
-        active_coords:tuple = self.right_area.active_coords
+        active_page:dict = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        active_coords:tuple = self.sidebar.active_coords
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
         active_page.dict.setdefault("keys", {})
         active_page.dict["keys"].setdefault(page_coords, {})
         active_page.dict["keys"][page_coords].setdefault("media", {
-            "path": path,
+            "path": None,
             "loop": True,
             "fps": 30
         })
+        active_page.dict["keys"][page_coords]["media"]["path"] = path
 
         # Save page
         active_page.save()
@@ -128,16 +129,16 @@ class IconSelector(Gtk.Box):
     def set_media_callback(self, path):
         self.set_media_path(path)
         # Reload key
-        controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        key_index = controller.coords_to_index(self.right_area.active_coords)
+        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        key_index = controller.coords_to_index(self.sidebar.active_coords)
         controller.load_key(key_index, page=controller.active_page)
 
     def remove_media(self, *args):
         # Get keygrid of active controller
-        controller = self.right_area.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         grid = controller.get_own_key_grid()
         # Call keys remove method
-        grid.selected_key.on_remove()
+        grid.selected_key.remove_media()
         # Hide remove button
         self.remove_button.set_visible(False)
 

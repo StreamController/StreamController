@@ -31,7 +31,7 @@ from loguru import logger as log
 import globals as gl
 
 # Import signals
-from src.backend.PluginManager import Signals
+from src.Signals import Signals
 
 class NoPagesError(Gtk.Box):
     """
@@ -67,7 +67,7 @@ class NoPagesError(Gtk.Box):
         gl.page_manager.add_page(name)
 
         # Notify plugin actions
-        gl.plugin_manager.trigger_signal(signal= Signals.PageAdd, path= path)
+        gl.signal_manager.trigger_signal(signal=Signals.PageAdd, path=path)
 
         gl.app.main_win.check_for_errors()
 

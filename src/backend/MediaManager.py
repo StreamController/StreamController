@@ -13,13 +13,20 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
+from copy import copy
 import os
 import cv2
 import imageio
 from PIL import Image, ImageSequence
 
+import os, psutil
+process = psutil.Process()
+
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import sha256, file_in_dir
+
+from pyffmpeg import FFmpeg
+
 
 # Import globals
 import globals as gl
@@ -31,17 +38,25 @@ class MediaManager:
     def get_thumbnail(self, file_path):
         hash = sha256(file_path)
 
-        os.makedirs(os.path.join(gl.DATA_PATH, "cache", "thumbnails"), exist_ok=True)
+        thumbnail_dir = os.path.join(gl.DATA_PATH, "cache", "thumbnails")
+        thumbnail_path = os.path.join(thumbnail_dir, f"{hash}.png")
+        
+        os.makedirs(thumbnail_dir, exist_ok=True)
+
         
         # Check if thumbnail has already been cached:
-        cached = file_in_dir(os.path.join(gl.DATA_PATH, "cache", "thumbnails", f"{hash}.jpg"))
+        cached = file_in_dir(f"{hash}.png", thumbnail_dir)
         if cached is None:
             cached = False
 
         if cached:
-            return Image.open(os.path.join(gl.DATA_PATH, "cache", "thumbnails", f"{hash}.jpg"))
+            with Image.open(thumbnail_path) as img:
+                image = img.copy()
+            return image
         else:
-            return self.generate_thumbnail(file_path)
+            thumbnail = self.generate_thumbnail(file_path)
+            thumbnail.save(thumbnail_path)
+            return thumbnail
 
     def generate_thumbnail(self, file_path):
         if os.path.splitext(file_path)[1] in [".jpg", ".jpeg", ".png"]:
@@ -49,16 +64,19 @@ class MediaManager:
         elif os.path.splitext(file_path)[1] in [".gif", ".GIF"]:
             return self.generate_gif_thumbnail(file_path)
         else:
-            return self.generate_video_thumbnail(file_path)
+            thumbnail = self.generate_video_thumbnail(file_path)
+            return thumbnail
 
-    def generate_video_thumbnail(self, file_path):
-        cap = cv2.VideoCapture(file_path)
-        success, frame = cap.read()
-        if not success:
-            return None
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        pil_img = Image.fromarray(rgb_frame)
-        return pil_img
+    def generate_video_thumbnail(self, video_path: str) -> Image.Image:
+        cap = cv2.VideoCapture(video_path)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, 1)
+        ret, frame = cap.read()
+        cap.release()
+
+        frame_rgb = cv2.cvtColor(copy(frame), cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(frame_rgb)
+        return pil_image
+            
 
     def generate_image_thumbnail(self, file_path):
         return Image.open(file_path)

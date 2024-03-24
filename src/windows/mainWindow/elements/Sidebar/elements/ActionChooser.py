@@ -29,14 +29,18 @@ from GtkHelper.GtkHelper import BetterExpander, BetterPreferencesGroup
 from src.windows.Store.Store import Store
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
+# Import typing
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.windows.mainWindow.elements.Sidebar import Sidebar
 
 # Import globals
 import globals as gl
 
 class ActionChooser(Gtk.Box):
-    def __init__(self, right_area, **kwargs):
+    def __init__(self, sidebar: "Sidebar", **kwargs):
         super().__init__(hexpand=True, vexpand=True, **kwargs)
-        self.right_area = right_area
+        self.sidebar: "Sidebar" = sidebar
 
         self.callback_function = None
         self.callback_args = None
@@ -48,7 +52,7 @@ class ActionChooser(Gtk.Box):
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
         self.append(self.scrolled_window)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_top=4)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_top=4, margin_start=25, margin_end=25)
         self.scrolled_window.set_child(self.main_box)
 
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
@@ -91,10 +95,10 @@ class ActionChooser(Gtk.Box):
         self.callback_args = callback_args
         self.callback_kwargs = callback_kwargs
 
-        self.right_area.set_visible_child(self)
+        self.sidebar.main_stack.set_visible_child(self)
 
     def on_back_button_click(self, button):
-        self.right_area.set_visible_child_name("key_editor")
+        self.sidebar.main_stack.set_visible_child_name("key_editor")
 
     def on_search_changed(self, search_entry):
         self.plugin_group.search()
@@ -117,17 +121,23 @@ class PluginGroup(BetterPreferencesGroup):
 
         self.expander = []
 
-        self.build()
+        self.update()
 
         self.set_sort_func(self.sort_func, None)
         self.set_filter_func(self.filter_func, None)
 
-    def build(self):
+    def update(self):
+        print()
         self.clear()
+        self.expander = []
+        print()
         for plugin_name, plugin_dir in gl.plugin_manager.get_plugins().items():
             expander = PluginExpander(self, plugin_name, plugin_dir)
+            # if expander.get_parent() is not None:
+                # print()
             self.add(expander)
             self.expander.append(expander)
+        print()
 
     def search(self):
         # Let the expanders search
@@ -194,7 +204,7 @@ class PluginExpander(BetterExpander):
         self.set_title(plugin_name)
         self.set_subtitle(get_last_dir(plugin_dir["folder-path"]))
 
-        self.set_icon_name("view-paged")
+        self.add_prefix(self.plugin_dir["object"].get_selector_icon())
 
         action_holders: list[ActionHolder] = self.plugin_dir["object"].action_holders.values()
         for holder in action_holders:
@@ -276,7 +286,10 @@ class ActionRow(Adw.PreferencesRow):
                                 margin_top=10, margin_bottom=10)
         self.button.set_child(self.main_box)
 
-        self.icon = Gtk.Image(icon_name="insert-image", icon_size=Gtk.IconSize.LARGE, margin_start=5)
+        # self.icon = Gtk.Image(icon_name="insert-image", icon_size=Gtk.IconSize.LARGE, margin_start=5)
+        self.icon = action_holder.icon
+        if action_holder.icon.get_parent() is not None:
+            self.action_holder.icon.get_parent().remove(self.action_holder.icon)
         self.main_box.append(self.icon)
 
         self.label = Gtk.Label(label=self.action_holder.action_name, margin_start=10, css_classes=["bold", "large-text"])
@@ -287,7 +300,7 @@ class ActionRow(Adw.PreferencesRow):
             return
         
         # Go back to old page
-        self.expander.plugin_group.action_chooser.right_area.set_visible_child(self.expander.plugin_group.action_chooser.current_stack_page)
+        self.expander.plugin_group.action_chooser.sidebar.main_stack.set_visible_child(self.expander.plugin_group.action_chooser.current_stack_page)
 
         # Verify the callback function
         if not callable(self.expander.plugin_group.action_chooser.callback_function):

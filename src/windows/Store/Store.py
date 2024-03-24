@@ -52,11 +52,13 @@ class Store(Gtk.ApplicationWindow):
 
         self.backend = gl.store_backend
 
+        self.currently_downloading: bool = False # Used to prevent multiple downloads because this may lead to errors during plugin initialization
+
         self.build()
 
     def build(self):
         # Header bar
-        self.header = Gtk.HeaderBar()
+        self.header = Gtk.HeaderBar(css_classes=["flat"])
         self.set_titlebar(self.header)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)

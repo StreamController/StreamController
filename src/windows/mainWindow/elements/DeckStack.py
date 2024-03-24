@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
@@ -33,12 +34,13 @@ from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.leftArea import LeftArea
+    from src.windows.mainWindow.mainWindow import MainWindow
 
 class DeckStack(Gtk.Stack):
     """
     A deck with childs for each connected deck
     """
-    def __init__(self, main_window, left_area: "LeftArea", deck_manager, **kwargs):
+    def __init__(self, main_window: "MainWindow", left_area: "LeftArea", deck_manager, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
         self.main_window = main_window
@@ -47,9 +49,18 @@ class DeckStack(Gtk.Stack):
         self.deck_names = []
         self.deck_numbers = []
 
+        self.deck_attributes: dict = {}
+
     def on_switch(self, widget, *args):
         # Update page selector
-        self.main_window.header_bar.page_selector.update_selected()
+        self.main_window.sidebar.key_editor.page_selector.update()
+
+        child: DeckStackChild = self.get_visible_child()
+        if child.stack.get_visible_child_name() == "page-settings":
+            self.main_window.split_view.set_collapsed(False)
+
+        else:
+            self.main_window.split_view.set_collapsed(True)
 
     def build(self):
         self.connect("notify::visible-child-name", self.on_switch)
@@ -75,9 +86,12 @@ class DeckStack(Gtk.Stack):
 
         self.main_window.change_ui_to_connected_deck()
 
-        self.main_window.reload_right_area()
+        self.main_window.reload_sidebar()
             
-    def get_page_attributes(self, deck_controller):
+    def get_page_attributes(self, deck_controller) -> tuple:
+        if deck_controller in self.deck_attributes:
+            return self.deck_attributes[deck_controller]
+        
         deck_type = deck_controller.deck.deck_type()
         try:
             serial_number = deck_controller.deck.get_serial_number()
@@ -89,6 +103,7 @@ class DeckStack(Gtk.Stack):
 
         if deck_type not in self.deck_names:
             self.deck_names.append(deck_type)
+            self.deck_attributes[deck_controller] = deck_number, deck_type
             return deck_number, deck_type
         # name already exists
         while deck_type in self.deck_names:
@@ -96,6 +111,8 @@ class DeckStack(Gtk.Stack):
                 deck_type = deck_type[:-1] + chr(ord(deck_type[-1]) + 1)
             else:
                 deck_type = deck_type + " 2"
+
+        self.deck_attributes[deck_controller] = deck_number, deck_type
 
         return deck_number, deck_type
 
@@ -115,7 +132,7 @@ class DeckStack(Gtk.Stack):
             return
         
         # Reload righ area
-        self.main_window.reload_right_area()
+        self.main_window.reload_sidebar()
             
         # Show message if no decks are connected
         if len(self.get_pages()) == 0:

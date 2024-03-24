@@ -14,9 +14,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio, GObject
+from gi.repository import Gtk, Adw, Gio, GObject, Pango
 
 # Import Python modules
 from loguru import logger as log
@@ -27,12 +28,13 @@ import globals as gl
 
 # Import own modules
 from src.windows.PageManager.PageManager import PageManager
+from src.Signals import Signals
 
 class PageSelector(Gtk.Box):
-    def __init__(self, main_window, page_manager):
+    def __init__(self, main_window, page_manager, **kwargs):
         self.main_window = main_window
         self.page_manager = page_manager
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, **kwargs)
         self.build()
 
     def build(self):
@@ -41,14 +43,16 @@ class PageSelector(Gtk.Box):
         self.append(self.label)
 
         # Right area
-        self.right_area = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["linked"])
-        self.append(self.right_area)
+        self.sidebar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["linked"])
+        self.append(self.sidebar)
 
         # Dropdown
         self.pages_model = Gtk.ListStore.new([str, str])
         self.drop_down = Gtk.ComboBox.new_with_model(self.pages_model)
+        self.drop_down.set_css_classes(["header-page-dropdown"])
+        self.drop_down.set_hexpand(False)
 
-        self.renderer_text = Gtk.CellRendererText()
+        self.renderer_text = Gtk.CellRendererText(ellipsize=Pango.EllipsizeMode.END)
         self.drop_down.pack_start(self.renderer_text, True)
         # Use first column for text
         self.drop_down.add_attribute(self.renderer_text, "text", 0)
@@ -57,14 +61,18 @@ class PageSelector(Gtk.Box):
         self.drop_down.set_tooltip_text(gl.lm.get("header-page-selector-drop-down-hint"))
         self.drop_down.connect("changed", self.on_change_page)
         self.update()
-        self.right_area.append(self.drop_down)
+        self.sidebar.append(self.drop_down)
 
         # Settings button
         self.settings_button = Gtk.Button(icon_name="settings", tooltip_text=gl.lm.get("header-page-selector-page-manager-hint"))
         self.settings_button.connect("clicked", self.on_click_open_page_manager)
-        self.right_area.append(self.settings_button)
+        self.sidebar.append(self.settings_button)
+
+        gl.signal_manager.connect_signal(signal=Signals.ChangePage, callback=self.update)
+        gl.signal_manager.connect_signal(signal=Signals.PageAdd, callback=self.update)
+        gl.signal_manager.connect_signal(signal=Signals.PageDelete, callback=self.update)
     
-    def update(self):
+    def update(self, *args, **kwargs):
         self.disconnect_change_signal()
         pages = self.page_manager.get_pages()
         # self.clear_model()

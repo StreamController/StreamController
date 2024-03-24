@@ -25,8 +25,6 @@ process = psutil.Process()
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import sha256, file_in_dir
 
-from pyffmpeg import FFmpeg
-
 
 # Import globals
 import globals as gl

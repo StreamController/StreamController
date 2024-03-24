@@ -98,7 +98,6 @@ class DynamicFlowBox(Gtk.Box):
     def get_items_to_show(self) -> list:
         filtered_items = self.filter_items(self.items)
         sorted_items = self.sort_items(filtered_items)
-
         return sorted_items
     
 
@@ -125,6 +124,16 @@ class DynamicFlowBox(Gtk.Box):
             if preview is None:
                 return
             preview.set_visible(False)
+
+        if start == 0:
+            self.back_button.set_sensitive(False)
+        else:
+            self.back_button.set_sensitive(True)
+
+        if end < len(items):
+            self.next_button.set_sensitive(True)
+        else:
+            self.next_button.set_sensitive(False)
 
 
     def on_next(self, *args):

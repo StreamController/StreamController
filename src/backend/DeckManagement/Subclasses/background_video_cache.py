@@ -43,7 +43,7 @@ class BackgroundVideoCache:
 
         self.cache_stored = False
 
-        thread = threading.Thread(target=self.load_cache)
+        thread = threading.Thread(target=self.load_cache, name="load_video_cache")
         thread.start()
 
         if self.is_cache_complete():
@@ -156,7 +156,7 @@ class BackgroundVideoCache:
             return sha1sum.hexdigest()
         
     def save_cache_threaded(self):
-        t = threading.Thread(target=self.save_cache)
+        t = threading.Thread(target=self.save_cache, name="save_video_cache")
         t.start()
         
     def save_cache(self):

@@ -134,7 +134,7 @@ class Page:
                 # self.action_objects[key][i] = action_object
                 if self.deck_controller.coords_to_index(key.split("x")) > self.deck_controller.deck.key_count():
                     continue
-                thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, key, i))
+                thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, key, i), name=f"add_action_object_from_holder_{key}_{i}")
                 thread.start()
                 add_threads.append(thread)
 

@@ -161,7 +161,7 @@ class StorePreview(Gtk.FlowBoxChild):
     def on_download_clicked(self, button: Gtk.Button):
         GLib.idle_add(self.show_install_spinner, True)
         
-        threading.Thread(target=self.perform_download_threaded, args=()).start()
+        threading.Thread(target=self.perform_download_threaded, args=(), name="perform_download_threaded").start()
 
     def perform_download_threaded(self):
         # Prevent multiple downloads because this may lead to errors during plugin initialization

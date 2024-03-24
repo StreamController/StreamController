@@ -79,7 +79,7 @@ class HyprlandGrabber:
 
         self.active_window_class = self.get_active_window_class()
 
-        grabber_thread = threading.Thread(target=self.fetch_active_window_class, daemon=True)
+        grabber_thread = threading.Thread(target=self.fetch_active_window_class, daemon=True, name="fetch_active_window_class")
         grabber_thread.start()
 
     def get_active_window_class(self) -> str:

@@ -109,4 +109,4 @@ class PluginManager:
     def init_pyro5(self):
         self.pyro_daemon = Pyro5.api.Daemon()
         #TODO: Stop daemon on close
-        threading.Thread(target=self.pyro_daemon.requestLoop, daemon=True).start()
+        threading.Thread(target=self.pyro_daemon.requestLoop, daemon=True, name="pyro_daemon_requestLoop").start()

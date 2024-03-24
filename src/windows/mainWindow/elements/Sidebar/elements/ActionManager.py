@@ -434,7 +434,7 @@ class MissingActionButtonRow(Adw.PreferencesRow):
         self.label.set_text("Installing Missing Plugin")
 
         # Run in thread to allow the ui to update
-        threading.Thread(target=self.install).start()
+        threading.Thread(target=self.install, name="asset_install_thread").start()
 
     def install(self):
         # Get missing plugin from id

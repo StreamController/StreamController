@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
     create_global_objects()
     create_cache_folder()
-    threading.Thread(target=update_assets).start()
+    threading.Thread(target=update_assets, name="update_assets").start()
     load()
 
 

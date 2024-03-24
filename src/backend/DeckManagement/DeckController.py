@@ -1255,16 +1255,16 @@ class ControllerKey:
             self.own_actions_key_up_threaded()
 
     def own_actions_ready_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_ready).start()
+        threading.Thread(target=self.own_actions_ready, name="own_actions_ready").start()
 
     def own_actions_key_down_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_key_down).start()
+        threading.Thread(target=self.own_actions_key_down, name="own_actions_key_down").start()
 
     def own_actions_key_up_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_key_up).start()
+        threading.Thread(target=self.own_actions_key_up, name="own_actions_key_up").start()
 
     def own_actions_tick_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_tick).start()
+        threading.Thread(target=self.own_actions_tick, name="own_actions_tick").start()
 
 
 

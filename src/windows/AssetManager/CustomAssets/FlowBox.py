@@ -116,7 +116,7 @@ class CustomAssetChooserFlowBox(Gtk.Box):
     
     def on_child_activated(self, flow_box, child):
         if callable(self.asset_chooser.asset_manager.callback_func):
-            callback_thread = threading.Thread(target=self.callback_thread, args=())
+            callback_thread = threading.Thread(target=self.callback_thread, args=(), name="flow_box_callback_thread")
             callback_thread.start()
 
         self.asset_chooser.asset_manager.close()

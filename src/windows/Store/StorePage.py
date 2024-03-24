@@ -16,7 +16,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 # Import python modules
 from fuzzywuzzy import fuzz
@@ -161,7 +161,8 @@ class StorePage(Gtk.Stack):
         self.flow_box.set_visible(False)
         self.bottom_box.set_visible(False)
         self.loading_box.set_visible(True)
-        threading.Thread(target=self.spinner.set_spinning, args=(True,)).start()
+        # threading.Thread(target=self.spinner.set_spinning, args=(True,), name="spinner_thread").start()
+        GLib.idle_add(self.spinner.set_spinning, True)
 
     def set_loaded(self):
         self.flow_box.set_visible(True)

@@ -54,7 +54,7 @@ def write_logs(record):
     gl.logs.append(record)
 
 def config_logger():
-    log.remove(0)
+    log.remove()
     # Create log files
     log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print

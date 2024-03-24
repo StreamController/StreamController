@@ -85,7 +85,7 @@ class MediaPlayerSetImageTask:
 
 class MediaPlayerThread(threading.Thread):
     def __init__(self, deck_controller: "DeckController"):
-        super().__init__()
+        super().__init__(name="MediaPlayerThread", daemon=True)
         self.deck_controller: DeckController = deck_controller
         self.FPS = 30 # Max refresh rate of the internal displays
 

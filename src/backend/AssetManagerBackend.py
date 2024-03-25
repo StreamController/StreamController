@@ -24,7 +24,6 @@ import os
 import shutil
 import uuid
 from loguru import logger as log
-from decord import VideoReader
 from PIL import Image
 
 # Import own modules
@@ -110,20 +109,8 @@ class AssetManagerBackend(list):
         os.makedirs(os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "thumbnails"), exist_ok=True)
         
         # Create thumbnail
-        p = os.path.splitext(asset_path)[1].lower().replace(".", "")
-        if os.path.splitext(asset_path)[1].lower().replace(".", "") == "gif":
-            # Video is a gif
-            with Image.open(asset_path) as gif:
-                # Go to the first frame
-                gif.seek(0) 
-                # Save
-                gif.save(thumbnail_path)
-        else:
-            # No gif
-            vr = VideoReader(asset_path)
-            decord_image = vr[0]
-            thumbnail = Image.fromarray(decord_image.asnumpy())
-            thumbnail.save(thumbnail_path)
+        thumbnail = gl.media_manager.generate_thumbnail(asset_path)
+        thumbnail.save(thumbnail_path)
 
         return thumbnail_path
         

@@ -149,7 +149,11 @@ class StoreBackend:
         if isinstance(result, NoConnectionError):
             return result
         plugins_json = result.text
-        plugins_json = json.loads(plugins_json)
+        try:
+            plugins_json = json.loads(plugins_json)
+        except json.decoder.JSONDecodeError as e:
+            log.error(e)
+            return NoConnectionError()
 
         plugins = []
 
@@ -173,7 +177,11 @@ class StoreBackend:
         if isinstance(result, NoConnectionError):
             return result
         icons_json = result.text
-        icons_json = json.loads(icons_json)
+        try:
+            icons_json = json.loads(icons_json)
+        except json.decoder.JSONDecodeError as e:
+            log.error(e)
+            return NoConnectionError()
 
         icons = []
         for icon in icons_json:
@@ -196,7 +204,11 @@ class StoreBackend:
         if isinstance(result, NoConnectionError):
             return result
         wallpapers_json = result.text
-        wallpapers_json = json.loads(wallpapers_json)
+        try:
+            wallpapers_json = json.loads(wallpapers_json)
+        except json.decoder.JSONDecodeError as e:
+            log.error(e)
+            return NoConnectionError()
 
         wallpapers = []
         for wallpaper in wallpapers_json:

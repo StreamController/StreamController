@@ -148,3 +148,9 @@ class DeckStack(Gtk.Stack):
         
         print(self.get_pages())
         self.set_visible_child(self.get_pages()[new_index].get_child())
+
+    def focus_controller(self, deck_controller) -> None:
+        for page in self.get_pages():
+            if page.get_child().deck_controller == deck_controller:
+                self.set_visible_child(page.get_child())
+                return

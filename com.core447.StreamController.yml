@@ -2,7 +2,22 @@ id: com.core447.StreamController
 runtime: org.gnome.Sdk
 runtime-version: '45'
 sdk: org.gnome.Sdk
-command: /app/bin/launch.sh
+command: launch.sh
+
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  - --filesystem=xdg-documents
+  - --filesystem=home
+  - --share=network
+  - --socket=pulseaudio
+  - --socket=session-bus # Allow plugins to connect to the session bus
+  - --socket=system-bus # Allow plugins to connect to the system bus
+  - --device=all # Needed to communicate with the decks
+  - --talk-name=org.freedesktop.Flatpak # Allow plugins to run system commands
+
 modules:
   - pypi-requirements.yaml
 
@@ -33,12 +48,14 @@ modules:
     sources:
       - type: git
         url: https://github.com/libusb/libusb.git
+        tag: v1.0.27
 
   - name: hidapi-libusb
     buildsystem: autotools
     sources:
       - type: git
         url: https://github.com/libusb/hidapi.git
+        tag: hidapi-0.14.0
 
   - name: gusb
     buildsystem: meson
@@ -49,7 +66,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/hughsie/libgusb.git
-        branch: main
+        tag: 0.4.8
 
   - name: libpeas
     buildsystem: meson
@@ -62,7 +79,7 @@ modules:
     sources:
       - type: git
         url: https://gitlab.gnome.org/GNOME/libpeas.git
-        branch: main
+        tag: 0.4.8
 
   - name: libportal
     buildsystem: meson
@@ -76,25 +93,6 @@ modules:
     sources:
       - type: git
         url: https://github.com/flatpak/libportal.git
-        commit: f7f3acf541087b30a200c5b738162e962fed4d4b
-
-
-    
-
-finish-args:
-  - --socket=x11
-  - --socket=fallback-x11
-  - --socket=wayland
-  - --share=ipc
-  - --device=dri
-  - --filesystem=xdg-documents
-  - --filesystem=home
-  - --share=network
-  - --socket=pulseaudio
-  - --socket=session-bus
-  - --socket=system-bus
-  - --device=all
-  - --device=input
-  - --talk-name=org.freedesktop.Flatpak
+        tag: 0.7.1
 
 # Install via: flatpak-builder --repo=repo --force-clean --install --user build-dir com.core447.StreamController.yml

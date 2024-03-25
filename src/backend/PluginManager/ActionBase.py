@@ -170,6 +170,9 @@ class ActionBase:
             
     def show_error(self, duration: int = -1) -> None:
         self.deck_controller.keys[self.key_index].show_error(duration=duration)
+
+    def hide_error(self) -> None:
+        self.deck_controller.keys[self.key_index].hide_error()
         
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,

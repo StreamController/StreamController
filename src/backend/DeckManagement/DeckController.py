@@ -1078,8 +1078,11 @@ class ControllerKey:
         new_key_image = KeyImage(
             controller_key=self,
             image=image,
-            size=0.9
+            size=0.7
         )
+
+        # Reset labels
+        self.labels = {}
 
         self.set_key_image(new_key_image)
 
@@ -1088,7 +1091,7 @@ class ControllerKey:
         
         if original_video is not None:
             self.set_key_video(original_video) # This also applies the labels
-        if original_key_image is not None:
+        else:
             self.set_key_image(original_key_image) # This also applies the labels
 
     def stop_error_timer(self):

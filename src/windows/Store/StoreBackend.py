@@ -307,8 +307,6 @@ class StoreBackend:
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
-        description = manifest.get("description")
-
         user_name = self.get_user_name(url)
         repo_name = self.get_repo_name(url)
 
@@ -316,7 +314,7 @@ class StoreBackend:
 
         return {
             "name": manifest.get("name"),
-            "description": description,
+            "description": manifest.get("description"),
             "url": url,
             "user_name": user_name,
             "repo_name": repo_name,
@@ -329,7 +327,7 @@ class StoreBackend:
             "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
             "license": attribution.get("license"),
             "copyright": attribution.get("copyright"),
-            "license_description": attribution.get("description_description"),
+            "license_description": attribution.get("license-description"),
             "original_url": attribution.get("original-url"),
         }
     

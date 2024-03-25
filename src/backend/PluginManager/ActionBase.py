@@ -1,3 +1,4 @@
+import time
 from loguru import logger as log
 from copy import copy
 import subprocess
@@ -254,6 +255,13 @@ class ActionBase:
         log.info(f"Launching backend: {command}")
         subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
 
+        self.wait_for_backend()
+
+    def wait_for_backend(self, tries: int = 3):
+        while tries > 0 and self._backend is None:
+            time.sleep(0.1)
+            tries -= 1
+
     def add_to_pyro(self) -> str:
         daemon = gl.plugin_manager.pyro_daemon
         uri = daemon.register(self)
@@ -265,6 +273,10 @@ class ActionBase:
         """
         self._backend = Pyro5.api.Proxy(backend_uri)
         gl.plugin_manager.backends.append(self._backend)
+        self.on_backend_ready()
+
+    def on_backend_ready(self):
+        pass
 
     @property
     def backend(self):
@@ -292,3 +304,6 @@ class ActionBase:
     def has_custom_user_asset(self) -> bool:
         media = self.page.dict["keys"][self.page_coords].get("media", {})
         return media.get("path", None) is not None
+    
+    def ping(self) -> bool:
+        return True

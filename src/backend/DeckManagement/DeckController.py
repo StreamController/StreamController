@@ -80,7 +80,10 @@ class MediaPlayerSetImageTask:
     native_image: bytes
 
     def run(self):
-        self.deck_controller.deck.set_key_image(self.key_index, self.native_image)
+        try:
+            self.deck_controller.deck.set_key_image(self.key_index, self.native_image)
+        except StreamDeck.TransportError as e:
+            log.error(f"Failed to set deck key image. Error: {e}")
 
 
 class MediaPlayerThread(threading.Thread):
@@ -593,13 +596,11 @@ class DeckController:
 
     def delete(self):
         self.active_page.action_objects = {}
-        del self.active_page
 
         self.media_player.stop()
 
-        if self.tick_timer is not None:
-            if self.tick_timer.is_alive():
-                self.tick_timer.cancel()
+        self.keep_actions_ticking = False
+        self.deck.run_read_thread = False
 
     def get_alive(self) -> bool:
         try:

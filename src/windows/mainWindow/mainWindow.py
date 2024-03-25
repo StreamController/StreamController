@@ -179,28 +179,28 @@ class MainWindow(Adw.ApplicationWindow):
         self.deck_switcher.set_show_switcher(True)
 
     def set_main_error(self, error: str=None):
-        """"
+        """
         error: str
             no-decks: Shows the no decks available error
             no-pages: Shows the no pages available error
             None: Goes back to normal mode
         """
         if error is None:
-            self.main_stack.set_visible_child(self.toast_overlay)
-            self.deck_switcher.set_show_switcher(True)
-            self.split_view.set_collapsed(False)
-            self.sidebar_toggle_button.set_visible(True)
+            GLib.idle_add(self.main_stack.set_visible_child, self.toast_overlay)
+            GLib.idle_add(self.deck_switcher.set_show_switcher, True)
+            GLib.idle_add(self.split_view.set_collapsed, False)
+            GLib.idle_add(self.sidebar_toggle_button.set_visible, True)
             return
         
         elif error == "no-decks":
-            self.main_stack.set_visible_child(self.no_decks_error)
+            GLib.idle_add(self.main_stack.set_visible_child, self.no_decks_error)
 
         elif error == "no-pages":
-            self.main_stack.set_visible_child(self.no_pages_error)
+            GLib.idle_add(self.main_stack.set_visible_child, self.no_pages_error)
 
-        self.deck_switcher.set_show_switcher(False)
-        self.split_view.set_collapsed(True)
-        self.sidebar_toggle_button.set_visible(False)
+        GLib.idle_add(self.deck_switcher.set_show_switcher, False)
+        GLib.idle_add(self.split_view.set_collapsed, True)
+        GLib.idle_add(self.sidebar_toggle_button.set_visible, False)
 
     def check_for_errors(self):
         if len(gl.deck_manager.deck_controller) == 0:

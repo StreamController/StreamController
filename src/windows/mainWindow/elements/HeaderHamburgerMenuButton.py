@@ -85,10 +85,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.settings.present()
     def on_quit(self, action, parameter):
         for ctrl in gl.deck_manager.deck_controller:
-            media_manager = ctrl.media_player
-            ctrl.keep_actions_ticking = False
-            media_manager.stop()
-            ctrl.deck.run_read_thread = False
+            ctrl.delete()
 
         gl.plugin_manager.loop_daemon = False
         gl.plugin_manager.pyro_daemon.close()

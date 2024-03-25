@@ -79,7 +79,7 @@ modules:
     sources:
       - type: git
         url: https://gitlab.gnome.org/GNOME/libpeas.git
-        tag: 0.4.8
+        tag: 2.0.1
 
   - name: libportal
     buildsystem: meson

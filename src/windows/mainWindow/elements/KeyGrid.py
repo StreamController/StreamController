@@ -171,7 +171,7 @@ class KeyButton(Gtk.Frame):
 
     def on_button_drop(self, drop: Gtk.DropTarget, value: Gdk.ContentProvider, x, y):
         if isinstance(drop.get_value(), KeyButton):
-            self.handle_key_button_drop()
+            self.handle_key_button_drop(drop, value, x, y)
        
         elif isinstance(drop.get_value(), Gdk.FileList):
             self.handle_file_drop(drop, value, x, y)

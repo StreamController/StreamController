@@ -8,7 +8,7 @@
     <name translatable="no">Core447</name>
   </developer>
 
-  <launchable type="desktop-id">org.core447.StreamController.desktop</launchable>
+  <launchable type="desktop-id">com.core447.StreamController.desktop</launchable>
   
   <name>StreamController</name>
   <summary>Control your Elgato Stream Decks with plugin support</summary>

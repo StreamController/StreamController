@@ -4,13 +4,13 @@
 Type=Application
 
 # The version of the desktop entry specification to which this file complies
-Version=0.0.2-alpha
+Version=1.0
 
 # The name of the application
 Name=StreamController
 
 # A comment which can/will be used as a tooltip
-Comment=StreamController
+Comment=Control your Elgato Stream Decks
 
 # The path to the folder in which the executable is run
 Path=/
@@ -25,4 +25,4 @@ Icon=com.core447.StreamController
 Terminal=false
 
 # Describes the categories in which this entry should be shown
-Categories=System,Utility
+Categories=Utility

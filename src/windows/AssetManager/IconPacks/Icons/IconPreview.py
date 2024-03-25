@@ -41,7 +41,7 @@ class IconPreview(Preview):
         self.icon: "Icon" = None
 
     def on_click_info(self, *args):
-        self.icon_pack_chooser.asset_manager.show_info(
+        gl.asset_manager.show_info(
             internal_path = self.icon.path,
             licence_name = self.icon.get_attribution().get("license"),
             license_url = self.icon.get_attribution().get("license-url"),

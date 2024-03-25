@@ -4,79 +4,79 @@ runtime-version: '45'
 sdk: org.gnome.Sdk
 command: /app/bin/launch.sh
 modules:
+  - pypi-requirements.yaml
+
   - name: StreamController
     buildsystem: simple
     build-commands:
+      - mkdir -p /app/bin
       - cp . /app/bin/StreamController -r
 
-      - "pip install -r requirements.txt --ignore-installed --prefix=/app"
+      # - "pip install -r requirements.txt --ignore-installed --prefix=/app"
       
       - install -D flatpak/launch.sh /app/bin/launch.sh
       - chmod +x /app/bin/launch.sh
       - install -D flatpak/icon_256.png /app/share/icons/hicolor/256x256/apps/com.core447.StreamController.png
       - install -D flatpak/launch.desktop /app/share/applications/com.core447.StreamController.desktop
-      - install -D flatpak/com.core447.StreamController.metainfo.xml /usr/share/metainfo/com.core447.StreamController.metainfo.xml
+      # - install -D flatpak/com.core447.StreamController.metainfo.xml /app/share/metainfo/com.core447.StreamController.metainfo.xml
     sources:
       - type: git
         url: https://github.com/StreamController/StreamController.git
         branch: dev  # or use 'commit' or 'tag' to pin to a specific version
 
-    build-options:
-      build-args:
-        - "--share=network"
+    # build-options:
+      # build-args:
+        # - "--share=network"
 
-    modules:
+  - name: libusb
+    buildsystem: autotools
+    sources:
+      - type: git
+        url: https://github.com/libusb/libusb.git
 
+  - name: hidapi-libusb
+    buildsystem: autotools
+    sources:
+      - type: git
+        url: https://github.com/libusb/hidapi.git
 
-    - name: libusb
-      buildsystem: autotools
-      sources:
-        - type: git
-          url: https://github.com/libusb/libusb.git
+  - name: gusb
+    buildsystem: meson
+    config-opts:
+      - -Ddocs=false
+      - -Dtests=false
+      - -Dvapi=false
+    sources:
+      - type: git
+        url: https://github.com/hughsie/libgusb.git
+        branch: main
 
-    - name: hidapi-libusb
-      buildsystem: autotools
-      sources:
-        - type: git
-          url: https://github.com/libusb/hidapi.git
+  - name: libpeas
+    buildsystem: meson
+    cleanup:
+      - /bin/*
+      - /lib/peas-demo
+    config-opts:
+      - -Dgtk_doc=false
+      - -Dlua51=false
+    sources:
+      - type: git
+        url: https://gitlab.gnome.org/GNOME/libpeas.git
+        branch: main
 
-    - name: gusb
-      buildsystem: meson
-      config-opts:
-        - -Ddocs=false
-        - -Dtests=false
-        - -Dvapi=false
-      sources:
-        - type: git
-          url: https://github.com/hughsie/libgusb.git
-          branch: main
-
-    - name: libpeas
-      buildsystem: meson
-      cleanup:
-        - /bin/*
-        - /lib/peas-demo
-      config-opts:
-        - -Dgtk_doc=false
-        - -Dlua51=false
-      sources:
-        - type: git
-          url: https://gitlab.gnome.org/GNOME/libpeas.git
-          branch: main
-
-    - name: libportal
-      buildsystem: meson
-      config-opts:
-        - -Dbackend-gtk3=disabled
-        - -Dbackend-gtk4=enabled
-        - -Dbackend-qt5=disabled
-        - -Ddocs=false
-        - -Dtests=false
-        - -Dvapi=false
-      sources:
-        - type: git
-          url: https://github.com/flatpak/libportal.git
-          commit: f7f3acf541087b30a200c5b738162e962fed4d4b
+  - name: libportal
+    buildsystem: meson
+    config-opts:
+      - -Dbackend-gtk3=disabled
+      - -Dbackend-gtk4=enabled
+      - -Dbackend-qt5=disabled
+      - -Ddocs=false
+      - -Dtests=false
+      - -Dvapi=false
+    sources:
+      - type: git
+        url: https://github.com/flatpak/libportal.git
+        commit: f7f3acf541087b30a200c5b738162e962fed4d4b
 
 
     

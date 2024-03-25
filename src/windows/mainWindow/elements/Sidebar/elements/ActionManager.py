@@ -449,20 +449,19 @@ class MissingActionButtonRow(Adw.PreferencesRow):
             return
         
         # Reset ui
-        self.spinner.set_visible(False)
-        self.spinner.stop()
-        self.label.set_text("Install Missing Plugin")
+        GLib.idle_add(self.spinner.set_visible, False)
+        GLib.idle_add(self.spinner.stop)
+        GLib.idle_add(self.label.set_text, "Install Missing Plugin")
 
         # Reload pages
         
 
     def show_install_error(self):
-        self.spinner.set_visible(False)
-        self.spinner.stop()
-        self.label.set_text("Install Failed")
-        self.set_css_classes(["error"])
-        self.set_sensitive(False)
-        self.main_button.set_sensitive(False)
+        GLib.idle_add(self.spinner.set_visible, False)
+        GLib.idle_add(self.spinner.stop)
+        GLib.idle_add(self.label.set_text, "Install Failed")
+        GLib.idle_add(self.remove_css_class, "error")
+        GLib.idle_add(self.set_sensitive, False)
 
         # Hide error after 3s
         threading.Timer(3, self.hide_install_error).start()

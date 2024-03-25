@@ -232,8 +232,8 @@
 
 .error-resolve-button {
   background-color: #3584E4;
-  font-size: 25px;
-  padding: 20px 0px;
+  font-size: 15px;
+  padding: 10px 25px;
   border-radius: 9999px;
   transition: background-color 0.25s;
 }

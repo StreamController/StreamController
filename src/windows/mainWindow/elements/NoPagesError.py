@@ -53,7 +53,7 @@ class NoPagesError(Gtk.Box):
         self.append(self.no_pages_label)
 
         self.create_new_button = Gtk.Button(label="Create New", margin_top=60, css_classes=["error-resolve-button"],
-                                            hexpand=False, margin_start=60, margin_end=60)
+                                            hexpand=False, margin_start=60, margin_end=60, halign=Gtk.Align.CENTER)
         self.create_new_button.connect("clicked", self.on_create_new)
         self.append(self.create_new_button)
 

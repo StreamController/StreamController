@@ -49,7 +49,7 @@ class NoDecksError(Gtk.Box):
         self.append(self.no_pages_label)
 
         self.add_button = Gtk.Button(label="Add A Fake Deck", margin_top=60, css_classes=["error-resolve-button"],
-                                            hexpand=False, margin_start=60, margin_end=60)
+                                            hexpand=False, margin_start=60, margin_end=60, halign=Gtk.Align.CENTER)
         self.add_button.connect("clicked", self.on_add_click)
         self.append(self.add_button)
 

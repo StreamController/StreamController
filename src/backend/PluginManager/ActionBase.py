@@ -307,3 +307,7 @@ class ActionBase:
     
     def ping(self) -> bool:
         return True
+    
+    def get_own_action_index(self) -> int:
+        if not self.get_is_present(): return -1
+        return self.page.get_all_actions_for_key(self.page_coords).index(self)

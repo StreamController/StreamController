@@ -1,6 +1,7 @@
 import os
 import inspect
 import json
+import time
 import Pyro5.api
 import Pyro5.errors
 import subprocess
@@ -150,6 +151,13 @@ class PluginBase:
 
         log.info(f"Launching backend: {command}")
         subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+
+        self.wait_for_backend()
+
+    def wait_for_backend(self, tries: int = 3):
+        while tries > 0 and self._backend is None:
+            time.sleep(0.1)
+            tries -= 1
 
     def add_to_pyro(self) -> str:
         daemon = gl.plugin_manager.pyro_daemon

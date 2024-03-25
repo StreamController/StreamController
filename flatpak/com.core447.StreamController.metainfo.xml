@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2024 Core447 -->
+<?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
   <id>com.core447.StreamController</id>
+
+  <developer id="com.core447">
+    <name translatable="no">Core447</name>
+  </developer>
+
+  <launchable type="desktop-id">org.core447.StreamController.desktop</launchable>
   
   <name>StreamController</name>
-  <summary>Controll your Elgato Stream Decks with plugin support</summary>
+  <summary>Control your Elgato Stream Decks with plugin support</summary>
   
   <metadata_license>CC-BY-4.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
@@ -11,10 +19,34 @@
   <recommends>
     <display_length compare="ge">850</display_length>
   </recommends>
+
+  <categories>
+    <category>System</category>
+    <category>Utility</category>
+  </categories>
+
+  <keywords>
+    <keyword translate="no">Streaming</keyword>
+    <keyword translate="no">Elgato Stream Deck</keyword>
+  </keywords>
+
+  <url type="homepage">https://github.com/StreamController/StreamController</url>
+  <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
+  <url type="contribute">https://github.com/StreamController/StreamController</url>
+
+  <releases>
+    <release version="1.1.2-alpha" date="2024-03-25">
+      <description translatable="no">
+        <p>First release</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.0" />
   
   <description>
     <p>
-      StreamController controls your Elgato Stream Decks.
+      StreamController controls your Elgato Stream Decks on a new level.
     </p>
     <p>
       App Features:

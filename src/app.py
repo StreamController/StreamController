@@ -13,6 +13,9 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import signal
+import sys
+import threading
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -36,6 +39,9 @@ class App(Adw.Application):
     def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
+
+        self.register_sigint_handler()
+
         self.connect("activate", self.on_activate)
 
         css_provider = Gtk.CssProvider()
@@ -78,3 +84,28 @@ class App(Adw.Application):
         # Disable onboarding for future sessions
         with open(os.path.join(gl.DATA_PATH, ".skip-onboarding"), "w") as f:
             f.write("")
+
+    def on_quit(self, *args):
+        log.info("Quitting...")
+        for ctrl in gl.deck_manager.deck_controller:
+                ctrl.delete()
+
+        gl.plugin_manager.loop_daemon = False
+        gl.plugin_manager.pyro_daemon.close()
+        gl.plugin_manager.pyro_daemon.shutdown()
+        log.debug("non-daemon threads:")
+        for thread in threading.enumerate():
+            if thread.daemon:
+                continue
+            log.debug(f"name: {thread.name}, id: {thread.ident} id2: {thread.native_id}")
+            
+
+        # Close all decks
+        gl.deck_manager.close_all()
+        # TODO: Find better way - sys.exit doesn't work because it waits for the threads to finish
+        # os._exit(0)
+        log.success("Stopped StreamController. Have a nice day!")
+        sys.exit(0)
+
+    def register_sigint_handler(self):
+        signal.signal(signal.SIGINT, self.on_quit)

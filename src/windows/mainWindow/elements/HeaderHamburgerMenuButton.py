@@ -84,25 +84,8 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.settings = Settings()
         self.settings.present()
     def on_quit(self, action, parameter):
-        for ctrl in gl.deck_manager.deck_controller:
-            ctrl.delete()
-
-        gl.plugin_manager.loop_daemon = False
-        gl.plugin_manager.pyro_daemon.close()
-        gl.plugin_manager.pyro_daemon.shutdown()
-        log.debug("non-daemon threads:")
-        for thread in threading.enumerate():
-            if thread.daemon:
-                continue
-            log.debug(f"name: {thread.name}, id: {thread.ident} id2: {thread.native_id}")
-            
-
-        # Close all decks
-        gl.deck_manager.close_all()
-        # TODO: Find better way - sys.exit doesn't work because it waits for the threads to finish
-        # os._exit(0)
-        log.success("Stopped StreamController. Have a nice day!")
-        sys.exit(0)
+        gl.app.on_quit()
+        return
 
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutWindow(transient_for=self.main_window)

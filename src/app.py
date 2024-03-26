@@ -87,6 +87,12 @@ class App(Adw.Application):
 
     def on_quit(self, *args):
         log.info("Quitting...")
+
+        # Force quit if normal quit is not possible
+        timer = threading.Timer(6, self.force_quit)
+        timer.setDaemon(True)
+        timer.start()
+
         for ctrl in gl.deck_manager.deck_controller:
                 ctrl.delete()
 
@@ -102,10 +108,14 @@ class App(Adw.Application):
 
         # Close all decks
         gl.deck_manager.close_all()
-        # TODO: Find better way - sys.exit doesn't work because it waits for the threads to finish
-        # os._exit(0)
+        # Stop timer
+        timer.cancel()
         log.success("Stopped StreamController. Have a nice day!")
         sys.exit(0)
+
+    def force_quit(self):
+        log.info("Forcing quit...")
+        os._exit(1)
 
     def register_sigint_handler(self):
         signal.signal(signal.SIGINT, self.on_quit)

@@ -54,7 +54,7 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.carousel.connect("page-changed", self.on_page_changed)
         self.overlay.set_child(self.carousel)
 
-        self.carousel.append(OnboardingScreen("Assets/Onboarding/logo.png", gl.lm.get("onboarding.welcome.header"), gl.lm.get("onboarding.welcome.details")))
+        self.carousel.append(OnboardingScreen("Assets/Onboarding/icon.png", gl.lm.get("onboarding.welcome.header"), gl.lm.get("onboarding.welcome.details")))
         self.carousel.append(OnboardingScreen("Assets/Onboarding/store.png", gl.lm.get("onboarding.store.header"), gl.lm.get("onboarding.store.details")))
         self.carousel.append(OnboardingScreen("Assets/Onboarding/multiple.png", gl.lm.get("onboarding.multiple.header"), gl.lm.get("onboarding.multiple.details")))
         self.carousel.append(OnboardingScreen("Assets/Onboarding/productive.png", gl.lm.get("onboarding.productive.header"), gl.lm.get("onboarding.productive.details")))

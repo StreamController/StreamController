@@ -59,11 +59,14 @@ class PluginBase:
         
         # Verify variables
         if plugin_name in ["", None]:
-            raise ValueError("Please specify a plugin name")
+            log.error("Plugin: Please specify a plugin name")
+            return
         if github_repo in ["", None]:
-            raise ValueError(f"Plugin: {plugin_name}: Please specify a github repo")
+            log.error(f"Plugin: {plugin_name}: Please specify a github repo")
+            return
         if plugin_name in PluginBase.plugins.keys():
-            raise ValueError(f"Plugin: {plugin_name}: Plugin already exists")
+            log.error(f"Plugin: {plugin_name}: Plugin already exists")
+            return
         
         
         if self.do_versions_match(app_version):

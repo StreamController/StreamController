@@ -970,7 +970,8 @@ class ControllerKey:
 
     def add_label(self, key_label: "KeyLabel", position: str = "center", update: bool = True) -> None:
         if position not in ["top", "center", "bottom"]:
-            raise ValueError("Position must be one of 'top', 'center', or 'bottom'.")
+            log.error(f"Invalid position: {position}, must be one of 'top', 'center', or 'bottom'.")
+            return
         
         self.labels[position] = key_label
 
@@ -979,7 +980,9 @@ class ControllerKey:
 
     def remove_label(self, position: str = "center", update: bool = True) -> None:
         if position not in ["top", "center", "bottom"]:
-            raise ValueError("Position must be one of 'top', 'center', or 'bottom'.")
+            log.error(f"Invalid position: {position}, must be one of 'top', 'center', or 'bottom'.")
+            return
+        
         if position not in self.labels:
             return
         del self.labels[position]

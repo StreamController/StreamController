@@ -115,5 +115,15 @@
     "settings.performance.header": "Performance & Optimierungen",
     "settings.performance.n-cached-pages.title": "Anzahl der zu cachenden Seiten",
     "settings.performance.n-cached-pages.subtitle": "Anzahl der Seiten, die im Caching gespeichert werden sollen",
-    "settings.performance.n-cached-pages.tooltip": "Eine höhere Zahl bedeutet mehr Speicherverbrauch aber schnellere Seitenladezeit."
+    "settings.performance.n-cached-pages.tooltip": "Eine höhere Zahl bedeutet mehr Speicherverbrauch aber schnellere Seitenladezeit.",
+    "errors.no-page.header": "Keine Seiten Verfügbar",
+    "errors.no-page.create-new": "Neue Erstellen",
+    "errors.no-page.create-dialog.title": "Neue Seite Erstellen",
+    "errors.no-page.create-dialog.entry.label": "Seitenname",
+    "errors.no-deck.header": "Keine Decks Erkannt",
+    "errors.no-deck.add-fake": "Ein Fake Deck Hinzufügen",
+    "action-chooser.go-back.label": "Zurück",
+    "action-chooser.search-entry.placeholder": "Nach Aktionen und Plugins suchen",
+    "action-chooser.header": "Aktion Auswählen",
+    "store.page.loading-spinner.label": "Lädt"
 }

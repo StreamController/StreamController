@@ -126,5 +126,5 @@
     "action-chooser.go-back.label": "Go Back",
     "action-chooser.search-entry.placeholder": "Search for actions and plugins",
     "action-chooser.header": "Choose An Action",
-    "store.page.loading-spinner.label": "Loading",
+    "store.page.loading-spinner.label": "Loading"
 }

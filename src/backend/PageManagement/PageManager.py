@@ -187,6 +187,8 @@ class PageManager:
         # Remove page json file
         os.remove(page_path)
 
+        self.remove_page_path_from_created_pages(page_path)
+
         # Remove default page entries
         settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
         for entry in copy(settings.get("default-pages",[])):
@@ -196,6 +198,16 @@ class PageManager:
 
         # Update ui
         self.update_ui()
+
+    def remove_page_path_from_created_pages(self, path: str):
+        for controller in self.created_pages:
+            if path in self.created_pages[controller]:
+                page_object: Page = self.created_pages[controller][path]["page"]
+                page_object.clear_action_objects()
+
+                self.created_pages[controller][path] = None
+                del self.created_pages[controller][path]
+
 
     def add_page(self, name:str):
         page = {

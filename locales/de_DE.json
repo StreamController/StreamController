@@ -125,5 +125,8 @@
     "action-chooser.go-back.label": "Zurück",
     "action-chooser.search-entry.placeholder": "Nach Aktionen und Plugins suchen",
     "action-chooser.header": "Aktion Auswählen",
-    "store.page.loading-spinner.label": "Lädt"
+    "store.page.loading-spinner.label": "Lädt",
+    "settings.performance.cache-videos.title": "Videos cachen",
+    "settings.performance.cache-videos.subtitle": "Wird nach einem Neustart angewandt",
+    "settings.performance.cache-videos.tooltip": "Aktivieren um Videos auf dem Computer zu cachen. Dies kann zu großem Arbeitsspeicherverbrauch führen"
 }

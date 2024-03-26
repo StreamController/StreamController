@@ -126,5 +126,8 @@
     "action-chooser.go-back.label": "Go Back",
     "action-chooser.search-entry.placeholder": "Search for actions and plugins",
     "action-chooser.header": "Choose An Action",
-    "store.page.loading-spinner.label": "Loading"
+    "store.page.loading-spinner.label": "Loading",
+    "settings.performance.cache-videos.title": "Cache Videos",
+    "settings.performance.cache-videos.subtitle": "Only applies to new videos or after a restart",
+    "settings.performance.cache-videos.tooltip": "Enabling this will cache videos on your computer. This might cause high memory usage."
 }

@@ -7,6 +7,7 @@ import time
 from PIL import Image, ImageOps
 import cv2
 from loguru import logger as log
+import globals as gl
 
 VID_CACHE = "vid_cache"
 
@@ -26,6 +27,8 @@ class VideoFrameCache:
         self.frame_width: int = 72
 
         self.load_cache()
+
+        self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
 
 
         if self.is_cache_complete():
@@ -74,7 +77,8 @@ class VideoFrameCache:
             pil_image = ImageOps.fit(pil_image, (self.frame_width, self.frame_width), Image.Resampling.LANCZOS)
 
             self.last_decoded_frame = pil_image
-            self.cache[self.last_frame_index] = pil_image
+            if self.do_caching:
+                self.cache[self.last_frame_index] = pil_image
 
             # Write the frame to the cache
             self.write_cache(pil_image, self.last_frame_index)

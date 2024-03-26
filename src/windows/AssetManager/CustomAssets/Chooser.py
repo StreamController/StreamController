@@ -131,7 +131,7 @@ class CustomAssetChooser(ChooserPage):
         self.asset_chooser.flow_box.invalidate_sort()
 
     def on_browse_files_clicked(self, button):
-        ChooseFileDialog(self)
+        ChooseFileDialog(self) #TODO: Change to Xdp Portal call
 
 
 class ChooseFileDialog(Gtk.FileDialog):

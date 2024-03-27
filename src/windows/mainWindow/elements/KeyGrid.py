@@ -57,6 +57,8 @@ class KeyGrid(Gtk.Grid):
 
         self.load_from_changes()
 
+        GLib.idle_add(self.select_key, 0, 0)
+
     def regenerate_buttons(self):
         self.buttons = [[None] * self.deck_controller.deck.key_layout()[1] for i in range(self.deck_controller.deck.key_layout()[0])]
     

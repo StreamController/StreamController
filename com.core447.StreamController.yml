@@ -37,7 +37,7 @@ modules:
       - type: git
         url: https://github.com/StreamController/StreamController.git
         branch: main
-        commit: 028927b11ff7fa97db8050de09f1aa41e81929a9
+        tag: 1.2.0-beta
 
     # build-options:
       # build-args:

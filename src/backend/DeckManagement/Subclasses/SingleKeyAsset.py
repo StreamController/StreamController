@@ -23,8 +23,6 @@ if TYPE_CHECKING:
 class SingleKeyAsset:
     def __init__(self, controller_key: "ControllerKey", fill_mode: str = "cover", size: float = 1, valign: float = 0, halign: float = 0):
         self.controller_key = controller_key
-        if isinstance(controller_key, str):
-            print()
         self.deck_controller = controller_key.deck_controller
         self.fill_mode = fill_mode
         self.size = size

@@ -3,7 +3,7 @@ import os
 from typing import TYPE_CHECKING
 import argparse
 
-DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data")
+DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
 # DATA_PATH = "data"
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ signal_manager: "SignalManager" = None
 dekstop_grabber: "DesktopGrabber" = None
 
 
-app_version: str = "1.1.2-alpha" # In breaking.feature.fix-state format
+app_version: str = "1.2.0-alpha" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []

@@ -158,7 +158,6 @@ class ActionExpanderRow(BetterExpander):
     def update_indices(self):
         for i, row in enumerate(self.get_rows()):
             row.index = i
-            print(row.action_name)
 
     def reorder_index_after(self, lst, move_index, after_index):
         if move_index < 0 or move_index >= len(lst):
@@ -288,10 +287,7 @@ class ActionRow(Adw.PreferencesRow):
         return self.expander.get_index_of_child(self)
 
     def on_click_up(self, button):
-        print("up")
         one_up_child = self.expander.get_rows()[self.index - 1]
-        print(f"{type(self)} and {type(one_up_child)}")
-        print(f"{self.action_name} below {one_up_child.action_name}")
         if isinstance(one_up_child, AddActionButtonRow):
             return
         self.expander.reorder_child_after(self, one_up_child)
@@ -301,10 +297,7 @@ class ActionRow(Adw.PreferencesRow):
 
 
     def on_click_down(self, button):
-        print("down")
         one_down_child = self.expander.get_rows()[self.index + 1]
-        print(f"{type(self)} and {type(one_down_child)}")
-        print(f"{self.action_name} below {one_down_child.action_name}")
         if isinstance(one_down_child, AddActionButtonRow):
             return
         self.expander.reorder_child_after(self, one_down_child)
@@ -449,20 +442,19 @@ class MissingActionButtonRow(Adw.PreferencesRow):
             return
         
         # Reset ui
-        self.spinner.set_visible(False)
-        self.spinner.stop()
-        self.label.set_text("Install Missing Plugin")
+        GLib.idle_add(self.spinner.set_visible, False)
+        GLib.idle_add(self.spinner.stop)
+        GLib.idle_add(self.label.set_text, "Install Missing Plugin")
 
         # Reload pages
         
 
     def show_install_error(self):
-        self.spinner.set_visible(False)
-        self.spinner.stop()
-        self.label.set_text("Install Failed")
-        self.set_css_classes(["error"])
-        self.set_sensitive(False)
-        self.main_button.set_sensitive(False)
+        GLib.idle_add(self.spinner.set_visible, False)
+        GLib.idle_add(self.spinner.stop)
+        GLib.idle_add(self.label.set_text, "Install Failed")
+        GLib.idle_add(self.remove_css_class, "error")
+        GLib.idle_add(self.set_sensitive, False)
 
         # Hide error after 3s
         threading.Timer(3, self.hide_install_error).start()

@@ -13,6 +13,9 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import signal
+import sys
+import threading
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -36,6 +39,9 @@ class App(Adw.Application):
     def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
+
+        self.register_sigint_handler()
+
         self.connect("activate", self.on_activate)
 
         css_provider = Gtk.CssProvider()
@@ -61,7 +67,7 @@ class App(Adw.Application):
 
     def on_reopen(self, *args, **kwargs):
         self.main_win.present()
-        print("awake")
+        log.info("awake")
 
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
         self.asset_manager = AssetManager(application=self, main_window=self.main_win)
@@ -78,3 +84,36 @@ class App(Adw.Application):
         # Disable onboarding for future sessions
         with open(os.path.join(gl.DATA_PATH, ".skip-onboarding"), "w") as f:
             f.write("")
+
+    def on_quit(self, *args):
+        log.info("Quitting...")
+
+        # Force quit if normal quit is not possible
+        timer = threading.Timer(6, self.force_quit)
+        timer.setDaemon(True)
+        timer.start()
+
+        for ctrl in gl.deck_manager.deck_controller:
+                ctrl.delete()
+
+        gl.plugin_manager.loop_daemon = False
+        log.debug("non-daemon threads:")
+        for thread in threading.enumerate():
+            if thread.daemon:
+                continue
+            log.debug(f"name: {thread.name}, id: {thread.ident} id2: {thread.native_id}")
+            
+
+        # Close all decks
+        gl.deck_manager.close_all()
+        # Stop timer
+        timer.cancel()
+        log.success("Stopped StreamController. Have a nice day!")
+        sys.exit(0)
+
+    def force_quit(self):
+        log.info("Forcing quit...")
+        os._exit(1)
+
+    def register_sigint_handler(self):
+        signal.signal(signal.SIGINT, self.on_quit)

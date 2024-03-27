@@ -52,6 +52,8 @@ class BackgroundVideoCache:
         else:
             log.info("Cache is not complete. Continuing with video capture.")
 
+        self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
+
     def get_tiles(self, n):
         n = min(n, self.n_frames - 1)
         with self.lock:
@@ -90,7 +92,8 @@ class BackgroundVideoCache:
                     if n >= self.n_frames - 1:
                         self.save_cache_threaded()
 
-                self.cache[self.last_frame_index] = tiles
+                if self.do_caching:
+                    self.cache[self.last_frame_index] = tiles
 
                 full_sized.close()
                 pil_image.close()
@@ -214,8 +217,6 @@ class BackgroundVideoCache:
     def close(self) -> None:
         import gc
         self.release()
-        print(len(gc.get_referrers(self)), len(gc.get_referrers(self.cache)))
-        print(gc.get_referrers(self.cache))
 
         for n in self.cache:
             for f in self.cache[n]:

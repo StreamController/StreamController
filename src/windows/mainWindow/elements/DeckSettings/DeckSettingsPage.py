@@ -64,6 +64,7 @@ class DeckSettingsPage(Gtk.Overlay):
 
         self.fake_deck_group = FakeDeckGroup(self)
         self.clamp_box.append(self.fake_deck_group)
+        self.fake_deck_group.set_visible(False) # Not stable enough to be shown #FIXME
 
         ## Hide the fake deck group if own deck is not fake
         deck = self.deck_controller.deck

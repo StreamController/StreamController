@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Copyright 2024 Core447 -->
+<component type="desktop-application">
+  <id>com.core447.StreamController</id>
+
+  <developer id="com.core447">
+    <name translatable="no">Core447</name>
+  </developer>
+
+  <launchable type="desktop-id">com.core447.StreamController.desktop</launchable>
+  
+  <name>StreamController</name>
+  <summary>Control your Elgato Stream Decks with plugin support</summary>
+  
+  <metadata_license>CC-BY-4.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  
+  <recommends>
+    <display_length compare="ge">850</display_length>
+  </recommends>
+
+  <categories>
+    <category>System</category>
+    <category>Utility</category>
+  </categories>
+
+  <keywords>
+    <keyword translate="no">Streaming</keyword>
+    <keyword translate="no">Elgato Stream Deck</keyword>
+  </keywords>
+
+  <url type="homepage">https://github.com/StreamController/StreamController</url>
+  <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
+  <url type="contribute">https://github.com/StreamController/StreamController</url>
+
+  <releases>
+    <release version="1.2.0-alpha" date="2024-03-27">
+      <description translatable="no">
+        <p>First release</p>
+      </description>
+    </release>
+    <release version="1.1.2-alpha" date="2024-03-25">
+      <description translatable="no">
+        <p>First test release</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.0" />
+  
+  <description>
+    <p>
+      StreamController controls your Elgato Stream Decks on a new level.
+    </p>
+    <p>
+      App Features:
+    </p>
+    <ul>
+      <li>Beautiful GTK4 Interface</li>
+      <li>Plugin support</li>
+      <li>Multi deck support</li>
+      <li>Set background images &amp; videos</li>
+      <li>Set custom icons</li>
+    </ul>
+    <p>
+      Official Plugin Features:
+    </p>
+    <ul>
+      <li>Send network requests</li>
+      <li>Press hotkeys (X and Wayland)</li>
+      <li>Control OBS Studio</li>
+      <li>Control your music</li>
+      <li>Mix the volume of different apps</li>
+      <li>Run commands</li>
+      <li>Send network requests</li>
+    </ul>
+  </description>
+  
+  <launchable type="desktop-id">launch.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/StreamController/StreamController/main/Assets/images/Screenshots/Screenshot_1.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/StreamController/StreamController/main/Assets/images/Screenshots/Screenshot_2.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/StreamController/StreamController/main/Assets/images/Screenshots/Screenshot_3.png</image>
+    </screenshot>
+  </screenshots>
+</component>

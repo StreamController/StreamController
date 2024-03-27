@@ -33,6 +33,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.Store.Store import Store
 
+# Import globals
+import globals as gl
+
 class StorePage(Gtk.Stack):
     def __init__(self, store: "Store"):
         super().__init__()
@@ -78,7 +81,7 @@ class StorePage(Gtk.Stack):
         self.spinner = Gtk.Spinner(spinning=False)
         self.loading_box.append(self.spinner)
 
-        self.loading_text = Gtk.Label(label="Loading")
+        self.loading_text = Gtk.Label(label=gl.lm.get("store.page.loading-spinner.label"))
         self.loading_box.append(self.loading_text)
 
         # Add vexpand box to the bottom to avoid unwanted stretching of the flowbox children

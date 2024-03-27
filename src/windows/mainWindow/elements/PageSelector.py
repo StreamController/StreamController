@@ -124,7 +124,7 @@ class PageSelector(Gtk.Box):
         
         page_path = self.pages_model[drop_down.get_active()][1]
         page = gl.page_manager.get_page(path=page_path, deck_controller = active_controller)
-        print(f"load page: {page}")
+        log.info(f"Load page: {page}")
         active_controller.load_page(page)
 
     def on_click_open_page_manager(self, button):

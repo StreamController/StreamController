@@ -48,6 +48,7 @@ class Page:
         return os.path.splitext(os.path.basename(self.json_path))[0]
 
     def load(self, load_from_file: bool = False):
+        start = time.time()
         if load_from_file:
             with open(self.json_path) as f:
                 self.dict.update(json.load(f))
@@ -55,6 +56,8 @@ class Page:
 
         # Call on_ready for all actions
         self.call_actions_ready()
+        end = time.time()
+        log.debug(f"Loaded page {self.get_name()} in {end - start:.2f} seconds")
 
     def save(self):
         # Make backup in case something goes wrong
@@ -290,7 +293,6 @@ class Page:
             return False
         for action in self.action_objects[page_coords].values():
             if action.CONTROLS_KEY_IMAGE:
-                print(action)
                 return True
         return False
 
@@ -311,7 +313,6 @@ class Page:
                 n = len(refs)
                 del self.action_objects[key][i]
         self.action_objects = {}
-        print()
 
     def get_name(self):
         return os.path.splitext(os.path.basename(self.json_path))[0]

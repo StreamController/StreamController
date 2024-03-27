@@ -2,7 +2,6 @@ import os
 import importlib
 import sys
 from loguru import logger as log
-import Pyro5.api
 import threading
 
 # Import own modules
@@ -20,12 +19,7 @@ class PluginManager:
     action_index = {}
     def __init__(self):
         self.initialized_plugin_classes = list[PluginBase]()
-
-        self.pyro_daemon:Pyro5.api.Daemon = None
         self.backends:list[BackendBase] = []
-
-        self.loop_daemon = True
-        self.init_pyro5()
 
     def load_plugins(self):
         # get all folders in plugins folder
@@ -49,7 +43,7 @@ class PluginManager:
         subclasses = PluginBase.__subclasses__()
         for subclass in subclasses:
             if subclass in self.initialized_plugin_classes:
-                print("skippting, already initialized")
+                log.info(f"Skipping {subclass} because it's already initialized")
                 continue
             obj = subclass()
             self.initialized_plugin_classes.append(subclass)
@@ -57,13 +51,9 @@ class PluginManager:
     def generate_action_index(self):
         plugins = self.get_plugins()
         for plugin in plugins.values():
-            print(plugin)
             plugin_base = plugin["object"]
             holders = plugin_base.action_holders
-            print(holders)
             self.action_index.update(plugin_base.action_holders)
-
-        print(self.action_index)
 
         return
         plugins = self.get_plugins()
@@ -94,7 +84,6 @@ class PluginManager:
             return self.action_index[action_id]
         except KeyError:
             log.warning(f"Requested action {action_id} not found, skipping...")
-            print(f"Index: {self.action_index}")
             return None
             
     def get_plugin_by_id(self, plugin_id:str) -> PluginBase:
@@ -106,9 +95,3 @@ class PluginManager:
             
     def remove_plugin_from_list(self, plugin_base: PluginBase):
         del PluginBase.plugins[plugin_base.plugin_name]
-    
-
-    def init_pyro5(self):
-        self.pyro_daemon = Pyro5.api.Daemon()
-        #TODO: Stop daemon on close
-        threading.Thread(target=self.pyro_daemon.requestLoop, kwargs={"loopCondition": lambda: self.loop_daemon}, name="pyro_daemon_requestLoop").start()

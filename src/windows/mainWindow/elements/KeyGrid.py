@@ -57,6 +57,8 @@ class KeyGrid(Gtk.Grid):
 
         self.load_from_changes()
 
+        GLib.idle_add(self.select_key, 0, 0)
+
     def regenerate_buttons(self):
         self.buttons = [[None] * self.deck_controller.deck.key_layout()[1] for i in range(self.deck_controller.deck.key_layout()[0])]
     
@@ -171,7 +173,7 @@ class KeyButton(Gtk.Frame):
 
     def on_button_drop(self, drop: Gtk.DropTarget, value: Gdk.ContentProvider, x, y):
         if isinstance(drop.get_value(), KeyButton):
-            self.handle_key_button_drop()
+            self.handle_key_button_drop(drop, value, x, y)
        
         elif isinstance(drop.get_value(), Gdk.FileList):
             self.handle_file_drop(drop, value, x, y)
@@ -299,7 +301,6 @@ class KeyButton(Gtk.Frame):
         GLib.idle_add(self.image.set_from_pixbuf, self.pixbuf)
 
     def on_click(self, gesture, n_press, x, y):
-        print("on_click")
         if gesture.get_current_button() == 1 and n_press == 1:
             # Single left click
             # Select key
@@ -463,7 +464,7 @@ class KeyButton(Gtk.Frame):
         self.add_controller(self.shortcut_controller)
 
     def on_update(self, *args, **kwargs):
-        print("update")
+        pass
 
 
 class KeyButtonContextMenu(Gtk.PopoverMenu):
@@ -477,7 +478,7 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         # gl.app.set_accels_for_action("context.test", ["<Primary>t"])
 
     def on_test(self, *args, **kwargs):
-        print("test")
+        pass
 
     def build(self):
         self.set_parent(self.key_button)

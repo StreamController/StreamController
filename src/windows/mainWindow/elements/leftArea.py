@@ -45,11 +45,7 @@ class LeftArea(Gtk.Stack):
         self.deck_stack.build()
 
     def show_no_decks_error(self):
-        print("show")
         self.set_visible_child(self.error_page)
 
     def hide_no_decks_error(self):
-        print("hide")
         self.set_visible_child(self.deck_stack)
-
-        print(self.get_visible_child_name())

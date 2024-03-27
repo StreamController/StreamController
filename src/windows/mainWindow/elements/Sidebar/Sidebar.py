@@ -196,7 +196,6 @@ class PagesGroup(BetterPreferencesGroup):
         child:Gtk.Box = row1.get_child() # Box
         prefix_box:Gtk.Box = child.get_first_child()
         gizmo = prefix_box.get_next_sibling()
-        print(f"gizmo type: {type(gizmo)}")
         empty_title = gizmo.get_first_child()
         title = empty_title.get_next_sibling()
 
@@ -287,7 +286,6 @@ class AdwPageRow(Adw.PreferencesRow):
         show_label = not self.label.get_visible()
         self.label.set_visible(show_label)
         self.entry.set_visible(not show_label)
-        print(f"label visibility: {show_label}")
         self.entry.grab_focus_without_selecting()
         self.entry.set_position(-1)
         self.active_icon.set_hexpand(False)

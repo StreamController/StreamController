@@ -49,17 +49,17 @@ class NoPagesError(Gtk.Box):
         self.build()
 
     def build(self):
-        self.no_pages_label = Gtk.Label(label="No Pages Available", css_classes=["error-label"])
+        self.no_pages_label = Gtk.Label(label=gl.lm.get("errors.no-page.header"), css_classes=["error-label"])
         self.append(self.no_pages_label)
 
-        self.create_new_button = Gtk.Button(label="Create New", margin_top=60, css_classes=["error-resolve-button"],
-                                            hexpand=False, margin_start=60, margin_end=60)
+        self.create_new_button = Gtk.Button(label=gl.lm.get("errors.no-page.create-now"), margin_top=60, css_classes=["text-button", "suggested-action", "pill"],
+                                            hexpand=False, margin_start=60, margin_end=60, halign=Gtk.Align.CENTER)
         self.create_new_button.connect("clicked", self.on_create_new)
         self.append(self.create_new_button)
 
     def on_create_new(self, button):
-        dial = EntryDialog(parent_window=gl.app.main_win, dialog_title="Add Page", entry_heading="Page name:", default_text="page",
-                           forbid_answers=gl.page_manager.get_page_names())
+        dial = EntryDialog(parent_window=gl.app.main_win, dialog_title=gl.lm.get("errors.no-page.create-dialog.title"), entry_heading=gl.lm.get("errors.no-page.create-dialog.entry.label"), default_text="",
+                           forbid_answers=gl.page_manager.get_page_names(), )
         dial.show(self.add_page_callback)
 
     def add_page_callback(self, name:str):

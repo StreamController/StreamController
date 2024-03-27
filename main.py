@@ -54,7 +54,7 @@ def write_logs(record):
     gl.logs.append(record)
 
 def config_logger():
-    log.remove(0)
+    log.remove()
     # Create log files
     log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print
@@ -171,7 +171,6 @@ if __name__ == "__main__":
         log.info("Already running, exiting")
         exit()
     except dbus.exceptions.DBusException as e:
-        print(e)
         log.info("No other instance running, continuing")
 
     reset_all_decks()

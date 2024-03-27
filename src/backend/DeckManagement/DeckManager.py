@@ -27,6 +27,9 @@ from src.backend.SettingsManager import SettingsManager
 from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
 
+import gi
+from gi.repository import GLib
+
 # Import globals
 import globals as gl
 
@@ -137,11 +140,11 @@ class DeckManager:
         # Check if ui is loaded - if not it will grab the controller automatically
         if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
             # Add to deck stack
-            print("adding to deck stack")
-            gl.app.main_win.leftArea.deck_stack.add_page(deck_controller)
+            GLib.idle_add(gl.app.main_win.leftArea.deck_stack.add_page, deck_controller)
 
         if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
-            gl.app.main_win.header_bar.page_selector.update()
+            GLib.idle_add(gl.app.main_win.header_bar.page_selector.update)
+
 
 
         self.deck_controller.append(deck_controller)

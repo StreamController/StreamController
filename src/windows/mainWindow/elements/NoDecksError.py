@@ -45,11 +45,11 @@ class NoDecksError(Gtk.Box):
         self.build()
 
     def build(self):
-        self.no_pages_label = Gtk.Label(label="No Decks Available", css_classes=["error-label"])
+        self.no_pages_label = Gtk.Label(label=gl.lm.get("errors.no-deck.header"), css_classes=["error-label"])
         self.append(self.no_pages_label)
 
-        self.add_button = Gtk.Button(label="Add A Fake Deck", margin_top=60, css_classes=["error-resolve-button"],
-                                            hexpand=False, margin_start=60, margin_end=60)
+        self.add_button = Gtk.Button(label=gl.lm.get("errors.no-deck.add-fake"), margin_top=60, css_classes=["text-button", "suggested-action", "pill"],
+                                            hexpand=False, margin_start=60, margin_end=60, halign=Gtk.Align.CENTER)
         self.add_button.connect("clicked", self.on_add_click)
         self.append(self.add_button)
 

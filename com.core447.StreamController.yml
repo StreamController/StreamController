@@ -36,7 +36,6 @@ modules:
     sources:
       - type: git
         url: https://github.com/StreamController/StreamController.git
-        branch: main
         tag: 1.2.0-beta
 
     # build-options:

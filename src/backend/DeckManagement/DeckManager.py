@@ -140,7 +140,6 @@ class DeckManager:
         # Check if ui is loaded - if not it will grab the controller automatically
         if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
             # Add to deck stack
-            print("adding to deck stack")
             GLib.idle_add(gl.app.main_win.leftArea.deck_stack.add_page, deck_controller)
 
         if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):

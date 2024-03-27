@@ -77,7 +77,6 @@ class DeckStack(Gtk.Stack):
         if attr is None:
             return
         deck_number, deck_type = attr
-        print(f"attributes: {deck_number}, {deck_type}")
 
         page = DeckStackChild(self, deck_controller)
         self.add_titled(page, deck_number, deck_type)
@@ -144,9 +143,6 @@ class DeckStack(Gtk.Stack):
         if new_index < 0:
             new_index = i + 1
 
-        print(f"was visible: {was_visible}")
-        
-        print(self.get_pages())
         self.set_visible_child(self.get_pages()[new_index].get_child())
 
     def focus_controller(self, deck_controller) -> None:

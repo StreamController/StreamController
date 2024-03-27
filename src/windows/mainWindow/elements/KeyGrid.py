@@ -299,7 +299,6 @@ class KeyButton(Gtk.Frame):
         GLib.idle_add(self.image.set_from_pixbuf, self.pixbuf)
 
     def on_click(self, gesture, n_press, x, y):
-        print("on_click")
         if gesture.get_current_button() == 1 and n_press == 1:
             # Single left click
             # Select key
@@ -463,7 +462,7 @@ class KeyButton(Gtk.Frame):
         self.add_controller(self.shortcut_controller)
 
     def on_update(self, *args, **kwargs):
-        print("update")
+        pass
 
 
 class KeyButtonContextMenu(Gtk.PopoverMenu):
@@ -477,7 +476,7 @@ class KeyButtonContextMenu(Gtk.PopoverMenu):
         # gl.app.set_accels_for_action("context.test", ["<Primary>t"])
 
     def on_test(self, *args, **kwargs):
-        print("test")
+        pass
 
     def build(self):
         self.set_parent(self.key_button)

@@ -231,7 +231,6 @@ class MainWindow(Adw.ApplicationWindow):
         for task in self.on_finished:
             if callable(task):
                 task()
-            print()
 
     def on_copy(self, *args):
         child = get_deepest_focused_widget_with_attr(self, "on_copy")

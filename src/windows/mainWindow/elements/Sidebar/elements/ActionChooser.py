@@ -127,17 +127,12 @@ class PluginGroup(BetterPreferencesGroup):
         self.set_filter_func(self.filter_func, None)
 
     def update(self):
-        print()
         self.clear()
         self.expander = []
-        print()
         for plugin_name, plugin_dir in gl.plugin_manager.get_plugins().items():
             expander = PluginExpander(self, plugin_name, plugin_dir)
-            # if expander.get_parent() is not None:
-                # print()
             self.add(expander)
             self.expander.append(expander)
-        print()
 
     def search(self):
         # Let the expanders search

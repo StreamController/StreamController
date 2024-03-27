@@ -43,7 +43,7 @@ class PluginManager:
         subclasses = PluginBase.__subclasses__()
         for subclass in subclasses:
             if subclass in self.initialized_plugin_classes:
-                print("skippting, already initialized")
+                log.info(f"Skipping {subclass} because it's already initialized")
                 continue
             obj = subclass()
             self.initialized_plugin_classes.append(subclass)
@@ -51,13 +51,9 @@ class PluginManager:
     def generate_action_index(self):
         plugins = self.get_plugins()
         for plugin in plugins.values():
-            print(plugin)
             plugin_base = plugin["object"]
             holders = plugin_base.action_holders
-            print(holders)
             self.action_index.update(plugin_base.action_holders)
-
-        print(self.action_index)
 
         return
         plugins = self.get_plugins()
@@ -88,7 +84,6 @@ class PluginManager:
             return self.action_index[action_id]
         except KeyError:
             log.warning(f"Requested action {action_id} not found, skipping...")
-            print(f"Index: {self.action_index}")
             return None
             
     def get_plugin_by_id(self, plugin_id:str) -> PluginBase:

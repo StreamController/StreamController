@@ -123,7 +123,6 @@ class StorePreview(Gtk.FlowBoxChild):
         self.install_spinner_box.append(self.install_spinner)
 
     def show_install_spinner(self, show: bool = True):
-        print(f"Spinner: {show}")
         if show:
             self.install_uninstall_button.set_visible(False)
             self.install_spinner_box.set_visible(True)

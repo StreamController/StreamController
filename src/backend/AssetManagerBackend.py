@@ -208,7 +208,6 @@ class AssetManagerBackend(list):
         pass
 
     def add_custom_media_set_by_ui(self, url: str, path: str):
-        print()
         if path is None and url is not None:
             # Lower domain and remove point
             extension = os.path.splitext(url)[1].lower().replace(".", "")
@@ -242,7 +241,6 @@ class AssetManagerBackend(list):
         if asset_id == None:
             return
         
-        print()
         asset = self.get_by_id(asset_id)
         # Add to asset chooser ui if opened
         if gl.asset_manager is not None:

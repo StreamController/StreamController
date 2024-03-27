@@ -214,8 +214,6 @@ class MediaPlayerThread(threading.Thread):
             
             # Remove task from list
             self.tasks.remove(task)
-            # if len(self.tasks) == before:
-                # print()
 
             # Skip task if dedicated to another page
             if task.page is not self.deck_controller.active_page:
@@ -307,9 +305,6 @@ class DeckController:
             self.update_key(i)
 
         log.debug(f"Updating all keys took {time.time() - start} seconds")
-        print()
-
-
     
 
     def set_deck_key_image(self, key: int, image) -> None:
@@ -437,7 +432,6 @@ class DeckController:
             for future in futures:
                 future.result()
         log.info(f"Loading all keys took {time.time() - start} seconds")
-        print()
 
     def load_key(self, key: int, page: Page, update: bool = True, load_labels: bool = True, load_media: bool = True):
         if key >= self.deck.key_count():
@@ -515,7 +509,6 @@ class DeckController:
         gl.signal_manager.trigger_signal(signal=Signals.ChangePage, controller=self, old_path=old_path, new_path=self.active_page.json_path)
 
         log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()} took {time.time() - start} seconds")
-        print()
 
     def set_brightness(self, value):
         if not self.get_alive(): return
@@ -1029,8 +1022,6 @@ class ControllerKey:
 
 
             start_mem = process.memory_info().rss
-            if text is None:
-                print()
             draw.text(position,
                         text=text, font=font, anchor="ms",
                         fill=color, stroke_width=font_weight)
@@ -1121,7 +1112,6 @@ class ControllerKey:
 
         start = time.time()
         self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
-        print(f"Own actions ready took {time.time() - start} seconds")
         actions = self.get_own_actions()
 
         start = time.time()
@@ -1140,7 +1130,6 @@ class ControllerKey:
                     font_weight=page_dict["labels"][label].get("stroke-width")
                 )
                 self.add_label(key_label, position=label, update=False)
-        print(f"Labels took {time.time() - start} seconds")
 
 
         start = time.time()
@@ -1148,7 +1137,6 @@ class ControllerKey:
         if load_media:
             path = page_dict.get("media", {}).get("path", None)
             if path not in ["", None]:
-                print(f"media on key {self.key} is {path}")
                 if is_image(path):
                     with Image.open(path) as image:
                         self.set_key_image(KeyImage(
@@ -1189,17 +1177,12 @@ class ControllerKey:
                         image=image.copy(),
                     ), update=False)
 
-        print(f"Media took {time.time() - start} seconds")
-
         start = time.time()
         if load_background_color:
             self.background_color = page_dict.get("background", {}).get("color", [0, 0, 0, 0])
             # Ensure the background color has an alpha channel
             if len(self.background_color) == 3:
                 self.background_color.append(255)
-
-        print(f"Background took {time.time() - start} seconds")
-        print()
 
 
         if update:
@@ -1341,8 +1324,6 @@ class KeyImage(SingleKeyAsset):
 class KeyVideo(SingleKeyAsset):
     def __init__(self, controller_key: ControllerKey, video_path: str, fill_mode: str = "cover", size: float = 1,
                  valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
-        if not isinstance(controller_key, ControllerKey):
-            print()
         super().__init__(
             controller_key=controller_key,
             fill_mode=fill_mode,

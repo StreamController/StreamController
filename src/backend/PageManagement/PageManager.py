@@ -115,11 +115,6 @@ class PageManager:
                             page_object: Page = self.created_pages[controller][p]["page"]
                             page_object.clear_action_objects()
 
-                            refs = gc.get_referrers(page_object)
-
-                            n = len(gc.get_referrers(page_object))
-                            print()
-
                             self.created_pages[controller][p] = None
                             del self.created_pages[controller][p]
                             

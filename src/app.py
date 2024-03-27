@@ -67,7 +67,7 @@ class App(Adw.Application):
 
     def on_reopen(self, *args, **kwargs):
         self.main_win.present()
-        print("awake")
+        log.info("awake")
 
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
         self.asset_manager = AssetManager(application=self, main_window=self.main_win)

@@ -217,8 +217,6 @@ class BackgroundVideoCache:
     def close(self) -> None:
         import gc
         self.release()
-        print(len(gc.get_referrers(self)), len(gc.get_referrers(self.cache)))
-        print(gc.get_referrers(self.cache))
 
         for n in self.cache:
             for f in self.cache[n]:

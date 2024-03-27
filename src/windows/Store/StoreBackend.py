@@ -600,8 +600,6 @@ class StoreBackend:
         gl.plugin_manager.init_plugins()
         gl.plugin_manager.generate_action_index()
         plugins = gl.plugin_manager.get_plugins()
-        if "Clocks" not in plugins:
-            print()
 
         # Update ui
         if recursive_hasattr(gl, "app.main_win.sidebar.action_chooser"):

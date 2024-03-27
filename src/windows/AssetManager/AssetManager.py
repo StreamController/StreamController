@@ -60,7 +60,6 @@ class AssetManager(Gtk.ApplicationWindow):
 
     def on_close(self, *args, **kwargs):
         gl.asset_manager = None
-        print("close")
 
     def build(self):
         self.main_stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, hexpand=True, vexpand=True)
@@ -118,9 +117,7 @@ class AssetManager(Gtk.ApplicationWindow):
                     self.asset_chooser.icon_pack_chooser.set_visible_child_name("pack-chooser")
 
             elif self.asset_chooser.get_visible_child_name() == "wallpaper-packs":
-                print("wallpaper packs")
                 if self.asset_chooser.wallpaper_pack_chooser.get_visible_child_name() == "wallpaper-chooser":
-                    print("pack-chooser")
                     # Switch from pack chooser to icon chooser
                     self.asset_chooser.wallpaper_pack_chooser.set_visible_child_name("pack-chooser")
 

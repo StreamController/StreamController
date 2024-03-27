@@ -143,7 +143,6 @@ class ScreenSaver:
             return
         if self.deck_controller.background.video is not None:
             self.deck_controller.background.video.fps = fps
-            print(f"FPS: {self.deck_controller.background.video.fps}")
 
     def set_loop(self, loop: bool) -> None:
         self.loop = loop
@@ -151,4 +150,3 @@ class ScreenSaver:
             return
         if self.deck_controller.background.video is not None:
             self.deck_controller.background.video.loop = loop
-            print(f"Loop: {self.deck_controller.background.video.loop}")

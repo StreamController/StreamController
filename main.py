@@ -171,7 +171,6 @@ if __name__ == "__main__":
         log.info("Already running, exiting")
         exit()
     except dbus.exceptions.DBusException as e:
-        print(e)
         log.info("No other instance running, continuing")
 
     reset_all_decks()

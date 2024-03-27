@@ -32,22 +32,19 @@ class VideoFrameCache:
 
 
         if self.is_cache_complete():
-            print("Cache is complete. Closing the video capture.")
+            log.info("Cache is complete. Closing the video capture.")
             self.release()
         else:
-            print("Cache is not complete. Continuing with video capture.")
-
-
+            log.info("Cache is not complete. Continuing with video capture.")
 
         # Print size of cache in memory in mb:
-        print(f"Size of cache in memory: {sys.getsizeof(self.cache) / 1024 / 1024:.2f} MB")
+        log.trace(f"Size of cache in memory: {sys.getsizeof(self.cache) / 1024 / 1024:.2f} MB")
 
-        print(f"Size of capture: {sys.getsizeof(self.cap) / 1024 / 1024:.2f} MB")
+        log.trace(f"Size of capture: {sys.getsizeof(self.cap) / 1024 / 1024:.2f} MB")
 
     def get_frame(self, n):
         n = min(n, self.n_frames - 1)
         if self.is_cache_complete():
-            # print("Cache is complete. Retrieving frame from cache.")
             return self.cache.get(n, None)
 
         # Otherwise, continue with video capture

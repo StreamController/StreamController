@@ -36,7 +36,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/StreamController/StreamController.git
-        branch: dev  # or use 'commit' or 'tag' to pin to a specific version
+        branch: main
+        commit: 028927b11ff7fa97db8050de09f1aa41e81929a9
 
     # build-options:
       # build-args:

@@ -203,6 +203,7 @@ class RemoveButton(Gtk.Button):
         self.set_css_classes(["remove-action-button"])
         self.configurator = configurator
         self.set_label(gl.lm.get("action-configurator-remove-action"))
+        self.set_margin_bottom(100)
         self.connect("clicked", self.on_remove_button_click)
 
         self.action = None

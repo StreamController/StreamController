@@ -102,4 +102,4 @@ modules:
         url: https://github.com/flatpak/libportal.git
         tag: 0.7.1
 
-# Install via: flatpak-builder --repo=repo --force-clean --install --user build-dir com.core447.StreamController.yml
+# Install via: flatpak-builder --repo=repo --force-clean --disable-cache --install --user build-dir com.core447.StreamController.yml

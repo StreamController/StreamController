@@ -1,13 +1,17 @@
 import os
 import inspect
 import json
+import threading
 import time
-import Pyro5.api
-import Pyro5.errors
 import subprocess
 from packaging import version
 
 from loguru import logger as log
+
+import rpyc
+from rpyc.utils.server import ThreadedServer
+from rpyc.core.protocol import Connection
+from rpyc.core import netref
 
 # Import gtk modules
 import gi
@@ -23,13 +27,14 @@ import globals as gl
 from locales.LocaleManager import LocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
-@Pyro5.api.expose
-class PluginBase:
+class PluginBase(rpyc.Service):
     plugins = {}
     disabled_plugins = {}
     
     def __init__(self):
-        self._backend: Pyro5.api.Proxy = None
+        self.backend_connection: Connection = None
+        self.backend: netref = None
+        self.server: ThreadedServer = None
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
 
@@ -138,54 +143,6 @@ class PluginBase:
     def register_page(self, path: str) -> None:
         gl.page_manager.register_page(path)
 
-    def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
-        uri = self.add_to_pyro()
-
-        ## Launch
-        if open_in_terminal:
-            command = "gnome-terminal -- bash -c '"
-            if venv_path is not None:
-                command += f"source {venv_path}/bin/activate && "
-            command += f"python3 {backend_path} --uri={uri}; exec $SHELL'"
-        else:
-            command = ""
-            if venv_path is not None:
-                command = f"source {venv_path}/bin/activate && "
-            command += f"python3 {backend_path} --uri={uri}"
-
-        log.info(f"Launching backend: {command}")
-        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
-
-        self.wait_for_backend()
-
-    def wait_for_backend(self, tries: int = 3):
-        while tries > 0 and self._backend is None:
-            time.sleep(0.1)
-            tries -= 1
-
-    def add_to_pyro(self) -> str:
-        daemon = gl.plugin_manager.pyro_daemon
-        uri = daemon.register(self)
-        return str(uri)
-    
-    def register_backend(self, backend_uri:str):
-        """
-        Internal method, do not call manually
-        """
-        self._backend = Pyro5.api.Proxy(backend_uri)
-        gl.plugin_manager.backends.append(self._backend)
-
-    @property
-    def backend(self):
-        # Transfer ownership
-        if self._backend is not None:
-            self._backend._pyroClaimOwnership()
-        return self._backend
-
-    @backend.setter
-    def backend(self, value):
-        self._backend = value
-
     def get_selector_icon(self) -> Gtk.Widget:
         return Gtk.Image(icon_name="view-paged")
     
@@ -193,11 +150,62 @@ class PluginBase:
         try:
             # Stop backend if running
             if self.backend is not None:
-                self.backend.stop()
-                self.backend._pyroRelease()
-                self._backend = None
+                self.on_disconnect(self.backend_connection)
         except Exception as e:
             log.error(e)
+
+    # ---------- #
+    # Rpyc stuff #
+    # ---------- #
+
+    def start_server(self):
+        if self.server is not None:
+            log.warning("Server already running, skipping...")
+            return
+        self.server = ThreadedServer(self, hostname="localhost", port=0, protocol_config={"allow_public_attrs": True})
+        # self.server.start()
+        threading.Thread(target=self.server.start, name="server_start", daemon=True).start()
+
+    def on_disconnect(self, conn):
+        if self.server is not None:
+            self.server.close()
+        if self.backend_connection is not None:
+            self.backend_connection.close()
+        self.backend_connection = None
+
+    def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
+        self.start_server()
+        port = self.server.port
+
+        ## Launch
+        if open_in_terminal:
+            command = "gnome-terminal -- bash -c '"
+            if venv_path is not None:
+                command += f"source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --port={port}; exec $SHELL'"
+        else:
+            command = ""
+            if venv_path is not None:
+                command = f"source {venv_path}/bin/activate && "
+            command += f"python3 {backend_path} --port={port}"
+
+        log.info(f"Launching backend: {command}")
+        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+
+        self.wait_for_backend()
+
+    def wait_for_backend(self, tries: int = 3):
+        while tries > 0 and self.backend_connection is None:
+            time.sleep(0.1)
+            tries -= 1
+
+    def register_backend(self, port: int):
+        """
+        Internal method, do not call manually
+        """
+        self.backend_connection = rpyc.connect("localhost", port)
+        self.backend = self.backend_connection.root
+        gl.plugin_manager.backends.append(self.backend_connection)
 
     def ping(self) -> bool:
         return True

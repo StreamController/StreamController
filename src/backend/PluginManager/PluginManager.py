@@ -2,7 +2,6 @@ import os
 import importlib
 import sys
 from loguru import logger as log
-import Pyro5.api
 import threading
 
 # Import own modules
@@ -19,13 +18,7 @@ sys.path.append(gl.DATA_PATH)
 class PluginManager:
     action_index = {}
     def __init__(self):
-        self.initialized_plugin_classes = list[PluginBase]()
-
-        self.pyro_daemon:Pyro5.api.Daemon = None
         self.backends:list[BackendBase] = []
-
-        self.loop_daemon = True
-        self.init_pyro5()
 
     def load_plugins(self):
         # get all folders in plugins folder
@@ -106,9 +99,3 @@ class PluginManager:
             
     def remove_plugin_from_list(self, plugin_base: PluginBase):
         del PluginBase.plugins[plugin_base.plugin_name]
-    
-
-    def init_pyro5(self):
-        self.pyro_daemon = Pyro5.api.Daemon()
-        #TODO: Stop daemon on close
-        threading.Thread(target=self.pyro_daemon.requestLoop, kwargs={"loopCondition": lambda: self.loop_daemon}, name="pyro_daemon_requestLoop").start()

@@ -97,8 +97,6 @@ class App(Adw.Application):
                 ctrl.delete()
 
         gl.plugin_manager.loop_daemon = False
-        gl.plugin_manager.pyro_daemon.close()
-        gl.plugin_manager.pyro_daemon.shutdown()
         log.debug("non-daemon threads:")
         for thread in threading.enumerate():
             if thread.daemon:

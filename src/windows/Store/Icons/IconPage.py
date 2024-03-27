@@ -25,6 +25,7 @@ import threading
 import os
 import shutil
 from loguru import logger as log
+import asyncio
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
@@ -85,23 +86,11 @@ class IconPreview(StorePreview):
             self.set_install_state(2)
 
     def install(self):
-        folder_name = f"{self.icon_dict['user_name']}::{self.icon_dict['name']}"
-        if os.path.exists(os.path.join(gl.DATA_PATH, "icons", folder_name)):
-            shutil.rmtree(os.path.join(gl.DATA_PATH, "icons", folder_name))
-        if not os.path.exists(os.path.join(gl.DATA_PATH, "icons")):
-            os.mkdir(os.path.join(gl.DATA_PATH, "icons"))
-
-        asyncio.run(self.store.backend.clone_repo(
-            repo_url=self.icon_dict["url"],
-            local_path=os.path.join(gl.DATA_PATH, "icons", folder_name),
-            commit_sha=self.icon_dict["commit_sha"]
-        ))
+        asyncio.run(self.store.backend.install_icon(icon_dict=self.icon_dict))
         self.set_install_state(1)
 
     def uninstall(self):
-        folder_name = f"{self.icon_dict['user_name']}::{self.icon_dict['name']}"
-        if os.path.exists(os.path.join(gl.DATA_PATH, "icons", folder_name)):
-            os.remove(os.path.join(gl.DATA_PATH, "icons", folder_name))
+        asyncio.run(self.store.backend.uninstall_icon(icon_dict=self.icon_dict))
         self.set_install_state(0)
 
     def update(self):

@@ -660,6 +660,42 @@ class StoreBackend:
         if module_name in sys.modules:
             del sys.modules[module_name]
 
+    async def install_icon(self, icon_dict:dict):
+        folder_name = f"{icon_dict['user_name']}::{icon_dict['name']}"
+        icon_path = os.path.join(gl.DATA_PATH, "icons", folder_name)
+        os.makedirs(icon_path, exist_ok=True)
+
+        await self.uninstall_icon(icon_dict)
+
+        await self.clone_repo(
+            repo_url=icon_dict["url"],
+            local_path=icon_path,
+            commit_sha=icon_dict["commit_sha"]
+        )
+
+    async def uninstall_icon(self, icon_dict:dict):
+        folder_name = f"{icon_dict['user_name']}::{icon_dict['name']}"
+        if os.path.exists(os.path.join(gl.DATA_PATH, "icons", folder_name)):
+            shutil.rmtree(os.path.join(gl.DATA_PATH, "icons", folder_name))
+
+    async def install_wallpaper(self, wallpaper_dict:dict):
+        folder_name = f"{wallpaper_dict['user_name']}::{wallpaper_dict['name']}"
+        wallpaper_path = os.path.join(gl.DATA_PATH, "wallpapers", folder_name)
+        os.makedirs(wallpaper_path, exist_ok=True)
+
+        await self.uninstall_wallpaper(wallpaper_dict)
+
+        await self.clone_repo(
+            repo_url=wallpaper_dict["url"],
+            local_path=wallpaper_path,
+            commit_sha=wallpaper_dict["commit_sha"]
+        )
+
+    async def uninstall_wallpaper(self, wallpaper_dict:dict):
+        folder_name = f"{wallpaper_dict['user_name']}::{wallpaper_dict['name']}"
+        if os.path.exists(os.path.join(gl.DATA_PATH, "wallpapers", folder_name)):
+            shutil.rmtree(os.path.join(gl.DATA_PATH, "wallpapers", folder_name))
+
     async def get_plugin_for_id(self, plugin_id):
         plugins = await self.get_all_plugins_async()
         for plugin in plugins:
@@ -722,6 +758,34 @@ class StoreBackend:
             await self.install_icon(icon)
 
         return len(icons_to_update)
+    
+    async def get_wallpapers_to_update(self):
+        wallpapers = await self.get_all_wallpapers()
+        if isinstance(wallpapers, NoConnectionError):
+            return wallpapers
+
+        wallpapers_to_update: list[dict] = []
+
+        for wallpaper in wallpapers:
+            if wallpaper["local_sha"] is None:
+                # Plugin is not installed
+                continue
+            if wallpaper["local_sha"] != wallpaper["commit_sha"]:
+                wallpapers_to_update.append(wallpaper)
+
+        return wallpapers_to_update
+    
+    async def update_all_wallpapers(self) -> int:
+        """
+        Returns number of updated wallpapers
+        """
+        wallpapers_to_update = await self.get_wallpapers_to_update()
+        if isinstance(wallpapers_to_update, NoConnectionError):
+            return wallpapers_to_update
+        for wallpaper in wallpapers_to_update:
+            await self.install_wallpaper(wallpaper)
+
+        return len(wallpapers_to_update)
 
     async def update_everything(self) -> int:
         """
@@ -729,11 +793,12 @@ class StoreBackend:
         """
         n_plugins = await self.update_all_plugins()
         n_icons = await self.update_all_icons()
+        n_wallpapers = await self.update_all_wallpapers()
 
         if isinstance(n_plugins, NoConnectionError) or isinstance(n_icons, NoConnectionError):
             return NoConnectionError()
 
-        return n_plugins + n_icons
+        return n_plugins + n_icons + n_wallpapers
 
 class NoCompatibleVersion:
     pass

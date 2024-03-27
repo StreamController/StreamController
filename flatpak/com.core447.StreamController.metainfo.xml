@@ -35,6 +35,12 @@
   <url type="contribute">https://github.com/StreamController/StreamController</url>
 
   <releases>
+   <release version="1.2.0-beta" date="2024-03-27">
+      <description translatable="no">
+        <p>First beta release</p>
+        <p>Bug fixes</p>
+      </description>
+    </release>
     <release version="1.2.0-alpha" date="2024-03-27">
       <description translatable="no">
         <p>First release</p>

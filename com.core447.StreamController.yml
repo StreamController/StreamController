@@ -14,7 +14,6 @@ finish-args:
   - --share=network
   - --socket=pulseaudio
   - --socket=session-bus # Allow plugins to connect to the session bus
-  - --socket=system-bus # Allow plugins to connect to the system bus
   - --device=all # Needed to communicate with the decks
   - --talk-name=org.freedesktop.Flatpak # Allow plugins to run system commands
 

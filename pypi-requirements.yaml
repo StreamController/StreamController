@@ -17,7 +17,7 @@ build-commands:
   pyspellchecker python-dateutil python-Levenshtein pyudev pyusb PyYAML rapidfuzz
   regex req2flatpak requests requirements-parser rich serpent setproctitle six smmap
   speedtest-cli streamcontroller-plugin-tools streamdeck textual tqdm types-setuptools
-  typing-extensions uc-micro-py urllib3 usb-monitor virtualenv websocket-client decord
+  typing-extensions uc-micro-py urllib3 usb-monitor virtualenv websocket-client decord rpyc
 sources:
 - type: file
   url: https://files.pythonhosted.org/packages/92/e1/1c8bb3420105e70bdf357d57dd5567202b4ef8d27f810e98bb962d950834/setuptools-69.2.0-py3-none-any.whl
@@ -32,6 +32,9 @@ sources:
   url: https://files.pythonhosted.org/packages/11/79/936af42edf90a7bd4e41a6cac89c913d4b47fa48a26b042d5129a9242ee3/decord-0.6.0-py3-none-manylinux2010_x86_64.whl
   sha256: 51997f20be8958e23b7c4061ba45d0efcd86bffd5fe81c695d0befee0d442976
 
+- type: file
+  url: https://files.pythonhosted.org/packages/f6/e7/38cd5f2d8ab0d259648f6672fd19de30688a22ae769f87616c6a2fe92581/rpyc-6.0.0-py3-none-any.whl
+  sha256: e86b5831378f794c623db46e8ade6fff766c56cf9dbe96886e614025b4647339
 - type: file
   url: https://files.pythonhosted.org/packages/67/c7/995360c87dd74e27539ccbfecddfb58e08f140d849fcd7f35d2ed1a5f80f/GitPython-3.1.42-py3-none-any.whl
   sha256: 1bf9cd7c9e7255f77778ea54359e54ac22a72a5b51288c457c881057b7bb9ecd
@@ -315,8 +318,8 @@ sources:
   url: https://files.pythonhosted.org/packages/9f/39/65259b7054368b370d3183762484fa2c779ddc41633894d895f9d1720f45/speedtest_cli-2.1.3-py2.py3-none-any.whl
   sha256: 75ff32c91af9ac1ce2b905476d6e92bd9eb2c0783f9e7d1939d74605c7d0b9ea
 - type: file
-  url: https://files.pythonhosted.org/packages/ff/3a/ee4b0c2a43880ac1c07998af82dd4516ae354b1b26c2b008ff262dbe7b9c/streamcontroller_plugin_tools-1.0.5-py3-none-any.whl
-  sha256: 8c98116a0cc9792cc84b7aef98e87b98e3fee81ce5d8ad4b476df917424cd11c
+  url: https://files.pythonhosted.org/packages/88/7f/45a698578bd2a4c0db40e2b950b52f01b4d4af018497f5cd5ab2fb58f9bb/streamcontroller_plugin_tools-2.0.0-py3-none-any.whl
+  sha256: b2068a0bd2d9b366846b37a8e259a17448d42108edb002609d244e558e56f684
 - type: file
   url: https://files.pythonhosted.org/packages/5b/6c/0f059e39447eed4235e5b97b1f7ffe831a89e98a44d3d1f62a4bd8acdaf8/streamdeck-0.9.5-py3-none-any.whl
   sha256: c5c590bd9f56d1a79ff2135772b8c95de39efc1da517bff690a6d96fed1f23fb

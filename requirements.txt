@@ -79,7 +79,7 @@ setproctitle==1.3.3
 six==1.16.0
 smmap==5.0.1
 speedtest-cli==2.1.3
-streamcontroller-plugin-tools==1.0.5
+streamcontroller-plugin-tools==2.0.0
 streamdeck==0.9.5
 textual==0.52.1
 tqdm==4.66.2
@@ -90,3 +90,4 @@ urllib3==2.2.1
 usb-monitor==1.17
 virtualenv==20.25.1
 websocket-client==1.7.0
+rpyc==6.0.0

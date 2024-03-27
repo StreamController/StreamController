@@ -158,7 +158,7 @@ class StorePageGroup(Adw.PreferencesGroup):
         self.settings = settings
         super().__init__(title=gl.lm.get("settings-store-settings-header"))
 
-        self.auto_update = Adw.SwitchRow(title=gl.lm.get("settings-auto-update"), active=True)
+        self.auto_update = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-auto-update"), active=True)
         self.add(self.auto_update)
 
         self.load_defaults()

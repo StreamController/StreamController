@@ -49,7 +49,7 @@ argparser: argparse.ArgumentParser = None
 logs: list[str] = []
 
 release_notes: str = "<ul> \
-    <li>Now available as a Flatpak </li>\
+    <li>Now available as a Flatpak</li>\
     <li>Bugfixes</li> \
     <li>First Release</li> \
     </ul>"

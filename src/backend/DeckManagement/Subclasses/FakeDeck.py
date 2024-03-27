@@ -69,3 +69,6 @@ class FakeDeck:
 
     def open(self):
         return
+    
+    def close(self):
+        return

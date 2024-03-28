@@ -36,8 +36,11 @@ class ActionConfigurator(Gtk.Box):
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True, margin_end=4)
         self.append(self.scrolled_window)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_top=4, margin_start=25, margin_end=25)
-        self.scrolled_window.set_child(self.main_box)
+        self.clamp = Adw.Clamp()
+        self.scrolled_window.set_child(self.clamp)
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_top=4)
+        self.clamp.set_child(self.main_box)
 
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.nav_box)

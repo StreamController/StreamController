@@ -19,7 +19,8 @@ import threading
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk, Gio
+gi.require_version("Xdp", "1.0")
+from gi.repository import Gtk, Adw, Gdk, Gio, Xdp
 
 # Import Python modules
 from loguru import logger as log
@@ -88,6 +89,9 @@ class App(Adw.Application):
             f.write("")
 
     def show_permissions(self):
+        portal = Xdp.Portal.new()
+        if not portal.running_under_flatpak():
+            return
         if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-permissions")):
             return
         self.permissions = PermissionsWindow(application=self, main_window=self.main_win)

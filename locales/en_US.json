@@ -94,6 +94,7 @@
     "asset-chooser.custom.browse-files": "Browse Files",
     "asset-chooser.custom.browse-files.dialog.title": "Select Files",
     "asset-chooser.custom.browse-files.dialog.select-button": "Select",
+    "asset-chooser.add-more-button.label": "Add More",
     "background-editor.header": "Background",
     "background-editor-expander.subtitle": "Background for this key",
     "background-editor.color.label": "Color",

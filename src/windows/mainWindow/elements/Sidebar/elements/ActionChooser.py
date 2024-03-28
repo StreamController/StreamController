@@ -109,7 +109,7 @@ class ActionChooser(Gtk.Box):
 
 class OpenStoreButton(Gtk.Button):
     def __init__(self, *args, **kwargs):
-        super().__init__(label="Get More", css_classes=["open-store-button"],
+        super().__init__(label=gl.lm.get("asset-chooser.add-more-button.label"), css_classes=["open-store-button"],
                          *args, **kwargs)
         self.connect("clicked", self.on_click)
 

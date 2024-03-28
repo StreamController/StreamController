@@ -129,5 +129,13 @@
     "store.page.loading-spinner.label": "Loading",
     "settings.performance.cache-videos.title": "Cache Videos",
     "settings.performance.cache-videos.subtitle": "Only applies to new videos or after a restart",
-    "settings.performance.cache-videos.tooltip": "Enabling this will cache videos on your computer. This might cause high memory usage."
+    "settings.performance.cache-videos.tooltip": "Enabling this will cache videos on your computer. This might cause high memory usage.",
+    "permissions-window.title": "Permissions",
+    "permissions-window.mark-solved": "Mark As Solved",
+    "permissions-window.close": "Close",
+    "permissions-window.flatpak-detected": "Flatpak detected",
+    "permissions-window.description": "Certain default permissions are restricted by Flathub for security reasons. To enhance your experience with plugins, consider adjusting the dbus permissions by running the following command in your terminal:",
+    "permissions-window.copy-tooltip": "Copy",
+    "permissions-window.info-beginning": "For more information on Flatpak permissions, visit the ",
+    "permissions-window.flatpak-docs": "Flatpak documentation"
 }

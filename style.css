@@ -332,3 +332,19 @@
 .header-page-dropdown {
   max-width: 50px;
 }
+
+.permissions-window-header {
+  font-size: 40px;
+  font-weight: bold;
+}
+.permissions-window-icon {
+  min-width: 250px;
+  min-height: 250px;
+}
+.permissions-window-command {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding-left: 10px;
+  padding-right: 10px;
+}

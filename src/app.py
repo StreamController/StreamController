@@ -31,6 +31,7 @@ from src.windows.AssetManager.AssetManager import AssetManager
 from src.windows.Store.Store import Store
 from src.windows.Shortcuts.Shortcuts import ShortcutsWindow
 from src.windows.Onboarding.OnboardingWindow import OnboardingWindow
+from src.windows.Permissions.Permissions import PermissionsWindow
 
 # Import globals
 import globals as gl
@@ -55,6 +56,7 @@ class App(Adw.Application):
             self.main_win.present()
 
         self.show_onboarding()
+        self.show_permissions()
 
         self.shortcuts = ShortcutsWindow(app=app, application=app)
         # self.shortcuts.present()
@@ -84,6 +86,15 @@ class App(Adw.Application):
         # Disable onboarding for future sessions
         with open(os.path.join(gl.DATA_PATH, ".skip-onboarding"), "w") as f:
             f.write("")
+
+    def show_permissions(self):
+        if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-permissions")):
+            return
+        self.permissions = PermissionsWindow(application=self, main_window=self.main_win)
+        if hasattr(self, "onboarding"):
+            if self.onboarding.is_visible():
+                return
+        self.permissions.present()
 
     def on_quit(self, *args):
         log.info("Quitting...")

@@ -35,6 +35,8 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.set_transient_for(main_win)
         self.set_modal(True)
         self.set_default_size(700, 700)
+
+        self.connect("close-request", self.on_close)
         
         self.build()
 
@@ -109,6 +111,11 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         else:
             self.forward_button.set_visible(False)
 
+    def on_close(self, *args, **kwargs):
+        self.destroy()
+        if hasattr(gl.app, "permissions"):
+            gl.app.permissions.present()
+
 class OnboardingScreen(Gtk.Box):
     def __init__(self, image_file: str, label: str, detail: str):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
@@ -151,4 +158,5 @@ class OnboardingScreen5(Gtk.Box):
     def on_start_button_click(self, button):
         self.onboarding_window.close()
         self.onboarding_window.destroy()
+        self.onboarding_window.on_close()
         gl.app.main_win.show()

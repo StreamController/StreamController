@@ -52,8 +52,11 @@ class ActionChooser(Gtk.Box):
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
         self.append(self.scrolled_window)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_top=4, margin_start=25, margin_end=25)
-        self.scrolled_window.set_child(self.main_box)
+        self.clamp = Adw.Clamp()
+        self.scrolled_window.set_child(self.clamp)
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True, margin_top=4)
+        self.clamp.set_child(self.main_box)
 
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.nav_box)
@@ -106,7 +109,7 @@ class ActionChooser(Gtk.Box):
 
 class OpenStoreButton(Gtk.Button):
     def __init__(self, *args, **kwargs):
-        super().__init__(label="Get More", css_classes=["open-store-button"],
+        super().__init__(label=gl.lm.get("asset-chooser.add-more-button.label"), css_classes=["open-store-button"],
                          *args, **kwargs)
         self.connect("clicked", self.on_click)
 

@@ -43,7 +43,7 @@ signal_manager: "SignalManager" = None
 dekstop_grabber: "DesktopGrabber" = None
 
 
-app_version: str = "1.2.0-beta" # In breaking.feature.fix-state format
+app_version: str = "1.2.1-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []

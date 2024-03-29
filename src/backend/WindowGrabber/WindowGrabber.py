@@ -33,18 +33,18 @@ class WindowGrabber:
         self.SUPPORTED_ENVS = ["hyprland", "gnome"]
 
         self.integration: Integration = None
-
-        self.environment = self.get_active_environment()
-        if self.environment not in self.SUPPORTED_ENVS:
-            log.error(f"Unsupported environment: {self.environment} for window grabber.")
-            return
-        
         self.init_integration()
 
     def get_active_environment(self) -> str:
         return os.getenv("XDG_CURRENT_DESKTOP").lower()
     
     def init_integration(self) -> None:
+        self.environment = self.get_active_environment()
+        if self.environment not in self.SUPPORTED_ENVS:
+            log.error(f"Unsupported environment: {self.environment} for window grabber.")
+            return
+        
+        log.info(f"Initializing window grabber for environment: {self.environment}")
         if self.environment == "hyprland":
             self.integration = Hyprland(self)
         elif self.environment == "gnome":
@@ -70,8 +70,6 @@ class WindowGrabber:
         return matching_windows
     
     def get_is_window_matching(self, window: Window, class_regex: str, title_regex: str) -> bool:
-        if "code" in window.wm_class.lower() and "code" in class_regex.lower():
-            print()
         if None in (window.wm_class, window.title, class_regex, title_regex):
             return False
         try:
@@ -82,7 +80,7 @@ class WindowGrabber:
         return class_match and title_match
     
     def on_active_window_changed(self, window: Window) -> None:
-        print(f"Active window changed: {window}")
+        log.info(f"Active window changed to: {window}")
         for deck_controller in gl.deck_manager.deck_controller:
             found_page = False
             for page_path in gl.page_manager.get_pages():
@@ -111,21 +109,3 @@ class WindowGrabber:
                         continue
                     page = gl.page_manager.get_page(deck_controller.last_manual_loaded_page_path, deck_controller)
                     deck_controller.load_page(page, allow_reload=False)
-
-
-
-        return
-        for page_path in gl.page_manager.auto_change_info:
-            info = gl.page_manager.auto_change_info[page_path]
-            wm_regex = info.get("wm_class")
-            title_regex = info.get("title")
-            enabled = info.get("enable", False)
-            if not enabled:
-                continue
-
-            if self.get_is_window_matching(window, wm_regex, title_regex):
-                print(f"Auto change: {page_path}")
-                for deck_controller in gl.deck_manager.deck_controller:
-                    page = gl.page_manager.get_page(page_path, deck_controller)
-                    deck_controller.load_page(page)
-                return

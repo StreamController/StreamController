@@ -51,7 +51,7 @@ class PageManager(Adw.ApplicationWindow):
 
     def build(self):
         # Split view
-        self.split = Adw.NavigationSplitView(vexpand=True, sidebar_width_fraction=0.4)
+        self.split = Adw.NavigationSplitView(vexpand=True, sidebar_width_fraction=0.4, min_sidebar_width=300)
         self.set_content(self.split)
 
         self.page_editor = PageEditor(self)

@@ -36,7 +36,7 @@ import globals as gl
 
 class PageSelector(Adw.NavigationPage):
     def __init__(self, page_manager: "PageManager"):
-        super().__init__(title="Page Selector")
+        super().__init__(title=gl.lm.get("page-manager.page-selector.title"))
         self.page_manager = page_manager
         self.page_rows: list[PageRow] = []
         self.build()
@@ -47,7 +47,7 @@ class PageSelector(Adw.NavigationPage):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.set_child(self.main_box)
 
-        self.search_entry = Gtk.SearchEntry(placeholder_text="Search", hexpand=True, margin_start=7, margin_end=7, margin_top=7, margin_bottom=7)
+        self.search_entry = Gtk.SearchEntry(placeholder_text=gl.lm.get("page-manager.page-selector.search-hint"), hexpand=True, margin_start=7, margin_end=7, margin_top=7, margin_bottom=7)
         self.search_entry.connect("changed", self.on_search_changed)
         self.main_box.append(self.search_entry)
 
@@ -134,13 +134,16 @@ class AddNewButton(Gtk.Button):
     def __init__(self, page_manager: "PageManager", *args, **kwargs):
         self.page_manager = page_manager
         super().__init__(*args, **kwargs)
-        self.set_label("Add New Page")
+        self.set_label(gl.lm.get("page-manager.page-selector.add-new"))
         self.set_css_classes(["suggested-action"])
 
         self.connect("clicked", self.on_clicked)
 
     def on_clicked(self, button: Gtk.Button) -> None:
-        dial = EntryDialog(parent_window=self.page_manager, dialog_title="Add Page", placeholder="Page name")
+        dial = EntryDialog(parent_window=self.page_manager,
+                           dialog_title=gl.lm.get("page-manager.page-selector.add-dialog.title"),
+                           placeholder=gl.lm.get("page-manager.page-selector.add-dialog.placeholder"),
+                           confirm_label=gl.lm.get("page-manager.page-selector.add-dialog.confirm"))
         dial.show(callback_func=self.page_manager.add_page_from_name)
 
 

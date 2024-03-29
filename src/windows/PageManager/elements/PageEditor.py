@@ -35,7 +35,7 @@ from src.backend.WindowGrabber.Window import Window
 
 class PageEditor(Adw.NavigationPage):
     def __init__(self, page_manager: "PageManager"):
-        super().__init__(title="Page Editor")
+        super().__init__(title=gl.lm.get("page-manager.page-editor.title"))
         self.page_manager = page_manager
         self.active_page_path: str = None
         self.build()
@@ -48,27 +48,35 @@ class PageEditor(Adw.NavigationPage):
         self.header = Adw.HeaderBar(show_back_button=False, css_classes=["flat"])
         self.main_box.append(self.header)
 
+        # Main stack - one page for the normal editor and one for the no page info screen
         self.main_stack = Gtk.Stack(hexpand=True, vexpand=True)
         self.main_box.append(self.main_stack)
 
+        # The box for the normal editor
         self.editor_main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.main_stack.add_titled(self.editor_main_box, "editor", "Editor")
 
+        # Scrolled window for  the normal editor
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
         self.editor_main_box.append(self.scrolled_window)
 
+        # Clamp for the scrolled window
         self.clamp = Adw.Clamp(margin_top=40)
         self.scrolled_window.set_child(self.clamp)
 
+        # Box for all widgets in the editor
         self.editor_main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.clamp.set_child(self.editor_main_box)
 
+        # Name group - Used to rename the page
         self.name_group = NameGroup(page_editor=self)
         self.editor_main_box.append(self.name_group)
 
+        # Auto change group - Used to configure automatic page switching
         self.auto_change_group = AutoChangeGroup(page_editor=self)
         self.editor_main_box.append(self.auto_change_group)
 
+        # Delete button
         self.delete_button = DeleteButton(page_editor=self, margin_top=40)
         self.editor_main_box.append(self.delete_button)
 
@@ -76,8 +84,9 @@ class PageEditor(Adw.NavigationPage):
         self.no_page_box = Gtk.Box(hexpand=True, vexpand=True)
         self.main_stack.add_titled(self.no_page_box, "no-page", "No Page")
 
-        self.no_page_box.append(Gtk.Label(label="No page selected", halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=True))
+        self.no_page_box.append(Gtk.Label(label=gl.lm.get("page-manager.page-editor.no-page-selected"), halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=True))
 
+        # Default to the no page info screen
         self.main_stack.set_visible_child_name("no-page")
 
     def load_for_page(self, page_path: str) -> None:
@@ -96,7 +105,7 @@ class DeleteButton(Gtk.Button):
     def __init__(self, page_editor: PageEditor, *args, **kwargs):
         super().__init__(css_classes=["destructive-action", "tall-button"], hexpand=True, *args, **kwargs)
         self.page_editor = page_editor
-        self.set_label("Delete Page")
+        self.set_label(gl.lm.get("page-manager.page-editor.delete-page"))
         self.connect("clicked", self.on_delete_clicked)
 
     def on_delete_clicked(self, button: Gtk.Button) -> None:
@@ -111,15 +120,15 @@ class DeletePageConfirmationDialog(Adw.MessageDialog):
 
         self.set_transient_for(page_editor.page_manager)
         self.set_modal(True)
-        self.set_title("Delete Page")
-        self.add_response("cancel", "Cancel")
-        self.add_response("delete", "Delete")
+        self.set_title(gl.lm.get("page-manager.page-editor.delete-page-confirm.title"))
+        self.add_response("cancel", gl.lm.get("page-manager.page-editor.delete-page-confirm.cancel"))
+        self.add_response("delete", gl.lm.get("page-manager.page-editor.delete-page-confirm.delete"))
         self.set_default_response("cancel")
         self.set_close_response("cancel")
         self.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
 
         page_name = os.path.splitext(os.path.basename(self.page_editor.active_page_path))[0]
-        self.set_body(f'Are you sure you want to delete the page: "{page_name}"?')
+        self.set_body(f'{gl.lm.get("page-manager.page-editor.delete-page-confirm.body")}"{page_name}"?')
 
         self.connect("response", self.on_response)
 
@@ -132,12 +141,12 @@ class DeletePageConfirmationDialog(Adw.MessageDialog):
 
 class NameGroup(Adw.PreferencesGroup):
     def __init__(self, page_editor: PageEditor):
-        super().__init__(title="Name")
+        super().__init__(title=gl.lm.get("page-manager.page-editor.name-group.title"))
         self.page_editor = page_editor
         self.build()
 
     def build(self):
-        self.name_entry = Adw.EntryRow(title="Name", show_apply_button=True)
+        self.name_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.name-group.name"), show_apply_button=True)
         self.name_entry.connect("changed", self.on_name_changed)
         self.name_entry.connect("apply", self.on_name_change_applied)
         self.add(self.name_entry)
@@ -172,20 +181,20 @@ class NameGroup(Adw.PreferencesGroup):
 
 class AutoChangeGroup(Adw.PreferencesGroup):
     def __init__(self, page_editor: PageEditor):
-        super().__init__(title="Auto Change")
+        super().__init__(title=gl.lm.get("page-manager.page-editor.change-group.title"))
         self.page_editor = page_editor
         self.build()
         
 
     def build(self):
-        self.enable_row = Adw.SwitchRow(title="Enable")
+        self.enable_row = Adw.SwitchRow(title=gl.lm.get("page-manager.page-editor.change-group.enable"))
         self.add(self.enable_row)
 
-        self.wm_class_entry = Adw.EntryRow(title="WM Class", text="", show_apply_button=True)
-        self.add(self.wm_class_entry)
-
-        self.title_entry = Adw.EntryRow(title="Title", text="", show_apply_button=True)
+        self.title_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.title-regex"), text="", show_apply_button=True)
         self.add(self.title_entry)
+
+        self.wm_class_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.wm-class-regex"), text="", show_apply_button=True)
+        self.add(self.wm_class_entry)
 
         self.matching_windows_expander = MatchingWindowsExpander(auto_change_group=self)
         self.add(self.matching_windows_expander)
@@ -237,7 +246,7 @@ class AutoChangeGroup(Adw.PreferencesGroup):
 
 class MatchingWindowsExpander(BetterExpander):
     def __init__(self, auto_change_group: AutoChangeGroup):
-        super().__init__(title="Matching Windows", subtitle="Matching Windows", expanded=False)
+        super().__init__(title=gl.lm.get("page-manager.page-editor.matching-windows.title"), subtitle=gl.lm.get("page-manager.page-editor.matching-windows.subtitle"), expanded=False)
         self.auto_change_group = auto_change_group
 
         self.update_button = Gtk.Button(icon_name="view-refresh-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])

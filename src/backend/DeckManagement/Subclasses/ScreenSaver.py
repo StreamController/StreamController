@@ -47,6 +47,7 @@ class ScreenSaver:
         self.loop: bool = True
 
     def set_time(self, time_delay: int) -> None:
+        time_delay = max(1, time_delay) # Min 1 minute - too small values leading to instant load if the screensaver lead to errors
         if time_delay != self.time_delay:
             log.info(f"Setting screen saver time delay to {time_delay} minutes")
         self.time_delay = time_delay

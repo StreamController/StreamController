@@ -235,9 +235,9 @@ class DeckController:
         
         try:
             # Clear the deck
-            deck.reset()
+            self.clear()
         except Exception as e:
-            log.error(f"Failed to reset deck, maybe it's already connected to another instance? Skipping... Error: {e}")
+            log.error(f"Failed to clear deck, maybe it's already connected to another instance? Skipping... Error: {e}")
             del self
             return
         
@@ -478,7 +478,7 @@ class DeckController:
 
         if page is None:
             # Clear deck
-            self.deck.reset()
+            self.clear()
             return
 
         log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()}")
@@ -563,6 +563,12 @@ class DeckController:
         self.own_deck_stack_child = deck_stack_child
         return deck_stack_child
     
+    def clear(self):
+        alpha_image = self.generate_alpha_key()
+        native_image = PILHelper.to_native_key_format(self.deck, alpha_image.convert("RGB"))
+        for i in range(self.deck.key_count()):
+            self.deck.set_key_image(i, native_image)
+
     def get_own_key_grid(self) -> KeyGrid:
         # Why not just lru_cache this? Because this would also cache the None that gets returned while the ui is still loading
         if self.own_key_grid is not None:

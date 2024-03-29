@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio
+from gi.repository import Gtk, Adw, Gio, Pango
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -51,7 +51,7 @@ class PageSelector(Adw.NavigationPage):
         self.search_entry.connect("changed", self.on_search_changed)
         self.main_box.append(self.search_entry)
 
-        self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
+        self.scrolled_window = Gtk.ScrolledWindow(hexpand=False, vexpand=True)
         self.main_box.append(self.scrolled_window)
 
         self.clamp = Adw.Clamp()
@@ -159,7 +159,7 @@ class PageRow(Gtk.ListBoxRow):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.set_child(self.main_box)
 
-        self.label = Gtk.Label(label="", hexpand=True, xalign=0)
+        self.label = Gtk.Label(label="", hexpand=True, xalign=0, ellipsize=Pango.EllipsizeMode.END)
         self.set_page_path(self.page_path)
         self.main_box.append(self.label)
 

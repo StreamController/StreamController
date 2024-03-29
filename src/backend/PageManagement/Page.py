@@ -52,14 +52,12 @@ class Page:
         Updates the dict without any updates on the action objects.
         Do NOT use if you made changes to the action objects
         """
-        with open(self.json_path) as f:
-            self.dict.update(json.load(f))
+        self.dict = gl.page_manager.get_page_json(self.json_path)
     
     def load(self, load_from_file: bool = False):
         start = time.time()
         if load_from_file:
-            with open(self.json_path) as f:
-                self.dict.update(json.load(f))
+            self.update_dict()
         self.load_action_objects()
 
         # Call on_ready for all actions

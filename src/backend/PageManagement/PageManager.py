@@ -267,17 +267,18 @@ class PageManager:
         self.auto_change_info = {}
         pages = self.get_pages()
         for page in pages:
-            with open(page, "r") as f:
-                abs_path = os.path.abspath(page)
-                self.auto_change_info[abs_path] = json.load(f).get("auto-change", {})
+            abs_path = os.path.abspath(page)
+            page_dict = self.get_page_json(abs_path)
+            if page_dict is None:
+                continue
+            self.auto_change_info[abs_path] = page_dict.get("auto-change", {})
 
         log.info(f"Updated auto-change info in {time.time() - start} seconds")
 
     def set_auto_change_info_for_page(self, page_path: str, info: dict) -> None:
         abs_path = os.path.abspath(page_path)
         self.auto_change_info[abs_path] = info
-        with open(abs_path, "r") as f:
-            page = json.load(f)
+        page = self.get_page_json(abs_path)
 
         page["auto-change"] = info
 
@@ -289,3 +290,30 @@ class PageManager:
     def get_auto_change_info_for_page(self, page_path: str) -> dict:
         abs_path = os.path.abspath(page_path)
         return self.auto_change_info.get(abs_path, {})
+    
+    def get_page_json(self, page_path: str) -> dict:
+        """
+        Loads and returns the json of the page.
+        If the page is corrupt it will fallback to the backed up page.
+        """
+        if not os.path.exists(page_path):
+            return
+        
+        try:
+            with open(page_path, "r") as f:
+                return json.load(f)
+        except json.decoder.JSONDecodeError:
+            pass
+        
+
+        backup_path = os.path.join(gl.DATA_PATH, "pages", "backups", os.path.basename(page_path))
+        if not os.path.exists(backup_path):
+            log.error(f"Invalid json in {page_path}, no backup exists, returning None")
+            return
+        
+        log.error(f"Invalid json in {page_path}, falling back to backup")
+        try:
+            with open(backup_path, "r") as f:
+                return json.load(f)
+        except json.decoder.JSONDecodeError:
+            return

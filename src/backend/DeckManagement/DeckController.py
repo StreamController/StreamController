@@ -399,12 +399,14 @@ class DeckController:
             loop = deck_settings.get("screensaver", {}).get("loop", False)
             fps = deck_settings.get("screensaver", {}).get("fps", 30)
             time = deck_settings.get("screensaver", {}).get("time-delay", 5)
+            brightness = deck_settings.get("screensaver", {}).get("brightness", 30)
 
             self.screen_saver.set_media_path(path)
             self.screen_saver.set_enable(enable)
             self.screen_saver.set_time(time)
             self.screen_saver.set_loop(loop)
             self.screen_saver.set_fps(fps)
+            self.screen_saver.set_brightness(brightness)
 
         def set_from_page(self: "DeckController"):
             path = page.dict.get("screensaver", {}).get("path")
@@ -412,12 +414,14 @@ class DeckController:
             loop = page.dict.get("screensaver", {}).get("loop", False)
             fps = page.dict.get("screensaver", {}).get("fps", 30)
             time = page.dict.get("screensaver", {}).get("time-delay", 5)
+            brightness = page.dict.get("screensaver", {}).get("brightness", 30)
 
             self.screen_saver.set_media_path(path)
             self.screen_saver.set_enable(enable)
             self.screen_saver.set_time(time)
             self.screen_saver.set_loop(loop)
             self.screen_saver.set_fps(fps)
+            self.screen_saver.set_brightness(brightness)
 
         if self.active_page.dict.get("screensaver", {}).get("overwrite", False) is False and "screensaver" in deck_settings:
             set_from_deck_settings(self)

@@ -71,6 +71,8 @@ class SingleKeyAsset:
     
     def generate_final_image(self, background: Image.Image = None, labels: dict = {}) -> Image.Image:
         foreground = self.get_raw_image()
+        if foreground is None:
+            foreground = self.deck_controller.generate_alpha_key()
 
         img_size = self.deck_controller.get_key_image_size()
         img_size = (int(img_size[0] * self.size), int(img_size[1] * self.size)) # Calculate scaled size of the image

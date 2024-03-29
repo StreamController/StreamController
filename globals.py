@@ -20,7 +20,8 @@ if TYPE_CHECKING:
     from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
     from src.windows.Store.StoreBackend import StoreBackend
     from src.Signals.SignalManager import SignalManager
-    from src.backend.DesktopGrabber import DesktopGrabber
+    from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
+    from src.backend.GnomeExtensions import GnomeExtensions
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -29,6 +30,7 @@ media_manager:"MediaManager" = None #MediaManager
 asset_manager_backend:"AssetManagerBackend" = None #AssetManager
 asset_manager: "AssetManager" = None
 page_manager:"PageManager" = None #PageManager
+gnome_extensions:"GnomeExtensions" = None
 settings_manager:"SettingsManager" = None #SettingsManager
 app:"App" = None #App
 deck_manager:"DeckManager" = None #DeckManager
@@ -40,7 +42,7 @@ wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
 signal_manager: "SignalManager" = None
-dekstop_grabber: "DesktopGrabber" = None
+window_grabber: "WindowGrabber" = None
 
 
 app_version: str = "1.2.1-beta" # In breaking.feature.fix-state format

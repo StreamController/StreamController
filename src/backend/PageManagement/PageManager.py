@@ -18,6 +18,7 @@ import os
 import shutil
 import json
 from copy import copy
+import time
 from loguru import logger as log
 
 # Import own modules
@@ -34,6 +35,7 @@ class PageManager:
         self.created_pages = {}
         self.created_pages_order = []
 
+
         self.max_pages = 3
 
         settings = gl.settings_manager.get_app_settings()
@@ -42,6 +44,9 @@ class PageManager:
         self.page_number: int = 0
 
         self.custom_pages = []
+
+        self.auto_change_info = {}
+        self.update_auto_change_info()
 
     def set_n_pages_to_cache(self, n_pages):
         old_max_pages = self.max_pages
@@ -155,7 +160,9 @@ class PageManager:
         os.remove(old_path)
 
         # Update ui
-        self.update_ui()
+        # self.update_ui()
+
+        self.update_auto_change_info()
 
 
     def remove_page(self, page_path: str):
@@ -192,7 +199,9 @@ class PageManager:
         gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)
 
         # Update ui
-        self.update_ui()
+        # self.update_ui()
+
+        self.update_auto_change_info()
 
     def remove_page_path_from_created_pages(self, path: str):
         for controller in self.created_pages:
@@ -213,7 +222,9 @@ class PageManager:
             json.dump(page, f)
 
         # Update ui
-        self.update_ui()
+        # self.update_ui()
+
+        self.update_auto_change_info()
 
     def register_page(self, path: str):
         if not os.path.exists(path):
@@ -223,8 +234,58 @@ class PageManager:
         self.custom_pages.append(path)
 
         # Update ui
-        self.update_ui()
+        # self.update_ui()
 
-    def update_ui(self):
-        if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
-            gl.app.main_win.header_bar.page_selector.update()
+        self.update_auto_change_info()
+
+    def get_pages_with_path(self, page_path: str) -> list[Page]:
+        pages: list[Page] = []
+
+        ## Add from controllers
+        for controller in gl.deck_manager.deck_controller:
+            if controller.active_page is None:
+                continue
+            if controller.active_page.json_path == page_path:
+                pages.append(controller.active_page)
+
+        ## Add from cache
+        for controller in self.created_pages:
+            if page_path in self.created_pages[controller]:
+                page = self.created_pages[controller][page_path]["page"]
+                if page not in pages:
+                    pages.append(page)
+
+        return pages
+
+    def update_dict_of_pages_with_path(self, page_path: str) -> None:
+        pages = self.get_pages_with_path(page_path)
+        for page in pages:
+            page.update_dict()
+
+    def update_auto_change_info(self):
+        start = time.time()
+        self.auto_change_info = {}
+        pages = self.get_pages()
+        for page in pages:
+            with open(page, "r") as f:
+                abs_path = os.path.abspath(page)
+                self.auto_change_info[abs_path] = json.load(f).get("auto-change", {})
+
+        log.info(f"Updated auto-change info in {time.time() - start} seconds")
+
+    def set_auto_change_info_for_page(self, page_path: str, info: dict) -> None:
+        abs_path = os.path.abspath(page_path)
+        self.auto_change_info[abs_path] = info
+        with open(abs_path, "r") as f:
+            page = json.load(f)
+
+        page["auto-change"] = info
+
+        with open(abs_path, "w") as f:
+            json.dump(page, f, indent=4)
+
+        self.update_dict_of_pages_with_path(abs_path)
+
+    def get_auto_change_info_for_page(self, page_path: str) -> dict:
+        abs_path = os.path.abspath(page_path)
+        return self.auto_change_info.get(abs_path, {})

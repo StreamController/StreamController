@@ -348,3 +348,6 @@
   padding-left: 10px;
   padding-right: 10px;
 }
+.tall-button {
+  min-height: 50px;
+}

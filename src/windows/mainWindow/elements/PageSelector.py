@@ -52,7 +52,7 @@ class PageSelector(Gtk.Box):
         self.drop_down.set_css_classes(["header-page-dropdown"])
         self.drop_down.set_hexpand(False)
 
-        self.renderer_text = Gtk.CellRendererText(ellipsize=Pango.EllipsizeMode.END)
+        self.renderer_text = Gtk.CellRendererText(ellipsize=Pango.EllipsizeMode.END, ellipsize_set=True)
         self.drop_down.pack_start(self.renderer_text, True)
         # Use first column for text
         self.drop_down.add_attribute(self.renderer_text, "text", 0)

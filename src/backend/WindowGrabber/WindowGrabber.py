@@ -95,6 +95,8 @@ class WindowGrabber:
                 if self.get_is_window_matching(window, wm_regex, title_regex):
                     if not deck_controller.deck.is_open():
                         return
+                    if deck_controller.active_page.json_path == page_path:
+                        continue
                     log.debug(f"Auto changing page: {page_path} on deck {deck_controller.deck.get_serial_number()}")
                     page = gl.page_manager.get_page(page_path, deck_controller)
                     if not deck_controller.page_auto_loaded:

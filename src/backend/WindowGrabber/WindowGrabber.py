@@ -93,7 +93,7 @@ class WindowGrabber:
                     continue
 
                 if self.get_is_window_matching(window, wm_regex, title_regex):
-                    print(f"Auto change: {page_path}")
+                    log.debug(f"Auto changing page: {page_path} on deck {deck_controller.deck.get_serial_number()}")
                     page = gl.page_manager.get_page(page_path, deck_controller)
                     if not deck_controller.page_auto_loaded:
                         deck_controller.last_manual_loaded_page_path = deck_controller.active_page.json_path

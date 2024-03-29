@@ -71,7 +71,7 @@ class AssetManager(Gtk.ApplicationWindow):
         self.main_stack.add_titled(self.asset_info, "Asset Info", "Asset Info")
 
         # Header bar
-        self.header_bar = Gtk.HeaderBar()
+        self.header_bar = Gtk.HeaderBar(css_classes=["flat"])
         self.set_titlebar(self.header_bar)
 
         self.stack_switcher = Gtk.StackSwitcher(stack=self.asset_chooser)

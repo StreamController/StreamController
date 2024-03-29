@@ -72,3 +72,6 @@ class FakeDeck:
     
     def close(self):
         return
+    
+    def is_visual(self) -> bool:
+        return True

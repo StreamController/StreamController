@@ -454,6 +454,7 @@ class DeckController:
                 background_group = settings_page.background_group
 
                 # Update ui
+                settings_group.brightness.load_defaults_from_page()
                 settings_group.screensaver.load_defaults_from_page()
                 background_group.media_row.load_defaults_from_page()
 

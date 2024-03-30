@@ -56,23 +56,25 @@ class Gnome(Integration):
 
 
     def connect_dbus(self) -> None:
-        bus = dbus.SessionBus()
         try:
-            self.proxy = bus.get_object("org.gnome.Shell", "/org/gnome/Shell/Extensions/StreamController")
+            self.bus = dbus.SessionBus()
+            self.proxy = self.bus.get_object("org.gnome.Shell", "/org/gnome/Shell/Extensions/StreamController")
             self.interface = dbus.Interface(self.proxy, "org.gnome.Shell.Extensions.StreamController")
+            self.interface.connect_to_signal("FocusedWindowChanged", self.on_window_changed)
         except dbus.exceptions.DBusException as e:
             log.error(f"Failed to connect to D-Bus: {e}")
             pass
 
-        self.interface.connect_to_signal("FocusedWindowChanged", self.on_window_changed)
 
     def on_window_changed(self, answer: str) -> None:
         answer = json.loads(answer)
         window = Window(answer.get("wm_class"), answer.get("title"))
         self.window_grabber.on_active_window_changed(window=window)
-
         
     def get_all_windows(self) -> list[Window]:
+        if not self.get_is_connected():
+            return []
+        
         answer = json.loads(self.interface.GetAllWindows())
         windows: list[Window] = []
         
@@ -84,7 +86,12 @@ class Gnome(Integration):
         return windows
     
     def get_active_window (self) -> Window:
+        if not self.get_is_connected():
+            return None
         answer = json.loads(self.interface.GetFocusedWindow())
         wm_class = answer.get("wm_class")
         title = answer.get("title") 
         return Window(wm_class, title)
+    
+    def get_is_connected(self) -> bool:
+        return None not in (self.bus, self.proxy, self.interface)

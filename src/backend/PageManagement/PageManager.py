@@ -59,7 +59,7 @@ class PageManager:
         for page in self.pages.values():
             page.save()
 
-    def get_pages(self) -> list:
+    def get_pages(self, add_custom_pages: bool = True) -> list:
         pages = []
         # Create pages dir if it doesn't exist
         os.makedirs(os.path.join(gl.DATA_PATH, "pages"), exist_ok=True)
@@ -68,7 +68,8 @@ class PageManager:
             if os.path.splitext(page)[1] == ".json":
                 pages.append(os.path.join(gl.DATA_PATH, "pages", page))
 
-        pages.extend(self.custom_pages)
+        if add_custom_pages:
+            pages.extend(self.custom_pages)
 
         return pages
     

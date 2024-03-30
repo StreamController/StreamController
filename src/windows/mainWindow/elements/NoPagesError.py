@@ -58,7 +58,7 @@ class NoPagesError(Gtk.Box):
         self.append(self.create_new_button)
 
     def on_create_new(self, button):
-        dial = EntryDialog(parent_window=self.page_manager,
+        dial = EntryDialog(parent_window=gl.app.main_win,
                            dialog_title=gl.lm.get("page-manager.page-selector.add-dialog.title"),
                            placeholder=gl.lm.get("page-manager.page-selector.add-dialog.placeholder"),
                            confirm_label=gl.lm.get("page-manager.page-selector.add-dialog.confirm"),

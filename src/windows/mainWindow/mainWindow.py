@@ -63,28 +63,34 @@ class MainWindow(Adw.ApplicationWindow):
 
     @log.catch
     def build(self):
+        #TODO: Put the objects in classes
         log.trace("Building main window")
         self.split_view = Adw.NavigationSplitView()
         self.set_content(self.split_view)
 
+        self.content_page = Adw.NavigationPage(title="StreamController")
+        self.split_view.set_content(self.content_page)
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.content_page.set_child(self.main_box)
+
         # Add a main stack containing the normal ui and error pages
         self.main_stack = Gtk.Stack(hexpand=True, vexpand=True)
-        self.main_content_page = Adw.NavigationPage(title="StreamController", child=self.main_stack)
+        self.main_box.append(self.main_stack)
 
         # Add the main stack as the content widget of the split view
-        self.split_view.set_content(self.main_content_page)
-        self.split_view.set_show_content(self.main_content_page)
+        self.split_view.set_show_content(self.content_page)
 
         # Main toast
         self.toast_overlay = Adw.ToastOverlay()
         self.main_stack.add_titled(self.toast_overlay, "main", "Main")
 
         # Add a box for the main content (right side)
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        self.toast_overlay.set_child(self.main_box)
+        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.toast_overlay.set_child(self.content_box)
 
         self.leftArea = LeftArea(self, deck_manager=self.deck_manager, margin_end=3, width_request=500, margin_bottom=10)
-        self.main_box.append(self.leftArea)
+        self.content_box.append(self.leftArea)
 
         self.sidebar = Sidebar(main_window=self, margin_start=4, width_request=300, margin_end=4)
         # self.mainPaned.set_end_child(self.sidebar)
@@ -192,6 +198,7 @@ class MainWindow(Adw.ApplicationWindow):
             GLib.idle_add(self.deck_switcher.set_show_switcher, True)
             GLib.idle_add(self.split_view.set_collapsed, False)
             GLib.idle_add(self.sidebar_toggle_button.set_visible, True)
+            GLib.idle_add(self.menu_button.set_visible, True)
             return
         
         elif error == "no-decks":
@@ -203,6 +210,7 @@ class MainWindow(Adw.ApplicationWindow):
         GLib.idle_add(self.deck_switcher.set_show_switcher, False)
         GLib.idle_add(self.split_view.set_collapsed, True)
         GLib.idle_add(self.sidebar_toggle_button.set_visible, False)
+        GLib.idle_add(self.menu_button.set_visible, False)
 
     def check_for_errors(self):
         if len(gl.deck_manager.deck_controller) == 0:

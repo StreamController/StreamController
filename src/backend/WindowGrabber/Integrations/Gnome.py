@@ -75,7 +75,10 @@ class Gnome(Integration):
         if not self.get_is_connected():
             return []
         
-        answer = json.loads(self.interface.GetAllWindows())
+        try:
+            answer = json.loads(self.interface.GetAllWindows())
+        except:
+            return []
         windows: list[Window] = []
         
         for window in answer:
@@ -88,7 +91,10 @@ class Gnome(Integration):
     def get_active_window (self) -> Window:
         if not self.get_is_connected():
             return None
-        answer = json.loads(self.interface.GetFocusedWindow())
+        try:
+            answer = json.loads(self.interface.GetFocusedWindow())
+        except:
+            return None
         wm_class = answer.get("wm_class")
         title = answer.get("title") 
         return Window(wm_class, title)

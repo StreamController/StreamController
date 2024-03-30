@@ -20,3 +20,6 @@ Feel free to open Pull requests
 
 ## Links
 [Website](https://core447.com) - [Wiki](https://streamcontroller.github.io/docs) - [Discord](https://discord.gg/MSyHM8TN3u)
+
+## Note
+This application is unofficial and in no way affiliated with Elgato.

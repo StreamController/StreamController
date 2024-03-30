@@ -73,6 +73,15 @@ class PageManager(Adw.ApplicationWindow):
         gl.signal_manager.trigger_signal(signal=Signals.PageAdd, path=page_path)
 
     def remove_page_by_path(self, page_path: str) -> None:
+        if page_path in gl.page_manager.custom_pages:
+            dial = CantDeletePluginPage(self)
+            dial.show()
+            return
+        if self.get_number_of_user_pages() <= 1:
+            dial = CantDeleteLastPageError(self)
+            dial.show()
+            return
+        
         self.page_selector.remove_row_with_path(page_path)
 
         gl.page_manager.remove_page(page_path)
@@ -87,3 +96,26 @@ class PageManager(Adw.ApplicationWindow):
 
         # Emit signal
         gl.signal_manager.trigger_signal(signal=Signals.PageRename, old_path=old_path, new_path=new_path)
+
+    def get_number_of_user_pages(self) -> int:
+        return len(gl.page_manager.get_pages(add_custom_pages=False))
+    
+class CantDeleteLastPageError(Adw.MessageDialog):
+    def __init__(self, page_manager: PageManager):
+        super().__init__()
+        self.set_transient_for(page_manager)
+        self.set_modal(True)
+        self.set_title("Error")
+        self.set_body("You have to have at least one user page.")
+        self.add_response("ok", "OK")
+        self.set_default_response("ok")
+
+class CantDeletePluginPage(Adw.MessageDialog):
+    def __init__(self, page_manager: PageManager):
+        super().__init__()
+        self.set_transient_for(page_manager)
+        self.set_modal(True)
+        self.set_title("Error")
+        self.set_body("You can't delete plugin pages.")
+        self.add_response("ok", "OK")
+        self.set_default_response("ok")

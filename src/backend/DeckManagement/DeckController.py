@@ -82,6 +82,8 @@ class MediaPlayerSetImageTask:
     def run(self):
         try:
             self.deck_controller.deck.set_key_image(self.key_index, self.native_image)
+            self.native_image = None
+            del self.native_image
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck key image. Error: {e}")
 
@@ -112,7 +114,7 @@ class MediaPlayerThread(threading.Thread):
         while True:
             start = time.time()
             if not self.pause:
-                if self.deck_controller.background.video is not None and True:
+                if self.deck_controller.background.video is not None:
                     if self.deck_controller.background.video.page is self.deck_controller.active_page:
                         # There is a background video
                         video_each_nth_frame = self.FPS // self.deck_controller.background.video.fps
@@ -350,7 +352,7 @@ class DeckController:
         if default_page_path is None:
             return
         
-        page = gl.page_manager.create_page(default_page_path, self)
+        page = gl.page_manager.get_page(default_page_path, self)
         self.load_page(page)
 
     def load_background(self, page: Page, update: bool = True):
@@ -462,6 +464,15 @@ class DeckController:
             except AttributeError as e:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
 
+    def close_image_ressources(self):
+        for key in self.keys:
+            key.close_resources()
+
+        if self.background.video is not None:
+            self.background.video.close()
+        if self.background.image is not None:
+            self.background.image.close()
+
 
     def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
                   allow_reload: bool = True):
@@ -503,14 +514,12 @@ class DeckController:
             self.load_screensaver(page)
         if load_keys:
             self.media_player.add_task(self.load_all_keys, page, update=False)
-            
 
         # Load page onto deck
         # self.update_all_keys()
         self.media_player.add_task(self.update_all_keys)
 
         # Notify plugin actions
-        # gl.plugin_manager.trigger_signal(controller=self, signal=Signals.ChangePage, path=self.active_page.json_path)
         gl.signal_manager.trigger_signal(signal=Signals.ChangePage, controller=self, old_path=old_path, new_path=self.active_page.json_path)
 
         log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()} took {time.time() - start} seconds")
@@ -930,6 +939,11 @@ class ControllerKey:
         if self.is_pressed():
             labeled_image = self.shrink_image(labeled_image)
 
+        if background is not None:
+            background.close()
+        
+        image.close()
+
         return labeled_image
     
     def paste_foreground(self, background: Image.Image, foreground: Image.Image) -> Image.Image:
@@ -1109,6 +1123,7 @@ class ControllerKey:
         """
         Attention: Disabling load_media might result into disabling custom user assets
         """
+        self.close_resources()
         if page_dict in [None, {}]:
             self.clear(update=update)
             return
@@ -1284,6 +1299,14 @@ class ControllerKey:
         for action in self.get_own_actions():
             action.on_tick()
 
+    def close_resources(self) -> None:
+        if self.key_image is not None:
+            self.key_image.close()
+        if self.key_video is not None:
+            self.key_video.close()
+
+        self.labels = {}
+
 
 class KeyLabel:
     def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 16, font_name: str = None, color: list[int] = [255, 255, 255, 255], font_weight: int = 1):
@@ -1327,10 +1350,10 @@ class KeyImage(SingleKeyAsset):
         return self.image
     
     def close(self) -> None:
-        return
         self.image.close()
         self.image = None
         del self.image
+        return
 
 class KeyVideo(SingleKeyAsset):
     def __init__(self, controller_key: ControllerKey, video_path: str, fill_mode: str = "cover", size: float = 1,

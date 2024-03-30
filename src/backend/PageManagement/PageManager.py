@@ -129,11 +129,36 @@ class PageManager:
 
     def get_default_page_for_deck(self, serial_number: str) -> str:
         page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        return page_settings.get("default-pages", {}).get(serial_number, None)
         for page in page_settings.get("default-pages", []):
             if page["deck"] == serial_number:
                 path = page["path"]
                 return path
         return None
+    
+    def set_default_page_for_deck(self, serial_number: str, path: str):
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        page_settings.setdefault("default-pages", {})
+        page_settings["default-pages"][serial_number] = path
+        self.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), page_settings)
+
+    def get_all_deck_serial_numbers_with_set_default_page(self) -> list[str]:
+        matches: list[str] = []
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        for serial_number in page_settings.get("default-pages", {}):
+            if page_settings["default-pages"][serial_number] not in ["", None]:
+                matches.append(serial_number)
+
+        return matches
+    
+    def get_all_deck_serial_numbers_with_page_as_default(self, path: str) -> list[str]:
+        matches: list[str] = []
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        for serial_number in page_settings.get("default-pages", {}):
+            if page_settings["default-pages"][serial_number] == path:
+                matches.append(serial_number)
+
+        return matches
     
     def move_page(self, old_path: str, new_path: str):
         # Copy page json file

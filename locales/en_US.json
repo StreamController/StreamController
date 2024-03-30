@@ -160,5 +160,10 @@
     "permissions-window.info-beginning": "For more information on Flatpak permissions, visit the ",
     "permissions-window.flatpak-docs": "Flatpak documentation",
     "settings-allow-white-mode": "Allow white mode",
-    "settings-allow-white-mode-subtitle": "Allow white mode for the ui - Experimental"
+    "settings-allow-white-mode-subtitle": "Allow white mode for the ui - Experimental",
+    "page-manager.page-editor.default-page.title": "Default Page",
+    "page-manager.page-editor.default-page.row.title": "Default page",
+    "page-manager.page-editor.default-page.row.subtitle": "Select for which decks this page should be opened by default",
+    "multi-deck-selector.title": "Select Decks",
+    "multi-deck-selector.selected": "selected"
 }

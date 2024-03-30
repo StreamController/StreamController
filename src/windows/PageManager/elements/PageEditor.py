@@ -14,6 +14,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gi
 import gi
+
+from src.windows.MultiDeckSelector.MultiDeckSelectorRow import MultiDeckSelectorRow
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
@@ -76,6 +78,9 @@ class PageEditor(Adw.NavigationPage):
         self.auto_change_group = AutoChangeGroup(page_editor=self)
         self.editor_main_box.append(self.auto_change_group)
 
+        self.default_page_group = DefaultPageGroup(page_editor=self)
+        self.editor_main_box.append(self.default_page_group)
+
         # Delete button
         self.delete_button = DeleteButton(page_editor=self, margin_top=40)
         self.editor_main_box.append(self.delete_button)
@@ -93,6 +98,7 @@ class PageEditor(Adw.NavigationPage):
         self.active_page_path = page_path
         self.name_group.load_for_page(page_path=page_path)
         self.auto_change_group.load_for_page(page_path=page_path)
+        self.default_page_group.load_for_page(page_path=page_path)
 
     def delete_active_page(self) -> None:
         if self.active_page_path is None:
@@ -266,3 +272,29 @@ class MatchingWindowsExpander(BetterExpander):
 
         matching_windows = gl.window_grabber.get_all_matching_windows(class_regex=class_regex, title_regex=title_regex)
         self.load_windows(windows=matching_windows)
+
+class DefaultPageGroup(Adw.PreferencesGroup):
+    def __init__(self, page_editor: PageEditor):
+        super().__init__(title=gl.lm.get("page-manager.page-editor.default-page.title"))
+        self.page_editor = page_editor
+        self.build()
+
+    def build(self):
+        matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
+        self.row = MultiDeckSelectorRow(source_window=self.page_editor.page_manager, title="Default page", subtitle="Select for which decks this page should be opened by default",
+                                        callback=self.on_changed, selected_deck_serials=matches)
+        self.add(self.row)
+
+    def on_changed(self, serial_number: str, state: bool):
+        path = self.page_editor.active_page_path
+        if not state:
+            path = None
+        
+        gl.page_manager.set_default_page_for_deck(serial_number=serial_number, path=path)
+
+    def load_for_page(self, page_path: str) -> None:
+        self.update()
+
+    def update(self) -> None:
+        matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
+        self.row.set_label(len(matches))

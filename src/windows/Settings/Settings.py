@@ -39,8 +39,8 @@ class Settings(Adw.PreferencesWindow):
 
         self.ui_page = UIPage(settings=self)
         self.store_page = StorePage(settings=self)
-        self.dev_page = DevPage(settings=self)
         self.performance_page = PerformancePage(settings=self)
+        self.dev_page = DevPage(settings=self)
 
         self.add(self.ui_page)
         self.add(self.store_page)

@@ -61,7 +61,7 @@ class UIPage(Adw.PreferencesPage):
         super().__init__()
         self.settings = settings
         self.set_title(gl.lm.get("settings-ui-settings-title"))
-        self.set_icon_name("system-run-symbolic")
+        self.set_icon_name("window-new")
 
         self.add(UIPageGroup(settings=settings))
 
@@ -127,7 +127,7 @@ class DevPage(Adw.PreferencesPage):
         self.settings = settings
         super().__init__()
         self.set_title(gl.lm.get("settings-dev-settings-title"))
-        self.set_icon_name("code-block")
+        self.set_icon_name("document-edit")
 
         self.add(DevPageGroup(settings=settings))
 
@@ -166,7 +166,7 @@ class StorePage(Adw.PreferencesPage):
         self.settings = settings
         super().__init__()
         self.set_title(gl.lm.get("settings-store-settings-title"))
-        self.set_icon_name("download-symbolic")
+        self.set_icon_name("go-home")
 
         self.add(StorePageGroup(settings=settings))
 
@@ -198,7 +198,7 @@ class PerformancePage(Adw.PreferencesPage):
         self.settings = settings
         super().__init__()
         self.set_title(gl.lm.get("settings.performance.title"))
-        self.set_icon_name("speedometer")
+        self.set_icon_name("power-profile-performance-symbolic")
 
         self.add(PerformancePageGroup(settings=settings))
 

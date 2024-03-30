@@ -56,6 +56,11 @@ class Store(Gtk.ApplicationWindow):
 
         self.build()
 
+        self.connect("close-request", self.on_close)
+
+    def on_close(self, *args, **kwargs):
+        gl.store = None
+
     def build(self):
         # Header bar
         self.header = Gtk.HeaderBar(css_classes=["flat"])

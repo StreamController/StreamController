@@ -58,8 +58,14 @@ class NoPagesError(Gtk.Box):
         self.append(self.create_new_button)
 
     def on_create_new(self, button):
-        dial = EntryDialog(parent_window=gl.app.main_win, dialog_title=gl.lm.get("errors.no-page.create-dialog.title"), entry_heading=gl.lm.get("errors.no-page.create-dialog.entry.label"), default_text="",
-                           forbid_answers=gl.page_manager.get_page_names(), )
+        dial = EntryDialog(parent_window=self.page_manager,
+                           dialog_title=gl.lm.get("page-manager.page-selector.add-dialog.title"),
+                           placeholder=gl.lm.get("page-manager.page-selector.add-dialog.placeholder"),
+                           confirm_label=gl.lm.get("page-manager.page-selector.add-dialog.confirm"),
+                           cancel_label=gl.lm.get("page-manager.page-selector.add-dialog.cancel"),
+                           empty_warning=gl.lm.get("page-manager.page-selector.add-dialog.empty-warning"),
+                           already_exists_warning=gl.lm.get("page-manager.page-selector.add-dialog.already-exists-warning"),
+                           forbid_answers=gl.page_manager.get_page_names())
         dial.show(self.add_page_callback)
 
     def add_page_callback(self, name:str):

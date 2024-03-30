@@ -143,7 +143,12 @@ class AddNewButton(Gtk.Button):
         dial = EntryDialog(parent_window=self.page_manager,
                            dialog_title=gl.lm.get("page-manager.page-selector.add-dialog.title"),
                            placeholder=gl.lm.get("page-manager.page-selector.add-dialog.placeholder"),
-                           confirm_label=gl.lm.get("page-manager.page-selector.add-dialog.confirm"))
+                           confirm_label=gl.lm.get("page-manager.page-selector.add-dialog.confirm"),
+                           cancel_label=gl.lm.get("page-manager.page-selector.add-dialog.cancel"),
+                           empty_warning=gl.lm.get("page-manager.page-selector.add-dialog.empty-warning"),
+                           already_exists_warning=gl.lm.get("page-manager.page-selector.add-dialog.already-exists-warning"),
+                           forbid_answers=gl.page_manager.get_page_names())
+        
         dial.show(callback_func=self.page_manager.add_page_from_name)
 
 

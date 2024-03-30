@@ -76,15 +76,20 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.enable_fps_warnings_row = Adw.SwitchRow(title=gl.lm.get("settings.enable-fps-warnings"), active=True)
         self.add(self.enable_fps_warnings_row)
 
+        self.allow_white_mode = Adw.SwitchRow(title=gl.lm.get("settings-allow-white-mode"), subtitle=gl.lm.get("settings-allow-white-mode-subtitle"), active=False)
+        self.add(self.allow_white_mode)
+
         self.load_defaults()
 
         # Connect signals
         self.emulate_row.connect("notify::active", self.on_emulate_row_toggled)
         self.enable_fps_warnings_row.connect("notify::active", self.on_enable_fps_warnings_row_toggled)
+        self.allow_white_mode.connect("notify::active", self.on_allow_white_mode_toggled)
 
     def load_defaults(self):
         self.emulate_row.set_active(self.settings.settings_json.get("key-grid", {}).get("emulate-at-double-click", True))
         self.enable_fps_warnings_row.set_active(self.settings.settings_json.get("warnings", {}).get("enable-fps-warnings", True))
+        self.allow_white_mode.set_active(self.settings.settings_json.get("ui", {}).get("allow-white-mode", False))
 
     def on_emulate_row_toggled(self, *args):
         self.settings.settings_json.setdefault("key-grid", {})
@@ -103,6 +108,18 @@ class UIPageGroup(Adw.PreferencesGroup):
         # Inform all deck controllers
         for controller in gl.deck_manager.deck_controller:
             controller.media_player.set_show_fps_warnings(self.enable_fps_warnings_row.get_active())
+
+    def on_allow_white_mode_toggled(self, *args):
+        self.settings.settings_json.setdefault("ui", {})
+        self.settings.settings_json["ui"]["allow-white-mode"] = self.allow_white_mode.get_active()
+
+        if self.allow_white_mode.get_active():
+            gl.app.style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
+        else:
+            gl.app.style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+
+        # Save
+        self.settings.save_json()
 
 
 class DevPage(Adw.PreferencesPage):

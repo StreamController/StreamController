@@ -158,5 +158,7 @@
     "permissions-window.description": "Certain default permissions are restricted by Flathub for security reasons. To enhance your experience with plugins, consider adjusting the dbus permissions by running the following command in your terminal:",
     "permissions-window.copy-tooltip": "Copy",
     "permissions-window.info-beginning": "For more information on Flatpak permissions, visit the ",
-    "permissions-window.flatpak-docs": "Flatpak documentation"
+    "permissions-window.flatpak-docs": "Flatpak documentation",
+    "settings-allow-white-mode": "Allow white mode",
+    "settings-allow-white-mode-subtitle": "Allow white mode for the ui - Experimental"
 }

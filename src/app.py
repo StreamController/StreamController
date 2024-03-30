@@ -50,8 +50,13 @@ class App(Adw.Application):
         css_provider.load_from_path(os.path.join(gl.top_level_dir, "style.css"))
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-        style_manager = self.get_style_manager()
-        style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK) # Not everything looks good in light mode at the moment #TODO
+        allow_white_mode = gl.settings_manager.get_app_settings().get("ui", {}).get("allow-white-mode", False)
+
+        self.style_manager = self.get_style_manager()
+        if allow_white_mode:
+            self.style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
+        else:
+            self.style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK) # Not everything looks good in light mode at the moment #TODO
 
     def on_activate(self, app):
         log.trace("running: on_activate")

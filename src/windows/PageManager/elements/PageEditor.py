@@ -281,7 +281,8 @@ class DefaultPageGroup(Adw.PreferencesGroup):
 
     def build(self):
         matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
-        self.row = MultiDeckSelectorRow(source_window=self.page_editor.page_manager, title="Default page", subtitle="Select for which decks this page should be opened by default",
+        self.row = MultiDeckSelectorRow(source_window=self.page_editor.page_manager, title=gl.lm.get("page-manager.page-editor.default-page.row.title"),
+                                        subtitle=gl.lm.get("page-manager.page-editor.default-page.row.subtitle"),
                                         callback=self.on_changed, selected_deck_serials=matches)
         self.add(self.row)
 

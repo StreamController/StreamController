@@ -13,7 +13,7 @@ background image by [kvacm](https://kvacm.artstation.com)
 
 ## Warning
 StreamController is still in beta.  
-All normal features like actions and pages are completely tested and can be considered stable. Background videos may cause problems (mainly hight memory usage) in some edge cases. Feel free to report any isssues you're encoutering.
+All normal features like actions and pages are completely tested and can be considered stable. Background videos may cause problems (mainly height memory usage) in some edge cases. Feel free to report any isssues you're encoutering.
 
 ## Contributing
 Feel free to open Pull requests

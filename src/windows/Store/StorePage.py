@@ -161,17 +161,17 @@ class StorePage(Gtk.Stack):
         return 0
     
     def set_loading(self):
-        self.flow_box.set_visible(False)
-        self.bottom_box.set_visible(False)
-        self.loading_box.set_visible(True)
+        GLib.idle_add(self.flow_box.set_visible, False)
+        GLib.idle_add(self.bottom_box.set_visible, False)
+        GLib.idle_add(self.loading_box.set_visible, True)
         # threading.Thread(target=self.spinner.set_spinning, args=(True,), name="spinner_thread").start()
         GLib.idle_add(self.spinner.set_spinning, True)
 
     def set_loaded(self):
-        self.flow_box.set_visible(True)
-        self.bottom_box.set_visible(True)
-        self.loading_box.set_visible(False)
-        self.spinner.set_spinning(False)
+        GLib.idle_add(self.flow_box.set_visible, True)
+        GLib.idle_add(self.bottom_box.set_visible, True)
+        GLib.idle_add(self.loading_box.set_visible, False)
+        GLib.idle_add(self.spinner.set_spinning, False)
 
     def set_info_visible(self, visible:bool):
         if visible:

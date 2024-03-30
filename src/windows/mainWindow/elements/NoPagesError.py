@@ -52,7 +52,7 @@ class NoPagesError(Gtk.Box):
         self.no_pages_label = Gtk.Label(label=gl.lm.get("errors.no-page.header"), css_classes=["error-label"])
         self.append(self.no_pages_label)
 
-        self.create_new_button = Gtk.Button(label=gl.lm.get("errors.no-page.create-now"), margin_top=60, css_classes=["text-button", "suggested-action", "pill"],
+        self.create_new_button = Gtk.Button(label=gl.lm.get("errors.no-page.create-new"), margin_top=60, css_classes=["text-button", "suggested-action", "pill"],
                                             hexpand=False, margin_start=60, margin_end=60, halign=Gtk.Align.CENTER)
         self.create_new_button.connect("clicked", self.on_create_new)
         self.append(self.create_new_button)

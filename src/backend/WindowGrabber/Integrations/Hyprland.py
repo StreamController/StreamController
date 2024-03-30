@@ -51,7 +51,7 @@ class Hyprland(Integration):
         windows: list[Window] = []
         try:
             # Run the hyprctl command and capture the output
-            output = subprocess.check_output(f"{self.command_prefix}hyprctl clients -j", shell=True, text=True).strip()
+            output = subprocess.check_output(f"{self.command_prefix}hyprctl clients -j", shell=True, text=True, cwd="/").strip()
             # Parse the JSON output into a Python list
             clients = json.loads(output)
 
@@ -69,7 +69,7 @@ class Hyprland(Integration):
     def get_active_window (self) -> Window:
         try:
             # Run the hyprctl command and capture the output
-            output = subprocess.check_output(f"{self.command_prefix}hyprctl activewindow -j", shell=True, text=True).strip()
+            output = subprocess.check_output(f"{self.command_prefix}hyprctl activewindow -j", shell=True, text=True, cwd="/").strip()
             # Parse the JSON output into a Python list
             client = json.loads(output)
 

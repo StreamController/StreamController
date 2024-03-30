@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from src.Signals.SignalManager import SignalManager
     from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
     from src.backend.GnomeExtensions import GnomeExtensions
+    from src.windows.Store.Store import Store
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -43,6 +44,7 @@ store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
 signal_manager: "SignalManager" = None
 window_grabber: "WindowGrabber" = None
+store: "Store" = None # Only if opened
 
 
 app_version: str = "1.2.1-beta" # In breaking.feature.fix-state format

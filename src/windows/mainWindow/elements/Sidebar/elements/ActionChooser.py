@@ -114,8 +114,12 @@ class OpenStoreButton(Gtk.Button):
         self.connect("clicked", self.on_click)
 
     def on_click(self, button):
-        self.store = Store(application=gl.app, main_window=gl.app.main_win)
-        self.store.present()
+        if gl.store is not None:
+            gl.store.present()
+            return
+
+        gl.store = Store(application=gl.app, main_window=gl.app.main_win)
+        gl.store.present()
 
 class PluginGroup(BetterPreferencesGroup):
     def __init__(self, action_chooser, **kwargs):

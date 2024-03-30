@@ -47,14 +47,13 @@ window_grabber: "WindowGrabber" = None
 store: "Store" = None # Only if opened
 
 
-app_version: str = "1.3.0-beta" # In breaking.feature.fix-state format
+app_version: str = "1.3.1-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []
 
 release_notes: str = "<ul> \
     <li>Now available as a Flatpak</li>\
-    <li>New page manager</li> \
     <li>Bugfixes</li> \
     <li>First Release</li> \
     </ul>"

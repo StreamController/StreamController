@@ -52,7 +52,7 @@ class PageSelector(Gtk.Box):
         self.drop_down.set_css_classes(["header-page-dropdown"])
         self.drop_down.set_hexpand(False)
 
-        self.renderer_text = Gtk.CellRendererText(ellipsize=Pango.EllipsizeMode.END)
+        self.renderer_text = Gtk.CellRendererText(ellipsize=Pango.EllipsizeMode.END, ellipsize_set=True)
         self.drop_down.pack_start(self.renderer_text, True)
         # Use first column for text
         self.drop_down.add_attribute(self.renderer_text, "text", 0)
@@ -64,11 +64,12 @@ class PageSelector(Gtk.Box):
         self.sidebar.append(self.drop_down)
 
         # Settings button
-        self.settings_button = Gtk.Button(icon_name="settings", tooltip_text=gl.lm.get("header-page-selector-page-manager-hint"))
-        self.settings_button.connect("clicked", self.on_click_open_page_manager)
-        self.sidebar.append(self.settings_button)
+        self.open_manager_button = Gtk.Button(icon_name="settings", tooltip_text=gl.lm.get("header-page-selector-page-manager-hint"))
+        self.open_manager_button.connect("clicked", self.on_click_open_page_manager)
+        self.sidebar.append(self.open_manager_button)
 
         gl.signal_manager.connect_signal(signal=Signals.ChangePage, callback=self.update)
+        gl.signal_manager.connect_signal(signal=Signals.PageRename, callback=self.update)
         gl.signal_manager.connect_signal(signal=Signals.PageAdd, callback=self.update)
         gl.signal_manager.connect_signal(signal=Signals.PageDelete, callback=self.update)
     
@@ -128,7 +129,7 @@ class PageSelector(Gtk.Box):
         active_controller.load_page(page)
 
     def on_click_open_page_manager(self, button):
-        page_manager = PageManager(gl.app)
+        page_manager = PageManager(main_win=gl.app.main_win)
         page_manager.present()
 
     def disconnect_change_signal(self):

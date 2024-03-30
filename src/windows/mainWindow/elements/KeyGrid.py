@@ -271,8 +271,12 @@ class KeyButton(Gtk.Frame):
             if self.key_grid.deck_page.deck_stack_child.stack.get_visible_child() != self.key_grid.deck_page:
                 self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
 
+        self.pixbuf = None
+        del self.pixbuf
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         self.show_pixbuf(self.pixbuf)
+        image = None
+        del image
 
         # update righthand side key preview if possible
         if recursive_hasattr(gl, "app.main_win.sidebar"):
@@ -362,14 +366,20 @@ class KeyButton(Gtk.Frame):
             return
         y, x = self.coords
         key_dict = active_page.dict["keys"][f"{x}x{y}"]
-
         gl.app.main_win.key_dict = key_dict
+        content = Gdk.ContentProvider.new_for_value(key_dict)
+        gl.app.main_win.key_clipboard.set_content(content)
 
     def on_cut(self, *args):
         self.on_copy()
         self.on_remove()
 
     def on_paste(self, *args):
+        # Check if clipboard is from this StreamController
+        if not gl.app.main_win.key_clipboard.is_local():
+            #TODO: Use read_value_async to read it instead - This is more like a temporary hack
+            return
+        
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
@@ -380,6 +390,11 @@ class KeyButton(Gtk.Frame):
 
         # Reload ui
         gl.app.main_win.sidebar.load_for_coords((x, y))
+
+    def on_paste_finished(self, result, data, user_data):
+        print(f"result: {result}, data: {data} user_data: {user_data}")
+        value = gl.app.main_win.key_clipboard.read_value_finish(result=data)
+        print()
 
     def on_remove(self, *args):
         active_page = self.key_grid.deck_controller.active_page

@@ -45,7 +45,8 @@ from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPa
 from src.windows.Store.StoreBackend import StoreBackend, NoConnectionError
 from autostart import setup_autostart
 from src.Signals.SignalManager import SignalManager
-from src.backend.DesktopGrabber import DesktopGrabber
+from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
+from src.backend.GnomeExtensions import GnomeExtensions
 
 # Import globals
 import globals as gl
@@ -94,6 +95,8 @@ def create_global_objects():
     gl.argparser.add_argument("-b", help="Open in background", action="store_true")
     gl.argparser.add_argument("app_args", nargs="*")
 
+    gl.gnome_extensions = GnomeExtensions()
+
     gl.settings_manager = SettingsManager()
 
     gl.signal_manager = SignalManager()
@@ -111,6 +114,8 @@ def create_global_objects():
     gl.plugin_manager = PluginManager()
     gl.plugin_manager.load_plugins()
     gl.plugin_manager.generate_action_index()
+
+    gl.window_grabber = WindowGrabber()
 
     
     # gl.dekstop_grabber = DesktopGrabber()

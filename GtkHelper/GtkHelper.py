@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Gdk
 
 # Import Python modules
 from loguru import logger as log
@@ -199,13 +199,15 @@ def get_deepest_focused_widget_with_attr(start: Gtk.Widget, attr:str) -> Gtk.Wid
         
 class EntryDialog(Gtk.ApplicationWindow):
     def __init__(self, parent_window, dialog_title:str, entry_heading:str = "Name:", default_text:str = None, confirm_label:str = "OK", forbid_answers:list[str] = [],
-                 empty_warning:str = "The name cannot be empty", cancel_label:str = "Cancel", already_exists_warning:str = "This name already exists"):
+                 empty_warning:str = "The name cannot be empty", cancel_label:str = "Cancel", already_exists_warning:str = "This name already exists",
+                 placeholder:str = None):
         self.default_text = default_text
         self.confirm_label = confirm_label
         self.entry_heading = entry_heading
         self.forbid_answers = forbid_answers
         self.empty_warning = empty_warning
         self.cancel_label = cancel_label
+        self.placeholder_text = placeholder
         self.already_exists_warning = already_exists_warning
         super().__init__(transient_for=parent_window, modal=True, default_height=150, default_width=350, title = dialog_title)
         self.callback_func = None
@@ -213,7 +215,7 @@ class EntryDialog(Gtk.ApplicationWindow):
 
     def build(self):
         # Create title bar
-        self.title_bar = Gtk.HeaderBar(show_title_buttons=False)
+        self.title_bar = Gtk.HeaderBar(show_title_buttons=False, css_classes=["flat"])
         # Cancel button
         self.cancel_button = Gtk.Button(label=self.cancel_label)
         self.cancel_button.connect('clicked', self.on_cancel)
@@ -225,7 +227,7 @@ class EntryDialog(Gtk.ApplicationWindow):
         # Label
         self.label = Gtk.Label(label=self.entry_heading)
         # Input box
-        self.input_box = Gtk.Entry(hexpand=True, margin_top=10, text=self.default_text)
+        self.input_box = Gtk.Entry(hexpand=True, margin_top=10, text=self.default_text, placeholder_text=self.placeholder_text)
         self.input_box.connect('changed', self.on_name_change)
         # Warning label
         self.warning_label = Gtk.Label(label=self.empty_warning, css_classes=['warning-label'], margin_top=10)
@@ -241,6 +243,9 @@ class EntryDialog(Gtk.ApplicationWindow):
 
         # Set status
         self.on_name_change(self.input_box)
+
+        # Trigger on_confirm on return press
+        self.input_box.connect("activate", self.on_confirm)
 
     def on_cancel(self, button):
         self.destroy()

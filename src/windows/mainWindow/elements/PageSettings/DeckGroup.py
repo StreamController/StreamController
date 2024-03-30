@@ -99,6 +99,9 @@ class Brightness(Adw.PreferencesRow):
         self.scale.set_value(brightness)
 
     def on_value_changed(self, scale):
+        GLib.idle_add(self.on_value_changed_idle, scale)
+
+    def on_value_changed_idle(self, scale):
         value = round(scale.get_value())
         # update value in page
         self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("brightness", {})
@@ -327,9 +330,9 @@ class Screensaver(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.screen_saver.set_fps(spinner.get_value_as_int())
 
     def on_change_time(self, spinner):
-        self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["time-delay"] = spinner.get_value_as_int()
+        self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["time-delay"] = round(spinner.get_value_as_int())
         self.settings_page.deck_page.deck_controller.active_page.save()
-        self.settings_page.deck_page.deck_controller.screen_saver.set_time(spinner.get_value_as_int())
+        self.settings_page.deck_page.deck_controller.screen_saver.set_time(round(spinner.get_value_as_int()))
 
     def on_change_brightness(self, scale):
         self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["brightness"] = scale.get_value()

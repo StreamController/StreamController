@@ -52,14 +52,20 @@ class NoPagesError(Gtk.Box):
         self.no_pages_label = Gtk.Label(label=gl.lm.get("errors.no-page.header"), css_classes=["error-label"])
         self.append(self.no_pages_label)
 
-        self.create_new_button = Gtk.Button(label=gl.lm.get("errors.no-page.create-now"), margin_top=60, css_classes=["text-button", "suggested-action", "pill"],
+        self.create_new_button = Gtk.Button(label=gl.lm.get("errors.no-page.create-new"), margin_top=60, css_classes=["text-button", "suggested-action", "pill"],
                                             hexpand=False, margin_start=60, margin_end=60, halign=Gtk.Align.CENTER)
         self.create_new_button.connect("clicked", self.on_create_new)
         self.append(self.create_new_button)
 
     def on_create_new(self, button):
-        dial = EntryDialog(parent_window=gl.app.main_win, dialog_title=gl.lm.get("errors.no-page.create-dialog.title"), entry_heading=gl.lm.get("errors.no-page.create-dialog.entry.label"), default_text="",
-                           forbid_answers=gl.page_manager.get_page_names(), )
+        dial = EntryDialog(parent_window=self.page_manager,
+                           dialog_title=gl.lm.get("page-manager.page-selector.add-dialog.title"),
+                           placeholder=gl.lm.get("page-manager.page-selector.add-dialog.placeholder"),
+                           confirm_label=gl.lm.get("page-manager.page-selector.add-dialog.confirm"),
+                           cancel_label=gl.lm.get("page-manager.page-selector.add-dialog.cancel"),
+                           empty_warning=gl.lm.get("page-manager.page-selector.add-dialog.empty-warning"),
+                           already_exists_warning=gl.lm.get("page-manager.page-selector.add-dialog.already-exists-warning"),
+                           forbid_answers=gl.page_manager.get_page_names())
         dial.show(self.add_page_callback)
 
     def add_page_callback(self, name:str):

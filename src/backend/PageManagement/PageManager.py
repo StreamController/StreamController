@@ -18,6 +18,7 @@ import os
 import shutil
 import json
 from copy import copy
+import time
 from loguru import logger as log
 
 # Import own modules
@@ -34,6 +35,7 @@ class PageManager:
         self.created_pages = {}
         self.created_pages_order = []
 
+
         self.max_pages = 3
 
         settings = gl.settings_manager.get_app_settings()
@@ -42,6 +44,9 @@ class PageManager:
         self.page_number: int = 0
 
         self.custom_pages = []
+
+        self.auto_change_info = {}
+        self.update_auto_change_info()
 
     def set_n_pages_to_cache(self, n_pages):
         old_max_pages = self.max_pages
@@ -54,7 +59,7 @@ class PageManager:
         for page in self.pages.values():
             page.save()
 
-    def get_pages(self) -> list:
+    def get_pages(self, add_custom_pages: bool = True) -> list:
         pages = []
         # Create pages dir if it doesn't exist
         os.makedirs(os.path.join(gl.DATA_PATH, "pages"), exist_ok=True)
@@ -63,7 +68,8 @@ class PageManager:
             if os.path.splitext(page)[1] == ".json":
                 pages.append(os.path.join(gl.DATA_PATH, "pages", page))
 
-        pages.extend(self.custom_pages)
+        if add_custom_pages:
+            pages.extend(self.custom_pages)
 
         return pages
     
@@ -123,11 +129,36 @@ class PageManager:
 
     def get_default_page_for_deck(self, serial_number: str) -> str:
         page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        return page_settings.get("default-pages", {}).get(serial_number, None)
         for page in page_settings.get("default-pages", []):
             if page["deck"] == serial_number:
                 path = page["path"]
                 return path
         return None
+    
+    def set_default_page_for_deck(self, serial_number: str, path: str):
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        page_settings.setdefault("default-pages", {})
+        page_settings["default-pages"][serial_number] = path
+        self.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), page_settings)
+
+    def get_all_deck_serial_numbers_with_set_default_page(self) -> list[str]:
+        matches: list[str] = []
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        for serial_number in page_settings.get("default-pages", {}):
+            if page_settings["default-pages"][serial_number] not in ["", None]:
+                matches.append(serial_number)
+
+        return matches
+    
+    def get_all_deck_serial_numbers_with_page_as_default(self, path: str) -> list[str]:
+        matches: list[str] = []
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        for serial_number in page_settings.get("default-pages", {}):
+            if page_settings["default-pages"][serial_number] == path:
+                matches.append(serial_number)
+
+        return matches
     
     def move_page(self, old_path: str, new_path: str):
         # Copy page json file
@@ -155,7 +186,9 @@ class PageManager:
         os.remove(old_path)
 
         # Update ui
-        self.update_ui()
+        # self.update_ui()
+
+        self.update_auto_change_info()
 
 
     def remove_page(self, page_path: str):
@@ -192,7 +225,9 @@ class PageManager:
         gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)
 
         # Update ui
-        self.update_ui()
+        # self.update_ui()
+
+        self.update_auto_change_info()
 
     def remove_page_path_from_created_pages(self, path: str):
         for controller in self.created_pages:
@@ -213,7 +248,9 @@ class PageManager:
             json.dump(page, f)
 
         # Update ui
-        self.update_ui()
+        # self.update_ui()
+
+        self.update_auto_change_info()
 
     def register_page(self, path: str):
         if not os.path.exists(path):
@@ -223,8 +260,86 @@ class PageManager:
         self.custom_pages.append(path)
 
         # Update ui
-        self.update_ui()
+        # self.update_ui()
 
-    def update_ui(self):
-        if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
-            gl.app.main_win.header_bar.page_selector.update()
+        self.update_auto_change_info()
+
+    def get_pages_with_path(self, page_path: str) -> list[Page]:
+        pages: list[Page] = []
+
+        ## Add from controllers
+        for controller in gl.deck_manager.deck_controller:
+            if controller.active_page is None:
+                continue
+            if controller.active_page.json_path == page_path:
+                pages.append(controller.active_page)
+
+        ## Add from cache
+        for controller in self.created_pages:
+            if page_path in self.created_pages[controller]:
+                page = self.created_pages[controller][page_path]["page"]
+                if page not in pages:
+                    pages.append(page)
+
+        return pages
+
+    def update_dict_of_pages_with_path(self, page_path: str) -> None:
+        pages = self.get_pages_with_path(page_path)
+        for page in pages:
+            page.update_dict()
+
+    def update_auto_change_info(self):
+        start = time.time()
+        self.auto_change_info = {}
+        pages = self.get_pages()
+        for page in pages:
+            abs_path = os.path.abspath(page)
+            page_dict = self.get_page_json(abs_path)
+            if page_dict is None:
+                continue
+            self.auto_change_info[abs_path] = page_dict.get("auto-change", {})
+
+        log.info(f"Updated auto-change info in {time.time() - start} seconds")
+
+    def set_auto_change_info_for_page(self, page_path: str, info: dict) -> None:
+        abs_path = os.path.abspath(page_path)
+        self.auto_change_info[abs_path] = info
+        page = self.get_page_json(abs_path)
+
+        page["auto-change"] = info
+
+        with open(abs_path, "w") as f:
+            json.dump(page, f, indent=4)
+
+        self.update_dict_of_pages_with_path(abs_path)
+
+    def get_auto_change_info_for_page(self, page_path: str) -> dict:
+        abs_path = os.path.abspath(page_path)
+        return self.auto_change_info.get(abs_path, {})
+    
+    def get_page_json(self, page_path: str) -> dict:
+        """
+        Loads and returns the json of the page.
+        If the page is corrupt it will fallback to the backed up page.
+        """
+        if not os.path.exists(page_path):
+            return
+        
+        try:
+            with open(page_path, "r") as f:
+                return json.load(f)
+        except json.decoder.JSONDecodeError:
+            pass
+        
+
+        backup_path = os.path.join(gl.DATA_PATH, "pages", "backups", os.path.basename(page_path))
+        if not os.path.exists(backup_path):
+            log.error(f"Invalid json in {page_path}, no backup exists, returning None")
+            return
+        
+        log.error(f"Invalid json in {page_path}, falling back to backup")
+        try:
+            with open(backup_path, "r") as f:
+                return json.load(f)
+        except json.decoder.JSONDecodeError:
+            return

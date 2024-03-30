@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GLib, Gio
+from gi.repository import Gtk, Adw, GLib, Gio, Gdk
 GLib.threads_init()
 
 # Import Python modules
@@ -54,6 +54,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.set_size_request(1000, 900)
         self.connect("close-request", self.on_close)
+
+        self.key_clipboard: Gdk.Clipboard = Gdk.Display.get_default().get_clipboard()
 
     def on_close(self, *args, **kwargs):
         self.hide()

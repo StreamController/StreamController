@@ -47,6 +47,7 @@ class ScreenSaver:
         self.loop: bool = True
 
     def set_time(self, time_delay: int) -> None:
+        time_delay = max(1, time_delay) # Min 1 minute - too small values leading to instant load if the screensaver lead to errors
         if time_delay != self.time_delay:
             log.info(f"Setting screen saver time delay to {time_delay} minutes")
         self.time_delay = time_delay
@@ -114,14 +115,9 @@ class ScreenSaver:
 
     def hide(self):
         log.info("Hiding screen saver")
-
-        # Restore original keys and background
-        self.deck_controller.keys = self.original_keys
-        self.deck_controller.background = self.original_background
-        self.deck_controller.set_brightness(self.original_brightness)
-        self.deck_controller.update_all_keys()
+        self.deck_controller.load_page(self.deck_controller.active_page, allow_reload=True)
+        self.set_time(self.time_delay)
         self.showing = False
-
         self.set_time(self.time_delay)
 
     def on_key_change(self):

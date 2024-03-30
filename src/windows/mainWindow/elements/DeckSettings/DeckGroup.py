@@ -65,6 +65,9 @@ class Brightness(Adw.PreferencesRow):
         self.main_box.append(self.scale)
 
     def on_value_changed(self, scale):
+        GLib.idle_add(self.on_value_changed_idle, scale)
+
+    def on_value_changed_idle(self, scale):
         value = round(scale.get_value())
         # update value in deck settings
         deck_settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
@@ -256,13 +259,13 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_change_time(self, spinner):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
-        config["screensaver"]["time-delay"] = spinner.get_value_as_int()
+        config["screensaver"]["time-delay"] = round(spinner.get_value_as_int())
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
         # Update time if not overwritten by the active page
         active_page = self.settings_page.deck_controller.active_page
         if not active_page.dict["screensaver"]["overwrite"]:
-            self.settings_page.deck_controller.screen_saver.set_time(spinner.get_value_as_int())
+            self.settings_page.deck_controller.screen_saver.set_time(round(spinner.get_value_as_int()))
 
     def on_change_brightness(self, scale):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)

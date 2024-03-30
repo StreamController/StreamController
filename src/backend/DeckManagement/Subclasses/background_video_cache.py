@@ -52,10 +52,13 @@ class BackgroundVideoCache:
         else:
             log.info("Cache is not complete. Continuing with video capture.")
 
+        self.last_tiles: list[Image.Image] = []
+
         self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
 
     def get_tiles(self, n):
         n = min(n, self.n_frames - 1)
+        tiles = None
         with self.lock:
             if self.is_cache_complete():
                 self.release()
@@ -94,12 +97,18 @@ class BackgroundVideoCache:
 
                 if self.do_caching:
                     self.cache[self.last_frame_index] = tiles
+                self.last_tiles = tiles
+                
 
                 full_sized.close()
                 pil_image.close()
 
 
         # Return the last decoded frame if the nth frame is not available
+        if len(self.last_tiles) > 0:
+            tiles = self.last_tiles
+        if tiles is None:
+            tiles = [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
         return self.cache.get(n, tiles)
     
     def create_full_deck_sized_image(self, frame: Image.Image) -> Image.Image:

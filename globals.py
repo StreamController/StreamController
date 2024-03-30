@@ -20,7 +20,9 @@ if TYPE_CHECKING:
     from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
     from src.windows.Store.StoreBackend import StoreBackend
     from src.Signals.SignalManager import SignalManager
-    from src.backend.DesktopGrabber import DesktopGrabber
+    from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
+    from src.backend.GnomeExtensions import GnomeExtensions
+    from src.windows.Store.Store import Store
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -29,6 +31,7 @@ media_manager:"MediaManager" = None #MediaManager
 asset_manager_backend:"AssetManagerBackend" = None #AssetManager
 asset_manager: "AssetManager" = None
 page_manager:"PageManager" = None #PageManager
+gnome_extensions:"GnomeExtensions" = None
 settings_manager:"SettingsManager" = None #SettingsManager
 app:"App" = None #App
 deck_manager:"DeckManager" = None #DeckManager
@@ -40,16 +43,18 @@ wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
 signal_manager: "SignalManager" = None
-dekstop_grabber: "DesktopGrabber" = None
+window_grabber: "WindowGrabber" = None
+store: "Store" = None # Only if opened
 
 
-app_version: str = "1.2.1-beta" # In breaking.feature.fix-state format
+app_version: str = "1.3.0-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []
 
 release_notes: str = "<ul> \
     <li>Now available as a Flatpak</li>\
+    <li>New page manager</li> \
     <li>Bugfixes</li> \
     <li>First Release</li> \
     </ul>"

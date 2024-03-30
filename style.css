@@ -348,3 +348,13 @@
   padding-left: 10px;
   padding-right: 10px;
 }
+.tall-button {
+  min-height: 50px;
+}
+
+.multi-deck-selector-label {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 10px 10px;
+}

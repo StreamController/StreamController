@@ -1,6 +1,6 @@
 """
 Author: Core447
-Year: 2023
+Year: 2024
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -12,260 +12,110 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+import os
 # Import gtk modules
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
 
-# Import globals
-import globals as gl
+# Import own modules
+from src.backend.WindowGrabber.Window import Window
+from GtkHelper.GtkHelper import BetterExpander, EntryDialog
+from src.windows.PageManager.elements.PageSelector import PageSelector
+from src.windows.PageManager.elements.PageEditor import PageEditor
 
-# Import python modules
-from fuzzywuzzy import fuzz
-import os
-
+# Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.app import App
-
-# Import own modules
-from GtkHelper.GtkHelper import EntryDialog
+    from src.windows.mainWindow.mainWindow import MainWindow
 
 # Import signals
 from src.Signals import Signals
 
-class PageManager(Gtk.ApplicationWindow):
-    def __init__(self, app:"App"):
+# Import globals
+import globals as gl
+
+class PageManager(Adw.ApplicationWindow):
+    def __init__(self, main_win: "MainWindow"):
         super().__init__(title=gl.lm.get("page-manager.title"), default_width=400, default_height=600)
-        self.set_transient_for(app.main_win)
+        self.set_transient_for(main_win)
+        self.set_modal(True)
 
         self.build()
 
-    def build(self):
-        # Title bar
-        self.title_bar = Gtk.HeaderBar(css_classes=["flat"])
-        self.set_titlebar(self.title_bar)
+        self.page_selector.load_pages()
 
-        # Main box
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
-                                margin_start=10, margin_end=10,
-                                margin_top=10, margin_bottom=10)
-        self.set_child(self.main_box)
+        self.set_size_request(1300, 800)
 
-        # Search entry
-        self.search_entry = Gtk.SearchEntry(placeholder_text=gl.lm.get("page-manager-search-hint"),
-                                            hexpand=True,
-                                            margin_bottom=10)
-        self.search_entry.connect("search-changed", self.on_search_changed)
-        self.main_box.append(self.search_entry)
-
-        # Scrolled window
-        self.scrolled_window = Gtk.ScrolledWindow(vexpand=True)
-        self.main_box.append(self.scrolled_window)
-        
-        # Scrolled box
-        self.scrolled_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.scrolled_window.set_child(self.scrolled_box)
-
-        # Page box
-        self.page_box = Gtk.FlowBox(orientation=Gtk.Orientation.HORIZONTAL, max_children_per_line=1,
-                                    selection_mode=Gtk.SelectionMode.NONE)
-        self.page_box.set_sort_func(self.sort_func)
-        self.page_box.set_filter_func(self.filter_func)
-        self.scrolled_box.append(self.page_box)
-
-        # Fix stretching of page_box children
-        self.scrolled_box.append(Gtk.Box(vexpand=True))
-
-        # Load page buttons
-        self.load_pages()
-
-        # Add new button
-        self.add_button = Gtk.Button(label=gl.lm.get("page-manager-add-page"),
-                                     css_classes=["add-button"])
-        self.add_button.connect("clicked", self.on_add_page)
-        self.main_box.append(self.add_button)
-
-    def load_pages(self):
-        pages = gl.page_manager.get_pages()
-        for page_path in pages:
-            if os.path.dirname(page_path) != os.path.join(gl.DATA_PATH, "pages"):
-                continue
-            self.page_box.append(PageButton(page_manager=self, page_path = page_path))
-
-    def on_add_page(self, button, parent_window=None):
-        if parent_window is None:
-            parent_window = self
-        dial = EntryDialog(parent_window=parent_window, dialog_title="Add Page", entry_heading="Page name:", default_text="page",
-                           forbid_answers=gl.page_manager.get_page_names())
-        dial.show(self.add_page_callback)
-
-    def add_page_callback(self, name:str):
-        path = os.path.join(gl.DATA_PATH, "pages", f"{name}.json")
-        gl.page_manager.add_page(name)
-        self.page_box.append(PageButton(page_manager=self, page_path=path))
-
-        # Notify plugin actions
-        gl.signal_manager.trigger_signal(signal=Signals.PageAdd, path=path)
-
-    def on_search_changed(self, *args):
-        self.page_box.invalidate_filter()
-        self.page_box.invalidate_sort()
-
-    def sort_func(self, a: "PageButton", b: "PageButton"):
-        search_string = self.search_entry.get_text()
-        
-        a_label = a.main_button.get_label()
-        b_label = b.main_button.get_label()
-        
-        if search_string == "":
-            # Sort alphabetically
-
-            if a_label < b_label:
-                return -1
-            if a_label > b_label:
-                return 1
-            return 0
-        
-        else:
-            a_ratio = fuzz.ratio(search_string.lower(), a_label.lower())
-            b_ratio = fuzz.ratio(search_string.lower(), b_label.lower())
-
-            if a_ratio > b_ratio:
-                return -1
-            elif a_ratio < b_ratio:
-                return 1
-            return 0
-    
-    def filter_func(self, child):
-        MIN_MATCH_RATIO = 0.6
-
-        search_string = self.search_entry.get_text()
-        if search_string == "":
-            return True
-
-        match_ratio = fuzz.ratio(search_string.lower(), child.main_button.get_label().lower())
-        if match_ratio >= MIN_MATCH_RATIO:
-            return True
-        return False
-
-
-
-
-class PageButton(Gtk.FlowBoxChild):
-    def __init__(self, page_manager:PageManager, page_path:str):
-        super().__init__(margin_bottom=5)
-
-        self.page_manager = page_manager
-        self.page_path = page_path
-
-        self.build()
 
     def build(self):
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.set_child(self.main_box)
+        # Split view
+        self.split = Adw.NavigationSplitView(vexpand=True, sidebar_width_fraction=0.4, min_sidebar_width=300)
+        self.set_content(self.split)
 
-        self.main_button = Gtk.Button(hexpand=True, height_request=50,
-                                      label=os.path.splitext(os.path.basename(self.page_path))[0],
-                                      css_classes=["no-round-right"])
-        self.main_box.append(self.main_button)
+        self.page_editor = PageEditor(self)
+        self.split.set_content(self.page_editor)
 
-        self.main_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+        self.page_selector = PageSelector(self)
+        self.split.set_sidebar(self.page_selector)
 
-        self.config_button = Gtk.Button(height_request=50,
-                                        icon_name="view-more",
-                                        css_classes=["no-round-left"])
-        self.config_button.connect("clicked", self.on_config)
-        self.main_box.append(self.config_button)
-
-    def on_config(self, button):
-        context = KeyButtonContextMenu(self)
-        context.popup()
-
-    def delete_page(self):
-        gl.page_manager.remove_page(self.page_path)
-        self.page_manager.page_box.remove(self)
-
-        # Notify plugin actions
-        gl.signal_manager.trigger_signal(signal=Signals.PageDelete, path=self.page_path)
-
-
-class KeyButtonContextMenu(Gtk.PopoverMenu):
-    def __init__(self, page_button:PageButton):
-        super().__init__()
-        self.page_button = page_button
-        self.build()
+    def add_page_from_name(self, page_name: str) -> None:
+        page_path = os.path.join(gl.DATA_PATH, "pages", f"{page_name}.json")
+        if os.path.exists(page_path):
+            return
         
-    def build(self):
-        self.set_has_arrow(False)
-        self.set_parent(self.page_button.config_button)
-
-        self.main_menu = Gio.Menu.new()
+        gl.page_manager.add_page(page_name)
         
-        # Rename action
-        rename_action = Gio.SimpleAction.new("rename", None)
-        remove_action = Gio.SimpleAction.new("remove", None)
+        self.page_selector.add_row_by_path(page_path)
 
-        # Add actions to window
-        self.page_button.page_manager.add_action(rename_action)
-        self.page_button.page_manager.add_action(remove_action)
+        # Emit signal
+        gl.signal_manager.trigger_signal(signal=Signals.PageAdd, path=page_path)
 
-        # Connect actions
-        rename_action.connect("activate", self.on_rename)
-        remove_action.connect("activate", self.on_remove)
-
-        self.main_menu.append(gl.lm.get("page-manager-rename"), "win.rename")
-        self.main_menu.append(gl.lm.get("page-manager-remove"), "win.remove")
-
-        self.set_menu_model(self.main_menu)
-
-    def on_rename(self, action, param):
-        old_name = self.page_button.main_button.get_label()
-        forbidden_names = gl.page_manager.get_page_names()
-        forbidden_names.remove(old_name)
-        dial = EntryDialog(parent_window=self.page_button.page_manager, dialog_title="Rename Page", entry_heading="New Name:", default_text=old_name,
-                           forbid_answers=forbidden_names)
-        dial.show(self.rename_callback)
+    def remove_page_by_path(self, page_path: str) -> None:
+        if page_path in gl.page_manager.custom_pages:
+            dial = CantDeletePluginPage(self)
+            dial.show()
+            return
+        if self.get_number_of_user_pages() <= 1:
+            dial = CantDeleteLastPageError(self)
+            dial.show()
+            return
         
+        self.page_selector.remove_row_with_path(page_path)
 
-    def rename_callback(self, new_name: str):
-        old_path = self.page_button.page_path
-        page_dir = os.path.dirname(old_path)
-        new_path = os.path.join(page_dir, f"{new_name}.json")
+        gl.page_manager.remove_page(page_path)
+
+        # Emit signal
+        gl.signal_manager.trigger_signal(signal=Signals.PageDelete, path=page_path)
+
+    def rename_page_by_path(self, old_path: str, new_path: str) -> None:
+        self.page_selector.rename_page_row(old_path=old_path, new_path=new_path)
+
         gl.page_manager.move_page(old_path, new_path)
 
-        # Update ui
-        self.page_button.main_button.set_label(os.path.splitext(os.path.basename(new_path))[0])
-
-        # Notify plugin actions
+        # Emit signal
         gl.signal_manager.trigger_signal(signal=Signals.PageRename, old_path=old_path, new_path=new_path)
 
-
-    def on_remove(self, action, param):
-        dial = DeleteFileConfirmationDialog(self.page_button)
-        dial.present()
-
-
-class DeleteFileConfirmationDialog(Adw.MessageDialog):
-    def __init__(self, page_button: PageButton):
+    def get_number_of_user_pages(self) -> int:
+        return len(gl.page_manager.get_pages(add_custom_pages=False))
+    
+class CantDeleteLastPageError(Adw.MessageDialog):
+    def __init__(self, page_manager: PageManager):
         super().__init__()
-        self.page_button = page_button
+        self.set_transient_for(page_manager)
+        self.set_modal(True)
+        self.set_title("Error")
+        self.set_body("You have to have at least one user page.")
+        self.add_response("ok", "OK")
+        self.set_default_response("ok")
 
-        self.build()
-
-    def build(self):
-        self.set_title("Delete Confirmation")
-        self.add_response("cancel", "Cancel")
-        self.add_response("delete", "Delete")
-        self.set_default_response("cancel")
-        self.set_close_response("cancel")
-        self.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
-        self.set_body(f'Are you sure you want to delete the page: "{self.page_button.main_button.get_label()}"?')
-
-        self.connect("response", self.on_response)
-
-    def on_response(self, dialog, response):
-        if response == "delete":
-            self.page_button.delete_page()
-        dialog.destroy()
+class CantDeletePluginPage(Adw.MessageDialog):
+    def __init__(self, page_manager: PageManager):
+        super().__init__()
+        self.set_transient_for(page_manager)
+        self.set_modal(True)
+        self.set_title("Error")
+        self.set_body("You can't delete plugin pages.")
+        self.add_response("ok", "OK")
+        self.set_default_response("ok")

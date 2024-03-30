@@ -39,5 +39,5 @@ class SignalManager:
             raise TypeError("signal_name must be of type Signal")
         
         for callback in self.connected_signals.get(signal, []):
-            callback(*args, **kwargs)
-            # GLib.idle_add(callback, args, kwargs)
+            # callback(*args, **kwargs)
+            GLib.idle_add(callback, args, kwargs)

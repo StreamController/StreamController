@@ -271,8 +271,12 @@ class KeyButton(Gtk.Frame):
             if self.key_grid.deck_page.deck_stack_child.stack.get_visible_child() != self.key_grid.deck_page:
                 self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
 
+        self.pixbuf = None
+        del self.pixbuf
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         self.show_pixbuf(self.pixbuf)
+        image = None
+        del image
 
         # update righthand side key preview if possible
         if recursive_hasattr(gl, "app.main_win.sidebar"):

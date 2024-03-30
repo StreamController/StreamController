@@ -61,7 +61,7 @@ class MultiDeckSelectorRow(Adw.ActionRow):
         self.multi_deck_selector.present()
 
     def set_label(self, n_selected_decks: int):
-        self.suffix_label.set_label(f"{n_selected_decks} {gl.lm.get("multi-deck-selector.selected")}")
+        self.suffix_label.set_label(f"{n_selected_decks} {gl.lm.get('multi-deck-selector.selected')}")
 
     def change_callback(self, serial_number: str, state: bool):
         n_selected_decks = self.multi_deck_selector.get_n_selected_decks()

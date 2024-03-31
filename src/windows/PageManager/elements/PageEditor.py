@@ -255,7 +255,7 @@ class MatchingWindowsExpander(BetterExpander):
         super().__init__(title=gl.lm.get("page-manager.page-editor.matching-windows.title"), subtitle=gl.lm.get("page-manager.page-editor.matching-windows.subtitle"), expanded=False)
         self.auto_change_group = auto_change_group
 
-        self.update_button = Gtk.Button(icon_name="com.core447.StreamController_view-refresh-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+        self.update_button = Gtk.Button(icon_name="com.core447.StreamController-view-refresh-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
         self.update_button.connect("clicked", self.update_matching_windows)
         self.add_suffix(self.update_button)
 

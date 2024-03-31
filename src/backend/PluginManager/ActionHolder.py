@@ -41,7 +41,7 @@ class ActionHolder:
             raise ValueError("Please specify an action name")
         
         if icon is None:
-            icon = Gtk.Image(icon_name="insert-image")
+            icon = Gtk.Image(icon_name="com.core447.StreamController_insert-image")
 
         self.plugin_base = plugin_base
         self.action_base = action_base

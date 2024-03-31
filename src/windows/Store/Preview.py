@@ -100,7 +100,7 @@ class StorePreview(Gtk.FlowBoxChild):
                                   hexpand=True)
         self.main_box.append(self.button_box)
 
-        self.github_button = Gtk.Button(icon_name="github-symbolic",
+        self.github_button = Gtk.Button(icon_name="com.core447.StreamController_folder-github",
                                         hexpand=True,
                                         css_classes=["no-round-top-left", "no-round-top-right", "no-round-bottom-right"])
         self.github_button.connect("clicked", self.on_github_clicked)
@@ -108,7 +108,7 @@ class StorePreview(Gtk.FlowBoxChild):
 
         self.button_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
 
-        self.install_uninstall_button = Gtk.Button(icon_name="download-symbolic",
+        self.install_uninstall_button = Gtk.Button(icon_name="com.core447.StreamController_edit-download",
                                           hexpand=True,
                                           css_classes=["no-round-top-left", "no-round-top-right", "no-round-bottom-left"])
         self.install_uninstall_button.connect("clicked", self.on_download_clicked)
@@ -205,18 +205,18 @@ class StorePreview(Gtk.FlowBoxChild):
         """
         self.install_state = state
         if state == 0:
-            self.install_uninstall_button.set_icon_name("download-symbolic")
+            self.install_uninstall_button.set_icon_name("com.core447.StreamController_edit-symbolic")
 
             self.install_uninstall_button.remove_css_class("red-background")
             self.install_uninstall_button.remove_css_class("confirm-button")
         elif state == 1:
-            self.install_uninstall_button.set_icon_name("delete")
+            self.install_uninstall_button.set_icon_name("com.core447.StreamController_entry-delete")
 
             self.install_uninstall_button.add_css_class("red-background")
             self.install_uninstall_button.remove_css_class("confirm-button")
 
         elif state == 2:
-            self.install_uninstall_button.set_icon_name("software-update-available")
+            self.install_uninstall_button.set_icon_name("com.core447.StreamController_update-low")
             
             self.install_uninstall_button.add_css_class("confirm-button")
             self.install_uninstall_button.remove_css_class("red-background")

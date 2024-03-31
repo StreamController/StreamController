@@ -92,7 +92,7 @@ class PermissionsWindow(Gtk.ApplicationWindow):
                                        overflow=Gtk.Overflow.HIDDEN)
         self.command_box.append(self.command_label)
 
-        self.copy_button = Gtk.Button(icon_name="edit-copy", css_classes=["permissions-window-copy"],
+        self.copy_button = Gtk.Button(icon_name="com.core447.StreamController_edit-copy", css_classes=["permissions-window-copy"],
                                       tooltip_text=gl.lm.get("permissions-window.copy-tooltip"))
         self.copy_button.connect("clicked", self.on_copy)
         self.command_box.append(self.copy_button)

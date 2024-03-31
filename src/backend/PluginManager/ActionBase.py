@@ -188,6 +188,9 @@ class ActionBase(rpyc.Service):
         if not self.on_ready_called:
             update = False
 
+        if self.get_is_multi_action():
+            return
+
         if text is None:
             text = ""
 

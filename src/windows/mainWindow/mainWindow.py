@@ -40,6 +40,7 @@ import globals as gl
 
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, deck_manager, **kwargs):
+        gl.app.main_win = self
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
 

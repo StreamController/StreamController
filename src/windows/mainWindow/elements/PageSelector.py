@@ -129,6 +129,8 @@ class PageSelector(Gtk.Box):
         active_controller.load_page(page)
 
     def on_click_open_page_manager(self, button):
+        gl.flatpak_permission_manager.show_dbus_permission_request_dialog("main")
+        return
         page_manager = PageManager(main_win=gl.app.main_win)
         page_manager.present()
 

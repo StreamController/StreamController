@@ -45,6 +45,8 @@ class PluginBase(rpyc.Service):
 
         self.registered: bool = False
 
+        self.plugin_name: str = None
+
     def register(self, plugin_name: str, github_repo: str, plugin_version: str, app_version: str):
         """
         Registers a plugin with the given information.
@@ -209,3 +211,16 @@ class PluginBase(rpyc.Service):
 
     def ping(self) -> bool:
         return True
+    
+    def request_dbus_permission(self, name: str, bus: str="session", description: str = None) -> None:
+        """
+        name: The name of the bus
+        bus: The bus type session or system
+        description: Describe why you need the permission - automatically added if not provided
+        """
+        if description is None:
+            description = gl.lm.get("permissions.request.plugin-blueprint")
+            if self.plugin_name is None:
+                raise ("Register the plugin before requesting permissions")
+            description = description.replace("{name}", self.plugin_name)
+        gl.flatpak_permission_manager.show_dbus_permission_request_dialog(name, bus, description)

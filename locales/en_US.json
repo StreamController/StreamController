@@ -165,5 +165,7 @@
     "page-manager.page-editor.default-page.row.title": "Default page",
     "page-manager.page-editor.default-page.row.subtitle": "Select for which decks this page should be opened by default",
     "multi-deck-selector.title": "Select Decks",
-    "multi-deck-selector.selected": "selected"
+    "multi-deck-selector.selected": "selected",
+    "permissions.request.default-description": "A plugin requested permissions. Consider running the following command to grant the needed permission",
+    "permissions.request.plugin-blueprint": "The {name} plugin requested a new permission. Consider running the following command to ensure the plugin works correctly:"
 }

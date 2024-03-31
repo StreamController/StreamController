@@ -63,7 +63,7 @@ class IconSelector(Gtk.Box):
         self.button.add_controller(motion_controller)
 
         # Remove button overlay
-        self.remove_button = Gtk.Button(icon_name="com.core447.StreamController-entry-delete", valign=Gtk.Align.END, halign=Gtk.Align.END,
+        self.remove_button = Gtk.Button(icon_name="com.core447.StreamController_entry-delete", valign=Gtk.Align.END, halign=Gtk.Align.END,
                                         css_classes=["icon-selector-remove-button", "no-padding", "remove-button"],
                                         visible=False)
         self.remove_button.connect("clicked", self.remove_media)

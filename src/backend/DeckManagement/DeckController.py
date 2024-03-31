@@ -386,7 +386,7 @@ class DeckController:
             self.set_brightness(deck_settings.get("brightness", {}).get("value", 75))
 
         def set_from_page(self: "DeckController"):
-            self.set_brightness(page.dict.get("brightness", 75))
+            self.set_brightness(page.dict.get("brightness", {}).get("value", 75))
 
         if "brightness" in deck_settings:
             set_from_deck_settings(self)

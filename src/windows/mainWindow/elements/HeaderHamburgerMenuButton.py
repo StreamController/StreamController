@@ -41,7 +41,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
     def __init__(self, main_window: "MainWindow", **kwargs):
         self.main_window: "MainWindow" = main_window
         super().__init__(**kwargs)
-        self.set_icon_name("com.core447.StreamController-open-menu-symbolic")
+        self.set_icon_name("com.core447.StreamController_open-menu-symbolic")
         
         self.init_actions()
         self.build()

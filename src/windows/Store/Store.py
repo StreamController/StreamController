@@ -77,7 +77,7 @@ class Store(Gtk.ApplicationWindow):
         self.header.set_title_widget(self.stack_switcher)
 
         # Header back button
-        self.back_button = Gtk.Button(icon_name="com.core447.StreamController-go-previous-symbolic", visible=False)
+        self.back_button = Gtk.Button(icon_name="com.core447.StreamController_go-previous-symbolic", visible=False)
         self.back_button.connect("clicked", self.on_back_button_click)
         self.header.pack_start(self.back_button)
 

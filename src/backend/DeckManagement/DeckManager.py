@@ -76,7 +76,7 @@ class DeckManager:
                 self.add_newly_connected_deck(fake_deck, is_fake=True)
 
             # Update header deck switcher if the new deck is the only one
-            if len(self.deck_controller) == 1:
+            if len(self.deck_controller) == 1 and False:
                 # Check if ui is loaded - if not it will grab the controller automatically
                 if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
                     gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(True)
@@ -93,11 +93,11 @@ class DeckManager:
                 gl.app.main_win.leftArea.deck_stack.remove_page(controller)
 
             # Update header deck switcher if there are no more decks
-            if len(self.deck_controller) == 0:
+            if len(self.deck_controller) == 0 and False:
                 # Check if ui is loaded - if not it will grab the controller automatically
                 if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
                     gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(False)
-
+        if hasattr(gl.app, "main_win"):
             gl.app.main_win.check_for_errors()
 
 

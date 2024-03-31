@@ -65,12 +65,12 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.carousel_indicator_dots = Adw.CarouselIndicatorDots(carousel=self.carousel)
         self.header.set_title_widget(self.carousel_indicator_dots)
 
-        self.forward_button = Gtk.Button(icon_name="com.core447.StreamController-go-next", css_classes=["onboarding-nav-button", "circular"],
+        self.forward_button = Gtk.Button(icon_name="com.core447.StreamController-go-next-symbolic", css_classes=["onboarding-nav-button", "circular"],
                                          halign=Gtk.Align.END, valign=Gtk.Align.CENTER, margin_end=15)
         self.forward_button.connect("clicked", self.on_forward_button_click)
         self.overlay.add_overlay(self.forward_button)
 
-        self.back_button = Gtk.Button(icon_name="com.core447.StreamController-go-previous", css_classes=["onboarding-nav-button", "circular"],
+        self.back_button = Gtk.Button(icon_name="com.core447.StreamController-go-previous-symbolic", css_classes=["onboarding-nav-button", "circular"],
                                       halign=Gtk.Align.START, valign=Gtk.Align.CENTER, margin_start=15,
                                       visible=False)
         self.back_button.connect("clicked", self.on_back_button_click)

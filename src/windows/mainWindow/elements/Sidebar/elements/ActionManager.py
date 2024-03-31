@@ -274,11 +274,11 @@ class ActionRow(Adw.PreferencesRow):
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.END, valign=Gtk.Align.CENTER, margin_end=10, css_classes=["linked"])
         self.overlay.add_overlay(self.button_box)
 
-        self.up_button = Gtk.Button(icon_name="com.core447.StreamController-go-up")
+        self.up_button = Gtk.Button(icon_name="com.core447.StreamController-go-up-symbolic")
         self.up_button.connect("clicked", self.on_click_up)
         self.button_box.append(self.up_button)
 
-        self.down_button = Gtk.Button(icon_name="com.core447.StreamController-go-down")
+        self.down_button = Gtk.Button(icon_name="com.core447.StreamController-go-down-symbolic")
         self.down_button.connect("clicked", self.on_click_down)
         self.button_box.append(self.down_button)
 

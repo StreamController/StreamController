@@ -70,7 +70,7 @@ class DeckStackChild(Gtk.Overlay):
     def on_toggle_settings_button_click(self, button):
         if self.stack.get_visible_child_name() == "page-settings":
             self.stack.set_visible_child_name("deck-settings")
-            self.toggle_settings_button.set_icon_name("com.core447.StreamController_view-paged")
+            self.toggle_settings_button.set_icon_name("com.core447.StreamController_view-paged-symbolic")
             gl.app.main_win.sidebar_toggle_button.set_visible(False)
             gl.app.main_win.split_view.set_collapsed(True)
 

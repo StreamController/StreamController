@@ -210,13 +210,13 @@ class StorePreview(Gtk.FlowBoxChild):
             self.install_uninstall_button.remove_css_class("red-background")
             self.install_uninstall_button.remove_css_class("confirm-button")
         elif state == 1:
-            self.install_uninstall_button.set_icon_name("com.core447.StreamController_entry-delete")
+            self.install_uninstall_button.set_icon_name("com.core447.StreamController_user-trash")
 
             self.install_uninstall_button.add_css_class("red-background")
             self.install_uninstall_button.remove_css_class("confirm-button")
 
         elif state == 2:
-            self.install_uninstall_button.set_icon_name("com.core447.StreamController_update-low")
+            self.install_uninstall_button.set_icon_name("com.core447.StreamController_software-update-available-symbolic")
             
             self.install_uninstall_button.add_css_class("confirm-button")
             self.install_uninstall_button.remove_css_class("red-background")

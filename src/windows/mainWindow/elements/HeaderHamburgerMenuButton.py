@@ -41,7 +41,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
     def __init__(self, main_window: "MainWindow", **kwargs):
         self.main_window: "MainWindow" = main_window
         super().__init__(**kwargs)
-        self.set_icon_name("open-menu-symbolic")
+        self.set_icon_name("com.core447.StreamController-open-menu-symbolic")
         
         self.init_actions()
         self.build()
@@ -112,6 +112,13 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
             "Stream Deck is a trademark owned by Elgato/Corsair Memory, Inc.",
             Gtk.License.CUSTOM,
             license=None,
+        )
+
+        self.about.add_legal_section(
+            "Icons",
+            "StreamController uses Papirus icons",
+            Gtk.License.GPL_3_0,
+            license=None
         )
 
         self.about.set_debug_info("".join(gl.logs))

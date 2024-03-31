@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import argparse
 
 DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
-# DATA_PATH = "data"
+DATA_PATH = "data"
 
 if TYPE_CHECKING:
     from src.app import App
@@ -47,11 +47,12 @@ window_grabber: "WindowGrabber" = None
 store: "Store" = None # Only if opened
 
 
-app_version: str = "1.3.3-beta" # In breaking.feature.fix-state format
+app_version: str = "1.3.4-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []
 
 release_notes: str = "<ul> \
     <li>Bugfixes</li> \
+    <li>Bundle icons</li> \
     </ul>"

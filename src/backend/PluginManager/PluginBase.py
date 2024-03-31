@@ -144,7 +144,7 @@ class PluginBase(rpyc.Service):
         gl.page_manager.register_page(path)
 
     def get_selector_icon(self) -> Gtk.Widget:
-        return Gtk.Image(icon_name="view-paged")
+        return Gtk.Image(icon_name="com.core447.StreamController-view-paged-symbolic")
     
     def on_uninstall(self) -> None:
         try:

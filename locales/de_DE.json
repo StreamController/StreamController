@@ -134,7 +134,7 @@
     "warning.dismiss": "Verwerfen",
     "settings.enable-fps-warnings": "FPS Warnungen aktivieren",
     "settings.performance.title": "Performance",
-    "settings.performance.header": "Performance & Optimierungen",
+    "settings.performance.header": "Performance &amp; Optimierungen",
     "settings.performance.n-cached-pages.title": "Anzahl der zu cachenden Seiten",
     "settings.performance.n-cached-pages.subtitle": "Anzahl der Seiten, die im Caching gespeichert werden sollen",
     "settings.performance.n-cached-pages.tooltip": "Eine höhere Zahl bedeutet mehr Speicherverbrauch aber schnellere Seitenladezeit.",

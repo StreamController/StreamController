@@ -83,7 +83,7 @@ class HeaderBar(Gtk.HeaderBar):
         # Create a menu button
         self.hamburger_menu = Gtk.MenuButton()
         self.hamburger_menu.set_popover(self.popover)
-        self.hamburger_menu.set_icon_name("open-menu-symbolic")
+        self.hamburger_menu.set_icon_name("com.core447.StreamController-open-menu-symbolic")
         self.pack_end(self.hamburger_menu)
 
         # Config deck button

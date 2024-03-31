@@ -64,7 +64,7 @@ class PageSelector(Gtk.Box):
         self.sidebar.append(self.drop_down)
 
         # Settings button
-        self.open_manager_button = Gtk.Button(icon_name="settings", tooltip_text=gl.lm.get("header-page-selector-page-manager-hint"))
+        self.open_manager_button = Gtk.Button(icon_name="com.core447.StreamController-configure", tooltip_text=gl.lm.get("header-page-selector-page-manager-hint"))
         self.open_manager_button.connect("clicked", self.on_click_open_page_manager)
         self.sidebar.append(self.open_manager_button)
 

@@ -205,7 +205,7 @@ class StorePreview(Gtk.FlowBoxChild):
         """
         self.install_state = state
         if state == 0:
-            self.install_uninstall_button.set_icon_name("com.core447.StreamController_edit-download")
+            self.install_uninstall_button.set_icon_name("com.core447.StreamController_browser-download-symbolic")
 
             self.install_uninstall_button.remove_css_class("red-background")
             self.install_uninstall_button.remove_css_class("confirm-button")

@@ -324,3 +324,6 @@ class ActionBase(rpyc.Service):
 
     def ping(self) -> bool:
         return True
+    
+    def on_removed_from_cache(self) -> None:
+        pass

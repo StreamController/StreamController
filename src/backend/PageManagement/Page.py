@@ -314,6 +314,8 @@ class Page:
             for i, action in enumerate(list(self.action_objects[key])):
                 self.action_objects[key][i].page = None
                 self.action_objects[key][i] = None
+                if isinstance(self.action_objects[key][i], ActionBase):
+                    self.action_objects[key][i].on_removed_from_cache()
                 refs = gc.get_referrers(self.action_objects[key][i])
                 r2 = gc.get_referents(self.action_objects[key][i])
                 n = len(refs)

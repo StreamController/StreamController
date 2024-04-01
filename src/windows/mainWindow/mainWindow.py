@@ -53,7 +53,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.build()
         self.init_actions()
 
-        self.set_size_request(1000, 900)
+        self.set_size_request(1400, 900)
         self.connect("close-request", self.on_close)
 
         self.key_clipboard: Gdk.Clipboard = Gdk.Display.get_default().get_clipboard()

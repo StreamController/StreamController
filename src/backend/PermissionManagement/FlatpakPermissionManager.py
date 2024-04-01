@@ -107,7 +107,7 @@ class FlatpakPermissionManager:
         return command
     
     def show_dbus_permission_request_dialog(self, name: str, bus: str="session", description: str="None"):
-        if not self.get_is_flatpak() and False:
+        if not self.get_is_flatpak():
             return
         if self.has_dbus_permission(name, bus):
             return

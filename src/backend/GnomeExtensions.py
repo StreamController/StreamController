@@ -42,7 +42,7 @@ class GnomeExtensions:
             extensions.append(extension)
         return extensions
 
-    def reguest_installation(self, uuid: str) -> bool:
+    def request_installation(self, uuid: str) -> bool:
         if not self.get_is_connected(): return False
         response = self.interface.InstallRemoteExtension(uuid)
         return True if response == "successful" else False

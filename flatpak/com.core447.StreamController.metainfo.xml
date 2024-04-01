@@ -4,6 +4,7 @@
 <component type="desktop-application">
   <id>com.core447.StreamController</id>
 
+  <developer_name translatable="no">Core447</developer_name>
   <developer id="com.core447">
     <name translatable="no">Core447</name>
   </developer>

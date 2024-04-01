@@ -32,7 +32,7 @@ from src.windows.AssetManager.AssetManager import AssetManager
 from src.windows.Store.Store import Store
 from src.windows.Shortcuts.Shortcuts import ShortcutsWindow
 from src.windows.Onboarding.OnboardingWindow import OnboardingWindow
-from src.windows.Permissions.Permissions import PermissionsWindow
+from src.windows.Permissions.FlatpakPermissionRequest import FlatpakPermissionRequestWindow
 
 # Import globals
 import globals as gl
@@ -102,7 +102,7 @@ class App(Adw.Application):
             return
         if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-permissions")):
             return
-        self.permissions = PermissionsWindow(application=self, main_window=self.main_win)
+        self.permissions = FlatpakPermissionRequestWindow(application=self, main_window=self.main_win)
         if hasattr(self, "onboarding"):
             if self.onboarding.is_visible():
                 return

@@ -274,11 +274,11 @@ class ActionRow(Adw.PreferencesRow):
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.END, valign=Gtk.Align.CENTER, margin_end=10, css_classes=["linked"])
         self.overlay.add_overlay(self.button_box)
 
-        self.up_button = Gtk.Button(icon_name="com.core447.StreamController-go-up-symbolic")
+        self.up_button = Gtk.Button(icon_name="go-up-symbolic")
         self.up_button.connect("clicked", self.on_click_up)
         self.button_box.append(self.up_button)
 
-        self.down_button = Gtk.Button(icon_name="com.core447.StreamController-go-down-symbolic")
+        self.down_button = Gtk.Button(icon_name="go-down-symbolic")
         self.down_button.connect("clicked", self.on_click_down)
         self.button_box.append(self.down_button)
 
@@ -415,7 +415,7 @@ class MissingActionButtonRow(Adw.PreferencesRow):
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, width_request=50)
         self.main_box.append(self.button_box)
 
-        self.remove_button = Gtk.Button(icon_name="com.core447.StreamController-entry-delete", vexpand=False, halign=Gtk.Align.END, css_classes=["red-background"], margin_end=0,
+        self.remove_button = Gtk.Button(icon_name="user-trash-symbolic", vexpand=False, halign=Gtk.Align.END, css_classes=["red-background"], margin_end=0,
                                         tooltip_text="Remove this action") # alternative icon: edit-delete-remove
         self.remove_button.connect("clicked", self.on_remove_click)
         # self.button_box.append(self.remove_button)

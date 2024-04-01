@@ -42,7 +42,6 @@ class Gnome(Integration):
         self.bus: dbus.Bus = None
         self.proxy =  None
         self.interface = None
-        self.install_extension()
         self.connect_dbus()
 
     def install_extension(self) -> None:
@@ -52,7 +51,7 @@ class Gnome(Integration):
         if uuid in installed_extensions:
             return
         
-        gl.gnome_extensions.reguest_installation(uuid)
+        gl.gnome_extensions.request_installation(uuid)
 
 
     def connect_dbus(self) -> None:

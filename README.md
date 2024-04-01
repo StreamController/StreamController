@@ -5,11 +5,21 @@
 background image by [kvacm](https://kvacm.artstation.com)
 
 ## Features
-* **Plugin support with store**
-* **Background images and videos**
-* **Screen saver**
-* **Automatic page switching based on the opened window**  
-  Currently available for Gnome and Hyprland
+### Plugins
+StreamController features plugin support with a built-in store to download your favorite actions. And the best part: You can also publish your own plugins [(Wiki)](https://streamcontroller.github.io/docs).
+
+### Wallpapers
+Use cool wallpapers and videos on your pages to make them look more interesting.
+
+### Screen saver
+Configure a custom screen saver to display a picture or video.
+
+### Automatic page switching
+Currently available for Gnome and Hyprland
+
+Automatic page switching allows you to automatically change your active page based on the active window. For example, you could see your favorite music albums when you open Spotify, your projects when you open VSCode, or your favorite websites in Firefox.
+
+  
 
 ## Warning
 StreamController is still in beta.  

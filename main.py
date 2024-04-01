@@ -47,6 +47,7 @@ from autostart import setup_autostart
 from src.Signals.SignalManager import SignalManager
 from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
 from src.backend.GnomeExtensions import GnomeExtensions
+from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
 
 # Import globals
 import globals as gl
@@ -74,11 +75,6 @@ class Main:
 @log.catch
 def load():
     config_logger()
-    # Setup locales
-    localeManager = LocaleManager(locales_path="locales")
-    localeManager.set_to_os_default()
-    localeManager.set_fallback_language("en_US")
-    gl.lm = localeManager
 
     log.info("Loading app")
     gl.deck_manager = DeckManager()
@@ -94,6 +90,13 @@ def create_global_objects():
     gl.argparser = argparse.ArgumentParser()
     gl.argparser.add_argument("-b", help="Open in background", action="store_true")
     gl.argparser.add_argument("app_args", nargs="*")
+
+    # Setup locales
+    gl.lm = LocaleManager(locales_path="locales")
+    gl.lm.set_to_os_default()
+    gl.lm.set_fallback_language("en_US")
+
+    gl.flatpak_permission_manager = FlatpakPermissionManager()
 
     gl.gnome_extensions = GnomeExtensions()
 

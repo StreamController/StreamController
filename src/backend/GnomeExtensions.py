@@ -25,14 +25,14 @@ class GnomeExtensions:
     def connect_dbus(self) -> None:
         try:
             self.bus = dbus.SessionBus()
-            self.proxy = self.bus.get_object("org.gnome.Shell", "/org/gnome/Shellr")
+            self.proxy = self.bus.get_object("org.gnome.Shell", "/org/gnome/Shell")
             self.interface = dbus.Interface(self.proxy, "org.gnome.Shell.Extensions")
         except dbus.exceptions.DBusException as e:
             log.error(f"Failed to connect to D-Bus: {e}")
             pass
 
     def get_is_connected(self) -> bool:
-        return None in (self.bus, self.proxy, self.interface)
+        return None not in (self.bus, self.proxy, self.interface)
     
     def get_installed_extensions(self) -> list[str]:
         extensions: list[str] = []
@@ -42,7 +42,7 @@ class GnomeExtensions:
             extensions.append(extension)
         return extensions
 
-    def reguest_installation(self, uuid: str) -> bool:
+    def request_installation(self, uuid: str) -> bool:
         if not self.get_is_connected(): return False
         response = self.interface.InstallRemoteExtension(uuid)
         return True if response == "successful" else False

@@ -40,6 +40,7 @@ import globals as gl
 
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, deck_manager, **kwargs):
+        gl.app.main_win = self
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
 
@@ -52,7 +53,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.build()
         self.init_actions()
 
-        self.set_size_request(1000, 900)
+        self.set_size_request(1400, 900)
         self.connect("close-request", self.on_close)
 
         self.key_clipboard: Gdk.Clipboard = Gdk.Display.get_default().get_clipboard()
@@ -113,7 +114,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.header.pack_end(self.menu_button)
 
         # Add sidebar toggle button to the header bar
-        self.sidebar_toggle_button = Gtk.ToggleButton(icon_name="com.core447.StreamController-sidebar-show-symbolic", active=True)
+        self.sidebar_toggle_button = Gtk.ToggleButton(icon_name="sidebar-show-symbolic", active=True)
         self.sidebar_toggle_button.connect("toggled", self.on_toggle_sidebar)
         self.header.pack_start(self.sidebar_toggle_button)
 
@@ -198,7 +199,7 @@ class MainWindow(Adw.ApplicationWindow):
             GLib.idle_add(self.deck_switcher.set_show_switcher, True)
             GLib.idle_add(self.split_view.set_collapsed, False)
             GLib.idle_add(self.sidebar_toggle_button.set_visible, True)
-            GLib.idle_add(self.menu_button.set_visible, True)
+            GLib.idle_add(self.menu_button.set_optional_actions_state, True)
             return
         
         elif error == "no-decks":
@@ -210,7 +211,7 @@ class MainWindow(Adw.ApplicationWindow):
         GLib.idle_add(self.deck_switcher.set_show_switcher, False)
         GLib.idle_add(self.split_view.set_collapsed, True)
         GLib.idle_add(self.sidebar_toggle_button.set_visible, False)
-        GLib.idle_add(self.menu_button.set_visible, False)
+        GLib.idle_add(self.menu_button.set_optional_actions_state, False)
 
     def check_for_errors(self):
         if len(gl.deck_manager.deck_controller) == 0:

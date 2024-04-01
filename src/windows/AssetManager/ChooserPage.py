@@ -38,11 +38,11 @@ class ChooserPage(Gtk.Box):
         self.type_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["linked"], margin_start=15)
         self.nav_box.append(self.type_box)
 
-        self.video_button = Gtk.ToggleButton(icon_name="com.core447.StreamController-view-list-video-symbolic", css_classes=["blue-toggle-button"])
+        self.video_button = Gtk.ToggleButton(icon_name="camera-video-symbolic", css_classes=["blue-toggle-button"])
         self.video_button.connect("toggled", self.on_video_toggled)
         self.type_box.append(self.video_button)
 
-        self.image_button = Gtk.ToggleButton(icon_name="com.core447.StreamController-view-list-images-symbolic", css_classes=["blue-toggle-button"])
+        self.image_button = Gtk.ToggleButton(icon_name="camera-photo-symbolic", css_classes=["blue-toggle-button"])
         self.image_button.connect("toggled", self.on_image_toggled)
         self.type_box.append(self.image_button)
 

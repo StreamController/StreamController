@@ -53,7 +53,7 @@ class DeckStackChild(Gtk.Overlay):
         self.stack.add_titled(self.deck_settings, "deck-settings", "Deck Settings")
 
         # Switch overlay button
-        self.toggle_settings_button = Gtk.Button(icon_name="com.core447.StreamController-configure", css_classes=["circular"],
+        self.toggle_settings_button = Gtk.Button(icon_name="applications-system-symbolic", css_classes=["circular"],
                                   halign=Gtk.Align.END, valign=Gtk.Align.END, margin_end=50, margin_bottom=50)
         self.toggle_settings_button.connect("clicked", self.on_toggle_settings_button_click)
         self.add_overlay(self.toggle_settings_button)
@@ -70,13 +70,13 @@ class DeckStackChild(Gtk.Overlay):
     def on_toggle_settings_button_click(self, button):
         if self.stack.get_visible_child_name() == "page-settings":
             self.stack.set_visible_child_name("deck-settings")
-            self.toggle_settings_button.set_icon_name("com.core447.StreamController-view-paged-symbolic")
+            self.toggle_settings_button.set_icon_name("view-paged-symbolic")
             gl.app.main_win.sidebar_toggle_button.set_visible(False)
             gl.app.main_win.split_view.set_collapsed(True)
 
         else:
             self.stack.set_visible_child_name("page-settings")
-            self.toggle_settings_button.set_icon_name("com.core447.StreamController-configure")
+            self.toggle_settings_button.set_icon_name("applications-system-symbolic")
             gl.app.main_win.sidebar_toggle_button.set_visible(True)
             gl.app.main_win.split_view.set_collapsed(False)
 

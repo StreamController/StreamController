@@ -41,7 +41,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
     def __init__(self, main_window: "MainWindow", **kwargs):
         self.main_window: "MainWindow" = main_window
         super().__init__(**kwargs)
-        self.set_icon_name("com.core447.StreamController-open-menu-symbolic")
+        self.set_icon_name("open-menu-symbolic")
         
         self.init_actions()
         self.build()
@@ -126,3 +126,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
 
         self.about.set_release_notes(gl.release_notes)  
         self.about.set_release_notes_version(gl.app_version)
+
+    def set_optional_actions_state(self, state: bool) -> None:
+        self.open_store_action.set_enabled(state)
+        self.open_settings_action.set_enabled(state)

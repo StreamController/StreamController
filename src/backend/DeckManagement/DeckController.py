@@ -386,7 +386,7 @@ class DeckController:
             self.set_brightness(deck_settings.get("brightness", {}).get("value", 75))
 
         def set_from_page(self: "DeckController"):
-            self.set_brightness(page.dict.get("brightness", 75))
+            self.set_brightness(page.dict.get("brightness", {}).get("value", 75))
 
         if "brightness" in deck_settings:
             set_from_deck_settings(self)
@@ -608,7 +608,8 @@ class DeckController:
         ))
 
     def delete(self):
-        self.active_page.action_objects = {}
+        if self.active_page is not None:
+            self.active_page.action_objects = {}
 
         self.media_player.stop()
 
@@ -1309,7 +1310,7 @@ class ControllerKey:
 
 
 class KeyLabel:
-    def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 16, font_name: str = None, color: list[int] = [255, 255, 255, 255], font_weight: int = 1):
+    def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 15, font_name: str = None, color: list[int] = [255, 255, 255, 255], font_weight: int = 0):
         if text is None:
             text = ""
 

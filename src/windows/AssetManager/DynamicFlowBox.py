@@ -62,13 +62,13 @@ class DynamicFlowBox(Gtk.Box):
                                margin_top=15, margin_bottom=15, margin_start=15, margin_end=15)
         self.append(self.nav_box)
 
-        self.back_button = Gtk.Button(icon_name="com.core447.StreamController_go-previous-symbolic")
+        self.back_button = Gtk.Button(icon_name="go-previous-symbolic")
         self.back_button.connect("clicked", self.on_back)
         self.nav_box.append(self.back_button)
 
         self.nav_box.append(Gtk.Box(hexpand=True))
 
-        self.next_button = Gtk.Button(icon_name="com.core447.StreamController_go-next-symbolic")
+        self.next_button = Gtk.Button(icon_name="go-next-symbolic")
         self.next_button.connect("clicked", self.on_next)
         self.nav_box.append(self.next_button)
 

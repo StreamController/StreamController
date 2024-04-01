@@ -45,7 +45,7 @@ class ActionConfigurator(Gtk.Box):
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.nav_box)
 
-        self.back_button = Gtk.Button(icon_name="com.core447.StreamController_go-previous-symbolic")
+        self.back_button = Gtk.Button(icon_name="go-previous-symbolic")
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
 

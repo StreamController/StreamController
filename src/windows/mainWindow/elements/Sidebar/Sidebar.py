@@ -202,7 +202,7 @@ class PagesGroup(BetterPreferencesGroup):
         empty_title.set_visible(False)
         title.set_visible(False)
 
-        row1.add_suffix(Gtk.Button(icon_name="com.core447.StreamController_open-menu-symbolic", css_classes=["flat"], vexpand=False, valign=Gtk.Align.CENTER))
+        row1.add_suffix(Gtk.Button(icon_name="view-more-symbolic", css_classes=["flat"], vexpand=False, valign=Gtk.Align.CENTER))
 
 
 class AdwPageRow(Adw.PreferencesRow):
@@ -230,10 +230,10 @@ class AdwPageRow(Adw.PreferencesRow):
                                visible=False)
         self.main_box.append(self.entry)
 
-        self.active_icon = Gtk.Image(icon_name="com.core447.StreamController_object-select-symbolic", css_classes=["flat"], margin_start=3, visible=False)
+        self.active_icon = Gtk.Image(icon_name="selection-mode-symbolic", css_classes=["flat"], margin_start=3, visible=False)
         self.main_box.append(self.active_icon)
 
-        self.edit_button = Gtk.Button(icon_name="com.core447.StreamController_edit-symbolic", halign=Gtk.Align.END, css_classes=["flat"], hexpand=True)
+        self.edit_button = Gtk.Button(icon_name="document-edit-symbolic", halign=Gtk.Align.END, css_classes=["flat"], hexpand=True)
         self.edit_button.connect("clicked", self.on_edit_clicked)
         self.main_box.append(self.edit_button)
 
@@ -326,7 +326,7 @@ class PageRow(Gtk.Overlay):
         self.label = Gtk.Label(xalign=0, label="Page Row")
         self.toggle_button.set_child(self.label)
 
-        self.menu_button = Gtk.Button(icon_name="com.core447.StreamController_open-menu-symbolic", halign=Gtk.Align.END, css_classes=["flat"])
+        self.menu_button = Gtk.Button(icon_name="view-more-symbolic", halign=Gtk.Align.END, css_classes=["flat"])
         self.add_overlay(self.menu_button)
 
 

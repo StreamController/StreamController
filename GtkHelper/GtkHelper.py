@@ -350,7 +350,7 @@ class OriginalURL(Adw.ActionRow):
         self.suffix_box = Gtk.Box(valign=Gtk.Align.CENTER)
         self.add_suffix(self.suffix_box)
 
-        self.open_button = Gtk.Button(icon_name="com.core447.StreamController_web-browser-symbolic")
+        self.open_button = Gtk.Button(icon_name="web-browser-symbolic")
         self.open_button.connect("clicked", self.on_open_clicked)
         self.suffix_box.append(self.open_button)
 

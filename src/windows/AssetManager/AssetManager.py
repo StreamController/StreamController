@@ -77,7 +77,7 @@ class AssetManager(Gtk.ApplicationWindow):
         self.stack_switcher = Gtk.StackSwitcher(stack=self.asset_chooser)
         self.header_bar.set_title_widget(self.stack_switcher)
 
-        self.back_button = Gtk.Button(icon_name="com.core447.StreamController_go-previous-symbolic", visible=False)
+        self.back_button = Gtk.Button(icon_name="go-previous-symbolic", visible=False)
         self.back_button.connect("clicked", self.on_back_button_click)
         self.header_bar.pack_start(self.back_button)
 

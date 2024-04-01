@@ -46,7 +46,7 @@ class MultiDeckSelectorRow(Adw.ActionRow):
         self.set_label(len(self.selected_deck_serials))
         self.suffix_box.append(self.suffix_label)
 
-        self.arrow_icon = Gtk.Image(icon_name="com.core447.StreamController_go-next-symbolic")
+        self.arrow_icon = Gtk.Image(icon_name="go-next-symbolic")
         self.suffix_box.append(self.arrow_icon)
 
     def on_activated(self, widget):

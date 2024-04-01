@@ -1309,7 +1309,7 @@ class ControllerKey:
 
 
 class KeyLabel:
-    def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 16, font_name: str = None, color: list[int] = [255, 255, 255, 255], font_weight: int = 1):
+    def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 15, font_name: str = None, color: list[int] = [255, 255, 255, 255], font_weight: int = 0):
         if text is None:
             text = ""
 

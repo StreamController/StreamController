@@ -111,7 +111,7 @@ class App(Adw.Application):
     def on_quit(self, *args):
         log.info("Quitting...")
 
-        gl.window_grabber.poll = False
+        gl.threads_running = False
 
         # Force quit if normal quit is not possible
         timer = threading.Timer(6, self.force_quit)

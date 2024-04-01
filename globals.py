@@ -47,6 +47,7 @@ signal_manager: "SignalManager" = None
 window_grabber: "WindowGrabber" = None
 store: "Store" = None # Only if opened
 flatpak_permission_manager: "FlatpakPermissionManager" = None
+threads_running: bool = True
 
 
 app_version: str = "1.4.2-beta" # In breaking.feature.fix-state format

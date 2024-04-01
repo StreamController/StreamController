@@ -124,5 +124,9 @@ class FlatpakPermissionManager:
             if gl.app.main_win is not None:
                 window = gl.app.main_win
 
+        if hasattr(gl, "store"):
+            if gl.store is not None:
+                window = gl.store
+
         window = FlatpakPermissionRequestWindow(gl.app, window, command=command, description=description)
         window.present()

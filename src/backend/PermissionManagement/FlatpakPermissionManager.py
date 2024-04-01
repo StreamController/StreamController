@@ -102,7 +102,7 @@ class FlatpakPermissionManager:
             command += " --system-talk-name="
         command += name
 
-        command =+ f" {self.app_id}"
+        command += f" {self.app_id}"
 
         return command
     

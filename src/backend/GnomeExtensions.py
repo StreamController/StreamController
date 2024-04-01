@@ -32,7 +32,7 @@ class GnomeExtensions:
             pass
 
     def get_is_connected(self) -> bool:
-        return None in (self.bus, self.proxy, self.interface)
+        return None not in (self.bus, self.proxy, self.interface)
     
     def get_installed_extensions(self) -> list[str]:
         extensions: list[str] = []

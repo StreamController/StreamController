@@ -102,6 +102,8 @@ class FlatpakPermissionManager:
             command += " --system-talk-name="
         command += name
 
+        command =+ f" {self.app_id}"
+
         return command
     
     def show_dbus_permission_request_dialog(self, name: str, bus: str="session", description: str="None"):

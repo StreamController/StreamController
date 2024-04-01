@@ -260,7 +260,7 @@
   background-color: #7caae4;
 }
 
-.onboarding-icon {
+.onboarding-image {
   min-width: 300px;
   min-height: 300px;
 }
@@ -276,15 +276,8 @@
 }
 
 .onboarding-nav-button {
-  background-color: #3584E4;
   min-width: 40px;
   min-height: 40px;
-}
-
-.onboarding-start-button {
-  background-color: #3584E4;
-  font-size: 25px;
-  border-radius: 999px;
 }
 
 .reset-button {

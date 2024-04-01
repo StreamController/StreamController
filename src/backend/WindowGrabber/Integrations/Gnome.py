@@ -42,7 +42,6 @@ class Gnome(Integration):
         self.bus: dbus.Bus = None
         self.proxy =  None
         self.interface = None
-        self.install_extension()
         self.connect_dbus()
 
     def install_extension(self) -> None:

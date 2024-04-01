@@ -126,3 +126,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
 
         self.about.set_release_notes(gl.release_notes)  
         self.about.set_release_notes_version(gl.app_version)
+
+    def set_optional_actions_state(self, state: bool) -> None:
+        self.open_store_action.set_enabled(state)
+        self.open_settings_action.set_enabled(state)

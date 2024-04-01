@@ -168,7 +168,9 @@
     "multi-deck-selector.selected": "selected",
     "permissions.request.default-description": "A plugin requested permissions. Consider running the following command to grant the needed permission",
     "permissions.request.plugin-blueprint": "The {name} plugin requested a new permission. Consider running the following command to ensure the plugin works correctly:",
-    "onboarding.extension.install-button": "Install",
+    "onboarding.extension.button.install": "Install",
+    "onboarding.extension.button.installed": "Installed",
+    "onboarding.extension.button.failed": "Failed",
     "onboarding.extension.detail": "Install the official Gnome extension to allow for automatic page switching",
     "onboarding.extension.header": "Gnome Extension",
     "onboarding.extension.hint": "Requires Gnome Extensions to be installed"

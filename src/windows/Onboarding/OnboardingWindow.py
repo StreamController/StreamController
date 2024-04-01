@@ -202,15 +202,15 @@ class ExtensionOnboardingScreen(Gtk.Box):
         self.install_button.set_css_classes(["pill"])
         if status == "uninstalled":
             self.install_button.add_css_class("suggested-action")
-            self.install_button.set_label("Install")
+            self.install_button.set_label(gl.lm.get("onboarding.extension.button.install"))
             self.install_button.set_sensitive(True)
         elif status == "installed":
             self.install_button.add_css_class("success")
-            self.install_button.set_label("Installed")
+            self.install_button.set_label(gl.lm.get("onboarding.extension.button.installed"))
             self.install_button.set_sensitive(False)
         elif status == "failed":
             self.install_button.add_css_class("destructive-action")
-            self.install_button.set_label("Failed")
+            self.install_button.set_label(gl.lm.get("onboarding.extension.button.failed"))
             self.install_button.set_sensitive(False)
             # Allow retry after 1 second
             GLib.timeout_add(1000, self.set_button_status, "uninstalled")

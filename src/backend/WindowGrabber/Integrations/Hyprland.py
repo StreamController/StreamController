@@ -90,7 +90,7 @@ class WatchForActiveWindowChange(threading.Thread):
         self.last_active_window = hyprland.get_active_window()
 
     def run(self) -> None:
-        while True:
+        while self.hyprland.window_grabber.poll:
             time.sleep(0.2)
             new_active_window = self.hyprland.get_active_window()
             if new_active_window is None:

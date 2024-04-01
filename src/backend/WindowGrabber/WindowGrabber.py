@@ -31,6 +31,7 @@ from src.backend.WindowGrabber.Integrations.Gnome import Gnome
 class WindowGrabber:
     def __init__(self):
         self.SUPPORTED_ENVS = ["hyprland", "gnome"]
+        self.poll = True
 
         self.integration: Integration = None
         self.init_integration()

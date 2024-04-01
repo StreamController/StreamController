@@ -25,7 +25,7 @@ class GnomeExtensions:
     def connect_dbus(self) -> None:
         try:
             self.bus = dbus.SessionBus()
-            self.proxy = self.bus.get_object("org.gnome.Shell", "/org/gnome/Shellr")
+            self.proxy = self.bus.get_object("org.gnome.Shell", "/org/gnome/Shell")
             self.interface = dbus.Interface(self.proxy, "org.gnome.Shell.Extensions")
         except dbus.exceptions.DBusException as e:
             log.error(f"Failed to connect to D-Bus: {e}")

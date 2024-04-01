@@ -112,7 +112,11 @@ class FlatpakPermissionRequestWindow(Gtk.ApplicationWindow):
 
 
     def on_copy(self, button):
-        pyclip.copy(self.command)
+        try:
+            pyclip.copy(self.command)
+        except:
+            #TODO: Show toast
+            pass
 
     def on_mark_solved(self, button):
         self.destroy()

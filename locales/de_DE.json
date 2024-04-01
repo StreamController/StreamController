@@ -165,5 +165,11 @@
     "page-manager.page-editor.default-page.row.title": "Standartseite",
     "page-manager.page-editor.default-page.row.subtitle": "Auswählen auf welchen Decks diese Seite beim Start geladen werden soll",
     "multi-deck-selector.title": "Decks auswählen",
-    "multi-deck-selector.selected": "auswählen"
+    "multi-deck-selector.selected": "auswählen",
+    "permissions.request.default-description": "Ein Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:",
+    "permissions.request.plugin-blueprint": "Das {name} Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:",
+    "onboarding.extension.install-button": "Installieren",
+    "onboarding.extension.detail": "Installiere die offizielle Gnome Erweiterung, um automatische Seitenwechsel zu ermöglichen",
+    "onboarding.extension.header": "Gnome Erweiterungen",
+    "onboarding.extension.hint": "Gnome Erweiterungen muss installiert sein"
 }

@@ -173,5 +173,5 @@
     "onboarding.extension.button.failed": "Failed",
     "onboarding.extension.detail": "Install the official Gnome extension to allow for automatic page switching",
     "onboarding.extension.header": "Gnome Extension",
-    "onboarding.extension.hint": "Requires Gnome Extensions to be installed"
+    "onboarding.extension.hint": "Requires Gnome Extensions & Gnome Shell 45 or later"
 }

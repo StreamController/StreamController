@@ -173,5 +173,5 @@
     "onboarding.extension.button.failed": "Fehlgeschlagen",
     "onboarding.extension.detail": "Installiere die offizielle Gnome Erweiterung, um automatische Seitenwechsel zu ermöglichen",
     "onboarding.extension.header": "Gnome Erweiterungen",
-    "onboarding.extension.hint": "Gnome Erweiterungen muss installiert sein"
+    "onboarding.extension.hint": "Erfordert Gnome Erweiterungen & Gnome Shell 45 oder neuer"
 }

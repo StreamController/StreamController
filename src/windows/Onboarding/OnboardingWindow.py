@@ -19,7 +19,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Pango
+from gi.repository import Gtk, Adw, Pango, GLib
 
 # Import globals
 import globals as gl
@@ -178,16 +178,53 @@ class ExtensionOnboardingScreen(Gtk.Box):
                                 width_request=600, halign=Gtk.Align.CENTER, wrap_mode=Gtk.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
         self.append(self.detail)
 
-        self.install_button = Gtk.Button(label=gl.lm.get("onboarding.extension.install-button"), css_classes=["pill", "suggested-action"], margin_top=20,
-                                         halign=Gtk.Align.CENTER)
+        self.install_button = Gtk.Button(label=gl.lm.get("onboarding.extension.install-button"), margin_top=20, halign=Gtk.Align.CENTER)
+        self.update_button_status()
         self.install_button.connect("clicked", self.on_install_button_click)
         self.append(self.install_button)
 
         self.hint_label = Gtk.Label(label=gl.lm.get("onboarding.extension.hint"), sensitive=False, margin_top=20)
         self.append(self.hint_label)
 
+    def update_button_status(self) -> None:
+        installed_extensions = gl.gnome_extensions.get_installed_extensions()
+        print(installed_extensions)
+        installed = "streamcontroller@core447.com" in installed_extensions
+        if installed:
+            self.set_button_status("installed")
+        else:
+            self.set_button_status("uninstalled")
+
+    def set_button_status(self, status: str) -> None:
+        """
+        uninstalled, installed, failed
+        """
+        self.install_button.set_css_classes(["pill"])
+        if status == "uninstalled":
+            self.install_button.add_css_class("suggested-action")
+            self.install_button.set_label("Install")
+            self.install_button.set_sensitive(True)
+        elif status == "installed":
+            self.install_button.add_css_class("success")
+            self.install_button.set_label("Installed")
+            self.install_button.set_sensitive(False)
+        elif status == "failed":
+            self.install_button.add_css_class("destructive-action")
+            self.install_button.set_label("Failed")
+            self.install_button.set_sensitive(False)
+            # Allow retry after 1 second
+            GLib.timeout_add(1000, self.set_button_status, "uninstalled")
+            
+        # To stop potential GLib.timeout_add
+        return False
+
+
     def on_install_button_click(self, button):
-        gl.gnome_extensions.request_installation("streamcontroller@core447.com")
+        result = gl.gnome_extensions.request_installation("streamcontroller@core447.com")
+        if result:
+            self.set_button_status("installed")
+        else:
+            self.set_button_status("failed")
         gl.window_grabber.init_integration()
 
 class OnboardingScreen5(Gtk.Box):

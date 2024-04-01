@@ -25,6 +25,7 @@ from loguru import logger as log
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import font_path_from_name, font_name_from_path
 from src.backend.PageManagement.Page import NoActionHolderFound
+from src.backend.DeckManagement.DeckController import KeyLabel
 
 # Import globals
 import globals as gl
@@ -217,6 +218,7 @@ class LabelRow(Adw.PreferencesRow):
         self.color_chooser_button.set_rgba(color)
 
     def on_change_color(self, button):
+        self.add_new_label_if_needed()
         color = self.color_chooser_button.get_rgba()
         green = round(color.green * 255)
         blue = round(color.blue * 255)
@@ -240,6 +242,7 @@ class LabelRow(Adw.PreferencesRow):
 
 
     def on_change_font(self, button):
+        self.add_new_label_if_needed()
         font = self.font_chooser_button.get_font()
 
         pango_font = Pango.font_description_from_string(font)
@@ -273,6 +276,7 @@ class LabelRow(Adw.PreferencesRow):
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"] = entry.get_text()
         page.save()
+        self.add_new_label_if_needed()
 
         # self.update_key(_property=f"text-{self.key_name}", value=entry.get_text())
 
@@ -288,11 +292,33 @@ class LabelRow(Adw.PreferencesRow):
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
             controller_key = deck_controller.keys[key_index]
-            
+
             controller_key.labels[self.key_name].text = entry.get_text()
             controller_key.update()
 
+    def add_new_label_if_needed(self):
+        #TODO: Use this method to update everything on change
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            controller_key = deck_controller.keys[key_index]
+
+            if self.key_name in controller_key.labels:
+                continue
+
+            # Add new KeyLabel
+            label = KeyLabel(
+                text=self.entry.get_text(),
+                controller_key=controller_key
+            )
+            controller_key.add_label(label, self.key_name, update=False)
+
+
     def on_change_stroke_width(self, button):
+        self.add_new_label_if_needed()
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["stroke-width"] = round(self.stroke_width_button.get_value())
         page.save()

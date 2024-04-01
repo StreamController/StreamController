@@ -49,7 +49,7 @@ store: "Store" = None # Only if opened
 flatpak_permission_manager: "FlatpakPermissionManager" = None
 
 
-app_version: str = "1.3.6-beta" # In breaking.feature.fix-state format
+app_version: str = "1.3.7-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []

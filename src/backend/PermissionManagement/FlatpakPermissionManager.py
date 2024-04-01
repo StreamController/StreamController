@@ -102,7 +102,7 @@ class FlatpakPermissionManager:
             command += " --system-talk-name="
         command += name
 
-        return self.add_spawn_prefix_if_needed(command)
+        return command
     
     def show_dbus_permission_request_dialog(self, name: str, bus: str="session", description: str="None"):
         if not self.get_is_flatpak() and False:

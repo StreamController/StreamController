@@ -13,11 +13,13 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+from asyncio import wrap_future
+import os
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Pango
 
 # Import globals
 import globals as gl
@@ -56,21 +58,23 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.carousel.connect("page-changed", self.on_page_changed)
         self.overlay.set_child(self.carousel)
 
-        self.carousel.append(OnboardingScreen("Assets/Onboarding/icon.png", gl.lm.get("onboarding.welcome.header"), gl.lm.get("onboarding.welcome.details")))
-        self.carousel.append(OnboardingScreen("Assets/Onboarding/store.png", gl.lm.get("onboarding.store.header"), gl.lm.get("onboarding.store.details")))
-        self.carousel.append(OnboardingScreen("Assets/Onboarding/multiple.png", gl.lm.get("onboarding.multiple.header"), gl.lm.get("onboarding.multiple.details")))
-        self.carousel.append(OnboardingScreen("Assets/Onboarding/productive.png", gl.lm.get("onboarding.productive.header"), gl.lm.get("onboarding.productive.details")))
+        self.carousel.append(ImageOnboardingScreen("Assets/Onboarding/icon.png", gl.lm.get("onboarding.welcome.header"), gl.lm.get("onboarding.welcome.details")))
+        self.carousel.append(IconOnboardingScreen("go-home", gl.lm.get("onboarding.store.header"), gl.lm.get("onboarding.store.details")))
+        self.carousel.append(IconOnboardingScreen("view-paged", gl.lm.get("onboarding.multiple.header"), gl.lm.get("onboarding.multiple.details")))
+        self.carousel.append(IconOnboardingScreen("preferences-desktop-remote-desktop-symbolic", gl.lm.get("onboarding.productive.header"), gl.lm.get("onboarding.productive.details")))
+        if os.getenv("XDG_CURRENT_DESKTOP").lower() == "gnome":
+            self.carousel.append(ExtensionOnboardingScreen())
         self.carousel.append(OnboardingScreen5(self))
 
         self.carousel_indicator_dots = Adw.CarouselIndicatorDots(carousel=self.carousel)
         self.header.set_title_widget(self.carousel_indicator_dots)
 
-        self.forward_button = Gtk.Button(icon_name="go-next-symbolic", css_classes=["onboarding-nav-button", "circular"],
+        self.forward_button = Gtk.Button(icon_name="go-next-symbolic", css_classes=["onboarding-nav-button", "circular", "suggested-action"],
                                          halign=Gtk.Align.END, valign=Gtk.Align.CENTER, margin_end=15)
         self.forward_button.connect("clicked", self.on_forward_button_click)
         self.overlay.add_overlay(self.forward_button)
 
-        self.back_button = Gtk.Button(icon_name="go-previous-symbolic", css_classes=["onboarding-nav-button", "circular"],
+        self.back_button = Gtk.Button(icon_name="go-previous-symbolic", css_classes=["onboarding-nav-button", "circular", "suggested-action"],
                                       halign=Gtk.Align.START, valign=Gtk.Align.CENTER, margin_start=15,
                                       visible=False)
         self.back_button.connect("clicked", self.on_back_button_click)
@@ -116,18 +120,17 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         if hasattr(gl.app, "permissions"):
             gl.app.permissions.present()
 
-class OnboardingScreen(Gtk.Box):
-    def __init__(self, image_file: str, label: str, detail: str):
+class ImageOnboardingScreen(Gtk.Box):
+    def __init__(self, image_path: str, label: str, detail: str):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        self.image_file = image_file
+        self.image_path = image_path
         self.label = label
         self.detail = detail
 
         self.build()
 
     def build(self):
-        self.image = Gtk.Image(file=self.image_file, css_classes=["onboarding-icon"],
-                               margin_top=120)
+        self.image = Gtk.Image(file=self.image_path, css_classes=["onboarding-image"], margin_top=120)
         self.append(self.image)
 
         self.label = Gtk.Label(label=self.label, css_classes=["onboarding-welcome-label"],
@@ -137,6 +140,55 @@ class OnboardingScreen(Gtk.Box):
         self.detail = Gtk.Label(label=self.detail, css_classes=["onboarding-welcome-detail-label"],)
         self.append(self.detail)
 
+class IconOnboardingScreen(Gtk.Box):
+    def __init__(self, icon_name: str, label: str, detail: str):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.icon_name = icon_name
+        self.label = label
+        self.detail = detail
+
+        self.build()
+
+    def build(self):
+        self.image = Gtk.Image(icon_name=self.icon_name, pixel_size=350, margin_top=120)
+        self.append(self.image)
+
+        self.label = Gtk.Label(label=self.label, css_classes=["onboarding-welcome-label"],
+                               margin_top=50)
+        self.append(self.label)
+
+        self.detail = Gtk.Label(label=self.detail, css_classes=["onboarding-welcome-detail-label"],)
+        self.append(self.detail)
+
+
+class ExtensionOnboardingScreen(Gtk.Box):
+    def __init__(self):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+
+        self.build()
+
+    def build(self):
+        self.image = Gtk.Image(icon_name="folder-download-symbolic", pixel_size=250, margin_top=70)
+        self.append(self.image)
+
+        self.label = Gtk.Label(label=gl.lm.get("onboarding.extension.header"), css_classes=["onboarding-welcome-label"], margin_top=50)
+        self.append(self.label)
+
+        self.detail = Gtk.Label(label=gl.lm.get("onboarding.extension.detail"), css_classes=["onboarding-welcome-detail-label"],
+                                width_request=600, halign=Gtk.Align.CENTER, wrap_mode=Gtk.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
+        self.append(self.detail)
+
+        self.install_button = Gtk.Button(label=gl.lm.get("onboarding.extension.install-button"), css_classes=["pill", "suggested-action"], margin_top=20,
+                                         halign=Gtk.Align.CENTER)
+        self.install_button.connect("clicked", self.on_install_button_click)
+        self.append(self.install_button)
+
+        self.hint_label = Gtk.Label(label=gl.lm.get("onboarding.extension.hint"), sensitive=False, margin_top=20)
+        self.append(self.hint_label)
+
+    def on_install_button_click(self, button):
+        gl.gnome_extensions.request_installation("streamcontroller@core447.com")
+        gl.window_grabber.init_integration()
 
 class OnboardingScreen5(Gtk.Box):
     def __init__(self, onboarding_window: OnboardingWindow):
@@ -151,7 +203,7 @@ class OnboardingScreen5(Gtk.Box):
                                margin_top=50)
         self.append(self.label)
 
-        self.start_button = Gtk.Button(label=gl.lm.get("onboarding.ready.button"), css_classes=["onboarding-start-button"], margin_top=20)
+        self.start_button = Gtk.Button(label=gl.lm.get("onboarding.ready.button"), css_classes=["pill", "suggested-action"], margin_top=20)
         self.start_button.connect("clicked", self.on_start_button_click)
         self.append(self.start_button)
 

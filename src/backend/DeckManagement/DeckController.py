@@ -608,7 +608,8 @@ class DeckController:
         ))
 
     def delete(self):
-        self.active_page.action_objects = {}
+        if self.active_page is not None:
+            self.active_page.action_objects = {}
 
         self.media_player.stop()
 

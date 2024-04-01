@@ -52,7 +52,7 @@ class Gnome(Integration):
         if uuid in installed_extensions:
             return
         
-        gl.gnome_extensions.reguest_installation(uuid)
+        gl.gnome_extensions.request_installation(uuid)
 
 
     def connect_dbus(self) -> None:

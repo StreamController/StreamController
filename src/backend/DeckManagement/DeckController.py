@@ -321,8 +321,9 @@ class DeckController:
         if state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
             self.screen_saver.on_key_change()
+            return
         
-        if self.screen_saver.showing:
+        elif self.screen_saver.showing:
             return
 
         self.keys[key].on_key_change(state)
@@ -1348,6 +1349,8 @@ class KeyImage(SingleKeyAsset):
             self.image = self.controller_key.deck_controller.generate_alpha_key()
 
     def get_raw_image(self) -> Image.Image:
+        if not hasattr(self, "image"):
+            return
         return self.image
     
     def close(self) -> None:

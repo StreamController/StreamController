@@ -321,7 +321,6 @@ class DeckController:
         if state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
             self.screen_saver.on_key_change()
-            return
         
         elif self.screen_saver.showing:
             return

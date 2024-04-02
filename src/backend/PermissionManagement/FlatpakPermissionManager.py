@@ -14,7 +14,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import gi
+
 gi.require_version("Xdp", "1.0")
+from gi.repository import GLib
 from gi.repository import Xdp
 
 import subprocess
@@ -129,4 +131,5 @@ class FlatpakPermissionManager:
                 window = gl.store
 
         window = FlatpakPermissionRequestWindow(gl.app, window, command=command, description=description)
-        window.present()
+        # window.present()
+        GLib.idle_add(window.present) # GLib should not be necessary, but without it the window flickers

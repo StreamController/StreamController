@@ -35,16 +35,15 @@ class FlatpakPermissionRequestWindow(Gtk.ApplicationWindow):
     def __init__(self, application, main_window: "MainWindow", command: str, description: str):
         super().__init__(application=application)
         self.set_title("Permissions")
-        self.set_transient_for(main_window)
-        self.set_modal(True)
+        if main_window is not None:
+            self.set_transient_for(main_window)
+            self.set_modal(True)
         self.set_default_size(600, 600)
 
         self.command = command
         self.description = description
         self.flatpak_docs_link = "https://docs.flatpak.org/en/latest/sandbox-permissions.html"
-        
         self.build()
-        self.set_default_size(600, 600)
 
     def build(self):
         self.header = Adw.HeaderBar(css_classes=["flat"])

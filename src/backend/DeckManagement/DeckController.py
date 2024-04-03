@@ -889,8 +889,10 @@ class KeyGIF(SingleKeyAsset):
         return self.get_next_frame()
     
     def close(self) -> None:
-        self.gif.close()
+        self.gif = None
         self.frames = None
+        del self.gif
+        del self.frames
     
 
 class ControllerKey:

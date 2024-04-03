@@ -184,3 +184,5 @@ data/
 vid_cache/
 
 **/.flatpak-builder/
+
+**/.flatpak/

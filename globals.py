@@ -2,9 +2,13 @@ import Pyro5.api
 import os
 from typing import TYPE_CHECKING
 import argparse
+import sys
 
 DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
 # DATA_PATH = "data"
+
+# Add data path to sys.path
+sys.path.append(DATA_PATH)
 
 if TYPE_CHECKING:
     from src.app import App

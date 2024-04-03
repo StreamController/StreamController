@@ -12,9 +12,6 @@ from streamcontroller_plugin_tools import BackendBase
 
 import globals as gl
 
-# Add data path to sys.path
-sys.path.append(gl.DATA_PATH)
-
 class PluginManager:
     action_index = {}
     def __init__(self):

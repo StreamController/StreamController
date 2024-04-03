@@ -177,10 +177,10 @@ class PageManager:
             settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
             if settings.get("default-pages") is None:
                 continue
-            for entry in settings["default-pages"]:
-                if entry["path"] == old_path:
-                    entry["path"] = new_path
-                    gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+            for serial_number, path in settings.get("default-pages", {}).items():
+                if path == old_path:
+                    settings["default-pages"][serial_number] = new_path
+            gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)
 
         # Remove old page
         os.remove(old_path)

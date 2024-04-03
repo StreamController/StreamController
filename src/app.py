@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import multiprocessing
 import signal
 import sys
 import threading
@@ -113,10 +114,13 @@ class App(Adw.Application):
     def on_quit(self, *args):
         log.info("Quitting...")
 
+        gl.signal_manager.trigger_signal(Signals.AppQuit)
+
         gl.threads_running = False
 
         # Force quit if normal quit is not possible
         timer = threading.Timer(6, self.force_quit)
+        timer.name = "force_quit_timer"
         timer.setDaemon(True)
         timer.start()
 
@@ -129,7 +133,9 @@ class App(Adw.Application):
             if thread.daemon:
                 continue
             log.debug(f"name: {thread.name}, id: {thread.ident} id2: {thread.native_id}")
-            
+
+        for child in multiprocessing.active_children():
+            child.terminate()
 
         # Close all decks
         gl.deck_manager.close_all()

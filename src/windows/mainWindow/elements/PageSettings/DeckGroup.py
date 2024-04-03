@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import os
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -285,7 +286,8 @@ class Screensaver(Adw.PreferencesRow):
         self.fps_spinner.set_value(fps)
         self.time_spinner.set_value(time)
         self.scale.set_value(brightness)
-        self.set_thumbnail(path)
+        if os.path.isfile(path):
+            self.set_thumbnail(path)
 
         self.config_box.set_visible(overwrite)
 

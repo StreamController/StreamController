@@ -36,6 +36,8 @@ def sha256(file_path):
         str: The sha256 hash of the file.
     """
     hash_sha256 = hashlib.sha256()
+    if not os.path.exists(file_path):
+        return
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_sha256.update(chunk)

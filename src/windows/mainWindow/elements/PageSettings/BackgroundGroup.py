@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import os
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -211,6 +212,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             self.media_selector_image.clear()
             return
         # return
+        if not os.path.isfile(file_path):
+            return
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
         if pixbuf is None:

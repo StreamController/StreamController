@@ -1037,7 +1037,6 @@ class ControllerKey:
             color = tuple(labels[label].color)
             font_size = labels[label].font_size
             font = ImageFont.truetype(font_path, font_size)
-            font_weight = labels[label].font_weight
 
             if text is None:
                 continue
@@ -1055,7 +1054,8 @@ class ControllerKey:
             start_mem = process.memory_info().rss
             draw.text(position,
                         text=text, font=font, anchor="ms",
-                        fill=color, stroke_width=font_weight)
+                        fill=color, stroke_width=2,
+                        stroke_fill="black")
             end = process.memory_info().rss
       
             
@@ -1158,8 +1158,7 @@ class ControllerKey:
                     text=page_dict["labels"][label].get("text"),
                     font_size=page_dict["labels"][label].get("font-size"),
                     font_name=page_dict["labels"][label].get("font-family"),
-                    color=page_dict["labels"][label].get("color"),
-                    font_weight=page_dict["labels"][label].get("stroke-width")
+                    color=page_dict["labels"][label].get("color")
                 )
                 self.add_label(key_label, position=label, update=False)
 
@@ -1315,7 +1314,7 @@ class ControllerKey:
 
 
 class KeyLabel:
-    def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 15, font_name: str = None, color: list[int] = [255, 255, 255, 255], font_weight: int = 0):
+    def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 15, font_name: str = None, color: list[int] = [255, 255, 255, 255]):
         if text is None:
             text = ""
 
@@ -1324,7 +1323,6 @@ class KeyLabel:
         self.font_size = font_size
         self.font_name = font_name
         self.color = color
-        self.font_weight = font_weight
 
     def get_font_path(self) -> str:
         if self.font_name is None and False:

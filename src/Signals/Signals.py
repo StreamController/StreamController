@@ -49,3 +49,6 @@ class PluginInstall(Signal):
     Callback:
     id: str
     """
+
+class AppQuit(Signal):
+    pass

@@ -34,6 +34,8 @@ from src.windows.Shortcuts.Shortcuts import ShortcutsWindow
 from src.windows.Onboarding.OnboardingWindow import OnboardingWindow
 from src.windows.Permissions.FlatpakPermissionRequest import FlatpakPermissionRequestWindow
 
+from src.Signals import Signals
+
 # Import globals
 import globals as gl
 

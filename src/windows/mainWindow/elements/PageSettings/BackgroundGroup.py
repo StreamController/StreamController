@@ -211,7 +211,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         if file_path == None:
             self.media_selector_image.clear()
             return
-        # return
+        if file_path is None:
+            return
         if not os.path.isfile(file_path):
             return
         image = gl.media_manager.get_thumbnail(file_path)

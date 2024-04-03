@@ -286,14 +286,16 @@ class Screensaver(Adw.PreferencesRow):
         self.fps_spinner.set_value(fps)
         self.time_spinner.set_value(time)
         self.scale.set_value(brightness)
-        if os.path.isfile(path):
-            self.set_thumbnail(path)
 
         self.config_box.set_visible(overwrite)
 
         # Save if changed
         if original_values != self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]:
             self.settings_page.deck_page.deck_controller.active_page.save()
+        
+        if path is not None:
+            if os.path.isfile(path):
+                self.set_thumbnail(path)
 
         self.connect_signals()
 

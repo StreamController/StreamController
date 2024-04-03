@@ -220,7 +220,10 @@ class Screensaver(Adw.PreferencesRow):
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
         self.scale.set_value(brightness)
-        self.set_thumbnail(path)
+
+        if path is not None:
+            if os.path.isfile(path):
+                self.set_thumbnail(path)
 
         self.connect_signals()
 

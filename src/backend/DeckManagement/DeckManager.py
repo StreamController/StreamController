@@ -124,6 +124,8 @@ class DeckManager:
 
     def on_disconnect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} disconnected")
+        if device_info["ID_VENDOR"] != "Elgato":
+            return
 
         for controller in self.deck_controller:
             if not controller.deck.connected():

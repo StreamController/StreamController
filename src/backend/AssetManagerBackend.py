@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, Adw, GLib
 
 # Import Python modules
 import json
@@ -208,17 +208,22 @@ class AssetManagerBackend(list):
         pass
 
     def add_custom_media_set_by_ui(self, url: str, path: str):
+        window = gl.app.main_win
+        if gl.store is not None:
+            window = gl.store
+            
         if path is None and url is not None:
             # Lower domain and remove point
             extension = os.path.splitext(url)[1].lower().replace(".", "")
             if extension not in (set(gl.video_extensions) | set(gl.image_extensions)):
+
                 # Not a valid url
                 dial = Gtk.AlertDialog(
                     message="The image is invalid.",
                     detail="You can only use urls directly pointing to images (not directly from Google).",
                     modal=True
                 )
-                dial.show()
+                GLib.idle_add(dial.show)
                 return -1
 
             os.makedirs(os.path.join(gl.DATA_PATH, "cache", "downloads"), exist_ok=True)
@@ -235,7 +240,7 @@ class AssetManagerBackend(list):
                     detail="Only images and videos are supported.",
                     modal=True
                 )
-            dial.show()
+            GLib.idle_add(dial.show)
             return
         asset_id = gl.asset_manager_backend.add(asset_path=path)
         if asset_id == None:

@@ -318,11 +318,12 @@ class DeckController:
             log.error(f"Failed to set deck key image. Error: {e}")
 
     def key_change_callback(self, deck, key, state):
+        screensaver_was_showing = self.screen_saver.showing
         if state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
             self.screen_saver.on_key_change()
         
-        elif self.screen_saver.showing:
+        if screensaver_was_showing:
             return
 
         self.keys[key].on_key_change(state)
@@ -674,6 +675,10 @@ class Background:
                     return
             self.set_video(BackgroundVideo(self.deck_controller, path, loop=loop, fps=fps), update=update)
         else:
+            if path is None:
+                return
+            if not os.path.isfile(path):
+                return
             with Image.open(path) as image:
                 self.set_image(BackgroundImage(self.deck_controller, image.copy()), update=update)
 

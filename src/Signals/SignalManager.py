@@ -40,4 +40,4 @@ class SignalManager:
         
         for callback in self.connected_signals.get(signal, []):
             # callback(*args, **kwargs)
-            GLib.idle_add(callback, args, kwargs)
+            GLib.idle_add(callback, *args, **kwargs)

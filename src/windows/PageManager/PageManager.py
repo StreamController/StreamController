@@ -70,7 +70,7 @@ class PageManager(Adw.ApplicationWindow):
         self.page_selector.add_row_by_path(page_path)
 
         # Emit signal
-        gl.signal_manager.trigger_signal(signal=Signals.PageAdd, path=page_path)
+        gl.signal_manager.trigger_signal(Signals.PageAdd, page_path)
 
     def remove_page_by_path(self, page_path: str) -> None:
         if page_path in gl.page_manager.custom_pages:
@@ -87,7 +87,7 @@ class PageManager(Adw.ApplicationWindow):
         gl.page_manager.remove_page(page_path)
 
         # Emit signal
-        gl.signal_manager.trigger_signal(signal=Signals.PageDelete, path=page_path)
+        gl.signal_manager.trigger_signal(Signals.PageDelete, page_path)
 
     def rename_page_by_path(self, old_path: str, new_path: str) -> None:
         self.page_selector.rename_page_row(old_path=old_path, new_path=new_path)
@@ -95,7 +95,7 @@ class PageManager(Adw.ApplicationWindow):
         gl.page_manager.move_page(old_path, new_path)
 
         # Emit signal
-        gl.signal_manager.trigger_signal(signal=Signals.PageRename, old_path=old_path, new_path=new_path)
+        gl.signal_manager.trigger_signal(Signals.PageRename, old_path, new_path)
 
     def get_number_of_user_pages(self) -> int:
         return len(gl.page_manager.get_pages(add_custom_pages=False))

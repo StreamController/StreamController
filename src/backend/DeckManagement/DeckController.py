@@ -521,7 +521,7 @@ class DeckController:
         self.media_player.add_task(self.update_all_keys)
 
         # Notify plugin actions
-        gl.signal_manager.trigger_signal(signal=Signals.ChangePage, controller=self, old_path=old_path, new_path=self.active_page.json_path)
+        gl.signal_manager.trigger_signal(Signals.ChangePage, self, old_path, self.active_page.json_path)
 
         log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()} took {time.time() - start} seconds")
 

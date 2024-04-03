@@ -73,7 +73,7 @@ class NoPagesError(Gtk.Box):
         gl.page_manager.add_page(name)
 
         # Notify plugin actions
-        gl.signal_manager.trigger_signal(signal=Signals.PageAdd, path=path)
+        gl.signal_manager.trigger_signal(Signals.PageAdd, path)
 
         gl.app.main_win.check_for_errors()
 

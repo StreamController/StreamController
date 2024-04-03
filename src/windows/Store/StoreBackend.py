@@ -617,7 +617,7 @@ class StoreBackend:
                     controller.load_page(controller.active_page)
 
         # Notify plugin actions
-        gl.signal_manager.trigger_signal(signal=Signals.PluginInstall, id=plugin_dict["id"])
+        gl.signal_manager.trigger_signal(Signals.PluginInstall, plugin_dict["id"])
 
         log.success(f"Plugin {plugin_dict['id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False) -> bool:

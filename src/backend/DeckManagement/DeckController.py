@@ -888,6 +888,10 @@ class KeyGIF(SingleKeyAsset):
     def get_raw_image(self) -> Image.Image:
         return self.get_next_frame()
     
+    def close(self) -> None:
+        self.gif.close()
+        self.frames = None
+    
 
 class ControllerKey:
     def __init__(self, deck_controller: DeckController, key: int):

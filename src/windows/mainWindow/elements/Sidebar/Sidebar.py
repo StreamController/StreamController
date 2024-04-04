@@ -44,7 +44,19 @@ class Sidebar(Adw.NavigationPage):
         super().__init__(hexpand=True, title="Sidebar", **kwargs)
         self.main_window = main_window
         self.active_coords: tuple = None
+        
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+
         self.build()
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+        self.on_map_tasks = []
 
     def build(self):
         self.main_stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
@@ -86,6 +98,9 @@ class Sidebar(Adw.NavigationPage):
         self.main_stack.set_visible_child(self.action_configurator)
 
     def load_for_coords(self, coords):
+        if not self.get_mapped():
+            self.on_map_tasks.append(lambda: self.load_for_coords(coords))
+            return
         self.active_coords = coords
         # Verify that a controller is selected
         if self.main_window.leftArea.deck_stack.get_visible_child() is None:
@@ -99,6 +114,7 @@ class Sidebar(Adw.NavigationPage):
         if controller.active_page == None:
             # self.error_page.set_error_text(gl.lm.get("right-area-no-page-selected-error"))
             # self.error_page.set_reload_args([None])
+            #TODO: User is unable to change or create pages when the error is shown
             self.show_error()
             return
 

@@ -162,6 +162,7 @@ class Screensaver(Adw.PreferencesRow):
     def on_map(self, widget):
         for f in self.on_map_tasks:
             f()
+        self.on_map_tasks = []
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,

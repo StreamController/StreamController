@@ -240,6 +240,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             )
             dial.show()
             return
+        self.media_selector_image.pixbuf = None
+        del self.media_selector_image.pixbuf
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 

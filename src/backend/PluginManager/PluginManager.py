@@ -42,7 +42,11 @@ class PluginManager:
             if subclass in self.initialized_plugin_classes:
                 log.info(f"Skipping {subclass} because it's already initialized")
                 continue
-            obj = subclass()
+            try:
+                obj = subclass()
+            except Exception as e:
+                log.error(f"Error initializing plugin {subclass}: {e}. Skipping...")
+                continue
             self.initialized_plugin_classes.append(subclass)
 
     def generate_action_index(self):

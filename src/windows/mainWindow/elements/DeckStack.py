@@ -150,3 +150,6 @@ class DeckStack(Gtk.Stack):
             if page.get_child().deck_controller == deck_controller:
                 self.set_visible_child(page.get_child())
                 return
+            
+    def get_visible_child(self) -> DeckStackChild:
+        return super().get_visible_child()

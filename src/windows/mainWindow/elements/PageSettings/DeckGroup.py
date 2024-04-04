@@ -152,7 +152,17 @@ class Screensaver(Adw.PreferencesRow):
         super().__init__(css_classes=["no-click"])
         self.settings_page = settings_page
         self.build()
-    
+
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
@@ -344,6 +354,9 @@ class Screensaver(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.screen_saver.set_brightness(scale.get_value())
 
     def set_thumbnail(self, file_path):
+        if not self.get_mapped():
+            self.on_map_tasks.append(lambda: self.set_thumbnail(file_path))
+            return
         if file_path == None:
             return
         image = gl.media_manager.get_thumbnail(file_path)

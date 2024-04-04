@@ -45,7 +45,18 @@ class BackgroundMediaRow(Adw.PreferencesRow):
     def __init__(self, settings_page, **kwargs):
         super().__init__()
         self.settings_page = settings_page
+
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+        
         self.build()
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -208,6 +219,9 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.set_deck_background)
 
     def set_thumbnail(self, file_path):
+        if not self.get_mapped():
+            self.on_map_tasks.append(lambda: self.set_thumbnail(file_path))
+            return
         if file_path == None:
             self.media_selector_image.clear()
             return

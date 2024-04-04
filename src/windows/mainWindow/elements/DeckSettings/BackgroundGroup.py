@@ -46,7 +46,18 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         super().__init__()
         self.settings_page = settings_page
         self.deck_serial_number = deck_serial_number
+
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+        
         self.build()
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -209,6 +220,9 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         controller.load_background(page=controller.active_page)
 
     def set_thumbnail(self, file_path):
+        if not self.get_mapped():
+            self.on_map_tasks.append(lambda: self.set_thumbnail(file_path))
+            return
         if file_path in [None, ""]:
             return
         if not os.path.isfile(file_path):

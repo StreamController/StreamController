@@ -149,21 +149,13 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             self.connect_signals()
             return
         
-        original_values = None
-        if "background" in self.settings_page.deck_page.deck_controller.active_page.dict:
-            original_values = copy(self.settings_page.deck_page.deck_controller.active_page.dict)
+        page_dict = self.settings_page.deck_page.deck_controller.active_page.dict
 
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("background", {}) 
-
-        overwrite = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("overwrite", False)
-        show = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("show", False)
-        file_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)
-        loop = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("loop", True)
-        fps = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("fps", 30)
-
-        # Save if changed
-        if original_values != self.settings_page.deck_page.deck_controller.active_page.dict:
-            self.settings_page.deck_page.deck_controller.active_page.save()
+        overwrite = page_dict.get("background", {}).get("overwrite", False)
+        show = page_dict.get("background", {}).get("show", False)
+        file_path = page_dict.get("background", {}).get("path", None)
+        loop = page_dict.get("background", {}).get("loop", True)
+        fps = page_dict.get("background", {}).get("fps", 30)
 
         self.overwrite_switch.set_active(overwrite)
         self.show_switch.set_active(show)

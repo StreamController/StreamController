@@ -88,7 +88,7 @@ class IconSelector(Gtk.Box):
 
     def on_click(self, button):
         media_path = self.get_media_path()
-        GLib.idle_add(gl.app.let_user_select_asset, default_path=media_path, callback_func=self.set_media_callback)
+        GLib.idle_add(gl.app.let_user_select_asset, media_path, self.set_media_callback)
 
     def get_media_path(self):
         active_page_dict = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page.dict

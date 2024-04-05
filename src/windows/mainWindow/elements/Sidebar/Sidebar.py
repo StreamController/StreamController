@@ -56,7 +56,7 @@ class Sidebar(Adw.NavigationPage):
     def on_map(self, widget):
         for f in self.on_map_tasks:
             f()
-        self.on_map_tasks = []
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
@@ -98,10 +98,11 @@ class Sidebar(Adw.NavigationPage):
         self.main_stack.set_visible_child(self.action_configurator)
 
     def load_for_coords(self, coords):
+        self.active_coords = coords
         if not self.get_mapped():
+            self.on_map_tasks.clear()
             self.on_map_tasks.append(lambda: self.load_for_coords(coords))
             return
-        self.active_coords = coords
         # Verify that a controller is selected
         if self.main_window.leftArea.deck_stack.get_visible_child() is None:
             self.error_page.set_error_text(gl.lm.get("right-area-no-deck-selected-error"))

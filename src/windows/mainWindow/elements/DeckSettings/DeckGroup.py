@@ -50,8 +50,19 @@ class Brightness(Adw.PreferencesRow):
         self.deck_serial_number = deck_serial_number
         self.build()
 
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+
         self.load_default()
         self.scale.connect("value-changed", self.on_value_changed)
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -85,6 +96,11 @@ class Brightness(Adw.PreferencesRow):
             self.settings_page.deck_controller.set_brightness(value)
 
     def load_default(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_default())
+            return
+        
         original_values = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         
         # Set defaut values 
@@ -116,7 +132,7 @@ class Screensaver(Adw.PreferencesRow):
     def on_map(self, widget):
         for f in self.on_map_tasks:
             f()
-        self.on_map_tasks = []
+        self.on_map_tasks.clear()
     
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -293,9 +309,6 @@ class Screensaver(Adw.PreferencesRow):
             self.settings_page.deck_controller.screen_saver.set_brightness(scale.get_value())
 
     def set_thumbnail(self, file_path):
-        if not self.get_mapped():
-            self.on_map_tasks.append(lambda: self.set_thumbnail(file_path))
-            return
         if file_path == None:
             return
         if not os.path.isfile(file_path):

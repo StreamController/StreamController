@@ -58,7 +58,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
     def on_map(self, widget):
         for f in self.on_map_tasks:
             f()
-        self.on_map_tasks = []
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -123,6 +123,10 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
 
     def load_defaults(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_defaults())
+            return
         self.disconnect_signals()
         original_values = gl.settings_manager.get_deck_settings(self.deck_serial_number)
 
@@ -221,9 +225,6 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         controller.load_background(page=controller.active_page)
 
     def set_thumbnail(self, file_path):
-        if not self.get_mapped():
-            self.on_map_tasks.append(lambda: self.set_thumbnail(file_path))
-            return
         if file_path in [None, ""]:
             return
         if not os.path.isfile(file_path):

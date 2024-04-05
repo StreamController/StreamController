@@ -147,6 +147,7 @@ class Brightness(Adw.PreferencesRow):
         self.overwrite_switch.set_active(active)
         self.config_box.set_visible(active)
 
+
 class Screensaver(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", **kwargs):
         super().__init__(css_classes=["no-click"])
@@ -162,7 +163,7 @@ class Screensaver(Adw.PreferencesRow):
     def on_map(self, widget):
         for f in self.on_map_tasks:
             f()
-        self.on_map_tasks = []
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -355,9 +356,6 @@ class Screensaver(Adw.PreferencesRow):
         self.settings_page.deck_page.deck_controller.screen_saver.set_brightness(scale.get_value())
 
     def set_thumbnail(self, file_path):
-        if not self.get_mapped():
-            self.on_map_tasks.append(lambda: self.set_thumbnail(file_path))
-            return
         if file_path == None:
             return
         image = gl.media_manager.get_thumbnail(file_path)

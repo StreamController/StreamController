@@ -57,7 +57,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
     def on_map(self, widget):
         for f in self.on_map_tasks:
             f()
-        self.on_map_tasks = []
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -136,6 +136,10 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             log.error(f"Don't panic, getting this error is normal: {e}")
 
     def load_defaults_from_page(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_defaults_from_page())
+            return
         self.disconnect_signals()
 
         if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
@@ -220,9 +224,6 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.set_deck_background)
 
     def set_thumbnail(self, file_path):
-        if not self.get_mapped():
-            self.on_map_tasks.append(lambda: self.set_thumbnail(file_path))
-            return
         if file_path == None:
             self.media_selector_image.clear()
             return

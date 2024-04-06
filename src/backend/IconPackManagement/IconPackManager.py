@@ -14,9 +14,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 # Import Python modules
+from functools import lru_cache
 import json
 import os
 import shutil
+from sys import maxsize
 
 # Import own modules
 from src.backend.IconPackManagement.IconPack import IconPack
@@ -28,6 +30,7 @@ class IconPackManager:
     def __init__(self):
         self.packs = {}
 
+    @lru_cache
     def get_icon_packs(self) -> dir:
         packs = {}
         os.makedirs(os.path.join(gl.DATA_PATH, "icons"), exist_ok=True)
@@ -35,6 +38,7 @@ class IconPackManager:
             packs[pack] = IconPack(os.path.join(gl.DATA_PATH, "icons", pack))
         return packs
 
+    @lru_cache
     def get_pack_icons(self, icon_pack: dict):
         path = icon_pack.get("path")
         icons_path = os.path.join(path, "icons")
@@ -47,6 +51,7 @@ class IconPackManager:
 
         return icons
     
+    @lru_cache
     def get_icon_attribution(self, attribution:dict, icon_name: str) -> dict:
         if icon_name in attribution:
             # Use specific

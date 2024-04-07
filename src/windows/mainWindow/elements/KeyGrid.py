@@ -91,7 +91,7 @@ class KeyGrid(Gtk.Grid):
                 pass
         
         # Clear tasks
-        self.deck_controller.ui_grid_buttons_changes_while_hidden = {}
+        self.deck_controller.ui_grid_buttons_changes_while_hidden.clear()
 
     def select_key(self, x: int, y: int):
         self.buttons[x][y].on_focus_in()
@@ -275,6 +275,7 @@ class KeyButton(Gtk.Frame):
         del self.pixbuf
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         self.show_pixbuf(self.pixbuf)
+        image.close()
         image = None
         del image
 

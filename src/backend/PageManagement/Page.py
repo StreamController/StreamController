@@ -317,9 +317,6 @@ class Page:
                 if not isinstance(self.action_objects[key][i], NoActionHolderFound):
                     if hasattr(self.action_objects[key][i], "on_removed_from_cache"):
                         self.action_objects[key][i].on_removed_from_cache()
-                refs = gc.get_referrers(self.action_objects[key][i])
-                r2 = gc.get_referents(self.action_objects[key][i])
-                n = len(refs)
                 del self.action_objects[key][i]
         self.action_objects = {}
 

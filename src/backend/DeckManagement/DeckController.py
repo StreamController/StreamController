@@ -107,7 +107,7 @@ class MediaPlayerThread(threading.Thread):
         self.pause = False
         self._stop = False
 
-        self.tasks: list[MediaPlayerTask] = []
+        self.task_queue: Queue[MediaPlayerTask] = Queue()
         # self.tasks = {}
         self.image_tasks = {}
 
@@ -199,7 +199,7 @@ class MediaPlayerThread(threading.Thread):
             time.sleep(0.1)
 
     def add_task(self, method: callable, *args, **kwargs):
-        self.tasks.append(MediaPlayerTask(
+        self.tasks.put(MediaPlayerTask(
             deck_controller=self.deck_controller,
             page=self.deck_controller.active_page,
             _callable=method,
@@ -216,19 +216,11 @@ class MediaPlayerThread(threading.Thread):
         )
 
     def perform_media_player_tasks(self):
-        for task in list(self.tasks):
-            # Skip task if it has been removed
-            if task not in self.tasks:
-                continue
-            
-            # Remove task from list
-            self.tasks.remove(task)
-
-            # Skip task if dedicated to another page
+        while not self.task_queue.empty():
+            task = self.task_queue.get()
+            # Skip task if it is from another page
             if task.page is not self.deck_controller.active_page:
                 continue
-            
-            # Run the task
             task.run()
 
         for key in list(self.image_tasks.keys()):
@@ -259,6 +251,7 @@ class DeckController:
 
         # Tasks
         self.media_player_tasks: list[MediaPlayerTask] = []
+        self.media_player_tasks: Queue[MediaPlayerTask] = Queue()
 
         self.ui_grid_buttons_changes_while_hidden: dict = {}
 

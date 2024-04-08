@@ -605,7 +605,10 @@ class DeckController:
         return deck_stack_child.page_settings.grid_page
     
     def clear_media_player_tasks(self):
-        self.media_player_tasks.clear()
+        while not self.media_player.task_queue.empty():
+            self.media_player.task_queue.get()
+        
+        self.media_player.image_tasks.clear()
 
     def clear_media_player_tasks_via_task(self):
         self.media_player_tasks.append(MediaPlayerTask(

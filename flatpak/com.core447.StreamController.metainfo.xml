@@ -30,7 +30,13 @@
   <keywords>
     <keyword translate="no">Streaming</keyword>
     <keyword translate="no">Elgato Stream Deck</keyword>
+    <keyword translate="no">GTK</keyword>
   </keywords>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#244b62</color>
+    <color type="primary" scheme_preference="dark">#244b62</color>
+  </branding>
 
   <url type="homepage">https://github.com/StreamController/StreamController</url>
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
@@ -156,12 +162,15 @@
       Official Plugin Features:
     </p>
     <ul>
-      <li>Send network requests</li>
+      <li>Run commands</li>
       <li>Press hotkeys (X and Wayland)</li>
+      <li>Move mouse (X and Wayland)</li>
       <li>Control OBS Studio</li>
       <li>Control your music</li>
       <li>Mix the volume of different apps</li>
-      <li>Run commands</li>
+      <li>Switch between audio outputs</li>
+      <li>Mute your microphone</li>
+      <li>Show a clock</li>
       <li>Send network requests</li>
     </ul>
   </description>

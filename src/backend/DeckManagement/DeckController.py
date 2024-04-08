@@ -1341,21 +1341,15 @@ class ControllerKey:
         self.labels.clear()
 
 
+@dataclass
 class KeyLabel:
-    def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 15, font_name: str = None, color: list[int] = [255, 255, 255, 255]):
-        if text is None:
-            text = ""
-
-        self.controller_key = controller_key
-        self.text = text
-        self.font_size = font_size
-        self.font_name = font_name
-        self.color = color
+    controller_key: ControllerKey
+    text: str = ""
+    font_size: int = 15
+    font_name: str = None
+    color: list[int] = (255, 255, 255, 255)
 
     def get_font_path(self) -> str:
-        if self.font_name is None and False:
-            FALLBACK = os.path.join("Assets", "Fonts", "Roboto-Regular.ttf")
-            return FALLBACK
         return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=self.font_name))
 
 

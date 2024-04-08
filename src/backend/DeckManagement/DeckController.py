@@ -224,8 +224,11 @@ class MediaPlayerThread(threading.Thread):
             task.run()
 
         for key in list(self.image_tasks.keys()):
-            self.image_tasks[key].run()
-            del self.image_tasks[key]
+            try:
+                self.image_tasks[key].run()
+                del self.image_tasks[key]
+            except KeyError:
+                pass
 
 class DeckController:
     def __init__(self, deck_manager: "DeckManager", deck: StreamDeck.StreamDeck):

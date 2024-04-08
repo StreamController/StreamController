@@ -79,13 +79,20 @@ class MediaPlayerSetImageTask:
     key_index: int
     native_image: bytes
 
+    n_failed_in_row: ClassVar[dict] = {}
+
     def run(self):
         try:
             self.deck_controller.deck.set_key_image(self.key_index, self.native_image)
             self.native_image = None
             del self.native_image
+            MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] = 0
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck key image. Error: {e}")
+            MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
+            if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
+                log.debug(f"Failed to set key_image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
+                gl.deck_manager.remove_controller(self.deck_controller)
 
 
 class MediaPlayerThread(threading.Thread):

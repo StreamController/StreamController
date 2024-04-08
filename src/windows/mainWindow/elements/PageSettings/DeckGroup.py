@@ -47,7 +47,19 @@ class Brightness(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", **kwargs):
         super().__init__()
         self.settings_page = settings_page
+
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+
         self.build()
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -124,6 +136,9 @@ class Brightness(Adw.PreferencesRow):
         deck_controller.load_page(deck_controller.active_page, load_screensaver=False, load_background=False, load_keys=False)
 
     def load_defaults_from_page(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_defaults_from_page())
         # Verify if page exists
         if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
             return

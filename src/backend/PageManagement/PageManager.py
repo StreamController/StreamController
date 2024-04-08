@@ -108,7 +108,7 @@ class PageManager:
     def clear_old_cached_pages(self):
         n_pages = 0
         for controller in self.created_pages:
-            for p in self.created_pages[controller]:
+            for page in self.created_pages[controller]:
                 n_pages += 1
 
         for _ in range(n_pages - self.max_pages):
@@ -116,13 +116,13 @@ class PageManager:
                 # Remove entry with lowest page number
                 lowest_page = min(self.created_pages[controller][p]["page_number"] for controller in self.created_pages for p in self.created_pages[controller])
                 for controller in self.created_pages:
-                    for p in self.created_pages[controller]:
-                        if self.created_pages[controller][p]["page_number"] == lowest_page:
-                            page_object: Page = self.created_pages[controller][p]["page"]
+                    for page in self.created_pages[controller]:
+                        if self.created_pages[controller][page]["page_number"] == lowest_page:
+                            page_object: Page = self.created_pages[controller][page]["page"]
                             page_object.clear_action_objects()
 
-                            self.created_pages[controller][p] = None
-                            del self.created_pages[controller][p]
+                            self.created_pages[controller][page] = None
+                            del self.created_pages[controller][page]
                             
                             break
 

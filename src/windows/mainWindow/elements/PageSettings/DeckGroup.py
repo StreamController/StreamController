@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import gc
 import os
 import gi
 gi.require_version("Gtk", "4.0")
@@ -360,10 +361,17 @@ class Screensaver(Adw.PreferencesRow):
             return
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
+        self.media_selector_image.set_from_pixbuf(None)
         self.media_selector_image.pixbuf = None
         del self.media_selector_image.pixbuf
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
+        image.close()
+        image = None
+        pixbuf = None
+        del image
+        del pixbuf
+        gc.collect()
 
     def on_choose_image(self, button):
         self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})

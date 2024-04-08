@@ -74,8 +74,13 @@ class BetterExpander(Adw.ExpanderRow):
         return revealer_list_box
         
     def clear(self):
-        revealer_list_box = self.get_list_box()
-        revealer_list_box.remove_all()
+        rows = self.get_rows()
+        list_box = self.get_list_box()
+        list_box.remove_all()
+        for row in rows:
+            row = None
+            del row
+        del rows
 
     def reorder_child_after(self, child, after):
         childs = self.get_rows()

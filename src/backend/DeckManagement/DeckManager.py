@@ -106,7 +106,11 @@ class DeckManager:
         # Check if it is a supported device
         if device_info["ID_VENDOR"] != "Elgato":
             return
+        
+        
+        self.connect_new_decks()
 
+    def connect_new_decks(self):
         # Get already loaded deck serial ids
         loaded_deck_ids = []
         for controller in self.deck_controller:
@@ -129,14 +133,16 @@ class DeckManager:
 
         for controller in self.deck_controller:
             if not controller.deck.connected():
-                self.deck_controller.remove(controller)
-                gl.app.main_win.leftArea.deck_stack.remove_page(controller)
-
-                controller.delete()
-
-                del controller
+                self.remove_controller(controller)
 
         gl.app.main_win.check_for_errors()
+
+    def remove_controller(self, deck_controller: DeckController) -> None:
+        self.deck_controller.remove(deck_controller)
+        gl.app.main_win.leftArea.deck_stack.remove_page(deck_controller)
+        deck_controller.delete()
+        del deck_controller
+
 
     def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):
         deck_controller = DeckController(self, deck)

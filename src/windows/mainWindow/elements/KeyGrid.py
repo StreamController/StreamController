@@ -275,9 +275,9 @@ class KeyButton(Gtk.Frame):
         del self.pixbuf
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         self.show_pixbuf(self.pixbuf)
-        image.close()
-        image = None
-        del image
+        # image.close()
+        # image = None
+        # del image
 
         # update righthand side key preview if possible
         if recursive_hasattr(gl, "app.main_win.sidebar"):

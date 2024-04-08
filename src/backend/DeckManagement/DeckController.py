@@ -49,7 +49,7 @@ process = psutil.Process()
 from src.Signals import Signals
 
 # Import typing
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from src.windows.mainWindow.elements.KeyGrid import KeyButton, KeyGrid
 if TYPE_CHECKING:

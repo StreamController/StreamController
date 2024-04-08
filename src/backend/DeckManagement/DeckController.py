@@ -201,7 +201,7 @@ class MediaPlayerThread(threading.Thread):
             time.sleep(0.1)
 
     def add_task(self, method: callable, *args, **kwargs):
-        self.tasks.put(MediaPlayerTask(
+        self.task_queue.put(MediaPlayerTask(
             deck_controller=self.deck_controller,
             page=self.deck_controller.active_page,
             _callable=method,

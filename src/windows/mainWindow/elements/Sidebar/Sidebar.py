@@ -127,16 +127,21 @@ class Sidebar(Adw.NavigationPage):
             self.main_stack.set_visible_child(self.key_editor)
 
     def show_error(self):
+        if self.main_stack.get_visible_child() == self.error_page:
+            return
+        
         self.main_stack.set_transition_duration(0)
         self.main_stack.set_visible_child(self.error_page)
         self.main_stack.set_transition_duration(200)
 
 
     def hide_error(self):
-        if self.main_stack.get_visible_child() == self.error_page:
-            self.main_stack.set_transition_duration(0)
-            self.main_stack.set_visible_child(self.key_editor)
-            self.main_stack.set_transition_duration(200)
+        if self.main_stack.get_visible_child() != self.error_page:
+            return
+        
+        self.main_stack.set_transition_duration(0)
+        self.main_stack.set_visible_child(self.key_editor)
+        self.main_stack.set_transition_duration(200)
 
     def reload(self):
         self.load_for_coords(self.active_coords)

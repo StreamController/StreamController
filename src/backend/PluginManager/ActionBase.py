@@ -182,7 +182,7 @@ class ActionBase(rpyc.Service):
         self.deck_controller.keys[self.key_index].hide_error()
         
 
-    def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0,
+    def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255],
                       font_family: str = "", font_size = 18, update: bool = True):
         if not self.get_is_present(): return
         if not self.on_ready_called:
@@ -197,7 +197,6 @@ class ActionBase(rpyc.Service):
         self.labels[position] = {
             "text": text,
             "color": color,
-            "stroke-width": stroke_width,
             "font-family": font_family,
             "font-size": font_size
         }
@@ -208,21 +207,20 @@ class ActionBase(rpyc.Service):
             font_size=font_size,
             font_name=font_family,
             color=color,
-            font_weight=stroke_width
         )
         self.deck_controller.keys[self.key_index].add_label(key_label, position=position, update=update)
 
-    def set_top_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
+    def set_top_label(self, text: str, color: list[int] = [255, 255, 255],
                       font_family: str = "", font_size = 18, update: bool = True):
-        self.set_label(text, "top", color, stroke_width, font_family, font_size, update)
+        self.set_label(text, "top", color, font_family, font_size, update)
     
-    def set_center_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
+    def set_center_label(self, text: str, color: list[int] = [255, 255, 255],
                       font_family: str = "", font_size = 18, update: bool = True):
-        self.set_label(text, "center", color, stroke_width, font_family, font_size, update)
+        self.set_label(text, "center", color, font_family, font_size, update)
     
-    def set_bottom_label(self, text: str, color: list[int] = [255, 255, 255], stroke_width: int = 0,
+    def set_bottom_label(self, text: str, color: list[int] = [255, 255, 255],
                       font_family: str = "", font_size = 18, update: bool = True):
-        self.set_label(text, "bottom", color, stroke_width, font_family, font_size, update)
+        self.set_label(text, "bottom", color, font_family, font_size, update)
 
     def on_labels_changed_in_ui(self):
         # TODO
@@ -324,3 +322,6 @@ class ActionBase(rpyc.Service):
 
     def ping(self) -> bool:
         return True
+    
+    def on_removed_from_cache(self) -> None:
+        pass

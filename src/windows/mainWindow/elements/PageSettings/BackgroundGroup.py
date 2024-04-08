@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import os
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -44,7 +45,19 @@ class BackgroundMediaRow(Adw.PreferencesRow):
     def __init__(self, settings_page, **kwargs):
         super().__init__()
         self.settings_page = settings_page
+
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+        
         self.build()
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -123,6 +136,10 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             log.error(f"Don't panic, getting this error is normal: {e}")
 
     def load_defaults_from_page(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_defaults_from_page())
+            return
         self.disconnect_signals()
 
         if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
@@ -132,21 +149,13 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             self.connect_signals()
             return
         
-        original_values = None
-        if "background" in self.settings_page.deck_page.deck_controller.active_page.dict:
-            original_values = copy(self.settings_page.deck_page.deck_controller.active_page.dict)
+        page_dict = self.settings_page.deck_page.deck_controller.active_page.dict
 
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("background", {}) 
-
-        overwrite = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("overwrite", False)
-        show = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("show", False)
-        file_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)
-        loop = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("loop", True)
-        fps = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("fps", 30)
-
-        # Save if changed
-        if original_values != self.settings_page.deck_page.deck_controller.active_page.dict:
-            self.settings_page.deck_page.deck_controller.active_page.save()
+        overwrite = page_dict.get("background", {}).get("overwrite", False)
+        show = page_dict.get("background", {}).get("show", False)
+        file_path = page_dict.get("background", {}).get("path", None)
+        loop = page_dict.get("background", {}).get("loop", True)
+        fps = page_dict.get("background", {}).get("fps", 30)
 
         self.overwrite_switch.set_active(overwrite)
         self.show_switch.set_active(show)
@@ -210,7 +219,10 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         if file_path == None:
             self.media_selector_image.clear()
             return
-        # return
+        if file_path is None:
+            return
+        if not os.path.isfile(file_path):
+            return
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
         if pixbuf is None:
@@ -222,6 +234,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             )
             dial.show()
             return
+        self.media_selector_image.pixbuf = None
+        del self.media_selector_image.pixbuf
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 

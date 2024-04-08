@@ -15,7 +15,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import Python modules
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
+from functools import lru_cache
 import os
+from queue import Queue
 import random
 import statistics
 from threading import Thread, Timer
@@ -49,7 +51,7 @@ process = psutil.Process()
 from src.Signals import Signals
 
 # Import typing
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from src.windows.mainWindow.elements.KeyGrid import KeyButton, KeyGrid
 if TYPE_CHECKING:
@@ -79,13 +81,20 @@ class MediaPlayerSetImageTask:
     key_index: int
     native_image: bytes
 
+    n_failed_in_row: ClassVar[dict] = {}
+
     def run(self):
         try:
             self.deck_controller.deck.set_key_image(self.key_index, self.native_image)
             self.native_image = None
             del self.native_image
+            MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] = 0
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck key image. Error: {e}")
+            MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
+            if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
+                log.debug(f"Failed to set key_image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
+                gl.deck_manager.remove_controller(self.deck_controller)
 
 
 class MediaPlayerThread(threading.Thread):
@@ -100,7 +109,7 @@ class MediaPlayerThread(threading.Thread):
         self.pause = False
         self._stop = False
 
-        self.tasks: list[MediaPlayerTask] = []
+        self.task_queue: Queue[MediaPlayerTask] = Queue()
         # self.tasks = {}
         self.image_tasks = {}
 
@@ -192,7 +201,7 @@ class MediaPlayerThread(threading.Thread):
             time.sleep(0.1)
 
     def add_task(self, method: callable, *args, **kwargs):
-        self.tasks.append(MediaPlayerTask(
+        self.tasks.put(MediaPlayerTask(
             deck_controller=self.deck_controller,
             page=self.deck_controller.active_page,
             _callable=method,
@@ -209,24 +218,19 @@ class MediaPlayerThread(threading.Thread):
         )
 
     def perform_media_player_tasks(self):
-        for task in list(self.tasks):
-            # Skip task if it has been removed
-            if task not in self.tasks:
-                continue
-            
-            # Remove task from list
-            self.tasks.remove(task)
-
-            # Skip task if dedicated to another page
+        while not self.task_queue.empty():
+            task = self.task_queue.get()
+            # Skip task if it is from another page
             if task.page is not self.deck_controller.active_page:
                 continue
-            
-            # Run the task
             task.run()
 
         for key in list(self.image_tasks.keys()):
-            self.image_tasks[key].run()
-            del self.image_tasks[key]
+            try:
+                self.image_tasks[key].run()
+                del self.image_tasks[key]
+            except KeyError:
+                pass
 
 class DeckController:
     def __init__(self, deck_manager: "DeckManager", deck: StreamDeck.StreamDeck):
@@ -252,6 +256,7 @@ class DeckController:
 
         # Tasks
         self.media_player_tasks: list[MediaPlayerTask] = []
+        self.media_player_tasks: Queue[MediaPlayerTask] = Queue()
 
         self.ui_grid_buttons_changes_while_hidden: dict = {}
 
@@ -287,6 +292,9 @@ class DeckController:
         for i in range(self.deck.key_count()):
             self.keys.append(ControllerKey(self, i))
 
+    @lru_cache(maxsize=None)
+    def serial_number(self) -> str:
+        return self.deck.get_serial_number()
     
 
     def update_key(self, index: int):
@@ -318,11 +326,12 @@ class DeckController:
             log.error(f"Failed to set deck key image. Error: {e}")
 
     def key_change_callback(self, deck, key, state):
+        screensaver_was_showing = self.screen_saver.showing
         if state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
             self.screen_saver.on_key_change()
         
-        if self.screen_saver.showing:
+        if screensaver_was_showing:
             return
 
         self.keys[key].on_key_change(state)
@@ -520,9 +529,10 @@ class DeckController:
         self.media_player.add_task(self.update_all_keys)
 
         # Notify plugin actions
-        gl.signal_manager.trigger_signal(signal=Signals.ChangePage, controller=self, old_path=old_path, new_path=self.active_page.json_path)
+        gl.signal_manager.trigger_signal(Signals.ChangePage, self, old_path, self.active_page.json_path)
 
-        log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()} took {time.time() - start} seconds")
+        log.info(f"Loaded page {page.get_name()} on deck {self.deck.get_serial_number()}")
+        gc.collect()
 
     def set_brightness(self, value):
         if not self.get_alive(): return
@@ -596,7 +606,10 @@ class DeckController:
         return deck_stack_child.page_settings.grid_page
     
     def clear_media_player_tasks(self):
-        self.media_player_tasks.clear()
+        while not self.media_player.task_queue.empty():
+            self.media_player.task_queue.get()
+        
+        self.media_player.image_tasks.clear()
 
     def clear_media_player_tasks_via_task(self):
         self.media_player_tasks.append(MediaPlayerTask(
@@ -674,10 +687,15 @@ class Background:
                     return
             self.set_video(BackgroundVideo(self.deck_controller, path, loop=loop, fps=fps), update=update)
         else:
+            if path is None:
+                return
+            if not os.path.isfile(path):
+                return
             with Image.open(path) as image:
                 self.set_image(BackgroundImage(self.deck_controller, image.copy()), update=update)
 
     def update_tiles(self) -> None:
+        old_tiles = self.tiles # Why store them and close them later? So that there is not key error if the media threads fetches them during the update
         if self.image is not None:
             self.tiles = self.image.get_tiles()
         elif self.video is not None:
@@ -685,6 +703,12 @@ class Background:
         else:
             self.tiles = [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
 
+        for tile in old_tiles:
+            if tile is not None:
+                tile.close()
+                tile = None
+                del tile
+        del old_tiles
         
 
 class BackgroundImage:
@@ -883,6 +907,12 @@ class KeyGIF(SingleKeyAsset):
     def get_raw_image(self) -> Image.Image:
         return self.get_next_frame()
     
+    def close(self) -> None:
+        self.gif = None
+        self.frames = None
+        del self.gif
+        del self.frames
+    
 
 class ControllerKey:
     def __init__(self, deck_controller: DeckController, key: int):
@@ -1032,7 +1062,6 @@ class ControllerKey:
             color = tuple(labels[label].color)
             font_size = labels[label].font_size
             font = ImageFont.truetype(font_path, font_size)
-            font_weight = labels[label].font_weight
 
             if text is None:
                 continue
@@ -1050,7 +1079,8 @@ class ControllerKey:
             start_mem = process.memory_info().rss
             draw.text(position,
                         text=text, font=font, anchor="ms",
-                        fill=color, stroke_width=font_weight)
+                        fill=color, stroke_width=2,
+                        stroke_fill="black")
             end = process.memory_info().rss
       
             
@@ -1153,8 +1183,7 @@ class ControllerKey:
                     text=page_dict["labels"][label].get("text"),
                     font_size=page_dict["labels"][label].get("font-size"),
                     font_name=page_dict["labels"][label].get("font-family"),
-                    color=page_dict["labels"][label].get("color"),
-                    font_weight=page_dict["labels"][label].get("stroke-width")
+                    color=page_dict["labels"][label].get("color")
                 )
                 self.add_label(key_label, position=label, update=False)
 
@@ -1303,28 +1332,25 @@ class ControllerKey:
     def close_resources(self) -> None:
         if self.key_image is not None:
             self.key_image.close()
+            self.key_image = None
+            del self.key_image
         if self.key_video is not None:
             self.key_video.close()
+            self.key_video = None
+            del self.key_video
 
-        self.labels = {}
+        self.labels.clear()
 
 
+@dataclass
 class KeyLabel:
-    def __init__(self, controller_key: ControllerKey, text: str, font_size: int = 15, font_name: str = None, color: list[int] = [255, 255, 255, 255], font_weight: int = 0):
-        if text is None:
-            text = ""
-
-        self.controller_key = controller_key
-        self.text = text
-        self.font_size = font_size
-        self.font_name = font_name
-        self.color = color
-        self.font_weight = font_weight
+    controller_key: ControllerKey
+    text: str = ""
+    font_size: int = 15
+    font_name: str = None
+    color: list[int] = (255, 255, 255, 255)
 
     def get_font_path(self) -> str:
-        if self.font_name is None and False:
-            FALLBACK = os.path.join("Assets", "Fonts", "Roboto-Regular.ttf")
-            return FALLBACK
         return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=self.font_name))
 
 
@@ -1348,9 +1374,14 @@ class KeyImage(SingleKeyAsset):
             self.image = self.controller_key.deck_controller.generate_alpha_key()
 
     def get_raw_image(self) -> Image.Image:
+        if not hasattr(self, "image"):
+            return
         return self.image
     
     def close(self) -> None:
+        if not hasattr(self, "image"):
+            # Already closed
+            return
         self.image.close()
         self.image = None
         del self.image

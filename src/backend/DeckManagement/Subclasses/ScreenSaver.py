@@ -55,6 +55,8 @@ class ScreenSaver:
             self.timer.cancel()
         # *60 to go from minuts (how it is stored) to seconds (how the timer needs it)
         self.timer = threading.Timer(time_delay*60, self.on_timer_end)
+        self.timer.setDaemon(True)
+        self.timer.setName("ScreenSaverTimer")
         if self.enable and not self.showing:
             self.timer.start()
 
@@ -115,9 +117,9 @@ class ScreenSaver:
 
     def hide(self):
         log.info("Hiding screen saver")
-        self.deck_controller.load_page(self.deck_controller.active_page, allow_reload=True)
-        self.set_time(self.time_delay)
+        self.deck_controller.clear() # Ensures that the first image visable is from the page not the screensaver if the brightness on the saver is 0
         self.showing = False
+        self.deck_controller.load_page(self.deck_controller.active_page, allow_reload=True)
         self.set_time(self.time_delay)
 
     def on_key_change(self):

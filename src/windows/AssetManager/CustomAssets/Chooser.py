@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import threading
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -63,45 +64,19 @@ class CustomAssetChooser(ChooserPage):
     
     def add_asset(self, asset: dict) -> None:
         preview = AssetPreview(self.asset_chooser, asset, width_request=100, height_request=100)
-        self.asset_chooser.flow_box.append(preview)
+        GLib.idle_add(self.asset_chooser.flow_box.append, preview)
     
     def add_files(self, files: list) -> None:
+        gl.asset_manager.set_cursor_from_name("wait")
         for path in files:
 
             url = path.get_uri()
             path = path.get_path()
 
-            gl.asset_manager_backend.add_custom_media_set_by_ui(url=url, path=path)
-            continue
+            # gl.asset_manager_backend.add_custom_media_set_by_ui(url=url, path=path)
+            threading.Thread(target=gl.asset_manager_backend.add_custom_media_set_by_ui, args=(url, path), name="add_custom_media_set_by_ui").start()
 
-            if path is None and url is not None:
-                # Lower domain and remove point
-                extension = os.path.splitext(url)[1].lower().replace(".", "")
-                if extension not in (set(gl.video_extensions) | set(gl.image_extensions)):
-                    # Not a valid url
-                    dial = Gtk.AlertDialog(
-                        message="The image is invalid.",
-                        detail="You can only use urls directly pointing to images (not directly from Google).",
-                        modal=True
-                    )
-                    dial.show()
-                    continue
-
-                os.makedirs(os.path.join(gl.DATA_PATH, "cache", "downloads"), exist_ok=True)
-                # Download file from url
-                path = download_file(url=url, path=os.path.join(gl.DATA_PATH, "cache", "downloads"))
-
-            if path == None:
-                continue
-            if not os.path.exists(path):
-                continue
-            if not os.path.splitext(path)[1] not in ["png", "jpg", "jpeg", "gif", "GIF", "MP4", "mp4", "mov", "MOV"]:
-                continue
-            asset_id = gl.asset_manager_backend.add(asset_path=path)
-            if asset_id == None:
-                continue
-            asset = gl.asset_manager_backend.get_by_id(asset_id)
-            self.asset_chooser.flow_box.append(AssetPreview(flow=self, asset=asset, width_request=100, height_request=100))
+        gl.asset_manager.set_cursor_from_name("default")
 
     def show_for_path(self, path):
         self.asset_chooser.show_for_path(path)

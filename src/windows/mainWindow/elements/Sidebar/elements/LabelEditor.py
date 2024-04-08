@@ -136,11 +136,11 @@ class LabelRow(Adw.PreferencesRow):
         self.main_box.append(self.stroke_width_box)
 
         self.stroke_width_label = Gtk.Label(label=gl.lm.get("label-editor-font-weight-label"), xalign=0, hexpand=True)
-        self.stroke_width_box.append(self.stroke_width_label)
+        # self.stroke_width_box.append(self.stroke_width_label)
 
         self.stroke_width_button = Gtk.SpinButton.new_with_range(0, 5, 1)
         self.stroke_width_button.connect("value-changed", self.on_change_stroke_width)
-        self.stroke_width_box.append(self.stroke_width_button)
+        # self.stroke_width_box.append(self.stroke_width_button)
 
     def load_for_coords(self, coords):
         self.active_coords = coords
@@ -160,14 +160,12 @@ class LabelRow(Adw.PreferencesRow):
         page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name].setdefault("color", [255, 255, 255])
         page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name].setdefault("font-family", "")
         page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name].setdefault("font-size", 15)
-        page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name].setdefault("stroke-width", 0)
 
         label = page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name]
         self.entry.disconnect_by_func(self.on_change_text) # Remove signal to avoid unnecessary updates
         self.entry.set_text(label["text"])
         self.entry.connect("changed", self.on_change_text) # Reconnect signal
         self.set_color(label["color"])
-        self.stroke_width_button.set_value(label["stroke-width"])
 
         self.font_chooser_button.set_font(label["font-family"] + " " + str(label["font-size"]))
 
@@ -206,7 +204,6 @@ class LabelRow(Adw.PreferencesRow):
                     self.entry.set_text(action.labels[key]["text"])
                     self.entry.connect("changed", self.on_change_text)
                     self.set_color(action.labels[key]["color"])
-                    self.stroke_width_button.set_value(action.labels[key]["stroke-width"])
                     self.font_chooser_button.set_font(action.labels[key]["font-family"] + " " + str(action.labels[key]["font-size"]))
                     return
 

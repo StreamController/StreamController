@@ -44,7 +44,19 @@ class Sidebar(Adw.NavigationPage):
         super().__init__(hexpand=True, title="Sidebar", **kwargs)
         self.main_window = main_window
         self.active_coords: tuple = None
+        
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+
         self.build()
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
@@ -87,6 +99,10 @@ class Sidebar(Adw.NavigationPage):
 
     def load_for_coords(self, coords):
         self.active_coords = coords
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_for_coords(coords))
+            return
         # Verify that a controller is selected
         if self.main_window.leftArea.deck_stack.get_visible_child() is None:
             self.error_page.set_error_text(gl.lm.get("right-area-no-deck-selected-error"))
@@ -99,6 +115,7 @@ class Sidebar(Adw.NavigationPage):
         if controller.active_page == None:
             # self.error_page.set_error_text(gl.lm.get("right-area-no-page-selected-error"))
             # self.error_page.set_reload_args([None])
+            #FIXME: User is unable to change or create pages when the error is shown
             self.show_error()
             return
 
@@ -110,16 +127,21 @@ class Sidebar(Adw.NavigationPage):
             self.main_stack.set_visible_child(self.key_editor)
 
     def show_error(self):
+        if self.main_stack.get_visible_child() == self.error_page:
+            return
+        
         self.main_stack.set_transition_duration(0)
         self.main_stack.set_visible_child(self.error_page)
         self.main_stack.set_transition_duration(200)
 
 
     def hide_error(self):
-        if self.main_stack.get_visible_child() == self.error_page:
-            self.main_stack.set_transition_duration(0)
-            self.main_stack.set_visible_child(self.key_editor)
-            self.main_stack.set_transition_duration(200)
+        if self.main_stack.get_visible_child() != self.error_page:
+            return
+        
+        self.main_stack.set_transition_duration(0)
+        self.main_stack.set_visible_child(self.key_editor)
+        self.main_stack.set_transition_duration(200)
 
     def reload(self):
         self.load_for_coords(self.active_coords)

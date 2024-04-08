@@ -13,7 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from src.Signals.Signals import Signal
+from src.Signals.Signals import AppQuit, Signal
 
 from gi.repository import GLib
 
@@ -36,8 +36,11 @@ class SignalManager:
     def trigger_signal(self, signal: Signal, *args, **kwargs) -> None:
         # Verify signal
         if not issubclass(signal, Signal):
-            raise TypeError("signal_name must be of type Signal")
+            raise TypeError("signal must be of type Signal")
         
         for callback in self.connected_signals.get(signal, []):
-            # callback(*args, **kwargs)
-            GLib.idle_add(callback, args, kwargs)
+            print(f"callback: {callback}")
+            if signal == AppQuit:
+                callback(*args, **kwargs)
+            else:
+                GLib.idle_add(callback, *args, **kwargs)

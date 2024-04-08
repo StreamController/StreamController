@@ -167,7 +167,8 @@ def reset_all_decks():
         except:
             log.error("Failed to reset deck, maybe it's already connected to another instance? Skipping...")
 
-if __name__ == "__main__":
+
+def main():
     # Dbus
     log.info("Checking if another instance is running")
     DBusGMainLoop(set_as_default=True)
@@ -189,6 +190,9 @@ if __name__ == "__main__":
     create_cache_folder()
     threading.Thread(target=update_assets, name="update_assets").start()
     load()
+
+if __name__ == "__main__":
+    main()
 
 
 log.trace("Reached end of main.py")

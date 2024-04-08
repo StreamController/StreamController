@@ -194,7 +194,6 @@ class BackgroundVideoCache:
 
 
     def load_cache(self, key_index: int = None):
-        return
         cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
         if not os.path.exists(cache_path):
             return

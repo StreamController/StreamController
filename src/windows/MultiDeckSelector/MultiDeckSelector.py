@@ -26,7 +26,7 @@ class MultiDeckSelector(Gtk.ApplicationWindow):
     def __init__(self, application: Gtk.Application, source_window: Gtk.ApplicationWindow,
                  selected_deck_serials: list[str] = [], callback: callable = None):
         super().__init__(application=application,
-                         title=gl.lm.get("multi-deck-selector.selected.title"),
+                         title=gl.lm.get("multi-deck-selector.title"),
                          transient_for=source_window,
                          modal=True,
                          default_width=350, default_height=350)

@@ -80,7 +80,7 @@ class WindowGrabber:
         return class_match and title_match
     
     def on_active_window_changed(self, window: Window) -> None:
-        log.info(f"Active window changed to: {window}")
+        # log.info(f"Active window changed to: {window}")
         for deck_controller in gl.deck_manager.deck_controller:
             found_page = False
             for page_path in gl.page_manager.get_pages():

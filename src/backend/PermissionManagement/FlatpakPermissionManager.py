@@ -14,7 +14,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 import gi
+
 gi.require_version("Xdp", "1.0")
+from gi.repository import GLib
 from gi.repository import Xdp
 
 import subprocess
@@ -102,10 +104,12 @@ class FlatpakPermissionManager:
             command += " --system-talk-name="
         command += name
 
+        command += f" {self.app_id}"
+
         return command
     
     def show_dbus_permission_request_dialog(self, name: str, bus: str="session", description: str="None"):
-        if not self.get_is_flatpak() and False:
+        if not self.get_is_flatpak():
             return
         if self.has_dbus_permission(name, bus):
             return
@@ -122,5 +126,10 @@ class FlatpakPermissionManager:
             if gl.app.main_win is not None:
                 window = gl.app.main_win
 
+        if hasattr(gl, "store"):
+            if gl.store is not None:
+                window = gl.store
+
         window = FlatpakPermissionRequestWindow(gl.app, window, command=command, description=description)
-        window.present()
+        # window.present()
+        GLib.idle_add(window.present) # GLib should not be necessary, but without it the window flickers

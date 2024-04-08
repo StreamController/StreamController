@@ -76,6 +76,7 @@ class PageSelector(Gtk.Box):
     def update(self, *args, **kwargs):
         self.disconnect_change_signal()
         pages = self.page_manager.get_pages()
+        pages.sort()
         # self.clear_model()
         self.pages_model.clear()
         for page in pages:

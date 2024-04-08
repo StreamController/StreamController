@@ -24,17 +24,55 @@
   <categories>
     <category>System</category>
     <category>Utility</category>
+    <category>Productivity</category>
   </categories>
 
   <keywords>
     <keyword translate="no">Streaming</keyword>
     <keyword translate="no">Elgato Stream Deck</keyword>
+    <keyword translate="no">GTK</keyword>
   </keywords>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#244b62</color>
+    <color type="primary" scheme_preference="dark">#244b62</color>
+  </branding>
 
   <url type="homepage">https://github.com/StreamController/StreamController</url>
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
+    <release version="1.4.6-beta" date="2024-04-08">
+      <description translatable="no">
+        <p>Bugfixes</p>
+        <p>Memory optimizations</p>
+      </description>
+    </release>
+    <release version="1.4.5-beta" date="2024-04-02">
+      <description translatable="no">
+        <p>Bugfixes</p>
+      </description>
+    </release>
+    <release version="1.4.4-beta" date="2024-04-02">
+      <description translatable="no">
+        <p>Bugfixes</p>
+      </description>
+    </release>
+    <release version="1.4.3-beta" date="2024-04-02">
+      <description translatable="no">
+        <p>Bugfixes</p>
+      </description>
+    </release>
+    <release version="1.4.2-beta" date="2024-04-01">
+      <description translatable="no">
+        <p>Bugfixes</p>
+      </description>
+    </release>
+    <release version="1.4.1-beta" date="2024-04-01">
+      <description translatable="no">
+        <p>Bugfixes</p>
+      </description>
+    </release>
     <release version="1.4.0-beta" date="2024-04-01">
       <description translatable="no">
         <p>Bugfixes</p>
@@ -135,12 +173,15 @@
       Official Plugin Features:
     </p>
     <ul>
-      <li>Send network requests</li>
+      <li>Run commands</li>
       <li>Press hotkeys (X and Wayland)</li>
+      <li>Move mouse (X and Wayland)</li>
       <li>Control OBS Studio</li>
       <li>Control your music</li>
       <li>Mix the volume of different apps</li>
-      <li>Run commands</li>
+      <li>Switch between audio outputs</li>
+      <li>Mute your microphone</li>
+      <li>Show a clock</li>
       <li>Send network requests</li>
     </ul>
   </description>
@@ -149,12 +190,15 @@
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/StreamController/StreamController/main/Assets/images/Screenshots/Screenshot_1.png</image>
+      <caption>The main window</caption>
     </screenshot>
     <screenshot>
       <image>https://raw.githubusercontent.com/StreamController/StreamController/main/Assets/images/Screenshots/Screenshot_2.png</image>
+      <caption>The main window</caption>
     </screenshot>
     <screenshot>
       <image>https://raw.githubusercontent.com/StreamController/StreamController/main/Assets/images/Screenshots/Screenshot_3.png</image>
+      <caption>The store</caption>
     </screenshot>
   </screenshots>
 </component>

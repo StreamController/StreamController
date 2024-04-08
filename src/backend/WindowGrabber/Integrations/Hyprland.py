@@ -27,6 +27,8 @@ import gi
 gi.require_version("Xdp", "1.0")
 from gi.repository import Xdp
 
+import globals as gl
+
 # Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -90,7 +92,7 @@ class WatchForActiveWindowChange(threading.Thread):
         self.last_active_window = hyprland.get_active_window()
 
     def run(self) -> None:
-        while True:
+        while gl.threads_running:
             time.sleep(0.2)
             new_active_window = self.hyprland.get_active_window()
             if new_active_window is None:

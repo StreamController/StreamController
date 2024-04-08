@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import os
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -45,7 +46,19 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         super().__init__()
         self.settings_page = settings_page
         self.deck_serial_number = deck_serial_number
+
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+        
         self.build()
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -110,6 +123,10 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
 
     def load_defaults(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_defaults())
+            return
         self.disconnect_signals()
         original_values = gl.settings_manager.get_deck_settings(self.deck_serial_number)
 
@@ -210,9 +227,12 @@ class BackgroundMediaRow(Adw.PreferencesRow):
     def set_thumbnail(self, file_path):
         if file_path in [None, ""]:
             return
-        # return
+        if not os.path.isfile(file_path):
+            return
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
+        self.media_selector_image.pixbuf = None
+        del self.media_selector_image.pixbuf
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 

@@ -13,6 +13,8 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import gc
+import os
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -46,7 +48,19 @@ class Brightness(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", **kwargs):
         super().__init__()
         self.settings_page = settings_page
+
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+
         self.build()
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+        self.on_map_tasks.clear()
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
@@ -123,35 +137,39 @@ class Brightness(Adw.PreferencesRow):
         deck_controller.load_page(deck_controller.active_page, load_screensaver=False, load_background=False, load_keys=False)
 
     def load_defaults_from_page(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_defaults_from_page())
         # Verify if page exists
         if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
             return
         if self.settings_page.deck_page.deck_controller.active_page == None:
             return
 
-        original_values = copy(self.settings_page.deck_page.deck_controller.active_page.dict)
-        
-        # Set defaut values 
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("brightness", {})
-        self.settings_page.deck_page.deck_controller.active_page.dict["brightness"].setdefault("value", 50)
-        self.settings_page.deck_page.deck_controller.active_page.dict["brightness"].setdefault("overwrite", False)
-
-        # Save if changed
-        if original_values != self.settings_page.deck_page.deck_controller.active_page.dict:
-            self.settings_page.deck_page.deck_controller.active_page.save()
-
         # Update ui
         self.set_scale_from_page(self.settings_page.deck_page.deck_controller.active_page)
-        active = self.settings_page.deck_page.deck_controller.active_page.dict["brightness"]["overwrite"]
+        active = self.settings_page.deck_page.deck_controller.active_page.dict.get("brightness", {}).get("overwrite", False)
         self.overwrite_switch.set_active(active)
         self.config_box.set_visible(active)
+
 
 class Screensaver(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", **kwargs):
         super().__init__(css_classes=["no-click"])
         self.settings_page = settings_page
         self.build()
-    
+
+        """
+        To save performance and memory, we only load the thumbnail when the user sees the row
+        """
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+        self.on_map_tasks.clear()
+
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
@@ -258,6 +276,10 @@ class Screensaver(Adw.PreferencesRow):
             pass
 
     def load_defaults_from_page(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_defaults_from_page())
+            return
         self.disconnect_signals()
         # Verify if page exists
         if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
@@ -265,18 +287,15 @@ class Screensaver(Adw.PreferencesRow):
         if self.settings_page.deck_page.deck_controller.active_page == None:
             return
 
-        original_values = None
-        if hasattr(self.settings_page.deck_page.deck_controller.active_page, "screensaver"):
-            original_values = self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"].copy()
-        # Set default values
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})
-        overwrite = self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"].setdefault("overwrite", False)
-        enable = self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"].setdefault("enable", False)
-        path = self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"].setdefault("path", None)
-        loop = self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"].setdefault("loop", False)
-        fps = self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"].setdefault("fps", 30)
-        time = self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"].setdefault("time-delay", 5)
-        brightness = self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"].setdefault("brightness", 75)
+        page_dict = self.settings_page.deck_page.deck_controller.active_page.dict
+
+        overwrite = page_dict.get("screensaver", {}).get("overwrite", False)
+        enable = page_dict.get("screensaver", {}).get("enable", False)
+        path = page_dict.get("screensaver", {}).get("path", None)
+        loop = page_dict.get("screensaver", {}).get("loop", False)
+        fps = page_dict.get("screensaver", {}).get("fps", 30)
+        time = page_dict.get("screensaver", {}).get("time-delay", 5)
+        brightness = page_dict.get("screensaver", {}).get("brightness", 75)
 
         # Update ui
         self.overwrite_switch.set_active(overwrite)
@@ -285,13 +304,11 @@ class Screensaver(Adw.PreferencesRow):
         self.fps_spinner.set_value(fps)
         self.time_spinner.set_value(time)
         self.scale.set_value(brightness)
-        self.set_thumbnail(path)
-
         self.config_box.set_visible(overwrite)
 
-        # Save if changed
-        if original_values != self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]:
-            self.settings_page.deck_page.deck_controller.active_page.save()
+        if path is not None:
+            if os.path.isfile(path):
+                self.set_thumbnail(path)
 
         self.connect_signals()
 
@@ -344,8 +361,17 @@ class Screensaver(Adw.PreferencesRow):
             return
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
+        self.media_selector_image.set_from_pixbuf(None)
+        self.media_selector_image.pixbuf = None
+        del self.media_selector_image.pixbuf
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
+        image.close()
+        image = None
+        pixbuf = None
+        del image
+        del pixbuf
+        gc.collect()
 
     def on_choose_image(self, button):
         self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})

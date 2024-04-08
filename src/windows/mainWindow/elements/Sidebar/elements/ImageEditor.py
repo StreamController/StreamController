@@ -150,7 +150,10 @@ class SizeRow(Adw.PreferencesRow):
         self.size_spinner.connect("value-changed", self.on_size_changed)
 
     def disconnect_signals(self):
-        self.size_spinner.disconnect_by_func(self.on_size_changed)
+        try:
+            self.size_spinner.disconnect_by_func(self.on_size_changed)
+        except:
+            pass
 
 
 class ValignRow(Adw.PreferencesRow):

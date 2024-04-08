@@ -2,9 +2,13 @@ import Pyro5.api
 import os
 from typing import TYPE_CHECKING
 import argparse
+import sys
 
 DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
 # DATA_PATH = "data"
+
+# Add data path to sys.path
+sys.path.append(DATA_PATH)
 
 if TYPE_CHECKING:
     from src.app import App
@@ -47,13 +51,15 @@ signal_manager: "SignalManager" = None
 window_grabber: "WindowGrabber" = None
 store: "Store" = None # Only if opened
 flatpak_permission_manager: "FlatpakPermissionManager" = None
+threads_running: bool = True
 
 
-app_version: str = "1.4.0-beta" # In breaking.feature.fix-state format
+app_version: str = "1.4.6-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []
 
 release_notes: str = "<ul> \
     <li>Bugfixes</li> \
+    <li>Memory optimizations</li> \
     </ul>"

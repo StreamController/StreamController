@@ -48,11 +48,12 @@ class MediaManager:
             cached = False
 
         if cached:
-            with Image.open(thumbnail_path) as img:
-                image = img.copy()
-            return image
+            img = Image.open(thumbnail_path)
+            img.thumbnail((250, 250), resample=Image.Resampling.LANCZOS)
+            return img
         else:
             thumbnail = self.generate_thumbnail(file_path)
+            thumbnail.thumbnail((250, 250), resample=Image.Resampling.LANCZOS)
             thumbnail.save(thumbnail_path)
             return thumbnail
 
@@ -87,4 +88,9 @@ class MediaManager:
         for frame in iterator: n_frames += 1 #TODO: Find a better way to do this
         frame = iterator[n_frames // 2] # Gifs tend to have a empty frame at the beginning
         frame = frame.convert("RGBA")
+
+        gif = None
+        iterator = None
+        n_frames = None
+
         return frame

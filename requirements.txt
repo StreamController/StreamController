@@ -49,7 +49,7 @@ plumbum==1.8.2
 proglog==0.1.10
 PrusaLinkPy==2.1.0
 psutil==5.9.8
-pulsectl==23.5.2
+pulsectl==24.4.0
 py-gcode-metadata==0.1.0
 pycairo==1.26.0
 pyclip==0.7.0

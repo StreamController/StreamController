@@ -88,4 +88,9 @@ class MediaManager:
         for frame in iterator: n_frames += 1 #TODO: Find a better way to do this
         frame = iterator[n_frames // 2] # Gifs tend to have a empty frame at the beginning
         frame = frame.convert("RGBA")
+
+        gif = None
+        iterator = None
+        n_frames = None
+
         return frame

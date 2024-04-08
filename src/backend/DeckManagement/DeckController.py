@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import Python modules
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
+from functools import lru_cache
 import os
 import random
 import statistics
@@ -290,6 +291,9 @@ class DeckController:
         for i in range(self.deck.key_count()):
             self.keys.append(ControllerKey(self, i))
 
+    @lru_cache(maxsize=None)
+    def serial_number(self) -> str:
+        return self.deck.get_serial_number()
     
 
     def update_key(self, index: int):

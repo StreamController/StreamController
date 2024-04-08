@@ -93,6 +93,8 @@ class IconSelector(Gtk.Box):
     def get_media_path(self):
         active_page_dict = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page.dict
         active_coords:tuple = self.sidebar.active_coords
+        if active_coords is None:
+            return
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
         if "keys" not in active_page_dict:

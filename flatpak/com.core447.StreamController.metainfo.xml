@@ -179,12 +179,15 @@
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/StreamController/StreamController/main/Assets/images/Screenshots/Screenshot_1.png</image>
+      <caption>The main window</caption>
     </screenshot>
     <screenshot>
       <image>https://raw.githubusercontent.com/StreamController/StreamController/main/Assets/images/Screenshots/Screenshot_2.png</image>
+      <caption>The main window</caption>
     </screenshot>
     <screenshot>
       <image>https://raw.githubusercontent.com/StreamController/StreamController/main/Assets/images/Screenshots/Screenshot_3.png</image>
+      <caption>The store</caption>
     </screenshot>
   </screenshots>
 </component>

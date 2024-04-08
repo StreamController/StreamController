@@ -531,7 +531,8 @@ class DeckController:
         # Notify plugin actions
         gl.signal_manager.trigger_signal(Signals.ChangePage, self, old_path, self.active_page.json_path)
 
-        log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()} took {time.time() - start} seconds")
+        log.info(f"Loaded page {page.get_name()} on deck {self.deck.get_serial_number()}")
+        gc.collect()
 
     def set_brightness(self, value):
         if not self.get_alive(): return

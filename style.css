@@ -11,8 +11,6 @@
 .page-settings-media-selector{
   min-width: 150px;
   min-height: 150px;
-  max-width: 150px;
-  max-height: 150px;
 }
 .red-color{
   color: #C01C28;
@@ -82,9 +80,7 @@
 .key-button{
   border-radius: 10px;
   min-width:75px;	
-	max-width:75px;
 	min-height:75px;
-	max-height:75px;
   padding-left: 0px;
   padding-right: 0px;
   padding-top: 0px;
@@ -323,7 +319,6 @@
 }
 
 .header-page-dropdown {
-  max-width: 50px;
 }
 
 .permissions-window-header {

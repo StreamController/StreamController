@@ -54,7 +54,7 @@ flatpak_permission_manager: "FlatpakPermissionManager" = None
 threads_running: bool = True
 
 
-app_version: str = "1.4.4-beta" # In breaking.feature.fix-state format
+app_version: str = "1.4.5-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 argparser: argparse.ArgumentParser = None
 logs: list[str] = []

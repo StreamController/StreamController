@@ -275,6 +275,10 @@ class Screensaver(Adw.PreferencesRow):
             pass
 
     def load_defaults_from_page(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_defaults_from_page())
+            return
         self.disconnect_signals()
         # Verify if page exists
         if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):

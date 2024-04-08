@@ -1331,10 +1331,14 @@ class ControllerKey:
     def close_resources(self) -> None:
         if self.key_image is not None:
             self.key_image.close()
+            self.key_image = None
+            del self.key_image
         if self.key_video is not None:
             self.key_video.close()
+            self.key_video = None
+            del self.key_video
 
-        self.labels = {}
+        self.labels.clear()
 
 
 class KeyLabel:

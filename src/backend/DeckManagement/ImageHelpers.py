@@ -139,6 +139,10 @@ def image2pixbuf(img, force_transparency=False):
     try:
         pix = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                 transparent, 8, w, h, w * channels)
+        # Clean up memory
+        data = None
+        w, h = None, None
+        del data
         return pix
     except TypeError as e:
          # This usually happens if the image is a non RGB image

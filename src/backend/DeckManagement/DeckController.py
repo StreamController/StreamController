@@ -1378,6 +1378,9 @@ class KeyImage(SingleKeyAsset):
         return self.image
     
     def close(self) -> None:
+        if not hasattr(self, "image"):
+            # Already closed
+            return
         self.image.close()
         self.image = None
         del self.image

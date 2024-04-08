@@ -115,7 +115,7 @@ class Sidebar(Adw.NavigationPage):
         if controller.active_page == None:
             # self.error_page.set_error_text(gl.lm.get("right-area-no-page-selected-error"))
             # self.error_page.set_reload_args([None])
-            #TODO: User is unable to change or create pages when the error is shown
+            #FIXME: User is unable to change or create pages when the error is shown
             self.show_error()
             return
 

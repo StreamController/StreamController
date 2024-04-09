@@ -47,9 +47,12 @@ class PageSelector(Adw.NavigationPage):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.set_child(self.main_box)
 
+        self.header = Adw.HeaderBar(css_classes=["flat"])
+        self.main_box.append(self.header)
+
         self.search_entry = Gtk.SearchEntry(placeholder_text=gl.lm.get("page-manager.page-selector.search-hint"), hexpand=True, margin_start=7, margin_end=7, margin_top=7, margin_bottom=7)
         self.search_entry.connect("changed", self.on_search_changed)
-        self.main_box.append(self.search_entry)
+        self.header.set_title_widget(self.search_entry)
 
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=False, vexpand=True)
         self.main_box.append(self.scrolled_window)

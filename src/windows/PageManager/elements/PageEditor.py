@@ -47,7 +47,7 @@ class PageEditor(Adw.NavigationPage):
         self.set_child(self.main_box)
 
         # Header
-        self.header = Adw.HeaderBar(show_back_button=False, css_classes=["flat"])
+        self.header = Adw.HeaderBar(show_back_button=False, css_classes=["flat"], show_end_title_buttons=True)
         self.main_box.append(self.header)
 
         # Main stack - one page for the normal editor and one for the no page info screen
@@ -299,3 +299,4 @@ class DefaultPageGroup(Adw.PreferencesGroup):
     def update(self) -> None:
         matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
         self.row.set_label(len(matches))
+        self.row.set_selected_deck_serials(matches)

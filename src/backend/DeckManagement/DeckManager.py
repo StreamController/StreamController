@@ -152,8 +152,8 @@ class DeckManager:
             # Add to deck stack
             GLib.idle_add(gl.app.main_win.leftArea.deck_stack.add_page, deck_controller)
 
-        if recursive_hasattr(gl, "app.main_win.header_bar.page_selector"):
-            GLib.idle_add(gl.app.main_win.header_bar.page_selector.update)
+        if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
+            GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
 
 
 

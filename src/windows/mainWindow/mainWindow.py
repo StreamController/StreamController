@@ -117,7 +117,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Add sidebar toggle button to the header bar
         self.sidebar_toggle_button = Gtk.ToggleButton(icon_name="sidebar-show-symbolic", active=True)
         self.sidebar_toggle_button.connect("toggled", self.on_toggle_sidebar)
-        self.header.pack_start(self.sidebar_toggle_button)
+        # self.header.pack_start(self.sidebar_toggle_button)
 
 
         # Error pages

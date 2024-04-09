@@ -59,8 +59,14 @@ class Sidebar(Adw.NavigationPage):
         self.on_map_tasks.clear()
 
     def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.set_child(self.main_box)
+
+        self.header = Adw.HeaderBar(css_classes=["flat"])
+        self.main_box.append(self.header)
+
         self.main_stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
-        self.set_child(self.main_stack)
+        self.main_box.append(self.main_stack)
 
         self.key_editor = KeyEditor(self)
         self.main_stack.add_named(self.key_editor, "key_editor")
@@ -73,6 +79,9 @@ class Sidebar(Adw.NavigationPage):
 
         self.error_page = ErrorPage(self)
         self.main_stack.add_named(self.error_page, "error_page")
+
+        self.page_selector = PageSelector(self.main_window, gl.page_manager, halign=Gtk.Align.CENTER)
+        self.header.set_title_widget(self.page_selector)
 
         self.load_for_coords((0, 0))
 
@@ -152,9 +161,6 @@ class KeyEditor(Gtk.Box):
         self.sidebar:Sidebar = sidebar
         super().__init__(**kwargs)
         self.set_orientation(Gtk.Orientation.VERTICAL)
-
-        self.page_selector = PageSelector(self.sidebar.main_window, gl.page_manager, margin_top=5, halign=Gtk.Align.CENTER)
-        self.append(self.page_selector)
 
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
         self.append(self.scrolled_window)

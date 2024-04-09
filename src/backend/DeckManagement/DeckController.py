@@ -1078,14 +1078,10 @@ class ControllerKey:
             if label == "bottom":
                 position = (image.width / 2, image.height*0.875)
 
-
-            start_mem = process.memory_info().rss
             draw.text(position,
                         text=text, font=font, anchor="ms",
                         fill=color, stroke_width=2,
                         stroke_fill="black")
-            end = process.memory_info().rss
-      
             
         draw = None
         del draw

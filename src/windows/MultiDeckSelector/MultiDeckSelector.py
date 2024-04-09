@@ -76,7 +76,7 @@ class MultiDeckSelector(Gtk.ApplicationWindow):
 
 class DeckRow(Gtk.CheckButton):
     def __init__(self, selector: MultiDeckSelector, deck_name: str, deck_serial_number: str, active: bool = False):
-        super().__init__(label=deck_name, css_classes=["multi-deck-selector-label"], active=active)
+        super().__init__(label=deck_name, css_classes=["multi-deck-selector-label"], active=active, margin_bottom=3)
         self.deck_name = deck_name
         self.selector = selector
         self.deck_serial_number = deck_serial_number

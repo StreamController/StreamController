@@ -57,8 +57,12 @@ class MultiDeckSelectorRow(Adw.ActionRow):
                 selected_deck_serials=self.selected_deck_serials,
                 callback=self.change_callback
             )
+            self.multi_deck_selector.connect("close-request", self.on_dialog_close)
         
         self.multi_deck_selector.present()
+
+    def on_dialog_close(self, widget):
+        self.multi_deck_selector = None
 
     def set_label(self, n_selected_decks: int):
         self.suffix_label.set_label(f"{n_selected_decks} {gl.lm.get('multi-deck-selector.selected')}")
@@ -69,3 +73,9 @@ class MultiDeckSelectorRow(Adw.ActionRow):
 
         if callable(self.callback):
             self.callback(serial_number, state)
+
+    def set_selected_deck_serials(self, selected_deck_serials: list[str]):
+        if self.multi_deck_selector is not None:
+            self.multi_deck_selector.close()
+
+        self.selected_deck_serials = selected_deck_serials

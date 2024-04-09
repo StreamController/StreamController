@@ -201,7 +201,7 @@ class MediaPlayerThread(threading.Thread):
             time.sleep(0.1)
 
     def add_task(self, method: callable, *args, **kwargs):
-        self.tasks.put(MediaPlayerTask(
+        self.task_queue.put(MediaPlayerTask(
             deck_controller=self.deck_controller,
             page=self.deck_controller.active_page,
             _callable=method,
@@ -299,7 +299,11 @@ class DeckController:
 
     def update_key(self, index: int):
         image = self.keys[index].get_current_deck_image()
-        native_image = PILHelper.to_native_key_format(self.deck, image.convert("RGB"))
+        
+        rgb_image = image.convert("RGB")
+        native_image = PILHelper.to_native_key_format(self.deck, rgb_image)
+        rgb_image.close()
+        del rgb_image
 
         self.media_player.add_image_task(index, native_image)
 

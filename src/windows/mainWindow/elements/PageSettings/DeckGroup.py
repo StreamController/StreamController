@@ -157,13 +157,14 @@ class Screensaver(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", **kwargs):
         super().__init__(css_classes=["no-click"])
         self.settings_page = settings_page
-        self.build()
 
         """
         To save performance and memory, we only load the thumbnail when the user sees the row
         """
         self.on_map_tasks: list = []
         self.connect("map", self.on_map)
+        
+        self.build()
 
     def on_map(self, widget):
         for f in self.on_map_tasks:

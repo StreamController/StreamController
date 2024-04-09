@@ -167,17 +167,18 @@
       App Features:
     </p>
     <ul>
-      <li>Beautiful GTK4 Interface</li>
-      <li>Plugin support</li>
-      <li>Multi deck support</li>
+      <li>Elegant GTK4 Interface</li>
+      <li>Plugin support with built-in store</li>
+      <li>Multi-deck support</li>
       <li>Set background images &amp; videos</li>
       <li>Set custom icons</li>
+      <li>Automatic page switching (Gnome &amp; Hyprland)</li>
     </ul>
     <p>
       Official Plugin Features:
     </p>
     <ul>
-      <li>Run commands</li>
+      <li>Execute commands</li>
       <li>Press hotkeys (X and Wayland)</li>
       <li>Move mouse (X and Wayland)</li>
       <li>Control OBS Studio</li>
@@ -185,8 +186,17 @@
       <li>Mix the volume of different apps</li>
       <li>Switch between audio outputs</li>
       <li>Mute your microphone</li>
-      <li>Show a clock</li>
+      <li>Display the current time</li>
       <li>Send network requests</li>
+    </ul>
+    <p>
+      Supported devices
+    </p>
+    <ul>
+      <li>Stream Deck Original</li>
+      <li>Stream Deck Original V2</li>
+      <li>Stream Deck Mini</li>
+      <li>Stream Deck XL</li>
     </ul>
   </description>
   

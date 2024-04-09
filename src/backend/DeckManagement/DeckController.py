@@ -1052,7 +1052,6 @@ class ControllerKey:
         # image = Image.frombytes("RGBA", _image.size, _image.tobytes())
 
         draw = ImageDraw.Draw(image)
-        draw.fontmode = "1" # Anti-aliased - this prevents frayed/noisy labels on the deck
 
         # labels = copy(self.labels) # Prevent crash if labels change during iteration
         labels = self.labels

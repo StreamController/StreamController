@@ -73,3 +73,9 @@ class MultiDeckSelectorRow(Adw.ActionRow):
 
         if callable(self.callback):
             self.callback(serial_number, state)
+
+    def set_selected_deck_serials(self, selected_deck_serials: list[str]):
+        if self.multi_deck_selector is not None:
+            self.multi_deck_selector.close()
+
+        self.selected_deck_serials = selected_deck_serials

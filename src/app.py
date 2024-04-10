@@ -125,7 +125,7 @@ class App(Adw.Application):
         timer.start()
 
         for ctrl in gl.deck_manager.deck_controller:
-                ctrl.delete()
+            ctrl.delete()
 
         gl.plugin_manager.loop_daemon = False
         log.debug("non-daemon threads:")

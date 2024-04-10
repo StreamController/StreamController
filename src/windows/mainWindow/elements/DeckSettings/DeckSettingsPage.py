@@ -84,6 +84,7 @@ class DeckSettingsPage(Gtk.Overlay):
 
     def on_back_clicked(self, button):
         self.deck_stack_child.stack.set_visible_child_name("page-settings")
+        self.toggle_settings_button.set_icon_name("applications-system-symbolic")
         
 
     def on_open_page_settings_button_click(self, button):

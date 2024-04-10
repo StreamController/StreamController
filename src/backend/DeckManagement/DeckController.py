@@ -109,8 +109,7 @@ class MediaPlayerThread(threading.Thread):
         self.pause = False
         self._stop = False
 
-        self.task_queue: Queue[MediaPlayerTask] = Queue()
-        # self.tasks = {}
+        self.tasks: list[MediaPlayerTask] = []
         self.image_tasks = {}
 
         self.fps: list[float] = []
@@ -201,7 +200,7 @@ class MediaPlayerThread(threading.Thread):
             time.sleep(0.1)
 
     def add_task(self, method: callable, *args, **kwargs):
-        self.task_queue.put(MediaPlayerTask(
+        self.tasks.append(MediaPlayerTask(
             deck_controller=self.deck_controller,
             page=self.deck_controller.active_page,
             _callable=method,
@@ -218,12 +217,14 @@ class MediaPlayerThread(threading.Thread):
         )
 
     def perform_media_player_tasks(self):
-        while not self.task_queue.empty():
-            task = self.task_queue.get()
-            # Skip task if it is from another page
-            if task.page is not self.deck_controller.active_page:
-                continue
-            task.run()
+        for task in self.tasks.copy():
+            if task.page is self.deck_controller.active_page:
+                task.run()
+
+            try:
+                self.tasks.remove(task)
+            except ValueError:
+                pass
 
         for key in list(self.image_tasks.keys()):
             try:
@@ -610,9 +611,7 @@ class DeckController:
         return deck_stack_child.page_settings.grid_page
     
     def clear_media_player_tasks(self):
-        while not self.media_player.task_queue.empty():
-            self.media_player.task_queue.get()
-        
+        self.media_player.tasks.clear()
         self.media_player.image_tasks.clear()
 
     def clear_media_player_tasks_via_task(self):

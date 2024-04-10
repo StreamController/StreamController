@@ -1171,11 +1171,8 @@ class ControllerKey:
         if load_labels:
             self.labels = {}
 
-        start = time.time()
         self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
-        actions = self.get_own_actions()
 
-        start = time.time()
         ## Load labels
         if load_labels:
             for label in page_dict.get("labels", []):
@@ -1191,8 +1188,6 @@ class ControllerKey:
                 )
                 self.add_label(key_label, position=label, update=False)
 
-
-        start = time.time()
         ## Load media
         if load_media:
             path = page_dict.get("media", {}).get("path", None)
@@ -1237,13 +1232,11 @@ class ControllerKey:
                         image=image.copy(),
                     ), update=False)
 
-        start = time.time()
         if load_background_color:
             self.background_color = page_dict.get("background", {}).get("color", [0, 0, 0, 0])
             # Ensure the background color has an alpha channel
             if len(self.background_color) == 3:
                 self.background_color.append(255)
-
 
         if update:
             self.update()

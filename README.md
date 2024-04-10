@@ -19,6 +19,11 @@ Currently available for Gnome and Hyprland
 
 Automatic page switching allows you to automatically change your active page based on the active window. For example, you could see your favorite music albums when you open Spotify, your projects when you open VSCode, or your favorite websites in Firefox.
 
+## Installation
+<a href='https://flathub.org/apps/details/com.core447.StreamController'><img width='200px' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
+
+[Installation](https://streamcontroller.github.io/docs/latest/installation/)
+
   
 
 ## Warning

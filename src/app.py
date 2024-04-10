@@ -114,6 +114,8 @@ class App(Adw.Application):
     def on_quit(self, *args):
         log.info("Quitting...")
 
+        self.main_win.destroy()
+
         gl.signal_manager.trigger_signal(Signals.AppQuit)
 
         gl.threads_running = False

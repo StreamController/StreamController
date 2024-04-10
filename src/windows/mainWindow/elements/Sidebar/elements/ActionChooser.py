@@ -25,7 +25,7 @@ from fuzzywuzzy import fuzz, process
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import get_last_dir
-from GtkHelper.GtkHelper import BetterExpander, BetterPreferencesGroup
+from GtkHelper.GtkHelper import BackButton, BetterExpander, BetterPreferencesGroup
 from src.windows.Store.Store import Store
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
@@ -61,12 +61,9 @@ class ActionChooser(Gtk.Box):
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.nav_box)
 
-        self.back_button = Gtk.Button(icon_name="go-previous")
+        self.back_button = BackButton()
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
-
-        self.back_label = Gtk.Label(label=gl.lm.get("action-chooser.go-back.label"), margin_start=6, xalign=0, css_classes=["bold"])
-        self.nav_box.append(self.back_label)
 
         self.search_entry = Gtk.SearchEntry(margin_top=10, placeholder_text=gl.lm.get("action-chooser.search-entry.placeholder"), hexpand=True)
         self.search_entry.connect("search-changed", self.on_search_changed)

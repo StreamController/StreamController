@@ -310,6 +310,7 @@ class DeckController:
 
         self.keys[index].set_ui_key_image(image)
 
+    @log.catch
     def update_all_keys(self):
         start = time.time()
         if not self.get_alive(): return
@@ -369,6 +370,7 @@ class DeckController:
         page = gl.page_manager.get_page(default_page_path, self)
         self.load_page(page)
 
+    @log.catch
     def load_background(self, page: Page, update: bool = True):
         log.info(f"Loading background in thread: {threading.get_ident()}")
         deck_settings = self.get_deck_settings()
@@ -393,6 +395,7 @@ class DeckController:
         else:
             set_from_page(self)
 
+    @log.catch
     def load_brightness(self, page: Page):
         if not self.get_alive(): return
         deck_settings = self.get_deck_settings()
@@ -407,6 +410,7 @@ class DeckController:
         else:
             set_from_page(self)
 
+    @log.catch
     def load_screensaver(self, page: Page):
         deck_settings = self.get_deck_settings()
         def set_from_deck_settings(self: "DeckController"):
@@ -444,6 +448,7 @@ class DeckController:
         else:
             set_from_page(self)
 
+    @log.catch
     def load_all_keys(self, page: Page, update: bool = True):
         start = time.time()
         keys_to_load = self.keys
@@ -488,6 +493,7 @@ class DeckController:
             self.background.image.close()
 
 
+    @log.catch
     def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
                   allow_reload: bool = True):
         if not self.get_alive(): return

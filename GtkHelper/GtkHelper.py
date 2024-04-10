@@ -402,3 +402,12 @@ class ComboRow(Adw.PreferencesRow):
 
         self.combo_box = Gtk.ComboBox.new_with_model(self.model)
         self.main_box.append(self.combo_box)
+
+class BackButton(Gtk.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.set_child(self.box)
+
+        self.box.append(Gtk.Image(icon_name="go-previous-symbolic"))
+        self.box.append(Gtk.Label(label=gl.lm.get("go-back")))

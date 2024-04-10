@@ -14,6 +14,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import gi
+
+from GtkHelper.GtkHelper import BackButton
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
@@ -33,7 +35,7 @@ class DeckSettingsPage(Gtk.Overlay):
     def __init__(self, deck_stack_child, deck_controller, **kwargs):
         super().__init__(hexpand=True, vexpand=True,
                          margin_start=50, margin_end=50,
-                         margin_top=50, margin_bottom=50, **kwargs)
+                         margin_top=0, margin_bottom=50, **kwargs)
         self.deck_stack_child = deck_stack_child
         self.deck_controller = deck_controller
         self.deck_serial_number = deck_controller.deck.get_serial_number()
@@ -47,7 +49,13 @@ class DeckSettingsPage(Gtk.Overlay):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.set_child(self.main_box)
 
-        self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
+        ## Back button
+        self.back_button = BackButton(halign=Gtk.Align.START)
+        self.back_button.connect("clicked", self.on_back_clicked)
+        self.main_box.append(self.back_button)
+
+        ## Main area
+        self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True, margin_top=50)
         self.main_box.append(self.scrolled_window)
 
         self.clamp = Adw.Clamp()
@@ -74,6 +82,8 @@ class DeckSettingsPage(Gtk.Overlay):
 
         self.fake_deck_group.set_visible(fake)
 
+    def on_back_clicked(self, button):
+        self.deck_stack_child.stack.set_visible_child_name("page-settings")
         
 
     def on_open_page_settings_button_click(self, button):

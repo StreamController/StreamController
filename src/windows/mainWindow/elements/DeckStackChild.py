@@ -71,14 +71,14 @@ class DeckStackChild(Gtk.Overlay):
         if self.stack.get_visible_child_name() == "page-settings":
             self.stack.set_visible_child_name("deck-settings")
             self.toggle_settings_button.set_icon_name("view-paged-symbolic")
-            gl.app.main_win.sidebar_toggle_button.set_visible(False)
-            gl.app.main_win.split_view.set_collapsed(True)
+            # gl.app.main_win.sidebar_toggle_button.set_visible(False)
+            # gl.app.main_win.split_view.set_collapsed(True)
 
         else:
             self.stack.set_visible_child_name("page-settings")
             self.toggle_settings_button.set_icon_name("applications-system-symbolic")
-            gl.app.main_win.sidebar_toggle_button.set_visible(True)
-            gl.app.main_win.split_view.set_collapsed(False)
+            # gl.app.main_win.sidebar_toggle_button.set_visible(True)
+            # gl.app.main_win.split_view.set_collapsed(False)
 
     def on_banner_dismiss(self, banner):
         banner.set_revealed(False)

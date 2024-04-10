@@ -62,7 +62,7 @@ class Sidebar(Adw.NavigationPage):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.set_child(self.main_box)
 
-        self.header = Adw.HeaderBar(css_classes=["flat"])
+        self.header = Adw.HeaderBar(css_classes=["flat"], show_back_button=False)
         self.main_box.append(self.header)
 
         self.main_stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)

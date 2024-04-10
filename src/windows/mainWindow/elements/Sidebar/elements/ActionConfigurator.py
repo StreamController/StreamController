@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from GtkHelper.GtkHelper import BackButton
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
@@ -45,12 +47,9 @@ class ActionConfigurator(Gtk.Box):
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.nav_box)
 
-        self.back_button = Gtk.Button(icon_name="go-previous-symbolic")
+        self.back_button = BackButton()
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
-
-        self.back_label = Gtk.Label(label=gl.lm.get("go-back"), margin_start=6, xalign=0, css_classes=["bold"])
-        self.nav_box.append(self.back_label)
 
         self.header = Gtk.Label(label=gl.lm.get("action-configurator-header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
         self.main_box.append(self.header)

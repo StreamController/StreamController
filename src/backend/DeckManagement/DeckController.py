@@ -109,8 +109,7 @@ class MediaPlayerThread(threading.Thread):
         self.pause = False
         self._stop = False
 
-        self.task_queue: Queue[MediaPlayerTask] = Queue()
-        # self.tasks = {}
+        self.tasks: list[MediaPlayerTask] = []
         self.image_tasks = {}
 
         self.fps: list[float] = []
@@ -201,7 +200,7 @@ class MediaPlayerThread(threading.Thread):
             time.sleep(0.1)
 
     def add_task(self, method: callable, *args, **kwargs):
-        self.task_queue.put(MediaPlayerTask(
+        self.tasks.append(MediaPlayerTask(
             deck_controller=self.deck_controller,
             page=self.deck_controller.active_page,
             _callable=method,
@@ -218,12 +217,14 @@ class MediaPlayerThread(threading.Thread):
         )
 
     def perform_media_player_tasks(self):
-        while not self.task_queue.empty():
-            task = self.task_queue.get()
-            # Skip task if it is from another page
-            if task.page is not self.deck_controller.active_page:
-                continue
-            task.run()
+        for task in self.tasks.copy():
+            if task.page is self.deck_controller.active_page:
+                task.run()
+
+            try:
+                self.tasks.remove(task)
+            except ValueError:
+                pass
 
         for key in list(self.image_tasks.keys()):
             try:
@@ -309,6 +310,7 @@ class DeckController:
 
         self.keys[index].set_ui_key_image(image)
 
+    @log.catch
     def update_all_keys(self):
         start = time.time()
         if not self.get_alive(): return
@@ -368,6 +370,7 @@ class DeckController:
         page = gl.page_manager.get_page(default_page_path, self)
         self.load_page(page)
 
+    @log.catch
     def load_background(self, page: Page, update: bool = True):
         log.info(f"Loading background in thread: {threading.get_ident()}")
         deck_settings = self.get_deck_settings()
@@ -392,6 +395,7 @@ class DeckController:
         else:
             set_from_page(self)
 
+    @log.catch
     def load_brightness(self, page: Page):
         if not self.get_alive(): return
         deck_settings = self.get_deck_settings()
@@ -406,6 +410,7 @@ class DeckController:
         else:
             set_from_page(self)
 
+    @log.catch
     def load_screensaver(self, page: Page):
         deck_settings = self.get_deck_settings()
         def set_from_deck_settings(self: "DeckController"):
@@ -443,6 +448,7 @@ class DeckController:
         else:
             set_from_page(self)
 
+    @log.catch
     def load_all_keys(self, page: Page, update: bool = True):
         start = time.time()
         keys_to_load = self.keys
@@ -487,6 +493,7 @@ class DeckController:
             self.background.image.close()
 
 
+    @log.catch
     def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
                   allow_reload: bool = True):
         if not self.get_alive(): return
@@ -610,9 +617,7 @@ class DeckController:
         return deck_stack_child.page_settings.grid_page
     
     def clear_media_player_tasks(self):
-        while not self.media_player.task_queue.empty():
-            self.media_player.task_queue.get()
-        
+        self.media_player.tasks.clear()
         self.media_player.image_tasks.clear()
 
     def clear_media_player_tasks_via_task(self):
@@ -1052,7 +1057,6 @@ class ControllerKey:
         # image = Image.frombytes("RGBA", _image.size, _image.tobytes())
 
         draw = ImageDraw.Draw(image)
-        draw.fontmode = "1" # Anti-aliased - this prevents frayed/noisy labels on the deck
 
         # labels = copy(self.labels) # Prevent crash if labels change during iteration
         labels = self.labels
@@ -1079,14 +1083,10 @@ class ControllerKey:
             if label == "bottom":
                 position = (image.width / 2, image.height*0.875)
 
-
-            start_mem = process.memory_info().rss
             draw.text(position,
                         text=text, font=font, anchor="ms",
                         fill=color, stroke_width=2,
                         stroke_fill="black")
-            end = process.memory_info().rss
-      
             
         draw = None
         del draw
@@ -1171,11 +1171,8 @@ class ControllerKey:
         if load_labels:
             self.labels = {}
 
-        start = time.time()
         self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
-        actions = self.get_own_actions()
 
-        start = time.time()
         ## Load labels
         if load_labels:
             for label in page_dict.get("labels", []):
@@ -1191,8 +1188,6 @@ class ControllerKey:
                 )
                 self.add_label(key_label, position=label, update=False)
 
-
-        start = time.time()
         ## Load media
         if load_media:
             path = page_dict.get("media", {}).get("path", None)
@@ -1237,13 +1232,11 @@ class ControllerKey:
                         image=image.copy(),
                     ), update=False)
 
-        start = time.time()
         if load_background_color:
             self.background_color = page_dict.get("background", {}).get("color", [0, 0, 0, 0])
             # Ensure the background color has an alpha channel
             if len(self.background_color) == 3:
                 self.background_color.append(255)
-
 
         if update:
             self.update()

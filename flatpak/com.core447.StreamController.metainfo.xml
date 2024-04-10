@@ -41,6 +41,11 @@
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
+    <release version="1.4.9-beta" date="2024-04-10">
+      <description translatable="no">
+        <p>Bugfixes</p>
+      </description>
+    </release>
     <release version="1.4.8-beta" date="2024-04-09">
       <description translatable="no">
         <p>Bugfixes</p>

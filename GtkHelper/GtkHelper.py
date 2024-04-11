@@ -368,7 +368,7 @@ class OriginalURL(Adw.ActionRow):
         self.open_button.set_sensitive(True)
 
     def on_open_clicked(self, button:Gtk.Button):
-        if self.get_subtitle() in [None, "N/A"]:
+        if self.get_subtitle() in [None, "N/A", ""]:
             return
         web.open(self.get_subtitle())
 

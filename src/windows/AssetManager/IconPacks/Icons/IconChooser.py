@@ -13,6 +13,8 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import threading
+import time
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -42,9 +44,11 @@ class IconChooserPage(ChooserPage):
 
         self.selected_icon: str = None
 
-        self.build()
+        threading.Thread(target=self.build).start()
 
     def build(self):
+        self.set_loading(True)
+        
         self.type_box.set_visible(False)
 
         self.icon_flow = WallpaperFlowBox(IconPreview, self)
@@ -52,12 +56,14 @@ class IconChooserPage(ChooserPage):
         self.icon_flow.set_filter_func(self.filter_func)
         self.icon_flow.set_sort_func(self.sort_func)
         # Remove default scrolled window
-        self.remove(self.scrolled_window)
+        GLib.idle_add(self.main_box.remove, self.scrolled_window)
         # Add dynamic flow box
-        self.append(self.icon_flow)
+        GLib.idle_add(self.main_box.append, self.icon_flow)
 
         # Connect flow box select signal
         self.icon_flow.flow_box.connect("child-activated", self.on_child_activated)
+
+        self.set_loading(False)
 
     def load_for_pack(self, pack: "IconPack"):
         self.icon_flow.set_item_list(pack.get_icons())

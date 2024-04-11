@@ -42,17 +42,21 @@ class CustomAssetChooser(ChooserPage):
         super().__init__()
         self.asset_manager = asset_manager
 
-        self.build()
+        # self.build()
+        threading.Thread(target=self.build).start()
 
-        self.load_defaults()
 
     def build(self):
         self.asset_chooser = CustomAssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.scrolled_box.prepend(self.asset_chooser)
+        GLib.idle_add(self.scrolled_box.prepend, self.asset_chooser)
 
         self.browse_files_button = Gtk.Button(label=gl.lm.get("asset-chooser.custom.browse-files"), margin_top=15)
         self.browse_files_button.connect("clicked", self.on_browse_files_clicked)
-        self.append(self.browse_files_button)
+        GLib.idle_add(self.main_box.append, self.browse_files_button)
+
+        self.load_defaults()
+
+        self.set_loading(False)
 
     def on_dnd_accept(self, drop, user_data):
         return True

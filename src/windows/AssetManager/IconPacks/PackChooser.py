@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import threading
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -41,9 +42,8 @@ class IconPackChooser(ChooserPage):
         super().__init__()
         self.asset_manager = asset_manager
 
-        self.build()
-
-        self.load()
+        threading.Thread(target=self.build).start()
+        
 
     def build(self):
         self.type_box.set_visible(False)
@@ -52,6 +52,10 @@ class IconPackChooser(ChooserPage):
         self.scrolled_box.prepend(self.icon_pack_chooser)
 
         self.icon_pack_chooser.flow_box.connect("child-activated", self.on_child_activated)
+
+        self.load()
+
+        self.set_loading(False)
 
     def load(self):
         flow_box = self.icon_pack_chooser.flow_box

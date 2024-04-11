@@ -68,7 +68,7 @@ class CustomAssetChooserFlowBox(Gtk.Box):
             if child == None:
                 return
             if child.asset["internal-path"] == path:
-                self.flow_box.select_child(child)
+                GLib.idle_add(self.flow_box.select_child, child)
                 return
             i += 1
             

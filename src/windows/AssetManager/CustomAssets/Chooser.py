@@ -42,11 +42,13 @@ class CustomAssetChooser(ChooserPage):
         super().__init__()
         self.asset_manager = asset_manager
 
-        # self.build()
+        self.build_finished = False
+        self.build_task_finished_tasks: list[callable] = []
+
         threading.Thread(target=self.build).start()
 
-
     def build(self):
+        self.build_finished = False
         self.asset_chooser = CustomAssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         GLib.idle_add(self.scrolled_box.prepend, self.asset_chooser)
 
@@ -57,6 +59,10 @@ class CustomAssetChooser(ChooserPage):
         self.load_defaults()
 
         self.set_loading(False)
+
+        self.build_finished = True
+        for task in self.build_task_finished_tasks:
+            task()
 
     def on_dnd_accept(self, drop, user_data):
         return True
@@ -83,6 +89,9 @@ class CustomAssetChooser(ChooserPage):
         gl.asset_manager.set_cursor_from_name("default")
 
     def show_for_path(self, path):
+        if not self.build_finished:
+            self.build_task_finished_tasks.append(lambda: self.asset_chooser.show_for_path(path))
+            return
         self.asset_chooser.show_for_path(path)
 
     def on_video_toggled(self, button):

@@ -94,3 +94,6 @@ class SingleKeyAsset:
             background.paste(foreground_resized, (left_margin, top_margin))
         
         return background
+    
+    def close(self):
+        pass

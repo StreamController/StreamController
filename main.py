@@ -182,6 +182,9 @@ def main():
     except dbus.exceptions.DBusException as e:
         log.info("No other instance running, continuing")
 
+    except ValueError as e:
+        log.info("The last instance has not been properly closed, continuing... This may cause issues")
+
     reset_all_decks()
 
     setup_autostart()

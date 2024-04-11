@@ -70,6 +70,7 @@ class Store(Gtk.ApplicationWindow):
         self.set_child(self.main_box)
 
         self.main_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, hexpand=True, vexpand=True)
+        self.main_stack.connect("notify::visible-child-name", self.on_switch)
         self.main_box.append(self.main_stack)
 
         # Header stack switcher
@@ -92,3 +93,10 @@ class Store(Gtk.ApplicationWindow):
     def on_back_button_click(self, button: Gtk.Button):
         # Switch active page back from info page
         self.main_stack.get_visible_child().set_info_visible(False)
+
+    def on_switch(self, *args):
+        child: StorePage = self.main_stack.get_visible_child()
+        if child.get_visible_child_name() == "Info":
+            self.back_button.set_visible(True)
+        else:
+            self.back_button.set_visible(False)

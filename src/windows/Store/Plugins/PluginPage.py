@@ -92,6 +92,7 @@ class PluginPreview(StorePreview):
         self.set_install_state(0)
 
     def update(self):
+        self.store.backend.uninstall_plugin(plugin_id=self.plugin_dict["id"], remove_from_pages=False, remove_files=False)
         self.install()
 
     def on_click_main(self, button: Gtk.Button):

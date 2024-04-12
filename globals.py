@@ -4,8 +4,16 @@ from typing import TYPE_CHECKING
 import argparse
 import sys
 
+argparser = argparse.ArgumentParser()
+argparser.add_argument("-b", help="Open in background", action="store_true")
+argparser.add_argument("--devel", help="Developer mode", action="store_true")
+argparser.add_argument("--close-running", help="Close running", action="store_true")
+argparser.add_argument("--data", help="Data path", type=str)
+argparser.add_argument("app_args", nargs="*")
+
 DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
-# DATA_PATH = "data"
+if argparser.parse_args().data:
+    DATA_PATH = argparser.parse_args().data
 
 # Add data path to sys.path
 sys.path.append(DATA_PATH)
@@ -56,7 +64,6 @@ threads_running: bool = True
 
 app_version: str = "1.4.10-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
-argparser: argparse.ArgumentParser = None
 logs: list[str] = []
 
 release_notes: str = "<ul> \

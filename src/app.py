@@ -77,6 +77,10 @@ class App(Adw.Application):
         on_reopen_action.connect("activate", self.on_reopen)
         self.add_action(on_reopen_action)
 
+        on_quit_action = Gio.SimpleAction.new("quit", None)
+        on_quit_action.connect("activate", self.on_quit)
+        self.add_action(on_quit_action)
+
         log.success("Finished loading app")
 
     def on_reopen(self, *args, **kwargs):

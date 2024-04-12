@@ -74,7 +74,7 @@ def setup_autostart_desktop_entry():
     log.info("Setting up autostart using desktop entry")
 
 
-    xdg_config_home = os.environ.get("XDG_CONFIG_HOME", os.path.join(os.environ.get("HOME"), ".config"))
+    xdg_config_home = os.path.join(os.environ.get("HOME"), ".config")
     AUTOSTART_DIR = os.path.join(xdg_config_home, "autostart")
     AUTOSTART_DESKTOP_PATH = os.path.join(AUTOSTART_DIR, "StreamController.desktop")
 

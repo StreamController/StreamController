@@ -69,7 +69,7 @@ class StorePage(Gtk.Stack):
         self.scrolled_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.scrolled_window.set_child(self.scrolled_box)
 
-        self.flow_box = Gtk.FlowBox(orientation=Gtk.Orientation.HORIZONTAL, selection_mode=Gtk.SelectionMode.NONE)
+        self.flow_box = Gtk.FlowBox(orientation=Gtk.Orientation.HORIZONTAL, selection_mode=Gtk.SelectionMode.NONE, homogeneous=True)
         self.flow_box.set_filter_func(self.filter_func)
         self.flow_box.set_sort_func(self.sort_func)
         self.scrolled_box.append(self.flow_box)

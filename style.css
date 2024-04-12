@@ -156,6 +156,7 @@
 .plugin-store-image{
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
+  min-height: 90px;
 }
 .no-round-bottom {
   border-bottom-left-radius: 0px;

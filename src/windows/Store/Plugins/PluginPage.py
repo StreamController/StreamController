@@ -83,6 +83,11 @@ class PluginPreview(StorePreview):
         else:
             self.set_install_state(2)
 
+        description = self.plugin_dict.get("short_description")
+        if description in ["", "N/A", None]:
+            description = self.plugin_dict.get("description")
+        self.set_description(description)
+
     def install(self):
         asyncio.run(self.store.backend.install_plugin(plugin_dict=self.plugin_dict))
         self.set_install_state(1)

@@ -12,14 +12,16 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+from textwrap import wrap
 import time
 import gi
 
+import globals as gl
 
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
+from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf, Pango
 
 # Import python modules
 from PIL import Image
@@ -55,7 +57,7 @@ class StorePreview(Gtk.FlowBoxChild):
         self.set_child(self.main_box)
 
         self.main_button = Gtk.Button(hexpand=True, vexpand=False,
-                                      width_request=250, height_request=200,
+                                      width_request=250, height_request=250,
                                       css_classes=["no-padding", "no-round-bottom"])
         self.main_button.connect("clicked", self.on_click_main)
         self.main_box.append(self.main_button)
@@ -64,10 +66,10 @@ class StorePreview(Gtk.FlowBoxChild):
                                        hexpand=True, vexpand=False)
         self.main_button.set_child(self.main_button_box)
         
-        self.image = Gtk.Picture(hexpand=True,
+        self.image = Gtk.Picture(hexpand=True, vexpand=True,
                                  content_fit=Gtk.ContentFit.COVER,
                                  height_request=90, width_request=250,
-                                 css_classes=["plugin-store-image"])
+                                 css_classes=["plugin-store-image"], can_shrink=True)
         self.main_button_box.append(self.image)
 
         self.label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
@@ -84,7 +86,7 @@ class StorePreview(Gtk.FlowBoxChild):
 
         self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
                                  hexpand=False, vexpand=True,
-                                 margin_start=7, margin_top=15, margin_bottom=15)
+                                 margin_start=6, margin_top=6, margin_bottom=6)
         # self.overlay.add_overlay(self.batch_box)
         self.main_button_box.append(self.batch_box)
 
@@ -93,6 +95,22 @@ class StorePreview(Gtk.FlowBoxChild):
 
         self.batch_box.append(self.official_batch)
         self.batch_box.append(self.verified_batch)
+
+        self.description_box = Gtk.Box(hexpand=False, width_request=100, margin_start=6, halign=Gtk.Align.START)
+        self.main_button_box.append(self.description_box)
+
+        # self.description = Gtk.Label(label="",
+        #                              wrap=False, wrap_mode=Pango.WrapMode.WORD_CHAR, width_chars=60, max_width_chars=60,
+        #                              justify=Gtk.Justification.LEFT, hexpand=False, vexpand=True, xalign=0,
+        #                              margin_top=0, margin_bottom=20, css_classes=["dim-label"], lines=1, ellipsize=Pango.EllipsizeMode.END)
+        
+        # self.description = Gtk.Label(label="", ellipsize=Pango.EllipsizeMode.END, max_width_chars=60, width_chars=10,
+        #                              hexpand=False, xalign=0, justify=Gtk.Justification.LEFT, lines=1)
+        
+        self.description = Gtk.Label(css_classes=["dim-label"], margin_bottom=6, label=gl.lm.get("store.preview.no-description"),
+                                     halign=Gtk.Align.START, hexpand=False)
+        
+        self.description_box.append(self.description)
 
         self.main_button_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
 
@@ -220,3 +238,15 @@ class StorePreview(Gtk.FlowBoxChild):
             
             self.install_uninstall_button.add_css_class("confirm-button")
             self.install_uninstall_button.remove_css_class("red-background")
+
+    def set_description(self, description:str) -> None:
+        if description in ["", "N/A", None]:
+            description = gl.lm.get("store.preview.no-description")
+
+        # Remove ending periods
+        if description[-1] == ".":
+            description = description[:-1]
+        
+        if len(description) >= 50:
+            description = description[:47] + "..."
+        self.description.set_label(description)

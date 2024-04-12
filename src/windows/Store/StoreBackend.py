@@ -326,6 +326,7 @@ class StoreBackend:
 
         return {
             "name": manifest.get("name"),
+            "short_description": manifest.get("short-description"),
             "description": manifest.get("description"),
             "url": url,
             "user_name": user_name,
@@ -386,6 +387,7 @@ class StoreBackend:
         return {
             "name": manifest.get("name"),
             "description": description,
+            "short_description": manifest.get("short-description"),
             "version": manifest.get("version"),
             "url": url,
             "user_name": user_name,
@@ -426,6 +428,7 @@ class StoreBackend:
         return {
             "name": manifest.get("name"),
             "description": manifest.get("description"),
+            "short_description": manifest.get("short-description"),
             "version": manifest.get("version"),
             "url": url,
             "user_name": user_name,

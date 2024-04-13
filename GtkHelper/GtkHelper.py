@@ -426,7 +426,6 @@ class ScaleRow(Adw.PreferencesRow):
             step = adjustment.get_step_increment()
             rounded_value = round(value / step) * step
             adjustment.set_value(rounded_value)
-            self.scale.set_tooltip_text(str(rounded_value))
 
         self.adjustment.connect("value-changed", correct_step_amount)
 

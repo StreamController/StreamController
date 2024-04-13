@@ -85,6 +85,8 @@ class WindowGrabber:
             found_page = False
             for page_path in gl.page_manager.get_pages():
                 abs_path = os.path.abspath(page_path)
+                if abs_path not in gl.page_manager.auto_change_info:
+                    continue
                 info = gl.page_manager.auto_change_info[abs_path]
                 wm_regex = info.get("wm_class")
                 title_regex = info.get("title")

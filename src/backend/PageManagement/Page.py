@@ -61,7 +61,6 @@ class Page:
         self.load_action_objects()
 
         # Call on_ready for all actions
-        self.call_actions_ready()
         end = time.time()
         log.debug(f"Loaded page {self.get_name()} in {end - start:.2f} seconds")
 

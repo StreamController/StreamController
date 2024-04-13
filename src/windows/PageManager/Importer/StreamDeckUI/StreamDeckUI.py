@@ -167,3 +167,6 @@ class StreamDeckUIImporter:
                 page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{int(page_name) + 1}.json")
                 self.save_json(page_path, page)
                 gl.signal_manager.trigger_signal(Signals.PageAdd, page_path)
+
+                gl.page_manager.update_dict_of_pages_with_path(page_path)
+                gl.page_manager.reload_pages_with_path(page_path)

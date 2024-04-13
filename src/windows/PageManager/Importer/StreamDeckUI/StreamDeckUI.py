@@ -5,6 +5,7 @@ from src.windows.PageManager.Importer.StreamDeckUI.helper import font_family_fro
 from src.windows.PageManager.Importer.StreamDeckUI.code_conv import parse_keys_as_keycodes
 
 from src.Signals import Signals
+from loguru import logger as log
 
 import globals as gl
 
@@ -79,9 +80,11 @@ class StreamDeckUIImporter:
                     page["keys"][coords]["media"] = {}
                     export_icon = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("icon")
                     if export_icon not in [None, ""]:
-                        page["keys"][coords]["media"]["path"] = export_icon
-                        #TODO: Add via asset manager
-                        #TODO: Verify path
+                        if os.path.exists(export_icon):
+                            asset = gl.asset_manager_backend.add(asset_path=export_icon)
+                            page["keys"][coords]["media"]["path"] = asset["internal-path"]
+                        else:
+                            log.warning(f"Icon {export_icon} not found, skipping")
 
                     ## Actions
                     page["keys"][coords]["actions"] = []

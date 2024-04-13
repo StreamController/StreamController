@@ -81,7 +81,8 @@ class StreamDeckUIImporter:
                     export_icon = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("icon")
                     if export_icon not in [None, ""]:
                         if os.path.exists(export_icon):
-                            asset = gl.asset_manager_backend.add(asset_path=export_icon)
+                            asset_id = gl.asset_manager_backend.add(asset_path=export_icon)
+                            asset = gl.asset_manager_backend.get_by_id(asset_id)
                             page["keys"][coords]["media"]["path"] = asset["internal-path"]
                         else:
                             log.warning(f"Icon {export_icon} not found, skipping")

@@ -98,7 +98,7 @@ class StreamDeckUIImporter:
                         try:
                             parsed = parse_keys_as_keycodes(self.export["state"][deck]["buttons"][page_name][button]["states"][state]["keys"])[0]
                         except Exception as e:
-                            print(e)
+                            log.error(f"Failed to parse keys: {self.export['state'][deck]['buttons'][page_name][button]['states'][state]['keys']}. Error: {e}")
 
                         if parsed not in [None, ""]:
                             action = {
@@ -173,3 +173,8 @@ class StreamDeckUIImporter:
 
                 gl.page_manager.update_dict_of_pages_with_path(page_path)
                 gl.page_manager.reload_pages_with_path(page_path)
+                log.success(f"Imported page {page_name} as page ui_{int(page_name) + 1} on deck {deck}")
+
+            log.success(f"Imported all pages of deck {deck}")
+
+        log.success("Imported all pages from StreamDeck UI")

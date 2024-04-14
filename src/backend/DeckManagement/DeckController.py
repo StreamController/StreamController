@@ -297,6 +297,9 @@ class DeckController:
     def serial_number(self) -> str:
         return self.deck.get_serial_number()
     
+    @lru_cache(maxsize=None)
+    def is_visual(self) -> bool:
+        return self.deck.is_visual()
 
     def update_key(self, index: int):
         image = self.keys[index].get_current_deck_image()
@@ -306,7 +309,8 @@ class DeckController:
         rgb_image.close()
         del rgb_image
 
-        self.media_player.add_image_task(index, native_image)
+        if self.is_visual():
+            self.media_player.add_image_task(index, native_image)
 
         self.keys[index].set_ui_key_image(image)
 
@@ -599,6 +603,8 @@ class DeckController:
         return deck_stack_child
     
     def clear(self):
+        if not self.is_visual():
+            return
         alpha_image = self.generate_alpha_key()
         native_image = PILHelper.to_native_key_format(self.deck, alpha_image.convert("RGB"))
         for i in range(self.deck.key_count()):

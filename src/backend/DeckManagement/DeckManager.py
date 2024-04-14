@@ -55,8 +55,6 @@ class DeckManager:
             except:
                 log.error("Failed to open deck. Maybe it's already connected to another instance?")
                 continue
-            if not deck.is_visual():
-                continue
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)
 

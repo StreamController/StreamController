@@ -75,25 +75,29 @@ class SingleKeyAsset:
             foreground = self.deck_controller.generate_alpha_key()
 
         img_size = self.deck_controller.get_key_image_size()
-        img_size = (int(img_size[0] * self.size), int(img_size[1] * self.size)) # Calculate scaled size of the image
+        scaled_img_size = (int(img_size[0] * self.size), int(img_size[1] * self.size))  # Calculate scaled size of the image
+
         if self.fill_mode == "stretch":
-            foreground_resized = foreground.resize(img_size, Image.Resampling.HAMMING)
+            foreground_resized = foreground.resize(scaled_img_size, Image.Resampling.HAMMING)
 
         elif self.fill_mode == "cover":
-            foreground_resized = ImageOps.cover(foreground, img_size, Image.Resampling.HAMMING)
+            foreground_resized = ImageOps.cover(foreground, scaled_img_size, Image.Resampling.HAMMING)
 
         elif self.fill_mode == "contain":
-            foreground_resized = ImageOps.contain(foreground, img_size, Image.Resampling.HAMMING)
+            foreground_resized = ImageOps.contain(foreground, scaled_img_size, Image.Resampling.HAMMING)
 
-        left_margin = int((background.width - img_size[0]) * (self.halign + 1) / 2)
-        top_margin = int((background.height - img_size[1]) * (self.valign + 1) / 2)
+        # Adjust the calculation for margins so that halign and valign of 0 will center the foreground
+        left_margin = int((background.width - scaled_img_size[0]) * (self.halign + 1) / 2)
+        top_margin = int((background.height - scaled_img_size[1]) * (self.valign + 1) / 2)
 
-        if foreground.mode == "RGBA":
-            background.paste(foreground_resized, (left_margin, top_margin), foreground_resized)
-        else:
-            background.paste(foreground_resized, (left_margin, top_margin))
-        
-        return background
+        # Create a new image for the resulting composite
+        final_image = Image.new('RGBA', background.size, (0, 0, 0, 0))
+        final_image.paste(background, (0, 0))  # Paste the background onto the composite image
+
+        # Paste the resized foreground onto the final image at the calculated position
+        final_image.paste(foreground_resized, (left_margin, top_margin), foreground_resized if foreground.mode == "RGBA" else None)
+
+        return final_image
     
     def close(self):
         pass

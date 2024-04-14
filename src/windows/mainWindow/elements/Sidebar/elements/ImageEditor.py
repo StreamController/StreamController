@@ -109,7 +109,7 @@ class SizeRow(Adw.PreferencesRow):
         self.label = Gtk.Label(label=gl.lm.get("right-area.image-editor.layout.size.label"), hexpand=True, xalign=0)
         self.main_box.append(self.label)
 
-        self.size_spinner = Gtk.SpinButton.new_with_range(0, 100, 1)
+        self.size_spinner = Gtk.SpinButton.new_with_range(0, 200, 1)
         self.main_box.append(self.size_spinner)
 
     def load_for_coords(self, coords):

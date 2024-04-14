@@ -282,6 +282,14 @@ class PageManager:
                     pages.append(page)
 
         return pages
+    
+    def reload_pages_with_path(self, page_path: str) -> None:
+        pages = self.get_pages_with_path(page_path)
+
+        for page in pages:
+            page.load()
+            if page.deck_controller.active_page == page:
+                page.deck_controller.load_page(page, allow_reload=True)
 
     def update_dict_of_pages_with_path(self, page_path: str) -> None:
         pages = self.get_pages_with_path(page_path)

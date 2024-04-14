@@ -76,6 +76,7 @@ class PageSelector(Adw.NavigationPage):
 
     def load_pages(self) -> None:
         self.page_rows.clear()
+        self.list_box.remove_all()
         pages = gl.page_manager.get_pages()
         for page_path in pages:
             self.add_row_by_path(page_path)

@@ -1,3 +1,4 @@
+from functools import lru_cache
 import os
 import json
 
@@ -13,6 +14,7 @@ class StreamDeckUIImporter:
     def __init__(self, json_export_path: str):
         self.json_export_path = json_export_path
 
+    @lru_cache(maxsize=None)
     def index_to_page_coords(self, index: int, deck_serial: int) -> str:
         # Find deck
         rows, cols = 3, 5

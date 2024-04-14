@@ -97,7 +97,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.set_developers(["Core447"])
         self.about.set_developer_name("Core447")
         self.about.set_license_type(Gtk.License.GPL_3_0)
-        self.about.set_comments("Control your StreamDeck")
+        self.about.set_comments("Control your Stream Decks")
         self.about.set_website("https://github.com/StreamController/StreamController")
         self.about.set_issue_url("https://github.com/StreamController/StreamController/issues")
         self.about.add_credit_section("Contributors", ["Core447"])

@@ -1327,9 +1327,13 @@ class ControllerKey:
 
     def own_actions_ready(self) -> None:
         with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(action.on_ready) for action in self.get_own_actions()]
+            futures = [executor.submit(self.call_action_ready_and_set_flag, action) for action in self.get_own_actions()]
             for future in futures:
                 future.result()
+
+    def call_action_ready_and_set_flag(self, action: "ActionBase") -> None:
+        action.on_ready()
+        action.on_ready_called = True
 
     def own_actions_key_down(self) -> None:
         for action in self.get_own_actions():

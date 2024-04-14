@@ -64,7 +64,7 @@ pydantic_core==2.16.3
 pyenchant==3.2.2
 Pygments==2.17.2
 PyGObject==3.48.1
-pymongo==4.6.2
+pymongo==4.6.3
 pyparsing==3.1.2
 pyperclip==1.8.2
 pyproject-metadata==0.7.1

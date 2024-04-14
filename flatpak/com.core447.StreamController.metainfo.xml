@@ -41,6 +41,12 @@
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
+    <release version="1.4.11-beta" date="2024-04-14">
+      <description translatable="no">
+        <p>Bugfixes</p>
+        <p>Svg support</p>
+      </description>
+    </release>
     <release version="1.4.10-beta" date="2024-04-11">
       <description translatable="no">
         <p>Bugfixes</p>

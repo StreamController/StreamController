@@ -63,11 +63,11 @@ flatpak_permission_manager: "FlatpakPermissionManager" = None
 threads_running: bool = True
 
 
-app_version: str = "1.4.10-beta" # In breaking.feature.fix-state format
+app_version: str = "1.4.11-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = "<ul> \
     <li>Bugfixes</li> \
-    <li>Add loading screen to the asset manager</li> \
+    <li>Svg support</li> \
     </ul>"

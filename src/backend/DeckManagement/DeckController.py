@@ -1209,6 +1209,17 @@ class ControllerKey:
                             halign=page_dict.get("media", {}).get("halign", 0),
                         ), update=False)
 
+                elif is_svg(path):
+                    img = load_svg_as_pil(path)
+                    self.set_key_image(KeyImage(
+                        controller_key=self,
+                        image=img,
+                        fill_mode=page_dict.get("media", {}).get("fill-mode", "cover"),
+                        size=page_dict.get("media", {}).get("size", 1),
+                        valign=page_dict.get("media", {}).get("valign", 0),
+                        halign=page_dict.get("media", {}).get("halign", 0),
+                    ), update=False)
+
                 elif is_video(path) and True:
                     if os.path.splitext(path)[1].lower() == ".gif":
                         self.set_key_video(KeyGIF(

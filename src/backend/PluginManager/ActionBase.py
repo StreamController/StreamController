@@ -14,7 +14,7 @@ from rpyc.core import netref
 # Import own modules
 from src.Signals.Signals import Signal
 from src.backend.PageManagement.Page import Page
-from src.backend.DeckManagement.HelperMethods import is_image, is_video
+from src.backend.DeckManagement.HelperMethods import is_image, is_svg, is_video
 from src.backend.DeckManagement.DeckController import KeyImage, KeyVideo, BackgroundImage, BackgroundVideo, KeyLabel
 
 # Import globals
@@ -142,9 +142,12 @@ class ActionBase(rpyc.Service):
         if self.has_custom_user_asset():
             return
         
-        if is_image(media_path):
+        if is_image(media_path) and image is None:
             with Image.open(media_path) as img:
                 image = img.copy()
+
+        if is_svg(media_path) and image is None:
+            image = gl.media_manager.generate_svg_thumbnail(media_path)
 
         if image is not None or media_path is None:
             self.deck_controller.keys[self.key_index].set_key_image(KeyImage(

@@ -27,7 +27,7 @@ from loguru import logger as log
 from PIL import Image
 
 # Import own modules
-from src.backend.DeckManagement.HelperMethods import is_video, is_image, sha256, file_in_dir, create_empty_json, download_file
+from src.backend.DeckManagement.HelperMethods import is_video, is_image, sha256, file_in_dir, create_empty_json, download_file, is_svg
 
 # Import globals
 import globals as gl
@@ -75,6 +75,9 @@ class AssetManagerBackend(list):
         
         if is_video(asset_path):
             thumbnail_path = self.save_thumbnail(asset_path, hash)
+
+        if is_svg(asset_path):
+            thumbnail_path = self.save_thumbnail(asset_path, hash)
             
 
         asset = {
@@ -100,9 +103,10 @@ class AssetManagerBackend(list):
     
     def save_thumbnail(self, asset_path, asset_hash):
         thumbnail_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "thumbnails", f"{asset_hash}.png")
+
         if os.path.exists(thumbnail_path):
             return thumbnail_path
-        if not is_video(asset_path):
+        if not (is_video(asset_path) or is_svg(asset_path)):
             return asset_path
         
         # Create missing directories
@@ -215,7 +219,7 @@ class AssetManagerBackend(list):
         if path is None and url is not None:
             # Lower domain and remove point
             extension = os.path.splitext(url)[1].lower().replace(".", "")
-            if extension not in (set(gl.video_extensions) | set(gl.image_extensions)):
+            if extension not in (set(gl.video_extensions) | set(gl.image_extensions) | set(gl.svg_extensions)):
 
                 # Not a valid url
                 dial = Gtk.AlertDialog(
@@ -234,7 +238,7 @@ class AssetManagerBackend(list):
             return
         if not os.path.exists(path):
             return
-        if not is_video(path) and not is_image(path):
+        if not is_video(path) and not is_image(path) and not is_svg(path):
             dial = Gtk.AlertDialog(
                     message="No valid image or video.",
                     detail="Only images and videos are supported.",

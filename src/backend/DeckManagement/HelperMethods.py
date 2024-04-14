@@ -19,6 +19,7 @@ import sys
 import math
 import json
 import requests
+import cairosvg
 from urllib.parse import urlparse
 from PIL import Image
 
@@ -130,6 +131,14 @@ def is_image(path: str) -> bool:
 
     return False
 
+def is_svg(path: str) -> bool:
+    if path is None:
+        return
+    if os.path.isfile(path):
+        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.svg_extensions
+    
+    return False
+
 def get_image_aspect_ratio(img: Image) -> str:
     width, height = img.size
     gcd = math.gcd(width, height)
@@ -186,3 +195,14 @@ def download_file(url: str, path: str = "", file_name: str = None) -> str:
         f.write(requests.get(url).content)
 
     return path
+
+def load_svg_as_pil(file_path):
+    hash = sha256(file_path)
+    tmp = os.path.join(gl.DATA_PATH, "cache", "svg_to_png", f"{hash}.png")
+
+    if not os.path.exists(tmp):
+        os.makedirs(os.path.dirname(tmp), exist_ok=True)
+        cairosvg.svg2png(url=file_path, write_to=tmp, output_width=96, output_height=96)
+
+    pil_image = Image.open(tmp)
+    return pil_image

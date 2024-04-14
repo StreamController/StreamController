@@ -51,6 +51,7 @@ deck_manager:"DeckManager" = None #DeckManager
 plugin_manager:"PluginManager" = None #PluginManager
 video_extensions = ["mp4", "mov", "MP4", "MOV", "mkv", "MKV", "webm", "WEBM", "gif", "GIF"]
 image_extensions = ["png", "jpg", "jpeg"]
+svg_extensions = ["svg", "SVG"]
 icon_pack_manager: "IconPackManager" = None
 wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None

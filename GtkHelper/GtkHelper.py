@@ -437,8 +437,19 @@ class ScaleRow(Adw.PreferencesRow):
         self.main_box.append(self.scale)
         self.main_box.append(self.label_right)
 
+class SwitchRow(Adw.PreferencesRow):
+    def __init__(self, title, **kwargs):
+        super().__init__(title=title, **kwargs)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
+                                margin_start=10, margin_end=10,
+                                margin_top=10, margin_bottom=10)
+        self.set_child(self.main_box)
 
+        self.label = Gtk.Label(label=title, hexpand=True, xalign=0)
+        self.main_box.append(self.label)
 
+        self.switch = Gtk.Switch()
+        self.main_box.append(self.switch)
 
 class BackButton(Gtk.Button):
     def __init__(self, *args, **kwargs):

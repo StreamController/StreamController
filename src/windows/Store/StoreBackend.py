@@ -340,7 +340,7 @@ class StoreBackend:
             "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
             "license": attribution.get("license"),
             "copyright": attribution.get("copyright"),
-            "license_description": attribution.get("license-description"),
+            "license_description": attribution.get("license-description", attribution.get("description")),
             "original_url": attribution.get("original-url"),
         }
     

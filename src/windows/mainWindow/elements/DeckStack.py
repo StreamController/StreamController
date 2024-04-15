@@ -111,6 +111,8 @@ class DeckStack(Gtk.Stack):
             else:
                 deck_type = deck_type + " 2"
 
+        self.deck_names.append(deck_type)
+
         self.deck_attributes[deck_controller] = deck_number, deck_type
 
         return deck_number, deck_type

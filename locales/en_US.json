@@ -174,5 +174,9 @@
     "onboarding.extension.detail": "Install the official Gnome extension to allow for automatic page switching",
     "onboarding.extension.header": "Gnome Extension",
     "onboarding.extension.hint": "Requires Gnome Extensions & Gnome Shell 45 or later",
-    "store.preview.no-description": "No description"
+    "store.preview.no-description": "No description",
+    "asset-manager.custom-assets.remove-confirmation-dialog.title": "Remove Asset",
+    "asset-manager.custom-assets.remove-confirmation-dialog.cancel": "Cancel",
+    "asset-manager.custom-assets.remove-confirmation-dialog.remove": "Remove",
+    "asset-manager.custom-assets.remove-confirmation-dialog.body": "Are you sure you want to remove the asset "
 }

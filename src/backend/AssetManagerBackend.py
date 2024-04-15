@@ -117,6 +117,21 @@ class AssetManagerBackend(list):
         thumbnail.save(thumbnail_path)
 
         return thumbnail_path
+    
+    def remove_asset_by_id(self, id: str) -> None:
+        asset = self.get_by_id(id)
+        if asset is None:
+            return
+        
+        internal_path = asset["internal-path"]
+
+        gl.page_manager.remove_asset_from_all_pages(internal_path)
+
+        os.remove(internal_path)
+
+        self.remove(asset)
+        self.save_json()
+        
         
     def copy_asset(self, asset_path: str) -> str:
         file_name = os.path.basename(asset_path)

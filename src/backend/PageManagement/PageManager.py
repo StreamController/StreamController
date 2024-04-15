@@ -351,3 +351,30 @@ class PageManager:
                 return json.load(f)
         except json.decoder.JSONDecodeError:
             return
+        
+    def remove_asset_from_all_pages(self, path: str):
+        if path in ["", None]:
+            raise ValueError("Invalid path")
+        
+        for page_path in self.get_pages():
+            page_had_asset = False
+            with open(page_path, "r") as f:
+                page_dict = json.load(f)
+                for key in page_dict.get("keys", {}):
+                    dict_path = page_dict["keys"][key].get("media", {}).get("path")
+                    if dict_path is None:
+                        continue
+                    if os.path.abspath(dict_path) == os.path.abspath(path):
+                        page_had_asset = True
+                        page_dict["keys"][key]["media"]["path"] = None
+
+            if page_had_asset:
+                with open(page_path, "w") as f:
+                    json.dump(page_dict, f, indent=4)
+
+                self.update_dict_of_pages_with_path(page_path)
+
+                pages = self.get_pages_with_path(page_path)
+                for page in pages:
+                    if page.deck_controller.active_page == page:
+                        page.deck_controller.load_page(page, allow_reload=True)

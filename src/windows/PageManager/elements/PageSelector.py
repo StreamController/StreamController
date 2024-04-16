@@ -29,6 +29,7 @@ from GtkHelper.GtkHelper import EntryDialog
 # Import python modules
 import os
 from fuzzywuzzy import fuzz
+import re
 
 # Import globals
 import globals as gl
@@ -103,6 +104,16 @@ class PageSelector(Adw.NavigationPage):
         page_row = PageRow(page_manager=self, page_path=path)
         self.page_rows.append(page_row)
         self.list_box.append(page_row)
+
+    def atoi(self, text):
+        return int(text) if text.isdigit() else text.lower()
+
+    def natural_keys(self, text):
+        """
+        alist.sort(key=natural_keys) sorts in human order
+        http://nedbatchelder.com/blog/200712/human_sorting.html
+        """
+        return [self.atoi(c) for c in re.split('(\d+)', text)]
     
     def sort_func(self, item1, item2) -> bool:
         """
@@ -116,11 +127,17 @@ class PageSelector(Adw.NavigationPage):
         search = self.search_entry.get_text()
         if search == "":
             # Sort alphabetically
-            if item_1_page_name < item_2_page_name:
-                return -1
-            if item_1_page_name > item_2_page_name:
-                return 1
-            return 0
+            # Split the page names into parts and convert numbers to integers
+            item_1_parts = self.natural_keys(item_1_page_name)
+            item_2_parts = self.natural_keys(item_2_page_name)
+
+            # Compare each part
+            for part1, part2 in zip(item_1_parts, item_2_parts):
+                # If the parts are different, return -1 or 1 immediately
+                if part1 < part2:
+                    return -1
+                elif part1 > part2:
+                    return 1
         
         fuzz1 = fuzz.ratio(item_1_page_name.lower(), search.lower())
         fuzz2 = fuzz.ratio(item_2_page_name.lower(), search.lower())

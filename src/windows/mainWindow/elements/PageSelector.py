@@ -130,8 +130,10 @@ class PageSelector(Gtk.Box):
         active_controller.load_page(page)
 
     def on_click_open_page_manager(self, button):
-        page_manager = PageManager(main_win=gl.app.main_win)
-        page_manager.present()
+        if gl.page_manager is not None:
+            gl.page_manager.present()
+        gl.page_manager = PageManager(main_win=gl.app.main_win)
+        gl.page_manager.present()
 
     def disconnect_change_signal(self):
         try:

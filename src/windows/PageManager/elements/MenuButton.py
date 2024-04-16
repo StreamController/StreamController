@@ -61,10 +61,11 @@ class MenuButton(Gtk.MenuButton):
 
     def streamdeck_ui_callback(self, selected_file):
         importer = Importer(gl.app, self.pageEditor.page_manager)
-        GLib.idle_add(importer.present)
+        # GLib.idle_add(importer.present)
+        importer.present()
         importer.import_pages(selected_file.get_path(), "streamdeck-ui")
 
-        self.pageEditor.page_manager.page_selector.load_pages()
+        
 
 class ChooseFileDialog(Gtk.FileDialog):
     def __init__(self, menu_button: MenuButton, callback: callable = None):

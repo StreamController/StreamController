@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from src.backend.GnomeExtensions import GnomeExtensions
     from src.windows.Store.Store import Store
     from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
+    from src.windows.PageManager.PageManager import PageManager
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -43,6 +44,7 @@ lm:"LocaleManager" = None
 media_manager:"MediaManager" = None #MediaManager
 asset_manager_backend:"AssetManagerBackend" = None #AssetManager
 asset_manager: "AssetManager" = None
+page_manager: "PageManager" = None # Only if opened
 page_manager_backend:"PageManagerBackend" = None #PageManager
 gnome_extensions:"GnomeExtensions" = None
 settings_manager:"SettingsManager" = None #SettingsManager

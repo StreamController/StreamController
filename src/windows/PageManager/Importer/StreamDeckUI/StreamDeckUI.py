@@ -1,6 +1,7 @@
 from functools import lru_cache
 import os
 import json
+import time
 
 from src.windows.PageManager.Importer.StreamDeckUI.helper import font_family_from_path, hex_to_rgba255
 from src.windows.PageManager.Importer.StreamDeckUI.code_conv import parse_keys_as_keycodes
@@ -9,6 +10,9 @@ from src.Signals import Signals
 from loguru import logger as log
 
 import globals as gl
+
+import gi
+from gi.repository import GLib
 
 class StreamDeckUIImporter:
     def __init__(self, json_export_path: str):
@@ -31,7 +35,7 @@ class StreamDeckUIImporter:
             json.dump(data, f, indent=4)
     
 
-    def start_import(self):
+    def perform_import(self):
         with open(self.json_export_path) as f:
             self.export = json.load(f)
 
@@ -169,12 +173,17 @@ class StreamDeckUIImporter:
 
                 page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{int(page_name) + 1}.json")
                 self.save_json(page_path, page)
-                gl.signal_manager.trigger_signal(Signals.PageAdd, page_path)
+                # gl.signal_manager.trigger_signal(Signals.PageAdd, page_path) # We don't trigger the action to save ressources
+                # time.sleep(0.005) # Otherwise the app can't hold up - The problem is the signal call, but is is necessary to 
 
-                gl.page_manager.update_dict_of_pages_with_path(page_path)
-                gl.page_manager.reload_pages_with_path(page_path)
+                gl.page_manager_backend.update_dict_of_pages_with_path(page_path)
+                gl.page_manager_backend.reload_pages_with_path(page_path)
                 log.success(f"Imported page {page_name} as page ui_{int(page_name) + 1} on deck {deck}")
 
             log.success(f"Imported all pages of deck {deck}")
 
         log.success("Imported all pages from StreamDeck UI")
+
+        GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
+        GLib.idle_add(gl.page_manager.page_selector.load_pages)
+        log.success("Updated ui")

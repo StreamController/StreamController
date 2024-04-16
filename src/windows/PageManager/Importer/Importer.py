@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gi
 import os
+import threading
 import gi
 
 from src.windows.PageManager.Importer.StreamDeckUI.StreamDeckUI import StreamDeckUIImporter
@@ -51,12 +52,11 @@ class Importer(Adw.ApplicationWindow):
         self.progess_bar.set_fraction(0)
 
         if app == "streamdeck-ui":
-            self.import_from_streamdeck_ui(path)
+            thread = threading.Thread(target=self.import_from_streamdeck_ui, args=(path, ), name="import_from_streamdeck_ui")
+            thread.start()
 
-        self.progess_bar.set_text("Imported!")
-        self.progess_bar.set_fraction(1)
 
-        GLib.timeout_add(2000, self.close)
+        
 
     def import_from_streamdeck_ui(self, path: str) -> None:
         if not os.path.exists(path):
@@ -67,4 +67,9 @@ class Importer(Adw.ApplicationWindow):
             return
 
         ui_importer = StreamDeckUIImporter(path)
-        ui_importer.start_import()
+        ui_importer.perform_import()
+
+        GLib.idle_add(self.progess_bar.set_text, "Imported!")
+        GLib.idle_add(self.progess_bar.set_fraction, 1)
+
+        GLib.timeout_add(1500, self.close)

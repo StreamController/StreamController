@@ -211,7 +211,7 @@ class PagesGroup(BetterPreferencesGroup):
         self.load_pages()
 
     def load_pages(self):
-        pages = gl.page_manager.get_pages()
+        pages = gl.page_manager_backend.get_pages()
         for page_path in pages:
             if os.path.dirname(page_path) != os.path.join(gl.DATA_PATH, "pages"):
                 continue

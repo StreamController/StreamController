@@ -26,6 +26,7 @@ import globals as gl
 # Import own modules
 from locales.LocaleManager import LocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
+from src.backend.PluginManager.EventHolder import EventHolder
 
 class PluginBase(rpyc.Service):
     plugins = {}
@@ -42,6 +43,8 @@ class PluginBase(rpyc.Service):
         self.locale_manager.set_to_os_default()
 
         self.action_holders: dict = {}
+
+        self.event_holders: dict = {}
 
         self.registered: bool = False
 
@@ -122,6 +125,52 @@ class PluginBase(rpyc.Service):
             raise ValueError("Please pass an ActionHolder")
         
         self.action_holders[action_holder.action_id] = action_holder
+
+    def add_event_holder(self, event_holder: EventHolder) -> None:
+        """
+        Adds a EventHolder to the Plugin
+
+        Args:
+            event_holder (EventHolder): The Event Holder
+
+        Raises:
+            ValueError: If the event holder is not an EventHolder
+
+        Returns:
+            None
+        """
+        if not isinstance(event_holder, EventHolder):
+            raise ValueError("Please pass an SignalHolder")
+
+        self.event_holders[event_holder.event_id] = event_holder
+
+    def connect_event(self, event_id: str, callback: callable) -> None:
+        """
+        Connects a Callback to the Event which gets specified by the event ID
+
+        Args:
+            event_id (str): The ID of the Event.
+            callback (callable): The Callback that gets Called when the Event triggers
+
+        Returns:
+            None
+        """
+        if event_id in self.event_holders:
+            self.event_holders[event_id].add_listener(callback)
+
+    def disconnect_event(self, event_id: str, callback: callable) -> None:
+        """
+        Disconnects a Callback from the Event which gets specified by the event ID
+
+        Args:
+            event_id (str): The ID of the Event.
+            callback (callable): The Callback that gets Removed
+
+        Returns:
+            None
+        """
+        if event_id in self.event_holders:
+            self.event_holders[event_id].remove_listener(callback)
 
     def get_settings(self):
         if os.path.exists(os.path.join(self.PATH, "settings.json")):

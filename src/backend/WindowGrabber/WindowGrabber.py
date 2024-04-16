@@ -83,11 +83,11 @@ class WindowGrabber:
         # log.info(f"Active window changed to: {window}")
         for deck_controller in gl.deck_manager.deck_controller:
             found_page = False
-            for page_path in gl.page_manager.get_pages():
+            for page_path in gl.page_manager_backend.get_pages():
                 abs_path = os.path.abspath(page_path)
-                if abs_path not in gl.page_manager.auto_change_info:
+                if abs_path not in gl.page_manager_backend.auto_change_info:
                     continue
-                info = gl.page_manager.auto_change_info[abs_path]
+                info = gl.page_manager_backend.auto_change_info[abs_path]
                 wm_regex = info.get("wm_class")
                 title_regex = info.get("title")
                 enabled = info.get("enable", False)
@@ -100,7 +100,7 @@ class WindowGrabber:
                     if deck_controller.active_page.json_path == page_path:
                         continue
                     log.debug(f"Auto changing page: {page_path} on deck {deck_controller.deck.get_serial_number()}")
-                    page = gl.page_manager.get_page(page_path, deck_controller)
+                    page = gl.page_manager_backend.get_page(page_path, deck_controller)
                     if not deck_controller.page_auto_loaded:
                         deck_controller.last_manual_loaded_page_path = deck_controller.active_page.json_path
                     deck_controller.load_page(page)
@@ -113,5 +113,5 @@ class WindowGrabber:
                     deck_controller.page_auto_loaded = False
                     if deck_controller.last_manual_loaded_page_path is None:
                         continue
-                    page = gl.page_manager.get_page(deck_controller.last_manual_loaded_page_path, deck_controller)
+                    page = gl.page_manager_backend.get_page(deck_controller.last_manual_loaded_page_path, deck_controller)
                     deck_controller.load_page(page, allow_reload=False)

@@ -285,7 +285,7 @@ class DefaultPageGroup(Adw.PreferencesGroup):
         self.build()
 
     def build(self):
-        matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
+        matches = gl.page_manager_backend.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
         self.row = MultiDeckSelectorRow(source_window=self.page_editor.page_manager, title=gl.lm.get("page-manager.page-editor.default-page.row.title"),
                                         subtitle=gl.lm.get("page-manager.page-editor.default-page.row.subtitle"),
                                         callback=self.on_changed, selected_deck_serials=matches)
@@ -296,12 +296,12 @@ class DefaultPageGroup(Adw.PreferencesGroup):
         if not state:
             path = None
         
-        gl.page_manager.set_default_page_for_deck(serial_number=serial_number, path=path)
+        gl.page_manager_backend.set_default_page_for_deck(serial_number=serial_number, path=path)
 
     def load_for_page(self, page_path: str) -> None:
         self.update()
 
     def update(self) -> None:
-        matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
+        matches = gl.page_manager_backend.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
         self.row.set_label(len(matches))
         self.row.set_selected_deck_serials(matches)

@@ -143,7 +143,7 @@ class PluginBase(rpyc.Service):
         )
 
     def register_page(self, path: str) -> None:
-        gl.page_manager.register_page(path)
+        gl.page_manager_backend.register_page(path)
 
     def get_selector_icon(self) -> Gtk.Widget:
         return Gtk.Image(icon_name="view-paged")

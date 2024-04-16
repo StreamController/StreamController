@@ -80,7 +80,7 @@ class Sidebar(Adw.NavigationPage):
         self.error_page = ErrorPage(self)
         self.main_stack.add_named(self.error_page, "error_page")
 
-        self.page_selector = PageSelector(self.main_window, gl.page_manager, halign=Gtk.Align.CENTER)
+        self.page_selector = PageSelector(self.main_window, gl.page_manager_backend, halign=Gtk.Align.CENTER)
         self.header.set_title_widget(self.page_selector)
 
         self.load_for_coords((0, 0))

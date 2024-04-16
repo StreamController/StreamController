@@ -36,7 +36,7 @@ from src.backend.DeckManagement.DeckManager import DeckManager
 from locales.LocaleManager import LocaleManager
 from src.backend.MediaManager import MediaManager
 from src.backend.AssetManagerBackend import AssetManagerBackend
-from src.backend.PageManagement.PageManager import PageManager
+from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
@@ -101,7 +101,7 @@ def create_global_objects():
 
     gl.media_manager = MediaManager()
     gl.asset_manager_backend = AssetManagerBackend()
-    gl.page_manager = PageManager(gl.settings_manager)
+    gl.page_manager_backend = PageManagerBackend(gl.settings_manager)
     gl.icon_pack_manager = IconPackManager()
     gl.wallpaper_pack_manager = WallpaperPackManager()
 

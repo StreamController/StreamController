@@ -360,18 +360,18 @@ class DeckController:
 
     def load_default_page(self):
         if not self.get_alive(): return
-        default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
+        default_page_path = gl.page_manager_backend.get_default_page_for_deck(self.deck.get_serial_number())
         if default_page_path is None:
             # Use the first page
-            pages = gl.page_manager.get_pages()
+            pages = gl.page_manager_backend.get_pages()
             if len(pages) == 0:
                 return
-            default_page_path = gl.page_manager.get_pages()[0]
+            default_page_path = gl.page_manager_backend.get_pages()[0]
 
         if default_page_path is None:
             return
         
-        page = gl.page_manager.get_page(default_page_path, self)
+        page = gl.page_manager_backend.get_page(default_page_path, self)
         self.load_page(page)
 
     @log.catch

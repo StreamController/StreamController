@@ -221,7 +221,7 @@ class MainWindow(Adw.ApplicationWindow):
         if len(gl.deck_manager.deck_controller) == 0:
             self.set_main_error("no-decks")
 
-        elif len(gl.page_manager.get_page_names()) == 0:
+        elif len(gl.page_manager_backend.get_page_names()) == 0:
             self.set_main_error("no-pages")
 
         else:

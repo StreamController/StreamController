@@ -237,7 +237,7 @@ class PerformancePageGroup(Adw.PreferencesGroup):
         self.settings.save_json()
 
         # Update value in page manager
-        gl.page_manager.set_n_pages_to_cache(int(self.n_cached_pages.get_value()))
+        gl.page_manager_backend.set_n_pages_to_cache(int(self.n_cached_pages.get_value()))
 
     def on_cache_videos_toggled(self, *args):
         self.settings.settings_json.setdefault("performance", {})

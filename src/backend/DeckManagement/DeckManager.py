@@ -22,7 +22,7 @@ import os
 
 # Import own modules
 from src.backend.DeckManagement.DeckController import DeckController
-from src.backend.PageManagement.PageManager import PageManager
+from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
@@ -39,7 +39,7 @@ class DeckManager:
         self.deck_controller: list[DeckController] = []
         self.fake_deck_controller = []
         self.settings_manager = SettingsManager()
-        self.page_manager = gl.page_manager
+        self.page_manager = gl.page_manager_backend
         # self.page_manager.load_pages()
 
         # USB monitor to detect connections and disconnections

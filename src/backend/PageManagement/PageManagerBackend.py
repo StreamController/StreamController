@@ -28,7 +28,7 @@ from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 # Import globals
 import globals as gl
 
-class PageManager:
+class PageManagerBackend:
     def __init__(self, settings_manager):
         self.settings_manager = settings_manager
 

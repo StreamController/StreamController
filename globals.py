@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from src.backend.AssetManagerBackend import AssetManagerBackend
     from src.windows.AssetManager.AssetManager import AssetManager
     from src.backend.MediaManager import MediaManager
-    from src.backend.PageManagement.PageManager import PageManager
+    from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
     from src.backend.SettingsManager import SettingsManager
     from src.backend.DeckManagement.DeckManager import DeckManager
     from src.backend.PluginManager.PluginManager import PluginManager
@@ -43,7 +43,7 @@ lm:"LocaleManager" = None
 media_manager:"MediaManager" = None #MediaManager
 asset_manager_backend:"AssetManagerBackend" = None #AssetManager
 asset_manager: "AssetManager" = None
-page_manager:"PageManager" = None #PageManager
+page_manager_backend:"PageManagerBackend" = None #PageManager
 gnome_extensions:"GnomeExtensions" = None
 settings_manager:"SettingsManager" = None #SettingsManager
 app:"App" = None #App

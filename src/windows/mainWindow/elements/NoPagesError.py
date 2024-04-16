@@ -65,12 +65,12 @@ class NoPagesError(Gtk.Box):
                            cancel_label=gl.lm.get("page-manager.page-selector.add-dialog.cancel"),
                            empty_warning=gl.lm.get("page-manager.page-selector.add-dialog.empty-warning"),
                            already_exists_warning=gl.lm.get("page-manager.page-selector.add-dialog.already-exists-warning"),
-                           forbid_answers=gl.page_manager.get_page_names())
+                           forbid_answers=gl.page_manager_backend.get_page_names())
         dial.show(self.add_page_callback)
 
     def add_page_callback(self, name:str):
         path = os.path.join(gl.DATA_PATH, "pages", f"{name}.json")
-        gl.page_manager.add_page(name)
+        gl.page_manager_backend.add_page(name)
 
         # Notify plugin actions
         gl.signal_manager.trigger_signal(Signals.PageAdd, path)

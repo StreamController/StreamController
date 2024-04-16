@@ -173,7 +173,7 @@ class NameGroup(Adw.PreferencesGroup):
         original_name = os.path.splitext(os.path.basename(self.page_editor.active_page_path))[0]
         new_name = entry.get_text()
 
-        all_page_names = gl.page_manager.get_page_names()
+        all_page_names = gl.page_manager_backend.get_page_names()
         all_page_names.remove(original_name)
         all_page_names.append("")
 

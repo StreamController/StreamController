@@ -125,7 +125,7 @@ class PageSelector(Gtk.Box):
             return
         
         page_path = self.pages_model[drop_down.get_active()][1]
-        page = gl.page_manager.get_page(path=page_path, deck_controller = active_controller)
+        page = gl.page_manager_backend.get_page(path=page_path, deck_controller = active_controller)
         log.info(f"Load page: {page}")
         active_controller.load_page(page)
 

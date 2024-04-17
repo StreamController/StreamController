@@ -39,7 +39,7 @@ class DeckManager:
         self.deck_controller: list[DeckController] = []
         self.fake_deck_controller = []
         self.settings_manager = SettingsManager()
-        self.page_manager = gl.page_manager_backend
+        self.page_manager = gl.page_manager
         # self.page_manager.load_pages()
 
         # USB monitor to detect connections and disconnections

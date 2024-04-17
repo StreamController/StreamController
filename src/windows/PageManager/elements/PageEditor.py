@@ -173,7 +173,7 @@ class NameGroup(Adw.PreferencesGroup):
         original_name = os.path.splitext(os.path.basename(self.page_editor.active_page_path))[0]
         new_name = entry.get_text()
 
-        all_page_names = gl.page_manager_backend.get_page_names()
+        all_page_names = gl.page_manager.get_page_names()
         all_page_names.remove(original_name)
         all_page_names.append("")
 
@@ -232,7 +232,7 @@ class AutoChangeGroup(Adw.PreferencesGroup):
             "wm_class": self.wm_class_entry.get_text(),
             "title": self.title_entry.get_text(),
         }
-        gl.page_manager_backend.set_auto_change_info_for_page(page_path=self.page_editor.active_page_path,
+        gl.page_manager.set_auto_change_info_for_page(page_path=self.page_editor.active_page_path,
                                                       info=auto_change)
 
     def load_config_settings(self):
@@ -242,7 +242,7 @@ class AutoChangeGroup(Adw.PreferencesGroup):
         
         self.disconnect_signals()
 
-        auto_change = gl.page_manager_backend.get_auto_change_info_for_page(page_path=self.page_editor.active_page_path)
+        auto_change = gl.page_manager.get_auto_change_info_for_page(page_path=self.page_editor.active_page_path)
 
         self.enable_row.set_active(auto_change.get("enable", False))
         self.wm_class_entry.set_text(auto_change.get("wm_class", ""))
@@ -285,7 +285,7 @@ class DefaultPageGroup(Adw.PreferencesGroup):
         self.build()
 
     def build(self):
-        matches = gl.page_manager_backend.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
+        matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
         self.row = MultiDeckSelectorRow(source_window=self.page_editor.page_manager, title=gl.lm.get("page-manager.page-editor.default-page.row.title"),
                                         subtitle=gl.lm.get("page-manager.page-editor.default-page.row.subtitle"),
                                         callback=self.on_changed, selected_deck_serials=matches)
@@ -296,12 +296,12 @@ class DefaultPageGroup(Adw.PreferencesGroup):
         if not state:
             path = None
         
-        gl.page_manager_backend.set_default_page_for_deck(serial_number=serial_number, path=path)
+        gl.page_manager.set_default_page_for_deck(serial_number=serial_number, path=path)
 
     def load_for_page(self, page_path: str) -> None:
         self.update()
 
     def update(self) -> None:
-        matches = gl.page_manager_backend.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
+        matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
         self.row.set_label(len(matches))
         self.row.set_selected_deck_serials(matches)

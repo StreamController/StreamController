@@ -125,15 +125,15 @@ class PageSelector(Gtk.Box):
             return
         
         page_path = self.pages_model[drop_down.get_active()][1]
-        page = gl.page_manager_backend.get_page(path=page_path, deck_controller = active_controller)
+        page = gl.page_manager.get_page(path=page_path, deck_controller = active_controller)
         log.info(f"Load page: {page}")
         active_controller.load_page(page)
 
     def on_click_open_page_manager(self, button):
-        if gl.page_manager is not None:
-            gl.page_manager.present()
-        gl.page_manager = PageManager(main_win=gl.app.main_win)
-        gl.page_manager.present()
+        if gl.page_manager_window is not None:
+            gl.page_manager_window.present()
+        gl.page_manager_window = PageManager(main_win=gl.app.main_win)
+        gl.page_manager_window.present()
 
     def disconnect_change_signal(self):
         try:

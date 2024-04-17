@@ -80,7 +80,7 @@ class Sidebar(Adw.NavigationPage):
         self.error_page = ErrorPage(self)
         self.main_stack.add_named(self.error_page, "error_page")
 
-        self.page_selector = PageSelector(self.main_window, gl.page_manager_backend, halign=Gtk.Align.CENTER)
+        self.page_selector = PageSelector(self.main_window, gl.page_manager, halign=Gtk.Align.CENTER)
         self.header.set_title_widget(self.page_selector)
 
         self.load_for_coords((0, 0))
@@ -211,7 +211,7 @@ class PagesGroup(BetterPreferencesGroup):
         self.load_pages()
 
     def load_pages(self):
-        pages = gl.page_manager_backend.get_pages()
+        pages = gl.page_manager.get_pages()
         for page_path in pages:
             if os.path.dirname(page_path) != os.path.join(gl.DATA_PATH, "pages"):
                 continue

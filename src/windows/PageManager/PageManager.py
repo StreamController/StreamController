@@ -65,7 +65,7 @@ class PageManager(Adw.ApplicationWindow):
         if os.path.exists(page_path):
             return
         
-        gl.page_manager_backend.add_page(page_name)
+        gl.page_manager.add_page(page_name)
         
         self.page_selector.add_row_by_path(page_path)
 
@@ -73,7 +73,7 @@ class PageManager(Adw.ApplicationWindow):
         gl.signal_manager.trigger_signal(Signals.PageAdd, page_path)
 
     def remove_page_by_path(self, page_path: str) -> None:
-        if page_path in gl.page_manager_backend.custom_pages:
+        if page_path in gl.page_manager.custom_pages:
             dial = CantDeletePluginPage(self)
             dial.show()
             return
@@ -84,7 +84,7 @@ class PageManager(Adw.ApplicationWindow):
         
         self.page_selector.remove_row_with_path(page_path)
 
-        gl.page_manager_backend.remove_page(page_path)
+        gl.page_manager.remove_page(page_path)
 
         # Emit signal
         gl.signal_manager.trigger_signal(Signals.PageDelete, page_path)
@@ -92,13 +92,13 @@ class PageManager(Adw.ApplicationWindow):
     def rename_page_by_path(self, old_path: str, new_path: str) -> None:
         self.page_selector.rename_page_row(old_path=old_path, new_path=new_path)
 
-        gl.page_manager_backend.move_page(old_path, new_path)
+        gl.page_manager.move_page(old_path, new_path)
 
         # Emit signal
         gl.signal_manager.trigger_signal(Signals.PageRename, old_path, new_path)
 
     def get_number_of_user_pages(self) -> int:
-        return len(gl.page_manager_backend.get_pages(add_custom_pages=False))
+        return len(gl.page_manager.get_pages(add_custom_pages=False))
     
 class CantDeleteLastPageError(Adw.MessageDialog):
     def __init__(self, page_manager: PageManager):

@@ -125,7 +125,7 @@ class AssetManagerBackend(list):
         
         internal_path = asset["internal-path"]
 
-        gl.page_manager_backend.remove_asset_from_all_pages(internal_path)
+        gl.page_manager.remove_asset_from_all_pages(internal_path)
 
         os.remove(internal_path)
 

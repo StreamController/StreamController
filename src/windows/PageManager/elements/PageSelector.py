@@ -78,7 +78,7 @@ class PageSelector(Adw.NavigationPage):
     def load_pages(self) -> None:
         self.page_rows.clear()
         self.list_box.remove_all()
-        pages = gl.page_manager_backend.get_pages()
+        pages = gl.page_manager.get_pages()
         for page_path in pages:
             self.add_row_by_path(page_path)
 
@@ -168,7 +168,7 @@ class AddNewButton(Gtk.Button):
                            cancel_label=gl.lm.get("page-manager.page-selector.add-dialog.cancel"),
                            empty_warning=gl.lm.get("page-manager.page-selector.add-dialog.empty-warning"),
                            already_exists_warning=gl.lm.get("page-manager.page-selector.add-dialog.already-exists-warning"),
-                           forbid_answers=gl.page_manager_backend.get_page_names())
+                           forbid_answers=gl.page_manager.get_page_names())
         
         dial.show(callback_func=self.page_manager.add_page_from_name)
 

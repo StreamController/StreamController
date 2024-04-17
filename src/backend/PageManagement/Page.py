@@ -52,7 +52,7 @@ class Page:
         Updates the dict without any updates on the action objects.
         Do NOT use if you made changes to the action objects
         """
-        self.dict = gl.page_manager_backend.get_page_json(self.json_path)
+        self.dict = gl.page_manager.get_page_json(self.json_path)
     
     def load(self, load_from_file: bool = False):
         start = time.time()

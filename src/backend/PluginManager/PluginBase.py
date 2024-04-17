@@ -144,7 +144,7 @@ class PluginBase(rpyc.Service):
 
         self.event_holders[event_holder.event_id] = event_holder
 
-    def connect_event(self, event_id: str, callback: callable) -> None:
+    def connect_to_event(self, event_id: str, callback: callable) -> None:
         """
         Connects a Callback to the Event which gets specified by the event ID
 
@@ -157,8 +157,28 @@ class PluginBase(rpyc.Service):
         """
         if event_id in self.event_holders:
             self.event_holders[event_id].add_listener(callback)
+        else:
+            log.warning(f"{event_id} does not exist in {self.plugin_name}")
 
-    def disconnect_event(self, event_id: str, callback: callable) -> None:
+    def connect_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
+        """
+        Connects a Callback directly to a Plugin with the specified ID
+
+        Args:
+            plugin_id (str): The ID of the Plugin
+            event_id (str): The ID of the Event
+            callback (callable): The Callback that gets Called when the Event triggers
+
+        Returns:
+            None
+        """
+        plugin = self.get_plugin(plugin_id)
+        if plugin is None:
+            log.warning(f"{plugin_id} does not exist")
+        else:
+            plugin.connect_to_event(event_id, callback)
+
+    def disconnect_from_event(self, event_id: str, callback: callable) -> None:
         """
         Disconnects a Callback from the Event which gets specified by the event ID
 
@@ -171,6 +191,26 @@ class PluginBase(rpyc.Service):
         """
         if event_id in self.event_holders:
             self.event_holders[event_id].remove_listener(callback)
+        else:
+            log.warning(f"{event_id} does not exist in {self.plugin_name}")
+
+    def disconnect_from_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
+        """
+        Disconnects a Callback directly from a plugin with the specified ID
+
+        Args:
+            plugin_id (str): The ID of the Plugin
+            event_id (str): The ID of the Event.
+            callback (callable): The Callback that gets Removed
+
+        Returns:
+            None
+        """
+        plugin = self.get_plugin(plugin_id)
+        if plugin is None:
+            log.warning(f"{plugin_id} does not exist")
+        else:
+            self.disconnect_from_event(event_id, callback)
 
     def get_settings(self):
         if os.path.exists(os.path.join(self.PATH, "settings.json")):
@@ -205,7 +245,7 @@ class PluginBase(rpyc.Service):
         except Exception as e:
             log.error(e)
 
-    def get_plugin(self, plugin_id: str):
+    def get_plugin(self, plugin_id: str) -> "PluginBase":
         return gl.plugin_manager.get_plugin_by_id(plugin_id) or None
 
     # ---------- #

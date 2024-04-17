@@ -258,6 +258,7 @@ class ActionBase(rpyc.Service):
     
     def get_is_present(self):
         if self.page is None: return False
+        if self.page.deck_controller.active_page is not self.page: return False
         return self in self.page.get_all_actions()
     
     def has_custom_user_asset(self) -> bool:

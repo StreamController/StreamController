@@ -48,6 +48,12 @@ class PageManager(Adw.ApplicationWindow):
 
         self.set_size_request(1300, 800)
 
+        self.connect("close-request", self.on_close)
+
+    def on_close(self, *args, **kwargs):
+        gl.page_manager_window = None
+        self.destroy()
+
 
     def build(self):
         # Split view

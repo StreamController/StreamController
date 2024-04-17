@@ -205,6 +205,9 @@ class PluginBase(rpyc.Service):
         except Exception as e:
             log.error(e)
 
+    def get_plugin(self, plugin_id: str):
+        return gl.plugin_manager.get_plugin_by_id(plugin_id) or None
+
     # ---------- #
     # Rpyc stuff #
     # ---------- #

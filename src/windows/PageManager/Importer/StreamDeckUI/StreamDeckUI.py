@@ -164,14 +164,14 @@ class StreamDeckUIImporter:
                             action = {
                                 "id": "com_core447_DeckPlugin::ChangePage",
                                 "settings": {
-                                    "selected_page": f"data/pages/ui_{export_switch_page}.json",
+                                    "selected_page": f"data/pages/ui_{deck}_{export_switch_page}.json",
                                     "deck_number": None
                                 }
                             }
                             page["keys"][coords]["actions"].append(action)
 
 
-                page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{int(page_name) + 1}.json")
+                page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{int(page_name) + 1}.json")
                 self.save_json(page_path, page)
                 # gl.signal_manager.trigger_signal(Signals.PageAdd, page_path) # We don't trigger the action to save ressources
                 # time.sleep(0.005) # Otherwise the app can't hold up - The problem is the signal call, but is is necessary to 

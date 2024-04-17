@@ -325,23 +325,25 @@ class StoreBackend:
         stargazers = await self.get_stargazers(url)
 
         return {
-            "name": manifest.get("name"),
-            "short_description": manifest.get("short-description"),
-            "description": manifest.get("description"),
+            "plugin_name": manifest.get("plugin-name"),
+            "plugin_version": manifest.get("plugin-version"),
+            "minimum-software-version": manifest.get("minimum-software-version") or "",
+            "plugin_id": manifest.get("plugin_id"),
+            "display-name": manifest.get("display-name") or manifest.get("plugin-name"), # Use specified display name, when not available use plugin-name
+            "descriptions": manifest.get("descriptions") or [],  # TODO: GET TRANSLATION
+            "short_descriptions": manifest.get("short-descriptions") or [], #TODO: GET TRANSLATION
             "url": url,
             "user_name": user_name,
             "repo_name": repo_name,
-            "version": manifest.get("version"),
             "image": image,
             "stargazers": stargazers,
             "official": user_name in self.official_authors,
             "commit_sha": commit,
-            "id": manifest.get("id"),
             "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
-            "license": attribution.get("license"),
             "copyright": attribution.get("copyright"),
-            "license_description": attribution.get("license-description", attribution.get("description")),
             "original_url": attribution.get("original-url"),
+            "license": attribution.get("license"),
+            "license_description": attribution.get("license-description", attribution.get("description")),
         }
     
     async def get_local_sha(self, git_dir: str):
@@ -385,22 +387,26 @@ class StoreBackend:
             return stargazers
 
         return {
-            "name": manifest.get("name"),
-            "description": description,
-            "short_description": manifest.get("short-description"),
-            "version": manifest.get("version"),
+            "plugin_name": manifest.get("plugin-name"),
+            "plugin_version": manifest.get("plugin-version"),
+            "minimum-software-version": manifest.get("minimum-software-version") or "",
+            "plugin_id": manifest.get("plugin_id"),
+            "display-name": manifest.get("display-name") or manifest.get("plugin-name"),
+            # Use specified display name, when not available use plugin-name
+            "descriptions": manifest.get("descriptions") or [],  # TODO: GET TRANSLATION
+            "short_descriptions": manifest.get("short-descriptions") or [],  # TODO: GET TRANSLATION
             "url": url,
             "user_name": user_name,
             "repo_name": repo_name,
             "image": image,
             "stargazers": stargazers,
-            "license": attribution.get("license"),
+            "official": user_name in self.official_authors,
+            "commit_sha": commit,
+            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
-            "license_description": attribution.get("description"),
-            "commit_sha": commit,
-            "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "icons", f"{user_name}::{manifest.get('name')}")),
-            "official": user_name in self.official_authors
+            "license": attribution.get("license"),
+            "license_description": attribution.get("license-description", attribution.get("description")),
         }
     
     async def prepare_wallpaper(self, wallpaper):
@@ -426,22 +432,26 @@ class StoreBackend:
         user_name = self.get_user_name(url)
 
         return {
-            "name": manifest.get("name"),
-            "description": manifest.get("description"),
-            "short_description": manifest.get("short-description"),
-            "version": manifest.get("version"),
+            "plugin_name": manifest.get("plugin-name"),
+            "plugin_version": manifest.get("plugin-version"),
+            "minimum-software-version": manifest.get("minimum-software-version") or "",
+            "plugin_id": manifest.get("plugin_id"),
+            "display-name": manifest.get("display-name") or manifest.get("plugin-name"),
+            # Use specified display name, when not available use plugin-name
+            "descriptions": manifest.get("descriptions") or [],  # TODO: GET TRANSLATION
+            "short_descriptions": manifest.get("short-descriptions") or [],  # TODO: GET TRANSLATION
             "url": url,
             "user_name": user_name,
             "repo_name": self.get_repo_name(url),
             "image": image,
             "stargazers": await self.get_stargazers(url),
-            "license": manifest.get("license"),
-            "copyright": manifest.get("copyright"),
+            "official": user_name in self.official_authors,
             "commit_sha": commit,
+            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
+            "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
-            "license_description": attribution.get("description"),
-            "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "wallpapers", f"{user_name}::{manifest.get('name')}")),
-            "official": self.get_user_name(url) in self.official_authors
+            "license": attribution.get("license"),
+            "license_description": attribution.get("license-description", attribution.get("description")),
         }
 
     async def image_from_url(self, url):

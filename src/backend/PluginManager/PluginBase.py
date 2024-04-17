@@ -160,7 +160,7 @@ class PluginBase(rpyc.Service):
         else:
             log.warning(f"{event_id} does not exist in {self.plugin_name}")
 
-    def connect_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
+    def connect_to_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
         """
         Connects a Callback directly to a Plugin with the specified ID
 

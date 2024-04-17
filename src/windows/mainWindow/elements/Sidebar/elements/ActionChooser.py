@@ -133,7 +133,8 @@ class PluginGroup(BetterPreferencesGroup):
     def update(self):
         self.clear()
         self.expander = []
-        for plugin_name, plugin_dir in gl.plugin_manager.get_plugins().items():
+        for plugin_id, plugin_dir in gl.plugin_manager.get_plugins().items():
+            plugin_name = plugin_dir["object"].plugin_name
             expander = PluginExpander(self, plugin_name, plugin_dir)
             self.add(expander)
             self.expander.append(expander)

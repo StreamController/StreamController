@@ -120,12 +120,12 @@ class StreamDeckUIImporter:
                             page["keys"][coords]["actions"].append(action)
 
                     # Write text
-                    export_text = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("text")
-                    if export_text not in [None, ""]:
+                    export_write = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("write")
+                    if export_write not in [None, ""]:
                         action = {
                             "id": "com_core447_OSPlugin::WriteText",
                             "settings": {
-                                "text": export_text
+                                "text": export_write
                             }
                         }
                         page["keys"][coords]["actions"].append(action)

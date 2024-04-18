@@ -48,14 +48,11 @@ class PluginBase(rpyc.Service):
 
         self.plugin_name: str = None
 
-    def register(self, plugin_name: str, github_repo: str, plugin_version: str, app_version: str):
+    def register(self, app_version: str):
         """
         Registers a plugin with the given information.
 
         Args:
-            plugin_name (str): The name of the plugin.
-            github_repo (str): The GitHub repository URL of the plugin.
-            plugin_version (str): The version of the plugin.
             app_version (str): The version of the application. Do NOT set it programmatically (e.g. by using gl.app_version).
 
         Raises:
@@ -64,6 +61,12 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
+
+        manifest = self.get_manifest()
+        plugin_name = manifest.get("plugin-version") or None
+        github_repo = manifest.get("github") or None
+        plugin_version = manifest.get("plugin-version") or None
+        minimum_software_version = manifest.get("minimum-software-version") or None
         
         # Verify variables
         if plugin_name in ["", None]:
@@ -85,8 +88,9 @@ class PluginBase(rpyc.Service):
             # Register plugin
             PluginBase.plugins[self.plugin_id] = {
                 "object": self,
+                "plugin_version": plugin_version,
+                "minimum_software_version": minimum_software_version,
                 "github": github_repo,
-                "version": plugin_version,
                 "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
                 "file_name": os.path.basename(inspect.getfile(self.__class__))
             }
@@ -100,26 +104,32 @@ class PluginBase(rpyc.Service):
             )
             PluginBase.disabled_plugins[self.plugin_id] = {
                 "object": self,
+                "plugin_version": plugin_version,
+                "minimum_software_version": minimum_software_version,
                 "github": github_repo,
-                "version": plugin_version,
                 "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
                 "file_name": os.path.basename(inspect.getfile(self.__class__))
             }
 
         self.plugin_name = plugin_name
         self.github_repo = github_repo
-        self.version = plugin_version
+        self.plugin_version = plugin_version
 
     def get_plugin_id(self) -> str:
         module = importlib.import_module(self.__module__)
         subclass_file = module.__file__
         return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
 
-
     def do_versions_match(self, app_version_to_check: str):
-        if gl.exact_app_version_check:
-            gl.app_version == app_version
-            return
+        manifest = self.get_manifest()
+        minimum_software_version = manifest.get("minimum-software-version") or None
+
+        if minimum_software_version is not None:
+            pass #TODO: Do Version check for min version
+
+        #if gl.exact_app_version_check:
+        #    gl.app_version == app_version
+        #    return
         
         # Only compare major version
         app_version = version.parse(gl.app_version)
@@ -137,6 +147,12 @@ class PluginBase(rpyc.Service):
     def get_settings(self):
         if os.path.exists(os.path.join(self.PATH, "settings.json")):
             with open(os.path.join(self.PATH, "settings.json"), "r") as f:
+                return json.load(f)
+        return {}
+
+    def get_manifest(self):
+        if os.path.exists(os.path.join(self.PATH, "manifest.json")):
+            with open(os.path.join(self.PATH, "manifest.json"), "r") as f:
                 return json.load(f)
         return {}
     

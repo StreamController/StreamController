@@ -328,7 +328,7 @@ class StoreBackend:
             "plugin_name": manifest.get("plugin-name"),
             "plugin_version": manifest.get("plugin-version"),
             "minimum-software-version": manifest.get("minimum-software-version") or "",
-            "plugin_id": manifest.get("plugin_id"),
+            "plugin_id": manifest.get("plugin-id"),
             "display-name": manifest.get("display-name") or manifest.get("plugin-name"), # Use specified display name, when not available use plugin-name
             "descriptions": manifest.get("descriptions") or [],  # TODO: GET TRANSLATION
             "short_descriptions": manifest.get("short-descriptions") or [], #TODO: GET TRANSLATION
@@ -339,7 +339,7 @@ class StoreBackend:
             "stargazers": stargazers,
             "official": user_name in self.official_authors,
             "commit_sha": commit,
-            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
+            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
             "license": attribution.get("license"),
@@ -377,8 +377,6 @@ class StoreBackend:
         if isinstance(image, NoConnectionError):
             return image
 
-        description = manifest.get("description")
-
         user_name = self.get_user_name(url)
         repo_name = self.get_repo_name(url)
 
@@ -387,11 +385,11 @@ class StoreBackend:
             return stargazers
 
         return {
-            "plugin_name": manifest.get("plugin-name"),
-            "plugin_version": manifest.get("plugin-version"),
+            "icon_name": manifest.get("icon-name"),
+            "icon_version": manifest.get("icon-version"),
             "minimum-software-version": manifest.get("minimum-software-version") or "",
-            "plugin_id": manifest.get("plugin_id"),
-            "display-name": manifest.get("display-name") or manifest.get("plugin-name"),
+            "icon_id": manifest.get("icon-id"),
+            "display-name": manifest.get("display-name") or manifest.get("icon-name"),
             # Use specified display name, when not available use plugin-name
             "descriptions": manifest.get("descriptions") or [],  # TODO: GET TRANSLATION
             "short_descriptions": manifest.get("short-descriptions") or [],  # TODO: GET TRANSLATION
@@ -402,7 +400,7 @@ class StoreBackend:
             "stargazers": stargazers,
             "official": user_name in self.official_authors,
             "commit_sha": commit,
-            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
+            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("icon-id"))),
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
             "license": attribution.get("license"),
@@ -432,11 +430,11 @@ class StoreBackend:
         user_name = self.get_user_name(url)
 
         return {
-            "plugin_name": manifest.get("plugin-name"),
-            "plugin_version": manifest.get("plugin-version"),
+            "wallpaper_name": manifest.get("wallpaper-name"),
+            "wallpaper_version": manifest.get("wallpaper-version"),
             "minimum-software-version": manifest.get("minimum-software-version") or "",
-            "plugin_id": manifest.get("plugin_id"),
-            "display-name": manifest.get("display-name") or manifest.get("plugin-name"),
+            "wallpaper_id": manifest.get("wallpaper-id"),
+            "display-name": manifest.get("display-name") or manifest.get("wallpaper-name"),
             # Use specified display name, when not available use plugin-name
             "descriptions": manifest.get("descriptions") or [],  # TODO: GET TRANSLATION
             "short_descriptions": manifest.get("short-descriptions") or [],  # TODO: GET TRANSLATION
@@ -447,7 +445,7 @@ class StoreBackend:
             "stargazers": await self.get_stargazers(url),
             "official": user_name in self.official_authors,
             "commit_sha": commit,
-            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
+            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("wallpaper-id"))),
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
             "license": attribution.get("license"),

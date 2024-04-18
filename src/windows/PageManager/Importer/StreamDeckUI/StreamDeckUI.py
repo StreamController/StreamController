@@ -33,6 +33,19 @@ class StreamDeckUIImporter:
     def save_json(self, json_path: str, data: dict):
         with open(json_path, "w") as f:
             json.dump(data, f, indent=4)
+
+        loaded = None
+        try:
+            # Verify data
+            with open(json_path) as f:
+                loaded = json.load(f)
+        except Exception as e:
+            pass
+
+        if loaded != data:
+            log.error(f"Failed to save {json_path}, trying again")
+            self.save_json(json_path, data)
+            
     
 
     def perform_import(self):

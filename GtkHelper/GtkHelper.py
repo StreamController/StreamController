@@ -448,3 +448,8 @@ class BackButton(Gtk.Button):
 
         self.box.append(Gtk.Image(icon_name="go-previous-symbolic"))
         self.box.append(Gtk.Label(label=gl.lm.get("go-back")))
+
+class RevertButton(Gtk.Button):
+    def __init__(self, **kwargs):
+        super().__init__(icon_name="edit-undo-symbolic", **kwargs)
+        self.set_tooltip_text("Revert to action defaults")

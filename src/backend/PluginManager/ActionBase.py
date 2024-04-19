@@ -186,8 +186,8 @@ class ActionBase(rpyc.Service):
         self.deck_controller.keys[self.key_index].hide_error()
         
 
-    def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255],
-                      font_family: str = "", font_size = 18, update: bool = True):
+    def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
+                      font_family: str = None, font_size = None, update: bool = True):
         if not self.get_is_present(): return
         if not self.on_ready_called:
             update = False
@@ -212,18 +212,18 @@ class ActionBase(rpyc.Service):
             font_name=font_family,
             color=color,
         )
-        self.deck_controller.keys[self.key_index].add_label(key_label, position=position, update=update)
+        self.deck_controller.keys[self.key_index].label_manager.set_action_label(label=key_label, position=position, update=update)
 
-    def set_top_label(self, text: str, color: list[int] = [255, 255, 255],
-                      font_family: str = "", font_size = 18, update: bool = True):
+    def set_top_label(self, text: str, color: list[int] = None,
+                      font_family: str = None, font_size = None, update: bool = True):
         self.set_label(text, "top", color, font_family, font_size, update)
-    
-    def set_center_label(self, text: str, color: list[int] = [255, 255, 255],
-                      font_family: str = "", font_size = 18, update: bool = True):
+
+    def set_center_label(self, text: str, color: list[int] = None,
+                      font_family: str = None, font_size = None, update: bool = True):
         self.set_label(text, "center", color, font_family, font_size, update)
-    
-    def set_bottom_label(self, text: str, color: list[int] = [255, 255, 255],
-                      font_family: str = "", font_size = 18, update: bool = True):
+
+    def set_bottom_label(self, text: str, color: list[int] = None,
+                      font_family: str = None, font_size = None, update: bool = True):
         self.set_label(text, "bottom", color, font_family, font_size, update)
 
     def on_labels_changed_in_ui(self):

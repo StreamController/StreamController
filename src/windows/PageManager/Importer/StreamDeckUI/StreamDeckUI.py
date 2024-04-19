@@ -84,9 +84,9 @@ class StreamDeckUIImporter:
                         font_color_hex = "#FFFFFFFF"
                     page["keys"][coords]["labels"] = {}
                     page["keys"][coords]["labels"]["bottom"] = {
-                        "text": self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("text", ""),
+                        "text": self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("text", None),
                         "color": hex_to_rgba255(font_color_hex),
-                        "font_size": 15,
+                        "font_size": None,
                         "font_family": font_family_from_path(self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("font"))
                     }
                     

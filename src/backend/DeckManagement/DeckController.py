@@ -927,6 +927,121 @@ class KeyGIF(SingleKeyAsset):
         self.frames = None
         del self.gif
         del self.frames
+
+class ControllerKeyLabelManager:
+    def __init__(self, controller_key: "ControllerKey"):
+        self.controller_key = controller_key
+        
+        self.page_labels = {}
+        self.action_labels = {}
+
+        self.init_labels()
+
+    def init_labels(self):
+        for position in ["top", "center", "bottom"]:
+            self.page_labels[position] = KeyLabel(self.controller_key)
+            self.action_labels[position] = KeyLabel(self.controller_key)
+ 
+    def clear_labels(self):
+        self.init_labels()
+
+    def set_page_label(self, position: str, label: "KeyLabel", update: bool = True):
+        if label is None:
+            label = self.page_labels[position]
+            label.text = None
+            label.color = None
+            label.font_name = None
+            label.font_size = None
+        else:
+            self.page_labels[position] = label
+        
+        if update:
+            self.update_label(position)
+
+    def set_action_label(self, position: str, label: "KeyLabel", update: bool = True):
+        if label is None:
+            label = self.action_labels[position]
+            label.text = None
+            label.color = None
+            label.font_name = None
+            label.font_size = None
+        else:
+            self.action_labels[position] = label
+
+        self.update_label_editor()
+
+        if update:
+            self.update_label(position)
+
+    def update_label_editor(self):
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
+        active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
+        if active_controller is not self.controller_key.deck_controller:
+            return
+
+        if gl.app.main_win.sidebar.active_coords != (self.controller_key.coords[0], self.controller_key.coords[1]):
+            return
+        
+        gl.app.main_win.sidebar.key_editor.label_editor.load_for_coords(self.controller_key.coords)
+        
+
+    def get_use_page_label_properties(self, position: str) -> dict:
+        if self.page_labels.get(position) is None:
+            return {
+                "text": False,
+                "color": False,
+                "font-family": False,
+                "font-size": False
+            }
+        return {
+            "text": self.page_labels[position].text is not None,
+            "color": self.page_labels[position].color is not None,
+            "font-family": self.page_labels[position].font_name is not None,
+            "font-size": self.page_labels[position].font_size is not None
+        }
+    
+    def get_composed_label(self, position: str) -> str:
+        use_page_label_properties = self.get_use_page_label_properties(position)
+        
+        label = copy(self.action_labels.get(position)) or KeyLabel(self.controller_key)
+
+        # Set to page values
+        page_label = self.page_labels.get(position)
+        if page_label is not None:
+            if use_page_label_properties["text"]:
+                label.text = page_label.text
+            if use_page_label_properties["color"]:
+                label.color = page_label.color
+            if use_page_label_properties["font-family"]:
+                label.font_name = page_label.font_name
+            if use_page_label_properties["font-size"]:
+                label.font_size = page_label.font_size
+
+        return self.inject_defaults(label)
+    
+    def get_composed_labels(self) -> dict:
+        composed_labels = {}
+        for position in ["top", "center", "bottom"]:
+            composed_labels[position] = self.get_composed_label(position)
+        return composed_labels
+
+    
+    def inject_defaults(self, label: "KeyLabel"):
+        if label.text is None:
+            label.text = ""
+        if label.color is None:
+            label.color = [255, 255, 255, 255]
+        if label.font_name is None:
+            label.font_name = ""
+        if label.font_size is None:
+            label.font_size = 15
+
+        return label
+
+
+    def update_label(self, position: str):
+        self.controller_key.update()
     
 
 class ControllerKey:
@@ -939,18 +1054,20 @@ class ControllerKey:
         self.fill_mode = "cover"
         self.size = 0.1
 
+        self.coords = deck_controller.index_to_coords(key)
+
         self.background_color = [0, 0, 0, 0]
 
         # Keep track of the current state of the key because self.deck_controller.deck.key_states seams to give inverted values in get_current_deck_image
         self.press_state: bool = self.deck_controller.deck.key_states()[self.key]
-
-        self.labels: dict = {}
 
         self.key_image: KeyImage = None
         self.key_video: KeyVideo = None
         # self.key_asset: SingleKeyAsset = SingleKeyAsset(self)
 
         self.hide_error_timer: Timer = None
+
+        self.label_manager = ControllerKeyLabelManager(self)
 
         # self.pressed_on_page: Page = None #TODO: Block release on different page than press
 
@@ -975,9 +1092,9 @@ class ControllerKey:
 
         image: Image.Image = None
         if self.key_image is not None:
-            image = self.key_image.generate_final_image(background=background, labels=self.labels)
+            image = self.key_image.generate_final_image(background=background, labels=self.label_manager.get_composed_labels())
         elif self.key_video is not None:
-            image = self.key_video.generate_final_image(background=background, labels=self.labels)
+            image = self.key_video.generate_final_image(background=background, labels=self.label_manager.get_composed_labels())
         else:
             image = background
         labeled_image = self.add_labels_to_image(image)
@@ -1032,16 +1149,6 @@ class ControllerKey:
             self.key_image.close()
         self.key_image = None
 
-    def add_label(self, key_label: "KeyLabel", position: str = "center", update: bool = True) -> None:
-        if position not in ["top", "center", "bottom"]:
-            log.error(f"Invalid position: {position}, must be one of 'top', 'center', or 'bottom'.")
-            return
-        
-        self.labels[position] = key_label
-
-        if update:
-            self.update()
-
     def remove_label(self, position: str = "center", update: bool = True) -> None:
         if position not in ["top", "center", "bottom"]:
             log.error(f"Invalid position: {position}, must be one of 'top', 'center', or 'bottom'.")
@@ -1065,9 +1172,9 @@ class ControllerKey:
         draw = ImageDraw.Draw(image)
 
         # labels = copy(self.labels) # Prevent crash if labels change during iteration
-        labels = self.labels
+        labels = self.label_manager.get_composed_labels()
 
-        for label in dict(labels):
+        for label in labels:
             text = labels[label].text
             if text in [None, ""]:
                 continue
@@ -1143,7 +1250,7 @@ class ControllerKey:
         )
 
         # Reset labels
-        self.labels = {}
+        self.label_manager.clear_labels()
 
         self.set_key_image(new_key_image)
 
@@ -1175,16 +1282,13 @@ class ControllerKey:
             self.key_video = None
         
         if load_labels:
-            self.labels = {}
+            self.label_manager.clear_labels()
 
         self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
 
         ## Load labels
         if load_labels:
             for label in page_dict.get("labels", []):
-                if label in self.labels:
-                    # Chosen by an action
-                    continue
                 key_label = KeyLabel(
                     controller_key=self,
                     text=page_dict["labels"][label].get("text"),
@@ -1192,7 +1296,8 @@ class ControllerKey:
                     font_name=page_dict["labels"][label].get("font-family"),
                     color=page_dict["labels"][label].get("color")
                 )
-                self.add_label(key_label, position=label, update=False)
+                # self.add_label(key_label, position=label, update=False)
+                self.label_manager.set_page_label(label, key_label, update=False)
 
         ## Load media
         if load_media:
@@ -1261,7 +1366,7 @@ class ControllerKey:
     def clear(self, update: bool = True):
         self.key_image = None
         self.key_video = None
-        self.labels = {}
+        self.label_manager.clear_labels()
         self.background_color = [0, 0, 0, 0]
         if update:
             self.update()
@@ -1359,16 +1464,16 @@ class ControllerKey:
             self.key_video = None
             del self.key_video
 
-        self.labels.clear()
+        # self.labels.clear()
 
 
 @dataclass
 class KeyLabel:
     controller_key: ControllerKey
-    text: str = ""
-    font_size: int = 15
+    text: str = None
+    font_size: int = None
     font_name: str = None
-    color: list[int] = (255, 255, 255, 255)
+    color: list[int] = None
 
     def get_font_path(self) -> str:
         return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=self.font_name))

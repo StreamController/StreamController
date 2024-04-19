@@ -200,12 +200,14 @@ class LabelRow(Adw.PreferencesRow):
 
         if self.text_entry.entry.get_text() != composed_label.text:
             pos = self.text_entry.entry.get_position()
-            print(f"entry: {self.text_entry.entry.get_text()} | label: {composed_label.text} | pos: {pos}")
             
             self.text_entry.entry.set_text(composed_label.text)
 
             pos = min(pos, len(composed_label.text))
             self.text_entry.entry.set_position(pos)
+
+        hide_details = composed_label.text.strip() == ""
+        self.font_chooser_box.set_visible(not hide_details)
 
         self.set_color(composed_label.color)
 

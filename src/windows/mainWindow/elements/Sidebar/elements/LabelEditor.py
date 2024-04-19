@@ -158,9 +158,12 @@ class LabelRow(Adw.PreferencesRow):
         self.font_chooser_button.button.connect("font-set", self.on_change_font)
 
     def disconnect_signals(self):
-        self.text_entry.entry.disconnect_by_func(self.on_change_text)
-        self.color_chooser_button.button.disconnect_by_func(self.on_change_color)
-        self.font_chooser_button.button.disconnect_by_func(self.on_change_font)
+        try:
+            self.text_entry.entry.disconnect_by_func(self.on_change_text)
+            self.color_chooser_button.button.disconnect_by_func(self.on_change_color)
+            self.font_chooser_button.button.disconnect_by_func(self.on_change_font)
+        except Exception as e:
+            log.error(f"Failed to disconnect signals. Error: {e}")
 
     def get_controller_key(self) -> ControllerKey:
         controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller

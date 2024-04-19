@@ -555,14 +555,19 @@ class DeckController:
         self.brightness = value
 
     def tick_actions(self) -> None:
+        time.sleep(self.TICK_DELAY)
         while self.keep_actions_ticking:
-            time.sleep(self.TICK_DELAY)
+            start = time.time()
             if not self.screen_saver.showing and True:
                 for key in self.keys:
                     key.own_actions_tick()
             else:
                 for key in self.keys:
                     key.update()
+
+            end = time.time()
+            wait = max(0.1, self.TICK_DELAY - (end - start))
+            time.sleep(wait)
             
         
 

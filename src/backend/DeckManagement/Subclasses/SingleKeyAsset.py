@@ -21,13 +21,9 @@ if TYPE_CHECKING:
     from src.backend.DeckManagement.DeckController import ControllerKey
 
 class SingleKeyAsset:
-    def __init__(self, controller_key: "ControllerKey", fill_mode: str = "cover", size: float = 1, valign: float = 0, halign: float = 0):
+    def __init__(self, controller_key: "ControllerKey"):
         self.controller_key = controller_key
         self.deck_controller = controller_key.deck_controller
-        self.fill_mode = fill_mode
-        self.size = size
-        self.valign = valign
-        self.halign = halign
 
     def get_raw_image(self) -> Image.Image:
         return Image.open(os.path.join("Assets", "images", "error.png"))
@@ -70,25 +66,30 @@ class SingleKeyAsset:
         return image.copy()
     
     def generate_final_image(self, background: Image.Image = None, labels: dict = {}) -> Image.Image:
+        layout = self.controller_key.layout_manager.get_composed_layout()
+
         foreground = self.get_raw_image()
         if foreground is None:
             foreground = self.deck_controller.generate_alpha_key()
 
         img_size = self.deck_controller.get_key_image_size()
-        scaled_img_size = (int(img_size[0] * self.size), int(img_size[1] * self.size))  # Calculate scaled size of the image
+        scaled_img_size = (int(img_size[0] * layout.size), int(img_size[1] * layout.size))  # Calculate scaled size of the image
 
-        if self.fill_mode == "stretch":
+        if layout.fill_mode == "stretch":
             foreground_resized = foreground.resize(scaled_img_size, Image.Resampling.HAMMING)
 
-        elif self.fill_mode == "cover":
+        elif layout.fill_mode == "cover":
             foreground_resized = ImageOps.cover(foreground, scaled_img_size, Image.Resampling.HAMMING)
 
-        elif self.fill_mode == "contain":
+        elif layout.fill_mode == "contain":
             foreground_resized = ImageOps.contain(foreground, scaled_img_size, Image.Resampling.HAMMING)
 
         # Adjust the calculation for margins so that halign and valign of 0 will center the foreground
-        left_margin = int((background.width - scaled_img_size[0]) * (self.halign + 1) / 2)
-        top_margin = int((background.height - scaled_img_size[1]) * (self.valign + 1) / 2)
+        halign = layout.halign if layout.size <= 1 else -layout.halign
+        valign = layout.valign if layout.size <= 1 else -layout.valign
+
+        left_margin = int((background.width - scaled_img_size[0]) * (halign + 1) / 2)
+        top_margin = int((background.height - scaled_img_size[1]) * (valign + 1) / 2)
 
         # Create a new image for the resulting composite
         final_image = Image.new('RGBA', background.size, (0, 0, 0, 0))

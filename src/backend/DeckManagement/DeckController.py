@@ -894,9 +894,8 @@ class BackgroundVideo(BackgroundVideoCache):
     
 
 class KeyGIF(SingleKeyAsset):
-    def __init__(self, controller_key: "ControllerKey", gif_path: str, fill_mode: str = "cover", size: float = 1,
-                 valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
-        super().__init__(controller_key, fill_mode, size, valign, halign)
+    def __init__(self, controller_key: "ControllerKey", gif_path: str, fps: int = 30, loop: bool = True):
+        super().__init__(controller_key)
         self.gif_path = gif_path
         self.fps = fps
         self.loop = loop
@@ -1042,17 +1041,97 @@ class ControllerKeyLabelManager:
 
     def update_label(self, position: str):
         self.controller_key.update()
+
+@dataclass
+class KeyLayout:
+    valign: float = None
+    halign: float = None
+    fill_mode: str = None
+    size: float = None
+
+
+class ControllerKeyLayoutManager:
+    def __init__(self, controller_key: "ControllerKey"):
+        self.controller_key = controller_key
+
+        self.action_layout = KeyLayout()
+        self.page_layout = KeyLayout()
+
+    def get_use_page_layout_properties(self) -> dict:
+        return {
+            "valign": self.page_layout.valign is not None,
+            "halign": self.page_layout.halign is not None,
+            "fill-mode": self.page_layout.fill_mode is not None,
+            "size": self.page_layout.size is not None
+        }
+    
+    def get_composed_layout(self) -> KeyLayout:
+        use_page_layout_properties = self.get_use_page_layout_properties()
+        
+        layout = copy(self.action_layout) or KeyLayout()
+
+        # Set to page values
+        page_layout = self.page_layout
+        if use_page_layout_properties["valign"]:
+            layout.valign = page_layout.valign
+        if use_page_layout_properties["halign"]:
+            layout.halign = page_layout.halign
+        if use_page_layout_properties["fill-mode"]:
+            layout.fill_mode = page_layout.fill_mode
+        if use_page_layout_properties["size"]:
+            layout.size = page_layout.size
+
+        return self.inject_defaults(layout)
+    
+    def inject_defaults(self, layout: KeyLayout):
+        if layout.valign is None:
+            layout.valign = 0
+        if layout.halign is None:
+            layout.halign = 0
+        if layout.fill_mode is None:
+            layout.fill_mode = "cover"
+        if layout.size is None:
+            layout.size = 1
+
+        return layout
+    
+    def set_page_layout(self, layout: KeyLayout, update: bool = True):
+        self.page_layout = layout
+
+        if update:
+            self.update()
+
+    def set_action_layout(self, layout: KeyLayout, update: bool = True):
+        self.action_layout = layout
+
+        if update:
+            self.update()
+
+    def update(self):
+        self.controller_key.update()
+        self.update_layout_editor()
+
+    def update_layout_editor(self):
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
+        
+        if not recursive_hasattr(gl, "app.main_win.sidebar.image_editor"):
+            return
+        
+        active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
+        if active_controller is not self.controller_key.deck_controller:
+            return
+
+        if gl.app.main_win.sidebar.active_coords != (self.controller_key.coords[0], self.controller_key.coords[1]):
+            return
+        
+        gl.app.main_win.sidebar.key_editor.image_editor.load_for_coords(self.controller_key.coords)
     
 
 class ControllerKey:
     def __init__(self, deck_controller: DeckController, key: int):
         self.deck_controller = deck_controller
         self.key = key
-
-        self.valign = 0
-        self.halign = 0
-        self.fill_mode = "cover"
-        self.size = 0.1
 
         self.coords = deck_controller.index_to_coords(key)
 
@@ -1068,6 +1147,7 @@ class ControllerKey:
         self.hide_error_timer: Timer = None
 
         self.label_manager = ControllerKeyLabelManager(self)
+        self.layout_manager = ControllerKeyLayoutManager(self)
 
         # self.pressed_on_page: Page = None #TODO: Block release on different page than press
 
@@ -1307,22 +1387,14 @@ class ControllerKey:
                     with Image.open(path) as image:
                         self.set_key_image(KeyImage(
                             controller_key=self,
-                            image=image.copy(),
-                            fill_mode=page_dict.get("media", {}).get("fill-mode", "cover"),
-                            size=page_dict.get("media", {}).get("size", 1),
-                            valign=page_dict.get("media", {}).get("valign", 0),
-                            halign=page_dict.get("media", {}).get("halign", 0),
+                            image=image.copy()
                         ), update=False)
-
+                        
                 elif is_svg(path):
                     img = load_svg_as_pil(path)
                     self.set_key_image(KeyImage(
                         controller_key=self,
-                        image=img,
-                        fill_mode=page_dict.get("media", {}).get("fill-mode", "cover"),
-                        size=page_dict.get("media", {}).get("size", 1),
-                        valign=page_dict.get("media", {}).get("valign", 0),
-                        halign=page_dict.get("media", {}).get("halign", 0),
+                        image=img
                     ), update=False)
 
                 elif is_video(path) and True:
@@ -1331,10 +1403,7 @@ class ControllerKey:
                             controller_key=self,
                             gif_path=path,
                             loop=page_dict.get("media", {}).get("loop", True),
-                            fps=page_dict.get("media", {}).get("fps", 30),
-                            size=page_dict.get("media", {}).get("size", 1),
-                            valign=page_dict.get("media", {}).get("valign", 0),
-                            halign=page_dict.get("media", {}).get("halign", 0),
+                            fps=page_dict.get("media", {}).get("fps", 30)
                         )) # GIFs always update
                     else:
                         self.set_key_video(KeyVideo(
@@ -1342,9 +1411,6 @@ class ControllerKey:
                             video_path=path,
                             loop = page_dict.get("media", {}).get("loop", True),
                             fps = page_dict.get("media", {}).get("fps", 30),
-                            size = page_dict.get("media", {}).get("size", 1),
-                            valign = page_dict.get("media", {}).get("valign", 0),
-                            halign = page_dict.get("media", {}).get("halign", 0),
                         )) # Videos always update
 
             elif len(self.get_own_actions()) > 1:
@@ -1353,6 +1419,14 @@ class ControllerKey:
                         controller_key=self,
                         image=image.copy(),
                     ), update=False)
+
+            layout = KeyLayout(
+                fill_mode=page_dict.get("media", {}).get("fill-mode"),
+                size=page_dict.get("media", {}).get("size"),
+                valign=page_dict.get("media", {}).get("valign"),
+                halign=page_dict.get("media", {}).get("halign"),
+            )
+            self.layout_manager.set_page_layout(layout, update=False)
 
         if load_background_color:
             self.background_color = page_dict.get("background", {}).get("color", [0, 0, 0, 0])
@@ -1480,7 +1554,7 @@ class KeyLabel:
 
 
 class KeyImage(SingleKeyAsset):
-    def __init__(self, controller_key: ControllerKey, image: Image.Image, fill_mode: str = "cover", size: float = 1, valign: float = 0, halign: float = 0):
+    def __init__(self, controller_key: ControllerKey, image: Image.Image):
         """
         Initialize the class with the given controller key, image, fill mode, size, vertical alignment, and horizontal alignment.
 
@@ -1492,7 +1566,7 @@ class KeyImage(SingleKeyAsset):
             valign (float, optional): The vertical alignment of the image. Defaults to 0. Ranges from -1 to 1.
             halign (float, optional): The horizontal alignment of the image. Defaults to 0. Ranges from -1 to 1.
         """
-        super().__init__(controller_key, fill_mode, size, valign, halign)
+        super().__init__(controller_key)
         self.image = image
 
         if self.image is None:
@@ -1513,14 +1587,9 @@ class KeyImage(SingleKeyAsset):
         return
 
 class KeyVideo(SingleKeyAsset):
-    def __init__(self, controller_key: ControllerKey, video_path: str, fill_mode: str = "cover", size: float = 1,
-                 valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
+    def __init__(self, controller_key: ControllerKey, video_path: str, fps: int = 30, loop: bool = True):
         super().__init__(
             controller_key=controller_key,
-            fill_mode=fill_mode,
-            size=size,
-            valign=valign,
-            halign=halign
         )
         self.video_path = video_path
         self.fps = fps

@@ -15,7 +15,7 @@ from rpyc.core import netref
 from src.Signals.Signals import Signal
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.HelperMethods import is_image, is_svg, is_video
-from src.backend.DeckManagement.DeckController import KeyImage, KeyVideo, BackgroundImage, BackgroundVideo, KeyLabel
+from src.backend.DeckManagement.DeckController import KeyImage, KeyLayout, KeyVideo, BackgroundImage, BackgroundVideo, KeyLabel
 
 # Import globals
 import globals as gl
@@ -127,7 +127,7 @@ class ActionBase(rpyc.Service):
                 "font-size": font_size
             }
 
-    def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True, update: bool = True):
+    def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):
         if not self.get_is_present():
             return
         if self.key_index >= self.deck_controller.deck.key_count():
@@ -153,9 +153,6 @@ class ActionBase(rpyc.Service):
             self.deck_controller.keys[self.key_index].set_key_image(KeyImage(
                 controller_key=self.deck_controller.keys[self.key_index],
                 image=image,
-                size=size,
-                valign=valign,
-                halign=halign
             ), update=False)
         elif is_video(media_path):
             self.deck_controller.keys[self.key_index].set_key_video(KeyVideo(
@@ -164,6 +161,14 @@ class ActionBase(rpyc.Service):
                 fps=fps,
                 loop=loop
             ))
+
+        self.deck_controller.keys[self.key_index].layout_manager.set_action_layout(KeyLayout(
+            valign=valign,
+            halign=halign,
+            size=size
+        ), update=False)
+
+
 
         if update:
             self.deck_controller.update_key(self.key_index)

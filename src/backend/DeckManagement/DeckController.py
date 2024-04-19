@@ -975,6 +975,10 @@ class ControllerKeyLabelManager:
     def update_label_editor(self):
         if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
             return
+        
+        if not recursive_hasattr(gl, "app.main_win.sidebar.key_editor"):
+            return
+        
         active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
         if active_controller is not self.controller_key.deck_controller:
             return

@@ -238,7 +238,7 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index > len(deck_controller.keys):
+            if key_index >= len(deck_controller.keys):
                 continue
             controller_key = deck_controller.keys[key_index]
 
@@ -276,7 +276,7 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index > len(deck_controller.keys):
+            if key_index >= len(deck_controller.keys):
                 continue
             controller_key = deck_controller.keys[key_index]
 
@@ -305,7 +305,7 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index > len(deck_controller.keys):
+            if key_index >= len(deck_controller.keys):
                 continue
             controller_key = deck_controller.keys[key_index]
 
@@ -334,7 +334,7 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index > len(deck_controller.keys):
+            if key_index >= len(deck_controller.keys):
                 continue
             controller_key = deck_controller.keys[key_index]
 
@@ -358,7 +358,7 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index > len(deck_controller.keys):
+            if key_index >= len(deck_controller.keys):
                 continue
             controller_key = deck_controller.keys[key_index]
 
@@ -387,7 +387,7 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index > len(deck_controller.keys):
+            if key_index >= len(deck_controller.keys):
                 continue
             controller_key = deck_controller.keys[key_index]
 
@@ -407,7 +407,7 @@ class LabelRow(Adw.PreferencesRow):
                 continue
 
             key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index > len(deck_controller.keys):
+            if key_index >= len(deck_controller.keys):
                 continue
             controller_key = deck_controller.keys[key_index]
 
@@ -434,7 +434,7 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index > len(deck_controller.keys):
+            if key_index >= len(deck_controller.keys):
                 continue
             controller_key = deck_controller.keys[key_index]
 

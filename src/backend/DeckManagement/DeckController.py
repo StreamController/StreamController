@@ -1533,9 +1533,7 @@ class ControllerKey:
 
     def own_actions_tick(self) -> None:
         for action in self.get_own_actions():
-            log.trace(f"Calling on_tick on {action}")
             action.on_tick()
-            log.trace(f"Finished calling on_tick on {action}")
 
     def close_resources(self) -> None:
         if self.key_image is not None:

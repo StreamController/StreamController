@@ -24,8 +24,9 @@ from loguru import logger as log
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import font_path_from_name, font_name_from_path
-from src.backend.PageManagement.Page import NoActionHolderFound
-from src.backend.DeckManagement.DeckController import KeyLabel
+from src.backend.PageManagement.Page import NoActionHolderFound, Page
+from src.backend.DeckManagement.DeckController import ControllerKey, KeyLabel
+from GtkHelper.GtkHelper import RevertButton
 
 # Import globals
 import globals as gl
@@ -72,6 +73,7 @@ class LabelExpanderRow(Adw.ExpanderRow):
         self.label_group = label_group
         self.active_coords = None
         self.build()
+        self.set_expanded(True)
 
     def build(self):
         self.top_row = LabelRow(gl.lm.get("label-editor-top-name"), 0, self.label_group.sidebar, key_name="top")
@@ -114,22 +116,22 @@ class LabelRow(Adw.PreferencesRow):
         self.text_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.text_box)
 
-        self.entry = Gtk.Entry(hexpand=True, margin_end=5, placeholder_text=gl.lm.get("label-editor-placeholder-text"))
-        self.entry.connect("changed", self.on_change_text)
-        self.text_box.append(self.entry)
+        self.text_entry = TextEntry()
+        # self.text_entry.entry.connect("changed", self.on_change_text)
+        self.text_box.append(self.text_entry)
 
-        self.color_chooser_button = Gtk.ColorButton()
-        self.color_chooser_button.connect("color-set", self.on_change_color)
+        self.color_chooser_button = ColorChooserButton()
+        # self.color_chooser_button.button.connect("color-set", self.on_change_color)
         self.text_box.append(self.color_chooser_button)
 
         self.font_chooser_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
         self.main_box.append(self.font_chooser_box)
 
-        self.font_chooser_label = Gtk.Label(label=gl.lm.get("label-editor-font-chooser-label"), xalign=0, hexpand=True)
+        self.font_chooser_label = Gtk.Label(label=gl.lm.get("label-editor-font-chooser-label"), xalign=0, hexpand=True, margin_start=2)
         self.font_chooser_box.append(self.font_chooser_label)
 
-        self.font_chooser_button = Gtk.FontButton()
-        self.font_chooser_button.connect("font-set", self.on_change_font)
+        self.font_chooser_button = FontChooserButton()
+        # self.font_chooser_button.button.connect("font-set", self.on_change_font)
         self.font_chooser_box.append(self.font_chooser_button)
 
         self.stroke_width_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
@@ -142,81 +144,87 @@ class LabelRow(Adw.PreferencesRow):
         self.stroke_width_button.connect("value-changed", self.on_change_stroke_width)
         # self.stroke_width_box.append(self.stroke_width_button)
 
+        ## Connect reset buttons
+        self.text_entry.revert_button.connect("clicked", self.on_reset_text)
+        self.color_chooser_button.revert_button.connect("clicked", self.on_reset_color)
+        self.font_chooser_button.revert_button.connect("clicked", self.on_reset_font)
+
+        ## Connect set signals
+        self.connect_signals()
+
+    def connect_signals(self):
+        self.text_entry.entry.connect("changed", self.on_change_text)
+        self.color_chooser_button.button.connect("color-set", self.on_change_color)
+        self.font_chooser_button.button.connect("font-set", self.on_change_font)
+
+    def disconnect_signals(self):
+        self.text_entry.entry.disconnect_by_func(self.on_change_text)
+        self.color_chooser_button.button.disconnect_by_func(self.on_change_color)
+        self.font_chooser_button.button.disconnect_by_func(self.on_change_font)
+
+    def get_controller_key(self) -> ControllerKey:
+        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        x, y = self.active_coords
+
+        return controller.keys[controller.coords_to_index((x, y))]
+
     def load_for_coords(self, coords):
         self.active_coords = coords
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
 
-        x, y = coords
 
         if page == None:
             #TODO: Show error
             return
-        # Set defaults
-        page.dict.setdefault("keys", {})
-        page.dict["keys"].setdefault(f"{x}x{y}", {})
-        page.dict["keys"][f"{x}x{y}"].setdefault("labels", {})
-        page.dict["keys"][f"{x}x{y}"]["labels"].setdefault(self.key_name, {})
-        page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name].setdefault("text", "")
-        page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name].setdefault("color", [255, 255, 255])
-        page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name].setdefault("font-family", "")
-        page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name].setdefault("font-size", 15)
-
-        label = page.dict["keys"][f"{x}x{y}"]["labels"][self.key_name]
-        self.entry.disconnect_by_func(self.on_change_text) # Remove signal to avoid unnecessary updates
-        self.entry.set_text(label["text"])
-        self.entry.connect("changed", self.on_change_text) # Reconnect signal
-        self.set_color(label["color"])
-
-        self.font_chooser_button.set_font(label["font-family"] + " " + str(label["font-size"]))
-
-        # Hide settings if text is empty
-        vis = self.entry.get_text() != ""
-        self.font_chooser_box.set_visible(vis)
-        self.stroke_width_box.set_visible(vis)
-
-        # Reset appearance
-        self.set_sensitive(True)
-        self.controlled_by_action_label.set_visible(False)
-
-        # Get all actions for this key - This allows us to see which labels are set by actions and set the sensivity to False
-        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        if controller == None:
-            return
-        action_objects = controller.active_page.get_all_actions_for_key(f"{x}x{y}")
-        if action_objects in [None, []]:
-            return
         
-        action_objects.reverse() # Reverse list, this allows us to easily set the label in the ui to the label set by the last action
+        controller_key = self.get_controller_key()
 
-        # Set sensitive = False if label is set by an action
-        for action in action_objects:
-            if isinstance(action, NoActionHolderFound):
-                # No plugin installed for this action
-                continue
-            if not action.LABELS_CAN_BE_OVERWRITTEN[self.label_index]:
-                pass
-            for key in action.labels:
-                if key == self.key_name:
-                    self.set_sensitive(False)
-                    self.controlled_by_action_label.set_visible(True)
-                    # Update the ui - this is why we reversed the list
-                    self.entry.disconnect_by_func(self.on_change_text) # Remove signal to avoid saving to page
-                    self.entry.set_text(action.labels[key]["text"])
-                    self.entry.connect("changed", self.on_change_text)
-                    self.set_color(action.labels[key]["color"])
-                    self.font_chooser_button.set_font(action.labels[key]["font-family"] + " " + str(action.labels[key]["font-size"]))
-                    return
+        use_page_label_properties = controller_key.label_manager.get_use_page_label_properties(position=self.key_name)
+
+        ## Set visibility of revert buttons
+        self.text_entry.revert_button.set_visible(use_page_label_properties.get("text", False))
+        self.color_chooser_button.revert_button.set_visible(use_page_label_properties.get("color", False))
+
+        font_combined = use_page_label_properties.get("font-family", False) and use_page_label_properties.get("font-size", False)
+        self.font_chooser_button.revert_button.set_visible(font_combined)
+
+        ## Set properties
+        self.update_values()
+
+
+    def update_values(self, composed_label: KeyLabel = None):
+        self.disconnect_signals()
+        if composed_label is None:
+            controller_key = self.get_controller_key()
+            composed_label = controller_key.label_manager.get_composed_label(position=self.key_name)
+
+        if self.text_entry.entry.get_text() != composed_label.text:
+            pos = self.text_entry.entry.get_position()
+            
+            self.text_entry.entry.set_text(composed_label.text)
+
+            pos = min(pos, len(composed_label.text))
+            self.text_entry.entry.set_position(pos)
+
+        hide_details = composed_label.text.strip() == ""
+        self.font_chooser_box.set_visible(not hide_details)
+
+        self.set_color(composed_label.color)
+
+        self.font_chooser_button.button.set_font(composed_label.font_name + " " + str(composed_label.font_size) + "px")
+
+        self.connect_signals()
+
 
     def set_color(self, color_values: list):
         if len(color_values) == 3:
             color_values.append(255)
         color = Gdk.RGBA()
         color.parse(f"rgba({color_values[0]}, {color_values[1]}, {color_values[2]}, {color_values[3]})")
-        self.color_chooser_button.set_rgba(color)
+        self.color_chooser_button.button.set_rgba(color)
 
     def on_change_color(self, button):
-        self.add_new_label_if_needed()
-        color = self.color_chooser_button.get_rgba()
+        color = self.color_chooser_button.button.get_rgba()
         green = round(color.green * 255)
         blue = round(color.blue * 255)
         red = round(color.red * 255)
@@ -232,15 +240,24 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
             controller_key = deck_controller.keys[key_index]
 
-            controller_key.labels[self.key_name].color = [red, green, blue]
-            controller_key.update()
+            page_label = controller_key.label_manager.page_labels.get(self.key_name)
+            if page_label is not None:
+                page_label.color = [red, green, blue]
+            controller_key.label_manager.update_label(position=self.key_name)
+
+        self.color_chooser_button.revert_button.set_visible(True)
+
+    def get_page(self) -> Page:
+        return self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        
 
 
     def on_change_font(self, button):
-        self.add_new_label_if_needed()
-        font = self.font_chooser_button.get_font()
+        font = self.font_chooser_button.button.get_font()
 
         pango_font = Pango.font_description_from_string(font)
 
@@ -261,21 +278,105 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
             controller_key = deck_controller.keys[key_index]
 
-            controller_key.labels[self.key_name].font_name = pango_font.get_family()
-            controller_key.labels[self.key_name].font_size = round(font_size/1000)
+            page_label = controller_key.label_manager.page_labels.get(self.key_name)
+            if page_label is not None:
+                page_label.font_name = pango_font.get_family()
+                page_label.font_size = round(font_size/1000)
+            controller_key.label_manager.update_label(position=self.key_name)
 
-            controller_key.update()
+        self.font_chooser_button.revert_button.set_visible(True)
 
+    def on_reset_font(self, button):
+        #FIXME: gets called multiple times
+        # Update
+        # Set to null
+        # Hide
+        page = self.get_page()
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-family"] = None
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-size"] = None
+
+        page.save()
+
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
+            controller_key = deck_controller.keys[key_index]
+
+            self.update_values()
+
+            label = controller_key.label_manager.page_labels.get(self.key_name)
+            if label is not None:
+                label.font_name = None
+                label.font_size = None
+            controller_key.label_manager.update_label(position=self.key_name)
+            
+
+        self.font_chooser_button.revert_button.set_visible(False)
+
+    def on_reset_text(self, button):
+        page = self.get_page()
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"] = None
+
+        page.save()
+
+        gl.page_manager.update_dict_of_pages_with_path(page.json_path)
+
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
+            controller_key = deck_controller.keys[key_index]
+
+            label = controller_key.label_manager.page_labels.get(self.key_name)
+            if label is not None:
+                label.text = None
+            controller_key.label_manager.update_label(position=self.key_name)
+
+        self.text_entry.revert_button.set_visible(False)
+        self.update_values()
+
+    def on_reset_color(self, button):
+        page = self.get_page()
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["color"] = None
+
+        page.save()
+
+        # Reload key on all decks that have this page loaded
+        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        for deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
+            controller_key = deck_controller.keys[key_index]
+
+            self.update_values()
+
+            label = controller_key.label_manager.page_labels.get(self.key_name)
+            if label is not None:
+                label.color = None
+            controller_key.label_manager.update_label(position=self.key_name)
+
+        self.color_chooser_button.revert_button.set_visible(False)
 
     def on_change_text(self, entry):
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"] = entry.get_text()
         page.save()
-        self.add_new_label_if_needed()
-
-        # self.update_key(_property=f"text-{self.key_name}", value=entry.get_text())
 
         # Hide settings if text is empty
         vis = entry.get_text() != ""
@@ -288,10 +389,17 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
             controller_key = deck_controller.keys[key_index]
 
-            controller_key.labels[self.key_name].text = entry.get_text()
-            controller_key.update()
+            page_label = controller_key.label_manager.page_labels.get(self.key_name)
+            if page_label is not None:
+                page_label.text = entry.get_text()
+            controller_key.label_manager.update_label(position=self.key_name)
+
+
+        self.text_entry.revert_button.set_visible(True)
 
     def add_new_label_if_needed(self):
         #TODO: Use this method to update everything on change
@@ -301,6 +409,8 @@ class LabelRow(Adw.PreferencesRow):
                 continue
 
             key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
             controller_key = deck_controller.keys[key_index]
 
             if self.key_name in controller_key.labels:
@@ -308,7 +418,7 @@ class LabelRow(Adw.PreferencesRow):
 
             # Add new KeyLabel
             label = KeyLabel(
-                text=self.entry.get_text(),
+                text=self.text_entry.get_text(),
                 controller_key=controller_key
             )
             controller_key.add_label(label, self.key_name, update=False)
@@ -326,6 +436,8 @@ class LabelRow(Adw.PreferencesRow):
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
             controller_key = deck_controller.keys[key_index]
 
             controller_key.labels[self.key_name].font_weight = round(self.stroke_width_button.get_value())
@@ -336,5 +448,35 @@ class LabelRow(Adw.PreferencesRow):
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
 
         # Update ui
-        self.entry.set_text(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"])
+        self.text_entry.set_text(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"])
         self.stroke_width_button.set_value(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["stroke-width"])
+
+class TextEntry(Gtk.Box):
+    def __init__(self, **kwargs):
+        super().__init__(css_classes=["linked"], margin_end=5,  **kwargs)
+
+        self.entry = Gtk.Entry(hexpand=True,placeholder_text=gl.lm.get("label-editor-placeholder-text"))
+        self.revert_button = RevertButton()
+
+        self.append(self.entry)
+        self.append(self.revert_button)
+
+class ColorChooserButton(Gtk.Box):
+    def __init__(self, **kwargs):
+        super().__init__(css_classes=["linked"], **kwargs)
+
+        self.button = Gtk.ColorButton()
+        self.revert_button = RevertButton()
+
+        self.append(self.button)
+        self.append(self.revert_button)
+
+class FontChooserButton(Gtk.Box):
+    def __init__(self, **kwargs):
+        super().__init__(css_classes=["linked"], **kwargs)
+
+        self.button = Gtk.FontButton()
+        self.revert_button = RevertButton()
+
+        self.append(self.button)
+        self.append(self.revert_button)

@@ -346,6 +346,7 @@ class StoreBackend:
             local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
             minimum_app_version=manifest.get("minimum-software-version") or None, #TODO:CHNAGE TO minimum-app-version
             repository_name=self.get_repo_name(url),
+            tags=manifest.get("tags") or None,
 
             thumbnail=thumbnail_path or None,
             image=image or None,
@@ -432,6 +433,8 @@ class StoreBackend:
             commit_sha=commit,
             local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
             minimum_app_version=manifest.get("minimum-software-version") or None,  # TODO:CHNAGE TO minimum-app-version
+            repository_name=self.get_repo_name(url),
+            tags=manifest.get("tags") or None,
 
             thumbnail=thumbnail_path or None,
             image=image or None,
@@ -505,6 +508,8 @@ class StoreBackend:
             commit_sha=commit,
             local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
             minimum_app_version=manifest.get("minimum-software-version") or None,  # TODO:CHNAGE TO minimum-app-version
+            repository_name=self.get_repo_name(url),
+            tags=manifest.get("tags") or None,
 
             thumbnail=thumbnail_path or None,
             image=image or None,

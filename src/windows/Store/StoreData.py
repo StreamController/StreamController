@@ -21,6 +21,7 @@ class StoreData:
     """Minimum app version that is required to use the Content"""
     repository_name: [str, None] = None
     """Name of the Repository"""
+    tags: list[str] = field(default_factory=list)
 
 
 @dataclass

@@ -638,8 +638,13 @@ class DeckController:
         return deck_stack_child.page_settings.grid_page
     
     def clear_media_player_tasks(self):
+        ticks = self.media_player.media_ticks
         self.media_player.tasks.clear()
         self.media_player.image_tasks.clear()
+
+        # Wait until tick is over
+        while self.media_player.media_ticks <= ticks:
+            time.sleep(1/60)
 
     def clear_media_player_tasks_via_task(self):
         self.media_player_tasks.append(MediaPlayerTask(

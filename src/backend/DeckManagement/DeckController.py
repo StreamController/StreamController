@@ -344,10 +344,10 @@ class DeckController:
         if screensaver_was_showing:
             return
         
-        self.active_page.ready_to_clear = False
+        self.mark_page_ready_to_clear(False)
 
         self.keys[key].on_key_change(state)
-        self.active_page.ready_to_clear = True
+        self.mark_page_ready_to_clear(True)
 
     ### Helper methods
     def generate_alpha_key(self) -> Image.Image:
@@ -561,7 +561,7 @@ class DeckController:
         time.sleep(self.TICK_DELAY)
         while self.keep_actions_ticking:
             start = time.time()
-            self.active_page.ready_to_clear = False
+            self.mark_page_ready_to_clear(False)
             if not self.screen_saver.showing and True:
                 for key in self.keys:
                     key.own_actions_tick()
@@ -569,17 +569,21 @@ class DeckController:
                 for key in self.keys:
                     key.update()
 
-            self.active_page.ready_to_clear = True
+            self.mark_page_ready_to_clear(True)
 
             end = time.time()
             wait = max(0.1, self.TICK_DELAY - (end - start))
             time.sleep(wait)
-            
+
         
 
     # -------------- #
     # Helper methods #
     # -------------- #
+
+    def mark_page_ready_to_clear(self, ready_to_clear: bool):
+        if self.active_page is not None:
+            self.active_page.ready_to_clear = ready_to_clear
         
     def index_to_coords(self, index):
         if not self.get_alive(): return

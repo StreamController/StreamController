@@ -117,6 +117,8 @@ class PageManagerBackend:
                 lowest_page = min(self.created_pages[controller][p]["page_number"] for controller in self.created_pages for p in self.created_pages[controller])
                 for controller in self.created_pages:
                     for page in self.created_pages[controller]:
+                        if self.created_pages[controller][page]["page"] is controller.active_page:
+                            continue
                         if self.created_pages[controller][page]["page_number"] == lowest_page:
                             page_object: Page = self.created_pages[controller][page]["page"]
                             page_object.clear_action_objects()

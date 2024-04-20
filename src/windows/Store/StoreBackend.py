@@ -326,13 +326,7 @@ class StoreBackend:
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
-        user_name = self.get_user_name(url)
-        repo_name = self.get_repo_name(url)
-
         stargazers = await self.get_stargazers(url)
-
-        #user_name -> author
-        #repo_name
 
         author = self.get_user_name(url)
 
@@ -729,7 +723,7 @@ class StoreBackend:
         # Notify plugin actions
         gl.signal_manager.trigger_signal(Signals.PluginInstall, plugin_data.plugin_id)
 
-        log.success(f"Plugin {plugin_data['plugin_id']} installed successfully under: {local_path} with sha: {plugin_data.commit_sha}")
+        log.success(f"Plugin {plugin_data.plugin_id} installed successfully under: {local_path} with sha: {plugin_data.commit_sha}")
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False, remove_files:bool = True) -> bool:
         ## 1. Remove all action objects in all pages
         for deck_controller in gl.deck_manager.deck_controller:

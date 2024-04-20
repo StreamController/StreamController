@@ -88,9 +88,13 @@ class PluginPreview(StorePreview):
         self.set_official(plugin_data.official)
         self.set_verified(plugin_data.commit_sha is not None)
 
+
+
         #TODO: CHANGE COLOR OF PREVIEW TO MAKE THE VERSION DIFFERENCE VISABLE
         if not self.check_required_version(plugin_data.minimum_app_version):
-            pass
+            self.main_button_box.add_css_class("red-border")
+        else:
+            self.main_button_box.remove_css_class("red-border")
 
         # Set install button state
         if plugin_data.local_sha is None:
@@ -99,8 +103,6 @@ class PluginPreview(StorePreview):
             self.set_install_state(1)
         else:
             self.set_install_state(2)
-
-        #TODO: LOAD TRANSLATION
 
         description = gl.lm.get_custom_translation(plugin_data.short_descriptions)
         if description in ["", "N/A", None]:

@@ -56,6 +56,14 @@ class StorePreview(Gtk.FlowBoxChild):
                                  width_request=250, height_request=250)
         self.set_child(self.main_box)
 
+        # ADD BOX FOR SEARCHING
+        self.search_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.main_box.append(self.search_box)
+
+        # ADD SEARCH BAR
+        self.search_bar = Gtk.SearchBar()
+        self.search_box.append(self.search_bar)
+
         self.main_button = Gtk.Button(hexpand=True, vexpand=False,
                                       width_request=250, height_request=250,
                                       css_classes=["no-padding", "no-round-bottom"])

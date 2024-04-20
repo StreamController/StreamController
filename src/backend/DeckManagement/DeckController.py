@@ -1341,7 +1341,6 @@ class ControllerKey:
         new_key_image = KeyImage(
             controller_key=self,
             image=image,
-            size=0.7
         )
 
         # Reset labels

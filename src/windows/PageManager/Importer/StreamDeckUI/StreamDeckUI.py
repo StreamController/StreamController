@@ -3,6 +3,7 @@ import os
 import json
 import time
 
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 from src.windows.PageManager.Importer.StreamDeckUI.helper import font_family_from_path, hex_to_rgba255
 from src.windows.PageManager.Importer.StreamDeckUI.code_conv import parse_keys_as_keycodes
 
@@ -33,6 +34,19 @@ class StreamDeckUIImporter:
     def save_json(self, json_path: str, data: dict):
         with open(json_path, "w") as f:
             json.dump(data, f, indent=4)
+
+        loaded = None
+        try:
+            # Verify data
+            with open(json_path) as f:
+                loaded = json.load(f)
+        except Exception as e:
+            pass
+
+        if loaded != data:
+            log.error(f"Failed to save {json_path}, trying again")
+            self.save_json(json_path, data)
+            
     
 
     def perform_import(self):
@@ -71,9 +85,9 @@ class StreamDeckUIImporter:
                         font_color_hex = "#FFFFFFFF"
                     page["keys"][coords]["labels"] = {}
                     page["keys"][coords]["labels"]["bottom"] = {
-                        "text": self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("text", ""),
+                        "text": self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("text", None),
                         "color": hex_to_rgba255(font_color_hex),
-                        "font_size": 15,
+                        "font_size": None,
                         "font_family": font_family_from_path(self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("font"))
                     }
                     
@@ -96,7 +110,21 @@ class StreamDeckUIImporter:
                     ## Actions
                     page["keys"][coords]["actions"] = []
 
-                    # Keys
+                    # Switch page
+                    export_switch_page = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("switch_page")
+                    if str(export_switch_page) != str(int(page_name)+1) and export_switch_page not in [0, "0", None, ""]:
+                        if export_switch_page not in [None, ""]:
+                            page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{export_switch_page}.json")
+                            action = {
+                                "id": "com_core447_DeckPlugin::ChangePage",
+                                "settings": {
+                                    "selected_page": page_path,
+                                    "deck_number": None
+                                }
+                            }
+                            page["keys"][coords]["actions"].append(action)
+
+                    # Hotkey
                     if self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("keys") not in [None, ""]:
                         parsed = ""
                         try:
@@ -157,19 +185,6 @@ class StreamDeckUIImporter:
                             }
                         page["keys"][coords]["actions"].append(action)
 
-                    # Switch page
-                    export_switch_page = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("switch_page")
-                    if str(export_switch_page) != str(int(page_name)+1) and export_switch_page not in [0, "0", None, ""]:
-                        if export_switch_page not in [None, ""]:
-                            action = {
-                                "id": "com_core447_DeckPlugin::ChangePage",
-                                "settings": {
-                                    "selected_page": f"data/pages/ui_{deck}_{export_switch_page}.json",
-                                    "deck_number": None
-                                }
-                            }
-                            page["keys"][coords]["actions"].append(action)
-
 
                 page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{int(page_name) + 1}.json")
                 self.save_json(page_path, page)
@@ -184,6 +199,8 @@ class StreamDeckUIImporter:
 
         log.success("Imported all pages from StreamDeck UI")
 
-        GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
-        GLib.idle_add(gl.page_manager_window.page_selector.load_pages)
+        if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
+            GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
+        if recursive_hasattr(gl, "page_manager_window.page_selector"):
+            GLib.idle_add(gl.page_manager_window.page_selector.load_pages)
         log.success("Updated ui")

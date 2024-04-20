@@ -26,5 +26,6 @@ def font_family_from_path(path: str) -> str:
     return family
 
 def hex_to_rgba255(color_hex: str) -> list[int]:
+    if color_hex in [None, ""]: return None
     rbga = matplotlib.colors.to_rgba(color_hex)
     return [int(x * 255) for x in rbga]

@@ -146,7 +146,6 @@ class App(Adw.Application):
         # Close all decks
         gl.deck_manager.close_all()
         # Stop timer
-        timer.cancel()
         log.success("Stopped StreamController. Have a nice day!")
         sys.exit(0)
 

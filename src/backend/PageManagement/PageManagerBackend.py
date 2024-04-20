@@ -117,6 +117,12 @@ class PageManagerBackend:
                 lowest_page = min(self.created_pages[controller][p]["page_number"] for controller in self.created_pages for p in self.created_pages[controller])
                 for controller in self.created_pages:
                     for page in self.created_pages[controller]:
+                        if controller.active_page is None:
+                            continue
+                        if not self.created_pages[controller][page]["page"].ready_to_clear:
+                            continue
+                        if self.created_pages[controller][page]["page"] is controller.active_page:
+                            continue
                         if self.created_pages[controller][page]["page_number"] == lowest_page:
                             page_object: Page = self.created_pages[controller][page]["page"]
                             page_object.clear_action_objects()
@@ -239,13 +245,9 @@ class PageManagerBackend:
                 del self.created_pages[controller][path]
 
 
-    def add_page(self, name:str):
-        page = {
-            "keys": {}
-        }
-
+    def add_page(self, name:str, page_dict: dict = {}):
         with open(os.path.join(gl.DATA_PATH, "pages", f"{name}.json"), "w") as f:
-            json.dump(page, f)
+            json.dump(page_dict, f)
 
         # Update ui
         # self.update_ui()

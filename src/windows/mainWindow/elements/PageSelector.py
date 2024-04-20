@@ -104,7 +104,6 @@ class PageSelector(Gtk.Box):
         child = self.main_window.leftArea.deck_stack.get_visible_child()
         if child is None:
             self.drop_down.set_sensitive(False)
-            self.clear_model()
             return
         else:
             self.drop_down.set_sensitive(True)

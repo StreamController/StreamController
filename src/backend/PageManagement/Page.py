@@ -42,6 +42,8 @@ class Page:
         # Dir that contains all actions this allows us to keep them at reload
         self.action_objects = {}
 
+        self.ready_to_clear = True
+
         self.load(load_from_file=True)
 
     def get_name(self) -> str:

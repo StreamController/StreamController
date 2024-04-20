@@ -79,7 +79,8 @@ def setup_autostart_desktop_entry():
     AUTOSTART_DESKTOP_PATH = os.path.join(AUTOSTART_DIR, "StreamController.desktop")
 
     try:
+        os.makedirs(os.path.dirname(AUTOSTART_DESKTOP_PATH), exist_ok=True)
         shutil.copyfile(os.path.join("flatpak", "com.core447.StreamController.desktop"), AUTOSTART_DESKTOP_PATH)
         log.info(f"Autostart set up at: {AUTOSTART_DESKTOP_PATH}")
-    except:
-        log.error(f"Failed to set up autostart at: {AUTOSTART_DESKTOP_PATH}")
+    except Exception as e:
+        log.error(f"Failed to set up autostart at: {AUTOSTART_DESKTOP_PATH} with error: {e}")

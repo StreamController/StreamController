@@ -73,7 +73,6 @@ class LabelExpanderRow(Adw.ExpanderRow):
         self.label_group = label_group
         self.active_coords = None
         self.build()
-        self.set_expanded(True)
 
     def build(self):
         self.top_row = LabelRow(gl.lm.get("label-editor-top-name"), 0, self.label_group.sidebar, key_name="top")

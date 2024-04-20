@@ -75,7 +75,6 @@ class Layout(Adw.ExpanderRow):
         self.margin_group = margin_group
         self.active_coords = None
         self.build()
-        self.set_expanded(True)
 
     def build(self):
         self.size_row = SizeRow(sidebar=self.margin_group.sidebar)

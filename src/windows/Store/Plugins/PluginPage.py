@@ -64,15 +64,6 @@ class PluginPage(StorePage):
 
         self.set_loaded()
 
-    def check_required_version(self, app_version_to_check: str, is_min_app_version: bool = False):
-        if is_min_app_version:
-            if app_version_to_check is None:
-                return True
-            min_version = version.parse(app_version_to_check)
-            app_version = version.parse(gl.app_version)
-
-            return min_version < app_version
-
 
 class PluginPreview(StorePreview):
     def __init__(self, plugin_page: PluginPage, plugin_data: PluginData):
@@ -88,9 +79,6 @@ class PluginPreview(StorePreview):
         self.set_official(plugin_data.official)
         self.set_verified(plugin_data.commit_sha is not None)
 
-
-
-        #TODO: CHANGE COLOR OF PREVIEW TO MAKE THE VERSION DIFFERENCE VISABLE
         if not self.check_required_version(plugin_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")
         else:
@@ -136,10 +124,3 @@ class PluginPreview(StorePreview):
         self.plugin_page.info_page.set_original_url(self.plugin_data.original_url)
         self.plugin_page.info_page.set_license_description(gl.lm.get_custom_translation(self.plugin_data.license_descriptions))
 
-    def check_required_version(self, app_version_to_check: str):
-        if app_version_to_check is None:
-            return True
-        min_version = version.parse(app_version_to_check)
-        app_version = version.parse(gl.app_version)
-
-        return min_version < app_version

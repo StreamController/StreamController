@@ -80,6 +80,11 @@ class IconPreview(StorePreview):
         self.set_official(icon_data.official)
         self.set_verified(icon_data.commit_sha is not None)
 
+        if not self.check_required_version(icon_data.minimum_app_version):
+            self.main_button_box.add_css_class("red-border")
+        else:
+            self.main_button_box.remove_css_class("red-border")
+
         if icon_data.local_sha is None:
             self.set_install_state(0)
         elif icon_data.local_sha == icon_data.commit_sha:

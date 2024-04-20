@@ -202,7 +202,7 @@ class PluginExpander(BetterExpander):
 
         # Texts
         self.set_title(plugin_name)
-        self.set_subtitle(get_last_dir(plugin_dir["folder-path"]))
+        self.set_subtitle(get_last_dir(plugin_dir["folder_path"]))
 
         self.add_prefix(self.plugin_dir["object"].get_selector_icon())
 

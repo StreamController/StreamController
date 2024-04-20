@@ -48,12 +48,9 @@ class PluginBase(rpyc.Service):
 
         self.plugin_name: str = None
 
-    def register(self, app_version: str):
+    def register(self):
         """
         Registers a plugin with the given information.
-
-        Args:
-            app_version (str): The version of the application. Do NOT set it programmatically (e.g. by using gl.app_version).
 
         Raises:
             ValueError: If the plugin name is not specified or if the plugin already exists.
@@ -66,7 +63,7 @@ class PluginBase(rpyc.Service):
         plugin_name = manifest.get("plugin-name") or None
         github_repo = manifest.get("github") or None
         plugin_version = manifest.get("plugin-version") or None
-        minimum_app_version = manifest.get("minimum-software-version") or None
+        minimum_app_version = manifest.get("minimum-app-version") or None
         
         # Verify variables
         if plugin_name in ["", None]:
@@ -84,7 +81,7 @@ class PluginBase(rpyc.Service):
                 log.error(f"Plugin: {plugin_name}: Plugin already exists")
                 return
 
-        if self.do_versions_match(app_version):
+        if self.do_versions_match(manifest.get("current-app-version") or None):
             if self.do_versions_match(minimum_app_version, True):
                 # Register plugin
                 PluginBase.plugins[self.plugin_id] = {
@@ -133,8 +130,6 @@ class PluginBase(rpyc.Service):
         return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
 
     def do_versions_match(self, app_version_to_check: str, is_min_app_version: bool = False):
-        manifest = self.get_manifest()
-
         if is_min_app_version:
             if app_version_to_check is None:
                 return True
@@ -142,9 +137,6 @@ class PluginBase(rpyc.Service):
             app_version = version.parse(gl.app_version)
 
             return min_version < app_version
-
-
-
         #if gl.exact_app_version_check:
         #    gl.app_version == app_version
         #    return
@@ -154,7 +146,6 @@ class PluginBase(rpyc.Service):
         app_version_to_check = version.parse(app_version_to_check)
 
         return app_version.major == app_version_to_check.major
-        
 
     def add_action_holder(self, action_holder: ActionHolder):
         if not isinstance(action_holder, ActionHolder):

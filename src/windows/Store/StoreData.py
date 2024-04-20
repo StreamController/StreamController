@@ -19,6 +19,8 @@ class StoreData:
     """The Local SHA that is used to verify if plugins are installed"""
     minimum_app_version: [str, None] = None # OPTIONAL
     """Minimum app version that is required to use the Content"""
+    current_app_version: [str, None] = None
+    """The Current app version the Plugin is made for"""
     repository_name: [str, None] = None
     """Name of the Repository"""
     tags: list[str] = field(default_factory=list)

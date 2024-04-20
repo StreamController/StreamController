@@ -345,6 +345,7 @@ class StoreBackend:
             commit_sha=commit,
             local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
+            current_app_version=manifest.get("current-app-version") or None,
             repository_name=self.get_repo_name(url),
             tags=manifest.get("tags") or None,
 
@@ -433,6 +434,7 @@ class StoreBackend:
             commit_sha=commit,
             local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
+            current_app_version=manifest.get("current-app-version") or None,
             repository_name=self.get_repo_name(url),
             tags=manifest.get("tags") or None,
 
@@ -508,6 +510,7 @@ class StoreBackend:
             commit_sha=commit,
             local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
+            current_app_version=manifest.get("current-app-version") or None,
             repository_name=self.get_repo_name(url),
             tags=manifest.get("tags") or None,
 

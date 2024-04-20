@@ -536,6 +536,6 @@ class AddActionButtonRow(Adw.PreferencesRow):
         if len(rows) < 2:
             return
         last_row = rows[-2] # -1 is the add button
-        if last_row.action_object.HAS_CONFIGURATION:
+        if last_row.action_object.has_configuration:
             gl.app.main_win.sidebar.action_configurator.load_for_action(last_row.action_object, last_row.index)
             gl.app.main_win.sidebar.show_action_configurator()

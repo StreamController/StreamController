@@ -185,9 +185,13 @@ class ActionBase(rpyc.Service):
 
             
     def show_error(self, duration: int = -1) -> None:
+        if not self.get_is_present(): return
+        if self.get_is_multi_action(): return
         self.deck_controller.keys[self.key_index].show_error(duration=duration)
 
     def hide_error(self) -> None:
+        if not self.get_is_present(): return
+        if self.get_is_multi_action(): return
         self.deck_controller.keys[self.key_index].hide_error()
         
 

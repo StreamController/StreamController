@@ -25,7 +25,7 @@ from gi.repository import Gtk, Adw, Gdk
 import globals as gl
 
 # Import own modules
-from locales.LocaleManager import LocaleManager
+from locales.LegacyLocaleManager import LegacyLocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
 class PluginBase(rpyc.Service):
@@ -39,7 +39,7 @@ class PluginBase(rpyc.Service):
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
 
-        self.locale_manager = LocaleManager(os.path.join(self.PATH, "locales"))
+        self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, "locales"))
         self.locale_manager.set_to_os_default()
 
         self.action_holders: dict = {}

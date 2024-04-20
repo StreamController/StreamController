@@ -87,7 +87,7 @@ def create_cache_folder():
 
 def create_global_objects():
     # Setup locales
-    gl.lm = LocaleManager(locales_path="locales")
+    gl.lm = LocaleManager(csv_path=os.path.join("locales", "locales.csv"))
     gl.lm.set_to_os_default()
     gl.lm.set_fallback_language("en_US")
 

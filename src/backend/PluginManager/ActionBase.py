@@ -21,7 +21,7 @@ from src.backend.DeckManagement.DeckController import KeyImage, KeyLayout, KeyVi
 import globals as gl
 
 # Import locale manager
-from locales.LocaleManager import LocaleManager
+from locales.LegacyLocaleManager import LegacyLocaleManager
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -62,7 +62,7 @@ class ActionBase(rpyc.Service):
         self.default_image = None
         self.default_labels = {}
 
-        self.locale_manager: LocaleManager = None
+        self.locale_manager: LegacyLocaleManager = None
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
         

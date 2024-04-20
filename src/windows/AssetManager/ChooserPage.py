@@ -17,19 +17,23 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
 
-class ChooserPage(Gtk.Box):
+import globals as gl
+
+class ChooserPage(Gtk.Stack):
     def __init__(self):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=False,
-                            margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        super().__init__(margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self._build()
 
         self.init_dnd()
 
     def _build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
+        self.add_titled(self.main_box, "main", "main")
+
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=False, margin_bottom=15)
-        self.append(self.nav_box)
+        self.main_box.append(self.nav_box)
 
         self.search_entry = Gtk.SearchEntry(placeholder_text="Search", hexpand=True)
         self.search_entry.connect("search-changed", self.on_search_changed)
@@ -47,7 +51,7 @@ class ChooserPage(Gtk.Box):
         self.type_box.append(self.image_button)
 
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
-        self.append(self.scrolled_window)
+        self.main_box.append(self.scrolled_window)
 
         self.scrolled_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=False,
                                 margin_top=5, margin_bottom=5)
@@ -61,12 +65,34 @@ class ChooserPage(Gtk.Box):
         self.fix_box = Gtk.Box(vexpand=True, hexpand=True)
         self.scrolled_box.append(self.fix_box)
 
+
+        ## Loading box
+        self.loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
+                                   valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
+        self.add_titled(self.loading_box, "loading", "loading")
+
+        self.spinner = Gtk.Spinner(spinning=False)
+        self.loading_box.append(self.spinner)
+
+        self.loading_label = Gtk.Label(label=gl.lm.get("store.page.loading-spinner.label"))
+        self.loading_box.append(self.loading_label)
+
+        self.set_loading(True)
+
+    def set_loading(self, loading: bool) -> None:
+        if loading:
+            GLib.idle_add(self.set_visible_child_name, "loading")
+            GLib.idle_add(self.spinner.start)
+        else:
+            GLib.idle_add(self.set_visible_child_name, "main")
+            GLib.idle_add(self.spinner.stop)
+
     def init_dnd(self):
         self.dnd_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
         self.dnd_target.connect("drop", self.on_dnd_drop)
         self.dnd_target.connect("accept", self.on_dnd_accept)
 
-        self.add_controller(self.dnd_target)
+        self.main_box.add_controller(self.dnd_target)
 
     def on_dnd_accept(self, drop, user_data):
         pass

@@ -17,13 +17,14 @@ from copy import copy
 import os
 import cv2
 import imageio
+import cairosvg
 from PIL import Image, ImageSequence
 
 import os, psutil
 process = psutil.Process()
 
 # Import own modules
-from src.backend.DeckManagement.HelperMethods import sha256, file_in_dir
+from src.backend.DeckManagement.HelperMethods import is_svg, load_svg_as_pil, sha256, file_in_dir
 
 
 # Import globals
@@ -62,6 +63,8 @@ class MediaManager:
             return self.generate_image_thumbnail(file_path)
         elif os.path.splitext(file_path)[1] in [".gif", ".GIF"]:
             return self.generate_gif_thumbnail(file_path)
+        elif is_svg(file_path):
+            return self.generate_svg_thumbnail(file_path)
         else:
             thumbnail = self.generate_video_thumbnail(file_path)
             return thumbnail
@@ -75,7 +78,9 @@ class MediaManager:
         frame_rgb = cv2.cvtColor(copy(frame), cv2.COLOR_BGR2RGB)
         pil_image = Image.fromarray(frame_rgb)
         return pil_image
-            
+    
+    def generate_svg_thumbnail(self, file_path):
+        return load_svg_as_pil(file_path)
 
     def generate_image_thumbnail(self, file_path):
         return Image.open(file_path)

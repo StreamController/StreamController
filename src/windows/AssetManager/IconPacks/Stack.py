@@ -36,17 +36,22 @@ class IconPackChooserStack(Gtk.Stack):
         super().__init__(*args, **kwargs)
         self.asset_manager = asset_manager
 
+        self.on_loads_finished_tasks: list[callable] = []
+
         self.build()
 
     def build(self):
-        self.pack_chooser = IconPackChooser(self.asset_manager)
+        self.pack_chooser = IconPackChooser(self, self.asset_manager)
         self.add_titled(self.pack_chooser, "pack-chooser", "Chooser")
 
-        self.icon_chooser = IconChooserPage(self.asset_manager)
+        self.icon_chooser = IconChooserPage(self, self.asset_manager)
         self.add_titled(self.icon_chooser, "icon-chooser", "Icon Chooser")
 
 
     def show_for_path(self, path):
+        if not self.get_is_build_finished():
+            self.on_loads_finished_tasks.append(lambda: self.show_for_path(path))
+            return
         packs = gl.icon_pack_manager.get_icon_packs()
         for pack in packs.values():
             icons = pack.get_icons()
@@ -58,3 +63,12 @@ class IconPackChooserStack(Gtk.Stack):
                     self.asset_manager.asset_chooser.set_visible_child_name("icon-packs")
                     self.asset_manager.back_button.set_visible(True)
                     return
+                
+    def get_is_build_finished(self):
+        return self.pack_chooser.build_finished and self.icon_chooser.build_finished
+                
+    def one_load_finished(self):
+        if self.get_is_build_finished():
+            for task in self.on_loads_finished_tasks.copy():
+                task()
+                self.on_loads_finished_tasks.remove(task)

@@ -117,6 +117,8 @@ class CommentGroup(Adw.PreferencesGroup):
     def get_comment(self) -> str:
         controller = self.parent.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         page = controller.active_page
+        if page is None:
+            return
         return page.get_action_comment(self.action.page_coords, self.index)
     
     def set_comment(self, comment: str) -> None:

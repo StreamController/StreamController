@@ -4,9 +4,9 @@
 <component type="desktop-application">
   <id>com.core447.StreamController</id>
 
-  <developer_name translatable="no">Core447</developer_name>
+  <developer_name translate="no">Core447</developer_name>
   <developer id="com.core447">
-    <name translatable="no">Core447</name>
+    <name translate="no">Core447</name>
   </developer>
 
   <launchable type="desktop-id">com.core447.StreamController.desktop</launchable>
@@ -41,127 +41,139 @@
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
+    <release version="1.4.11-beta" date="2024-04-14">
+      <description translatable="no">
+        <p>Bugfixes</p>
+        <p>Svg support</p>
+      </description>
+    </release>
+    <release version="1.4.10-beta" date="2024-04-11">
+      <description translatable="no">
+        <p>Bugfixes</p>
+        <p>Add loading screen to the asset manager</p>
+      </description>
+    </release>
     <release version="1.4.9-beta" date="2024-04-10">
       <description translatable="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.4.8-beta" date="2024-04-09">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.4.7-beta" date="2024-04-08">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.4.6-beta" date="2024-04-08">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
         <p>Memory optimizations</p>
       </description>
     </release>
     <release version="1.4.5-beta" date="2024-04-02">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.4.4-beta" date="2024-04-02">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.4.3-beta" date="2024-04-02">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.4.2-beta" date="2024-04-01">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.4.1-beta" date="2024-04-01">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.4.0-beta" date="2024-04-01">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.3.9-beta" date="2024-04-01">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.3.8-beta" date="2024-04-01">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.3.7-beta" date="2024-04-01">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.3.6-beta" date="2024-03-31">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.3.5-beta" date="2024-03-31">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.3.4-beta" date="2024-03-31">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
         <p>Bundle icons</p>
       </description>
     </release>
     <release version="1.3.3-beta" date="2024-03-30">
-      <description translatable="no">
+      <description translate="no">
         <p>Switch to system icons for the settings</p>
       </description>
     </release>
     <release version="1.3.2-beta" date="2024-03-30">
-      <description translatable="no">
+      <description translate="no">
         <p>Switch to system icons for the settings</p>
       </description>
     </release>
     <release version="1.3.1-beta" date="2024-03-30">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.3.0-beta" date="2024-03-30">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
         <p>New page manager</p>
       </description>
     </release>
     <release version="1.2.1-beta" date="2024-03-27">
-      <description translatable="no">
+      <description translate="no">
         <p>Bugfixes</p>
       </description>
     </release>
     <release version="1.2.0-beta" date="2024-03-27">
-      <description translatable="no">
+      <description translate="no">
         <p>First beta release</p>
         <p>Bug fixes</p>
       </description>
     </release>
     <release version="1.2.0-alpha" date="2024-03-27">
-      <description translatable="no">
+      <description translate="no">
         <p>First release</p>
       </description>
     </release>
     <release version="1.1.2-alpha" date="2024-03-25">
-      <description translatable="no">
+      <description translate="no">
         <p>First test release</p>
       </description>
     </release>

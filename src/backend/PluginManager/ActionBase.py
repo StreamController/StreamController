@@ -14,14 +14,14 @@ from rpyc.core import netref
 # Import own modules
 from src.Signals.Signals import Signal
 from src.backend.PageManagement.Page import Page
-from src.backend.DeckManagement.HelperMethods import is_image, is_video
-from src.backend.DeckManagement.DeckController import KeyImage, KeyVideo, BackgroundImage, BackgroundVideo, KeyLabel
+from src.backend.DeckManagement.HelperMethods import is_image, is_svg, is_video
+from src.backend.DeckManagement.DeckController import KeyImage, KeyLayout, KeyVideo, BackgroundImage, BackgroundVideo, KeyLabel
 
 # Import globals
 import globals as gl
 
 # Import locale manager
-from locales.LocaleManager import LocaleManager
+from locales.LegacyLocaleManager import LegacyLocaleManager
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -51,6 +51,7 @@ class ActionBase(rpyc.Service):
         self.CONTROLS_KEY_IMAGE: bool = False
         self.KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
         self.LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
+        self.HAS_CONFIGURATION = False
 
         self.labels = {}
         self.current_key = {
@@ -61,7 +62,7 @@ class ActionBase(rpyc.Service):
         self.default_image = None
         self.default_labels = {}
 
-        self.locale_manager: LocaleManager = None
+        self.locale_manager: LegacyLocaleManager = None
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
         
@@ -126,7 +127,7 @@ class ActionBase(rpyc.Service):
                 "font-size": font_size
             }
 
-    def set_media(self, image = None, media_path=None, size: float = 1, valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True, update: bool = True):
+    def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):
         if not self.get_is_present():
             return
         if self.key_index >= self.deck_controller.deck.key_count():
@@ -141,17 +142,17 @@ class ActionBase(rpyc.Service):
         if self.has_custom_user_asset():
             return
         
-        if is_image(media_path):
+        if is_image(media_path) and image is None:
             with Image.open(media_path) as img:
                 image = img.copy()
+
+        if is_svg(media_path) and image is None:
+            image = gl.media_manager.generate_svg_thumbnail(media_path)
 
         if image is not None or media_path is None:
             self.deck_controller.keys[self.key_index].set_key_image(KeyImage(
                 controller_key=self.deck_controller.keys[self.key_index],
                 image=image,
-                size=size,
-                valign=valign,
-                halign=halign
             ), update=False)
         elif is_video(media_path):
             self.deck_controller.keys[self.key_index].set_key_video(KeyVideo(
@@ -160,6 +161,14 @@ class ActionBase(rpyc.Service):
                 fps=fps,
                 loop=loop
             ))
+
+        self.deck_controller.keys[self.key_index].layout_manager.set_action_layout(KeyLayout(
+            valign=valign,
+            halign=halign,
+            size=size
+        ), update=False)
+
+
 
         if update:
             self.deck_controller.update_key(self.key_index)
@@ -176,14 +185,18 @@ class ActionBase(rpyc.Service):
 
             
     def show_error(self, duration: int = -1) -> None:
+        if not self.get_is_present(): return
+        if self.get_is_multi_action(): return
         self.deck_controller.keys[self.key_index].show_error(duration=duration)
 
     def hide_error(self) -> None:
+        if not self.get_is_present(): return
+        if self.get_is_multi_action(): return
         self.deck_controller.keys[self.key_index].hide_error()
         
 
-    def set_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255],
-                      font_family: str = "", font_size = 18, update: bool = True):
+    def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
+                      font_family: str = None, font_size = None, update: bool = True):
         if not self.get_is_present(): return
         if not self.on_ready_called:
             update = False
@@ -208,18 +221,18 @@ class ActionBase(rpyc.Service):
             font_name=font_family,
             color=color,
         )
-        self.deck_controller.keys[self.key_index].add_label(key_label, position=position, update=update)
+        self.deck_controller.keys[self.key_index].label_manager.set_action_label(label=key_label, position=position, update=update)
 
-    def set_top_label(self, text: str, color: list[int] = [255, 255, 255],
-                      font_family: str = "", font_size = 18, update: bool = True):
+    def set_top_label(self, text: str, color: list[int] = None,
+                      font_family: str = None, font_size = None, update: bool = True):
         self.set_label(text, "top", color, font_family, font_size, update)
-    
-    def set_center_label(self, text: str, color: list[int] = [255, 255, 255],
-                      font_family: str = "", font_size = 18, update: bool = True):
+
+    def set_center_label(self, text: str, color: list[int] = None,
+                      font_family: str = None, font_size = None, update: bool = True):
         self.set_label(text, "center", color, font_family, font_size, update)
-    
-    def set_bottom_label(self, text: str, color: list[int] = [255, 255, 255],
-                      font_family: str = "", font_size = 18, update: bool = True):
+
+    def set_bottom_label(self, text: str, color: list[int] = None,
+                      font_family: str = None, font_size = None, update: bool = True):
         self.set_label(text, "bottom", color, font_family, font_size, update)
 
     def on_labels_changed_in_ui(self):
@@ -254,6 +267,7 @@ class ActionBase(rpyc.Service):
     
     def get_is_present(self):
         if self.page is None: return False
+        if self.page.deck_controller.active_page is not self.page: return False
         return self in self.page.get_all_actions()
     
     def has_custom_user_asset(self) -> bool:

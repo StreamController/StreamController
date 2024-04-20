@@ -1,3 +1,4 @@
+import importlib
 import os
 import inspect
 import json
@@ -24,7 +25,7 @@ from gi.repository import Gtk, Adw, Gdk
 import globals as gl
 
 # Import own modules
-from locales.LocaleManager import LocaleManager
+from locales.LegacyLocaleManager import LegacyLocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
 class PluginBase(rpyc.Service):
@@ -38,7 +39,7 @@ class PluginBase(rpyc.Service):
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
 
-        self.locale_manager = LocaleManager(os.path.join(self.PATH, "locales"))
+        self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, "locales"))
         self.locale_manager.set_to_os_default()
 
         self.action_holders: dict = {}
@@ -71,14 +72,18 @@ class PluginBase(rpyc.Service):
         if github_repo in ["", None]:
             log.error(f"Plugin: {plugin_name}: Please specify a github repo")
             return
-        if plugin_name in PluginBase.plugins.keys():
-            log.error(f"Plugin: {plugin_name}: Plugin already exists")
-            return
         
-        
+        self.plugin_id = self.get_plugin_id()
+
+        for plugin_id in PluginBase.plugins.keys():
+            plugin = PluginBase.plugins[plugin_id]["object"]
+            if plugin.plugin_name == plugin_name:
+                log.error(f"Plugin: {plugin_name}: Plugin already exists")
+                return
+
         if self.do_versions_match(app_version):
             # Register plugin
-            PluginBase.plugins[plugin_name] = {
+            PluginBase.plugins[self.plugin_id] = {
                 "object": self,
                 "github": github_repo,
                 "version": plugin_version,
@@ -93,7 +98,7 @@ class PluginBase(rpyc.Service):
                 f"Please update your assets! Plugin requires version {plugin_version} and you are "
                 f"running version {gl.app_version}. Disabling plugin."
             )
-            PluginBase.disabled_plugins[plugin_name] = {
+            PluginBase.disabled_plugins[self.plugin_id] = {
                 "object": self,
                 "github": github_repo,
                 "version": plugin_version,
@@ -104,6 +109,12 @@ class PluginBase(rpyc.Service):
         self.plugin_name = plugin_name
         self.github_repo = github_repo
         self.version = plugin_version
+
+    def get_plugin_id(self) -> str:
+        module = importlib.import_module(self.__module__)
+        subclass_file = module.__file__
+        return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
+
 
     def do_versions_match(self, app_version_to_check: str):
         if gl.exact_app_version_check:

@@ -326,6 +326,7 @@ class StoreBackend:
 
         return {
             "name": manifest.get("name"),
+            "short_description": manifest.get("short-description"),
             "description": manifest.get("description"),
             "url": url,
             "user_name": user_name,
@@ -339,7 +340,7 @@ class StoreBackend:
             "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
             "license": attribution.get("license"),
             "copyright": attribution.get("copyright"),
-            "license_description": attribution.get("license-description"),
+            "license_description": attribution.get("license-description", attribution.get("description")),
             "original_url": attribution.get("original-url"),
         }
     
@@ -386,6 +387,7 @@ class StoreBackend:
         return {
             "name": manifest.get("name"),
             "description": description,
+            "short_description": manifest.get("short-description"),
             "version": manifest.get("version"),
             "url": url,
             "user_name": user_name,
@@ -426,6 +428,7 @@ class StoreBackend:
         return {
             "name": manifest.get("name"),
             "description": manifest.get("description"),
+            "short_description": manifest.get("short-description"),
             "version": manifest.get("version"),
             "url": url,
             "user_name": user_name,
@@ -620,7 +623,7 @@ class StoreBackend:
         gl.signal_manager.trigger_signal(Signals.PluginInstall, plugin_dict["id"])
 
         log.success(f"Plugin {plugin_dict['id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
-    def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False) -> bool:
+    def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False, remove_files:bool = True) -> bool:
         ## 1. Remove all action objects in all pages
         for deck_controller in gl.deck_manager.deck_controller:
             # Track all keys controlled by this plugin
@@ -640,10 +643,11 @@ class StoreBackend:
         plugin = gl.plugin_manager.get_plugin_by_id(plugin_id)
         if plugin is None:
             return
-        plugin.on_uninstall()
-        
-        ## 3. Remove plugin folder
-        shutil.rmtree(plugin.PATH)
+        if remove_files:
+            plugin.on_uninstall()
+            
+            ## 3. Remove plugin folder
+            shutil.rmtree(plugin.PATH)
 
         ## 4. Delete plugin base object
         # plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
@@ -725,6 +729,10 @@ class StoreBackend:
         if isinstance(plugins_to_update, NoConnectionError):
             return plugins_to_update
         for plugin in plugins_to_update:
+            try:
+                await self.uninstall_plugin(plugin["id"], remove_from_pages=False, remove_files=False)
+            except Exception as e:
+                log.error(e)
             await self.install_plugin(plugin)
         
         return len(plugins_to_update)

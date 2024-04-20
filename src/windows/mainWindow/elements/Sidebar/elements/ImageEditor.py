@@ -28,7 +28,9 @@ import globals as gl
 # Import own modules
 from src.windows.mainWindow.elements.Sidebar.elements.IconSelector import IconSelector
 from src.backend.PageManagement.Page import Page
-from src.backend.DeckManagement.DeckController import DeckController
+from src.backend.DeckManagement.DeckController import DeckController, KeyLabel
+from GtkHelper.GtkHelper import RevertButton
+
 
 class ImageEditor(Gtk.Box):
     def __init__(self, sidebar, **kwargs):
@@ -109,8 +111,10 @@ class SizeRow(Adw.PreferencesRow):
         self.label = Gtk.Label(label=gl.lm.get("right-area.image-editor.layout.size.label"), hexpand=True, xalign=0)
         self.main_box.append(self.label)
 
-        self.size_spinner = Gtk.SpinButton.new_with_range(0, 100, 1)
+        self.size_spinner = SpinButton(0, 200, 1)
         self.main_box.append(self.size_spinner)
+
+        self.size_spinner.revert_button.connect("clicked", self.on_size_reset)
 
     def load_for_coords(self, coords):
         self.disconnect_signals()
@@ -118,7 +122,23 @@ class SizeRow(Adw.PreferencesRow):
 
         deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        self.size_spinner.set_value(deck_controller.active_page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("size", 1) * 100)
+        key_index = deck_controller.coords_to_index(self.active_coords)
+
+        use_page_properties = deck_controller.keys[key_index].layout_manager.get_use_page_layout_properties()
+        self.size_spinner.revert_button.set_visible(use_page_properties.get("size", False))
+
+        self.update_values()
+
+        self.connect_signals()
+
+    def update_values(self, composed_label: KeyLabel = None):
+        self.disconnect_signals()
+        if composed_label is None:
+            deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+            controller_key = deck_controller.keys[deck_controller.coords_to_index(self.active_coords)]
+            composed_label = controller_key.layout_manager.get_composed_layout()
+
+        self.size_spinner.button.set_value(composed_label.size*100)
 
         self.connect_signals()
 
@@ -138,20 +158,49 @@ class SizeRow(Adw.PreferencesRow):
             if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
             controller_key = deck_controller.keys[key_index]
-            if controller_key.key_image is not None:
-                controller_key.key_image.size = widget.get_value() / 100
-                controller_key.update()
-            if controller_key.key_video is not None:
-                controller_key.key_video.size = widget.get_value() / 100
-                controller_key.update()
+
+            layout = controller_key.layout_manager.page_layout
+            layout.size = widget.get_value() / 100
+            controller_key.update()
+
+        self.size_spinner.revert_button.set_visible(True)
+
+    def on_size_reset(self, widget):
+        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+
+        deck_controller.active_page.dict.setdefault("keys", {})
+        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
+
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["size"] = None
+
+        deck_controller.active_page.save()
+
+        # Reload key on all decks that have this page loaded
+        for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
+            controller_key = deck_controller.keys[key_index]
+
+            layout = controller_key.layout_manager.page_layout
+            layout.size = None
+            controller_key.update()
+
+        self.size_spinner.revert_button.set_visible(False)
+        self.update_values()
 
     def connect_signals(self):
-        self.size_spinner.connect("value-changed", self.on_size_changed)
+        self.size_spinner.button.connect("value-changed", self.on_size_changed)
 
     def disconnect_signals(self):
         try:
-            self.size_spinner.disconnect_by_func(self.on_size_changed)
+            self.size_spinner.button.disconnect_by_func(self.on_size_changed)
         except:
             pass
 
@@ -173,8 +222,10 @@ class ValignRow(Adw.PreferencesRow):
         self.label = Gtk.Label(label=gl.lm.get("right-area.image-editor.layout.valign.label"), hexpand=True, xalign=0)
         self.main_box.append(self.label)
 
-        self.valign_spinner = Gtk.SpinButton.new_with_range(-1, 1, 0.1)
+        self.valign_spinner = SpinButton(-1, 1, 0.1)
         self.main_box.append(self.valign_spinner)
+
+        self.valign_spinner.revert_button.connect("clicked", self.on_valign_reset)
 
     def load_for_coords(self, coords):
         self.disconnect_signals()
@@ -182,7 +233,22 @@ class ValignRow(Adw.PreferencesRow):
 
         deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        self.valign_spinner.set_value(deck_controller.active_page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("valign", 0))
+        key_index = deck_controller.coords_to_index(self.active_coords)
+
+        use_page_properties = deck_controller.keys[key_index].layout_manager.get_use_page_layout_properties()
+        self.valign_spinner.revert_button.set_visible(use_page_properties.get("valign", False))
+
+        self.connect_signals()
+        self.update_values()
+
+    def update_values(self, composed_label: KeyLabel = None):
+        self.disconnect_signals()
+        if composed_label is None:
+            deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+            controller_key = deck_controller.keys[deck_controller.coords_to_index(self.active_coords)]
+            composed_label = controller_key.layout_manager.get_composed_layout()
+
+        self.valign_spinner.button.set_value(composed_label.valign)
 
         self.connect_signals()
 
@@ -202,19 +268,48 @@ class ValignRow(Adw.PreferencesRow):
             if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
             controller_key = deck_controller.keys[key_index]
-            if controller_key.key_image is not None:
-                controller_key.key_image.valign = widget.get_value()
-                controller_key.update()
-            if controller_key.key_video is not None:
-                controller_key.key_video.valign = widget.get_value()
-                controller_key.update()
+
+            layout = controller_key.layout_manager.page_layout
+            layout.valign = widget.get_value()
+            controller_key.update()
+
+        self.valign_spinner.revert_button.set_visible(True)
+
+    def on_valign_reset(self, widget):
+        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+
+        deck_controller.active_page.dict.setdefault("keys", {})
+        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
+
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["valign"] = None
+
+        deck_controller.active_page.save()
+
+        # Reload key on all decks that have this page loaded
+        for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
+            controller_key = deck_controller.keys[key_index]
+
+            layout = controller_key.layout_manager.page_layout
+            layout.valign = None
+            controller_key.update()
+
+        self.valign_spinner.revert_button.set_visible(False)
+        self.update_values()
 
     def connect_signals(self):
-        self.valign_spinner.connect("value-changed", self.on_valign_changed)
+        self.valign_spinner.button.connect("value-changed", self.on_valign_changed)
 
     def disconnect_signals(self):
-        self.valign_spinner.disconnect_by_func(self.on_valign_changed)
+        self.valign_spinner.button.disconnect_by_func(self.on_valign_changed)
 
 
 class HalignRow(Adw.PreferencesRow):
@@ -234,17 +329,33 @@ class HalignRow(Adw.PreferencesRow):
         self.label = Gtk.Label(label=gl.lm.get("right-area.image-editor.layout.halign.label"), hexpand=True, xalign=0)
         self.main_box.append(self.label)
 
-        self.halign_spinner = Gtk.SpinButton.new_with_range(-1, 1, 0.1)
+        self.halign_spinner = SpinButton(-1, 1, 0.1)
         self.main_box.append(self.halign_spinner)
+
+        self.halign_spinner.revert_button.connect("clicked", self.on_halign_reset)
 
     def load_for_coords(self, coords):
         self.disconnect_signals()
-        
         self.active_coords = coords
 
         deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
 
-        self.halign_spinner.set_value(deck_controller.active_page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {}).get("media", {}).get("halign", 0))
+        key_index = deck_controller.coords_to_index(self.active_coords)
+
+        use_page_properties = deck_controller.keys[key_index].layout_manager.get_use_page_layout_properties()
+        self.halign_spinner.revert_button.set_visible(use_page_properties.get("halign", False))
+
+        self.connect_signals()
+        self.update_values()
+
+    def update_values(self, composed_label: KeyLabel = None):
+        self.disconnect_signals()
+        if composed_label is None:
+            deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+            controller_key = deck_controller.keys[deck_controller.coords_to_index(self.active_coords)]
+            composed_label = controller_key.layout_manager.get_composed_layout()
+
+        self.halign_spinner.button.set_value(composed_label.halign)
 
         self.connect_signals()
 
@@ -264,16 +375,55 @@ class HalignRow(Adw.PreferencesRow):
             if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
             key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
             controller_key = deck_controller.keys[key_index]
-            if controller_key.key_image is not None:
-                controller_key.key_image.halign = widget.get_value()
-                controller_key.update()
-            if controller_key.key_video is not None:
-                controller_key.key_video.halign = widget.get_value()
-                controller_key.update()
+
+            layout = controller_key.layout_manager.page_layout
+            layout.halign = widget.get_value()
+            controller_key.update()
+
+        self.halign_spinner.revert_button.set_visible(True)
+
+    def on_halign_reset(self, widget):
+        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+
+        deck_controller.active_page.dict.setdefault("keys", {})
+        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
+
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["halign"] = None
+
+        deck_controller.active_page.save()
+
+        # Reload key on all decks that have this page loaded
+        for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+                continue
+            key_index = deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(deck_controller.keys):
+                continue
+            controller_key = deck_controller.keys[key_index]
+
+            layout = controller_key.layout_manager.page_layout
+            layout.halign = None
+            controller_key.update()
+
+        self.halign_spinner.revert_button.set_visible(False)
+        self.update_values()
 
     def connect_signals(self):
-        self.halign_spinner.connect("value-changed", self.on_halign_changed)
+        self.halign_spinner.button.connect("value-changed", self.on_halign_changed)
 
     def disconnect_signals(self):
-        self.halign_spinner.disconnect_by_func(self.on_halign_changed)
+        self.halign_spinner.button.disconnect_by_func(self.on_halign_changed)
+
+class SpinButton(Gtk.Box):
+    def __init__(self, start: float, end: float, step: float, **kwargs):
+        super().__init__(css_classes=["linked"], **kwargs)
+
+        self.button = Gtk.SpinButton.new_with_range(start, end, step)
+        self.revert_button = RevertButton()
+
+        self.append(self.button)
+        self.append(self.revert_button)

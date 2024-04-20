@@ -28,7 +28,7 @@ from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 # Import globals
 import globals as gl
 
-class PageManager:
+class PageManagerBackend:
     def __init__(self, settings_manager):
         self.settings_manager = settings_manager
 
@@ -117,6 +117,12 @@ class PageManager:
                 lowest_page = min(self.created_pages[controller][p]["page_number"] for controller in self.created_pages for p in self.created_pages[controller])
                 for controller in self.created_pages:
                     for page in self.created_pages[controller]:
+                        if controller.active_page is None:
+                            continue
+                        if not self.created_pages[controller][page]["page"].ready_to_clear:
+                            continue
+                        if self.created_pages[controller][page]["page"] is controller.active_page:
+                            continue
                         if self.created_pages[controller][page]["page_number"] == lowest_page:
                             page_object: Page = self.created_pages[controller][page]["page"]
                             page_object.clear_action_objects()
@@ -239,13 +245,9 @@ class PageManager:
                 del self.created_pages[controller][path]
 
 
-    def add_page(self, name:str):
-        page = {
-            "keys": {}
-        }
-
+    def add_page(self, name:str, page_dict: dict = {}):
         with open(os.path.join(gl.DATA_PATH, "pages", f"{name}.json"), "w") as f:
-            json.dump(page, f)
+            json.dump(page_dict, f)
 
         # Update ui
         # self.update_ui()
@@ -282,6 +284,14 @@ class PageManager:
                     pages.append(page)
 
         return pages
+    
+    def reload_pages_with_path(self, page_path: str) -> None:
+        pages = self.get_pages_with_path(page_path)
+
+        for page in pages:
+            page.load()
+            if page.deck_controller.active_page == page:
+                page.deck_controller.load_page(page, allow_reload=True)
 
     def update_dict_of_pages_with_path(self, page_path: str) -> None:
         pages = self.get_pages_with_path(page_path)
@@ -343,3 +353,30 @@ class PageManager:
                 return json.load(f)
         except json.decoder.JSONDecodeError:
             return
+        
+    def remove_asset_from_all_pages(self, path: str):
+        if path in ["", None]:
+            raise ValueError("Invalid path")
+        
+        for page_path in self.get_pages():
+            page_had_asset = False
+            with open(page_path, "r") as f:
+                page_dict = json.load(f)
+                for key in page_dict.get("keys", {}):
+                    dict_path = page_dict["keys"][key].get("media", {}).get("path")
+                    if dict_path is None:
+                        continue
+                    if os.path.abspath(dict_path) == os.path.abspath(path):
+                        page_had_asset = True
+                        page_dict["keys"][key]["media"]["path"] = None
+
+            if page_had_asset:
+                with open(page_path, "w") as f:
+                    json.dump(page_dict, f, indent=4)
+
+                self.update_dict_of_pages_with_path(page_path)
+
+                pages = self.get_pages_with_path(page_path)
+                for page in pages:
+                    if page.deck_controller.active_page == page:
+                        page.deck_controller.load_page(page, allow_reload=True)

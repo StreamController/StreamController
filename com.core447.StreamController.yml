@@ -62,7 +62,7 @@ modules:
     sources:
       - type: git
         url: https://gitlab.gnome.org/GNOME/libpeas.git
-        tag: 2.0.1
+        tag: 2.0.2
 
   - name: libportal
     buildsystem: meson
@@ -94,7 +94,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/StreamController/StreamController.git
-        tag: 1.4.6-beta
-        # branch: dev
+        # tag: 1.4.10-beta
+        branch: main
 
 # Install via: flatpak-builder --repo=repo --force-clean --install --user build-dir com.core447.StreamController.yml
+# Use git submodule update --init if the shared-modules folder is empty

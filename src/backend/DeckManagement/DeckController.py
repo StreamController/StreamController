@@ -297,6 +297,9 @@ class DeckController:
     def serial_number(self) -> str:
         return self.deck.get_serial_number()
     
+    @lru_cache(maxsize=None)
+    def is_visual(self) -> bool:
+        return self.deck.is_visual()
 
     def update_key(self, index: int):
         image = self.keys[index].get_current_deck_image()
@@ -306,7 +309,8 @@ class DeckController:
         rgb_image.close()
         del rgb_image
 
-        self.media_player.add_image_task(index, native_image)
+        if self.is_visual():
+            self.media_player.add_image_task(index, native_image)
 
         self.keys[index].set_ui_key_image(image)
 
@@ -339,8 +343,11 @@ class DeckController:
         
         if screensaver_was_showing:
             return
+        
+        self.mark_page_ready_to_clear(False)
 
         self.keys[key].on_key_change(state)
+        self.mark_page_ready_to_clear(True)
 
     ### Helper methods
     def generate_alpha_key(self) -> Image.Image:
@@ -551,20 +558,32 @@ class DeckController:
         self.brightness = value
 
     def tick_actions(self) -> None:
+        time.sleep(self.TICK_DELAY)
         while self.keep_actions_ticking:
-            time.sleep(self.TICK_DELAY)
+            start = time.time()
+            self.mark_page_ready_to_clear(False)
             if not self.screen_saver.showing and True:
                 for key in self.keys:
                     key.own_actions_tick()
             else:
                 for key in self.keys:
                     key.update()
-            
+
+            self.mark_page_ready_to_clear(True)
+
+            end = time.time()
+            wait = max(0.1, self.TICK_DELAY - (end - start))
+            time.sleep(wait)
+
         
 
     # -------------- #
     # Helper methods #
     # -------------- #
+
+    def mark_page_ready_to_clear(self, ready_to_clear: bool):
+        if self.active_page is not None:
+            self.active_page.ready_to_clear = ready_to_clear
         
     def index_to_coords(self, index):
         if not self.get_alive(): return
@@ -599,6 +618,8 @@ class DeckController:
         return deck_stack_child
     
     def clear(self):
+        if not self.is_visual():
+            return
         alpha_image = self.generate_alpha_key()
         native_image = PILHelper.to_native_key_format(self.deck, alpha_image.convert("RGB"))
         for i in range(self.deck.key_count()):
@@ -617,8 +638,13 @@ class DeckController:
         return deck_stack_child.page_settings.grid_page
     
     def clear_media_player_tasks(self):
+        ticks = self.media_player.media_ticks
         self.media_player.tasks.clear()
         self.media_player.image_tasks.clear()
+
+        # Wait until tick is over
+        while self.media_player.media_ticks <= ticks:
+            time.sleep(1/60)
 
     def clear_media_player_tasks_via_task(self):
         self.media_player_tasks.append(MediaPlayerTask(
@@ -888,9 +914,8 @@ class BackgroundVideo(BackgroundVideoCache):
     
 
 class KeyGIF(SingleKeyAsset):
-    def __init__(self, controller_key: "ControllerKey", gif_path: str, fill_mode: str = "cover", size: float = 1,
-                 valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
-        super().__init__(controller_key, fill_mode, size, valign, halign)
+    def __init__(self, controller_key: "ControllerKey", gif_path: str, fps: int = 30, loop: bool = True):
+        super().__init__(controller_key)
         self.gif_path = gif_path
         self.fps = fps
         self.loop = loop
@@ -921,6 +946,210 @@ class KeyGIF(SingleKeyAsset):
         self.frames = None
         del self.gif
         del self.frames
+
+class ControllerKeyLabelManager:
+    def __init__(self, controller_key: "ControllerKey"):
+        self.controller_key = controller_key
+        
+        self.page_labels = {}
+        self.action_labels = {}
+
+        self.init_labels()
+
+    def init_labels(self):
+        for position in ["top", "center", "bottom"]:
+            self.page_labels[position] = KeyLabel(self.controller_key)
+            self.action_labels[position] = KeyLabel(self.controller_key)
+ 
+    def clear_labels(self):
+        self.init_labels()
+
+    def set_page_label(self, position: str, label: "KeyLabel", update: bool = True):
+        if label is None:
+            label = self.page_labels[position]
+            label.text = None
+            label.color = None
+            label.font_name = None
+            label.font_size = None
+        else:
+            self.page_labels[position] = label
+        
+        if update:
+            self.update_label(position)
+
+    def set_action_label(self, position: str, label: "KeyLabel", update: bool = True):
+        if label is None:
+            label = self.action_labels[position]
+            label.text = None
+            label.color = None
+            label.font_name = None
+            label.font_size = None
+        else:
+            self.action_labels[position] = label
+
+        self.update_label_editor()
+
+        if update:
+            self.update_label(position)
+
+    def update_label_editor(self):
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
+        
+        if not recursive_hasattr(gl, "app.main_win.sidebar.key_editor"):
+            return
+        
+        active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
+        if active_controller is not self.controller_key.deck_controller:
+            return
+
+        if gl.app.main_win.sidebar.active_coords != (self.controller_key.coords[0], self.controller_key.coords[1]):
+            return
+        
+        gl.app.main_win.sidebar.key_editor.label_editor.load_for_coords(self.controller_key.coords)
+        
+
+    def get_use_page_label_properties(self, position: str) -> dict:
+        if self.page_labels.get(position) is None:
+            return {
+                "text": False,
+                "color": False,
+                "font-family": False,
+                "font-size": False
+            }
+        return {
+            "text": self.page_labels[position].text is not None,
+            "color": self.page_labels[position].color is not None,
+            "font-family": self.page_labels[position].font_name is not None,
+            "font-size": self.page_labels[position].font_size is not None
+        }
+    
+    def get_composed_label(self, position: str) -> str:
+        use_page_label_properties = self.get_use_page_label_properties(position)
+        
+        label = copy(self.action_labels.get(position)) or KeyLabel(self.controller_key)
+
+        # Set to page values
+        page_label = self.page_labels.get(position)
+        if page_label is not None:
+            if use_page_label_properties["text"]:
+                label.text = page_label.text
+            if use_page_label_properties["color"]:
+                label.color = page_label.color
+            if use_page_label_properties["font-family"]:
+                label.font_name = page_label.font_name
+            if use_page_label_properties["font-size"]:
+                label.font_size = page_label.font_size
+
+        return self.inject_defaults(label)
+    
+    def get_composed_labels(self) -> dict:
+        composed_labels = {}
+        for position in ["top", "center", "bottom"]:
+            composed_labels[position] = self.get_composed_label(position)
+        return composed_labels
+
+    
+    def inject_defaults(self, label: "KeyLabel"):
+        if label.text is None:
+            label.text = ""
+        if label.color is None:
+            label.color = [255, 255, 255, 255]
+        if label.font_name is None:
+            label.font_name = ""
+        if label.font_size is None:
+            label.font_size = 15
+
+        return label
+
+
+    def update_label(self, position: str):
+        self.controller_key.update()
+
+@dataclass
+class KeyLayout:
+    valign: float = None
+    halign: float = None
+    fill_mode: str = None
+    size: float = None
+
+
+class ControllerKeyLayoutManager:
+    def __init__(self, controller_key: "ControllerKey"):
+        self.controller_key = controller_key
+
+        self.action_layout = KeyLayout()
+        self.page_layout = KeyLayout()
+
+    def get_use_page_layout_properties(self) -> dict:
+        return {
+            "valign": self.page_layout.valign is not None,
+            "halign": self.page_layout.halign is not None,
+            "fill-mode": self.page_layout.fill_mode is not None,
+            "size": self.page_layout.size is not None
+        }
+    
+    def get_composed_layout(self) -> KeyLayout:
+        use_page_layout_properties = self.get_use_page_layout_properties()
+        
+        layout = copy(self.action_layout) or KeyLayout()
+
+        # Set to page values
+        page_layout = self.page_layout
+        if use_page_layout_properties["valign"]:
+            layout.valign = page_layout.valign
+        if use_page_layout_properties["halign"]:
+            layout.halign = page_layout.halign
+        if use_page_layout_properties["fill-mode"]:
+            layout.fill_mode = page_layout.fill_mode
+        if use_page_layout_properties["size"]:
+            layout.size = page_layout.size
+
+        return self.inject_defaults(layout)
+    
+    def inject_defaults(self, layout: KeyLayout):
+        if layout.valign is None:
+            layout.valign = 0
+        if layout.halign is None:
+            layout.halign = 0
+        if layout.fill_mode is None:
+            layout.fill_mode = "cover"
+        if layout.size is None:
+            layout.size = 1
+
+        return layout
+    
+    def set_page_layout(self, layout: KeyLayout, update: bool = True):
+        self.page_layout = layout
+
+        if update:
+            self.update()
+
+    def set_action_layout(self, layout: KeyLayout, update: bool = True):
+        self.action_layout = layout
+
+        if update:
+            self.update()
+
+    def update(self):
+        self.controller_key.update()
+        self.update_layout_editor()
+
+    def update_layout_editor(self):
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
+        
+        if not recursive_hasattr(gl, "app.main_win.sidebar.image_editor"):
+            return
+        
+        active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
+        if active_controller is not self.controller_key.deck_controller:
+            return
+
+        if gl.app.main_win.sidebar.active_coords != (self.controller_key.coords[0], self.controller_key.coords[1]):
+            return
+        
+        gl.app.main_win.sidebar.key_editor.image_editor.load_for_coords(self.controller_key.coords)
     
 
 class ControllerKey:
@@ -928,23 +1157,23 @@ class ControllerKey:
         self.deck_controller = deck_controller
         self.key = key
 
-        self.valign = 0
-        self.halign = 0
-        self.fill_mode = "cover"
-        self.size = 0.1
+        self.coords = deck_controller.index_to_coords(key)
 
         self.background_color = [0, 0, 0, 0]
 
         # Keep track of the current state of the key because self.deck_controller.deck.key_states seams to give inverted values in get_current_deck_image
         self.press_state: bool = self.deck_controller.deck.key_states()[self.key]
 
-        self.labels: dict = {}
-
         self.key_image: KeyImage = None
         self.key_video: KeyVideo = None
+
+        self._show_error: bool = False
         # self.key_asset: SingleKeyAsset = SingleKeyAsset(self)
 
         self.hide_error_timer: Timer = None
+
+        self.label_manager = ControllerKeyLabelManager(self)
+        self.layout_manager = ControllerKeyLayoutManager(self)
 
         # self.pressed_on_page: Page = None #TODO: Block release on different page than press
 
@@ -967,11 +1196,18 @@ class ControllerKey:
         if background is None:
             background = self.deck_controller.generate_alpha_key().copy()
 
+        if self._show_error:
+            height = round(self.deck_controller.get_key_image_size()[1]*0.75)
+            error_img = Image.open(os.path.join("Assets", "images", "error.png"))
+            error_img = error_img.resize((height, height))
+            background.paste(error_img, (int((self.deck_controller.get_key_image_size()[0] - height) // 2), int((self.deck_controller.get_key_image_size()[1] - height) // 2)), error_img)
+            return background
+
         image: Image.Image = None
         if self.key_image is not None:
-            image = self.key_image.generate_final_image(background=background, labels=self.labels)
+            image = self.key_image.generate_final_image(background=background, labels=self.label_manager.get_composed_labels())
         elif self.key_video is not None:
-            image = self.key_video.generate_final_image(background=background, labels=self.labels)
+            image = self.key_video.generate_final_image(background=background, labels=self.label_manager.get_composed_labels())
         else:
             image = background
         labeled_image = self.add_labels_to_image(image)
@@ -1026,16 +1262,6 @@ class ControllerKey:
             self.key_image.close()
         self.key_image = None
 
-    def add_label(self, key_label: "KeyLabel", position: str = "center", update: bool = True) -> None:
-        if position not in ["top", "center", "bottom"]:
-            log.error(f"Invalid position: {position}, must be one of 'top', 'center', or 'bottom'.")
-            return
-        
-        self.labels[position] = key_label
-
-        if update:
-            self.update()
-
     def remove_label(self, position: str = "center", update: bool = True) -> None:
         if position not in ["top", "center", "bottom"]:
             log.error(f"Invalid position: {position}, must be one of 'top', 'center', or 'bottom'.")
@@ -1059,9 +1285,9 @@ class ControllerKey:
         draw = ImageDraw.Draw(image)
 
         # labels = copy(self.labels) # Prevent crash if labels change during iteration
-        labels = self.labels
+        labels = self.label_manager.get_composed_labels()
 
-        for label in dict(labels):
+        for label in labels:
             text = labels[label].text
             if text in [None, ""]:
                 continue
@@ -1124,30 +1350,14 @@ class ControllerKey:
         if duration == 0:
             self.stop_error_timer()
         elif duration > 0:
-            self.hide_error_timer = Timer(duration, self.hide_error, args=[self.key_image, self.key_video, self.labels])
+            self._show_error = True
+            self.update()
+            self.hide_error_timer = Timer(duration, self.hide_error)
             self.hide_error_timer.start()
 
-        with Image.open(os.path.join("Assets", "images", "error.png")) as image:
-            image = image.copy()
-
-        new_key_image = KeyImage(
-            controller_key=self,
-            image=image,
-            size=0.7
-        )
-
-        # Reset labels
-        self.labels = {}
-
-        self.set_key_image(new_key_image)
-
-    def hide_error(self, original_key_image: "KeyImage", original_video: "KeyVideo", original_labels: dict = {}):
-        self.labels = original_labels
-        
-        if original_video is not None:
-            self.set_key_video(original_video) # This also applies the labels
-        else:
-            self.set_key_image(original_key_image) # This also applies the labels
+    def hide_error(self):
+        self._show_error = False
+        self.update()
 
     def stop_error_timer(self):
         if self.hide_error_timer is not None:
@@ -1169,16 +1379,13 @@ class ControllerKey:
             self.key_video = None
         
         if load_labels:
-            self.labels = {}
+            self.label_manager.clear_labels()
 
         self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
 
         ## Load labels
         if load_labels:
             for label in page_dict.get("labels", []):
-                if label in self.labels:
-                    # Chosen by an action
-                    continue
                 key_label = KeyLabel(
                     controller_key=self,
                     text=page_dict["labels"][label].get("text"),
@@ -1186,7 +1393,8 @@ class ControllerKey:
                     font_name=page_dict["labels"][label].get("font-family"),
                     color=page_dict["labels"][label].get("color")
                 )
-                self.add_label(key_label, position=label, update=False)
+                # self.add_label(key_label, position=label, update=False)
+                self.label_manager.set_page_label(label, key_label, update=False)
 
         ## Load media
         if load_media:
@@ -1196,12 +1404,15 @@ class ControllerKey:
                     with Image.open(path) as image:
                         self.set_key_image(KeyImage(
                             controller_key=self,
-                            image=image.copy(),
-                            fill_mode=page_dict.get("media", {}).get("fill-mode", "cover"),
-                            size=page_dict.get("media", {}).get("size", 1),
-                            valign=page_dict.get("media", {}).get("valign", 0),
-                            halign=page_dict.get("media", {}).get("halign", 0),
+                            image=image.copy()
                         ), update=False)
+                        
+                elif is_svg(path):
+                    img = load_svg_as_pil(path)
+                    self.set_key_image(KeyImage(
+                        controller_key=self,
+                        image=img
+                    ), update=False)
 
                 elif is_video(path) and True:
                     if os.path.splitext(path)[1].lower() == ".gif":
@@ -1209,10 +1420,7 @@ class ControllerKey:
                             controller_key=self,
                             gif_path=path,
                             loop=page_dict.get("media", {}).get("loop", True),
-                            fps=page_dict.get("media", {}).get("fps", 30),
-                            size=page_dict.get("media", {}).get("size", 1),
-                            valign=page_dict.get("media", {}).get("valign", 0),
-                            halign=page_dict.get("media", {}).get("halign", 0),
+                            fps=page_dict.get("media", {}).get("fps", 30)
                         )) # GIFs always update
                     else:
                         self.set_key_video(KeyVideo(
@@ -1220,9 +1428,6 @@ class ControllerKey:
                             video_path=path,
                             loop = page_dict.get("media", {}).get("loop", True),
                             fps = page_dict.get("media", {}).get("fps", 30),
-                            size = page_dict.get("media", {}).get("size", 1),
-                            valign = page_dict.get("media", {}).get("valign", 0),
-                            halign = page_dict.get("media", {}).get("halign", 0),
                         )) # Videos always update
 
             elif len(self.get_own_actions()) > 1:
@@ -1231,6 +1436,14 @@ class ControllerKey:
                         controller_key=self,
                         image=image.copy(),
                     ), update=False)
+
+            layout = KeyLayout(
+                fill_mode=page_dict.get("media", {}).get("fill-mode"),
+                size=page_dict.get("media", {}).get("size"),
+                valign=page_dict.get("media", {}).get("valign"),
+                halign=page_dict.get("media", {}).get("halign"),
+            )
+            self.layout_manager.set_page_layout(layout, update=False)
 
         if load_background_color:
             self.background_color = page_dict.get("background", {}).get("color", [0, 0, 0, 0])
@@ -1244,7 +1457,7 @@ class ControllerKey:
     def clear(self, update: bool = True):
         self.key_image = None
         self.key_video = None
-        self.labels = {}
+        self.label_manager.clear_labels()
         self.background_color = [0, 0, 0, 0]
         if update:
             self.update()
@@ -1310,9 +1523,13 @@ class ControllerKey:
 
     def own_actions_ready(self) -> None:
         with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(action.on_ready) for action in self.get_own_actions()]
+            futures = [executor.submit(self.call_action_ready_and_set_flag, action) for action in self.get_own_actions()]
             for future in futures:
                 future.result()
+
+    def call_action_ready_and_set_flag(self, action: "ActionBase") -> None:
+        action.on_ready()
+        action.on_ready_called = True
 
     def own_actions_key_down(self) -> None:
         for action in self.get_own_actions():
@@ -1336,23 +1553,23 @@ class ControllerKey:
             self.key_video = None
             del self.key_video
 
-        self.labels.clear()
+        # self.labels.clear()
 
 
 @dataclass
 class KeyLabel:
     controller_key: ControllerKey
-    text: str = ""
-    font_size: int = 15
+    text: str = None
+    font_size: int = None
     font_name: str = None
-    color: list[int] = (255, 255, 255, 255)
+    color: list[int] = None
 
     def get_font_path(self) -> str:
         return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=self.font_name))
 
 
 class KeyImage(SingleKeyAsset):
-    def __init__(self, controller_key: ControllerKey, image: Image.Image, fill_mode: str = "cover", size: float = 1, valign: float = 0, halign: float = 0):
+    def __init__(self, controller_key: ControllerKey, image: Image.Image):
         """
         Initialize the class with the given controller key, image, fill mode, size, vertical alignment, and horizontal alignment.
 
@@ -1364,7 +1581,7 @@ class KeyImage(SingleKeyAsset):
             valign (float, optional): The vertical alignment of the image. Defaults to 0. Ranges from -1 to 1.
             halign (float, optional): The horizontal alignment of the image. Defaults to 0. Ranges from -1 to 1.
         """
-        super().__init__(controller_key, fill_mode, size, valign, halign)
+        super().__init__(controller_key)
         self.image = image
 
         if self.image is None:
@@ -1385,14 +1602,9 @@ class KeyImage(SingleKeyAsset):
         return
 
 class KeyVideo(SingleKeyAsset):
-    def __init__(self, controller_key: ControllerKey, video_path: str, fill_mode: str = "cover", size: float = 1,
-                 valign: float = 0, halign: float = 0, fps: int = 30, loop: bool = True):
+    def __init__(self, controller_key: ControllerKey, video_path: str, fps: int = 30, loop: bool = True):
         super().__init__(
             controller_key=controller_key,
-            fill_mode=fill_mode,
-            size=size,
-            valign=valign,
-            halign=halign
         )
         self.video_path = video_path
         self.fps = fps

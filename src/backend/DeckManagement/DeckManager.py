@@ -22,7 +22,7 @@ import os
 
 # Import own modules
 from src.backend.DeckManagement.DeckController import DeckController
-from src.backend.PageManagement.PageManager import PageManager
+from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
@@ -54,8 +54,6 @@ class DeckManager:
                     deck.open()
             except:
                 log.error("Failed to open deck. Maybe it's already connected to another instance?")
-                continue
-            if not deck.is_visual():
                 continue
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)

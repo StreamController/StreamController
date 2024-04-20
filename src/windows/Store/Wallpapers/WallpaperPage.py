@@ -84,6 +84,11 @@ class WallpaperPreview(StorePreview):
         else:
             self.set_install_state(2)
 
+        description = self.wallpaper_dict.get("short_description")
+        if description in ["", "N/A", None]:
+            description = self.wallpaper_dict.get("description")
+        self.set_description(description)
+
     def install(self):
         asyncio.run(self.store.backend.install_wallpaper(wallpaper_dict=self.wallpaper_dict))
         self.set_install_state(1)

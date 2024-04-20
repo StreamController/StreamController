@@ -59,6 +59,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.key_clipboard: Gdk.Clipboard = Gdk.Display.get_default().get_clipboard()
 
+        if gl.argparser.parse_args().devel:
+            self.add_css_class("devel")
+
     def on_close(self, *args, **kwargs):
         self.hide()
         return True

@@ -34,6 +34,7 @@ import os
 # Import own modules
 from GtkHelper.GtkHelper import BetterExpander
 from src.backend.WindowGrabber.Window import Window
+from src.windows.PageManager.elements.MenuButton import MenuButton
 
 class PageEditor(Adw.NavigationPage):
     def __init__(self, page_manager: "PageManager"):
@@ -49,6 +50,10 @@ class PageEditor(Adw.NavigationPage):
         # Header
         self.header = Adw.HeaderBar(show_back_button=False, css_classes=["flat"], show_end_title_buttons=True)
         self.main_box.append(self.header)
+
+        # Menu button
+        self.menu_button = MenuButton(self)
+        self.header.pack_end(self.menu_button)
 
         # Main stack - one page for the normal editor and one for the no page info screen
         self.main_stack = Gtk.Stack(hexpand=True, vexpand=True)

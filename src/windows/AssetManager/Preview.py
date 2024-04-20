@@ -20,7 +20,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GdkPixbuf, Pango
 
 class Preview(Gtk.FlowBoxChild):
-    def __init__(self, image_path: str = None, text:str = None):
+    def __init__(self, image_path: str = None, text:str = None, can_be_deleted: bool = False):
         super().__init__()
         self.set_css_classes(["asset-preview"])
         self.set_margin_start(5)
@@ -29,6 +29,7 @@ class Preview(Gtk.FlowBoxChild):
         self.set_margin_bottom(5)
 
         self.pixbuf: GdkPixbuf.Pixbuf = None
+        self.can_be_deleted = can_be_deleted
 
         self._build()
 
@@ -54,9 +55,13 @@ class Preview(Gtk.FlowBoxChild):
                                margin_start=20, margin_end=20)
         self.main_box.append(self.label)
 
-        self.info_button = Gtk.Button(icon_name="help-about-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.END, margin_end=5, margin_bottom=5)
+        self.info_button = Gtk.Button(icon_name="help-about-symbolic", halign=Gtk.Align.START, valign=Gtk.Align.END, margin_start=5, margin_bottom=5)
         self.info_button.connect("clicked", self.on_click_info)
         self.overlay.add_overlay(self.info_button)
+
+        self.remove_button = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.END, halign=Gtk.Align.END, margin_end=5, margin_bottom=5, visible=self.can_be_deleted)
+        self.remove_button.connect("clicked", self.on_click_remove)
+        self.overlay.add_overlay(self.remove_button)
 
     def set_image(self, path:str):
         if path is None:
@@ -72,4 +77,7 @@ class Preview(Gtk.FlowBoxChild):
         self.label.set_text(text)
 
     def on_click_info(self, *args):
+        pass
+
+    def on_click_remove(self, *args):
         pass

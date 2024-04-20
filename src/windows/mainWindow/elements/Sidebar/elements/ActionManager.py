@@ -481,7 +481,7 @@ class MissingActionButtonRow(Adw.PreferencesRow):
 
 
 class AddActionButtonRow(Adw.PreferencesRow):
-    def __init__(self, expander, **kwargs):
+    def __init__(self, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding", "add-button"])
         self.expander = expander
 
@@ -530,3 +530,12 @@ class AddActionButtonRow(Adw.PreferencesRow):
         controller = self.expander.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         key_index = controller.coords_to_index(self.expander.active_coords)
         controller.load_key(key_index, page=controller.active_page)
+
+        # Open action editor if new action has configuration - qol
+        rows = self.expander.get_rows()
+        if len(rows) < 2:
+            return
+        last_row = rows[-2] # -1 is the add button
+        if last_row.action_object.HAS_CONFIGURATION:
+            gl.app.main_win.sidebar.action_configurator.load_for_action(last_row.action_object, last_row.index)
+            gl.app.main_win.sidebar.show_action_configurator()

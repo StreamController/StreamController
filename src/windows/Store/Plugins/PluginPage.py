@@ -83,6 +83,11 @@ class PluginPreview(StorePreview):
         else:
             self.set_install_state(2)
 
+        description = self.plugin_dict.get("short_description")
+        if description in ["", "N/A", None]:
+            description = self.plugin_dict.get("description")
+        self.set_description(description)
+
     def install(self):
         asyncio.run(self.store.backend.install_plugin(plugin_dict=self.plugin_dict))
         self.set_install_state(1)
@@ -92,6 +97,7 @@ class PluginPreview(StorePreview):
         self.set_install_state(0)
 
     def update(self):
+        self.store.backend.uninstall_plugin(plugin_id=self.plugin_dict["id"], remove_from_pages=False, remove_files=False)
         self.install()
 
     def on_click_main(self, button: Gtk.Button):

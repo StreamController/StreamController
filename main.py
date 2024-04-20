@@ -36,7 +36,7 @@ from src.backend.DeckManagement.DeckManager import DeckManager
 from locales.LocaleManager import LocaleManager
 from src.backend.MediaManager import MediaManager
 from src.backend.AssetManagerBackend import AssetManagerBackend
-from src.backend.PageManagement.PageManager import PageManager
+from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
@@ -86,13 +86,8 @@ def create_cache_folder():
     os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
 
 def create_global_objects():
-    # Argparser
-    gl.argparser = argparse.ArgumentParser()
-    gl.argparser.add_argument("-b", help="Open in background", action="store_true")
-    gl.argparser.add_argument("app_args", nargs="*")
-
     # Setup locales
-    gl.lm = LocaleManager(locales_path="locales")
+    gl.lm = LocaleManager(csv_path=os.path.join("locales", "locales.csv"))
     gl.lm.set_to_os_default()
     gl.lm.set_fallback_language("en_US")
 
@@ -106,7 +101,7 @@ def create_global_objects():
 
     gl.media_manager = MediaManager()
     gl.asset_manager_backend = AssetManagerBackend()
-    gl.page_manager = PageManager(gl.settings_manager)
+    gl.page_manager = PageManagerBackend(gl.settings_manager)
     gl.icon_pack_manager = IconPackManager()
     gl.wallpaper_pack_manager = WallpaperPackManager()
 
@@ -167,20 +162,35 @@ def reset_all_decks():
         except:
             log.error("Failed to reset deck, maybe it's already connected to another instance? Skipping...")
 
-
-def main():
-    # Dbus
+def quit_running():
     log.info("Checking if another instance is running")
     DBusGMainLoop(set_as_default=True)
     session_bus = dbus.SessionBus()
     try:
         obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
         action_interface = dbus.Interface(obj, "org.gtk.Actions")
-        action_interface.Activate("reopen", [], [])
-        log.info("Already running, exiting")
-        exit()
+        if gl.argparser.parse_args().close_running:
+            log.info("Closing running instance")
+            try:
+                action_interface.Activate("quit", [], [])
+            except dbus.exceptions.DBusException as e:
+                log.error("Could not close running instance: " + str(e))
+                sys.exit(0)
+            time.sleep(5)
+        else:
+            action_interface.Activate("reopen", [], [])
+            log.info("Already running, exiting")
+            sys.exit(0)
     except dbus.exceptions.DBusException as e:
         log.info("No other instance running, continuing")
+
+    except ValueError as e:
+        log.info("The last instance has not been properly closed, continuing... This may cause issues")
+
+
+def main():
+    # Dbus
+    quit_running()
 
     reset_all_decks()
 

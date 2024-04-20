@@ -13,7 +13,9 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import threading
 import gi
+
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -34,24 +36,35 @@ import globals as gl
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.AssetManager.AssetManager import AssetManager
+    from src.windows.AssetManager.IconPacks.Stack import IconPackChooserStack
 
 
 class IconPackChooser(ChooserPage):
-    def __init__(self, asset_manager: "AssetManager"):
+    def __init__(self, stack: "IconPackChooserStack", asset_manager: "AssetManager"):
         super().__init__()
         self.asset_manager = asset_manager
+        self.stack = stack
 
-        self.build()
+        self.build_finished = False
 
-        self.load()
+        threading.Thread(target=self.build).start()
+        
 
     def build(self):
+        self.build_finished = False
         self.type_box.set_visible(False)
 
         self.icon_pack_chooser = IconPackFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.scrolled_box.prepend(self.icon_pack_chooser)
 
         self.icon_pack_chooser.flow_box.connect("child-activated", self.on_child_activated)
+
+        self.load()
+
+        self.set_loading(False)
+
+        self.build_finished = True
+        self.stack.one_load_finished()
 
     def load(self):
         flow_box = self.icon_pack_chooser.flow_box

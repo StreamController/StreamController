@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GLib
 
 # Import python modules
 from fuzzywuzzy import fuzz
@@ -55,11 +55,11 @@ class CustomAssetChooserFlowBox(Gtk.Box):
     def build(self):
         self.flow_box = Gtk.FlowBox(hexpand=True, orientation=Gtk.Orientation.HORIZONTAL)
         self.flow_box.connect("child-activated", self.on_child_activated)
-        self.append(self.flow_box)
+        GLib.idle_add(self.append, self.flow_box)
 
         for asset in gl.asset_manager_backend.get_all():
             asset = AssetPreview(flow=self, asset=asset, width_request=100, height_request=100)
-            self.flow_box.append(asset)
+            GLib.idle_add(self.flow_box.append, asset)
 
     def show_for_path(self, path):
         i = 0
@@ -68,7 +68,7 @@ class CustomAssetChooserFlowBox(Gtk.Box):
             if child == None:
                 return
             if child.asset["internal-path"] == path:
-                self.flow_box.select_child(child)
+                GLib.idle_add(self.flow_box.select_child, child)
                 return
             i += 1
             

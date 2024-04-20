@@ -186,3 +186,5 @@ vid_cache/
 **/.flatpak-builder/
 
 **/.flatpak/
+
+.flatpak/meson.sh

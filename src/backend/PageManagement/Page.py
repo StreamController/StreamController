@@ -42,6 +42,8 @@ class Page:
         # Dir that contains all actions this allows us to keep them at reload
         self.action_objects = {}
 
+        self.ready_to_clear = True
+
         self.load(load_from_file=True)
 
     def get_name(self) -> str:
@@ -61,7 +63,6 @@ class Page:
         self.load_action_objects()
 
         # Call on_ready for all actions
-        self.call_actions_ready()
         end = time.time()
         log.debug(f"Loaded page {self.get_name()} in {end - start:.2f} seconds")
 

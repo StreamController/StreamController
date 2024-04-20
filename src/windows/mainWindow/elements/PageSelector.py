@@ -68,7 +68,7 @@ class PageSelector(Gtk.Box):
         self.open_manager_button.connect("clicked", self.on_click_open_page_manager)
         self.sidebar.append(self.open_manager_button)
 
-        gl.signal_manager.connect_signal(signal=Signals.ChangePage, callback=self.update)
+        gl.signal_manager.connect_signal(signal=Signals.ChangePage, callback=self.update_selected)
         gl.signal_manager.connect_signal(signal=Signals.PageRename, callback=self.update)
         gl.signal_manager.connect_signal(signal=Signals.PageAdd, callback=self.update)
         gl.signal_manager.connect_signal(signal=Signals.PageDelete, callback=self.update)
@@ -100,11 +100,10 @@ class PageSelector(Gtk.Box):
                 self.drop_down.set_active(i)
                 return
             
-    def update_selected(self):
+    def update_selected(self, *args, **kwargs):
         child = self.main_window.leftArea.deck_stack.get_visible_child()
         if child is None:
             self.drop_down.set_sensitive(False)
-            self.clear_model()
             return
         else:
             self.drop_down.set_sensitive(True)
@@ -130,8 +129,10 @@ class PageSelector(Gtk.Box):
         active_controller.load_page(page)
 
     def on_click_open_page_manager(self, button):
-        page_manager = PageManager(main_win=gl.app.main_win)
-        page_manager.present()
+        if gl.page_manager_window is not None:
+            gl.page_manager_window.present()
+        gl.page_manager_window = PageManager(main_win=gl.app.main_win)
+        gl.page_manager_window.present()
 
     def disconnect_change_signal(self):
         try:

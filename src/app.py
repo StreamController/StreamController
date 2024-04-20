@@ -77,6 +77,10 @@ class App(Adw.Application):
         on_reopen_action.connect("activate", self.on_reopen)
         self.add_action(on_reopen_action)
 
+        on_quit_action = Gio.SimpleAction.new("quit", None)
+        on_quit_action.connect("activate", self.on_quit)
+        self.add_action(on_quit_action)
+
         log.success("Finished loading app")
 
     def on_reopen(self, *args, **kwargs):
@@ -114,6 +118,8 @@ class App(Adw.Application):
     def on_quit(self, *args):
         log.info("Quitting...")
 
+        self.main_win.destroy()
+
         gl.signal_manager.trigger_signal(Signals.AppQuit)
 
         gl.threads_running = False
@@ -140,7 +146,6 @@ class App(Adw.Application):
         # Close all decks
         gl.deck_manager.close_all()
         # Stop timer
-        timer.cancel()
         log.success("Stopped StreamController. Have a nice day!")
         sys.exit(0)
 

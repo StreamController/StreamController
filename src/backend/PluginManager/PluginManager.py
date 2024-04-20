@@ -74,8 +74,8 @@ class PluginManager:
     def get_plugins(self) -> list[PluginBase]:
         return PluginBase.plugins
     
-    def get_actions_for_plugin(self, plugin_name):
-        return PluginBase.plugins[plugin_name]["object"].ACTIONS
+    def get_actions_for_plugin_id(self, plugin_id: str):
+        return PluginBase.plugins[plugin_id]["object"].ACTIONS
     
     def get_action_holder_from_id(self, action_id: str) -> ActionHolder:
         """
@@ -88,11 +88,7 @@ class PluginManager:
             return None
             
     def get_plugin_by_id(self, plugin_id:str) -> PluginBase:
-        plugins = self.get_plugins()
-        for plugin in plugins.keys():
-            _id = get_last_dir(plugins[plugin]["folder-path"])
-            if _id == plugin_id:
-                return plugins[plugin]["object"]
+        return self.get_plugins().get(plugin_id, {}).get("object", None)
             
     def remove_plugin_from_list(self, plugin_base: PluginBase):
-        del PluginBase.plugins[plugin_base.plugin_name]
+        del PluginBase.plugins[plugin_base.plugin_id]

@@ -4,8 +4,16 @@ from typing import TYPE_CHECKING
 import argparse
 import sys
 
+argparser = argparse.ArgumentParser()
+argparser.add_argument("-b", help="Open in background", action="store_true")
+argparser.add_argument("--devel", help="Developer mode", action="store_true")
+argparser.add_argument("--close-running", help="Close running", action="store_true")
+argparser.add_argument("--data", help="Data path", type=str)
+argparser.add_argument("app_args", nargs="*")
+
 DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
-# DATA_PATH = "data"
+if argparser.parse_args().data:
+    DATA_PATH = argparser.parse_args().data
 
 # Add data path to sys.path
 sys.path.append(DATA_PATH)
@@ -16,7 +24,7 @@ if TYPE_CHECKING:
     from src.backend.AssetManagerBackend import AssetManagerBackend
     from src.windows.AssetManager.AssetManager import AssetManager
     from src.backend.MediaManager import MediaManager
-    from src.backend.PageManagement.PageManager import PageManager
+    from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
     from src.backend.SettingsManager import SettingsManager
     from src.backend.DeckManagement.DeckManager import DeckManager
     from src.backend.PluginManager.PluginManager import PluginManager
@@ -28,6 +36,7 @@ if TYPE_CHECKING:
     from src.backend.GnomeExtensions import GnomeExtensions
     from src.windows.Store.Store import Store
     from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
+    from src.windows.PageManager.PageManager import PageManager
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -35,7 +44,8 @@ lm:"LocaleManager" = None
 media_manager:"MediaManager" = None #MediaManager
 asset_manager_backend:"AssetManagerBackend" = None #AssetManager
 asset_manager: "AssetManager" = None
-page_manager:"PageManager" = None #PageManager
+page_manager_window: "PageManager" = None # Only if opened
+page_manager:"PageManagerBackend" = None #PageManager #TODO: Rename to page_manager_backend in 2.0.0
 gnome_extensions:"GnomeExtensions" = None
 settings_manager:"SettingsManager" = None #SettingsManager
 app:"App" = None #App
@@ -43,6 +53,7 @@ deck_manager:"DeckManager" = None #DeckManager
 plugin_manager:"PluginManager" = None #PluginManager
 video_extensions = ["mp4", "mov", "MP4", "MOV", "mkv", "MKV", "webm", "WEBM", "gif", "GIF"]
 image_extensions = ["png", "jpg", "jpeg"]
+svg_extensions = ["svg", "SVG"]
 icon_pack_manager: "IconPackManager" = None
 wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
@@ -54,11 +65,11 @@ flatpak_permission_manager: "FlatpakPermissionManager" = None
 threads_running: bool = True
 
 
-app_version: str = "1.4.9-beta" # In breaking.feature.fix-state format
+app_version: str = "1.4.11-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
-argparser: argparse.ArgumentParser = None
 logs: list[str] = []
 
 release_notes: str = "<ul> \
     <li>Bugfixes</li> \
+    <li>Svg support</li> \
     </ul>"

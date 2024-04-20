@@ -70,7 +70,7 @@ class WallpaperPreview(StorePreview):
         self.wallpaper_page = wallpaper_page
 
         self.set_author_label(wallpaper_dict["user_name"])
-        self.set_name_label(wallpaper_dict["name"])
+        self.set_name_label(wallpaper_dict["wallpaper_name"])
         self.set_image(wallpaper_dict["image"])
         self.set_url(wallpaper_dict["url"])
 
@@ -104,10 +104,10 @@ class WallpaperPreview(StorePreview):
         self.wallpaper_page.set_info_visible(True)
 
         # Update info page
-        self.wallpaper_page.info_page.set_name(self.wallpaper_dict.get("name"))
+        self.wallpaper_page.info_page.set_name(self.wallpaper_dict.get("wallpaper_name"))
         self.wallpaper_page.info_page.set_description(self.wallpaper_dict.get("description"))
         self.wallpaper_page.info_page.set_author(self.wallpaper_dict.get("user_name"))
-        self.wallpaper_page.info_page.set_version(self.wallpaper_dict.get("version"))
+        self.wallpaper_page.info_page.set_version(self.wallpaper_dict.get("wallpaper_version"))
 
         self.wallpaper_page.info_page.set_license(self.wallpaper_dict.get("license"))
         self.wallpaper_page.info_page.set_copyright(self.wallpaper_dict.get("copyright"))

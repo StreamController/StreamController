@@ -63,10 +63,10 @@ class PluginBase(rpyc.Service):
         """
 
         manifest = self.get_manifest()
-        plugin_name = manifest.get("plugin-version") or None
+        plugin_name = manifest.get("plugin-name") or None
         github_repo = manifest.get("github") or None
         plugin_version = manifest.get("plugin-version") or None
-        minimum_software_version = manifest.get("minimum-software-version") or None
+        minimum_app_version = manifest.get("minimum-software-version") or None
         
         # Verify variables
         if plugin_name in ["", None]:
@@ -76,7 +76,7 @@ class PluginBase(rpyc.Service):
             log.error(f"Plugin: {plugin_name}: Please specify a github repo")
             return
         
-        self.plugin_id = self.get_plugin_id()
+        self.plugin_id = manifest.get("plugin-id")
 
         for plugin_id in PluginBase.plugins.keys():
             plugin = PluginBase.plugins[plugin_id]["object"]
@@ -85,27 +85,39 @@ class PluginBase(rpyc.Service):
                 return
 
         if self.do_versions_match(app_version):
-            # Register plugin
-            PluginBase.plugins[self.plugin_id] = {
-                "object": self,
-                "plugin_version": plugin_version,
-                "minimum_software_version": minimum_software_version,
-                "github": github_repo,
-                "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
-                "file_name": os.path.basename(inspect.getfile(self.__class__))
-            }
-            self.registered = True
-
+            if self.do_versions_match(minimum_app_version, True):
+                # Register plugin
+                PluginBase.plugins[self.plugin_id] = {
+                    "object": self,
+                    "plugin_version": plugin_version,
+                    "minimum_app_version": minimum_app_version,
+                    "github": github_repo,
+                    "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
+                    "file_name": os.path.basename(inspect.getfile(self.__class__))
+                }
+                self.registered = True
+            else:
+                log.warning(f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
+                            f"Please update StreamController! Plugin requires app version {minimum_app_version} and "
+                            f"you are on version {gl.app_version}. Disabling plugin.")
+                PluginBase.disabled_plugins[self.plugin_id] = {
+                    "object": self,
+                    "plugin_version": plugin_version,
+                    "minimum_app_version": minimum_app_version,
+                    "github": github_repo,
+                    "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
+                    "file_name": os.path.basename(inspect.getfile(self.__class__))
+                }
         else:
             log.warning(
-                f"Plugin {plugin_name} is not compatible with this version of StreamController. "
+                f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
                 f"Please update your assets! Plugin requires version {plugin_version} and you are "
                 f"running version {gl.app_version}. Disabling plugin."
             )
             PluginBase.disabled_plugins[self.plugin_id] = {
                 "object": self,
                 "plugin_version": plugin_version,
-                "minimum_software_version": minimum_software_version,
+                "minimum_app_version": minimum_app_version,
                 "github": github_repo,
                 "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
                 "file_name": os.path.basename(inspect.getfile(self.__class__))
@@ -120,12 +132,18 @@ class PluginBase(rpyc.Service):
         subclass_file = module.__file__
         return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
 
-    def do_versions_match(self, app_version_to_check: str):
+    def do_versions_match(self, app_version_to_check: str, is_min_app_version: bool = False):
         manifest = self.get_manifest()
-        minimum_software_version = manifest.get("minimum-software-version") or None
 
-        if minimum_software_version is not None:
-            pass #TODO: Do Version check for min version
+        if is_min_app_version:
+            if app_version_to_check is None:
+                return True
+            min_version = version.parse(app_version_to_check)
+            app_version = version.parse(gl.app_version)
+
+            return min_version < app_version
+
+
 
         #if gl.exact_app_version_check:
         #    gl.app_version == app_version

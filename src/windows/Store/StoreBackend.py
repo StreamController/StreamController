@@ -49,13 +49,14 @@ class NoConnectionError:
     pass
 
 class StoreBackend:
-    STORE_REPO_URL = "https://github.com/StreamController/StreamController-Store"
+    STORE_REPO_URL = "https://github.com/G4PLS/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
     STORE_CACHE_PATH = "Store/cache"
+
 
     def __init__(self):
         # API cache file
         os.makedirs(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH), exist_ok=True)
-        if not os.path.exists(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH,"api.json")):
+        if not os.path.exists(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json")):
             with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json"), "w") as f:
                 json.dump({}, f, indent=4)
         with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json"), "r") as f:
@@ -136,7 +137,7 @@ class StoreBackend:
         return answer
     
     async def get_official_authors(self) -> list:
-        result = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json")
+        result = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", "test") #TODO: REMOVE BRANCH NAME
         if isinstance(result, NoConnectionError):
             return result
         authors_json = result.text
@@ -148,7 +149,7 @@ class StoreBackend:
         returns the number of assets that are new old for the current app version
         """
         n_too_new_assets = 0
-        result = await self.get_remote_file(self.STORE_REPO_URL, "Plugins.json")
+        result = await self.get_remote_file(self.STORE_REPO_URL, "Plugins.json", "test") #TODO: REMOVE BRANCH NAME
         if isinstance(result, NoConnectionError):
             return result
         plugins_json = result.text
@@ -176,7 +177,7 @@ class StoreBackend:
         returns the number of assets that are too new for the current app version
         """
         n_to_new_assets = 0
-        result = await self.get_remote_file(self.STORE_REPO_URL, "Icons.json")
+        result = await self.get_remote_file(self.STORE_REPO_URL, "Icons.json", "test") #TODO: REMOVE BRANCH NAME
         if isinstance(result, NoConnectionError):
             return result
         icons_json = result.text
@@ -203,7 +204,7 @@ class StoreBackend:
         returns the number of assets that are too new for the current app version
         """
         n_to_new_assets = 0
-        result = await self.get_remote_file(self.STORE_REPO_URL, "Wallpapers.json")
+        result = await self.get_remote_file(self.STORE_REPO_URL, "Wallpapers.json", "test") #TODO: REMOVE BRANCH NAME
         if isinstance(result, NoConnectionError):
             return result
         wallpapers_json = result.text
@@ -330,9 +331,9 @@ class StoreBackend:
         return {
             "plugin_name": manifest.get("plugin-name"),
             "plugin_version": manifest.get("plugin-version"),
-            "minimum-software-version": manifest.get("minimum-software-version") or "",
+            "minimum_app_version": manifest.get("minimum-software-version") or "",
             "plugin_id": manifest.get("plugin-id"),
-            "display-name": manifest.get("display-name") or manifest.get("plugin-name"), # Use specified display name, when not available use plugin-name
+            "display_name": manifest.get("display-name") or manifest.get("plugin-name"), # Use specified display name, when not available use plugin-name
             "descriptions": manifest.get("descriptions") or [],  # TODO: GET TRANSLATION
             "short_descriptions": manifest.get("short-descriptions") or [], #TODO: GET TRANSLATION
             "url": url,
@@ -342,7 +343,7 @@ class StoreBackend:
             "stargazers": stargazers,
             "official": user_name in self.official_authors,
             "commit_sha": commit,
-            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
+            "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
             "license": attribution.get("license"),
@@ -360,6 +361,9 @@ class StoreBackend:
         return sha
     
     async def prepare_icon(self, icon):
+        if "url" not in icon:
+            return None
+
         url = icon["url"]
 
         # Check if suitable version is available
@@ -390,9 +394,9 @@ class StoreBackend:
         return {
             "icon_name": manifest.get("icon-name"),
             "icon_version": manifest.get("icon-version"),
-            "minimum-software-version": manifest.get("minimum-software-version") or "",
+            "minimum_app_version": manifest.get("minimum-software-version") or "",
             "icon_id": manifest.get("icon-id"),
-            "display-name": manifest.get("display-name") or manifest.get("icon-name"),
+            "display_name": manifest.get("display-name") or manifest.get("icon-name"),
             # Use specified display name, when not available use plugin-name
             "descriptions": manifest.get("descriptions") or [],  # TODO: GET TRANSLATION
             "short_descriptions": manifest.get("short-descriptions") or [],  # TODO: GET TRANSLATION
@@ -403,7 +407,7 @@ class StoreBackend:
             "stargazers": stargazers,
             "official": user_name in self.official_authors,
             "commit_sha": commit,
-            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("icon-id"))),
+            "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("icon-id"))),
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
             "license": attribution.get("license"),
@@ -411,6 +415,9 @@ class StoreBackend:
         }
     
     async def prepare_wallpaper(self, wallpaper):
+        if "url" not in wallpaper:
+            return None
+
         url = wallpaper["url"]
 
         # Check if suitable version is available
@@ -435,9 +442,9 @@ class StoreBackend:
         return {
             "wallpaper_name": manifest.get("wallpaper-name"),
             "wallpaper_version": manifest.get("wallpaper-version"),
-            "minimum-software-version": manifest.get("minimum-software-version") or "",
+            "minimum_app_version": manifest.get("minimum-software-version") or "",
             "wallpaper_id": manifest.get("wallpaper-id"),
-            "display-name": manifest.get("display-name") or manifest.get("wallpaper-name"),
+            "display_name": manifest.get("display-name") or manifest.get("wallpaper-name"),
             # Use specified display name, when not available use plugin-name
             "descriptions": manifest.get("descriptions") or [],  # TODO: GET TRANSLATION
             "short_descriptions": manifest.get("short-descriptions") or [],  # TODO: GET TRANSLATION
@@ -448,7 +455,7 @@ class StoreBackend:
             "stargazers": await self.get_stargazers(url),
             "official": user_name in self.official_authors,
             "commit_sha": commit,
-            "local-sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("wallpaper-id"))),
+            "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("wallpaper-id"))),
             "copyright": attribution.get("copyright"),
             "original_url": attribution.get("original-url"),
             "license": attribution.get("license"),
@@ -594,7 +601,7 @@ class StoreBackend:
         url = plugin_dict["url"]
 
         PLUGINS_FOLDER = "plugins"
-        local_path = os.path.join(gl.DATA_PATH, PLUGINS_FOLDER, plugin_dict["id"])
+        local_path = os.path.join(gl.DATA_PATH, PLUGINS_FOLDER, plugin_dict["plugin_id"])
 
         response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_dict["commit_sha"])
 
@@ -631,9 +638,9 @@ class StoreBackend:
                     controller.load_page(controller.active_page)
 
         # Notify plugin actions
-        gl.signal_manager.trigger_signal(Signals.PluginInstall, plugin_dict["id"])
+        gl.signal_manager.trigger_signal(Signals.PluginInstall, plugin_dict["plugin_id"])
 
-        log.success(f"Plugin {plugin_dict['id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
+        log.success(f"Plugin {plugin_dict['plugin_id']} installed successfully under: {local_path} with sha: {plugin_dict['commit_sha']}")
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False, remove_files:bool = True) -> bool:
         ## 1. Remove all action objects in all pages
         for deck_controller in gl.deck_manager.deck_controller:
@@ -674,7 +681,7 @@ class StoreBackend:
             del sys.modules[module_name]
 
     async def install_icon(self, icon_dict:dict):
-        folder_name = f"{icon_dict['user_name']}::{icon_dict['name']}"
+        folder_name = f"{icon_dict['user_name']}::{icon_dict['icon_name']}"
         icon_path = os.path.join(gl.DATA_PATH, "icons", folder_name)
         os.makedirs(icon_path, exist_ok=True)
 
@@ -687,12 +694,12 @@ class StoreBackend:
         )
 
     async def uninstall_icon(self, icon_dict:dict):
-        folder_name = f"{icon_dict['user_name']}::{icon_dict['name']}"
+        folder_name = f"{icon_dict['user_name']}::{icon_dict['icon_name']}"
         if os.path.exists(os.path.join(gl.DATA_PATH, "icons", folder_name)):
             shutil.rmtree(os.path.join(gl.DATA_PATH, "icons", folder_name))
 
     async def install_wallpaper(self, wallpaper_dict:dict):
-        folder_name = f"{wallpaper_dict['user_name']}::{wallpaper_dict['name']}"
+        folder_name = f"{wallpaper_dict['user_name']}::{wallpaper_dict['wallpaper_name']}"
         wallpaper_path = os.path.join(gl.DATA_PATH, "wallpapers", folder_name)
         os.makedirs(wallpaper_path, exist_ok=True)
 
@@ -705,7 +712,7 @@ class StoreBackend:
         )
 
     async def uninstall_wallpaper(self, wallpaper_dict:dict):
-        folder_name = f"{wallpaper_dict['user_name']}::{wallpaper_dict['name']}"
+        folder_name = f"{wallpaper_dict['user_name']}::{wallpaper_dict['wallpaper_name']}"
         if os.path.exists(os.path.join(gl.DATA_PATH, "wallpapers", folder_name)):
             shutil.rmtree(os.path.join(gl.DATA_PATH, "wallpapers", folder_name))
 
@@ -724,10 +731,10 @@ class StoreBackend:
         plugins_to_update: list[dict] = []
 
         for plugin in plugins:
-            if plugin["local-sha"] is None:
+            if plugin["local_sha"] is None:
                 # Plugin is not installed
                 continue
-            if plugin["local-sha"] != plugin["commit_sha"]:
+            if plugin["local_sha"] != plugin["commit_sha"]:
                 plugins_to_update.append(plugin)
 
         return plugins_to_update

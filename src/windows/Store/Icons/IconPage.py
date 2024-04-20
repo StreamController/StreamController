@@ -71,7 +71,7 @@ class IconPreview(StorePreview):
         self.icon_page = icon_page
 
         self.set_author_label(icon_dict["user_name"])
-        self.set_name_label(icon_dict["name"])
+        self.set_name_label(icon_dict["icon_name"])
         self.set_image(icon_dict["image"])
         self.set_url(icon_dict["url"])
 
@@ -105,10 +105,10 @@ class IconPreview(StorePreview):
         self.icon_page.set_info_visible(True)
 
         # Update info page
-        self.icon_page.info_page.set_name(self.icon_dict.get("name"))
+        self.icon_page.info_page.set_name(self.icon_dict.get("icon_name"))
         self.icon_page.info_page.set_description(self.icon_dict.get("description"))
         self.icon_page.info_page.set_author(self.icon_dict.get("user_name"))
-        self.icon_page.info_page.set_version(self.icon_dict.get("version"))
+        self.icon_page.info_page.set_version(self.icon_dict.get("icon_version"))
 
         self.icon_page.info_page.set_license(self.icon_dict.get("license"))
         self.icon_page.info_page.set_copyright(self.icon_dict.get("copyright"))

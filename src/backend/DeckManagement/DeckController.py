@@ -1166,6 +1166,8 @@ class ControllerKey:
 
         self.key_image: KeyImage = None
         self.key_video: KeyVideo = None
+
+        self._show_error: bool = False
         # self.key_asset: SingleKeyAsset = SingleKeyAsset(self)
 
         self.hide_error_timer: Timer = None
@@ -1193,6 +1195,13 @@ class ControllerKey:
 
         if background is None:
             background = self.deck_controller.generate_alpha_key().copy()
+
+        if self._show_error:
+            height = round(self.deck_controller.get_key_image_size()[1]*0.75)
+            error_img = Image.open(os.path.join("Assets", "images", "error.png"))
+            error_img = error_img.resize((height, height))
+            background.paste(error_img, (int((self.deck_controller.get_key_image_size()[0] - height) // 2), int((self.deck_controller.get_key_image_size()[1] - height) // 2)), error_img)
+            return background
 
         image: Image.Image = None
         if self.key_image is not None:
@@ -1341,29 +1350,14 @@ class ControllerKey:
         if duration == 0:
             self.stop_error_timer()
         elif duration > 0:
-            self.hide_error_timer = Timer(duration, self.hide_error, args=[self.key_image, self.key_video, self.labels])
+            self._show_error = True
+            self.update()
+            self.hide_error_timer = Timer(duration, self.hide_error)
             self.hide_error_timer.start()
 
-        with Image.open(os.path.join("Assets", "images", "error.png")) as image:
-            image = image.copy()
-
-        new_key_image = KeyImage(
-            controller_key=self,
-            image=image,
-        )
-
-        # Reset labels
-        self.label_manager.clear_labels()
-
-        self.set_key_image(new_key_image)
-
-    def hide_error(self, original_key_image: "KeyImage", original_video: "KeyVideo", original_labels: dict = {}):
-        self.labels = original_labels
-        
-        if original_video is not None:
-            self.set_key_video(original_video) # This also applies the labels
-        else:
-            self.set_key_image(original_key_image) # This also applies the labels
+    def hide_error(self):
+        self._show_error = False
+        self.update()
 
     def stop_error_timer(self):
         if self.hide_error_timer is not None:

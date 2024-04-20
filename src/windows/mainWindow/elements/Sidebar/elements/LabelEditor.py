@@ -231,6 +231,10 @@ class LabelRow(Adw.PreferencesRow):
         blue = round(color.blue * 255)
         red = round(color.red * 255)
 
+        # Set defaults
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("labels", {})
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"].setdefault(self.key_name, {})
+
         # Get active page
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["color"] = [red, green, blue]
@@ -269,10 +273,15 @@ class LabelRow(Adw.PreferencesRow):
         # Get active page
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
 
+        # Set defaults
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("labels", {})
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"].setdefault(self.key_name, {})
+
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-family"] = pango_font.get_family()
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-size"] = round(font_size/1000)
 
         page.save()
+        return
 
         # Reload key on all decks that have this page loaded
         current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
@@ -377,6 +386,11 @@ class LabelRow(Adw.PreferencesRow):
 
     def on_change_text(self, entry):
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+
+        # Set defaults
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("labels", {})
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"].setdefault(self.key_name, {})
+        
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"] = entry.get_text()
         page.save()
 

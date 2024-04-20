@@ -14,6 +14,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.windows.Store.StoreData import PluginData
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
@@ -53,14 +55,14 @@ class PluginPage(StorePage):
 
     def load(self):
         self.set_loading()
-        plugins = self.store.backend.get_all_plugins()
+        plugins: list[PluginData] = self.store.backend.get_all_plugins()
         if isinstance(plugins, NoConnectionError):
             self.show_connection_error()
             return
         for plugin in plugins:
-            if plugin["local_sha"] is None and self.check_required_version(plugin.get("minimum_app_version", True)):
+            if plugin.local_sha is None and self.check_required_version(plugin.minimum_app_version, True):
                 continue
-            GLib.idle_add(self.flow_box.append, PluginPreview(plugin_page=self, plugin_dict=plugin))
+            GLib.idle_add(self.flow_box.append, PluginPreview(plugin_page=self, plugin_data=plugin))
 
         self.set_loaded()
 
@@ -75,48 +77,48 @@ class PluginPage(StorePage):
 
 
 class PluginPreview(StorePreview):
-    def __init__(self, plugin_page: PluginPage, plugin_dict: dict):
+    def __init__(self, plugin_page: PluginPage, plugin_data: PluginData):
         super().__init__(store_page=plugin_page)
         self.plugin_page = plugin_page
-        self.plugin_dict = plugin_dict
+        self.plugin_data = plugin_data
 
-        self.set_author_label(plugin_dict["user_name"])
-        self.set_name_label(plugin_dict["plugin_name"])
-        self.set_image(plugin_dict["image"])
-        self.set_url(plugin_dict["url"])
+        self.set_author_label(plugin_data.author)
+        self.set_name_label(plugin_data.plugin_name)
+        self.set_image(plugin_data.image)
+        self.set_url(plugin_data.github)
 
-        self.set_official(plugin_dict["official"])
-        self.set_verified(plugin_dict["commit_sha"] is not None)
+        self.set_official(plugin_data.official)
+        self.set_verified(plugin_data.commit_sha is not None)
 
         #TODO: CHANGE COLOR OF PREVIEW TO MAKE THE VERSION DIFFERENCE VISABLE
-        if not self.check_required_version(plugin_dict.get("minimum_app_version")):
+        if not self.check_required_version(plugin_data.minimum_app_version):
             pass
 
         # Set install button state
-        if plugin_dict["local_sha"] is None:
+        if plugin_data.local_sha is None:
             self.set_install_state(0)
-        elif plugin_dict["local_sha"] == plugin_dict["commit_sha"]:
+        elif plugin_data.local_sha == plugin_data.commit_sha:
             self.set_install_state(1)
         else:
             self.set_install_state(2)
 
         #TODO: LOAD TRANSLATION
 
-        description = self.plugin_dict.get("short_description")
+        description = gl.lm.get_custom_translation(plugin_data.short_descriptions)
         if description in ["", "N/A", None]:
-            description = self.plugin_dict.get("description")
+            description = gl.lm.get_custom_translation(plugin_data.descriptions)
         self.set_description(description)
 
     def install(self):
-        asyncio.run(self.store.backend.install_plugin(plugin_dict=self.plugin_dict))
+        asyncio.run(self.store.backend.install_plugin(plugin_data=self.plugin_data))
         self.set_install_state(1)
 
     def uninstall(self):
-        self.store.backend.uninstall_plugin(plugin_id=self.plugin_dict["plugin_id"])
+        self.store.backend.uninstall_plugin(plugin_id=self.plugin_data.plugin_id)
         self.set_install_state(0)
 
     def update(self):
-        self.store.backend.uninstall_plugin(plugin_id=self.plugin_dict["plugin_id"], remove_from_pages=False,
+        self.store.backend.uninstall_plugin(plugin_id=self.plugin_data.plugin_id, remove_from_pages=False,
                                             remove_files=False)
         self.install()
 
@@ -124,15 +126,15 @@ class PluginPreview(StorePreview):
         self.plugin_page.set_info_visible(True)
 
         # Update info page
-        self.plugin_page.info_page.set_name(self.plugin_dict.get("plugin_name"))
-        self.plugin_page.info_page.set_description(self.plugin_dict.get("description"))
-        self.plugin_page.info_page.set_author(self.plugin_dict.get("user_name"))
-        self.plugin_page.info_page.set_version(self.plugin_dict.get("plugin_version"))
+        self.plugin_page.info_page.set_name(self.plugin_data.plugin_name)
+        self.plugin_page.info_page.set_description(gl.lm.get_custom_translation(self.plugin_data.descriptions))
+        self.plugin_page.info_page.set_author(self.plugin_data.author)
+        self.plugin_page.info_page.set_version(self.plugin_data.plugin_version)
 
-        self.plugin_page.info_page.set_license(self.plugin_dict.get("license"))
-        self.plugin_page.info_page.set_copyright(self.plugin_dict.get("copyright"))
-        self.plugin_page.info_page.set_original_url(self.plugin_dict.get("original_url"))
-        self.plugin_page.info_page.set_license_description(self.plugin_dict.get("license_description"))
+        self.plugin_page.info_page.set_license(self.plugin_data.license)
+        self.plugin_page.info_page.set_copyright(self.plugin_data.copyright)
+        self.plugin_page.info_page.set_original_url(self.plugin_data.original_url)
+        self.plugin_page.info_page.set_license_description(gl.lm.get_custom_translation(self.plugin_data.license_descriptions))
 
     def check_required_version(self, app_version_to_check: str):
         if app_version_to_check is None:

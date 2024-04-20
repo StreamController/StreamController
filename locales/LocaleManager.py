@@ -78,3 +78,8 @@ class LocaleManager:
             if language.startswith(primary_language_code):
                 return language
         return self.FALLBACK_LOCALE
+
+    def get_custom_translation(self, locale_json:dict[str, str]):
+        if locale_json is None:
+            return ""
+        return locale_json.get(self.locales, locale_json.get(self.FALLBACK_LOCALE))

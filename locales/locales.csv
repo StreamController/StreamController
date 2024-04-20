@@ -185,3 +185,7 @@ page-manager-search-hint;;;Rechercher
 page-manager-add-page;;;Ajouter une page
 page-manager-rename;;;Renommer
 page-manager-remove;;;Supprimer
+page-manager.duplicate;Duplizieren;Duplicate;
+page-manager.export-page;Exportieren;Export;
+page-manager.import;Importieren;Import;
+page-manager.import.page;Seite;Page;

@@ -85,7 +85,9 @@ class PageSelector(Adw.NavigationPage):
     def on_row_activated(self, list_box: Gtk.ListBox, row: "PageRow") -> None:
         if row is None:
             self.page_manager.page_editor.main_stack.set_visible_child_name("no-page")
+            self.page_manager.page_editor.menu_button.set_page_specific_actions_enabled(False)
             return
+        self.page_manager.page_editor.menu_button.set_page_specific_actions_enabled(True)
         self.page_manager.page_editor.main_stack.set_visible_child_name("editor")
         self.page_manager.page_editor.load_for_page(row.page_path)
 

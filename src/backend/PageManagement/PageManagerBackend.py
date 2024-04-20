@@ -245,13 +245,9 @@ class PageManagerBackend:
                 del self.created_pages[controller][path]
 
 
-    def add_page(self, name:str):
-        page = {
-            "keys": {}
-        }
-
+    def add_page(self, name:str, page_dict: dict = {}):
         with open(os.path.join(gl.DATA_PATH, "pages", f"{name}.json"), "w") as f:
-            json.dump(page, f)
+            json.dump(page_dict, f)
 
         # Update ui
         # self.update_ui()

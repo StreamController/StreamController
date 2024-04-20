@@ -109,7 +109,21 @@ class StreamDeckUIImporter:
                     ## Actions
                     page["keys"][coords]["actions"] = []
 
-                    # Keys
+                    # Switch page
+                    export_switch_page = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("switch_page")
+                    if str(export_switch_page) != str(int(page_name)+1) and export_switch_page not in [0, "0", None, ""]:
+                        if export_switch_page not in [None, ""]:
+                            page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{export_switch_page}.json")
+                            action = {
+                                "id": "com_core447_DeckPlugin::ChangePage",
+                                "settings": {
+                                    "selected_page": page_path,
+                                    "deck_number": None
+                                }
+                            }
+                            page["keys"][coords]["actions"].append(action)
+
+                    # Hotkey
                     if self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("keys") not in [None, ""]:
                         parsed = ""
                         try:
@@ -169,20 +183,6 @@ class StreamDeckUIImporter:
                                 "settings": {}
                             }
                         page["keys"][coords]["actions"].append(action)
-
-                    # Switch page
-                    export_switch_page = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("switch_page")
-                    if str(export_switch_page) != str(int(page_name)+1) and export_switch_page not in [0, "0", None, ""]:
-                        if export_switch_page not in [None, ""]:
-                            page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{export_switch_page}.json")
-                            action = {
-                                "id": "com_core447_DeckPlugin::ChangePage",
-                                "settings": {
-                                    "selected_page": page_path,
-                                    "deck_number": None
-                                }
-                            }
-                            page["keys"][coords]["actions"].append(action)
 
 
                 page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{int(page_name) + 1}.json")

@@ -347,3 +347,11 @@
   background-color: rgba(255, 255, 255, 0.1);
   padding: 10px 10px;
 }
+.plus-screenbar{
+  border-radius: 10px;
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  background-color: #363636;
+}

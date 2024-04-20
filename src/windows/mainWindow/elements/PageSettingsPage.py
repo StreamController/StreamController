@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
@@ -23,6 +24,7 @@ from loguru import logger as log
 
 # Import own modules
 from src.windows.mainWindow.elements.KeyGrid import KeyGrid
+from src.windows.mainWindow.DeckPlus.ScreenBar import ScreenBar
 from src.windows.mainWindow.elements.PageSettings.PageSettings import PageSettings
 
 # Import globals
@@ -67,6 +69,9 @@ class PageSettingsPage(Gtk.Overlay):
         # Add key grid
         self.grid_page = KeyGrid(self.deck_controller, self)
         self.stack.add_titled(self.grid_page, "keys", gl.lm.get("main-page-page-grid"))
+
+        self.screenbar = ScreenBar(self)
+        self.stack.add_titled(self.screenbar, "screenbar", gl.lm.get("main-page-page-screenbar"))
 
         # Add settings
         self.settings_page = PageSettings(self)

@@ -60,8 +60,6 @@ class PluginPage(StorePage):
             self.show_connection_error()
             return
         for plugin in plugins:
-            if plugin.local_sha is None and self.check_required_version(plugin.minimum_app_version, True):
-                continue
             GLib.idle_add(self.flow_box.append, PluginPreview(plugin_page=self, plugin_data=plugin))
 
         self.set_loaded()

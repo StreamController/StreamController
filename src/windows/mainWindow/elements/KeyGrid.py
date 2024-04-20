@@ -36,10 +36,10 @@ class KeyGrid(Gtk.Grid):
     Child of PageSettingsPage
     Key grid for the button config
     """
-    def __init__(self, deck_controller, deck_page, **kwargs):
+    def __init__(self, deck_controller, page_settings_page, **kwargs):
         super().__init__(**kwargs)
         self.deck_controller = deck_controller
-        self.deck_page = deck_page
+        self.page_settings_page = page_settings_page
 
         self.selected_key = None # The selected key, indicated by a blue frame around it
 
@@ -263,10 +263,10 @@ class KeyButton(Gtk.Frame):
         # Check if we can perform the next checks
         if recursive_hasattr(self, "key_grid.deck_page.grid_page"):
             # Check if this keygrid is on the screen
-            if self.key_grid.deck_page.stack.get_visible_child() != self.key_grid.deck_page.grid_page:
+            if self.key_grid.page_settings_page.stack.get_visible_child() != self.key_grid.page_settings_page.grid_page:
                 self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
             # Check if this deck is on the screen
-            if self.key_grid.deck_page.deck_stack_child.stack.get_visible_child() != self.key_grid.deck_page:
+            if self.key_grid.page_settings_page.deck_stack_child.stack.get_visible_child() != self.key_grid.page_settings_page:
                 self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
 
         self.pixbuf = None
@@ -333,17 +333,18 @@ class KeyButton(Gtk.Frame):
         # Release key after 100ms
         GLib.timeout_add(100, self.key_grid.deck_controller.key_change_callback, deck, key, False)
 
-    def set_visible(self, visible):
+    def set_border_active(self, visible):
         if visible:
             # Hide other frames
-            if self.key_grid.selected_key not in [self, None]:
+            if self.key_grid.page_settings_page.deck_config.active_widget not in [self, None]:
                 # self.key_grid.selected_key.set_css_classes(["key-button-frame-hidden"])
-                self.key_grid.selected_key.set_visible(False)
+                self.key_grid.page_settings_page.deck_config.active_widget.set_border_active(False)
+            self.key_grid.page_settings_page.deck_config.active_widget = self
             self.set_css_classes(["key-button-frame"])
             self.key_grid.selected_key = self
         else:
             self.set_css_classes(["key-button-frame-hidden"])
-            self.key_grid.selected_key = None
+            self.key_grid.page_settings_page.deck_config.active_widget = None
 
     def on_focus_in(self, *args):
         # Update settings on the righthand side of the screen
@@ -356,7 +357,7 @@ class KeyButton(Gtk.Frame):
             self.set_icon_selector_previews(self.pixbuf)
         # self.set_css_classes(["key-button-frame"])
         # self.button.set_css_classes(["key-button-new-small"])
-        self.set_visible(True)
+        self.set_border_active(True)
 
     # Modifier
     def on_copy(self, *args):

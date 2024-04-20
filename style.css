@@ -364,4 +364,21 @@
   padding-top: 0px;
   padding-bottom: 0px;
   background-color: #363636;
+  border-radius: 50px;
+}
+.dial-frame {
+  border-radius:50px;
+  border-width: 3px;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  margin: 6px;
+}
+.dial-frame-visible {
+  border-color: #78AEED;
+}
+
+.dial-frame-hidden {
+  border-color: #00000000;
 }

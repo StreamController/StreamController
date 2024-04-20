@@ -39,17 +39,40 @@ class ScreenBar(Gtk.Frame):
         self.set_child(self.image)
 
         focus_controller = Gtk.EventControllerFocus()
-        self.add_controller(focus_controller)
+        self.image.add_controller(focus_controller)
         focus_controller.connect("enter", self.on_focus_in)
-        focus_controller.connect("leave", self.on_focus_out)
+
+        self.click_ctrl = Gtk.GestureClick().new()
+        self.click_ctrl.connect("pressed", self.on_click)
+        self.click_ctrl.set_button(0)
+        self.image.add_controller(self.click_ctrl)
 
     
         # Make image focusable
         self.set_focus_child(self.image)
         self.image.set_focusable(True)
 
-    def on_focus_in(self, *args):
-        self.set_css_classes(["key-button-frame"])
+    def on_click(self, gesture, n_press, x, y):
+        if gesture.get_current_button() == 1 and n_press == 1:
+            # Single left click
+            # Select key
+            self.image.grab_focus()
 
-    def on_focus_out(self, *args):
-        self.set_css_classes(["key-button-frame-hidden"])
+        elif gesture.get_current_button() == 1 and n_press == 2:
+            pass
+            # Double left click
+            # Simulate key press
+            # self.simulate_press()
+
+    def on_focus_in(self, *args):
+        self.set_border_active(True)
+
+    def set_border_active(self, active: bool):
+        if active:
+            if self.page_settings_page.deck_config.active_widget not in [self, None]:
+                self.page_settings_page.deck_config.active_widget.set_border_active(False)
+            self.page_settings_page.deck_config.active_widget = self
+            self.set_css_classes(["key-button-frame"])
+        else:
+            self.set_css_classes(["key-button-frame-hidden"])
+            self.page_settings_page.deck_config.active_widget = None

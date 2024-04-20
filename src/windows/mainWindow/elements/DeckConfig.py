@@ -34,6 +34,8 @@ class DeckConfig(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, homogeneous=False,
                          halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
         self.page_settings_page = page_settings_page
+
+        self.active_widget = None
         self.build()
 
     def build(self):

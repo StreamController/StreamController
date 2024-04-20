@@ -81,7 +81,7 @@ class DeckStack(Gtk.Stack):
         page = DeckStackChild(self, deck_controller)
         self.add_titled(page, deck_number, deck_type)
 
-        page.page_settings.grid_page.select_key(0, 0)
+        page.page_settings.deck_config.grid.select_key(0, 0)
 
         self.main_window.change_ui_to_connected_deck()
 

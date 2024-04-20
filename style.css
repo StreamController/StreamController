@@ -354,4 +354,14 @@
   padding-top: 0px;
   padding-bottom: 0px;
   background-color: #363636;
+  min-height:75px;
+}
+.dial {
+  min-width:75px;	
+  min-height:75px;
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  background-color: #363636;
 }

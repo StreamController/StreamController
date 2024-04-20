@@ -26,15 +26,29 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
 
-class ScreenBar(Gtk.Frame):
+class DialBox(Gtk.Box):
     def __init__(self, page_settings_page: "PageSettingsPage", **kwargs):
-        self.page_settings_page = page_settings_page
         super().__init__(**kwargs)
-        self.set_css_classes(["key-button-frame-hidden"])
+        self.page_settings_page = page_settings_page
+        self.build()
+
+    def build(self):
+        for i in range(4):
+
+            dial = Dial(self)
+            self.append(dial)
+
+
+class Dial(Gtk.Frame):
+    def __init__(self, dial_box: DialBox, **kwargs):
+        self.dial_box = dial_box
+        super().__init__(**kwargs)
+        self.set_css_classes(["circular"])
+        self.set_overflow(Gtk.Overflow.HIDDEN)
 
         self.pixbuf = None
 
-        self.image = Gtk.Image(css_classes=["key-image", "plus-screenbar"])
+        self.image = Gtk.Image(css_classes=["dial", "circular"])
         self.image.set_overflow(Gtk.Overflow.HIDDEN)
         self.set_child(self.image)
 

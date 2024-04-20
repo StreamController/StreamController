@@ -38,8 +38,6 @@ class KeyGrid(Gtk.Grid):
     """
     def __init__(self, deck_controller, deck_page, **kwargs):
         super().__init__(**kwargs)
-        self.set_halign(Gtk.Align.CENTER)
-        self.set_valign(Gtk.Align.CENTER)
         self.deck_controller = deck_controller
         self.deck_page = deck_page
 

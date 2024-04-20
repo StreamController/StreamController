@@ -624,8 +624,8 @@ class DeckController:
         if deck_stack_child == None:
             return
         
-        self.own_key_grid = deck_stack_child.page_settings.grid_page
-        return deck_stack_child.page_settings.grid_page
+        self.own_key_grid = deck_stack_child.page_settings.deck_config.grid
+        return deck_stack_child.page_settings.deck_config.grid
     
     def clear_media_player_tasks(self):
         self.media_player.tasks.clear()

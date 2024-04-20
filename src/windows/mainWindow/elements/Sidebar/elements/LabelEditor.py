@@ -281,7 +281,6 @@ class LabelRow(Adw.PreferencesRow):
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-size"] = round(font_size/1000)
 
         page.save()
-        return
 
         # Reload key on all decks that have this page loaded
         current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller

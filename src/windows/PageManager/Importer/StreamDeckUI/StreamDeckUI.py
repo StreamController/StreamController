@@ -3,6 +3,7 @@ import os
 import json
 import time
 
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 from src.windows.PageManager.Importer.StreamDeckUI.helper import font_family_from_path, hex_to_rgba255
 from src.windows.PageManager.Importer.StreamDeckUI.code_conv import parse_keys_as_keycodes
 
@@ -198,6 +199,8 @@ class StreamDeckUIImporter:
 
         log.success("Imported all pages from StreamDeck UI")
 
-        GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
-        GLib.idle_add(gl.page_manager_window.page_selector.load_pages)
+        if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
+            GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
+        if recursive_hasattr(gl, "page_manager_window.page_selector"):
+            GLib.idle_add(gl.page_manager_window.page_selector.load_pages)
         log.success("Updated ui")

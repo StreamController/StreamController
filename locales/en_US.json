@@ -178,5 +178,6 @@
     "asset-manager.custom-assets.remove-confirmation-dialog.title": "Remove Asset",
     "asset-manager.custom-assets.remove-confirmation-dialog.cancel": "Cancel",
     "asset-manager.custom-assets.remove-confirmation-dialog.remove": "Remove",
-    "asset-manager.custom-assets.remove-confirmation-dialog.body": "Are you sure you want to remove the asset "
+    "asset-manager.custom-assets.remove-confirmation-dialog.body": "Are you sure you want to remove the asset ",
+    "errors.no-page.import": "Import"
 }

@@ -14,6 +14,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.windows.Store.StoreData import WallpaperData
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, GLib
@@ -58,43 +60,43 @@ class WallpaperPage(StorePage):
             self.show_connection_error()
             return
         for icon in icons:
-            GLib.idle_add(self.flow_box.append, WallpaperPreview(wallpaper_page=self, wallpaper_dict=icon))
+            GLib.idle_add(self.flow_box.append, WallpaperPreview(wallpaper_page=self, wallpaper_data=icon))
 
         self.set_loaded()
 
 
 class WallpaperPreview(StorePreview):
-    def __init__(self, wallpaper_page:WallpaperPage, wallpaper_dict:dict):
+    def __init__(self, wallpaper_page:WallpaperPage, wallpaper_data:WallpaperData):
         super().__init__(store_page=wallpaper_page)
-        self.wallpaper_dict = wallpaper_dict
+        self.wallpaper_data = wallpaper_data
         self.wallpaper_page = wallpaper_page
 
-        self.set_author_label(wallpaper_dict["user_name"])
-        self.set_name_label(wallpaper_dict["name"])
-        self.set_image(wallpaper_dict["image"])
-        self.set_url(wallpaper_dict["url"])
+        self.set_author_label(wallpaper_data.author)
+        self.set_name_label(wallpaper_data.wallpaper_name)
+        self.set_image(wallpaper_data.image)
+        self.set_url(wallpaper_data.github)
 
-        self.set_official(wallpaper_dict["official"])
-        self.set_verified(wallpaper_dict["commit_sha"] is not None)
+        self.set_official(wallpaper_data.official)
+        self.set_verified(wallpaper_data.commit_sha is not None)
 
-        if wallpaper_dict["local_sha"] is None:
+        if wallpaper_data.local_sha is None:
             self.set_install_state(0)
-        elif wallpaper_dict["commit_sha"] == wallpaper_dict["local_sha"]:
+        elif wallpaper_data.local_sha == wallpaper_data.commit_sha:
             self.set_install_state(1)
         else:
             self.set_install_state(2)
 
-        description = self.wallpaper_dict.get("short_description")
+        description = gl.lm.get_custom_translation(self.wallpaper_data.short_descriptions)
         if description in ["", "N/A", None]:
-            description = self.wallpaper_dict.get("description")
+            description = gl.lm.get_custom_translation(self.wallpaper_data.descriptions)
         self.set_description(description)
 
     def install(self):
-        asyncio.run(self.store.backend.install_wallpaper(wallpaper_dict=self.wallpaper_dict))
+        asyncio.run(self.store.backend.install_wallpaper(wallpaper_data=self.wallpaper_data))
         self.set_install_state(1)
 
     def uninstall(self):
-        asyncio.run(self.store.backend.uninstall_wallpaper(wallpaper_dict=self.wallpaper_dict))
+        asyncio.run(self.store.backend.uninstall_wallpaper(wallpaper_data=self.wallpaper_data))
         self.set_install_state(0)
 
     def update(self):
@@ -104,12 +106,12 @@ class WallpaperPreview(StorePreview):
         self.wallpaper_page.set_info_visible(True)
 
         # Update info page
-        self.wallpaper_page.info_page.set_name(self.wallpaper_dict.get("name"))
-        self.wallpaper_page.info_page.set_description(self.wallpaper_dict.get("description"))
-        self.wallpaper_page.info_page.set_author(self.wallpaper_dict.get("user_name"))
-        self.wallpaper_page.info_page.set_version(self.wallpaper_dict.get("version"))
+        self.wallpaper_page.info_page.set_name(self.wallpaper_data.get("wallpaper_name"))
+        self.wallpaper_page.info_page.set_description(self.wallpaper_data.get("description"))
+        self.wallpaper_page.info_page.set_author(self.wallpaper_data.get("user_name"))
+        self.wallpaper_page.info_page.set_version(self.wallpaper_data.get("wallpaper_version"))
 
-        self.wallpaper_page.info_page.set_license(self.wallpaper_dict.get("license"))
-        self.wallpaper_page.info_page.set_copyright(self.wallpaper_dict.get("copyright"))
-        self.wallpaper_page.info_page.set_original_url(self.wallpaper_dict.get("original_url"))
-        self.wallpaper_page.info_page.set_license_description(self.wallpaper_dict.get("license_description"))
+        self.wallpaper_page.info_page.set_license(self.wallpaper_data.get("license"))
+        self.wallpaper_page.info_page.set_copyright(self.wallpaper_data.get("copyright"))
+        self.wallpaper_page.info_page.set_original_url(self.wallpaper_data.get("original_url"))
+        self.wallpaper_page.info_page.set_license_description(self.wallpaper_data.get("license_description"))

@@ -48,15 +48,9 @@ class PluginBase(rpyc.Service):
 
         self.plugin_name: str = None
 
-    def register(self, plugin_name: str, github_repo: str, plugin_version: str, app_version: str):
+    def register(self):
         """
         Registers a plugin with the given information.
-
-        Args:
-            plugin_name (str): The name of the plugin.
-            github_repo (str): The GitHub repository URL of the plugin.
-            plugin_version (str): The version of the plugin.
-            app_version (str): The version of the application. Do NOT set it programmatically (e.g. by using gl.app_version).
 
         Raises:
             ValueError: If the plugin name is not specified or if the plugin already exists.
@@ -64,6 +58,12 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
+
+        manifest = self.get_manifest()
+        plugin_name = manifest.get("plugin-name") or None
+        github_repo = manifest.get("github") or None
+        plugin_version = manifest.get("plugin-version") or None
+        minimum_app_version = manifest.get("minimum-app-version") or None
         
         # Verify variables
         if plugin_name in ["", None]:
@@ -73,7 +73,7 @@ class PluginBase(rpyc.Service):
             log.error(f"Plugin: {plugin_name}: Please specify a github repo")
             return
         
-        self.plugin_id = self.get_plugin_id()
+        self.plugin_id = manifest.get("plugin-id")
 
         for plugin_id in PluginBase.plugins.keys():
             plugin = PluginBase.plugins[plugin_id]["object"]
@@ -81,52 +81,71 @@ class PluginBase(rpyc.Service):
                 log.error(f"Plugin: {plugin_name}: Plugin already exists")
                 return
 
-        if self.do_versions_match(app_version):
-            # Register plugin
-            PluginBase.plugins[self.plugin_id] = {
-                "object": self,
-                "github": github_repo,
-                "version": plugin_version,
-                "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
-                "file_name": os.path.basename(inspect.getfile(self.__class__))
-            }
-            self.registered = True
-
+        if self.do_versions_match(manifest.get("current-app-version") or None):
+            if self.do_versions_match(minimum_app_version, True):
+                # Register plugin
+                PluginBase.plugins[self.plugin_id] = {
+                    "object": self,
+                    "plugin_version": plugin_version,
+                    "minimum_app_version": minimum_app_version,
+                    "github": github_repo,
+                    "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
+                    "file_name": os.path.basename(inspect.getfile(self.__class__))
+                }
+                self.registered = True
+            else:
+                log.warning(f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
+                            f"Please update StreamController! Plugin requires app version {minimum_app_version} and "
+                            f"you are on version {gl.app_version}. Disabling plugin.")
+                PluginBase.disabled_plugins[self.plugin_id] = {
+                    "object": self,
+                    "plugin_version": plugin_version,
+                    "minimum_app_version": minimum_app_version,
+                    "github": github_repo,
+                    "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
+                    "file_name": os.path.basename(inspect.getfile(self.__class__))
+                }
         else:
             log.warning(
-                f"Plugin {plugin_name} is not compatible with this version of StreamController. "
+                f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
                 f"Please update your assets! Plugin requires version {plugin_version} and you are "
                 f"running version {gl.app_version}. Disabling plugin."
             )
             PluginBase.disabled_plugins[self.plugin_id] = {
                 "object": self,
+                "plugin_version": plugin_version,
+                "minimum_app_version": minimum_app_version,
                 "github": github_repo,
-                "version": plugin_version,
                 "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
                 "file_name": os.path.basename(inspect.getfile(self.__class__))
             }
 
         self.plugin_name = plugin_name
         self.github_repo = github_repo
-        self.version = plugin_version
+        self.plugin_version = plugin_version
 
     def get_plugin_id(self) -> str:
         module = importlib.import_module(self.__module__)
         subclass_file = module.__file__
         return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
 
+    def do_versions_match(self, app_version_to_check: str, is_min_app_version: bool = False):
+        if is_min_app_version:
+            if app_version_to_check is None:
+                return True
+            min_version = version.parse(app_version_to_check)
+            app_version = version.parse(gl.app_version)
 
-    def do_versions_match(self, app_version_to_check: str):
-        if gl.exact_app_version_check:
-            gl.app_version == app_version
-            return
+            return min_version < app_version
+        #if gl.exact_app_version_check:
+        #    gl.app_version == app_version
+        #    return
         
         # Only compare major version
         app_version = version.parse(gl.app_version)
         app_version_to_check = version.parse(app_version_to_check)
 
         return app_version.major == app_version_to_check.major
-        
 
     def add_action_holder(self, action_holder: ActionHolder):
         if not isinstance(action_holder, ActionHolder):
@@ -137,6 +156,12 @@ class PluginBase(rpyc.Service):
     def get_settings(self):
         if os.path.exists(os.path.join(self.PATH, "settings.json")):
             with open(os.path.join(self.PATH, "settings.json"), "r") as f:
+                return json.load(f)
+        return {}
+
+    def get_manifest(self):
+        if os.path.exists(os.path.join(self.PATH, "manifest.json")):
+            with open(os.path.join(self.PATH, "manifest.json"), "r") as f:
                 return json.load(f)
         return {}
     

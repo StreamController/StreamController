@@ -51,7 +51,7 @@ class ActionBase(rpyc.Service):
         self.CONTROLS_KEY_IMAGE: bool = False
         self.KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
         self.LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
-        self.HAS_CONFIGURATION = False
+        self.has_configuration = False
 
         self.labels = {}
         self.current_key = {

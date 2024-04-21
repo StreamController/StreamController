@@ -109,7 +109,10 @@ class ColorRow(Adw.PreferencesRow):
         self.color_chooser_button.connect("notify::rgba", self.on_change_color)
 
     def disconnect_signals(self):
-        self.color_chooser_button.disconnect_by_func(self.on_change_color)
+        try:
+            self.color_chooser_button.disconnect_by_func(self.on_change_color)
+        except:
+            pass
 
     def set_color(self, color_values: list):
         if len(color_values) == 3:

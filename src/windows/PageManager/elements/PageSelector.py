@@ -13,10 +13,11 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gi
+from functools import lru_cache
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio, Pango
+from gi.repository import Gtk, Adw, Gio, Pango, GLib
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -67,6 +68,7 @@ class PageSelector(Adw.NavigationPage):
 
         self.list_box = Gtk.ListBox(css_classes=["navigation-sidebar"], selection_mode=Gtk.SelectionMode.SINGLE)
         self.list_box.set_sort_func(self.sort_func)
+        self.list_box.set_filter_func(self.filter_func)
         self.list_box.connect("row-selected", self.on_row_activated)
         self.clamp_box.append(self.list_box)
 
@@ -141,17 +143,34 @@ class PageSelector(Adw.NavigationPage):
                 elif part1 > part2:
                     return 1
         
-        fuzz1 = fuzz.ratio(item_1_page_name.lower(), search.lower())
-        fuzz2 = fuzz.ratio(item_2_page_name.lower(), search.lower())
+        fuzz1 = self.calc_ratio(item_1_page_name, search)
+        fuzz2 = self.calc_ratio(item_2_page_name, search)
 
         if fuzz1 > fuzz2:
             return -1
         elif fuzz1 < fuzz2:
             return 1
         return 0
+    
+    def filter_func(self, item) -> bool:
+        search = self.search_entry.get_text()
+        if search == "":
+            return True
+
+        page_name = os.path.splitext(os.path.basename(item.page_path))[0]
+
+        return self.calc_ratio(page_name, search) > 50
+    
+    @lru_cache(maxsize=1000)
+    def calc_ratio(self, str1, str2) -> int:
+        return fuzz.partial_ratio(str1.lower(), str2.lower())
+
         
     def on_search_changed(self, search_entry: Gtk.SearchEntry) -> None:
-        self.list_box.invalidate_sort()
+        # self.list_box.invalidate_filter()
+        # self.list_box.invalidate_sort()
+        GLib.idle_add(self.list_box.invalidate_filter)
+        GLib.idle_add(self.list_box.invalidate_sort)
 
 class AddNewButton(Gtk.Button):
     def __init__(self, page_manager: "PageManager", *args, **kwargs):

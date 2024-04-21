@@ -1081,6 +1081,10 @@ class ControllerKeyLayoutManager:
         self.action_layout = KeyLayout()
         self.page_layout = KeyLayout()
 
+    def clear(self):
+        self.action_layout = KeyLayout()
+        self.page_layout = KeyLayout()
+
     def get_use_page_layout_properties(self) -> dict:
         return {
             "valign": self.page_layout.valign is not None,
@@ -1381,6 +1385,10 @@ class ControllerKey:
         if load_labels:
             self.label_manager.clear_labels()
 
+        # Reset action layout
+        layout = KeyLayout()
+        self.layout_manager.set_action_layout(layout, update=False)
+
         self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
 
         ## Load labels
@@ -1458,6 +1466,7 @@ class ControllerKey:
         self.key_image = None
         self.key_video = None
         self.label_manager.clear_labels()
+        self.layout_manager.clear()
         self.background_color = [0, 0, 0, 0]
         if update:
             self.update()

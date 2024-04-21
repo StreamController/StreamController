@@ -79,6 +79,11 @@ class WallpaperPreview(StorePreview):
         self.set_official(wallpaper_data.official)
         self.set_verified(wallpaper_data.commit_sha is not None)
 
+        if not self.check_required_version(wallpaper_data.minimum_app_version):
+            self.main_button_box.add_css_class("red-border")
+        else:
+            self.main_button_box.remove_css_class("red-border")
+
         if wallpaper_data.local_sha is None:
             self.set_install_state(0)
         elif wallpaper_data.local_sha == wallpaper_data.commit_sha:

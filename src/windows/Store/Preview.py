@@ -33,6 +33,7 @@ import threading
 from src.windows.Store.StorePage import StorePage
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
+from packaging import version
 
 class StorePreview(Gtk.FlowBoxChild):
     def __init__(self, store_page: StorePage):
@@ -55,6 +56,14 @@ class StorePreview(Gtk.FlowBoxChild):
                                  css_classes=["no-padding"],
                                  width_request=250, height_request=250)
         self.set_child(self.main_box)
+
+        # ADD BOX FOR SEARCHING
+        self.search_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.main_box.append(self.search_box)
+
+        # ADD SEARCH BAR
+        self.search_bar = Gtk.SearchBar()
+        self.search_box.append(self.search_bar)
 
         self.main_button = Gtk.Button(hexpand=True, vexpand=False,
                                       width_request=250, height_request=250,
@@ -250,3 +259,11 @@ class StorePreview(Gtk.FlowBoxChild):
         if len(description) >= 50:
             description = description[:47] + "..."
         self.description.set_label(description)
+
+    def check_required_version(self, app_version_to_check: str):
+        if app_version_to_check is None:
+            return True
+        min_version = version.parse(app_version_to_check)
+        app_version = version.parse(gl.app_version)
+
+        return min_version < app_version

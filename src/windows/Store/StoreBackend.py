@@ -327,13 +327,7 @@ class StoreBackend:
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
-        user_name = self.get_user_name(url)
-        repo_name = self.get_repo_name(url)
-
         stargazers = await self.get_stargazers(url)
-
-        #user_name -> author
-        #repo_name
 
         author = self.get_user_name(url)
 
@@ -363,27 +357,6 @@ class StoreBackend:
             plugin_id=manifest.get("plugin-id") or None
         )
 
-        #return {
-        #    "plugin_name": manifest.get("plugin-name"),
-        #    "plugin_version": manifest.get("plugin-version"),
-        #    "minimum_app_version": manifest.get("minimum-software-version") or "",
-        #    "plugin_id": manifest.get("plugin-id"),
-        #    "display_name": manifest.get("display-name") or manifest.get("plugin-name"), # Use specified display name, when not available use plugin-name
-        #    "descriptions": manifest.get("descriptions") or [],
-        #    "short_descriptions": manifest.get("short-descriptions") or [],
-        #    "url": url,
-        #    "user_name": user_name,
-        #    "repo_name": repo_name,
-        #    "image": image,
-        #    "stargazers": stargazers,
-        #    "official": user_name in self.official_authors,
-        #    "commit_sha": commit,
-        #    "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
-        #    "copyright": attribution.get("copyright"),
-        #    "original_url": attribution.get("original-url"),
-        #    "license": attribution.get("license"),
-        #    "license_description": attribution.get("license-description", attribution.get("description")),
-        #}
     
     async def get_local_sha(self, git_dir: str):
         if not os.path.exists(git_dir):
@@ -730,7 +703,7 @@ class StoreBackend:
         # Notify plugin actions
         gl.signal_manager.trigger_signal(Signals.PluginInstall, plugin_data.plugin_id)
 
-        log.success(f"Plugin {plugin_data['plugin_id']} installed successfully under: {local_path} with sha: {plugin_data.commit_sha}")
+        log.success(f"Plugin {plugin_data.plugin_id} installed successfully under: {local_path} with sha: {plugin_data.commit_sha}")
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False, remove_files:bool = True) -> bool:
         ## 1. Remove all action objects in all pages
         for deck_controller in gl.deck_manager.deck_controller:

@@ -88,10 +88,6 @@ class PluginPreview(StorePreview):
         self.set_official(plugin_data.official)
         self.set_verified(plugin_data.commit_sha is not None)
 
-        #TODO: CHANGE COLOR OF PREVIEW TO MAKE THE VERSION DIFFERENCE VISABLE
-        if not self.check_required_version(plugin_data.minimum_app_version):
-            pass
-
         # Set install button state
         if plugin_data.local_sha is None:
             self.set_install_state(0)
@@ -100,11 +96,9 @@ class PluginPreview(StorePreview):
         else:
             self.set_install_state(2)
 
-        #TODO: LOAD TRANSLATION
-
-        description = gl.lm.get_custom_translation(plugin_data.short_descriptions)
+        description = gl.lm.get_custom_translation(self.plugin_data.short_descriptions)
         if description in ["", "N/A", None]:
-            description = gl.lm.get_custom_translation(plugin_data.descriptions)
+            description = gl.lm.get_custom_translation(self.plugin_data.descriptions)
         self.set_description(description)
 
     def install(self):

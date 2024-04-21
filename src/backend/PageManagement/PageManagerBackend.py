@@ -23,7 +23,7 @@ from loguru import logger as log
 
 # Import own modules
 from src.backend.PageManagement.Page import Page
-from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+from src.backend.DeckManagement.HelperMethods import natural_sort, natural_sort_by_filenames, recursive_hasattr
 
 # Import globals
 import globals as gl
@@ -59,7 +59,7 @@ class PageManagerBackend:
         for page in self.pages.values():
             page.save()
 
-    def get_pages(self, add_custom_pages: bool = True) -> list:
+    def get_pages(self, add_custom_pages: bool = True, sort: bool = True) -> list:
         pages = []
         # Create pages dir if it doesn't exist
         os.makedirs(os.path.join(gl.DATA_PATH, "pages"), exist_ok=True)
@@ -71,6 +71,10 @@ class PageManagerBackend:
         if add_custom_pages:
             pages.extend(self.custom_pages)
 
+        if sort:
+            pages = natural_sort_by_filenames(pages)
+
+        # print(pages)
         return pages
     
     def get_page_names(self) -> list[str]:

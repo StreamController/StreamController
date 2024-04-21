@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
 # Import own modules
 from GtkHelper.GtkHelper import EntryDialog
+from src.backend.DeckManagement.HelperMethods import natural_keys
 
 # Import python modules
 import os
@@ -109,16 +110,6 @@ class PageSelector(Adw.NavigationPage):
         self.page_rows.append(page_row)
         self.list_box.append(page_row)
 
-    def atoi(self, text):
-        return int(text) if text.isdigit() else text.lower()
-
-    def natural_keys(self, text):
-        """
-        alist.sort(key=natural_keys) sorts in human order
-        http://nedbatchelder.com/blog/200712/human_sorting.html
-        """
-        return [self.atoi(c) for c in re.split('(\d+)', text)]
-    
     def sort_func(self, item1, item2) -> bool:
         """
         -1 if child1 should come before child2
@@ -132,8 +123,8 @@ class PageSelector(Adw.NavigationPage):
         if search == "":
             # Sort alphabetically
             # Split the page names into parts and convert numbers to integers
-            item_1_parts = self.natural_keys(item_1_page_name)
-            item_2_parts = self.natural_keys(item_2_page_name)
+            item_1_parts = natural_keys(item_1_page_name)
+            item_2_parts = natural_keys(item_2_page_name)
 
             # Compare each part
             for part1, part2 in zip(item_1_parts, item_2_parts):

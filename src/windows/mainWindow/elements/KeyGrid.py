@@ -348,16 +348,23 @@ class KeyButton(Gtk.Frame):
 
     def on_focus_in(self, *args):
         # Update settings on the righthand side of the screen
-        if not recursive_hasattr(gl, "app.main_win.sidebar"):
-            return
-        sidebar = gl.app.main_win.sidebar
-        sidebar.load_for_coords((self.coords[1], self.coords[0]))
+        self.update_sidebar()
         # Update preview
         if self.pixbuf is not None:
             self.set_icon_selector_previews(self.pixbuf)
         # self.set_css_classes(["key-button-frame"])
         # self.button.set_css_classes(["key-button-new-small"])
         self.set_visible(True)
+
+    def update_sidebar(self):
+        if not recursive_hasattr(gl, "app.main_win.sidebar"):
+            return
+        sidebar = gl.app.main_win.sidebar
+        # Check if already loaded for this coords
+        if sidebar.active_coords == (self.coords[1], self.coords[0]):
+            if not self.get_mapped():
+                return
+        sidebar.load_for_coords((self.coords[1], self.coords[0]))
 
     # Modifier
     def on_copy(self, *args):

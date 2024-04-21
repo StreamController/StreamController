@@ -127,7 +127,12 @@ class ColorRow(Adw.PreferencesRow):
 
         # Get active page
         page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+
+        # Set defaults
+        page.dict.setdefault("keys", {})
+        page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("background", {})
+
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["background"]["color"] = [red, green, blue, alpha]
         page.save()
 

@@ -116,7 +116,7 @@ class MenuButton(Gtk.MenuButton):
         ChooseImportFileDialog(self, self.import_page_callback)
 
     def import_page_callback(self, selected_file):
-        if self.selected_file in [None, ""]:
+        if selected_file in [None, ""]:
             return
         page_name = os.path.splitext(os.path.basename(selected_file.get_path()))[0]
         self.selected_file = selected_file

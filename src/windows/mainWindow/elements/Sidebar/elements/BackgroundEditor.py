@@ -156,7 +156,7 @@ class ColorRow(Adw.PreferencesRow):
         if page is None:
             return
 
-        self.set_color(page.dict.get("keys").get(f"{self.active_coords[0]}x{self.active_coords[1]}", {}).get("background", {}).get("color", [0, 0, 0, 0]))
+        self.set_color(page.dict.get("keys", {}).get(f"{self.active_coords[0]}x{self.active_coords[1]}", {}).get("background", {}).get("color", [0, 0, 0, 0]))
 
         self.connect_signals()
 

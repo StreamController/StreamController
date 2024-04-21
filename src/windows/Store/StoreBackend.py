@@ -53,6 +53,7 @@ class NoConnectionError:
 class StoreBackend:
     STORE_REPO_URL = "https://github.com/G4PLS/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
     STORE_CACHE_PATH = "Store/cache"
+    STORE_BRANCH = "test"
 
 
     def __init__(self):
@@ -139,7 +140,7 @@ class StoreBackend:
         return answer
     
     async def get_official_authors(self) -> list:
-        result = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", "test") #TODO: REMOVE BRANCH NAME
+        result = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH)
         if isinstance(result, NoConnectionError):
             return result
         authors_json = result.text
@@ -151,7 +152,7 @@ class StoreBackend:
         returns the number of assets that are new old for the current app version
         """
         n_too_new_assets = 0
-        result = await self.get_remote_file(self.STORE_REPO_URL, "Plugins.json", "test") #TODO: REMOVE BRANCH NAME
+        result = await self.get_remote_file(self.STORE_REPO_URL, "Plugins.json", self.STORE_BRANCH)
         if isinstance(result, NoConnectionError):
             return result
         plugins_json = result.text
@@ -179,7 +180,7 @@ class StoreBackend:
         returns the number of assets that are too new for the current app version
         """
         n_to_new_assets = 0
-        result = await self.get_remote_file(self.STORE_REPO_URL, "Icons.json", "test") #TODO: REMOVE BRANCH NAME
+        result = await self.get_remote_file(self.STORE_REPO_URL, "Icons.json", self.STORE_BRANCH)
         if isinstance(result, NoConnectionError):
             return result
         icons_json = result.text
@@ -206,7 +207,7 @@ class StoreBackend:
         returns the number of assets that are too new for the current app version
         """
         n_to_new_assets = 0
-        result = await self.get_remote_file(self.STORE_REPO_URL, "Wallpapers.json", "test") #TODO: REMOVE BRANCH NAME
+        result = await self.get_remote_file(self.STORE_REPO_URL, "Wallpapers.json", self.STORE_BRANCH)
         if isinstance(result, NoConnectionError):
             return result
         wallpapers_json = result.text

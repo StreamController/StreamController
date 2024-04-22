@@ -81,6 +81,12 @@ class App(Adw.Application):
         on_quit_action.connect("activate", self.on_quit)
         self.add_action(on_quit_action)
 
+        # Do tasks
+        gl.app = self
+        for task in gl.app_loading_finished_tasks:
+            if callable(task):
+                task()
+
         log.success("Finished loading app")
 
     def on_reopen(self, *args, **kwargs):

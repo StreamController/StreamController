@@ -110,7 +110,7 @@ def create_global_objects():
 
     # Plugin Manager
     gl.plugin_manager = PluginManager()
-    gl.plugin_manager.load_plugins()
+    gl.plugin_manager.load_plugins(show_notification=True)
     gl.plugin_manager.generate_action_index()
 
     gl.window_grabber = WindowGrabber()

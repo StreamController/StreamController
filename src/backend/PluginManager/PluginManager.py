@@ -18,7 +18,7 @@ class PluginManager:
         self.initialized_plugin_classes = list[PluginBase]()
         self.backends:list[BackendBase] = []
 
-    def load_plugins(self):
+    def load_plugins(self, show_notification: bool = False):
         # get all folders in plugins folder
         if not os.path.exists(os.path.join(gl.DATA_PATH, "plugins")):
             os.mkdir(os.path.join(gl.DATA_PATH, "plugins"))
@@ -35,6 +35,30 @@ class PluginManager:
 
         # Get all classes inheriting from PluginBase and generate objects for them
         self.init_plugins()
+
+        if show_notification:
+            self.show_n_disabled_plugins_notification()
+
+
+    def show_n_disabled_plugins_notification(self):
+        n_deactivated_plugins = len(PluginBase.disabled_plugins)
+        if n_deactivated_plugins == 0:
+            return
+        
+        body = f"{n_deactivated_plugins} plugins have been disabled because they are no longer compatible with the current app version"
+        if n_deactivated_plugins == 1:
+            body = f"{n_deactivated_plugins} plugin has been disabled because it is no longer compatible with the current app version"
+        
+        call = lambda: gl.app.send_notification(
+            "dialog-information-symbolic",
+            "Plugins",
+            body
+        )
+        if gl.app is None:
+            gl.app_loading_finished_tasks.append(call)
+        else:
+            call()
+        
 
     def init_plugins(self):
         subclasses = PluginBase.__subclasses__()
@@ -106,4 +130,4 @@ class PluginManager:
             return False
         
         reason = PluginBase.disabled_plugins[plugin_id].get("reason")
-        return reason == "out-of-date"
+        return reason == "plugin-out-of-date"

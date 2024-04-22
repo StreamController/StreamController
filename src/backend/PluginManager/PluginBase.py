@@ -109,7 +109,7 @@ class PluginBase(rpyc.Service):
                 "github": self.github_repo,
                 "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
                 "file_name": os.path.basename(inspect.getfile(self.__class__)),
-                "reason": "out-of-date"
+                "reason": "plugin-out-of-date"
             }
 
             max_version = f"{version.parse(self.min_app_version).major}.x.x"

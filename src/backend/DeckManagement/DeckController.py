@@ -359,9 +359,14 @@ class DeckController:
     def generate_alpha_key(self) -> Image.Image:
         return Image.new("RGBA", self.get_key_image_size(), (0, 0, 0, 0))
     
+    @lru_cache(maxsize=None)
     def get_key_image_size(self) -> tuple[int]:
         if not self.get_alive(): return
-        return self.deck.key_image_format()["size"]
+        size = self.deck.key_image_format()["size"]
+        if size is None:
+            return (72, 72)
+        size = max(size[0], 72), max(size[1], 72)
+        return size
     
     # ------------ #
     # Page Loading #

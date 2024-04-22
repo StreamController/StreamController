@@ -120,7 +120,12 @@ class SizeRow(Adw.PreferencesRow):
         self.disconnect_signals()
         self.active_coords = coords
 
-        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        deck_controller = visible_child.deck_controller
+        if deck_controller is None:
+            return
 
         key_index = deck_controller.coords_to_index(self.active_coords)
 
@@ -134,7 +139,12 @@ class SizeRow(Adw.PreferencesRow):
     def update_values(self, composed_label: KeyLabel = None):
         self.disconnect_signals()
         if composed_label is None:
-            deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+            visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+            if visible_child is None:
+                return
+            deck_controller = visible_child.deck_controller
+            if deck_controller is None:
+                return
             controller_key = deck_controller.keys[deck_controller.coords_to_index(self.active_coords)]
             composed_label = controller_key.layout_manager.get_composed_layout()
 
@@ -143,7 +153,12 @@ class SizeRow(Adw.PreferencesRow):
         self.connect_signals()
 
     def on_size_changed(self, widget):
-        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        deck_controller = visible_child.deck_controller
+        if deck_controller is None:
+            return
 
         deck_controller.active_page.dict.setdefault("keys", {})
         deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
@@ -169,7 +184,12 @@ class SizeRow(Adw.PreferencesRow):
         self.size_spinner.revert_button.set_visible(True)
 
     def on_size_reset(self, widget):
-        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        deck_controller = visible_child.deck_controller
+        if deck_controller is None:
+            return
 
         deck_controller.active_page.dict.setdefault("keys", {})
         deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
@@ -231,7 +251,12 @@ class ValignRow(Adw.PreferencesRow):
         self.disconnect_signals()
         self.active_coords = coords
 
-        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        deck_controller = visible_child.deck_controller
+        if deck_controller is None:
+            return
 
         key_index = deck_controller.coords_to_index(self.active_coords)
 
@@ -244,7 +269,12 @@ class ValignRow(Adw.PreferencesRow):
     def update_values(self, composed_label: KeyLabel = None):
         self.disconnect_signals()
         if composed_label is None:
-            deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+            visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+            if visible_child is None:
+                return
+            deck_controller = visible_child.deck_controller
+            if deck_controller is None:
+                return
             controller_key = deck_controller.keys[deck_controller.coords_to_index(self.active_coords)]
             composed_label = controller_key.layout_manager.get_composed_layout()
 
@@ -253,7 +283,12 @@ class ValignRow(Adw.PreferencesRow):
         self.connect_signals()
 
     def on_valign_changed(self, widget):
-        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        deck_controller = visible_child.deck_controller
+        if deck_controller is None:
+            return
 
         deck_controller.active_page.dict.setdefault("keys", {})
         deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
@@ -279,7 +314,12 @@ class ValignRow(Adw.PreferencesRow):
         self.valign_spinner.revert_button.set_visible(True)
 
     def on_valign_reset(self, widget):
-        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        deck_controller = visible_child.deck_controller
+        if deck_controller is None:
+            return
 
         deck_controller.active_page.dict.setdefault("keys", {})
         deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
@@ -338,7 +378,12 @@ class HalignRow(Adw.PreferencesRow):
         self.disconnect_signals()
         self.active_coords = coords
 
-        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        deck_controller = visible_child.deck_controller
+        if deck_controller is None:
+            return
 
         key_index = deck_controller.coords_to_index(self.active_coords)
 
@@ -351,7 +396,12 @@ class HalignRow(Adw.PreferencesRow):
     def update_values(self, composed_label: KeyLabel = None):
         self.disconnect_signals()
         if composed_label is None:
-            deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+            visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+            if visible_child is None:
+                return
+            deck_controller = visible_child.deck_controller
+            if deck_controller is None:
+                return
             controller_key = deck_controller.keys[deck_controller.coords_to_index(self.active_coords)]
             composed_label = controller_key.layout_manager.get_composed_layout()
 
@@ -360,7 +410,12 @@ class HalignRow(Adw.PreferencesRow):
         self.connect_signals()
 
     def on_halign_changed(self, widget):
-        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        deck_controller = visible_child.deck_controller
+        if deck_controller is None:
+            return
 
         deck_controller.active_page.dict.setdefault("keys", {})
         deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
@@ -386,7 +441,12 @@ class HalignRow(Adw.PreferencesRow):
         self.halign_spinner.revert_button.set_visible(True)
 
     def on_halign_reset(self, widget):
-        deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        deck_controller = visible_child.deck_controller
+        if deck_controller is None:
+            return
 
         deck_controller.active_page.dict.setdefault("keys", {})
         deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})

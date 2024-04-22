@@ -129,7 +129,13 @@ class ColorRow(Adw.PreferencesRow):
         alpha = round(color.alpha * 255)
 
         # Get active page
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
 
         # Set defaults
         page.dict.setdefault("keys", {})
@@ -140,7 +146,6 @@ class ColorRow(Adw.PreferencesRow):
         page.save()
 
         # Reload key
-        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         key_index = controller.coords_to_index(self.active_coords)
         controller.load_key(key_index, page=controller.active_page)
 
@@ -152,7 +157,13 @@ class ColorRow(Adw.PreferencesRow):
         self.active_coords = coords
 
         # Get active page
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
         if page is None:
             return
 

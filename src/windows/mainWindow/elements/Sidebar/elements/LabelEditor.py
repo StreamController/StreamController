@@ -165,14 +165,25 @@ class LabelRow(Adw.PreferencesRow):
             log.error(f"Failed to disconnect signals. Error: {e}")
 
     def get_controller_key(self) -> ControllerKey:
-        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         x, y = self.active_coords
 
         return controller.keys[controller.coords_to_index((x, y))]
 
     def load_for_coords(self, coords):
         self.active_coords = coords
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
 
 
         if page == None:
@@ -231,17 +242,23 @@ class LabelRow(Adw.PreferencesRow):
         blue = round(color.blue * 255)
         red = round(color.red * 255)
 
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        current_deck_controller = visible_child.deck_controller
+        if current_deck_controller is None:
+            return
+
         # Set defaults
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("labels", {})
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"].setdefault(self.key_name, {})
 
         # Get active page
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = current_deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["color"] = [red, green, blue]
         page.save()
 
         # Reload key on all decks that have this page loaded
-        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         for deck_controller in gl.deck_manager.deck_controller:
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
@@ -258,7 +275,13 @@ class LabelRow(Adw.PreferencesRow):
         self.color_chooser_button.revert_button.set_visible(True)
 
     def get_page(self) -> Page:
-        return self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return None
+        return controller.active_page
         
 
 
@@ -270,8 +293,14 @@ class LabelRow(Adw.PreferencesRow):
         font_path = font_path_from_name(pango_font.get_family())
         font_size = pango_font.get_size()
 
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        current_deck_controller = visible_child.deck_controller
+        if current_deck_controller is None:
+            return
         # Get active page
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        page = current_deck_controller.active_page
 
         # Set defaults
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("labels", {})
@@ -283,7 +312,6 @@ class LabelRow(Adw.PreferencesRow):
         page.save()
 
         # Reload key on all decks that have this page loaded
-        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         for deck_controller in gl.deck_manager.deck_controller:
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
@@ -312,7 +340,12 @@ class LabelRow(Adw.PreferencesRow):
         page.save()
 
         # Reload key on all decks that have this page loaded
-        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        current_deck_controller = visible_child.deck_controller
+        if current_deck_controller is None:
+            return
         for deck_controller in gl.deck_manager.deck_controller:
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
@@ -341,7 +374,12 @@ class LabelRow(Adw.PreferencesRow):
         gl.page_manager.update_dict_of_pages_with_path(page.json_path)
 
         # Reload key on all decks that have this page loaded
-        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        current_deck_controller = visible_child.deck_controller
+        if current_deck_controller is None:
+            return
         for deck_controller in gl.deck_manager.deck_controller:
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
@@ -365,7 +403,12 @@ class LabelRow(Adw.PreferencesRow):
         page.save()
 
         # Reload key on all decks that have this page loaded
-        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        current_deck_controller = visible_child.deck_controller
+        if current_deck_controller is None: 
+            return
         for deck_controller in gl.deck_manager.deck_controller:
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
@@ -384,7 +427,13 @@ class LabelRow(Adw.PreferencesRow):
         self.color_chooser_button.revert_button.set_visible(False)
 
     def on_change_text(self, entry):
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        current_deck_controller = visible_child.deck_controller
+        if current_deck_controller is None:
+            return
+        page = current_deck_controller.active_page
 
         # Set defaults
         page.dict.setdefault("keys", {})
@@ -401,14 +450,13 @@ class LabelRow(Adw.PreferencesRow):
         self.stroke_width_box.set_visible(vis)
 
         # Reload key on all decks that have this page loaded
-        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        for deck_controller in gl.deck_manager.deck_controller:
-            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
+        for current_deck_controller in gl.deck_manager.deck_controller:
+            if current_deck_controller.active_page.json_path != current_deck_controller.active_page.json_path:
                 continue
-            key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index >= len(deck_controller.keys):
+            key_index = current_deck_controller.coords_to_index(self.active_coords)
+            if key_index >= len(current_deck_controller.keys):
                 continue
-            controller_key = deck_controller.keys[key_index]
+            controller_key = current_deck_controller.keys[key_index]
 
             page_label = controller_key.label_manager.page_labels.get(self.key_name)
             if page_label is not None:
@@ -420,7 +468,12 @@ class LabelRow(Adw.PreferencesRow):
 
     def add_new_label_if_needed(self):
         #TODO: Use this method to update everything on change
-        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        current_deck_controller = visible_child.deck_controller
+        if current_deck_controller is None:
+            return
         for deck_controller in gl.deck_manager.deck_controller:
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
@@ -443,12 +496,17 @@ class LabelRow(Adw.PreferencesRow):
 
     def on_change_stroke_width(self, button):
         self.add_new_label_if_needed()
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        current_deck_controller = visible_child.deck_controller
+        if current_deck_controller is None:
+            return
+        page = current_deck_controller.active_page
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["stroke-width"] = round(self.stroke_width_button.get_value())
         page.save()
 
         # Reload key on all decks that have this page loaded
-        current_deck_controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         for deck_controller in gl.deck_manager.deck_controller:
             if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
                 continue
@@ -462,7 +520,13 @@ class LabelRow(Adw.PreferencesRow):
 
 
     def load_defaults(self):
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        ontroller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
 
         # Update ui
         self.text_entry.set_text(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"])

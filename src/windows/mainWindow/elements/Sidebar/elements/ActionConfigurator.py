@@ -115,14 +115,24 @@ class CommentGroup(Adw.PreferencesGroup):
     
 
     def get_comment(self) -> str:
-        controller = self.parent.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         page = controller.active_page
         if page is None:
             return
         return page.get_action_comment(self.action.page_coords, self.index)
     
     def set_comment(self, comment: str) -> None:
-        controller = self.parent.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         page = controller.active_page
         page.set_action_comment(self.action.page_coords, self.index, comment)
     
@@ -214,7 +224,12 @@ class RemoveButton(Gtk.Button):
         self.index = None
 
     def on_remove_button_click(self, button):
-        controller = self.configurator.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         page = controller.active_page
 
         # Swtich to main editor page

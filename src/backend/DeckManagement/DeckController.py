@@ -94,7 +94,13 @@ class MediaPlayerSetImageTask:
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
             if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
                 log.debug(f"Failed to set key_image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
+                
+                
+                self.deck_controller.deck.close()
+                self.deck_controller.media_player.running = False # Set stop flat - otherwise remove_controller will wait until this task is done, which it never will because it waiuts
                 gl.deck_manager.remove_controller(self.deck_controller)
+
+                gl.deck_manager.connect_new_decks()
 
 
 class MediaPlayerThread(threading.Thread):
@@ -999,7 +1005,10 @@ class ControllerKeyLabelManager:
         if not recursive_hasattr(gl, "app.main_win.sidebar.key_editor"):
             return
         
-        active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        active_controller = visible_child.deck_controller
         if active_controller is not self.controller_key.deck_controller:
             return
 
@@ -1146,7 +1155,10 @@ class ControllerKeyLayoutManager:
         if not recursive_hasattr(gl, "app.main_win.sidebar.image_editor"):
             return
         
-        active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        active_controller = visible_child.deck_controller
         if active_controller is not self.controller_key.deck_controller:
             return
 

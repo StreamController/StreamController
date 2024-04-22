@@ -83,7 +83,10 @@ class NoPagesError(Gtk.Box):
 
         gl.app.main_win.check_for_errors()
 
-        active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        active_controller = visible_child.deck_controller
         if active_controller is None:
             return
         

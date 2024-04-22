@@ -225,6 +225,10 @@ class App(Adw.Application):
                           body: str,
                           button: tuple[str, str, GLib.Variant] = None,
                           category: str = "im.error") -> None:
+        show_notifications = gl.settings_manager.get_app_settings().get("ui", {}).get("show-notifications", True)
+        if not show_notifications:
+            return
+
         notif = Gio.Notification()
         notif.set_icon(Gio.Icon.new_for_string(icon_name))
         notif.set_category(category)

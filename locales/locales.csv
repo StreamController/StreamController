@@ -189,3 +189,5 @@ page-manager.duplicate;Duplizieren;Duplicate;
 page-manager.export-page;Exportieren;Export;
 page-manager.import;Importieren;Import;
 page-manager.import.page;Seite;Page;
+settings-show-notifications;Benachrichtigungen anzeigen;Show notifications;
+settings-show-notifications-subtitle;Benachrichtigungen bei veralteten Assets anzeigen;Show notifications for outdated assets;

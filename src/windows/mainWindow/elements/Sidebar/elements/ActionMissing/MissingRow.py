@@ -91,7 +91,7 @@ class MissingRow(Adw.PreferencesRow):
         # Reset ui
         GLib.idle_add(self.spinner.set_visible, False)
         GLib.idle_add(self.spinner.stop)
-        GLib.idle_add(self.label.set_text, self.install_la)
+        GLib.idle_add(self.label.set_text, self.install_label)
 
         # Reload pages
         

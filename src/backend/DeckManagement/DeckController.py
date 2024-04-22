@@ -1554,13 +1554,13 @@ class ControllerKey:
             if isinstance(action, ActionOutdated):
                 _id = action.id
                 plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(_id)
-                self.send_outdated_plugin_notification(plugin_name=plugin_id)
+                self.send_outdated_plugin_notification(plugin_id=plugin_id)
                 continue
             
             if isinstance(action, NoActionHolderFound):
                 _id = action.id
                 plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(_id)
-                self.send_missing_plugin_notification(plugin_name=plugin_id)
+                self.send_missing_plugin_notification(plugin_id=plugin_id)
                 continue
 
             action.on_key_down()
@@ -1577,18 +1577,19 @@ class ControllerKey:
                 continue
             action.on_tick()
 
-    def send_outdated_plugin_notification(self, plugin_name: str) -> None:
+    def send_outdated_plugin_notification(self, plugin_id: str) -> None:
         gl.app.send_notification(
             "software-update-available-symbolic",
             "Plugin out of date",
-            f"The plugin {plugin_name} is out of date and needs to be updated"
+            f"The plugin {plugin_id} is out of date and needs to be updated"
         )
 
-    def send_missing_plugin_notification(self, plugin_name: str) -> None:
+    def send_missing_plugin_notification(self, plugin_id: str) -> None:
         gl.app.send_notification(
             "dialog-information-symbolic",
             "Plugin missing",
-            f"The plugin {plugin_name} is missing. Please install it."
+            f"The plugin {plugin_id} is missing. Please install it.",
+            button=("Install", "app.install-plugin", GLib.Variant.new_string(plugin_id))
         )
 
     def close_resources(self) -> None:

@@ -17,11 +17,12 @@ import multiprocessing
 import signal
 import sys
 import threading
+import asyncio
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Xdp", "1.0")
-from gi.repository import Gtk, Adw, Gdk, Gio, Xdp
+from gi.repository import Gtk, Adw, Gdk, Gio, Xdp, GLib
 
 # Import Python modules
 from loguru import logger as log
@@ -80,6 +81,8 @@ class App(Adw.Application):
         on_quit_action = Gio.SimpleAction.new("quit", None)
         on_quit_action.connect("activate", self.on_quit)
         self.add_action(on_quit_action)
+
+        self.add_signals()
 
         # Do tasks
         gl.app = self
@@ -162,14 +165,72 @@ class App(Adw.Application):
     def register_sigint_handler(self):
         signal.signal(signal.SIGINT, self.on_quit)
 
+    def add_signals(self):
+        self.update_all_assets_action = Gio.SimpleAction.new("update-all-assets", None)
+        self.update_all_assets_action.connect("activate", self.update_all_assets)
+        self.add_action(self.update_all_assets_action)
+
+        self.install_plugin_action = Gio.SimpleAction.new("install-plugin", GLib.VariantType("s"))
+        self.install_plugin_action.connect("activate", self.install_plugin)
+        self.add_action(self.install_plugin_action)
+
+    def update_all_assets(self, *args, **kwargs):
+        threading.Thread(target=self._update_all_assets, name="update_all_assets").start()
+
+    def _update_all_assets(self):
+        self.set_working(True)
+
+        asyncio.run(gl.store_backend.update_everything())
+
+        self.set_working(False)
+
+        gl.app.send_notification("dialog-information-symbolic", "All assets updated", "All assets have been updated")
+
+    def install_plugin(self, action, plugin_id: GLib.Variant):
+        plugin_id = plugin_id.unpack()
+        threading.Thread(target=self._install_plugin, args=(plugin_id,), name="install_plugin").start()
+
+    def _install_plugin(self, plugin_id: str):
+        plugin = asyncio.run(gl.store_backend.get_plugin_for_id(plugin_id=plugin_id))
+
+        self.set_working(True)
+
+        if plugin is None:
+            gl.app.send_notification("dialog-information-symbolic", "Failed to install plugin",
+                                     f"The plugin {plugin_id} could not be installed")
+            self.set_working(False)
+            return
+        
+        success = asyncio.run(gl.store_backend.install_plugin(plugin))
+        if not success:
+            gl.app.send_notification("dialog-information-symbolic", "Failed to install plugin",
+                                     f"The plugin {plugin_id} could not be installed")
+        else:
+            gl.app.send_notification("dialog-information-symbolic", "Plugin installed",
+                                     f"The plugin {plugin_id} was successfully installed")
+
+        self.set_working(False)            
+
+    def set_working(self, working: bool) -> None:
+        if working:
+            GLib.idle_add(gl.app.mark_busy)
+            GLib.idle_add(gl.app.main_win.set_cursor_from_name, "wait")
+        else:
+            GLib.idle_add(gl.app.unmark_busy)
+            GLib.idle_add(gl.app.main_win.set_cursor_from_name, "default")
+
     def send_notification(self,
                           icon_name: str,
                           title: str,
                           body: str,
+                          button: tuple[str, str, GLib.Variant] = None,
                           category: str = "im.error") -> None:
         notif = Gio.Notification()
         notif.set_icon(Gio.Icon.new_for_string(icon_name))
         notif.set_category(category)
         notif.set_title(title)
         notif.set_body(body)
-        super().send_notification("com.core447.StreamController", notif)
+        if button:
+            notif.add_button_with_target(button[0], button[1], button[2])
+
+        GLib.idle_add(super().send_notification, "com.core447.StreamController", notif)

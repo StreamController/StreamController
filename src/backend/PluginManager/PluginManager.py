@@ -52,7 +52,8 @@ class PluginManager:
         call = lambda: gl.app.send_notification(
             "dialog-information-symbolic",
             "Plugins",
-            body
+            body,
+            button=("Update All", "app.update-all-assets", None)
         )
         if gl.app is None:
             gl.app_loading_finished_tasks.append(call)

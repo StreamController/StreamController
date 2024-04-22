@@ -310,7 +310,7 @@ class StoreBackend:
         # Check if suitable version is available
         version = self.get_newest_compatible_version(plugin["commits"])
         if version is None:
-            return NoCompatibleVersion
+            return NoCompatibleVersion #TODO
         commit = plugin["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
@@ -332,13 +332,13 @@ class StoreBackend:
         author = self.get_user_name(url)
 
         return PluginData(
-            github=manifest.get("github") or None, # Formerly: url
+            github=url or None,
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,
             author=author or None, # Formerly: user_name
             official=author in self.official_authors or False,
             commit_sha=commit,
-            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
+            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id", manifest.get("id")))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
             current_app_version=manifest.get("current-app-version") or None,
             repository_name=self.get_repo_name(url),
@@ -352,9 +352,9 @@ class StoreBackend:
             license=attribution.get("licence") or None,
             license_descriptions=attribution.get("licence-descriptions", attribution.get("descriptions")) or None,
 
-            plugin_name=manifest.get("plugin-name") or None,
-            plugin_version=manifest.get("plugin-version") or None,
-            plugin_id=manifest.get("plugin-id") or None
+            plugin_name=manifest.get("plugin-name", manifest.get("name")) or None,
+            plugin_version=manifest.get("plugin-version", manifest.get("version")) or None,
+            plugin_id=manifest.get("plugin-id", manifest.get("id")) or None
         )
 
     
@@ -400,13 +400,13 @@ class StoreBackend:
             return stargazers
 
         return IconData(
-            github=manifest.get("github") or None,  # Formerly: url
+            github=url or None,
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,
             author=author or None,  # Formerly: user_name
             official=author in self.official_authors or False,
             commit_sha=commit,
-            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
+            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "icons", manifest.get("plugin-id", manifest.get("id")))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
             current_app_version=manifest.get("current-app-version") or None,
             repository_name=self.get_repo_name(url),
@@ -420,33 +420,11 @@ class StoreBackend:
             license=attribution.get("licence") or None,
             license_descriptions=attribution.get("licence-descriptions", attribution.get("descriptions")) or None,
 
-            icon_name=manifest.get("plugin-name") or None,
-            icon_version=manifest.get("plugin-version") or None,
-            icon_id=manifest.get("plugin-id") or None
+            icon_name=manifest.get("icon-name", manifest.get("name")) or None,
+            icon_version=manifest.get("icon-version", manifest.get("version")) or None,
+            icon_id=manifest.get("icon-id", manifest.get("id")) or None
         )
 
-        #return {
-        #    "icon_name": manifest.get("icon-name"),
-        #    "icon_version": manifest.get("icon-version"),
-        #    "minimum_app_version": manifest.get("minimum-software-version") or "",
-        #    "icon_id": manifest.get("icon-id"),
-        #    "display_name": manifest.get("display-name") or manifest.get("icon-name"),
-        #    # Use specified display name, when not available use plugin-name
-        #    "descriptions": manifest.get("descriptions") or [],
-        #    "short_descriptions": manifest.get("short-descriptions") or [],
-        #    "url": url,
-        #    "user_name": user_name,
-        #    "repo_name": repo_name,
-        #    "image": image,
-        #    "stargazers": stargazers,
-        #    "official": user_name in self.official_authors,
-        #    "commit_sha": commit,
-        #    "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("icon-id"))),
-        #    "copyright": attribution.get("copyright"),
-        #    "original_url": attribution.get("original-url"),
-        #    "license": attribution.get("license"),
-        #    "license_description": attribution.get("license-description", attribution.get("description")),
-        #}
     
     async def prepare_wallpaper(self, wallpaper):
         if "url" not in wallpaper:
@@ -476,13 +454,13 @@ class StoreBackend:
         author = self.get_user_name(url)
 
         return WallpaperData(
-            github=manifest.get("github") or None,  # Formerly: url
+            github=url or None,
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,
             author=author or None,  # Formerly: user_name
             official=author in self.official_authors or False,
             commit_sha=commit,
-            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id"))),
+            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("plugin-id", manifest.get("id"))),),
             minimum_app_version=manifest.get("minimum-app-version") or None,
             current_app_version=manifest.get("current-app-version") or None,
             repository_name=self.get_repo_name(url),
@@ -496,34 +474,10 @@ class StoreBackend:
             license=attribution.get("licence") or None,
             license_descriptions=attribution.get("licence-descriptions", attribution.get("descriptions")) or None,
 
-            wallpaper_name=manifest.get("plugin-name") or None,
-            wallpaper_version=manifest.get("plugin-version") or None,
-            wallpaper_id=manifest.get("plugin-id") or None
+            wallpaper_name=manifest.get("wallpaper-name", manifest.get("name")) or None,
+            wallpaper_version=manifest.get("wallpaper-version", manifest.get("version")) or None,
+            wallpaper_id=manifest.get("wallpaper-id", manifest.get("id")) or None
         )
-
-
-        #return {
-        #    "wallpaper_name": manifest.get("wallpaper-name"),
-        #    "wallpaper_version": manifest.get("wallpaper-version"),
-        #    "minimum_app_version": manifest.get("minimum-software-version") or "",
-        #    "wallpaper_id": manifest.get("wallpaper-id"),
-        #    "display_name": manifest.get("display-name") or manifest.get("wallpaper-name"),
-        #    # Use specified display name, when not available use plugin-name
-        #    "descriptions": manifest.get("descriptions") or [],
-        #    "short_descriptions": manifest.get("short-descriptions") or [],
-        #    "url": url,
-        #    "user_name": user_name,
-        #    "repo_name": self.get_repo_name(url),
-        #    "image": image,
-        #    "stargazers": await self.get_stargazers(url),
-        #    "official": user_name in self.official_authors,
-        #    "commit_sha": commit,
-        #    "local_sha": await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("wallpaper-id"))),
-        #    "copyright": attribution.get("copyright"),
-        #    "original_url": attribution.get("original-url"),
-        #    "license": attribution.get("license"),
-        #    "license_description": attribution.get("license-description", attribution.get("description")),
-        #}
 
     async def image_from_url(self, url):
         # Search in cache

@@ -31,7 +31,9 @@ import globals as gl
 # Import own modules
 from src.backend.PluginManager.ActionBase import ActionBase
 from GtkHelper.GtkHelper import BetterExpander
-from src.backend.PageManagement.Page import NoActionHolderFound
+from src.backend.PageManagement.Page import NoActionHolderFound, ActionOutdated
+from src.windows.mainWindow.elements.Sidebar.elements.ActionMissing.MisingActionButtonRow import MissingActionButtonRow
+from src.windows.mainWindow.elements.Sidebar.elements.ActionMissing.OutdatedActionRow import OutdatedActionRow
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -116,9 +118,9 @@ class ActionExpanderRow(BetterExpander):
             elif isinstance(action, NoActionHolderFound):
                 missing_button_row = MissingActionButtonRow(action.id, page_coords, i)
                 self.add_row(missing_button_row)
-            elif isinstance(action, str):
+            elif isinstance(action, ActionOutdated):
                 # No plugin installed for this action
-                missing_button_row = MissingActionButtonRow(action, page_coords, i)
+                missing_button_row = OutdatedActionRow(action.id, page_coords, i)
                 self.add_row(missing_button_row)
                 
 
@@ -379,105 +381,6 @@ class ActionRow(Adw.PreferencesRow):
             self.left_bottom_box.set_visible(True)
 
         self.comment_row.set_text(comment)
-
-
-
-class MissingActionButtonRow(Adw.PreferencesRow):
-    def __init__(self, action_id:str, page_coords:str, index:int):
-        super().__init__(css_classes=["no-padding"])
-        self.action_id = action_id
-        self.page_coords = page_coords
-        self.index = index
-
-        self.main_overlay = Gtk.Overlay()
-        self.set_child(self.main_overlay)
-
-        self.main_button = Gtk.Button(hexpand=True, css_classes=["invisible"])
-        self.main_button.connect("clicked", self.on_click)
-        self.main_overlay.set_child(self.main_button)
-
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
-                                margin_bottom=15, margin_top=15)
-        self.main_button.set_child(self.main_box)
-
-        # Counter part for the button on the right - other wise the label is not centered
-        self.main_box.append(Gtk.Box(width_request=50))
-    
-        self.center_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        self.main_box.append(self.center_box)
-
-        self.spinner = Gtk.Spinner(spinning=False, margin_bottom=5, visible=False)
-        self.center_box.append(self.spinner)
-
-        self.label = Gtk.Label(label=f"Install Missing Plugin", xalign=Gtk.Align.CENTER, vexpand=True, valign=Gtk.Align.CENTER)
-        self.center_box.append(self.label)
-
-        self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, width_request=50)
-        self.main_box.append(self.button_box)
-
-        self.remove_button = Gtk.Button(icon_name="user-trash-symbolic", vexpand=False, halign=Gtk.Align.END, css_classes=["red-background"], margin_end=0,
-                                        tooltip_text="Remove this action") # alternative icon: edit-delete-remove
-        self.remove_button.connect("clicked", self.on_remove_click)
-        # self.button_box.append(self.remove_button)
-        self.main_overlay.add_overlay(self.remove_button)
-
-    def on_click(self, button):
-        self.spinner.set_visible(True)
-        self.spinner.start()
-        self.label.set_text("Installing Missing Plugin")
-
-        # Run in thread to allow the ui to update
-        threading.Thread(target=self.install, name="asset_install_thread").start()
-
-    def install(self):
-        # Get missing plugin from id
-        plugin = asyncio.run(gl.store_backend.get_plugin_for_id(self.action_id.split("::")[0]))
-        if plugin is None:
-            self.show_install_error()
-            return
-        # Install plugin
-        success = asyncio.run(gl.store_backend.install_plugin(plugin))
-        if success == 404:
-            self.show_install_error()
-            return
-        
-        # Reset ui
-        GLib.idle_add(self.spinner.set_visible, False)
-        GLib.idle_add(self.spinner.stop)
-        GLib.idle_add(self.label.set_text, "Install Missing Plugin")
-
-        # Reload pages
-        
-
-    def show_install_error(self):
-        GLib.idle_add(self.spinner.set_visible, False)
-        GLib.idle_add(self.spinner.stop)
-        GLib.idle_add(self.label.set_text, "Install Failed")
-        GLib.idle_add(self.remove_css_class, "error")
-        GLib.idle_add(self.set_sensitive, False)
-
-        # Hide error after 3s
-        threading.Timer(3, self.hide_install_error).start()
-
-    def hide_install_error(self):
-        self.label.set_text("Install Missing Plugin")
-        self.remove_css_class("error")
-        self.set_sensitive(True)
-        self.main_button.set_sensitive(True)
-
-    def on_remove_click(self, button):
-        controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
-        page = controller.active_page
-
-        # Remove from action objects
-        del page.action_objects[self.page_coords][self.index]
-
-        # Remove from page json
-        page.dict["keys"][self.page_coords]["actions"].pop(self.index)
-        page.save()
-
-        # Reload configurator ui
-        gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.page_coords.split("x"))
 
 
 class AddActionButtonRow(Adw.PreferencesRow):

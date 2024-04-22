@@ -92,20 +92,30 @@ class PluginBase(rpyc.Service):
             
         if self.is_app_version_matching():
             # Register plugin
-                PluginBase.plugins[self.plugin_id] = {
-                    "object": self,
-                    "plugin_version": self.plugin_version,
-                    "minimum_app_version": self.min_app_version,
-                    "github": self.github_repo,
-                    "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
-                    "file_name": os.path.basename(inspect.getfile(self.__class__))
-                }
-                self.registered = True
+            PluginBase.plugins[self.plugin_id] = {
+                "object": self,
+                "plugin_version": self.plugin_version,
+                "minimum_app_version": self.min_app_version,
+                "github": self.github_repo,
+                "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
+                "file_name": os.path.basename(inspect.getfile(self.__class__))
+            }
+            self.registered = True
         else:
+            PluginBase.disabled_plugins[self.plugin_id] = {
+                "object": self,
+                "plugin_version": self.plugin_version,
+                "minimum_app_version": self.min_app_version,
+                "github": self.github_repo,
+                "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
+                "file_name": os.path.basename(inspect.getfile(self.__class__)),
+                "reason": "out-of-date"
+            }
+
             max_version = f"{version.parse(self.min_app_version).major}.x.x"
             log.warning(
                 f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
-                f"Please update your assets! Plugin requires an app version between {self.plugin_version} and {max_version} "
+                f"Please update your assets! Plugin requires an app version between {self.min_app_version} and {max_version} "
                 f"you are running version {gl.app_version}. Disabling plugin."
             )
 

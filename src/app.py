@@ -155,3 +155,15 @@ class App(Adw.Application):
 
     def register_sigint_handler(self):
         signal.signal(signal.SIGINT, self.on_quit)
+
+    def send_notification(self,
+                          icon_name: str,
+                          title: str,
+                          body: str,
+                          category: str = "im.error") -> None:
+        notif = Gio.Notification()
+        notif.set_icon(Gio.Icon.new_for_string(icon_name))
+        notif.set_category(category)
+        notif.set_title(title)
+        notif.set_body(body)
+        super().send_notification("com.core447.StreamController", notif)

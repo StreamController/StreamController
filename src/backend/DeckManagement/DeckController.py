@@ -31,21 +31,27 @@ import usb.core
 import usb.util
 from loguru import logger as log
 import asyncio
-import matplotlib.font_manager
 from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
 from src.backend.DeckManagement.Subclasses.key_video_cache import VideoFrameCache
+from src.backend.DeckManagement.Subclasses.KeyImage import KeyImage
+from src.backend.DeckManagement.Subclasses.KeyVideo import KeyVideo
+from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
+from src.backend.DeckManagement.Subclasses.KeyLayout import KeyLayout
 from dataclasses import dataclass
 import gc
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
-from src.backend.PageManagement.Page import Page, NoActionHolderFound
+from src.backend.PageManagement.Page import ActionOutdated, Page, NoActionHolderFound
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
 
 import psutil
 process = psutil.Process()
+
+import gi
+from gi.repository import Gio
 
 # Import signals
 from src.Signals import Signals
@@ -54,10 +60,10 @@ from src.Signals import Signals
 from typing import TYPE_CHECKING, ClassVar
 
 from src.windows.mainWindow.elements.KeyGrid import KeyButton, KeyGrid
+from src.backend.PluginManager.ActionBase import ActionBase
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.DeckStackChild import DeckStackChild
     from src.backend.DeckManagement.DeckManager import DeckManager
-    from src.backend.PluginManager.ActionBase import ActionBase
 
 # Import globals
 import globals as gl
@@ -1066,13 +1072,6 @@ class ControllerKeyLabelManager:
     def update_label(self, position: str):
         self.controller_key.update()
 
-@dataclass
-class KeyLayout:
-    valign: float = None
-    halign: float = None
-    fill_mode: str = None
-    size: float = None
-
 
 class ControllerKeyLayoutManager:
     def __init__(self, controller_key: "ControllerKey"):
@@ -1215,12 +1214,29 @@ class ControllerKey:
         if self.is_pressed():
             labeled_image = self.shrink_image(labeled_image)
 
+        if self.has_unavailable_action():
+            labeled_image = self.add_warning_point(labeled_image)
+
         if background is not None:
             background.close()
         
         image.close()
 
         return labeled_image
+    
+    def add_warning_point(self, image: Image.Image, margin: int = 10, size: int = 10, color: tuple = (255, 150, 80)) -> Image.Image:
+        draw = ImageDraw.Draw(image)
+
+        # Calculate the coordinates of the top right circle
+        width, height = image.size
+        top_right_x = width - margin - size
+        top_right_y = margin
+
+        # Draw the circle
+        draw.ellipse((top_right_x, top_right_y, top_right_x + size, top_right_y + size), fill=color, outline=(0, 0, 0), width=2)
+
+        del draw
+        return image
     
     def paste_foreground(self, background: Image.Image, foreground: Image.Image) -> Image.Image:
         img_size = self.deck_controller.get_key_image_size()
@@ -1528,20 +1544,52 @@ class ControllerKey:
                 future.result()
 
     def call_action_ready_and_set_flag(self, action: "ActionBase") -> None:
+        if not isinstance(action, ActionBase):
+            return
         action.on_ready()
         action.on_ready_called = True
 
     def own_actions_key_down(self) -> None:
         for action in self.get_own_actions():
+            if isinstance(action, ActionOutdated):
+                _id = action.id
+                plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(_id)
+                self.send_outdated_plugin_notification(plugin_name=plugin_id)
+                continue
+            
+            if isinstance(action, NoActionHolderFound):
+                _id = action.id
+                plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(_id)
+                self.send_missing_plugin_notification(plugin_name=plugin_id)
+                continue
+
             action.on_key_down()
 
     def own_actions_key_up(self) -> None:
         for action in self.get_own_actions():
+            if not isinstance(action, ActionBase):
+                continue
             action.on_key_up()
 
     def own_actions_tick(self) -> None:
         for action in self.get_own_actions():
+            if not isinstance(action, ActionBase):
+                continue
             action.on_tick()
+
+    def send_outdated_plugin_notification(self, plugin_name: str) -> None:
+        gl.app.send_notification(
+            "software-update-available-symbolic",
+            "Plugin out of date",
+            f"The plugin {plugin_name} is out of date and needs to be updated"
+        )
+
+    def send_missing_plugin_notification(self, plugin_name: str) -> None:
+        gl.app.send_notification(
+            "dialog-information-symbolic",
+            "Plugin missing",
+            f"The plugin {plugin_name} is missing. Please install it."
+        )
 
     def close_resources(self) -> None:
         if self.key_image is not None:
@@ -1555,75 +1603,11 @@ class ControllerKey:
 
         # self.labels.clear()
 
-
-@dataclass
-class KeyLabel:
-    controller_key: ControllerKey
-    text: str = None
-    font_size: int = None
-    font_name: str = None
-    color: list[int] = None
-
-    def get_font_path(self) -> str:
-        return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=self.font_name))
-
-
-class KeyImage(SingleKeyAsset):
-    def __init__(self, controller_key: ControllerKey, image: Image.Image):
-        """
-        Initialize the class with the given controller key, image, fill mode, size, vertical alignment, and horizontal alignment.
-
-        Parameters:
-            controller_key (ControllerKey): The key of the controller.
-            image (Image.Image): The image to be displayed.
-            fill_mode (str, optional): The mode for filling the image. Defaults to "cover".
-            size (float, optional): The size of the image. Defaults to 1.
-            valign (float, optional): The vertical alignment of the image. Defaults to 0. Ranges from -1 to 1.
-            halign (float, optional): The horizontal alignment of the image. Defaults to 0. Ranges from -1 to 1.
-        """
-        super().__init__(controller_key)
-        self.image = image
-
-        if self.image is None:
-            self.image = self.controller_key.deck_controller.generate_alpha_key()
-
-    def get_raw_image(self) -> Image.Image:
-        if not hasattr(self, "image"):
-            return
-        return self.image
-    
-    def close(self) -> None:
-        if not hasattr(self, "image"):
-            # Already closed
-            return
-        self.image.close()
-        self.image = None
-        del self.image
-        return
-
-class KeyVideo(SingleKeyAsset):
-    def __init__(self, controller_key: ControllerKey, video_path: str, fps: int = 30, loop: bool = True):
-        super().__init__(
-            controller_key=controller_key,
-        )
-        self.video_path = video_path
-        self.fps = fps
-        self.loop = loop
-
-        self.video_cache = VideoFrameCache(video_path)
-
-        self.active_frame: int = -1
-
-
-    def get_next_frame(self) -> Image:
-        self.active_frame += 1
-
-        if self.active_frame >= self.video_cache.n_frames:
-            if self.loop:
-                self.active_frame = 0
-        
-        return self.video_cache.get_frame(self.active_frame).resize(self.controller_key.deck_controller.get_key_image_size(), Image.Resampling.LANCZOS)
-    
-    def get_raw_image(self) -> Image.Image:
-        return self.get_next_frame()
-     
+    def has_unavailable_action(self) -> bool:
+        for action in self.get_own_actions():
+            if isinstance(action, ActionOutdated):
+                return True
+            if isinstance(action, NoActionHolderFound):
+                return True
+            
+        return False

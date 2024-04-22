@@ -12,6 +12,7 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+from argparse import Action
 import gc
 import os
 import json
@@ -24,11 +25,11 @@ import shutil
 # Import globals
 import globals as gl
 
+from src.backend.PluginManager.ActionBase import ActionBase
 # Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager.ActionHolder import ActionHolder
-    from src.backend.PluginManager.ActionBase import ActionBase
 
 class Page:
     def __init__(self, json_path, deck_controller, *args, **kwargs):
@@ -121,7 +122,11 @@ class Page:
 
                 action_holder = gl.plugin_manager.get_action_holder_from_id(action["id"])
                 if action_holder is None:
-                    self.action_objects[key][i] = NoActionHolderFound(id=action["id"])
+                    plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(action["id"])
+                    if gl.plugin_manager.get_is_plugin_out_of_date(plugin_id):
+                        self.action_objects[key][i] = ActionOutdated(id=action["id"])
+                    else:
+                        self.action_objects[key][i] = NoActionHolderFound(id=action["id"])
                     continue
                 action_class = action_holder.action_base
                 
@@ -131,12 +136,12 @@ class Page:
 
                 old_object = self.action_objects[key].get(i)
                 if old_object is not None:
-                    if isinstance(old_object, action_class) and not isinstance(old_object, NoActionHolderFound):    
+                    if isinstance(old_object, action_class) and isinstance(old_object, ActionBase):    
                         # Action already exists - keep it
                         continue
                 
                 if i in self.loaded_action_objects.get(key, []):
-                    if not isinstance(self.loaded_action_objects.get(key, [i])[i], NoActionHolderFound):
+                    if isinstance(self.loaded_action_objects.get(key, [i])[i], ActionBase):
                         self.action_objects[key][i] = self.loaded_action_objects[key][i]
                         continue
 
@@ -156,6 +161,7 @@ class Page:
                     all_threads_finished = False
                     break
             time.sleep(0.02)
+        print()
 
     def move_actions(self, from_key: str, to_key: str):
         from_actions = self.action_objects.get(from_key, {})
@@ -197,7 +203,7 @@ class Page:
             return False
         for key in list(self.action_objects.keys()):
             for index in list(self.action_objects[key].keys()):
-                if isinstance(self.action_objects[key][index], NoActionHolderFound):
+                if not isinstance(self.action_objects[key][index], ActionBase):
                     continue
                 if self.action_objects[key][index].plugin_base == plugin_obj:
                     # Remove object
@@ -217,7 +223,7 @@ class Page:
         keys = []
         for key in self.action_objects:
             for action in self.action_objects[key].values():
-                if isinstance(action, NoActionHolderFound):
+                if not isinstance(action, ActionBase):
                     continue
                 if action.plugin_base == plugin_obj:
                     keys.append(key)
@@ -250,16 +256,18 @@ class Page:
             for action in self.action_objects[key].values():
                 if action is None:
                     continue
-                if isinstance(action, NoActionHolderFound):
+                if not isinstance(action, ActionBase):
                     continue
                 actions.append(action)
         return actions
     
-    def get_all_actions_for_key(self, key):
+    def get_all_actions_for_key(self, key, only_action_bases: bool = False):
         actions = []
         if key in self.action_objects:
             for action in self.action_objects[key].values():
-                if isinstance(action, NoActionHolderFound) or action is None:
+                if action is None:
+                    continue
+                if only_action_bases and not isinstance(action, ActionBase):
                     continue
                 actions.append(action)
         return actions
@@ -315,7 +323,7 @@ class Page:
             for i, action in enumerate(list(self.action_objects[key])):
                 self.action_objects[key][i].page = None
                 self.action_objects[key][i] = None
-                if not isinstance(self.action_objects[key][i], NoActionHolderFound):
+                if isinstance(self.action_objects[key][i], ActionBase):
                     if hasattr(self.action_objects[key][i], "on_removed_from_cache"):
                         self.action_objects[key][i].on_removed_from_cache()
                 del self.action_objects[key][i]
@@ -379,5 +387,9 @@ class Page:
         new_d = self.dict
 
 class NoActionHolderFound:
+    def __init__(self, id: str):
+        self.id = id
+
+class ActionOutdated:
     def __init__(self, id: str):
         self.id = id

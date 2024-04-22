@@ -13,9 +13,11 @@ from rpyc.core import netref
 
 # Import own modules
 from src.Signals.Signals import Signal
-from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.HelperMethods import is_image, is_svg, is_video
-from src.backend.DeckManagement.DeckController import KeyImage, KeyLayout, KeyVideo, BackgroundImage, BackgroundVideo, KeyLabel
+from src.backend.DeckManagement.Subclasses.KeyImage import KeyImage
+from src.backend.DeckManagement.Subclasses.KeyVideo import KeyVideo
+from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
+from src.backend.DeckManagement.Subclasses.KeyLayout import KeyLayout
 
 # Import globals
 import globals as gl
@@ -28,11 +30,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
     from src.backend.DeckManagement.DeckController import DeckController, ControllerKey
+    from src.backend.PageManagement.Page import Page
 
 class ActionBase(rpyc.Service):
     # Change to match your action
     def __init__(self, action_id: str, action_name: str,
-                 deck_controller: "DeckController", page: Page, coords: str, plugin_base: "PluginBase"):
+                 deck_controller: "DeckController", page: "Page", coords: str, plugin_base: "PluginBase"):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None

@@ -92,3 +92,18 @@ class PluginManager:
             
     def remove_plugin_from_list(self, plugin_base: PluginBase):
         del PluginBase.plugins[plugin_base.plugin_id]
+
+    def get_plugin_id_from_action_id(self, action_id: str) -> str:
+        if action_id is None:
+            return
+        
+        return action_id.split("::")[0]
+    
+    def get_is_plugin_out_of_date(self, plugin_id: str) -> bool:
+        plugin = PluginBase.disabled_plugins.get(plugin_id)
+        if plugin is None:
+            # Not installed
+            return False
+        
+        reason = PluginBase.disabled_plugins[plugin_id].get("reason")
+        return reason == "out-of-date"

@@ -568,8 +568,11 @@ class StoreBackend:
         current_major = version.parse(gl.app_version).major
 
         compatible_versions = [v for v in available_versions if version.parse(v).major == current_major]
+        parsed_compatible_versions = [version.parse(v) for v in compatible_versions]
+
         if compatible_versions:
-            return max(compatible_versions)
+            max_index = parsed_compatible_versions.index(max(parsed_compatible_versions))
+            return compatible_versions[max_index]
         else:
             return None
 

@@ -288,10 +288,12 @@ class Page:
         if coords is None:
             for key in self.dict["keys"]:
                 for i, action in enumerate(self.dict["keys"][key]["actions"]):
+                    self.action_objects.setdefault(key, {})
                     if self.action_objects[key][i] == action_object:
                         self.dict["keys"][key]["actions"][i]["settings"] = settings
         else:
             for i, action in enumerate(self.dict["keys"][coords]["actions"]):
+                self.action_objects.setdefault(coords, {})
                 if self.action_objects[coords][i] == action_object:
                     self.dict["keys"][coords]["actions"][i]["settings"] = settings
 

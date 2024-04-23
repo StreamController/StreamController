@@ -698,8 +698,7 @@ class StoreBackend:
             del sys.modules[module_name]
 
     async def install_icon(self, icon_data:IconData):
-        folder_name = f"{icon_data.author}::{icon_data.icon_name}"
-        icon_path = os.path.join(gl.DATA_PATH, "icons", folder_name)
+        icon_path = os.path.join(gl.DATA_PATH, "icons", icon_data.icon_id)
         os.makedirs(icon_path, exist_ok=True)
 
         await self.uninstall_icon(icon_data)
@@ -716,8 +715,7 @@ class StoreBackend:
             shutil.rmtree(os.path.join(gl.DATA_PATH, "icons", folder_name))
 
     async def install_wallpaper(self, wallpaper_data:WallpaperData):
-        folder_name = f"{wallpaper_data.author}::{wallpaper_data.wallpaper_name}"
-        wallpaper_path = os.path.join(gl.DATA_PATH, "wallpapers", folder_name)
+        wallpaper_path = os.path.join(gl.DATA_PATH, "wallpapers", wallpaper_data.wallpaper_id)
         os.makedirs(wallpaper_path, exist_ok=True)
 
         await self.uninstall_wallpaper(wallpaper_data)

@@ -311,13 +311,13 @@ class DeckController:
         image = self.keys[index].get_current_deck_image()
         
         rgb_image = image.convert("RGB")
-        native_image = PILHelper.to_native_key_format(self.deck, rgb_image)
-        rgb_image.close()
-        del rgb_image
 
         if self.is_visual():
+            native_image = PILHelper.to_native_key_format(self.deck, rgb_image)
+            rgb_image.close()
             self.media_player.add_image_task(index, native_image)
 
+        del rgb_image
         self.keys[index].set_ui_key_image(image)
 
     @log.catch

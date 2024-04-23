@@ -51,9 +51,10 @@ class NoConnectionError:
     pass
 
 class StoreBackend:
-    STORE_REPO_URL = "https://github.com/G4PLS/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
+    STORE_REPO_URL = "https://github.com/StreamController/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
     STORE_CACHE_PATH = "Store/cache"
-    STORE_BRANCH = "test"
+    # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
+    STORE_BRANCH = "testing"
 
 
     def __init__(self):

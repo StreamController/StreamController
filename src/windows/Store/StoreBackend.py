@@ -659,6 +659,8 @@ class StoreBackend:
 
         GLib.idle_add(gl.app.main_win.sidebar.action_chooser.plugin_group.update)
 
+        GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
+
         # Remove from sys.modules
         module_name = f"plugins.{plugin_id}.main"
         if module_name in sys.modules:

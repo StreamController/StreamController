@@ -18,8 +18,11 @@ import os
 import shutil
 import json
 from copy import copy
+from signal import Signals
 import time
 from loguru import logger as log
+
+from src.Signals import Signals
 
 # Import own modules
 from src.backend.PageManagement.Page import Page
@@ -267,8 +270,14 @@ class PageManagerBackend:
 
         # Update ui
         # self.update_ui()
+        gl.signal_manager.trigger_signal(Signals.PageAdd, path)
 
         self.update_auto_change_info()
+
+    def unregister_page(self, path: str):
+        self.custom_pages.remove(path)
+
+        gl.signal_manager.trigger_signal(Signals.PageDelete, path)
 
     def get_pages_with_path(self, page_path: str) -> list[Page]:
         pages: list[Page] = []

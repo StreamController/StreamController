@@ -627,6 +627,8 @@ class StoreBackend:
         ## 1. Remove all action objects in all pages
         for deck_controller in gl.deck_manager.deck_controller:
             # Track all keys controlled by this plugin
+            if deck_controller.active_page is None:
+                continue
             keys = deck_controller.active_page.get_keys_with_plugin(plugin_id=plugin_id)
 
             deck_controller.active_page.remove_plugin_action_objects(plugin_id=plugin_id)

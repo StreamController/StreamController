@@ -65,6 +65,7 @@ class PluginBase(rpyc.Service):
         self.github_repo = manifest.get("github") or github_repo or None
         self.plugin_version = manifest.get("plugin-version") or plugin_version or None
         self.min_app_version = manifest.get("minimum-app-version") or app_version or None
+        self.app_version = manifest.get("app-version") or app_version or None
         
         # Verify variables
         if self.plugin_name in ["", None]:
@@ -102,6 +103,27 @@ class PluginBase(rpyc.Service):
             }
             self.registered = True
         else:
+            reason = None
+
+            if version.parse(self.min_app_version) > version.parse(gl.app_version):
+                # Plugin is too new - StreamController is too old
+                log.warning(
+                    f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
+                    f"Please update StreamController! Plugin requires app version {self.min_app_version} "
+                    f"you are running version {gl.app_version}. Disabling plugin."
+                )
+                reason = "app-out-of-date"
+
+            elif version.parse(self.app_version).major < version.parse(gl.app_version).major:
+                # Plugin is too old - StreamController is too new
+                max_version = f"{version.parse(self.app_version).major}.x.x"
+                log.warning(
+                    f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
+                    f"Please update your assets! Plugin requires an app version between {self.min_app_version} and {max_version} "
+                    f"you are running version {gl.app_version}. Disabling plugin."
+                )
+                reason = "plugin-out-of-date"
+
             PluginBase.disabled_plugins[self.plugin_id] = {
                 "object": self,
                 "plugin_version": self.plugin_version,
@@ -109,15 +131,8 @@ class PluginBase(rpyc.Service):
                 "github": self.github_repo,
                 "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
                 "file_name": os.path.basename(inspect.getfile(self.__class__)),
-                "reason": "plugin-out-of-date"
+                "reason": reason
             }
-
-            max_version = f"{version.parse(self.min_app_version).major}.x.x"
-            log.warning(
-                f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
-                f"Please update your assets! Plugin requires an app version between {self.min_app_version} and {max_version} "
-                f"you are running version {gl.app_version}. Disabling plugin."
-            )
 
     def get_plugin_id_from_folder_name(self) -> str:
         module = importlib.import_module(self.__module__)

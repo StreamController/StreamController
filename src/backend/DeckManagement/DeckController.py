@@ -1503,13 +1503,13 @@ class ControllerKey:
             return
         
         x, y = self.deck_controller.index_to_coords(self.key)
-        
-        if self.deck_controller.get_own_key_grid() is None:
+
+
+        if self.deck_controller.get_own_key_grid() is None or not gl.app.main_win.get_mapped():
             # Save to use later
             self.deck_controller.ui_grid_buttons_changes_while_hidden[(y, x)] = image # The ui key coords are in reverse order
         else:
-            # self.get_own_key_grid().buttons[y][x].set_image(pixbuf)
-            GLib.idle_add(self.deck_controller.get_own_key_grid().buttons[y][x].set_image, image)
+            self.deck_controller.get_own_key_grid().buttons[y][x].set_image(image)
         
     def get_own_ui_key(self) -> KeyButton:
         x, y = self.deck_controller.index_to_coords(self.key)

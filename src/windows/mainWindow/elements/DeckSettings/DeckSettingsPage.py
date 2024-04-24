@@ -82,6 +82,9 @@ class DeckSettingsPage(Gtk.Overlay):
 
         self.fake_deck_group.set_visible(fake)
 
+        self.serial_number_label = Gtk.Label(label=f"Serial: {self.deck_controller.serial_number()}", margin_top=20, margin_bottom=20, css_classes=["dim-label"], selectable=True)
+        self.main_box.append(self.serial_number_label)
+
     def on_back_clicked(self, button):
         self.deck_stack_child.stack.set_visible_child_name("page-settings")
         self.deck_stack_child.toggle_settings_button.set_icon_name("applications-system-symbolic")

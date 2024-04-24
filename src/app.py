@@ -21,7 +21,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Xdp", "1.0")
-from gi.repository import Gtk, Adw, Gdk, Gio, Xdp
+from gi.repository import Gtk, Adw, Gdk, Gio, Xdp, GLib
 
 # Import Python modules
 from loguru import logger as log
@@ -80,6 +80,10 @@ class App(Adw.Application):
         on_quit_action = Gio.SimpleAction.new("quit", None)
         on_quit_action.connect("activate", self.on_quit)
         self.add_action(on_quit_action)
+
+        change_page_action = Gio.SimpleAction.new("change_page", GLib.VariantType("as")) # as = array of strings
+        change_page_action.connect("activate", self.on_change_page)
+        self.add_action(change_page_action)
 
         log.success("Finished loading app")
 
@@ -155,3 +159,24 @@ class App(Adw.Application):
 
     def register_sigint_handler(self):
         signal.signal(signal.SIGINT, self.on_quit)
+
+    def on_change_page(self, action, data: GLib.Variant, *args):
+        """
+        page_name can be either the name or the path of the page
+        """
+        serial_number, page_name = data.unpack()
+
+        for controller in self.deck_manager.deck_controller:
+            if controller.serial_number() == serial_number:
+                page_path = gl.page_manager.get_best_page_path_match_from_name(page_name)
+
+                if controller is not None:
+                    if controller.active_page is not None:
+                        if os.path.abspath(page_path) == os.path.abspath(controller.active_page.json_path):
+                            continue
+
+                page = gl.page_manager.get_page(page_path, controller)
+                if page_path is None:
+                    continue
+
+                controller.load_page(page)

@@ -393,3 +393,22 @@ class PageManagerBackend:
                 for page in pages:
                     if page.deck_controller.active_page == page:
                         page.deck_controller.load_page(page, allow_reload=True)
+
+    def get_best_page_path_match_from_name(self, name: str) -> str:
+        if name in ["", None]:
+            return
+        
+        # Is a full path
+        if os.path.isfile(name):
+            return name
+        
+        # Not a full path
+        for page in self.get_pages():
+            if "app" in page and "app" in name:
+                print()
+            if os.path.basename(page) == name:
+                return page
+            if os.path.splitext(os.path.basename(page))[0] == name:
+                return page
+            
+        return

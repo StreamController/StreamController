@@ -374,7 +374,17 @@ class DeckController:
 
     def load_default_page(self):
         if not self.get_alive(): return
-        default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
+
+        api_page_path = None
+        if self.serial_number() in gl.api_page_requests:
+            api_page_path = gl.api_page_requests[self.serial_number()]
+            api_page_path = gl.page_manager.get_best_page_path_match_from_name(api_page_path)
+
+        if api_page_path is None:
+            default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
+        else:
+            default_page_path = api_page_path
+            
         if default_page_path is None:
             # Use the first page
             pages = gl.page_manager.get_pages()

@@ -189,3 +189,7 @@ page-manager.duplicate;Duplizieren;Duplicate;
 page-manager.export-page;Exportieren;Export;
 page-manager.import;Importieren;Import;
 page-manager.import.page;Seite;Page;
+settings-system-settings-title;System;System;
+settings-system-settings-header;Systemeinstellungen; System settings;
+settings-system-settings-autostart;Autostart;Autostart;
+settings-system-settings-autostart-subtitle;App beim Systemstart automatisch starten;Start app on system boot;

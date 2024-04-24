@@ -26,17 +26,22 @@ def is_flatpak():
     return os.path.isfile('/.flatpak-info')
 
 log.catch
-def setup_autostart():
-    if is_flatpak():
-        setup_autostart_flatpak()
+def setup_autostart(enable: bool = True):
+    if enable:
+        if is_flatpak():
+            setup_autostart_flatpak(True)
+
+        else:
+            setup_autostart_desktop_entry(True)
 
     else:
-        setup_autostart_desktop_entry()
+        setup_autostart_flatpak(False)
+        setup_autostart_desktop_entry(False)
     
     
 
 
-def setup_autostart_flatpak():
+def setup_autostart_flatpak(enable: bool = True):
     """
     Use portal to autostart for Flatpak
     Documentation:
@@ -56,21 +61,23 @@ def setup_autostart_flatpak():
     xdp = Xdp.Portal.new()
 
     try:
+        flag = Xdp.BackgroundFlags.AUTOSTART if enable else Xdp.BackgroundFlags.NONE
+
         # Request Autostart
         xdp.request_background(
             None,  # parent
             "Autostart StreamController",  # reason
             ["/app/bin/launch.sh", "-b"],  # commandline
-            Xdp.BackgroundFlags.AUTOSTART,
+            flag,
             None,  # cancellable
             request_background_callback,
             None,  # user_data
         )
     except:
         log.error(f"request_background failed")
-        setup_autostart_desktop_entry()
+        setup_autostart_desktop_entry(enable)
 
-def setup_autostart_desktop_entry():
+def setup_autostart_desktop_entry(enable: bool = True):
     log.info("Setting up autostart using desktop entry")
 
 
@@ -78,5 +85,17 @@ def setup_autostart_desktop_entry():
     AUTOSTART_DIR = os.path.join(xdg_config_home, "autostart")
     AUTOSTART_DESKTOP_PATH = os.path.join(AUTOSTART_DIR, "StreamController.desktop")
 
+    if enable:
+        try:
+            os.makedirs(os.path.dirname(AUTOSTART_DESKTOP_PATH), exist_ok=True)
             shutil.copyfile(os.path.join("flatpak", "autostart.desktop"), AUTOSTART_DESKTOP_PATH)
             log.info(f"Autostart set up at: {AUTOSTART_DESKTOP_PATH}")
+        except Exception as e:
+            log.error(f"Failed to set up autostart at: {AUTOSTART_DESKTOP_PATH} with error: {e}")
+    else:
+        if os.path.exists(AUTOSTART_DESKTOP_PATH):
+            try:
+                os.remove(AUTOSTART_DESKTOP_PATH)
+                log.info(f"Autostart removed from: {AUTOSTART_DESKTOP_PATH}")
+            except Exception as e:
+                log.error(f"Failed to remove autostart from: {AUTOSTART_DESKTOP_PATH} with error: {e}")

@@ -224,9 +224,11 @@ def main():
 
     reset_all_decks()
 
-    setup_autostart()
-
     create_global_objects()
+
+    app_settings = gl.settings_manager.get_app_settings()
+    if app_settings.get("autostart", True):
+        setup_autostart()
     create_cache_folder()
     threading.Thread(target=update_assets, name="update_assets").start()
     load()

@@ -271,8 +271,6 @@ class KeyButton(Gtk.Frame):
             if self.key_grid.deck_page.deck_stack_child.stack.get_visible_child() != self.key_grid.deck_page:
                 self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
 
-        if hasattr(self, "pixbuf"):
-            del self.pixbuf
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         GLib.idle_add(self.show_pixbuf, self.pixbuf, priority=GLib.PRIORITY_HIGH)
         # image.close()

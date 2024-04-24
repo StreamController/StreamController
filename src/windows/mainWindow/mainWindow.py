@@ -135,6 +135,7 @@ class MainWindow(Adw.ApplicationWindow):
         
 
     def on_toggle_sidebar(self, button):
+        return
         if button.get_active():
             self.split_view.set_collapsed(False)
         else:
@@ -213,7 +214,6 @@ class MainWindow(Adw.ApplicationWindow):
             GLib.idle_add(self.main_stack.set_visible_child, self.no_pages_error)
 
         GLib.idle_add(self.deck_switcher.set_show_switcher, False)
-        GLib.idle_add(self.split_view.set_collapsed, True)
         GLib.idle_add(self.sidebar_toggle_button.set_visible, False)
         GLib.idle_add(self.menu_button.set_optional_actions_state, False)
 

@@ -307,7 +307,7 @@ class LabelRow(Adw.PreferencesRow):
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"].setdefault(self.key_name, {})
 
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-family"] = pango_font.get_family()
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-size"] = round(font_size/1000)
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-size"] = round(font_size/Pango.SCALE)
 
         page.save()
 
@@ -323,7 +323,7 @@ class LabelRow(Adw.PreferencesRow):
             page_label = controller_key.label_manager.page_labels.get(self.key_name)
             if page_label is not None:
                 page_label.font_name = pango_font.get_family()
-                page_label.font_size = round(font_size/1000)
+                page_label.font_size = round(font_size/Pango.SCALE)
             controller_key.label_manager.update_label(position=self.key_name)
 
         self.font_chooser_button.revert_button.set_visible(True)

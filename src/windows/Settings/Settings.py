@@ -274,11 +274,11 @@ class SystemGroup(Adw.PreferencesGroup):
         self.autostart.connect("notify::active", self.on_autostart_toggled)
 
     def load_defaults(self):
-        self.autostart.set_active(self.settings.settings_json.get("store", {}).get("autostart", True))
+        self.autostart.set_active(self.settings.settings_json.get("system", {}).get("autostart", True))
 
     def on_autostart_toggled(self, *args):
-        self.settings.settings_json.setdefault("store", {})
-        self.settings.settings_json["store"]["autostart"] = self.autostart.get_active()
+        self.settings.settings_json.setdefault("system", {})
+        self.settings.settings_json["system"]["autostart"] = self.autostart.get_active()
 
         setup_autostart(self.autostart.get_active())
 

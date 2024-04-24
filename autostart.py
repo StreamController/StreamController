@@ -61,7 +61,7 @@ def setup_autostart_flatpak(enable: bool = True):
     xdp = Xdp.Portal.new()
 
     try:
-        flag = Xdp.BackgroundFlags.AUTOSTART if enable else Xdp.BackgroundFlags.NONE
+        flag = Xdp.BackgroundFlags.AUTOSTART if enable else Xdp.BackgroundFlags.ACTIVATABLE
 
         # Request Autostart
         xdp.request_background(

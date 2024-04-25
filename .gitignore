@@ -188,3 +188,7 @@ vid_cache/
 **/.flatpak/
 
 .flatpak/meson.sh
+
+## Semrel temporary stuff
+.semrel/
+semantic-release

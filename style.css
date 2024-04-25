@@ -18,6 +18,10 @@
 .red-background{
   background-color: #C01C28;
 }
+.red-border{
+  border: 2px solid red;
+  padding: 10px;
+}
 .icon-selector{
   border-radius: 10px;
   margin: 10px;

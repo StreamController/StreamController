@@ -27,6 +27,7 @@ from loguru import logger as log
 from src.windows.Store.InfoPage import InfoPage
 from GtkHelper.GtkHelper import ErrorPage
 from src.windows.Store.NoConnectionError import NoConnectionError
+from packaging import version
 
 # Typing
 from typing import TYPE_CHECKING
@@ -186,3 +187,12 @@ class StorePage(Gtk.Stack):
 
     def hide_connection_error(self):
         self.set_visible_child(self.main_box)
+
+    def check_required_version(self, app_version_to_check: str, is_min_app_version: bool = False):
+        if is_min_app_version:
+            if app_version_to_check is None:
+                return True
+            min_version = version.parse(app_version_to_check)
+            app_version = version.parse(gl.app_version)
+
+            return min_version < app_version

@@ -23,8 +23,7 @@ from src.backend.IconPackManagement.Icon import Icon
 class IconPack:
     def __init__(self, path: str):
         self.path = path
-        # Get name from folder path by removing everything before the first "::"
-        self.name = os.path.basename(path).split("::", 1)[1]
+        self.name = self.get_manifest().get("name") or os.path.basename(path)
 
     @lru_cache(maxsize=None)
     def get_manifest(self):

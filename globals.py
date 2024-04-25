@@ -64,6 +64,7 @@ window_grabber: "WindowGrabber" = None
 store: "Store" = None # Only if opened
 flatpak_permission_manager: "FlatpakPermissionManager" = None
 threads_running: bool = True
+app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 
 app_version: str = "1.4.11-beta" # In breaking.feature.fix-state format

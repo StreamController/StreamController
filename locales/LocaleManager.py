@@ -59,6 +59,11 @@ class LocaleManager:
                 return language
         return self.FALLBACK_LOCALE
 
+    def get_custom_translation(self, locale_json:dict[str, str]):
+        if locale_json is None:
+            return ""
+        return locale_json.get(self.language, locale_json.get(self.FALLBACK_LOCALE))
+
     def get(self, key: str) -> str:
         key_dict = self.locale_data.get(key, {})
         return key_dict.get(self.language, key_dict.get(self.FALLBACK_LOCALE, key))

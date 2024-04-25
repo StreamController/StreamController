@@ -54,81 +54,107 @@ class PluginBase(rpyc.Service):
         """
         Registers a plugin with the given information.
 
-        Args:
-            plugin_name (str): The name of the plugin.
-            github_repo (str): The GitHub repository URL of the plugin.
-            plugin_version (str): The version of the plugin.
-            app_version (str): The version of the application. Do NOT set it programmatically (e.g. by using gl.app_version).
-
         Raises:
             ValueError: If the plugin name is not specified or if the plugin already exists.
 
         Returns:
             None
         """
+
+        manifest = self.get_manifest()
+        self.plugin_name = manifest.get("plugin-name") or plugin_name or None
+        self.github_repo = manifest.get("github") or github_repo or None
+        self.plugin_version = manifest.get("plugin-version") or plugin_version or None
+        self.min_app_version = manifest.get("minimum-app-version") or app_version or None
+        self.app_version = manifest.get("app-version") or app_version or None
         
         # Verify variables
-        if plugin_name in ["", None]:
+        if self.plugin_name in ["", None]:
             log.error("Plugin: Please specify a plugin name")
             return
-        if github_repo in ["", None]:
-            log.error(f"Plugin: {plugin_name}: Please specify a github repo")
+        if self.github_repo in ["", None]:
+            log.error(f"Plugin: {self.plugin_name}: Please specify a github repo")
             return
         
-        self.plugin_id = self.get_plugin_id()
+        if self.plugin_version in ["", None]:
+            log.error(f"Plugin: {self.plugin_name}: Please specify a plugin version")
+            return
+        
+        if self.min_app_version in ["", None]:
+            log.error(f"Plugin: {self.plugin_name}: Please specify a minimum app version")
+            return
+        
+        self.plugin_id = manifest.get("plugin-id") or self.get_plugin_id_from_folder_name()
 
         for plugin_id in PluginBase.plugins.keys():
             plugin = PluginBase.plugins[plugin_id]["object"]
-            if plugin.plugin_name == plugin_name:
-                log.error(f"Plugin: {plugin_name}: Plugin already exists")
+            if plugin.plugin_name == self.plugin_name:
+                log.error(f"Plugin: {self.plugin_name}: Plugin already exists")
                 return
-
-        if self.do_versions_match(app_version):
+            
+        if self.is_app_version_matching():
             # Register plugin
             PluginBase.plugins[self.plugin_id] = {
                 "object": self,
-                "github": github_repo,
-                "version": plugin_version,
-                "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
+                "plugin_version": self.plugin_version,
+                "minimum_app_version": self.min_app_version,
+                "github": self.github_repo,
+                "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
                 "file_name": os.path.basename(inspect.getfile(self.__class__))
             }
             self.registered = True
-
         else:
-            log.warning(
-                f"Plugin {plugin_name} is not compatible with this version of StreamController. "
-                f"Please update your assets! Plugin requires version {plugin_version} and you are "
-                f"running version {gl.app_version}. Disabling plugin."
-            )
+            reason = None
+
+            if version.parse(self.min_app_version) > version.parse(gl.app_version):
+                # Plugin is too new - StreamController is too old
+                log.warning(
+                    f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
+                    f"Please update StreamController! Plugin requires app version {self.min_app_version} "
+                    f"you are running version {gl.app_version}. Disabling plugin."
+                )
+                reason = "app-out-of-date"
+
+            elif version.parse(self.app_version).major < version.parse(gl.app_version).major:
+                # Plugin is too old - StreamController is too new
+                max_version = f"{version.parse(self.app_version).major}.x.x"
+                log.warning(
+                    f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
+                    f"Please update your assets! Plugin requires an app version between {self.min_app_version} and {max_version} "
+                    f"you are running version {gl.app_version}. Disabling plugin."
+                )
+                reason = "plugin-out-of-date"
+
             PluginBase.disabled_plugins[self.plugin_id] = {
                 "object": self,
-                "github": github_repo,
-                "version": plugin_version,
-                "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
-                "file_name": os.path.basename(inspect.getfile(self.__class__))
+                "plugin_version": self.plugin_version,
+                "minimum_app_version": self.min_app_version,
+                "github": self.github_repo,
+                "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
+                "file_name": os.path.basename(inspect.getfile(self.__class__)),
+                "reason": reason
             }
 
-        self.plugin_name = plugin_name
-        self.github_repo = github_repo
-        self.version = plugin_version
-
-    def get_plugin_id(self) -> str:
+    def get_plugin_id_from_folder_name(self) -> str:
         module = importlib.import_module(self.__module__)
         subclass_file = module.__file__
         return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
-
-
-    def do_versions_match(self, app_version_to_check: str):
-        if gl.exact_app_version_check:
-            gl.app_version == app_version
-            return
-        
-        # Only compare major version
+    
+    def is_minimum_version_ok(self) -> bool:
         app_version = version.parse(gl.app_version)
-        app_version_to_check = version.parse(app_version_to_check)
+        min_app_version = version.parse(self.min_app_version)
 
-        return app_version.major == app_version_to_check.major
-        
+        return app_version >= min_app_version
+
+    def are_major_versions_matching(self) -> bool:
+        app_version = version.parse(gl.app_version)
+        min_app_version = version.parse(self.min_app_version)
+
+        return app_version.major == min_app_version.major
+    
+    def is_app_version_matching(self) -> bool:
+        return self.are_major_versions_matching() and self.is_minimum_version_ok()
+
 
     def add_action_holder(self, action_holder: ActionHolder):
         if not isinstance(action_holder, ActionHolder):
@@ -139,6 +165,12 @@ class PluginBase(rpyc.Service):
     def get_settings(self):
         if os.path.exists(os.path.join(self.PATH, "settings.json")):
             with open(os.path.join(self.PATH, "settings.json"), "r") as f:
+                return json.load(f)
+        return {}
+
+    def get_manifest(self):
+        if os.path.exists(os.path.join(self.PATH, "manifest.json")):
+            with open(os.path.join(self.PATH, "manifest.json"), "r") as f:
                 return json.load(f)
         return {}
     

@@ -83,17 +83,22 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.allow_white_mode = Adw.SwitchRow(title=gl.lm.get("settings-allow-white-mode"), subtitle=gl.lm.get("settings-allow-white-mode-subtitle"), active=False)
         self.add(self.allow_white_mode)
 
+        self.show_notifications = Adw.SwitchRow(title=gl.lm.get("settings-show-notifications"), subtitle=gl.lm.get("settings-show-notifications-subtitle"), active=True)
+        self.add(self.show_notifications)
+
         self.load_defaults()
 
         # Connect signals
         self.emulate_row.connect("notify::active", self.on_emulate_row_toggled)
         self.enable_fps_warnings_row.connect("notify::active", self.on_enable_fps_warnings_row_toggled)
         self.allow_white_mode.connect("notify::active", self.on_allow_white_mode_toggled)
+        self.show_notifications.connect("notify::active", self.on_show_notifications_toggled)
 
     def load_defaults(self):
         self.emulate_row.set_active(self.settings.settings_json.get("key-grid", {}).get("emulate-at-double-click", True))
         self.enable_fps_warnings_row.set_active(self.settings.settings_json.get("warnings", {}).get("enable-fps-warnings", True))
         self.allow_white_mode.set_active(self.settings.settings_json.get("ui", {}).get("allow-white-mode", False))
+        self.show_notifications.set_active(self.settings.settings_json.get("ui", {}).get("show-notifications", True))
 
     def on_emulate_row_toggled(self, *args):
         self.settings.settings_json.setdefault("key-grid", {})
@@ -121,6 +126,13 @@ class UIPageGroup(Adw.PreferencesGroup):
             gl.app.style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
         else:
             gl.app.style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+
+        # Save
+        self.settings.save_json()
+
+    def on_show_notifications_toggled(self, *args):
+        self.settings.settings_json.setdefault("ui", {})
+        self.settings.settings_json["ui"]["show-notifications"] = self.show_notifications.get_active()
 
         # Save
         self.settings.save_json()

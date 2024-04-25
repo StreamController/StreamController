@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from PIL import ImageFile
+from PIL import Image
 
 @dataclass
 class StoreData:
@@ -30,7 +30,7 @@ class StoreData:
 class ImageData:
     thumbnail: [str, None] = None # Path to image
     """Path to the Thumbnail used in the Store"""
-    image: [ImageFile, None] = None #Actual Image
+    image: [Image.Image, None] = None #Actual Image
     """The Image that gets displayed in the Store"""
 
 @dataclass

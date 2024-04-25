@@ -100,7 +100,13 @@ class MediaPlayerSetImageTask:
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
             if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
                 log.debug(f"Failed to set key_image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
+                
+                
+                self.deck_controller.deck.close()
+                self.deck_controller.media_player.running = False # Set stop flat - otherwise remove_controller will wait until this task is done, which it never will because it waiuts
                 gl.deck_manager.remove_controller(self.deck_controller)
+
+                gl.deck_manager.connect_new_decks()
 
 
 class MediaPlayerThread(threading.Thread):
@@ -311,13 +317,13 @@ class DeckController:
         image = self.keys[index].get_current_deck_image()
         
         rgb_image = image.convert("RGB")
-        native_image = PILHelper.to_native_key_format(self.deck, rgb_image)
-        rgb_image.close()
-        del rgb_image
 
         if self.is_visual():
+            native_image = PILHelper.to_native_key_format(self.deck, rgb_image)
+            rgb_image.close()
             self.media_player.add_image_task(index, native_image)
 
+        del rgb_image
         self.keys[index].set_ui_key_image(image)
 
     @log.catch
@@ -359,9 +365,14 @@ class DeckController:
     def generate_alpha_key(self) -> Image.Image:
         return Image.new("RGBA", self.get_key_image_size(), (0, 0, 0, 0))
     
+    @lru_cache(maxsize=None)
     def get_key_image_size(self) -> tuple[int]:
         if not self.get_alive(): return
-        return self.deck.key_image_format()["size"]
+        size = self.deck.key_image_format()["size"]
+        if size is None:
+            return (72, 72)
+        size = max(size[0], 72), max(size[1], 72)
+        return size
     
     # ------------ #
     # Page Loading #
@@ -369,7 +380,17 @@ class DeckController:
 
     def load_default_page(self):
         if not self.get_alive(): return
-        default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
+
+        api_page_path = None
+        if self.serial_number() in gl.api_page_requests:
+            api_page_path = gl.api_page_requests[self.serial_number()]
+            api_page_path = gl.page_manager.get_best_page_path_match_from_name(api_page_path)
+
+        if api_page_path is None:
+            default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
+        else:
+            default_page_path = api_page_path
+            
         if default_page_path is None:
             # Use the first page
             pages = gl.page_manager.get_pages()
@@ -1005,7 +1026,10 @@ class ControllerKeyLabelManager:
         if not recursive_hasattr(gl, "app.main_win.sidebar.key_editor"):
             return
         
-        active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        active_controller = visible_child.deck_controller
         if active_controller is not self.controller_key.deck_controller:
             return
 
@@ -1080,6 +1104,10 @@ class ControllerKeyLayoutManager:
         self.action_layout = KeyLayout()
         self.page_layout = KeyLayout()
 
+    def clear(self):
+        self.action_layout = KeyLayout()
+        self.page_layout = KeyLayout()
+
     def get_use_page_layout_properties(self) -> dict:
         return {
             "valign": self.page_layout.valign is not None,
@@ -1141,7 +1169,10 @@ class ControllerKeyLayoutManager:
         if not recursive_hasattr(gl, "app.main_win.sidebar.image_editor"):
             return
         
-        active_controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        active_controller = visible_child.deck_controller
         if active_controller is not self.controller_key.deck_controller:
             return
 
@@ -1397,6 +1428,10 @@ class ControllerKey:
         if load_labels:
             self.label_manager.clear_labels()
 
+        # Reset action layout
+        layout = KeyLayout()
+        self.layout_manager.set_action_layout(layout, update=False)
+
         self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
 
         ## Load labels
@@ -1474,6 +1509,7 @@ class ControllerKey:
         self.key_image = None
         self.key_video = None
         self.label_manager.clear_labels()
+        self.layout_manager.clear()
         self.background_color = [0, 0, 0, 0]
         if update:
             self.update()
@@ -1483,13 +1519,13 @@ class ControllerKey:
             return
         
         x, y = self.deck_controller.index_to_coords(self.key)
-        
-        if self.deck_controller.get_own_key_grid() is None:
+
+
+        if self.deck_controller.get_own_key_grid() is None or not gl.app.main_win.get_mapped():
             # Save to use later
             self.deck_controller.ui_grid_buttons_changes_while_hidden[(y, x)] = image # The ui key coords are in reverse order
         else:
-            # self.get_own_key_grid().buttons[y][x].set_image(pixbuf)
-            GLib.idle_add(self.deck_controller.get_own_key_grid().buttons[y][x].set_image, image)
+            self.deck_controller.get_own_key_grid().buttons[y][x].set_image(image)
         
     def get_own_ui_key(self) -> KeyButton:
         x, y = self.deck_controller.index_to_coords(self.key)

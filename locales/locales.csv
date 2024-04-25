@@ -191,3 +191,7 @@ page-manager.import;Importieren;Import;
 page-manager.import.page;Seite;Page;
 settings-show-notifications;Benachrichtigungen anzeigen;Show notifications;
 settings-show-notifications-subtitle;Benachrichtigungen bei veralteten Assets anzeigen;Show notifications for outdated assets;
+settings-system-settings-title;System;System;
+settings-system-settings-header;Systemeinstellungen; System settings;
+settings-system-settings-autostart;Autostart;Autostart;
+settings-system-settings-autostart-subtitle;App beim Systemstart automatisch starten;Start app on system boot;

@@ -48,8 +48,9 @@ class PluginBase(rpyc.Service):
 
         self.plugin_name: str = None
 
-    def register(self, plugin_name: str = None, github_repo: str = None, plugin_version: str = None, app_version: str = None):
-        #TODO: Remove fallback args in newer versions
+        self.registered_pages: list[str] = []
+
+    def register(self, plugin_name: str, github_repo: str, plugin_version: str, app_version: str):
         """
         Registers a plugin with the given information.
 
@@ -188,11 +189,14 @@ class PluginBase(rpyc.Service):
 
     def register_page(self, path: str) -> None:
         gl.page_manager.register_page(path)
+        self.registered_pages.append(path)
 
     def get_selector_icon(self) -> Gtk.Widget:
         return Gtk.Image(icon_name="view-paged")
     
     def on_uninstall(self) -> None:
+        for page in self.registered_pages:
+            gl.page_manager.unregister_page(page)
         try:
             # Stop backend if running
             if self.backend is not None:

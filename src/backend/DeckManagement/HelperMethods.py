@@ -20,6 +20,7 @@ import math
 import json
 import requests
 import cairosvg
+import re
 from urllib.parse import urlparse
 from PIL import Image
 
@@ -206,3 +207,13 @@ def load_svg_as_pil(file_path):
 
     pil_image = Image.open(tmp)
     return pil_image
+
+def natural_keys(s):
+    return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
+
+def natural_sort(strings_list: list[str]) -> list[str]:
+    return sorted(strings_list, key=natural_keys)
+
+def natural_sort_by_filenames(paths_list: list[str]) -> list[str]:
+    sorted_paths = sorted(paths_list, key=lambda path: natural_keys(os.path.basename(path)))
+    return sorted_paths

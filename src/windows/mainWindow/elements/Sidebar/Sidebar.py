@@ -120,7 +120,12 @@ class Sidebar(Adw.NavigationPage):
             self.show_error()
             return
         # Verify is page is loaded on current controller
-        controller = self.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         if controller.active_page == None:
             # self.error_page.set_error_text(gl.lm.get("right-area-no-page-selected-error"))
             # self.error_page.set_reload_args([None])

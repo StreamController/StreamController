@@ -18,6 +18,7 @@ import threading
 import gi
 
 from src.windows.PageManager.Importer.StreamDeckUI.StreamDeckUI import StreamDeckUIImporter
+from src.windows.PageManager.Importer.StreamController.StreamController import StreamControllerImporter
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -55,7 +56,9 @@ class Importer(Adw.ApplicationWindow):
             thread = threading.Thread(target=self.import_from_streamdeck_ui, args=(path, on_finished), name="import_from_streamdeck_ui")
             thread.start()
 
-
+        if app == "streamcontroller":
+            thread = threading.Thread(target=self.import_from_streamcontroller, args=(path, on_finished), name="import_from_streamcontroller")
+            thread.start()
         
 
     def import_from_streamdeck_ui(self, path: str, on_finished: callable) -> None:
@@ -67,6 +70,25 @@ class Importer(Adw.ApplicationWindow):
             return
 
         ui_importer = StreamDeckUIImporter(path)
+        ui_importer.perform_import()
+
+        GLib.idle_add(self.progess_bar.set_text, "Imported!")
+        GLib.idle_add(self.progess_bar.set_fraction, 1)
+
+        if on_finished:
+            on_finished()
+
+        GLib.timeout_add(1500, self.close)
+
+    def import_from_streamcontroller(self, path: str, on_finished: callable) -> None:
+        if not os.path.exists(path):
+            self.show_error()
+            return
+        if not os.path.splitext(os.path.basename(path))[1] == ".json":
+            self.show_error()
+            return
+
+        ui_importer = StreamControllerImporter(path)
         ui_importer.perform_import()
 
         GLib.idle_add(self.progess_bar.set_text, "Imported!")

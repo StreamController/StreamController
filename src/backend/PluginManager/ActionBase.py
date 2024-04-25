@@ -250,9 +250,13 @@ class ActionBase(rpyc.Service):
     
     def get_settings(self) -> dir:
         # self.page.load()
+        if self.page is None:
+            return {}
         return self.page.get_settings_for_action(self, coords = self.page_coords)
     
     def set_settings(self, settings: dict):
+        if self.page is None:
+            return
         self.page.set_settings_for_action(self, settings=settings, coords = self.page_coords)
         self.page.save()
 
@@ -274,6 +278,7 @@ class ActionBase(rpyc.Service):
         return self in self.page.get_all_actions()
     
     def has_custom_user_asset(self) -> bool:
+        if not self.get_is_present(): return False
         media = self.page.dict["keys"][self.page_coords].get("media", {})
         return media.get("path", None) is not None
     

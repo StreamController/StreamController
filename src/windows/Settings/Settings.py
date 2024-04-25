@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from autostart import setup_autostart
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
@@ -41,11 +43,13 @@ class Settings(Adw.PreferencesWindow):
         self.store_page = StorePage(settings=self)
         self.performance_page = PerformancePage(settings=self)
         self.dev_page = DevPage(settings=self)
+        self.system_page = SystemPage(settings=self)
 
         self.add(self.ui_page)
         self.add(self.store_page)
         self.add(self.dev_page)
         self.add(self.performance_page)
+        self.add(self.system_page)
 
     def load_json(self):
         # Load settings from file
@@ -254,6 +258,41 @@ class PerformancePageGroup(Adw.PreferencesGroup):
     def on_cache_videos_toggled(self, *args):
         self.settings.settings_json.setdefault("performance", {})
         self.settings.settings_json["performance"]["cache-videos"] = self.cache_videos.get_active()
+
+        # Save
+        self.settings.save_json()
+
+
+class SystemPage(Adw.PreferencesPage):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__()
+        self.set_title(gl.lm.get("settings-system-settings-title"))
+        self.set_icon_name("system-run-symbolic")
+
+        self.add(SystemGroup(settings=settings))
+
+class SystemGroup(Adw.PreferencesGroup):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__(title=gl.lm.get("settings-system-settings-header"))
+
+        self.autostart = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-autostart"), subtitle=gl.lm.get("settings-system-settings-autostart-subtitle"), active=True)
+        self.add(self.autostart)
+
+        self.load_defaults()
+
+        # Connect signals
+        self.autostart.connect("notify::active", self.on_autostart_toggled)
+
+    def load_defaults(self):
+        self.autostart.set_active(self.settings.settings_json.get("system", {}).get("autostart", True))
+
+    def on_autostart_toggled(self, *args):
+        self.settings.settings_json.setdefault("system", {})
+        self.settings.settings_json["system"]["autostart"] = self.autostart.get_active()
+
+        setup_autostart(self.autostart.get_active())
 
         # Save
         self.settings.save_json()

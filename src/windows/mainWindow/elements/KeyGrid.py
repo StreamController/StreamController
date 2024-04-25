@@ -272,7 +272,7 @@ class KeyButton(Gtk.Frame):
                 self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
 
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
-        self.show_pixbuf(self.pixbuf)
+        GLib.idle_add(self.show_pixbuf, self.pixbuf, priority=GLib.PRIORITY_HIGH)
         # image.close()
         # image = None
         # del image
@@ -280,13 +280,12 @@ class KeyButton(Gtk.Frame):
         # update righthand side key preview if possible
         if recursive_hasattr(gl, "app.main_win.sidebar"):
             self.set_icon_selector_previews(self.pixbuf)
-        self.pixbuf = None
 
     def set_icon_selector_previews(self, pixbuf):
+        if not recursive_hasattr(gl, "app.main_win.sidebar"):
+            return
         sidebar = gl.app.main_win.sidebar
         if pixbuf is None:
-            return
-        if not recursive_hasattr(gl, "app.main_win.sidebar"):
             return
         if sidebar.key_editor.label_editor.label_group.expander.active_coords != (self.coords[1], self.coords[0]):
             return
@@ -296,13 +295,13 @@ class KeyButton(Gtk.Frame):
         if child.deck_controller != self.key_grid.deck_controller:
             return
         # Update icon selector on the top of the right are
-        GLib.idle_add(sidebar.key_editor.icon_selector.image.set_from_pixbuf, pixbuf)
+        GLib.idle_add(sidebar.key_editor.icon_selector.image.set_from_pixbuf, pixbuf, priority=GLib.PRIORITY_HIGH)
         # Update icon selector in margin editor
         # GLib.idle_add(sidebar.key_editor.image_editor.image_group.expander.margin_row.icon_selector.image.set_from_pixbuf, pixbuf)
 
     def show_pixbuf(self, pixbuf):
         self.pixbuf = pixbuf
-        GLib.idle_add(self.image.set_from_pixbuf, self.pixbuf)
+        self.image.set_from_pixbuf(self.pixbuf)
 
     def on_click(self, gesture, n_press, x, y):
         if gesture.get_current_button() == 1 and n_press == 1:
@@ -348,16 +347,23 @@ class KeyButton(Gtk.Frame):
 
     def on_focus_in(self, *args):
         # Update settings on the righthand side of the screen
-        if not recursive_hasattr(gl, "app.main_win.sidebar"):
-            return
-        sidebar = gl.app.main_win.sidebar
-        sidebar.load_for_coords((self.coords[1], self.coords[0]))
+        self.update_sidebar()
         # Update preview
         if self.pixbuf is not None:
             self.set_icon_selector_previews(self.pixbuf)
         # self.set_css_classes(["key-button-frame"])
         # self.button.set_css_classes(["key-button-new-small"])
         self.set_visible(True)
+
+    def update_sidebar(self):
+        if not recursive_hasattr(gl, "app.main_win.sidebar"):
+            return
+        sidebar = gl.app.main_win.sidebar
+        # Check if already loaded for this coords
+        if sidebar.active_coords == (self.coords[1], self.coords[0]):
+            if not self.get_mapped():
+                return
+        sidebar.load_for_coords((self.coords[1], self.coords[0]))
 
     # Modifier
     def on_copy(self, *args):

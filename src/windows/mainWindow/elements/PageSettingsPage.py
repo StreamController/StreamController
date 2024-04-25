@@ -96,8 +96,6 @@ class PageSettingsPage(Gtk.Overlay):
 
     def on_open_deck_settings_button_click(self, button):
         self.deck_stack_child.set_visible_child_name("deck-settings")
-        gl.app.main_win.split_view.set_collapsed(True)
-        gl.app.main_win.sidebar_toggle_button.set_visible(False)
 
 
 class Switcher(Gtk.StackSwitcher):

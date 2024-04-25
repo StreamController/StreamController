@@ -102,7 +102,12 @@ class ActionExpanderRow(BetterExpander):
         self.clear_actions(keep_add_button=True)
         self.active_coords = coords
         page_coords = f"{coords[0]}x{coords[1]}"
-        controller = self.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         if page_coords not in controller.active_page.action_objects:
             return
         
@@ -193,7 +198,12 @@ class ActionExpanderRow(BetterExpander):
 
 
     def reorder_actions(self, move_index, after_index):
-        controller = self.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
 
         actions = controller.active_page.dict["keys"][page_coords]["actions"]
@@ -214,7 +224,12 @@ class ActionExpanderRow(BetterExpander):
         controller.load_page(controller.active_page)
 
     def update_comment_for_index(self, action_index):
-        controller = self.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
         comment = controller.active_page.get_action_comment(page_coords=page_coords, index=action_index)
         self.get_rows()[action_index].set_comment(comment)
@@ -404,7 +419,12 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         # Gather data
         # action_string = gl.plugin_manager.get_action_string_from_action(action_class)
-        active_controller = self.expander.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        active_controller = visible_child.deck_controller
+        if active_controller is None:
+            return
         active_page = active_controller.active_page
         page_coords = f"{self.expander.active_coords[0]}x{self.expander.active_coords[1]}"
 
@@ -430,7 +450,12 @@ class AddActionButtonRow(Adw.PreferencesRow):
         self.expander.load_for_coords(self.expander.active_coords)
 
         # Reload key
-        controller = self.expander.action_group.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         key_index = controller.coords_to_index(self.expander.active_coords)
         controller.load_key(key_index, page=controller.active_page)
 

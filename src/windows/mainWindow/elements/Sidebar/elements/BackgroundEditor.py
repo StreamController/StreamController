@@ -109,7 +109,10 @@ class ColorRow(Adw.PreferencesRow):
         self.color_chooser_button.connect("notify::rgba", self.on_change_color)
 
     def disconnect_signals(self):
-        self.color_chooser_button.disconnect_by_func(self.on_change_color)
+        try:
+            self.color_chooser_button.disconnect_by_func(self.on_change_color)
+        except:
+            pass
 
     def set_color(self, color_values: list):
         if len(color_values) == 3:
@@ -126,13 +129,23 @@ class ColorRow(Adw.PreferencesRow):
         alpha = round(color.alpha * 255)
 
         # Get active page
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
+
+        # Set defaults
+        page.dict.setdefault("keys", {})
+        page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("background", {})
+
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["background"]["color"] = [red, green, blue, alpha]
         page.save()
 
         # Reload key
-        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
         key_index = controller.coords_to_index(self.active_coords)
         controller.load_key(key_index, page=controller.active_page)
 
@@ -144,11 +157,17 @@ class ColorRow(Adw.PreferencesRow):
         self.active_coords = coords
 
         # Get active page
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
         if page is None:
             return
 
-        self.set_color(page.dict["keys"].get(f"{self.active_coords[0]}x{self.active_coords[1]}", {}).get("background", {}).get("color", [0, 0, 0, 0]))
+        self.set_color(page.dict.get("keys", {}).get(f"{self.active_coords[0]}x{self.active_coords[1]}", {}).get("background", {}).get("color", [0, 0, 0, 0]))
 
         self.connect_signals()
 

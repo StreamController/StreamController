@@ -89,6 +89,9 @@ class App(Adw.Application):
         for task in gl.app_loading_finished_tasks:
             if callable(task):
                 task()
+        change_page_action = Gio.SimpleAction.new("change_page", GLib.VariantType("as")) # as = array of strings
+        change_page_action.connect("activate", self.on_change_page)
+        self.add_action(change_page_action)
 
         log.success("Finished loading app")
 
@@ -238,3 +241,23 @@ class App(Adw.Application):
             notif.add_button_with_target(button[0], button[1], button[2])
 
         GLib.idle_add(super().send_notification, "com.core447.StreamController", notif)
+    def on_change_page(self, action, data: GLib.Variant, *args):
+        """
+        page_name can be either the name or the path of the page
+        """
+        serial_number, page_name = data.unpack()
+
+        for controller in self.deck_manager.deck_controller:
+            if controller.serial_number() == serial_number:
+                page_path = gl.page_manager.get_best_page_path_match_from_name(page_name)
+
+                if controller is not None:
+                    if controller.active_page is not None:
+                        if os.path.abspath(page_path) == os.path.abspath(controller.active_page.json_path):
+                            continue
+
+                page = gl.page_manager.get_page(page_path, controller)
+                if page_path is None:
+                    continue
+
+                controller.load_page(page)

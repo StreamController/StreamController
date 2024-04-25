@@ -113,11 +113,10 @@ class DeckManager:
         loaded_deck_ids = []
         for controller in self.deck_controller:
             loaded_deck_ids.append(controller.deck.id())
-        
+
         for deck in DeviceManager().enumerate():
             if deck.id() in loaded_deck_ids:
                 continue
-
             # Add deck
             self.add_newly_connected_deck(deck)
 
@@ -136,10 +135,15 @@ class DeckManager:
         gl.app.main_win.check_for_errors()
 
     def remove_controller(self, deck_controller: DeckController) -> None:
+        print("1")
         self.deck_controller.remove(deck_controller)
+        print("2")
         gl.app.main_win.leftArea.deck_stack.remove_page(deck_controller)
+        print("3")
         deck_controller.delete()
+        print("4")
         del deck_controller
+        print("5")
 
 
     def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):

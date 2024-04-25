@@ -164,11 +164,19 @@ def reset_all_decks():
 
 def quit_running():
     log.info("Checking if another instance is running")
-    DBusGMainLoop(set_as_default=True)
     session_bus = dbus.SessionBus()
+    obj: dbus.BusObject = None
+    action_interface: dbus.Interface = None
     try:
         obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
         action_interface = dbus.Interface(obj, "org.gtk.Actions")
+    except dbus.exceptions.DBusException as e:
+        log.info("No other instance running, continuing")
+        log.error(e)
+    except ValueError as e:
+        log.info("The last instance has not been properly closed, continuing... This may cause issues")
+
+    if None not in [obj, action_interface]:
         if gl.argparser.parse_args().close_running:
             log.info("Closing running instance")
             try:
@@ -177,26 +185,52 @@ def quit_running():
                 log.error("Could not close running instance: " + str(e))
                 sys.exit(0)
             time.sleep(5)
+
         else:
             action_interface.Activate("reopen", [], [])
             log.info("Already running, exiting")
             sys.exit(0)
+
+def make_api_calls():
+    if not gl.argparser.parse_args().change_page:
+        return
+    
+    session_bus = dbus.SessionBus()
+    obj: dbus.BusObject = None
+    action_interface: dbus.Interface = None
+    try:
+        obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
+        action_interface = dbus.Interface(obj, "org.gtk.Actions")
     except dbus.exceptions.DBusException as e:
-        log.info("No other instance running, continuing")
-
+        obj = None
     except ValueError as e:
-        log.info("The last instance has not been properly closed, continuing... This may cause issues")
+        obj = None
+
+    for serial_number, page_name in gl.argparser.parse_args().change_page:
+        if None in [obj, action_interface] or gl.argparser.parse_args().close_running:
+            gl.api_page_requests[serial_number] = page_name
+        else:
+            # Other instance is running - call dbus interfaces
+            action_interface.Activate("change_page", [[serial_number, page_name]], [])
 
 
+    
+    
 def main():
+    DBusGMainLoop(set_as_default=True)
     # Dbus
+    make_api_calls()
     quit_running()
 
     reset_all_decks()
 
-    setup_autostart()
-
     create_global_objects()
+
+    app_settings = gl.settings_manager.get_app_settings()
+    app_settings = gl.settings_manager.get_app_settings()
+    auto_start = app_settings.get("system", {}).get("autostart", True)
+    setup_autostart(auto_start)
+    
     create_cache_folder()
     threading.Thread(target=update_assets, name="update_assets").start()
     load()

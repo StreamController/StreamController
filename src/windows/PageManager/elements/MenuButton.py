@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gi
+from datetime import datetime
 import gi
 
 from GtkHelper.GtkHelper import EntryDialog
@@ -55,16 +56,22 @@ class MenuButton(Gtk.MenuButton):
         self.duplicate_page_action = Gio.SimpleAction.new("duplicate-page", None)
         self.export_page_action = Gio.SimpleAction.new("export-page", None)
         self.import_page_action = Gio.SimpleAction.new("import-page", None)
+        self.export_all_pages_action = Gio.SimpleAction.new("export-all-pages", None)
+        self.import_streamcontroller = Gio.SimpleAction.new("import-streamcontroller", None)
 
         self.duplicate_page_action.connect("activate", self.on_duplicate_page)
         self.import_streamdeck_ui_action.connect("activate", self.on_import_streamdeck_ui)
         self.export_page_action.connect("activate", self.on_export_page)
         self.import_page_action.connect("activate", self.on_import_page)
+        self.export_all_pages_action.connect("activate", self.on_export_all_pages)
+        self.import_streamcontroller.connect("activate", self.on_import_streamcontroller)
 
         self.action_group.add_action(self.duplicate_page_action)
         self.action_group.add_action(self.import_streamdeck_ui_action)
         self.action_group.add_action(self.export_page_action)
         self.action_group.add_action(self.import_page_action)
+        self.action_group.add_action(self.export_all_pages_action)
+        self.action_group.add_action(self.import_streamcontroller)
 
     def set_page_specific_actions_enabled(self, enabled: bool):
         self.duplicate_page_action.set_enabled(enabled)
@@ -74,11 +81,13 @@ class MenuButton(Gtk.MenuButton):
         self.menu = Gio.Menu.new()
         self.menu.append(gl.lm.get("page-manager.duplicate"), "pm.duplicate-page")
         self.menu.append(gl.lm.get("page-manager.export-page"), "pm.export-page")
+        self.menu.append("Export All", "pm.export-all-pages")
 
         self.import_menu = Gio.Menu.new()
         self.menu.append_submenu(gl.lm.get("page-manager.import"), self.import_menu)
 
         self.import_menu.append(gl.lm.get("page-manager.import.page"), "pm.import-page")
+        self.import_menu.append("StreamController", "pm.import-streamcontroller")
         self.import_menu.append("StreamDeck UI", "pm.streamdeck-ui")
 
 
@@ -116,7 +125,7 @@ class MenuButton(Gtk.MenuButton):
         ChooseImportFileDialog(self, self.import_page_callback)
 
     def import_page_callback(self, selected_file):
-        if self.selected_file in [None, ""]:
+        if selected_file in [None, ""]:
             return
         page_name = os.path.splitext(os.path.basename(selected_file.get_path()))[0]
         self.selected_file = selected_file
@@ -163,6 +172,33 @@ class MenuButton(Gtk.MenuButton):
         file =Gio.File.new_for_path(active_page_path)
         self.import_page_callback(file)
 
+    def on_export_all_pages(self, *args):
+        initial_name = f"StreamController_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.json"
+        ChooseExportFileDialog(self, self.export_all_pages_callback, initial_name=initial_name)
+
+    def export_all_pages_callback(self, selected_file):
+        if selected_file in [None, ""]:
+            return
+        selected_path = selected_file.get_path()
+
+        pages = {}
+
+        for path in gl.page_manager.get_pages(add_custom_pages=False):
+            js = gl.page_manager.get_page_json(path)
+            pages[os.path.basename(path)] = js
+
+        with open(selected_path, "w") as f:
+            json.dump(pages, f, indent=4)
+
+    def on_import_streamcontroller(self, *args):
+        ChooseImportFileDialog(self, self.import_streamcontroller_callback)
+
+    def import_streamcontroller_callback(self, selected_file):
+        if selected_file in [None, ""]:
+            return
+        importer = Importer(gl.app, self.pageEditor.page_manager)
+        importer.present()
+        importer.import_pages(selected_file.get_path(), "streamcontroller")
         
 
 class ChooseImportFileDialog(Gtk.FileDialog):

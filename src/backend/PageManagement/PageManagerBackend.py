@@ -18,12 +18,15 @@ import os
 import shutil
 import json
 from copy import copy
+from signal import Signals
 import time
 from loguru import logger as log
 
+from src.Signals import Signals
+
 # Import own modules
 from src.backend.PageManagement.Page import Page
-from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+from src.backend.DeckManagement.HelperMethods import natural_sort, natural_sort_by_filenames, recursive_hasattr
 
 # Import globals
 import globals as gl
@@ -59,7 +62,7 @@ class PageManagerBackend:
         for page in self.pages.values():
             page.save()
 
-    def get_pages(self, add_custom_pages: bool = True) -> list:
+    def get_pages(self, add_custom_pages: bool = True, sort: bool = True) -> list:
         pages = []
         # Create pages dir if it doesn't exist
         os.makedirs(os.path.join(gl.DATA_PATH, "pages"), exist_ok=True)
@@ -71,6 +74,10 @@ class PageManagerBackend:
         if add_custom_pages:
             pages.extend(self.custom_pages)
 
+        if sort:
+            pages = natural_sort_by_filenames(pages)
+
+        # print(pages)
         return pages
     
     def get_page_names(self) -> list[str]:
@@ -263,8 +270,14 @@ class PageManagerBackend:
 
         # Update ui
         # self.update_ui()
+        gl.signal_manager.trigger_signal(Signals.PageAdd, path)
 
         self.update_auto_change_info()
+
+    def unregister_page(self, path: str):
+        self.custom_pages.remove(path)
+
+        gl.signal_manager.trigger_signal(Signals.PageDelete, path)
 
     def get_pages_with_path(self, page_path: str) -> list[Page]:
         pages: list[Page] = []
@@ -380,3 +393,22 @@ class PageManagerBackend:
                 for page in pages:
                     if page.deck_controller.active_page == page:
                         page.deck_controller.load_page(page, allow_reload=True)
+
+    def get_best_page_path_match_from_name(self, name: str) -> str:
+        if name in ["", None]:
+            return
+        
+        # Is a full path
+        if os.path.isfile(name):
+            return name
+        
+        # Not a full path
+        for page in self.get_pages():
+            if "app" in page and "app" in name:
+                print()
+            if os.path.basename(page) == name:
+                return page
+            if os.path.splitext(os.path.basename(page))[0] == name:
+                return page
+            
+        return

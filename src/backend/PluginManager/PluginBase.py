@@ -27,6 +27,7 @@ import globals as gl
 # Import own modules
 from locales.LegacyLocaleManager import LegacyLocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
+from src.backend.PluginManager.EventHolder import EventHolder
 
 class PluginBase(rpyc.Service):
     plugins = {}
@@ -43,6 +44,8 @@ class PluginBase(rpyc.Service):
         self.locale_manager.set_to_os_default()
 
         self.action_holders: dict = {}
+
+        self.event_holders: dict = {}
 
         self.registered: bool = False
 
@@ -162,6 +165,92 @@ class PluginBase(rpyc.Service):
         
         self.action_holders[action_holder.action_id] = action_holder
 
+    def add_event_holder(self, event_holder: EventHolder) -> None:
+        """
+        Adds a EventHolder to the Plugin
+
+        Args:
+            event_holder (EventHolder): The Event Holder
+
+        Raises:
+            ValueError: If the event holder is not an EventHolder
+
+        Returns:
+            None
+        """
+        if not isinstance(event_holder, EventHolder):
+            raise ValueError("Please pass an SignalHolder")
+
+        self.event_holders[event_holder.event_id] = event_holder
+
+    def connect_to_event(self, event_id: str, callback: callable) -> None:
+        """
+        Connects a Callback to the Event which gets specified by the event ID
+
+        Args:
+            event_id (str): The ID of the Event.
+            callback (callable): The Callback that gets Called when the Event triggers
+
+        Returns:
+            None
+        """
+        if event_id in self.event_holders:
+            self.event_holders[event_id].add_listener(callback)
+        else:
+            log.warning(f"{event_id} does not exist in {self.plugin_name}")
+
+    def connect_to_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
+        """
+        Connects a Callback directly to a Plugin with the specified ID
+
+        Args:
+            plugin_id (str): The ID of the Plugin
+            event_id (str): The ID of the Event
+            callback (callable): The Callback that gets Called when the Event triggers
+
+        Returns:
+            None
+        """
+        plugin = self.get_plugin(plugin_id)
+        if plugin is None:
+            log.warning(f"{plugin_id} does not exist")
+        else:
+            plugin.connect_to_event(event_id, callback)
+
+    def disconnect_from_event(self, event_id: str, callback: callable) -> None:
+        """
+        Disconnects a Callback from the Event which gets specified by the event ID
+
+        Args:
+            event_id (str): The ID of the Event.
+            callback (callable): The Callback that gets Removed
+
+        Returns:
+            None
+        """
+        if event_id in self.event_holders:
+            self.event_holders[event_id].remove_listener(callback)
+        else:
+            log.warning(f"{event_id} does not exist in {self.plugin_name}")
+
+    def disconnect_from_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
+        """
+        Disconnects a Callback directly from a plugin with the specified ID
+
+        Args:
+            plugin_id (str): The ID of the Plugin
+            event_id (str): The ID of the Event.
+            callback (callable): The Callback that gets Removed
+
+        Returns:
+            None
+        """
+        plugin = self.get_plugin(plugin_id)
+        if plugin is None:
+            log.warning(f"{plugin_id} does not exist")
+        else:
+            self.disconnect_from_event(event_id, callback)
+
     def get_settings(self):
         if os.path.exists(os.path.join(self.PATH, "settings.json")):
             with open(os.path.join(self.PATH, "settings.json"), "r") as f:
@@ -203,6 +292,9 @@ class PluginBase(rpyc.Service):
                 self.on_disconnect(self.backend_connection)
         except Exception as e:
             log.error(e)
+
+    def get_plugin(self, plugin_id: str) -> "PluginBase":
+        return gl.plugin_manager.get_plugin_by_id(plugin_id) or None
 
     # ---------- #
     # Rpyc stuff #

@@ -49,7 +49,8 @@ class PluginPage(StorePage):
     def __init__(self, store: "Store"):
         super().__init__(store=store)
         self.store = store
-        self.search_entry.set_placeholder_text(gl.lm.get("store.plugins.search-placeholder"))
+        self.compatible_section.search_entry.set_placeholder_text(gl.lm.get("store.plugins.search-placeholder"))
+        self.incompatible_section.search_entry.set_placeholder_text(gl.lm.get("store.plugins.search-placeholder"))
 
         threading.Thread(target=self.load, name="load_plugin_page").start()
 
@@ -60,7 +61,11 @@ class PluginPage(StorePage):
             self.show_connection_error()
             return
         for plugin in plugins:
-            GLib.idle_add(self.flow_box.append, PluginPreview(plugin_page=self, plugin_data=plugin))
+            if plugin.is_compatible:
+                section = self.compatible_section
+            else:
+                section = self.incompatible_section
+            GLib.idle_add(section.append_child, PluginPreview(plugin_page=self, plugin_data=plugin))
 
         self.set_loaded()
 

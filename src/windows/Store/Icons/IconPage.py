@@ -50,7 +50,8 @@ class IconPage(StorePage):
     def __init__(self, store: "Store"):
         super().__init__(store=store)
         self.store = store
-        self.search_entry.set_placeholder_text(gl.lm.get("store.icons.search-placeholder"))
+        self.compatible_section.search_entry.set_placeholder_text(gl.lm.get("store.icons.search-placeholder"))
+        self.incompatible_section.search_entry.set_placeholder_text(gl.lm.get("store.icons.search-placeholder"))
 
         threading.Thread(target=self.load, name="load_icon_page").start()
 
@@ -61,7 +62,11 @@ class IconPage(StorePage):
             self.show_connection_error()
             return
         for icon in icons:
-            GLib.idle_add(self.flow_box.append, IconPreview(icon_page=self, icon_data=icon))
+            if icon.is_compatible:
+                section = self.compatible_section
+            else:
+                section = self.incompatible_section
+            GLib.idle_add(section.append_child, IconPreview(icon_page=self, icon_data=icon))
 
         self.set_loaded()
 

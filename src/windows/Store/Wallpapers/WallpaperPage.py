@@ -49,18 +49,22 @@ class WallpaperPage(StorePage):
     def __init__(self, store: "Store"):
         super().__init__(store=store)
         self.store = store
-        self.search_entry.set_placeholder_text(gl.lm.get("store.wallpapers.search-placeholder"))
+        self.compatible_section.search_entry.set_placeholder_text(gl.lm.get("store.wallpapers.search-placeholder"))
 
         threading.Thread(target=self.load, name="load_wallpaper_page").start()
 
     def load(self):
         self.set_loading()
-        icons = asyncio.run(self.store.backend.get_all_wallpapers())
-        if isinstance(icons, NoConnectionError):
+        wallpapers = asyncio.run(self.store.backend.get_all_wallpapers())
+        if isinstance(wallpapers, NoConnectionError):
             self.show_connection_error()
             return
-        for icon in icons:
-            GLib.idle_add(self.flow_box.append, WallpaperPreview(wallpaper_page=self, wallpaper_data=icon))
+        for wallpaper in wallpapers:
+            if wallpaper.is_compatible:
+                section = self.compatible_section
+            else:
+                section = self.incompatible_section
+            GLib.idle_add(section.append_child, WallpaperPreview(wallpaper_page=self, wallpaper_data=wallpaper))
 
         self.set_loaded()
 

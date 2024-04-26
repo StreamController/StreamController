@@ -297,9 +297,13 @@ class StoreBackend:
         url = plugin["url"]
 
         # Check if suitable version is available
+        compatible = True
         version = self.get_newest_compatible_version(plugin["commits"])
         if version is None:
-            return NoCompatibleVersion #TODO
+            compatible = False
+            version = self.get_newest_version(list(plugin["commits"].keys()))
+            if version is None:
+                return NoCompatibleVersion #TODO
         commit = plugin["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
@@ -343,7 +347,9 @@ class StoreBackend:
 
             plugin_name=manifest.get("name") or None,
             plugin_version=manifest.get("version") or None,
-            plugin_id=manifest.get("id") or None
+            plugin_id=manifest.get("id") or None,
+
+            is_compatible=compatible
         )
 
     
@@ -364,9 +370,13 @@ class StoreBackend:
         url = icon["url"]
 
         # Check if suitable version is available
+        compatible = True
         version = self.get_newest_compatible_version(icon["commits"])
         if version is None:
-            return NoCompatibleVersion
+            compatible = False
+            version = self.get_newest_version(list(icon["commits"].keys()))
+            if version is None:
+                return NoCompatibleVersion
         commit = icon["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
@@ -411,7 +421,9 @@ class StoreBackend:
 
             icon_name=manifest.get("name") or None,
             icon_version=manifest.get("icon") or None,
-            icon_id=manifest.get("id") or None
+            icon_id=manifest.get("id") or None,
+
+            is_compatible=compatible
         )
 
     
@@ -422,9 +434,13 @@ class StoreBackend:
         url = wallpaper["url"]
 
         # Check if suitable version is available
+        compatible = True
         version = self.get_newest_compatible_version(wallpaper["commits"])
         if version is None:
-            return NoCompatibleVersion
+            compatible = False
+            version = self.get_newest_version(list(wallpaper["commits"].keys()))
+            if version is None:
+                return NoCompatibleVersion
         commit = wallpaper["commits"][version]
 
         manifest = await self.get_manifest(url, commit)
@@ -465,7 +481,9 @@ class StoreBackend:
 
             wallpaper_name=manifest.get("name") or None,
             wallpaper_version=manifest.get("version") or None,
-            wallpaper_id=manifest.get("id") or None
+            wallpaper_id=manifest.get("id") or None,
+
+            is_compatible=compatible
         )
 
     async def image_from_url(self, url):
@@ -564,6 +582,12 @@ class StoreBackend:
             return compatible_versions[max_index]
         else:
             return None
+        
+    def get_newest_version(self, available_versions: list[str]) -> str:
+        parsed_versions = [version.parse(v) for v in available_versions]
+        
+        max_index = parsed_versions.index(max(parsed_versions))
+        return available_versions[max_index]
 
     ## Install
     async def subp_call(self, args):

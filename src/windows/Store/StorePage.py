@@ -14,6 +14,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.windows.Store.StorePageSection import StorePageSection
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, GLib
@@ -57,37 +59,30 @@ class StorePage(Gtk.Stack):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.add_titled(self.main_box, "Store", "Store")
 
-        self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
-        self.main_box.append(self.nav_box)
+        self.section_stack = Gtk.Stack(vexpand=True)
+        self.main_box.append(self.section_stack)
 
-        self.search_entry = Gtk.SearchEntry(placeholder_text="Search", hexpand=True)
-        self.search_entry.connect("search-changed", self.on_search_changed)
-        self.nav_box.append(self.search_entry)
+        self.compatible_section = StorePageSection()
+        self.incompatible_section = StorePageSection()
+        self.incompatible_section.nothing_here.set_icon_name("face-smile-symbolic")
 
-        self.scrolled_window = Gtk.ScrolledWindow(hexpand=True)
-        self.main_box.append(self.scrolled_window)
+        self.set_visible_child(self.compatible_section)
 
-        self.scrolled_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
-        self.scrolled_window.set_child(self.scrolled_box)
-
-        self.flow_box = Gtk.FlowBox(orientation=Gtk.Orientation.HORIZONTAL, selection_mode=Gtk.SelectionMode.NONE, homogeneous=True)
-        self.flow_box.set_filter_func(self.filter_func)
-        self.flow_box.set_sort_func(self.sort_func)
-        self.scrolled_box.append(self.flow_box)
+        self.section_switcher = Gtk.StackSwitcher(stack=self.section_stack, margin_bottom=15)
+        self.main_box.prepend(self.section_switcher)
+        
+        self.section_stack.add_titled(self.compatible_section, "Compatible", "Compatible")
+        self.section_stack.add_titled(self.incompatible_section, "Incompatible", "Incompatible")
 
         self.loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
                                    visible=False, valign=Gtk.Align.CENTER)
-        self.scrolled_box.append(self.loading_box)
+        self.main_box.append(self.loading_box)
 
         self.spinner = Gtk.Spinner(spinning=False)
         self.loading_box.append(self.spinner)
 
         self.loading_text = Gtk.Label(label=gl.lm.get("store.page.loading-spinner.label"))
         self.loading_box.append(self.loading_text)
-
-        # Add vexpand box to the bottom to avoid unwanted stretching of the flowbox children
-        self.bottom_box = Gtk.Box(hexpand=True, vexpand=True)
-        self.scrolled_box.append(self.bottom_box)
 
         # Info page
         self.info_page = InfoPage(self)
@@ -97,82 +92,20 @@ class StorePage(Gtk.Stack):
         self.no_connection_page = NoConnectionError()
         self.add_titled(self.no_connection_page, "Error", "Error")
 
-    def on_search_changed(self, entry: Gtk.SearchEntry):
-        self.flow_box.invalidate_filter()
-        self.flow_box.invalidate_sort()
-
-    def filter_func(self, item):
-        """
-        Filters the given item based on the search string and their number of github stars.
-
-        Parameters:
-            item (object): The item to be filtered.
-
-        Returns:
-            bool: True if the item passes the filter, False otherwise.
-        """
-        search_string = self.search_entry.get_text()
-
-        if search_string == "":
-            return True
-        
-        item_name = item.name_label.get_text()
-        
-        fuzz_ratio = fuzz.ratio(search_string.lower(), item_name.lower())
-
-        MIN_FUZZY_SCORE = 40
-
-        return fuzz_ratio >= MIN_FUZZY_SCORE
-    
-    def sort_func(self, item_a, item_b):
-        search_string = self.search_entry.get_text()
-
-        if search_string == "":
-            if  item_a.name_label.get_text() < item_b.name_label.get_text():
-                return -1
-            if item_a.name_label.get_text() > item_b.name_label.get_text():
-                return 1
-            return 0
-
-            # Sort by stars - currently not used
-            if item_a.stars > item_b.stars:
-                return -1
-            if item_a.stars < item_b.stars:
-                return 1
-            return 0
-        
-        item_a_fuzz = fuzz.ratio(search_string.lower(), item_a.name_label.get_text().lower())
-        item_b_fuzz = fuzz.ratio(search_string.lower(), item_b.name_label.get_text().lower())
-
-        # Set to 0 because stars are currently disabled for api rate limit reasons
-        item_a_stars = 0 # item_a.stars/item_b.stars
-        item_b_stars = 0 # item_a.stars/item_b.stars
-
-        if item_a_stars > 1 or item_b_stars > 1:
-            item_a_stars = item_b.stars/item_a.stars
-            item_b_stars = item_b.stars/item_a.stars
-
-        total_a = (item_a_fuzz + item_a_stars)/2
-        total_b = (item_b_fuzz + item_b_stars)/2
-
-        if total_a > total_b:
-            return -1
-        if total_a < total_b:
-            return 1
-        return 0
-    
     def set_loading(self):
-        GLib.idle_add(self.flow_box.set_visible, False)
-        GLib.idle_add(self.bottom_box.set_visible, False)
+        GLib.idle_add(self.section_stack.set_visible, False)
+        # GLib.idle_add(self.bottom_box.set_visible, False)
         GLib.idle_add(self.loading_box.set_visible, True)
         # threading.Thread(target=self.spinner.set_spinning, args=(True,), name="spinner_thread").start()
         GLib.idle_add(self.spinner.set_spinning, True)
+        GLib.idle_add(self.section_switcher.set_visible, False)
 
     def set_loaded(self):
-        GLib.idle_add(self.flow_box.set_visible, True)
-        GLib.idle_add(self.bottom_box.set_visible, True)
+        GLib.idle_add(self.section_stack.set_visible, True)
+        # GLib.idle_add(self.bottom_box.set_visible, True)
         GLib.idle_add(self.loading_box.set_visible, False)
         GLib.idle_add(self.spinner.set_spinning, False)
+        GLib.idle_add(self.section_switcher.set_visible, True)
 
     def set_info_visible(self, visible:bool):
         if visible:

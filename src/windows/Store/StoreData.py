@@ -24,6 +24,8 @@ class StoreData:
     repository_name: [str, None] = None
     """Name of the Repository"""
     tags: list[str] = field(default_factory=list)
+    """If the asset has a compatible version"""
+    is_compatible: [bool, None] = None
 
 
 @dataclass

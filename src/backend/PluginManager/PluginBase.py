@@ -69,8 +69,8 @@ class PluginBase(rpyc.Service):
         self.plugin_name = plugin_name or manifest.get("name") or None
         self.github_repo = github_repo or manifest.get("github") or None
         self.plugin_version = plugin_version or manifest.get("version") or None
-        self.min_app_version = manifest.get("minimum-app-version") or None
-        self.app_version = app_version or manifest.get("app-version") or None
+        self.min_app_version = manifest.get("minimum-app-version") or "0.0.0" #TODO: IMPLEMENT BETTER WAY OF VERSION ERROR HANDLING
+        self.app_version = app_version or manifest.get("app-version") or "0.0.0"
 
         # Verify variables
         if self.plugin_name in ["", None]:
@@ -150,10 +150,12 @@ class PluginBase(rpyc.Service):
 
     def are_major_versions_matching(self) -> bool:
         app_version = version.parse(gl.app_version)
-        min_app_version = version.parse(self.min_app_version)
+        # Should use the current app version the plugin uses instead of the minimum app version
+        current_app_version = version.parse(self.app_version)
 
-        return app_version.major == min_app_version.major
-    
+        return app_version.major == current_app_version.major
+
+    #TODO: BETTER ERROR HANDLING FOR are_major_versions_matching and is_minimum_version_ok
     def is_app_version_matching(self) -> bool:
         return self.are_major_versions_matching() and self.is_minimum_version_ok()
 

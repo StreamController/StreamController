@@ -117,7 +117,7 @@ class PluginBase(rpyc.Service):
                 )
                 reason = "app-out-of-date"
 
-            elif version.parse(self.app_version).major < version.parse(gl.app_version).major:
+            elif version.parse(self.app_version).major != version.parse(gl.app_version).major:
                 # Plugin is too old - StreamController is too new
                 max_version = f"{version.parse(self.app_version).major}.x.x"
                 log.warning(

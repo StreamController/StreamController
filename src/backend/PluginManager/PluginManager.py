@@ -96,8 +96,13 @@ class PluginManager:
                 path = get_last_dir(path)
                 self.action_index[action_id] = plugins[plugin]["object"].ACTIONS[action_id]
 
-    def get_plugins(self) -> list[PluginBase]:
-        return PluginBase.plugins
+    def get_plugins(self, include_disabled: bool = False) -> list[PluginBase]:
+        plugins = PluginBase.plugins
+
+        if include_disabled:
+            plugins.update(PluginBase.disabled_plugins)
+
+        return plugins
     
     def get_actions_for_plugin_id(self, plugin_id: str):
         return PluginBase.plugins[plugin_id]["object"].ACTIONS
@@ -112,8 +117,8 @@ class PluginManager:
             log.warning(f"Requested action {action_id} not found, skipping...")
             return None
             
-    def get_plugin_by_id(self, plugin_id:str) -> PluginBase:
-        return self.get_plugins().get(plugin_id, {}).get("object", None)
+    def get_plugin_by_id(self, plugin_id:str, include_disabled: bool = True) -> PluginBase:
+        return self.get_plugins(include_disabled).get(plugin_id, {}).get("object", None)
             
     def remove_plugin_from_list(self, plugin_base: PluginBase):
         del PluginBase.plugins[plugin_base.plugin_id]

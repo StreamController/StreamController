@@ -53,7 +53,8 @@ class PluginBase(rpyc.Service):
 
         self.registered_pages: list[str] = []
 
-    def register(self, plugin_name: str, github_repo: str, plugin_version: str, app_version: str):
+    def register(self, plugin_name: str = None, github_repo: str = None, plugin_version: str = None,
+                 app_version: str = None):
         """
         Registers a plugin with the given information.
 
@@ -65,12 +66,12 @@ class PluginBase(rpyc.Service):
         """
 
         manifest = self.get_manifest()
-        self.plugin_name = manifest.get("plugin-name") or plugin_name or None
-        self.github_repo = manifest.get("github") or github_repo or None
-        self.plugin_version = manifest.get("plugin-version") or plugin_version or None
-        self.min_app_version = manifest.get("minimum-app-version") or app_version or None
-        self.app_version = manifest.get("app-version") or app_version or None
-        
+        self.plugin_name = plugin_name or manifest.get("name") or None
+        self.github_repo = github_repo or manifest.get("github") or None
+        self.plugin_version = plugin_version or manifest.get("version") or None
+        self.min_app_version = manifest.get("minimum-app-version") or None
+        self.app_version = app_version or manifest.get("app-version") or None
+
         # Verify variables
         if self.plugin_name in ["", None]:
             log.error("Plugin: Please specify a plugin name")
@@ -78,16 +79,14 @@ class PluginBase(rpyc.Service):
         if self.github_repo in ["", None]:
             log.error(f"Plugin: {self.plugin_name}: Please specify a github repo")
             return
-        
         if self.plugin_version in ["", None]:
             log.error(f"Plugin: {self.plugin_name}: Please specify a plugin version")
             return
-        
-        if self.min_app_version in ["", None]:
-            log.error(f"Plugin: {self.plugin_name}: Please specify a minimum app version")
+        if self.app_version in ["", None]:
+            log.error(f"Plugin: {self.plugin_name}: Please specify a app version")
             return
-        
-        self.plugin_id = manifest.get("plugin-id") or self.get_plugin_id_from_folder_name()
+
+        self.plugin_id = manifest.get("id") or self.get_plugin_id_from_folder_name()
 
         for plugin_id in PluginBase.plugins.keys():
             plugin = PluginBase.plugins[plugin_id]["object"]

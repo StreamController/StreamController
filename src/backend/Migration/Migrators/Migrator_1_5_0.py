@@ -35,4 +35,11 @@ class Migrator_1_5_0(Migrator):
             with open(page_path, "w") as f:
                 json.dump(page, f, indent=4)
 
+        # Update icons and wallapers to id system
+        if os.path.exists(os.path.join(gl.DATA_PATH, "icons", "Core447::Material Icons")):
+            os.rename(os.path.join(gl.DATA_PATH, "icons", "Core447::Material Icons"), os.path.join(gl.DATA_PATH, "icons", "com_core447_MaterialIcons"))
+
+        if os.path.exists(os.path.join(gl.DATA_PATH, "wallpapers", "Core447::Pixabay Favorites")):
+            os.rename(os.path.join(gl.DATA_PATH, "wallpapers", "Core447::Pixabay Favorites"), os.path.join(gl.DATA_PATH, "wallpapers", "com_core447_PixabayFavorites"))
+
         self.set_migrated(True)

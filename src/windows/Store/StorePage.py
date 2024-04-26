@@ -66,13 +66,13 @@ class StorePage(Gtk.Stack):
         self.incompatible_section = StorePageSection()
         self.incompatible_section.nothing_here.set_icon_name("face-smile-symbolic")
 
-        self.set_visible_child(self.compatible_section)
 
         self.section_switcher = Gtk.StackSwitcher(stack=self.section_stack, margin_bottom=15)
         self.main_box.prepend(self.section_switcher)
         
         self.section_stack.add_titled(self.compatible_section, "Compatible", "Compatible")
         self.section_stack.add_titled(self.incompatible_section, "Incompatible", "Incompatible")
+        self.section_stack.set_visible_child(self.compatible_section)
 
         self.loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
                                    visible=False, valign=Gtk.Align.CENTER)

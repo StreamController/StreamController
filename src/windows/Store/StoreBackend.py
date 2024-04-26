@@ -54,7 +54,7 @@ class StoreBackend:
     STORE_REPO_URL = "https://github.com/StreamController/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
-    STORE_BRANCH = "testing"
+    STORE_BRANCH = "main"
 
 
     def __init__(self):
@@ -395,7 +395,7 @@ class StoreBackend:
             author=author or None,  # Formerly: user_name
             official=author in self.official_authors or False,
             commit_sha=commit,
-            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "icons", manifest.get("id"))),
+            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "icons", (manifest.get("id") or ""))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
             app_version=manifest.get("app-version") or None,
             repository_name=self.get_repo_name(url),
@@ -449,7 +449,7 @@ class StoreBackend:
             author=author or None,  # Formerly: user_name
             official=author in self.official_authors or False,
             commit_sha=commit,
-            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
+            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", (manifest.get("id") or ""))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
             app_version=manifest.get("app-version") or None,
             repository_name=self.get_repo_name(url),

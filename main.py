@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
 import setproctitle
+
 setproctitle.setproctitle("StreamController")
 
 import sys
@@ -48,6 +49,10 @@ from src.Signals.SignalManager import SignalManager
 from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
 from src.backend.GnomeExtensions import GnomeExtensions
 from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
+
+# Migration
+from src.backend.Migration.MigrationManager import MigrationManager
+from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
 
 # Import globals
 import globals as gl
@@ -223,6 +228,12 @@ def main():
     quit_running()
 
     reset_all_decks()
+
+    migration_manager = MigrationManager()
+    # Add migrators
+    migration_manager.add_migrator(Migrator_1_5_0())
+    # Run migrators
+    migration_manager.run_migrators()
 
     create_global_objects()
 

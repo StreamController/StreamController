@@ -95,7 +95,7 @@ class StorePreview(Gtk.FlowBoxChild):
                                       xalign=0)
         self.label_box.append(self.author_label)
 
-        self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
+        self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER,
                                  hexpand=False, vexpand=True,
                                  margin_start=6, margin_top=6, margin_bottom=6)
         # self.overlay.add_overlay(self.batch_box)
@@ -162,6 +162,8 @@ class StorePreview(Gtk.FlowBoxChild):
             self.install_spinner.set_spinning(False)
 
     def set_image(self, image:Image):
+        if image is None:
+            return
         image.thumbnail((250, 90))
         pixbuf = image2pixbuf(image, force_transparency=True)
         GLib.idle_add(self.image.set_pixbuf, pixbuf)

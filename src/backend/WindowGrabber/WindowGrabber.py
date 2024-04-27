@@ -27,10 +27,11 @@ from src.backend.WindowGrabber.Window import Window
 from src.backend.WindowGrabber.Integration import Integration
 from src.backend.WindowGrabber.Integrations.Hyprland import Hyprland
 from src.backend.WindowGrabber.Integrations.Gnome import Gnome
+from src.backend.WindowGrabber.Integrations.X11 import X11
 
 class WindowGrabber:
     def __init__(self):
-        self.SUPPORTED_ENVS = ["hyprland", "gnome"]
+        self.SUPPORTED_ENVS = ["hyprland", "gnome", "x11"]
 
         self.integration: Integration = None
         self.init_integration()
@@ -38,17 +39,24 @@ class WindowGrabber:
     def get_active_environment(self) -> str:
         return os.getenv("XDG_CURRENT_DESKTOP").lower()
     
+    def get_active_server(self) -> str:
+        return os.getenv("XDG_SESSION_TYPE").lower()
+    
     def init_integration(self) -> None:
         self.environment = self.get_active_environment()
-        if self.environment not in self.SUPPORTED_ENVS:
-            log.error(f"Unsupported environment: {self.environment} for window grabber.")
+        self.server = self.get_active_server()
+
+        if self.environment not in self.SUPPORTED_ENVS and self.server not in self.SUPPORTED_ENVS:
+            log.error(f"Unsupported environment: {self.environment} with server: {self.server} for window grabber.")
             return
         
-        log.info(f"Initializing window grabber for environment: {self.environment}")
+        log.info(f"Initializing window grabber for environment: {self.environment} under server: {self.server}")
         if self.environment == "hyprland":
             self.integration = Hyprland(self)
         elif self.environment == "gnome":
             self.integration = Gnome(self)
+        elif self.server == "x11":
+            self.integration = X11(self)
 
     def get_all_windows(self) -> list[Window]:
         """

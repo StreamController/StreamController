@@ -194,13 +194,33 @@ class StorePageGroup(Adw.PreferencesGroup):
         self.auto_update = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-auto-update"), active=True)
         self.add(self.auto_update)
 
+        self.use_custom_stores = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-custom-stores"), active=False)
+        self.add(self.use_custom_stores)
+
+        self.use_custom_plugins = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-custom-plugins"), active=False)
+        self.add(self.use_custom_plugins)
+
+        self.custom_stores = CustomStoresGroup()
+        self.add(self.custom_stores)
+
+        self.custom_plugins = CustomPluginsGroup()
+        self.add(self.custom_plugins)
+
         self.load_defaults()
+
+        # Make Groups In-/Active
+        self.custom_stores.set_sensitive(self.use_custom_stores.get_active())
+        self.custom_plugins.set_sensitive(self.use_custom_plugins.get_active())
 
         # Connect signals
         self.auto_update.connect("notify::active", self.on_auto_update_toggled)
+        self.use_custom_stores.connect("notify::active", self.on_use_custom_stores_toggled)
+        self.use_custom_plugins.connect("notify::active", self.on_use_custom_plugins_toggled)
 
     def load_defaults(self):
         self.auto_update.set_active(self.settings.settings_json.get("store", {}).get("auto-update", True))
+        self.use_custom_stores.set_active(self.settings.settings_json.get("store", {}).get("use-custom-stores", False))
+        self.use_custom_plugins.set_active(self.settings.settings_json.get("store", {}).get("use-custom-plugins", False))
 
     def on_auto_update_toggled(self, *args):
         self.settings.settings_json.setdefault("store", {})
@@ -208,6 +228,54 @@ class StorePageGroup(Adw.PreferencesGroup):
 
         # Save
         self.settings.save_json()
+
+    def on_use_custom_stores_toggled(self, *args):
+        self.settings.settings_json.setdefault("store", {})
+        self.settings.settings_json["store"]["use-custom-stores"] = self.use_custom_stores.get_active()
+
+        self.settings.save_json()
+
+        self.custom_stores.set_sensitive(self.use_custom_stores.get_active())
+
+    def on_use_custom_plugins_toggled(self, *args):
+        self.settings.settings_json.setdefault("store", {})
+        self.settings.settings_json["store"]["use-custom-plugins"] = self.use_custom_plugins.get_active()
+
+        self.settings.save_json()
+
+        self.custom_plugins.set_sensitive(self.use_custom_plugins.get_active())
+
+
+class CustomContent(Adw.PreferencesRow):
+    def __init__(self):
+        super().__init__()
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_start=10)
+        self.set_child(self.main_box)
+
+        self.url = Adw.EntryRow(title="Repository URL")
+        self.main_box.append(self.url)
+
+        self.branch = Adw.EntryRow(title="Branch", text="main")
+        self.main_box.append(self.branch)
+
+        self.button_add = Gtk.Button(label="Add")
+        self.main_box.append(self.button_add)
+
+
+class CustomStoresGroup(Adw.PreferencesGroup):
+    def __init__(self):
+        super().__init__(title=gl.lm.get("settings-store-custom-stores-header"))
+
+        self.store_adder = CustomContent()
+        self.add(self.store_adder)
+
+class CustomPluginsGroup(Adw.PreferencesGroup):
+    def __init__(self):
+        super().__init__(title=gl.lm.get("settings-store-custom-plugins-header"))
+
+        self.plugin_adder = CustomContent()
+        self.add(self.plugin_adder)
 
 class PerformancePage(Adw.PreferencesPage):
     def __init__(self, settings: Settings):

@@ -100,7 +100,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.set_comments("Control your Stream Decks")
         self.about.set_website("https://github.com/StreamController/StreamController")
         self.about.set_issue_url("https://github.com/StreamController/StreamController/issues")
-        self.about.add_credit_section("Contributors", ["Core447", "4s3ti", "G4PLS", "yakushabb"])
+        self.about.add_credit_section("Contributors", ["Core447", "coolapso", "G4PLS", "yakushabb"])
         self.about.set_copyright("Copyright (C) 2024 Core447")
         self.about.set_application_icon("com.core447.StreamController")
         self.about.set_visible(True)

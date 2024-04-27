@@ -39,12 +39,17 @@ class X11(Integration):
         super().__init__(window_grabber=window_grabber)
 
         portal = Xdp.Portal.new()
-        self.command_prefix = ""
+        self.command_prefix = None
         if portal.running_under_flatpak():
             self.command_prefix = "flatpak-spawn --host "
 
         self.start_active_window_change_thread()
-        
+
+    def _run_command(self, command: list[str]) -> subprocess.Popen:
+        if self.command_prefix:
+            command.insert(0, self.command_prefix)
+        return subprocess.Popen(command, stdout=subprocess.PIPE)
+
     def start_active_window_change_thread(self):
         self.active_window_change_thread = WatchForActiveWindowChange(self)
         self.active_window_change_thread.start()
@@ -52,19 +57,15 @@ class X11(Integration):
     def get_all_windows(self) -> list[Window]:
         windows: list[Window] = []
 
-        # Get the list of all window IDs using xprop
         try:
-            root = subprocess.Popen(["xprop", "-root", "_NET_CLIENT_LIST"], stdout=subprocess.PIPE)
+            root = self._run_command(["xprop", "-root", "_NET_CLIENT_LIST"])
             stdout, stderr = root.communicate()
 
-            # Extract the window IDs
             window_ids = stdout.decode().split("#")[1].strip().split(", ")
-
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running xprop: {e}")
             return windows
 
-        # For each window ID, get the title and class
         for window_id in window_ids:
             title = self.get_title(window_id)
             class_name = self.get_class(window_id)
@@ -75,30 +76,29 @@ class X11(Integration):
             windows.append(Window(class_name, title))
 
         return windows
-    
+
     def get_active_window(self) -> Window:
         try:
-            root = subprocess.Popen(["xprop", "-root", "_NET_ACTIVE_WINDOW"], stdout=subprocess.PIPE)
+            root = self._run_command(["xprop", "-root", "_NET_ACTIVE_WINDOW"])
             stdout, stderr = root.communicate()
             window_id = stdout.strip().split()[-1]
-
         except subprocess.CalledProcessError as e:
-            log.error(f"An error occurred while running hyprctl: {e}")
+            log.error(f"An error occurred while running xprop: {e}")
             return
-        
+
         title = self.get_title(window_id)
         class_name = self.get_class(window_id)
 
         if None in [title, class_name]:
             return
-        
+
         return Window(class_name, title)
-    
-    def get_title(self, window_id: int) -> str:
+
+    def get_title(self, window_id: str) -> str:
         if window_id == "0x0":
             return
         try:
-            title_bytes = subprocess.check_output(["xprop", "-id", window_id, "WM_NAME"])
+            title_bytes = self._run_command(["xprop", "-id", window_id, "WM_NAME"]).communicate()[0]
             decoded = title_bytes.decode()
             split = decoded.split('"', 1)
             if len(split) < 2:
@@ -108,12 +108,12 @@ class X11(Integration):
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running xprop: {e}")
             return
-        
-    def get_class(self, window_id: int) -> str:
+
+    def get_class(self, window_id: str) -> str:
         if window_id == "0x0":
             return
         try:
-            class_bytes = subprocess.check_output(["xprop", "-id", window_id, "WM_CLASS"])
+            class_bytes = self._run_command(["xprop", "-id", window_id, "WM_CLASS"]).communicate()[0]
             decoded = class_bytes.decode()
             split = decoded.split('"')
             if len(split) < 4:
@@ -122,7 +122,6 @@ class X11(Integration):
             return window_class
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running xprop: {e}")
-            return
         
 class WatchForActiveWindowChange(threading.Thread):
     def __init__(self, x11: X11):

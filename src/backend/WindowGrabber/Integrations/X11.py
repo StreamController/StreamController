@@ -95,18 +95,30 @@ class X11(Integration):
         return Window(class_name, title)
     
     def get_title(self, window_id: int) -> str:
+        if window_id == "0x0":
+            return
         try:
             title_bytes = subprocess.check_output(["xprop", "-id", window_id, "WM_NAME"])
-            title = title_bytes.decode().split('"', 1)[1].rstrip('"\n')
+            decoded = title_bytes.decode()
+            split = decoded.split('"', 1)
+            if len(split) < 2:
+                return
+            title = split[1].rstrip('"\n')
             return title
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running xprop: {e}")
             return
         
     def get_class(self, window_id: int) -> str:
+        if window_id == "0x0":
+            return
         try:
             class_bytes = subprocess.check_output(["xprop", "-id", window_id, "WM_CLASS"])
-            window_class = class_bytes.decode().split('"')[3]  # Assuming class is the second quoted string
+            decoded = class_bytes.decode()
+            split = decoded.split('"')
+            if len(split) < 4:
+                return
+            window_class = split[3]
             return window_class
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running xprop: {e}")

@@ -24,6 +24,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib
 
+from loguru import logger as log
+
 class Importer(Adw.ApplicationWindow):
     def __init__(self, app, window):
         super().__init__(application=app,
@@ -61,6 +63,7 @@ class Importer(Adw.ApplicationWindow):
             thread.start()
         
 
+    @log.catch
     def import_from_streamdeck_ui(self, path: str, on_finished: callable) -> None:
         if not os.path.exists(path):
             self.show_error()
@@ -80,6 +83,7 @@ class Importer(Adw.ApplicationWindow):
 
         GLib.timeout_add(1500, self.close)
 
+    @log.catch
     def import_from_streamcontroller(self, path: str, on_finished: callable) -> None:
         if not os.path.exists(path):
             self.show_error()

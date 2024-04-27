@@ -55,6 +55,7 @@ class IconPage(StorePage):
 
         threading.Thread(target=self.load, name="load_icon_page").start()
 
+    @log.catch
     def load(self):
         self.set_loading()
         icons: list[IconData] = asyncio.run(self.store.backend.get_all_icons())

@@ -171,6 +171,7 @@ class BackgroundVideoCache:
         t = threading.Thread(target=self.save_cache, name="save_video_cache")
         t.start()
         
+    @log.catch
     def save_cache(self):
         """
         Store cache using pickle
@@ -193,6 +194,7 @@ class BackgroundVideoCache:
         del data
 
 
+    @log.catch
     def load_cache(self, key_index: int = None):
         cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
         if not os.path.exists(cache_path):

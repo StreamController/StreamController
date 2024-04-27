@@ -54,6 +54,7 @@ class PluginPage(StorePage):
 
         threading.Thread(target=self.load, name="load_plugin_page").start()
 
+    @log.catch
     def load(self):
         self.set_loading()
         plugins: list[PluginData] = self.store.backend.get_all_plugins()

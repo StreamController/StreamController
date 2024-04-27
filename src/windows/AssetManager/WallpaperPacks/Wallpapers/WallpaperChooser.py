@@ -29,6 +29,7 @@ from src.windows.AssetManager.IconPacks.Preview import IconPackPreview
 # Import python modules
 import os
 from fuzzywuzzy import fuzz
+from loguru import logger as log
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -46,6 +47,7 @@ class WallpaperChooserPage(ChooserPage):
         # self.build()
         threading.Thread(target=self.build).start()
 
+    @log.catch
     def build(self):
         self.set_loading(True)
         

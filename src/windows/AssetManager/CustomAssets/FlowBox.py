@@ -22,6 +22,7 @@ from gi.repository import Gtk, Adw, GLib
 # Import python modules
 from fuzzywuzzy import fuzz
 import threading
+from loguru import logger as log
 
 # Import globals
 import globals as gl
@@ -121,6 +122,7 @@ class CustomAssetChooserFlowBox(Gtk.Box):
 
         self.asset_chooser.asset_manager.close()
 
+    @log.catch
     def callback_thread(self):
         child = self.flow_box.get_selected_children()[0]
         self.asset_chooser.asset_manager.callback_func(child.asset["internal-path"],

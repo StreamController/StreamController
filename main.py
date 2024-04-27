@@ -123,6 +123,7 @@ def create_global_objects():
     
     # gl.dekstop_grabber = DesktopGrabber()
 
+@log.catch
 def update_assets():
     settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
     auto_update = settings.get("store", {}).get("auto-update", True)
@@ -220,7 +221,7 @@ def make_api_calls():
 
 
     
-    
+@log.catch
 def main():
     DBusGMainLoop(set_as_default=True)
     # Dbus

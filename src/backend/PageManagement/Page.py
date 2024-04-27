@@ -188,6 +188,7 @@ class Page:
         self.action_objects[key_2] = key_1_actions
 
 
+    @log.catch
     def add_action_object_from_holder(self, action_holder: "ActionHolder", key: str, i: int):
         action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
         if action_object is None:

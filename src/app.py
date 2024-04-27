@@ -180,6 +180,7 @@ class App(Adw.Application):
     def update_all_assets(self, *args, **kwargs):
         threading.Thread(target=self._update_all_assets, name="update_all_assets").start()
 
+    @log.catch
     def _update_all_assets(self):
         self.set_working(True)
 
@@ -193,6 +194,7 @@ class App(Adw.Application):
         plugin_id = plugin_id.unpack()
         threading.Thread(target=self._install_plugin, args=(plugin_id,), name="install_plugin").start()
 
+    @log.catch
     def _install_plugin(self, plugin_id: str):
         plugin = asyncio.run(gl.store_backend.get_plugin_for_id(plugin_id=plugin_id))
 

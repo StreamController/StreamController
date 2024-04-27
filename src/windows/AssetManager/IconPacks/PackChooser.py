@@ -32,6 +32,8 @@ from src.windows.AssetManager.IconPacks.Preview import IconPackPreview
 # Import globals
 import globals as gl
 
+from loguru import logger as log
+
 # Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -49,7 +51,7 @@ class IconPackChooser(ChooserPage):
 
         threading.Thread(target=self.build).start()
         
-
+    @log.catch
     def build(self):
         self.build_finished = False
         self.type_box.set_visible(False)

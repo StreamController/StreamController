@@ -53,6 +53,7 @@ class WallpaperPage(StorePage):
 
         threading.Thread(target=self.load, name="load_wallpaper_page").start()
 
+    @log.catch
     def load(self):
         self.set_loading()
         wallpapers = asyncio.run(self.store.backend.get_all_wallpapers())

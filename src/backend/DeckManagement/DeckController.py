@@ -129,6 +129,7 @@ class MediaPlayerThread(threading.Thread):
 
         self.show_fps_warnings = gl.settings_manager.get_app_settings().get("warnings", {}).get("enable-fps-warnings", True)
 
+    @log.catch
     def run(self):
         self.running = True
         while True:
@@ -1579,12 +1580,14 @@ class ControllerKey:
             for future in futures:
                 future.result()
 
+    @log.catch
     def call_action_ready_and_set_flag(self, action: "ActionBase") -> None:
         if not isinstance(action, ActionBase):
             return
         action.on_ready()
         action.on_ready_called = True
 
+    @log.catch
     def own_actions_key_down(self) -> None:
         for action in self.get_own_actions():
             if isinstance(action, ActionOutdated):
@@ -1601,12 +1604,14 @@ class ControllerKey:
 
             action.on_key_down()
 
+    @log.catch
     def own_actions_key_up(self) -> None:
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):
                 continue
             action.on_key_up()
 
+    @log.catch
     def own_actions_tick(self) -> None:
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):

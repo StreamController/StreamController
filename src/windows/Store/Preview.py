@@ -18,6 +18,8 @@ import gi
 
 import globals as gl
 
+from loguru import logger as log
+
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -189,6 +191,7 @@ class StorePreview(Gtk.FlowBoxChild):
         
         threading.Thread(target=self.perform_download_threaded, args=(), name="perform_download_threaded").start()
 
+    @log.catch
     def perform_download_threaded(self):
         # Prevent multiple downloads because this may lead to errors during plugin initialization
         while self.store_page.store.currently_downloading:

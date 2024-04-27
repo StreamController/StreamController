@@ -22,6 +22,7 @@ from gi.repository import Gtk, Adw, Gdk, GLib, Pango
 import asyncio
 import threading
 import globals as gl
+from loguru import logger as log
 
 class MissingRow(Adw.PreferencesRow):
     def __init__(self, action_id:str, page_coords:str, index:int,
@@ -76,6 +77,7 @@ class MissingRow(Adw.PreferencesRow):
         # Run in thread to allow the ui to update
         threading.Thread(target=self.install, name="asset_install_thread").start()
 
+    @log.catch
     def install(self):
         # Get missing plugin from id
         plugin = asyncio.run(gl.store_backend.get_plugin_for_id(self.action_id.split("::")[0]))

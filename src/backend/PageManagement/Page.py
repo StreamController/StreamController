@@ -105,7 +105,7 @@ class Page:
 
     def load_action_objects(self):
         # Store loaded action objects
-        self.loaded_action_objects = copy(self.action_objects)
+        loaded_action_objects = copy(self.action_objects)
 
         add_threads: list[threading.Thread] = []
 
@@ -134,16 +134,14 @@ class Page:
                     self.action_objects[key][i] = NoActionHolderFound(id=action["id"])
                     continue
 
-                old_object = self.action_objects[key].get(i)
-                if old_object is not None:
-                    if isinstance(old_object, action_class) and isinstance(old_object, ActionBase):    
-                        # Action already exists - keep it
-                        continue
+                old_object = loaded_action_objects.get(key, {}).get(i)
                 
-                if i in self.loaded_action_objects.get(key, []):
-                    if isinstance(self.loaded_action_objects.get(key, [i])[i], ActionBase):
-                        self.action_objects[key][i] = self.loaded_action_objects[key][i]
-                        continue
+                if i in loaded_action_objects.get(key, []):
+                    # if isinstance(loaded_action_objects.get(key, {}).get(i), action_class):
+                    if old_object is not None:
+                        if isinstance(old_object, action_class):
+                            self.action_objects[key][i] = loaded_action_objects[key][i]
+                            continue
 
                 # action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
                 # self.action_objects[key][i] = action_object
@@ -161,7 +159,6 @@ class Page:
                     all_threads_finished = False
                     break
             time.sleep(0.02)
-        print()
 
     def move_actions(self, from_key: str, to_key: str):
         from_actions = self.action_objects.get(from_key, {})

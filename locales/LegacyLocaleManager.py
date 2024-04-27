@@ -52,8 +52,8 @@ class LegacyLocaleManager:
         self.FALLBACK_LOCALE = language
         self.load_fallback_language()
 
-    def get(self, key: str) -> str:
-        return self.locales_json.get(key, self.fallback_json.get(key, key))
+    def get(self, key: str, fallback: str = None) -> str:
+        return self.locales_json.get(key, self.fallback_json.get(key, fallback or key))
     
     def get_availbale_locales(self) -> list:
         locales: list[str] = []

@@ -64,6 +64,6 @@ class LocaleManager:
             return ""
         return locale_json.get(self.language, locale_json.get(self.FALLBACK_LOCALE))
 
-    def get(self, key: str) -> str:
+    def get(self, key: str, fallback: str = None) -> str:
         key_dict = self.locale_data.get(key, {})
-        return key_dict.get(self.language, key_dict.get(self.FALLBACK_LOCALE, key))
+        return key_dict.get(self.language, key_dict.get(self.FALLBACK_LOCALE, fallback or key))

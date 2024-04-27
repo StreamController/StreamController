@@ -1,10 +1,6 @@
 name: Release
 on:
   workflow_dispatch:
-  push:
-    - main
-    - beta
-    - alpha
 
 jobs:
   release:

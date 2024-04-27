@@ -171,7 +171,7 @@ permissions.request.plugin-blueprint;Das {name} Plugin hat eine neue Berechtigun
 onboarding.extension.button.install;Installieren;Install;
 onboarding.extension.button.installed;Installiert;Installed;
 onboarding.extension.button.failed;Fehlgeschlagen;Failed;
-onboarding.extension.detail;"Installiere die offizielle Gnome Erweiterung; um automatische Seitenwechsel zu ermöglichen";Install the official Gnome extension to allow for automatic page switching;
+onboarding.extension.detail;"Installiere die offizielle Gnome Erweiterung; um automatische Seitenwechsel zu ermöglichen";Install the official Gnome extension to allow automatic page switching;
 onboarding.extension.header;Gnome Erweiterungen;Gnome Extension;
 onboarding.extension.hint;Erfordert Gnome Erweiterungen & Gnome Shell 45 oder neuer;Requires Gnome Extensions & Gnome Shell 45 or later;
 store.preview.no-description;Keine Beschreibung;No description;

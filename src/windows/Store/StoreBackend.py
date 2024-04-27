@@ -163,15 +163,12 @@ class StoreBackend:
             log.error(e)
             return NoConnectionError()
 
-        plugins = []
-
-        for plugin in plugins_json:
-            plugin = await self.prepare_plugin(plugin)
-            if isinstance(plugin, PluginData):
-                plugins.append(plugin)
+        prepare_tasks = [self.prepare_plugin(plugin, include_images) for plugin in plugins_json]
+        plugins = await asyncio.gather(*prepare_tasks)
+        plugins = [plugin for plugin in plugins if isinstance(plugin, PluginData)]
 
         return plugins
-    
+        
     async def get_all_icons(self) -> int:
         """
         returns the number of assets that are too new for the current app version

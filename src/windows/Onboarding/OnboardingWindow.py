@@ -76,6 +76,12 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.carousel.append(IconOnboardingScreen("preferences-desktop-remote-desktop-symbolic", gl.lm.get("onboarding.productive.header"), gl.lm.get("onboarding.productive.details")))
         if os.getenv("XDG_CURRENT_DESKTOP").lower() == "gnome":
             self.carousel.append(ExtensionOnboardingScreen())
+
+        udev_version = self.get_udev_version()
+        if udev_version is not None:
+            if version.parse(udev_version) < version.parse("252"):
+                self.carousel.append(UdevOnboardingScreen())
+
         self.recommendations = PluginRecommendations()
         self.carousel.append(self.recommendations)
 
@@ -138,6 +144,17 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.destroy()
         if hasattr(gl.app, "permissions"):
             gl.app.permissions.present()
+
+    def get_udev_version(self):
+        command = "udevadm --version"
+
+        if is_flatpak():
+            command = f"flatpak run --command {command}"
+
+        try:
+            return subprocess.check_output(command, shell=True).decode("utf-8").strip()
+        except subprocess.CalledProcessError:
+            return None
 
 class ImageOnboardingScreen(Gtk.Box):
     def __init__(self, image_path: str, label: str, detail: str):
@@ -245,6 +262,31 @@ class ExtensionOnboardingScreen(Gtk.Box):
         else:
             self.set_button_status("failed")
         gl.window_grabber.init_integration()
+
+
+class UdevOnboardingScreen(Gtk.Box):
+    def __init__(self):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+
+        self.build()
+
+    def build(self):
+        self.image = Gtk.Image(icon_name="dialog-error-symbolic", pixel_size=250, margin_top=70)
+        self.append(self.image)
+
+        self.label = Gtk.Label(label=gl.lm.get("onboarding.udev.header"), css_classes=["onboarding-welcome-label"], margin_top=50)
+        self.append(self.label)
+
+        self.detail = Gtk.Label(label=gl.lm.get("onboarding.udev.detail"), css_classes=["onboarding-welcome-detail-label"],
+                                width_request=600, halign=Gtk.Align.CENTER, wrap_mode=Gtk.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
+        self.append(self.detail)
+
+        self.open_wiki_button = Gtk.Button(label=gl.lm.get("onboarding.udev.button"), margin_top=20, halign=Gtk.Align.CENTER, css_classes=["pill", "suggested-action"])
+        self.open_wiki_button.connect("clicked", self.on_button_click)
+        self.append(self.open_wiki_button)
+
+    def on_button_click(self, button):
+        web.open("https://streamcontroller.github.io/docs/latest/installation/#udev")
 
 class OnboardingScreen5(Gtk.Box):
     def __init__(self, onboarding_window: OnboardingWindow):

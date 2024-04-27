@@ -9,6 +9,10 @@ class StoreData:
     """All the translations for the description"""
     short_descriptions: dict[str, str] = field(default_factory=dict)
     """All the translations for the short descriptions"""
+    description: [str, None] = None
+    """Translated Description of the Content"""
+    short_description: [str, None] = None
+    """Translated short Description of the Content"""
     author: [str, None] = None
     """Author of the Content"""
     official: [bool, None] = None

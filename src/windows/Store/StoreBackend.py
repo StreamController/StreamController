@@ -148,15 +148,15 @@ class StoreBackend:
         authors_json = json.loads(authors_json)
         return authors_json
     
-    async def get_all_plugins_async(self) -> int:
+    async def get_all_plugins_async(self, include_images: bool = True) -> int:
         """
-        returns the number of assets that are new old for the current app version
+        Returns the number of assets that are new old for the current app version.
         """
-        n_too_new_assets = 0
         result = await self.get_remote_file(self.STORE_REPO_URL, "Plugins.json", self.STORE_BRANCH)
         if isinstance(result, NoConnectionError):
             return result
         plugins_json = result.text
+
         try:
             plugins_json = json.loads(plugins_json)
         except json.decoder.JSONDecodeError as e:
@@ -290,7 +290,7 @@ class StoreBackend:
                     os.remove(self.attribution_cache[cached_url])
                 del self.attribution_cache[cached_url]
 
-    async def prepare_plugin(self, plugin):
+    async def prepare_plugin(self, plugin, include_image: bool = True):
         url = plugin["url"]
 
         # Check if suitable version is available
@@ -307,10 +307,12 @@ class StoreBackend:
         if isinstance(manifest, NoConnectionError):
             return manifest
 
+        image = None
         thumbnail_path = manifest.get("thumbnail")
-        image = await self.image_from_url(self.build_url(url, thumbnail_path, commit))
-        if isinstance(manifest, NoConnectionError):
-            return image
+        if include_image:
+            image = await self.image_from_url(self.build_url(url, thumbnail_path, commit))
+            if isinstance(manifest, NoConnectionError):
+                return image
         
         attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
@@ -322,9 +324,12 @@ class StoreBackend:
         author = self.get_user_name(url)
 
         return PluginData(
-            github=url or None,
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,
+            description=gl.lm.get_custom_translation(manifest.get("descriptions", {})),
+            short_description=gl.lm.get_custom_translation(manifest.get("short-descriptions", {})),
+
+            github=url or None,
             author=author or None, # Formerly: user_name
             official=author in self.official_authors or False,
             commit_sha=commit,
@@ -559,8 +564,8 @@ class StoreBackend:
             return
         return split[2]
     
-    def get_all_plugins(self):
-        return asyncio.run(self.get_all_plugins_async())
+    def get_all_plugins(self, include_images: bool = True) -> list[PluginData]:
+        return asyncio.run(self.get_all_plugins_async(include_images))
     
     def get_newest_compatible_version(self, available_versions: list[str]) -> str:
         if gl.exact_app_version_check:

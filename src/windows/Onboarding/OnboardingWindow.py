@@ -14,8 +14,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 from asyncio import wrap_future
+import asyncio
 import os
+import threading
 import gi
+import subprocess
+from packaging import version
+import webbrowser as web
+
+from GtkHelper.GtkHelper import LoadingScreen
+from autostart import is_flatpak
+from src.windows.Onboarding.PluginRecommendations import PluginRecommendations
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -46,8 +55,11 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.header = Adw.HeaderBar(css_classes=["flat"])
         self.set_titlebar(self.header)
 
+        self.stack = Gtk.Stack(hexpand=True, vexpand=True)
+        self.set_child(self.stack)
+
         self.overlay = Gtk.Overlay()
-        self.set_child(self.overlay)
+        self.stack.add_named(self.overlay, "main")
 
         self.carousel = Adw.Carousel(
             allow_long_swipes=True,
@@ -64,6 +76,9 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.carousel.append(IconOnboardingScreen("preferences-desktop-remote-desktop-symbolic", gl.lm.get("onboarding.productive.header"), gl.lm.get("onboarding.productive.details")))
         if os.getenv("XDG_CURRENT_DESKTOP").lower() == "gnome":
             self.carousel.append(ExtensionOnboardingScreen())
+        self.recommendations = PluginRecommendations()
+        self.carousel.append(self.recommendations)
+
         self.carousel.append(OnboardingScreen5(self))
 
         self.carousel_indicator_dots = Adw.CarouselIndicatorDots(carousel=self.carousel)
@@ -79,6 +94,10 @@ class OnboardingWindow(Gtk.ApplicationWindow):
                                       visible=False)
         self.back_button.connect("clicked", self.on_back_button_click)
         self.overlay.add_overlay(self.back_button)
+
+        # Add loading screen
+        self.loading_box = LoadingScreen()
+        self.stack.add_named(self.loading_box, "loading")
 
     def on_forward_button_click(self, button):
         pos = self.carousel.get_position()
@@ -245,7 +264,23 @@ class OnboardingScreen5(Gtk.Box):
         self.append(self.start_button)
 
     def on_start_button_click(self, button):
-        self.onboarding_window.close()
-        self.onboarding_window.destroy()
-        self.onboarding_window.on_close()
-        gl.app.main_win.show()
+        threading.Thread(target=self._on_start_button_click).start()
+
+    def _on_start_button_click(self):
+        GLib.idle_add(self.onboarding_window.stack.set_visible_child_name, "loading")
+        GLib.idle_add(self.onboarding_window.loading_box.loading_label.set_label, "Installing plugins")
+        GLib.idle_add(self.onboarding_window.loading_box.set_spinning, True)
+
+        selected_ids = self.onboarding_window.recommendations.get_selected_ids()
+
+        for plugin_id in selected_ids:
+            plugin = asyncio.run(gl.store_backend.get_plugin_for_id(plugin_id))
+            if plugin is None:
+                continue
+            asyncio.run(gl.store_backend.install_plugin(plugin))
+
+        GLib.idle_add(self.onboarding_window.loading_box.set_spinning, False)
+        GLib.idle_add(self.onboarding_window.close)
+        GLib.idle_add(self.onboarding_window.destroy)
+        GLib.idle_add(self.onboarding_window.on_close)
+        GLib.idle_add(gl.app.main_win.show)

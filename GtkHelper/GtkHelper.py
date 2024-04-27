@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk
+from gi.repository import Gtk, Adw, Gdk, GLib
 
 # Import Python modules
 from loguru import logger as log
@@ -453,3 +453,20 @@ class RevertButton(Gtk.Button):
     def __init__(self, **kwargs):
         super().__init__(icon_name="edit-undo-symbolic", **kwargs)
         self.set_tooltip_text("Revert to action defaults")
+
+class LoadingScreen(Gtk.Box):
+    def __init__(self):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
+                         valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
+        
+        self.spinner = Gtk.Spinner(spinning=False)
+        self.append(self.spinner)
+
+        self.loading_label = Gtk.Label(label="Loading")
+        self.append(self.loading_label)
+
+    def set_spinning(self, loading: bool):
+        if loading:
+            GLib.idle_add(self.spinner.start)
+        else:
+            GLib.idle_add(self.spinner.stop)

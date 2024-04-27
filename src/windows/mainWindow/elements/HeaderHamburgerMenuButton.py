@@ -112,12 +112,12 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
             license=None,
         )
 
-        self.about.add_legal_section(
-            "Icons",
-            "StreamController uses Papirus icons",
-            Gtk.License.GPL_3_0,
-            license=None
-        )
+        # self.about.add_legal_section(
+        #     "Icons",
+        #     "StreamController uses Papirus icons",
+        #     Gtk.License.GPL_3_0,
+        #     license=None
+        # )
 
         self.about.set_debug_info("".join(gl.logs))
         self.about.set_debug_info_filename(os.path.join(gl.DATA_PATH, "StreamController.log"))

@@ -326,6 +326,7 @@ class Page:
                 if isinstance(self.action_objects[key][i], ActionBase):
                     if hasattr(self.action_objects[key][i], "on_removed_from_cache"):
                         self.action_objects[key][i].on_removed_from_cache()
+                self.action_objects[key][i] = None
                 del self.action_objects[key][i]
         self.action_objects = {}
 

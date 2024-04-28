@@ -200,10 +200,12 @@ class StorePageGroup(Adw.PreferencesGroup):
         self.use_custom_plugins = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-custom-plugins"), active=False)
         self.add(self.use_custom_plugins)
 
-        self.custom_stores = CustomContentGroup(title=gl.lm.get("settings-store-custom-stores-header"), margin_top=12)
+        # self.custom_stores = CustomContentGroup(title=gl.lm.get("settings-store-custom-stores-header"), margin_top=12)
+        self.custom_stores = CustomContentExpander(title=gl.lm.get("settings-store-custom-stores-header"), subtitle=gl.lm.get("settings-store-custom-stores-subtitle"))
         self.add(self.custom_stores)
 
-        self.custom_plugins = CustomContentGroup(title=gl.lm.get("settings-store-custom-plugins-header"), margin_top=12)
+        # self.custom_plugins = CustomContentGroup(title=gl.lm.get("settings-store-custom-plugins-header"), margin_top=12)
+        self.custom_plugins = CustomContentExpander(title=gl.lm.get("settings-store-custom-plugins-header"), subtitle=gl.lm.get("settings-store-custom-plugins-subtitle"))
         self.add(self.custom_plugins)
 
         self.load_defaults()
@@ -245,32 +247,35 @@ class StorePageGroup(Adw.PreferencesGroup):
 
         self.custom_plugins.set_sensitive(self.use_custom_plugins.get_active())
 
-class CustomContentGroup(Adw.PreferencesGroup):
-    def __init__(self, title: str, **kwargs):
-        super().__init__(title=title, **kwargs)
+class CustomContentExpander(Adw.ExpanderRow):
+    def __init__(self, title: str, subtitle: str, **kwargs):
+        super().__init__(title=title, subtitle=subtitle, **kwargs)
+
+        self.switch = Gtk.Switch(valign=Gtk.Align.CENTER)
+        self.add_suffix(self.switch)
 
         self.add_button = Gtk.Button(icon_name="list-add-symbolic", css_classes=["flat"])
-        self.set_header_suffix(self.add_button)
+        # self.set_header_suffix(self.add_button)
 
-        for i in range(100):
-            self.add(CustomContentEntry(url="https://PAIN", branch="main"))
+        for i in range(3):
+            self.add_row(CustomContentEntry(url="https://PAIN", branch="main"))
 
+        self.add_row(CustomContentAddButton())
 
-class CustomContentAdder(Adw.PreferencesRow):
+class CustomContentAddButton(Adw.PreferencesRow):
     def __init__(self):
         super().__init__()
+        self.set_activatable(True)
+        self.set_css_classes(["no-padding"])
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_start=10, valign=Gtk.Align.CENTER)
+        self.main_box = Gtk.Box(css_classes=["add-button"], hexpand=True)
         self.set_child(self.main_box)
 
-        self.url = Adw.EntryRow(title="Repository URL", valign=Gtk.Align.CENTER)
-        self.main_box.append(self.url)
+        self.label = Gtk.Label(label=gl.lm.get("settings-store-custom-add"), halign=Gtk.Align.CENTER, hexpand=True,
+                               margin_bottom=15, margin_top=15, css_classes=["bold"])
+        self.main_box.append(self.label)
 
-        self.branch = Adw.EntryRow(title="Branch", text="main", valign=Gtk.Align.CENTER)
-        self.main_box.append(self.branch)
 
-        self.button_add = Gtk.Button(label="Add", valign=Gtk.Align.CENTER)
-        self.main_box.append(self.button_add)
 
 class CustomContentEntry(Adw.PreferencesRow):
     def __init__(self, url: str, branch: str):

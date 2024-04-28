@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from src.backend.PluginManager.PluginManager import PluginManager
     from src.backend.IconPackManagement.IconPackManager import IconPackManager
     from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
-    from src.windows.Store.StoreBackend import StoreBackend
+    from src.backend.Store.StoreBackend import StoreBackend
     from src.Signals.SignalManager import SignalManager
     from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
     from src.backend.GnomeExtensions import GnomeExtensions

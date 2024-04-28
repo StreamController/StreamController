@@ -43,7 +43,7 @@ from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
-from src.windows.Store.StoreBackend import StoreBackend, NoConnectionError
+from src.backend.Store.StoreBackend import StoreBackend, NoConnectionError
 from autostart import setup_autostart
 from src.Signals.SignalManager import SignalManager
 from src.backend.WindowGrabber.WindowGrabber import WindowGrabber

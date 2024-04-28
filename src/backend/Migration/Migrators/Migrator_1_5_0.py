@@ -1,3 +1,5 @@
+from codecs import ignore_errors
+import shutil
 from src.backend.Migration.Migrator import Migrator
 import json
 import os
@@ -41,5 +43,9 @@ class Migrator_1_5_0(Migrator):
 
         if os.path.exists(os.path.join(gl.DATA_PATH, "wallpapers", "Core447::Pixabay Favorites")):
             os.rename(os.path.join(gl.DATA_PATH, "wallpapers", "Core447::Pixabay Favorites"), os.path.join(gl.DATA_PATH, "wallpapers", "com_core447_PixabayFavorites"))
+
+        # Clear store cache
+        if os.path.exists(os.path.join(gl.DATA_PATH, "Store", "cache")):
+            shutil.rmtree(os.path.join(gl.DATA_PATH, "Store", "cache"))
 
         self.set_migrated(True)

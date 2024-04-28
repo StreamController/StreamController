@@ -17,6 +17,7 @@ import os
 import gi
 
 from src.windows.mainWindow.elements.PageSelector import PageSelector
+from src.windows.mainWindow.elements.Sidebar.elements.StateSwitcher import StateSwitcher
 
 
 gi.require_version("Gtk", "4.0")
@@ -172,6 +173,10 @@ class KeyEditor(Gtk.Box):
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.scrolled_window.set_child(self.main_box)
+
+        self.state_switcher = StateSwitcher(margin_start=20, margin_end=20, margin_top=10, margin_bottom=10, hexpand=True)
+        self.state_switcher.set_n_states(3)
+        self.main_box.append(self.state_switcher)
 
         self.icon_selector = IconSelector(sidebar, halign=Gtk.Align.CENTER, margin_top=40)
         self.main_box.append(self.icon_selector)

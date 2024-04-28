@@ -47,8 +47,8 @@ class LabelEditor(Gtk.Box):
         self.label_group = LabelGroup(self.sidebar)
         self.main_box.append(self.label_group)
 
-    def load_for_coords(self, coords):
-        self.label_group.load_for_coords(coords)
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        self.label_group.load_for_coords(coords, state)
 
 
 class LabelGroup(Adw.PreferencesGroup):
@@ -64,8 +64,8 @@ class LabelGroup(Adw.PreferencesGroup):
 
         return
 
-    def load_for_coords(self, coords):
-        self.expander.load_for_coords(coords)
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        self.expander.load_for_coords(coords, state)
 
 class LabelExpanderRow(Adw.ExpanderRow):
     def __init__(self, label_group):
@@ -83,12 +83,12 @@ class LabelExpanderRow(Adw.ExpanderRow):
         self.add_row(self.center_row)
         self.add_row(self.bottom_row)
 
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
         self.active_coords = coords
 
-        self.top_row.load_for_coords(coords)
-        self.center_row.load_for_coords(coords)
-        self.bottom_row.load_for_coords(coords)
+        self.top_row.load_for_coords(coords, state)
+        self.center_row.load_for_coords(coords, state)
+        self.bottom_row.load_for_coords(coords, state)
 
 class LabelRow(Adw.PreferencesRow):
     def __init__(self, label_text, label_index: int, sidebar, key_name: str, **kwargs):
@@ -96,6 +96,7 @@ class LabelRow(Adw.PreferencesRow):
         self.label_text = label_text
         self.sidebar = sidebar
         self.active_coords = None
+        self.state: int = 0
         self.label_index = label_index
         self.key_name = key_name
         self.build()
@@ -175,8 +176,10 @@ class LabelRow(Adw.PreferencesRow):
 
         return controller.keys[controller.coords_to_index((x, y))]
 
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        print("update labels")
         self.active_coords = coords
+        self.state = state
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
             return
@@ -192,7 +195,7 @@ class LabelRow(Adw.PreferencesRow):
         
         controller_key = self.get_controller_key()
 
-        use_page_label_properties = controller_key.label_manager.get_use_page_label_properties(position=self.key_name)
+        use_page_label_properties = controller_key.get_active_state().label_manager.get_use_page_label_properties(position=self.key_name)
 
         ## Set visibility of revert buttons
         self.text_entry.revert_button.set_visible(use_page_label_properties.get("text", False))
@@ -209,7 +212,7 @@ class LabelRow(Adw.PreferencesRow):
         self.disconnect_signals()
         if composed_label is None:
             controller_key = self.get_controller_key()
-            composed_label = controller_key.label_manager.get_composed_label(position=self.key_name)
+            composed_label = controller_key.get_active_state().label_manager.get_composed_label(position=self.key_name)
 
         if self.text_entry.entry.get_text() != composed_label.text:
             pos = self.text_entry.entry.get_position()
@@ -436,12 +439,14 @@ class LabelRow(Adw.PreferencesRow):
         page = current_deck_controller.active_page
 
         # Set defaults
+        coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
         page.dict.setdefault("keys", {})
-        page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("labels", {})
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"].setdefault(self.key_name, {})
-        
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"] = entry.get_text()
+        page.dict["keys"].setdefault(coords, {})
+        page.dict["keys"][coords].setdefault("states", {})
+        page.dict["keys"][coords]["states"].setdefault(str(self.state), {})
+        page.dict["keys"][coords]["states"][str(self.state)].setdefault("labels", {})
+        page.dict["keys"][coords]["states"][str(self.state)]["labels"].setdefault(self.key_name, {})
+        page.dict["keys"][coords]["states"][str(self.state)]["labels"][self.key_name]["text"] = entry.get_text()
         page.save()
 
         # Hide settings if text is empty
@@ -458,10 +463,10 @@ class LabelRow(Adw.PreferencesRow):
                 continue
             controller_key = current_deck_controller.keys[key_index]
 
-            page_label = controller_key.label_manager.page_labels.get(self.key_name)
+            page_label = controller_key.get_active_state().label_manager.page_labels.get(self.key_name)
             if page_label is not None:
                 page_label.text = entry.get_text()
-            controller_key.label_manager.update_label(position=self.key_name)
+            controller_key.get_active_state().label_manager.update_label(position=self.key_name)
 
 
         self.text_entry.revert_button.set_visible(True)

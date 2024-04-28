@@ -122,6 +122,7 @@ class KeyButton(Gtk.Frame):
         super().__init__(**kwargs)
         self.set_css_classes(["key-button-frame-hidden"])
         self.coords = coords
+        self.state = 0
         self.key_grid = key_grid
 
         self.pixbuf = None
@@ -197,7 +198,7 @@ class KeyButton(Gtk.Frame):
         dropped_key_dict = active_page.dict.get("keys", {}).get(f"{dropped_x}x{dropped_y}", {})
 
         # Swap keys in the page dict
-        active_page.dict.setdefault("keys", {})
+        active_page.dict.setdefault("keys", {"states": {self.state: {}}})
         active_page.dict["keys"][f"{target_x}x{target_y}"] = dropped_key_dict
         active_page.dict["keys"][f"{dropped_x}x{dropped_y}"] = target_key_dict
         active_page.save()
@@ -229,7 +230,7 @@ class KeyButton(Gtk.Frame):
 
         page_coords = f"{self.coords[1]}x{self.coords[0]}"
         
-        active_page.dict.setdefault("keys", {})
+        active_page.dict.setdefault("keys", {"states": {self.state: {}}})
         active_page.dict["keys"].setdefault(page_coords, {})
         active_page.dict["keys"][page_coords].setdefault("media", {
             "path": None,
@@ -363,7 +364,7 @@ class KeyButton(Gtk.Frame):
         if sidebar.active_coords == (self.coords[1], self.coords[0]):
             if not self.get_mapped():
                 return
-        sidebar.load_for_coords((self.coords[1], self.coords[0]))
+        sidebar.load_for_coords((self.coords[1], self.coords[0]), self.state)
 
     # Modifier
     def on_copy(self, *args):

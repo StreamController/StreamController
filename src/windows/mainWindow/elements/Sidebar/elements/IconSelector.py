@@ -104,8 +104,12 @@ class IconSelector(Gtk.Box):
         if active_coords is None:
             return
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
+        
+        active_state = self.sidebar.active_state
 
         if "keys" not in active_page_dict:
+            return None
+        if active_state not in active_page_dict["keys"]:
             return None
         if page_coords not in active_page_dict["keys"]:
             return None
@@ -128,7 +132,7 @@ class IconSelector(Gtk.Box):
         active_coords:tuple = self.sidebar.active_coords
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
-        active_page.dict.setdefault("keys", {})
+        active_page.dict.setdefault("keys", {"states": {self.state: {}}})
         active_page.dict["keys"].setdefault(page_coords, {})
         active_page.dict["keys"][page_coords].setdefault("media", {
             "path": None,
@@ -173,5 +177,5 @@ class IconSelector(Gtk.Box):
     def has_image_to_remove(self):
         return self.get_media_path() is not None
     
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
         self.remove_button.set_visible(self.has_image_to_remove())

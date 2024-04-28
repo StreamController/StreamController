@@ -57,8 +57,8 @@ class ActionManager(Gtk.Box):
 
         self.main_box.set_margin_bottom(50)
 
-    def load_for_coords(self, coords):
-        self.action_group.load_for_coords(coords)
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        self.action_group.load_for_coords(coords, state)
 
 class ActionGroup(Adw.PreferencesGroup):
     def __init__(self, sidebar, **kwargs):
@@ -75,8 +75,8 @@ class ActionGroup(Adw.PreferencesGroup):
         self.expander = ActionExpanderRow(self)
         self.add(self.expander)
 
-    def load_for_coords(self, coords):
-        self.expander.load_for_coords(coords)
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        self.expander.load_for_coords(coords, state)
 
 
 class ActionExpanderRow(BetterExpander):
@@ -85,6 +85,7 @@ class ActionExpanderRow(BetterExpander):
         self.set_expanded(True)
         self.action_group = action_group
         self.active_coords = None
+        self.active_state = None
 
         self.preview = None
 
@@ -98,9 +99,10 @@ class ActionExpanderRow(BetterExpander):
         action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.sidebar, comment, index, total_rows, self)
         self.add_row(action_row)
 
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
         self.clear_actions(keep_add_button=True)
         self.active_coords = coords
+        self.active_state = state
         page_coords = f"{coords[0]}x{coords[1]}"
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
@@ -429,7 +431,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         page_coords = f"{self.expander.active_coords[0]}x{self.expander.active_coords[1]}"
 
         # Set missing values
-        active_page.dict.setdefault("keys", {})
+        active_page.dict.setdefault("keys", {"states": {self.state: {}}})
         active_page.dict["keys"].setdefault(page_coords, {})
         active_page.dict["keys"][page_coords].setdefault("actions", [])
 

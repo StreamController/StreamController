@@ -50,8 +50,15 @@ class StateSwitcher(Gtk.ScrolledWindow):
         self.clear_stack()
 
         for i in range(n):
-            self.stack.add_titled(Gtk.Box(), f"state{i+1}", f"State {i+1}")
+            self.stack.add_titled(Gtk.Box(), str(i+1), f"State {i+1}")
 
     def on_add_click(self, button):
         n_states = self.get_n_states()
-        self.stack.add_titled(Gtk.Box(), f"state{n_states + 1}", f"State {n_states + 1}")
+        self.stack.add_titled(Gtk.Box(), str(n_states + 1), f"State {n_states + 1}")
+
+    def get_selected_state(self) -> int:
+        name = self.stack.get_visible_child_name()
+        return int(name) - 1
+    
+    def select_state(self, state: int):
+        self.stack.set_visible_child_name(str(state + 1))

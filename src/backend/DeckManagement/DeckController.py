@@ -144,7 +144,7 @@ class MediaPlayerThread(threading.Thread):
 
                 for key in self.deck_controller.keys:
                     # break
-                    if key.key_video is not None:
+                    if key.get_active_state().key_video is not None:
                         video_each_nth_frame = self.FPS // key.key_video.fps
                         if self.media_ticks % video_each_nth_frame == 0:
                             key.update()
@@ -391,6 +391,10 @@ class DeckController:
             default_page_path = gl.page_manager.get_default_page_for_deck(self.deck.get_serial_number())
         else:
             default_page_path = api_page_path
+
+        if default_page_path is not None:
+            if not os.path.isfile(default_page_path):
+                default_page_path = None
             
         if default_page_path is None:
             # Use the first page
@@ -592,7 +596,7 @@ class DeckController:
             self.mark_page_ready_to_clear(False)
             if not self.screen_saver.showing and True:
                 for key in self.keys:
-                    key.own_actions_tick()
+                    key.get_active_state().own_actions_tick()
             else:
                 for key in self.keys:
                     key.update()
@@ -1037,7 +1041,7 @@ class ControllerKeyLabelManager:
         if gl.app.main_win.sidebar.active_coords != (self.controller_key.coords[0], self.controller_key.coords[1]):
             return
         
-        gl.app.main_win.sidebar.key_editor.label_editor.load_for_coords(self.controller_key.coords)
+        gl.app.main_win.sidebar.key_editor.label_editor.load_for_coords(self.controller_key.coords, self.controller_key.active_state)
         
 
     def get_use_page_label_properties(self, position: str) -> dict:
@@ -1187,35 +1191,45 @@ class ControllerKey:
     def __init__(self, deck_controller: DeckController, key: int):
         self.deck_controller = deck_controller
         self.key = key
+        self.state = 0
 
         self.coords = deck_controller.index_to_coords(key)
 
-        self.background_color = [0, 0, 0, 0]
-
         # Keep track of the current state of the key because self.deck_controller.deck.key_states seams to give inverted values in get_current_deck_image
         self.press_state: bool = self.deck_controller.deck.key_states()[self.key]
-
-        self.key_image: KeyImage = None
-        self.key_video: KeyVideo = None
 
         self._show_error: bool = False
         # self.key_asset: SingleKeyAsset = SingleKeyAsset(self)
 
         self.hide_error_timer: Timer = None
 
-        self.label_manager = ControllerKeyLabelManager(self)
-        self.layout_manager = ControllerKeyLayoutManager(self)
+        self.states = {
+            0: ControllerKeyState(self, 0),
+        }
 
-        # self.pressed_on_page: Page = None #TODO: Block release on different page than press
+    def create_n_states(self, n: int):
+        for state in self.states.values():
+            state.close_resources()
+        self.states.clear()
+
+        for i in range(n):
+            self.states[i] = ControllerKeyState(self, i)
+
+    def get_active_state(self) -> "ControllerKeyState":
+        return self.states.get(self.state, ControllerKeyState(self, 0))
+
 
     def get_current_deck_image(self) -> Image.Image:
+        state = self.get_active_state()
+
+
         background: Image.Image = None
         # Only load the background image if it's not gonna be hidden by the background color
-        if self.background_color[-1] < 255:
+        if self.get_active_state().background_color[-1] < 255:
             background = copy(self.deck_controller.background.tiles[self.key])
 
-        if self.background_color[-1] > 0:
-            background_color_img = Image.new("RGBA", self.deck_controller.get_key_image_size(), color=tuple(self.background_color))
+        if self.get_active_state().background_color[-1] > 0:
+            background_color_img = Image.new("RGBA", self.deck_controller.get_key_image_size(), color=tuple(state.background_color))
             
             if background is None:
                 # Use the color as the only background - happens if background color alpha is 255
@@ -1235,10 +1249,10 @@ class ControllerKey:
             return background
 
         image: Image.Image = None
-        if self.key_image is not None:
-            image = self.key_image.generate_final_image(background=background, labels=self.label_manager.get_composed_labels())
-        elif self.key_video is not None:
-            image = self.key_video.generate_final_image(background=background, labels=self.label_manager.get_composed_labels())
+        if state.key_image is not None:
+            image = state.key_image.generate_final_image(background=background, labels=state.label_manager.get_composed_labels())
+        elif state.key_video is not None:
+            image = state.key_video.generate_final_image(background=background, labels=state.label_manager.get_composed_labels())
         else:
             image = background
         labeled_image = self.add_labels_to_image(image)
@@ -1294,6 +1308,45 @@ class ControllerKey:
     def update(self) -> None:
         self.deck_controller.update_key(self.key)
 
+    def set_state(self, state: int, update: bool = True) -> None:
+        if state == self.state:
+            return
+        
+        if state not in self.states:
+            log.error(f"Invalid state: {state}, must be one of {list(self.states.keys())}")
+            return
+        self.state = state
+
+        if update:
+            self.update()
+            self.reload_sidebar()
+
+
+    def reload_sidebar(self) -> None:
+        print()
+        print("reload sidebar")
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            print("no visible child")
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            print("no controller")
+            return
+        
+        if controller is not self.deck_controller:
+            print("controller is not self.deck_controller")
+            return
+        
+        if tuple(self.coords) != tuple(gl.app.main_win.sidebar.active_coords):
+            print("coords are not equal")
+            return
+        
+        print("reload")
+        print(f"active_state: {self.state}, state: {self.state}")
+        gl.app.main_win.sidebar.active_state = self.state
+        gl.app.main_win.sidebar.reload()
+
     def set_key_image(self, key_image: "KeyImage", update: bool = True) -> None:
         if self.key_image is not None:
             self.key_image.close()
@@ -1333,7 +1386,7 @@ class ControllerKey:
         draw = ImageDraw.Draw(image)
 
         # labels = copy(self.labels) # Prevent crash if labels change during iteration
-        labels = self.label_manager.get_composed_labels()
+        labels = self.get_active_state().label_manager.get_composed_labels()
 
         for label in labels:
             text = labels[label].text
@@ -1416,95 +1469,101 @@ class ControllerKey:
         """
         Attention: Disabling load_media might result into disabling custom user assets
         """
-        self.close_resources()
-        if page_dict in [None, {}]:
-            self.clear(update=update)
-            return
-        
-        ## Load media - why here? so that it doesn't overwrite the images chosen by the actions
-        if load_media:
-            self.key_image = None
-            self.key_video = None
-        
-        if load_labels:
-            self.label_manager.clear_labels()
+        n_states = len(page_dict.get("states", {}))
+        self.create_n_states(max(1, n_states))
 
-        # Reset action layout
-        layout = KeyLayout()
-        self.layout_manager.set_action_layout(layout, update=False)
+        #TODO: Reset states
+        for state in page_dict.get("states", {}):
+            state: ControllerKeyState = self.states.get(int(state))
+            if state is None:
+                continue
 
-        self.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
+            state_dict = page_dict["states"][str(state.state)]
 
-        ## Load labels
-        if load_labels:
-            for label in page_dict.get("labels", []):
-                key_label = KeyLabel(
-                    controller_key=self,
-                    text=page_dict["labels"][label].get("text"),
-                    font_size=page_dict["labels"][label].get("font-size"),
-                    font_name=page_dict["labels"][label].get("font-family"),
-                    color=page_dict["labels"][label].get("color")
-                )
-                # self.add_label(key_label, position=label, update=False)
-                self.label_manager.set_page_label(label, key_label, update=False)
+            ## Load media - why here? so that it doesn't overwrite the images chosen by the actions
+            if load_media:
+                state.key_image = None
+                state.key_video = None
+            
+            if load_labels:
+                state.label_manager.clear_labels()
 
-        ## Load media
-        if load_media:
-            path = page_dict.get("media", {}).get("path", None)
-            if path not in ["", None]:
-                if is_image(path):
-                    with Image.open(path) as image:
-                        self.set_key_image(KeyImage(
+            # Reset action layout
+            layout = KeyLayout()
+            state.layout_manager.set_action_layout(layout, update=False)
+
+            state.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
+
+            ## Load labels
+            if load_labels:
+                for label in state_dict.get("labels", []):
+                    key_label = KeyLabel(
+                        controller_key=self,
+                        text=state_dict["labels"][label].get("text"),
+                        font_size=state_dict["labels"][label].get("font-size"),
+                        font_name=state_dict["labels"][label].get("font-family"),
+                        color=state_dict["labels"][label].get("color")
+                    )
+                    # self.add_label(key_label, position=label, update=False)
+                    state.label_manager.set_page_label(label, key_label, update=False)
+
+            ## Load media
+            if load_media:
+                path = state_dict.get("media", {}).get("path", None)
+                if path not in ["", None]:
+                    if is_image(path):
+                        with Image.open(path) as image:
+                            state.set_key_image(KeyImage(
+                                controller_key=self,
+                                image=image.copy()
+                            ), update=False)
+                            
+                    elif is_svg(path):
+                        img = load_svg_as_pil(path)
+                        state.set_key_image(KeyImage(
                             controller_key=self,
-                            image=image.copy()
+                            image=img
                         ), update=False)
-                        
-                elif is_svg(path):
-                    img = load_svg_as_pil(path)
-                    self.set_key_image(KeyImage(
-                        controller_key=self,
-                        image=img
-                    ), update=False)
 
-                elif is_video(path) and True:
-                    if os.path.splitext(path)[1].lower() == ".gif":
-                        self.set_key_video(KeyGIF(
+                    elif is_video(path) and True:
+                        if os.path.splitext(path)[1].lower() == ".gif":
+                            state.set_key_video(KeyGIF(
+                                controller_key=self,
+                                gif_path=path,
+                                loop=state_dict.get("media", {}).get("loop", True),
+                                fps=state_dict.get("media", {}).get("fps", 30)
+                            )) # GIFs always update
+                        else:
+                            state.set_key_video(KeyVideo(
+                                controller_key=self,
+                                video_path=path,
+                                loop = state_dict.get("media", {}).get("loop", True),
+                                fps = state_dict.get("media", {}).get("fps", 30),
+                            )) # Videos always update
+
+                elif len(state.get_own_actions()) > 1:
+                    with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
+                        state.set_key_image(KeyImage(
                             controller_key=self,
-                            gif_path=path,
-                            loop=page_dict.get("media", {}).get("loop", True),
-                            fps=page_dict.get("media", {}).get("fps", 30)
-                        )) # GIFs always update
-                    else:
-                        self.set_key_video(KeyVideo(
-                            controller_key=self,
-                            video_path=path,
-                            loop = page_dict.get("media", {}).get("loop", True),
-                            fps = page_dict.get("media", {}).get("fps", 30),
-                        )) # Videos always update
+                            image=image.copy(),
+                        ), update=False)
 
-            elif len(self.get_own_actions()) > 1:
-                with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
-                    self.set_key_image(KeyImage(
-                        controller_key=self,
-                        image=image.copy(),
-                    ), update=False)
+                layout = KeyLayout(
+                    fill_mode=state_dict.get("media", {}).get("fill-mode"),
+                    size=state_dict.get("media", {}).get("size"),
+                    valign=state_dict.get("media", {}).get("valign"),
+                    halign=state_dict.get("media", {}).get("halign"),
+                )
+                state.layout_manager.set_page_layout(layout, update=False)
 
-            layout = KeyLayout(
-                fill_mode=page_dict.get("media", {}).get("fill-mode"),
-                size=page_dict.get("media", {}).get("size"),
-                valign=page_dict.get("media", {}).get("valign"),
-                halign=page_dict.get("media", {}).get("halign"),
-            )
-            self.layout_manager.set_page_layout(layout, update=False)
+            if load_background_color:
+                state.background_color = state_dict.get("background", {}).get("color", [0, 0, 0, 0])
+                # Ensure the background color has an alpha channel
+                if len(state.background_color) == 3:
+                    state.background_color.append(255)
 
-        if load_background_color:
-            self.background_color = page_dict.get("background", {}).get("color", [0, 0, 0, 0])
-            # Ensure the background color has an alpha channel
-            if len(self.background_color) == 3:
-                self.background_color.append(255)
-
-        if update:
-            self.update()
+            if update:
+                self.update()
 
     def clear(self, update: bool = True):
         self.key_image = None
@@ -1533,7 +1592,77 @@ class ControllerKey:
         buttons = self.deck_controller.get_own_key_grid().buttons # The ui key coords are in reverse order
         return buttons[x][y]
     
+    
+    
+    def on_key_change(self, state) -> None:
+        return
+        self.press_state = state
+
+        self.update()
+
+        if state:
+            self.own_actions_key_down_threaded()
+        else:
+            self.own_actions_key_up_threaded()
+
+
+    
+
+    
+
+    def send_outdated_plugin_notification(self, plugin_id: str) -> None:
+        gl.app.send_notification(
+            "software-update-available-symbolic",
+            "Plugin out of date",
+            f"The plugin {plugin_id} is out of date and needs to be updated"
+        )
+
+    def send_missing_plugin_notification(self, plugin_id: str) -> None:
+        gl.app.send_notification(
+            "dialog-information-symbolic",
+            "Plugin missing",
+            f"The plugin {plugin_id} is missing. Please install it.",
+            button=("Install", "app.install-plugin", GLib.Variant.new_string(plugin_id))
+        )
+
+        # self.labels.clear()
+
+    def has_unavailable_action(self) -> bool:
+        return True
+        for action in self.get_own_actions():
+            if isinstance(action, ActionOutdated):
+                return True
+            if isinstance(action, NoActionHolderFound):
+                return True
+            
+        return False
+    
+class ControllerKeyState:
+    def __init__(self, controller_key: "ControllerKey", state: int):
+        self.controller_key = controller_key
+        self.state = state
+
+        # Variables
+        self.background_color = [0, 0, 0, 0]
+
+        self.key_image: KeyImage = None
+        self.key_video: KeyVideo = None
+
+        self.label_manager = ControllerKeyLabelManager(controller_key)
+        self.layout_manager = ControllerKeyLayoutManager(controller_key)
+
+    def close_resources(self) -> None:
+        if self.key_image is not None:
+            self.key_image.close()
+            self.key_image = None
+            del self.key_image
+        if self.key_video is not None:
+            self.key_video.close()
+            self.key_video = None
+            del self.key_video
+
     def get_own_actions(self) -> list["ActionBase"]:
+        return []
         active_page = self.deck_controller.active_page
         if active_page is None:
             return []
@@ -1549,31 +1678,15 @@ class ControllerKey:
         # Remove all NoActionHolderFound objects
         actions = [action for action in actions if not (isinstance(action, NoActionHolderFound) or action is None)]
         return actions
+
+    @log.catch
+    def call_action_ready_and_set_flag(self, action: "ActionBase") -> None:
+        return
+        if not isinstance(action, ActionBase):
+            return
+        action.on_ready()
+        action.on_ready_called = True
     
-    def on_key_change(self, state) -> None:
-        self.press_state = state
-
-        self.update()
-
-        if state:
-            self.own_actions_key_down_threaded()
-        else:
-            self.own_actions_key_up_threaded()
-
-    def own_actions_ready_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_ready, name="own_actions_ready").start()
-
-    def own_actions_key_down_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_key_down, name="own_actions_key_down").start()
-
-    def own_actions_key_up_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_key_up, name="own_actions_key_up").start()
-
-    def own_actions_tick_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_tick, name="own_actions_tick").start()
-
-
-
     def own_actions_ready(self) -> None:
         with ThreadPoolExecutor() as executor:
             futures = [executor.submit(self.call_action_ready_and_set_flag, action) for action in self.get_own_actions()]
@@ -1581,14 +1694,8 @@ class ControllerKey:
                 future.result()
 
     @log.catch
-    def call_action_ready_and_set_flag(self, action: "ActionBase") -> None:
-        if not isinstance(action, ActionBase):
-            return
-        action.on_ready()
-        action.on_ready_called = True
-
-    @log.catch
     def own_actions_key_down(self) -> None:
+        return
         for action in self.get_own_actions():
             if isinstance(action, ActionOutdated):
                 _id = action.id
@@ -1606,6 +1713,7 @@ class ControllerKey:
 
     @log.catch
     def own_actions_key_up(self) -> None:
+        return
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):
                 continue
@@ -1613,43 +1721,20 @@ class ControllerKey:
 
     @log.catch
     def own_actions_tick(self) -> None:
+        return
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):
                 continue
             action.on_tick()
 
-    def send_outdated_plugin_notification(self, plugin_id: str) -> None:
-        gl.app.send_notification(
-            "software-update-available-symbolic",
-            "Plugin out of date",
-            f"The plugin {plugin_id} is out of date and needs to be updated"
-        )
+    def own_actions_ready_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_ready, name="own_actions_ready").start()
 
-    def send_missing_plugin_notification(self, plugin_id: str) -> None:
-        gl.app.send_notification(
-            "dialog-information-symbolic",
-            "Plugin missing",
-            f"The plugin {plugin_id} is missing. Please install it.",
-            button=("Install", "app.install-plugin", GLib.Variant.new_string(plugin_id))
-        )
+    def own_actions_key_down_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_key_down, name="own_actions_key_down").start()
 
-    def close_resources(self) -> None:
-        if self.key_image is not None:
-            self.key_image.close()
-            self.key_image = None
-            del self.key_image
-        if self.key_video is not None:
-            self.key_video.close()
-            self.key_video = None
-            del self.key_video
+    def own_actions_key_up_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_key_up, name="own_actions_key_up").start()
 
-        # self.labels.clear()
-
-    def has_unavailable_action(self) -> bool:
-        for action in self.get_own_actions():
-            if isinstance(action, ActionOutdated):
-                return True
-            if isinstance(action, NoActionHolderFound):
-                return True
-            
-        return False
+    def own_actions_tick_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_tick, name="own_actions_tick").start()

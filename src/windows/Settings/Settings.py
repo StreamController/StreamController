@@ -200,10 +200,10 @@ class StorePageGroup(Adw.PreferencesGroup):
         self.use_custom_plugins = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-custom-plugins"), active=False)
         self.add(self.use_custom_plugins)
 
-        self.custom_stores = CustomContentGroup(title=gl.lm.get("settings-store-custom-stores-header"))
+        self.custom_stores = CustomContentGroup(title=gl.lm.get("settings-store-custom-stores-header"), margin_top=12)
         self.add(self.custom_stores)
 
-        self.custom_plugins = CustomContentGroup(title=gl.lm.get("settings-store-custom-plugins-header"))
+        self.custom_plugins = CustomContentGroup(title=gl.lm.get("settings-store-custom-plugins-header"), margin_top=12)
         self.add(self.custom_plugins)
 
         self.load_defaults()
@@ -246,21 +246,15 @@ class StorePageGroup(Adw.PreferencesGroup):
         self.custom_plugins.set_sensitive(self.use_custom_plugins.get_active())
 
 class CustomContentGroup(Adw.PreferencesGroup):
-    def __init__(self, title: str):
-        super().__init__(title=title)
+    def __init__(self, title: str, **kwargs):
+        super().__init__(title=title, **kwargs)
 
-        self.content_adder = CustomContentAdder()
-        self.add(self.content_adder)
+        self.add_button = Gtk.Button(icon_name="list-add-symbolic", css_classes=["flat"])
+        self.set_header_suffix(self.add_button)
 
-        self.scroll_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.scroll_box.append(CustomContentEntry(url="https://PAIN", branch="main"))
-        self.scroll_box.append(CustomContentEntry(url="https://WORKS", branch="test"))
+        for i in range(100):
+            self.add(CustomContentEntry(url="https://PAIN", branch="main"))
 
-        self.scroll_view = Gtk.ScrolledWindow()
-        self.scroll_view.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        self.scroll_view.set_child(self.scroll_box)
-
-        self.add(self.scroll_view)
 
 class CustomContentAdder(Adw.PreferencesRow):
     def __init__(self):
@@ -280,19 +274,27 @@ class CustomContentAdder(Adw.PreferencesRow):
 
 class CustomContentEntry(Adw.PreferencesRow):
     def __init__(self, url: str, branch: str):
-        super().__init__()
+        super().__init__(activatable=False)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5, margin_start=5, margin_end=5)
         self.set_child(self.main_box)
 
-        self.url = Adw.EntryRow(title="Repository URL", valign=Gtk.Align.CENTER, editable=False, text=url, sensitive=False)
-        self.main_box.append(self.url)
+        self.entry_grid = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True)
+        self.main_box.append(self.entry_grid)
 
-        self.branch = Adw.EntryRow(title="Branch", valign=Gtk.Align.CENTER, editable=False, text=branch, sensitive=False)
-        self.main_box.append(self.branch)
+        self.url = Adw.EntryRow(title="Repository URL", valign=Gtk.Align.CENTER, text=url or "")
+        self.entry_grid.append(self.url)
 
-        self.button_remove = Gtk.Button(label="Remove", valign=Gtk.Align.CENTER)
+        self.branch = Adw.EntryRow(title="Branch", valign=Gtk.Align.CENTER, text=branch or "")
+        self.entry_grid.append(self.branch)
+
+        self.button_remove = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["destructive-action-on-hover", "flat"])
         self.main_box.append(self.button_remove)
+
+        self.button_remove.connect("clicked", self.on_remove)
+
+    def on_remove(self, *args):
+        print("TODO: on_remove")
 
 
 class PerformancePage(Adw.PreferencesPage):

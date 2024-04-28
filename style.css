@@ -351,3 +351,11 @@
   background-color: rgba(255, 255, 255, 0.1);
   padding: 10px 10px;
 }
+
+.destructive-action-on-hover{
+
+}
+
+.destructive-action-on-hover:hover{
+  background-color: @destructive_bg_color;
+}

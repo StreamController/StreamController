@@ -194,13 +194,33 @@ class StorePageGroup(Adw.PreferencesGroup):
         self.auto_update = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-auto-update"), active=True)
         self.add(self.auto_update)
 
+        self.use_custom_stores = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-custom-stores"), active=False)
+        self.add(self.use_custom_stores)
+
+        self.use_custom_plugins = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-custom-plugins"), active=False)
+        self.add(self.use_custom_plugins)
+
+        self.custom_stores = CustomContentGroup(title=gl.lm.get("settings-store-custom-stores-header"))
+        self.add(self.custom_stores)
+
+        self.custom_plugins = CustomContentGroup(title=gl.lm.get("settings-store-custom-plugins-header"))
+        self.add(self.custom_plugins)
+
         self.load_defaults()
+
+        # Make Groups In-/Active
+        self.custom_stores.set_sensitive(self.use_custom_stores.get_active())
+        self.custom_plugins.set_sensitive(self.use_custom_plugins.get_active())
 
         # Connect signals
         self.auto_update.connect("notify::active", self.on_auto_update_toggled)
+        self.use_custom_stores.connect("notify::active", self.on_use_custom_stores_toggled)
+        self.use_custom_plugins.connect("notify::active", self.on_use_custom_plugins_toggled)
 
     def load_defaults(self):
         self.auto_update.set_active(self.settings.settings_json.get("store", {}).get("auto-update", True))
+        self.use_custom_stores.set_active(self.settings.settings_json.get("store", {}).get("use-custom-stores", False))
+        self.use_custom_plugins.set_active(self.settings.settings_json.get("store", {}).get("use-custom-plugins", False))
 
     def on_auto_update_toggled(self, *args):
         self.settings.settings_json.setdefault("store", {})
@@ -208,6 +228,72 @@ class StorePageGroup(Adw.PreferencesGroup):
 
         # Save
         self.settings.save_json()
+
+    def on_use_custom_stores_toggled(self, *args):
+        self.settings.settings_json.setdefault("store", {})
+        self.settings.settings_json["store"]["use-custom-stores"] = self.use_custom_stores.get_active()
+
+        self.settings.save_json()
+
+        self.custom_stores.set_sensitive(self.use_custom_stores.get_active())
+
+    def on_use_custom_plugins_toggled(self, *args):
+        self.settings.settings_json.setdefault("store", {})
+        self.settings.settings_json["store"]["use-custom-plugins"] = self.use_custom_plugins.get_active()
+
+        self.settings.save_json()
+
+        self.custom_plugins.set_sensitive(self.use_custom_plugins.get_active())
+
+class CustomContentGroup(Adw.PreferencesGroup):
+    def __init__(self, title: str):
+        super().__init__(title=title)
+
+        self.content_adder = CustomContentAdder()
+        self.add(self.content_adder)
+
+        self.scroll_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.scroll_box.append(CustomContentEntry(url="https://PAIN", branch="main"))
+        self.scroll_box.append(CustomContentEntry(url="https://WORKS", branch="test"))
+
+        self.scroll_view = Gtk.ScrolledWindow()
+        self.scroll_view.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        self.scroll_view.set_child(self.scroll_box)
+
+        self.add(self.scroll_view)
+
+class CustomContentAdder(Adw.PreferencesRow):
+    def __init__(self):
+        super().__init__()
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_start=10, valign=Gtk.Align.CENTER)
+        self.set_child(self.main_box)
+
+        self.url = Adw.EntryRow(title="Repository URL", valign=Gtk.Align.CENTER)
+        self.main_box.append(self.url)
+
+        self.branch = Adw.EntryRow(title="Branch", text="main", valign=Gtk.Align.CENTER)
+        self.main_box.append(self.branch)
+
+        self.button_add = Gtk.Button(label="Add", valign=Gtk.Align.CENTER)
+        self.main_box.append(self.button_add)
+
+class CustomContentEntry(Adw.PreferencesRow):
+    def __init__(self, url: str, branch: str):
+        super().__init__()
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.set_child(self.main_box)
+
+        self.url = Adw.EntryRow(title="Repository URL", valign=Gtk.Align.CENTER, editable=False, text=url, sensitive=False)
+        self.main_box.append(self.url)
+
+        self.branch = Adw.EntryRow(title="Branch", valign=Gtk.Align.CENTER, editable=False, text=branch, sensitive=False)
+        self.main_box.append(self.branch)
+
+        self.button_remove = Gtk.Button(label="Remove", valign=Gtk.Align.CENTER)
+        self.main_box.append(self.button_remove)
+
 
 class PerformancePage(Adw.PreferencesPage):
     def __init__(self, settings: Settings):

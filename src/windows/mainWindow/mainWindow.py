@@ -205,6 +205,7 @@ class MainWindow(Adw.ApplicationWindow):
             GLib.idle_add(self.split_view.set_collapsed, False)
             GLib.idle_add(self.sidebar_toggle_button.set_visible, True)
             GLib.idle_add(self.menu_button.set_optional_actions_state, True)
+            GLib.idle_add(self.split_view.set_collapsed, False)
             return
         
         elif error == "no-decks":
@@ -216,6 +217,7 @@ class MainWindow(Adw.ApplicationWindow):
         GLib.idle_add(self.deck_switcher.set_show_switcher, False)
         GLib.idle_add(self.sidebar_toggle_button.set_visible, False)
         GLib.idle_add(self.menu_button.set_optional_actions_state, False)
+        GLib.idle_add(self.split_view.set_collapsed, True)
 
     def check_for_errors(self):
         if len(gl.deck_manager.deck_controller) == 0:

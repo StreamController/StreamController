@@ -80,9 +80,9 @@ class PageManagerBackend:
         # print(pages)
         return pages
     
-    def get_page_names(self) -> list[str]:
+    def get_page_names(self, add_custom_pages: bool = True) -> list[str]:
         pages: list[str] = []
-        for page in self.get_pages():
+        for page in self.get_pages(add_custom_pages):
             pages.append(os.path.splitext(os.path.basename(page))[0])
         return pages
     

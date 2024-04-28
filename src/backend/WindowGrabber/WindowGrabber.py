@@ -37,10 +37,16 @@ class WindowGrabber:
         self.init_integration()
 
     def get_active_environment(self) -> str:
-        return os.getenv("XDG_CURRENT_DESKTOP").lower()
+        desktop = os.getenv("XDG_CURRENT_DESKTOP")
+        if desktop is None:
+            return
+        return desktop.lower()
     
     def get_active_server(self) -> str:
-        return os.getenv("XDG_SESSION_TYPE").lower()
+        env = os.getenv("XDG_SESSION_TYPE")
+        if env is None:
+            return
+        return env.lower()
     
     def init_integration(self) -> None:
         self.environment = self.get_active_environment()

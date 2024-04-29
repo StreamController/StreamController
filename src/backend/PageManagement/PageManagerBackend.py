@@ -142,11 +142,11 @@ class PageManagerBackend:
 
     def get_default_page_for_deck(self, serial_number: str) -> str:
         page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        return page_settings.get("default-pages", {}).get(serial_number, None)
-        for page in page_settings.get("default-pages", []):
-            if page["deck"] == serial_number:
-                path = page["path"]
-                return path
+        page_path = page_settings.get("default-pages", {}).get(serial_number, None)
+        if page_path is not None:
+            if not os.path.exists(page_path):
+                return None
+            return page_path
         return None
     
     def set_default_page_for_deck(self, serial_number: str, path: str):

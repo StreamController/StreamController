@@ -19,12 +19,16 @@ class Migrator_1_5_0(Migrator):
                 page = json.load(f)
 
             background_path = page.get("background", {}).get("path", "")
+            if background_path is None:
+                background_path = ""
             if "Core447::Material Icons" in background_path:
                 page["background"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
             if "Core447::Pixabay Favorites" in background_path:
                 page["background"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
 
             screensaver_path = page.get("screensaver", {}).get("path", "")
+            if screensaver_path is None:
+                screensaver_path = ""
             if "Core447::Material Icons" in screensaver_path:
                 page["screensaver"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
             if "Core447::Pixabay Favorites" in screensaver_path:
@@ -45,6 +49,8 @@ class Migrator_1_5_0(Migrator):
                         page["keys"][key]["labels"][label]["color"] = None
 
                 media_path = page["keys"][key].get("media", {}).get("path", "")
+                if media_path is None:
+                    media_path = ""
                 if "Core447::Material Icons" in media_path:
                     page["keys"][key]["media"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
 
@@ -62,12 +68,16 @@ class Migrator_1_5_0(Migrator):
                 deck = json.load(f)
 
             background_path = deck.get("background", {}).get("path", "")
+            if background_path is None:
+                background_path = ""
             if "Core447::Material Icons" in background_path:
                 deck["background"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
             if "Core447::Pixabay Favorites" in background_path:
                 deck["background"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
 
             screensaver_path = deck.get("screensaver", {}).get("path", "")
+            if screensaver_path is None:
+                screensaver_path = ""
             if "Core447::Material Icons" in screensaver_path:
                 deck["screensaver"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
             if "Core447::Pixabay Favorites" in screensaver_path:

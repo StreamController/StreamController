@@ -44,7 +44,7 @@ class Migrator_1_5_0(Migrator):
                     if page["keys"][key]["labels"][label].get("color") == [255, 255, 255, 255]:
                         page["keys"][key]["labels"][label]["color"] = None
 
-                media_path = page["keys"][key].get("media").get("path", "")
+                media_path = page["keys"][key].get("media", {}).get("path", "")
                 if "Core447::Material Icons" in media_path:
                     page["keys"][key]["media"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
 

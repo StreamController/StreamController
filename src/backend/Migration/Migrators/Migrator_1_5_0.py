@@ -22,17 +22,17 @@ class Migrator_1_5_0(Migrator):
             if background_path is None:
                 background_path = ""
             if "Core447::Material Icons" in background_path:
-                page["background"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+                page["background"]["path"] = page["background"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
             if "Core447::Pixabay Favorites" in background_path:
-                page["background"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+                page["background"]["path"] = page["background"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
 
             screensaver_path = page.get("screensaver", {}).get("path", "")
             if screensaver_path is None:
                 screensaver_path = ""
             if "Core447::Material Icons" in screensaver_path:
-                page["screensaver"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+                page["screensaver"]["path"] = page["screensaver"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
             if "Core447::Pixabay Favorites" in screensaver_path:
-                page["screensaver"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+                page["screensaver"]["path"] = page["screensaver"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
 
             for key in page.get("keys", {}):
                 for label in page["keys"][key].get("labels", {}):
@@ -52,10 +52,10 @@ class Migrator_1_5_0(Migrator):
                 if media_path is None:
                     media_path = ""
                 if "Core447::Material Icons" in media_path:
-                    page["keys"][key]["media"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+                    page["keys"][key]["media"]["path"] = page["keys"][key]["media"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
 
                 if "Core447::Pixabay Favorites" in media_path:
-                    page["keys"][key]["media"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+                    page["keys"][key]["media"]["path"] = page["keys"][key]["media"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
 
             with open(page_path, "w") as f:
                 json.dump(page, f, indent=4)
@@ -71,17 +71,17 @@ class Migrator_1_5_0(Migrator):
             if background_path is None:
                 background_path = ""
             if "Core447::Material Icons" in background_path:
-                deck["background"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+                deck["background"]["path"] = deck["background"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
             if "Core447::Pixabay Favorites" in background_path:
-                deck["background"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+                deck["background"]["path"] = deck["background"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
 
             screensaver_path = deck.get("screensaver", {}).get("path", "")
             if screensaver_path is None:
                 screensaver_path = ""
             if "Core447::Material Icons" in screensaver_path:
-                deck["screensaver"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+                deck["screensaver"]["path"] = deck["screensaver"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
             if "Core447::Pixabay Favorites" in screensaver_path:
-                deck["screensaver"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+                deck["screensaver"]["path"] = deck["screensaver"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
 
             with open(deck_path, "w") as f:
                 json.dump(deck, f, indent=4)

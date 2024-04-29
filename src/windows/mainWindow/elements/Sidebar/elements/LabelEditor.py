@@ -248,6 +248,8 @@ class LabelRow(Adw.PreferencesRow):
         current_deck_controller = visible_child.deck_controller
         if current_deck_controller is None:
             return
+        
+        page = current_deck_controller.active_page
 
         # Set defaults
         page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("labels", {})

@@ -13,11 +13,15 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+from typing import Type
 from gi.repository import Gtk
 
 class StateSwitcher(Gtk.ScrolledWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        # Keep track of signals - used to disconnect them in select_state
+        self.callbacks: list[callable] = []
 
         self.build()
 
@@ -47,10 +51,13 @@ class StateSwitcher(Gtk.ScrolledWindow):
         return n
 
     def set_n_states(self, n: int):
+        self._disconnect_signal()
         self.clear_stack()
 
         for i in range(n):
             self.stack.add_titled(Gtk.Box(), str(i+1), f"State {i+1}")
+
+        self._connect_signal()
 
     def on_add_click(self, button):
         n_states = self.get_n_states()
@@ -61,4 +68,24 @@ class StateSwitcher(Gtk.ScrolledWindow):
         return int(name) - 1
     
     def select_state(self, state: int):
+        self._disconnect_signal()
         self.stack.set_visible_child_name(str(state + 1))
+        self._connect_signal()
+
+    def _connect_signal(self):
+        self.stack.connect("notify::visible-child-name", self.on_state_switch)
+
+    def _disconnect_signal(self):
+        try:
+            self.stack.disconnect_by_func(self.on_state_switch)
+        except TypeError:
+            pass
+
+    def add_callback(self, callback: callable):
+        self.callbacks.append(callback)
+
+    def on_state_switch(self, *args):
+        print("on_state_switch called")
+        for callback in self.callbacks:
+            if callable(callback):
+                callback()

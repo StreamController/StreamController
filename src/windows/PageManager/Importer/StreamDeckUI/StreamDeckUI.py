@@ -55,6 +55,7 @@ class StreamDeckUIImporter:
 
 
         for deck in self.export.get("state", {}):
+            break #TODO
             ## Deck preferences
             preferences = {}
             preferences["brightness"] = {}

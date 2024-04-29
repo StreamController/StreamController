@@ -114,20 +114,20 @@ class ActionExpanderRow(BetterExpander):
             return
         
         
-        number_of_actions = len(controller.active_page.action_objects[page_coords])
-        for i, key in enumerate(controller.active_page.action_objects[page_coords]):
-            action = controller.active_page.action_objects[page_coords][key]
+        number_of_actions = len(controller.active_page.action_objects[page_coords].get(self.active_state, {}))
+        for i, key in enumerate(controller.active_page.action_objects[page_coords].get(self.active_state, {})):
+            action = controller.active_page.action_objects[page_coords][self.active_state][key]
             if isinstance(action, ActionBase):
                 # Get action comment
-                comment = controller.active_page.get_action_comment(page_coords=page_coords, index=key)
+                comment = controller.active_page.get_action_comment(page_coords=page_coords, index=key, state=self.active_state)
 
                 self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, comment=comment, index=i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
-                missing_button_row = MissingActionButtonRow(action.id, page_coords, i)
+                missing_button_row = MissingActionButtonRow(action.id, page_coords, i, self.active_state)
                 self.add_row(missing_button_row)
             elif isinstance(action, ActionOutdated):
                 # No plugin installed for this action
-                missing_button_row = OutdatedActionRow(action.id, page_coords, i)
+                missing_button_row = OutdatedActionRow(action.id, page_coords, i, self.active_state)
                 self.add_row(missing_button_row)
                 
 
@@ -208,10 +208,10 @@ class ActionExpanderRow(BetterExpander):
             return
         page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
 
-        actions = controller.active_page.dict["keys"][page_coords]["actions"]
+        actions = controller.active_page.dict["keys"][page_coords]["states"][self.active_state]["actions"]
 
         reordered = self.reorder_index_after(actions, move_index, after_index)
-        controller.active_page.dict["keys"][page_coords]["actions"] = reordered
+        controller.active_page.dict["keys"][page_coords]["states"][self.active_state]["actions"] = reordered
         controller.active_page.save()
         # a = controller.active_page.action_objects
         # controller.active_page.action_objects = {}
@@ -220,7 +220,7 @@ class ActionExpanderRow(BetterExpander):
         action_objects = controller.active_page.action_objects[page_coords]
 
         reordered = self.reorder_action_objects(action_objects, move_index, after_index)
-        controller.active_page.action_objects[page_coords] = reordered
+        controller.active_page.action_objects[page_coords][self.active_state] = reordered
 
 
         controller.load_page(controller.active_page)
@@ -431,12 +431,14 @@ class AddActionButtonRow(Adw.PreferencesRow):
         page_coords = f"{self.expander.active_coords[0]}x{self.expander.active_coords[1]}"
 
         # Set missing values
-        active_page.dict.setdefault("keys", {"states": {self.state: {}}})
+        active_page.dict.setdefault("keys", {})
         active_page.dict["keys"].setdefault(page_coords, {})
-        active_page.dict["keys"][page_coords].setdefault("actions", [])
+        active_page.dict["keys"][page_coords].setdefault("states", {})
+        active_page.dict["keys"][page_coords]["states"].setdefault(str(self.expander.active_state), {})
+        active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)].setdefault("actions", [])
 
         # Add action
-        active_page.dict["keys"][page_coords]["actions"].append({
+        active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"].append({
             "id": action_class.action_id,
             "settings": {}
         })
@@ -449,7 +451,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         active_page.reload_similar_pages(page_coords=page_coords)
 
         # Reload ui
-        self.expander.load_for_coords(self.expander.active_coords)
+        self.expander.load_for_coords(self.expander.active_coords, self.expander.active_state)
 
         # Reload key
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()

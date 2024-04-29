@@ -66,7 +66,7 @@ class SingleKeyAsset:
         return image.copy()
     
     def generate_final_image(self, background: Image.Image = None, labels: dict = {}) -> Image.Image:
-        layout = self.controller_key.layout_manager.get_composed_layout()
+        layout = self.controller_key.get_active_state().layout_manager.get_composed_layout()
 
         foreground = self.get_raw_image()
         if foreground is None:

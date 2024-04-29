@@ -376,12 +376,13 @@ class PageManagerBackend:
             with open(page_path, "r") as f:
                 page_dict = json.load(f)
                 for key in page_dict.get("keys", {}):
-                    dict_path = page_dict["keys"][key].get("media", {}).get("path")
-                    if dict_path is None:
-                        continue
-                    if os.path.abspath(dict_path) == os.path.abspath(path):
-                        page_had_asset = True
-                        page_dict["keys"][key]["media"]["path"] = None
+                    for state in page_dict["keys"][key].get("states", {}):
+                        dict_path = page_dict["keys"][key]["states"][state].get("media", {}).get("path")
+                        if dict_path is None:
+                            continue
+                        if os.path.abspath(dict_path) == os.path.abspath(path):
+                            page_had_asset = True
+                            page_dict["keys"][key]["states"][state]["media"]["path"] = None
 
             if page_had_asset:
                 with open(page_path, "w") as f:

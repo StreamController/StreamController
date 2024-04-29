@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.HelperMethods import add_default_keys
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
@@ -107,17 +109,7 @@ class IconSelector(Gtk.Box):
         
         active_state = self.sidebar.active_state
 
-        if "keys" not in active_page_dict:
-            return None
-        if active_state not in active_page_dict["keys"]:
-            return None
-        if page_coords not in active_page_dict["keys"]:
-            return None
-        if "media" not in active_page_dict["keys"][page_coords]:
-            return None
-        if "path" not in active_page_dict["keys"][page_coords]["media"]:
-            return None
-        return active_page_dict["keys"][page_coords]["media"]["path"]
+        return active_page_dict.get("keys", {}).get(page_coords, {}).get("states", {}).get(active_state, {}).get("media", {}).get("path")
     
     def set_media_path(self, path):
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
@@ -132,14 +124,13 @@ class IconSelector(Gtk.Box):
         active_coords:tuple = self.sidebar.active_coords
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
-        active_page.dict.setdefault("keys", {"states": {self.state: {}}})
-        active_page.dict["keys"].setdefault(page_coords, {})
-        active_page.dict["keys"][page_coords].setdefault("media", {
+        add_default_keys(active_page.dict, ["keys", page_coords, "states", self.state])
+        active_page.dict["keys"][page_coords]["states"][str(self.state)].setdefault("media", {
             "path": None,
             "loop": True,
             "fps": 30
         })
-        active_page.dict["keys"][page_coords]["media"]["path"] = path
+        active_page.dict["keys"][page_coords]["states"][str(self.state)]["media"]["path"] = path
 
         # Save page
         active_page.save()

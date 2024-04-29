@@ -217,3 +217,17 @@ def natural_sort(strings_list: list[str]) -> list[str]:
 def natural_sort_by_filenames(paths_list: list[str]) -> list[str]:
     sorted_paths = sorted(paths_list, key=lambda path: natural_keys(os.path.basename(path)))
     return sorted_paths
+
+def add_default_keys(d: dict, keys: list):
+    """
+    Add nested default keys to a dictionary.
+
+    :param d: The dictionary to add keys to.
+    :param keys: A list of keys to create nested dictionaries for.
+    :return: None; the dictionary is modified in place.
+    """
+    current_level = d
+    for key in keys:
+        if key not in current_level:
+            current_level[key] = {}
+        current_level = current_level[key]

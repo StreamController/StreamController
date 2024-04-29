@@ -190,17 +190,20 @@ class KeyButton(Gtk.Frame):
         
         ## Fetch own key_dict
         target_y, target_x = self.coords
-        target_key_dict = active_page.dict.get("keys", {}).get(f"{target_x}x{target_y}", {})
+        target_key_dict = active_page.dict.get("keys", {}).get("states", {}).get(str(self.state), {}).get(f"{target_x}x{target_y}", {})
 
         ## Fetch dropped key_dict
         dropped_button = drop.get_value()
         dropped_y, dropped_x = dropped_button.coords
-        dropped_key_dict = active_page.dict.get("keys", {}).get(f"{dropped_x}x{dropped_y}", {})
+        dropped_state = str(dropped_button.state)
+        dropped_key_dict = active_page.dict.get("keys", {}).get(f"{dropped_x}x{dropped_y}", {}).get("states", {}).get(dropped_state, {})
 
         # Swap keys in the page dict
-        active_page.dict.setdefault("keys", {"states": {self.state: {}}})
-        active_page.dict["keys"][f"{target_x}x{target_y}"] = dropped_key_dict
-        active_page.dict["keys"][f"{dropped_x}x{dropped_y}"] = target_key_dict
+        active_page.dict.setdefault("keys", {})
+        active_page.dict["keys"].setdefault(f"{target_x}x{target_y}", {})
+        active_page.dict["keys"][f"{target_x}x{target_y}"].setdefault("states", {})
+        active_page.dict["keys"][f"{target_x}x{target_y}"]["states"][str(self.state)] = dropped_key_dict
+        active_page.dict["keys"][f"{dropped_x}x{dropped_y}"]["states"][dropped_state] = target_key_dict
         active_page.save()
 
         active_page.switch_actions_of_keys(f"{target_x}x{target_y}", f"{dropped_x}x{dropped_y}")
@@ -230,14 +233,15 @@ class KeyButton(Gtk.Frame):
 
         page_coords = f"{self.coords[1]}x{self.coords[0]}"
         
-        active_page.dict.setdefault("keys", {"states": {self.state: {}}})
         active_page.dict["keys"].setdefault(page_coords, {})
-        active_page.dict["keys"][page_coords].setdefault("media", {
+        active_page.dict["keys"][page_coords].setdefault("states", {})
+        active_page.dict["keys"][page_coords]["states"].setdefault(str(self.state), {})
+        active_page.dict["keys"][page_coords]["states"][str(self.state)].setdefault("media", {
             "path": None,
             "loop": True,
             "fps": 30
         })
-        active_page.dict["keys"][page_coords]["media"]["path"] = internal_path
+        active_page.dict["keys"][page_coords]["states"][str(self.state)]["media"]["path"] = internal_path
         # Save page
         active_page.save()
         key_index = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
@@ -364,6 +368,7 @@ class KeyButton(Gtk.Frame):
         if sidebar.active_coords == (self.coords[1], self.coords[0]):
             if not self.get_mapped():
                 return
+            
         sidebar.load_for_coords((self.coords[1], self.coords[0]), self.state)
 
     # Modifier
@@ -372,7 +377,7 @@ class KeyButton(Gtk.Frame):
         if active_page is None:
             return
         y, x = self.coords
-        key_dict = active_page.dict["keys"][f"{x}x{y}"]
+        key_dict = active_page.dict["keys"][f"{x}x{y}"][str(self.state)]
         gl.app.main_win.key_dict = key_dict
         content = Gdk.ContentProvider.new_for_value(key_dict)
         gl.app.main_win.key_clipboard.set_content(content)
@@ -392,7 +397,7 @@ class KeyButton(Gtk.Frame):
             return
         y, x = self.coords
         
-        active_page.dict["keys"][f"{x}x{y}"] = gl.app.main_win.key_dict
+        active_page.dict["keys"][f"{x}x{y}"][str(self.state)] = gl.app.main_win.key_dict
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
         # Reload ui
@@ -411,7 +416,9 @@ class KeyButton(Gtk.Frame):
         
         if f"{x}x{y}" not in active_page.dict["keys"]:
             return
-        del active_page.dict["keys"][f"{x}x{y}"]
+        if str(self.state) not in active_page.dict["keys"][f"{x}x{y}"]:
+            return
+        del active_page.dict["keys"][f"{x}x{y}"]["states"][str(self.state)]
         active_page.save()
         active_page.load()
 
@@ -434,7 +441,10 @@ class KeyButton(Gtk.Frame):
         if f"{x}x{y}" not in active_page.dict["keys"]:
             return
         
-        active_page.dict["keys"][f"{x}x{y}"]["media"]["path"] = None
+        if self.state not in active_page.dict["keys"][f"{x}x{y}"]["states"]:
+            return
+        
+        active_page.dict["keys"][f"{x}x{y}"]["states"][str(self.state)]["media"]["path"] = None
         active_page.save()
 
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)

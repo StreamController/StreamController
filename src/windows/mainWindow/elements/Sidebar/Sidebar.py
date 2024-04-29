@@ -112,6 +112,7 @@ class Sidebar(Adw.NavigationPage):
     def load_for_coords(self, coords: tuple[int, int], state: int):
         self.active_coords = coords
         self.active_state = state
+        self.key_editor.state_switcher.select_state(state)
         if not self.get_mapped():
             self.on_map_tasks.clear()
             self.on_map_tasks.append(lambda: self.load_for_coords(coords, state))
@@ -178,7 +179,7 @@ class KeyEditor(Gtk.Box):
         self.scrolled_window.set_child(self.main_box)
 
         self.state_switcher = StateSwitcher(margin_start=20, margin_end=20, margin_top=10, margin_bottom=10, hexpand=True)
-        self.state_switcher.stack.connect("notify::visible-child-name", self.on_state_switch)
+        self.state_switcher.add_callback(self.on_state_switch)
         self.state_switcher.set_n_states(0)
         self.main_box.append(self.state_switcher)
 
@@ -198,6 +199,7 @@ class KeyEditor(Gtk.Box):
         self.main_box.append(self.action_editor)
 
     def on_state_switch(self, *args):
+        print("on_state_switch")
         state = self.state_switcher.get_selected_state()
         # self.sidebar.active_state = self.state_switcher.get_selected_state()
 
@@ -210,7 +212,8 @@ class KeyEditor(Gtk.Box):
         
         key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
 
-        key.set_state(state)
+        key.set_state(state, update_sidebar=True)
+        print("on_state_switch end")
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
 

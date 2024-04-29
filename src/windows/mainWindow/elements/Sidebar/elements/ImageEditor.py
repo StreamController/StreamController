@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.HelperMethods import add_default_keys
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, Pango
@@ -163,11 +165,8 @@ class SizeRow(Adw.PreferencesRow):
         if deck_controller is None:
             return
 
-        deck_controller.active_page.dict.setdefault("keys", {"states": {self.state: {}}})
-        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
-
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["size"] = widget.get_value() / 100
+        add_default_keys(deck_controller.active_page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "media"])
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["media"]["size"] = widget.get_value() / 100
 
         deck_controller.active_page.save()
 
@@ -194,11 +193,8 @@ class SizeRow(Adw.PreferencesRow):
         if deck_controller is None:
             return
 
-        deck_controller.active_page.dict.setdefault("keys", {"states": {self.state: {}}})
-        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
-
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["size"] = None
+        add_default_keys(deck_controller.active_page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "media"])
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["media"]["size"] = None
 
         deck_controller.active_page.save()
 
@@ -295,11 +291,8 @@ class ValignRow(Adw.PreferencesRow):
         if deck_controller is None:
             return
 
-        deck_controller.active_page.dict.setdefault("keys", {"states": {self.state: {}}})
-        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
-
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["valign"] = widget.get_value()
+        add_default_keys(deck_controller.active_page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "media"])
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["media"]["valign"] = widget.get_value()
 
         deck_controller.active_page.save()
 
@@ -326,11 +319,8 @@ class ValignRow(Adw.PreferencesRow):
         if deck_controller is None:
             return
 
-        deck_controller.active_page.dict.setdefault("keys", {"states": {self.state: {}}})
-        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
-
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["valign"] = None
+        add_default_keys(deck_controller.active_page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "media"])
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["media"]["valign"] = None
 
         deck_controller.active_page.save()
 
@@ -424,11 +414,8 @@ class HalignRow(Adw.PreferencesRow):
         if deck_controller is None:
             return
 
-        deck_controller.active_page.dict.setdefault("keys", {"states": {self.state: {}}})
-        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
-
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["halign"] = widget.get_value()
+        add_default_keys(deck_controller.active_page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "media"])
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["media"]["halign"] = widget.get_value()
 
         deck_controller.active_page.save()
 
@@ -455,11 +442,8 @@ class HalignRow(Adw.PreferencesRow):
         if deck_controller is None:
             return
 
-        deck_controller.active_page.dict.setdefault("keys", {"states": {self.state: {}}})
-        deck_controller.active_page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("media", {})
-
-        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["media"]["halign"] = None
+        add_default_keys(deck_controller.active_page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "media"])
+        deck_controller.active_page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["media"]["halign"] = None
 
         deck_controller.active_page.save()
 

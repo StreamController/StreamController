@@ -124,7 +124,7 @@ class CommentGroup(Adw.PreferencesGroup):
         page = controller.active_page
         if page is None:
             return
-        return page.get_action_comment(self.action.page_coords, self.index)
+        return page.get_action_comment(self.action.page_coords, self.index, self.action.state)
     
     def set_comment(self, comment: str) -> None:
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
@@ -240,14 +240,15 @@ class RemoveButton(Gtk.Button):
         page.fix_action_objects_order(self.action.page_coords)
 
         # Remove from page json
-        page.dict["keys"][self.action.page_coords]["actions"].pop(self.index)
+        page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["actions"].pop(self.index)
         page.save()
 
         # Reload configurator
         self.configurator.sidebar.load_for_coords(self.action.page_coords.split("x"), self.action.state)
 
         # Check whether we have to reload the key
-        load = not page.has_key_an_image_controlling_action(self.action.page_coords)
+        load = not page.has_key_an_image_controlling_action(self.action, self.action.state)
+        load = True # TODO
         if load:
             key_index = page.deck_controller.coords_to_index(self.action.page_coords.split("x"))
             controller.load_key(key_index, page=page)

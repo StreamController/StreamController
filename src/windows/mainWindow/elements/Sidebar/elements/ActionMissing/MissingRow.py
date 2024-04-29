@@ -123,7 +123,7 @@ class MissingRow(Adw.PreferencesRow):
         del page.action_objects[self.page_coords][self.index]
 
         # Remove from page json
-        page.dict["keys"][self.page_coords]["actions"].pop(self.index)
+        page.dict["keys"][self.page_coords][str(self.state)]["actions"].pop(self.index)
         page.save()
 
         # Reload configurator ui

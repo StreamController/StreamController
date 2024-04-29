@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.a import add_default_keys
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, Pango, GLib
@@ -177,7 +179,6 @@ class LabelRow(Adw.PreferencesRow):
         return controller.keys[controller.coords_to_index((x, y))]
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
-        print("update labels")
         self.active_coords = coords
         self.state = state
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
@@ -253,12 +254,11 @@ class LabelRow(Adw.PreferencesRow):
             return
 
         # Set defaults
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("labels", {})
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"].setdefault(self.key_name, {})
+        add_default_keys(page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "labels", self.key_name])
 
         # Get active page
         page = current_deck_controller.active_page
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["color"] = [red, green, blue]
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["color"] = [red, green, blue]
         page.save()
 
         # Reload key on all decks that have this page loaded
@@ -306,11 +306,10 @@ class LabelRow(Adw.PreferencesRow):
         page = current_deck_controller.active_page
 
         # Set defaults
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("labels", {})
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"].setdefault(self.key_name, {})
+        add_default_keys(page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "labels", self.key_name])
 
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-family"] = pango_font.get_family()
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-size"] = round(font_size/Pango.SCALE)
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["font-family"] = pango_font.get_family()
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["font-size"] = round(font_size/Pango.SCALE)
 
         page.save()
 
@@ -337,8 +336,8 @@ class LabelRow(Adw.PreferencesRow):
         # Set to null
         # Hide
         page = self.get_page()
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-family"] = None
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["font-size"] = None
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["font-family"] = None
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["font-size"] = None
 
         page.save()
 
@@ -370,7 +369,7 @@ class LabelRow(Adw.PreferencesRow):
 
     def on_reset_text(self, button):
         page = self.get_page()
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"] = None
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["text"] = None
 
         page.save()
 
@@ -391,17 +390,17 @@ class LabelRow(Adw.PreferencesRow):
                 continue
             controller_key = deck_controller.keys[key_index]
 
-            label = controller_key.label_manager.page_labels.get(self.key_name)
+            label = controller_key.get_active_state().label_manager.page_labels.get(self.key_name)
             if label is not None:
                 label.text = None
-            controller_key.label_manager.update_label(position=self.key_name)
+            controller_key.get_active_state().label_manager.update_label(position=self.key_name)
 
         self.text_entry.revert_button.set_visible(False)
         self.update_values()
 
     def on_reset_color(self, button):
         page = self.get_page()
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["color"] = None
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["color"] = None
 
         page.save()
 
@@ -440,12 +439,7 @@ class LabelRow(Adw.PreferencesRow):
 
         # Set defaults
         coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
-        page.dict.setdefault("keys", {})
-        page.dict["keys"].setdefault(coords, {})
-        page.dict["keys"][coords].setdefault("states", {})
-        page.dict["keys"][coords]["states"].setdefault(str(self.state), {})
-        page.dict["keys"][coords]["states"][str(self.state)].setdefault("labels", {})
-        page.dict["keys"][coords]["states"][str(self.state)]["labels"].setdefault(self.key_name, {})
+        add_default_keys(page.dict, ["keys", coords, "states", str(self.state), "labels", self.key_name])
         page.dict["keys"][coords]["states"][str(self.state)]["labels"][self.key_name]["text"] = entry.get_text()
         page.save()
 
@@ -508,7 +502,7 @@ class LabelRow(Adw.PreferencesRow):
         if current_deck_controller is None:
             return
         page = current_deck_controller.active_page
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["stroke-width"] = round(self.stroke_width_button.get_value())
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["stroke-width"] = round(self.stroke_width_button.get_value())
         page.save()
 
         # Reload key on all decks that have this page loaded
@@ -528,14 +522,14 @@ class LabelRow(Adw.PreferencesRow):
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
             return
-        ontroller = visible_child.deck_controller
+        controller = visible_child.deck_controller
         if controller is None:
             return
         page = controller.active_page
 
         # Update ui
-        self.text_entry.set_text(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["text"])
-        self.stroke_width_button.set_value(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["labels"][self.key_name]["stroke-width"])
+        self.text_entry.set_text(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["text"])
+        self.stroke_width_button.set_value(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["stroke-width"])
 
 class TextEntry(Gtk.Box):
     def __init__(self, **kwargs):

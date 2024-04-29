@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.a import add_default_keys
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, Pango
@@ -141,11 +143,9 @@ class ColorRow(Adw.PreferencesRow):
         page = controller.active_page
 
         # Set defaults
-        page.dict.setdefault("keys", {"states": {self.state: {}}})
-        page.dict["keys"].setdefault(f"{self.active_coords[0]}x{self.active_coords[1]}", {})
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("background", {})
+        add_default_keys(page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.active_state), "background"])
 
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["background"]["color"] = [red, green, blue, alpha]
+        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.active_state)]["background"]["color"] = [red, green, blue, alpha]
         page.save()
 
         # Reload key
@@ -171,7 +171,7 @@ class ColorRow(Adw.PreferencesRow):
         if page is None:
             return
 
-        self.set_color(page.dict.get("keys", {}).get(f"{self.active_coords[0]}x{self.active_coords[1]}", {}).get("background", {}).get("color", [0, 0, 0, 0]))
+        self.set_color(page.dict.get("keys", {}).get(f"{self.active_coords[0]}x{self.active_coords[1]}", {}).get("states", {}).get(str(self.active_state), {}).get("background", {}).get("color", [0, 0, 0, 0]))
 
         self.connect_signals()
 

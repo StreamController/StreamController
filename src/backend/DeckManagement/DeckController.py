@@ -51,7 +51,7 @@ import psutil
 process = psutil.Process()
 
 import gi
-from gi.repository import Gio
+from gi.repository import Gio, GLib
 
 # Import signals
 from src.Signals import Signals
@@ -1216,7 +1216,7 @@ class ControllerKey:
             self.states[i] = ControllerKeyState(self, i)
 
     def get_active_state(self) -> "ControllerKeyState":
-        return self.states.get(self.state, ControllerKeyState(self, 0))
+        return self.states.get(self.state)
 
 
     def get_current_deck_image(self) -> Image.Image:
@@ -1308,7 +1308,7 @@ class ControllerKey:
     def update(self) -> None:
         self.deck_controller.update_key(self.key)
 
-    def set_state(self, state: int, update: bool = True) -> None:
+    def set_state(self, state: int, update_key: bool = True, update_sidebar: bool = True) -> None:
         if state == self.state:
             return
         
@@ -1317,8 +1317,14 @@ class ControllerKey:
             return
         self.state = state
 
-        if update:
+        self.get_own_ui_key().state = state
+
+        self.get_active_state().own_actions_ready()
+
+        if update_key:
             self.update()
+
+        if update_sidebar:
             self.reload_sidebar()
 
 
@@ -1345,35 +1351,9 @@ class ControllerKey:
         print("reload")
         print(f"active_state: {self.state}, state: {self.state}")
         gl.app.main_win.sidebar.active_state = self.state
-        gl.app.main_win.sidebar.reload()
+        GLib.idle_add(gl.app.main_win.sidebar.reload)
 
-    def set_key_image(self, key_image: "KeyImage", update: bool = True) -> None:
-        if self.key_image is not None:
-            self.key_image.close()
-
-        self.key_image = key_image
-        self.key_video = None
-
-        if update:
-            self.update()
-
-    def set_key_video(self, key_video: "KeyVideo") -> None:
-        self.key_video = key_video
-        if self.key_image is not None:
-            self.key_image.close()
-        self.key_image = None
-
-    def remove_label(self, position: str = "center", update: bool = True) -> None:
-        if position not in ["top", "center", "bottom"]:
-            log.error(f"Invalid position: {position}, must be one of 'top', 'center', or 'bottom'.")
-            return
-        
-        if position not in self.labels:
-            return
-        del self.labels[position]
-
-        if update:
-            self.update()
+    
 
     def add_labels_to_image(self, _image: Image.Image) -> Image.Image:
         # image = _image.copy()
@@ -1472,6 +1452,8 @@ class ControllerKey:
         n_states = len(page_dict.get("states", {}))
         self.create_n_states(max(1, n_states))
 
+        self.state = 0
+
         #TODO: Reset states
         for state in page_dict.get("states", {}):
             state: ControllerKeyState = self.states.get(int(state))
@@ -1492,7 +1474,8 @@ class ControllerKey:
             layout = KeyLayout()
             state.layout_manager.set_action_layout(layout, update=False)
 
-            state.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
+            self.get_active_state().own_actions_ready()
+            # state.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
 
             ## Load labels
             if load_labels:
@@ -1590,20 +1573,21 @@ class ControllerKey:
     def get_own_ui_key(self) -> KeyButton:
         x, y = self.deck_controller.index_to_coords(self.key)
         buttons = self.deck_controller.get_own_key_grid().buttons # The ui key coords are in reverse order
-        return buttons[x][y]
+        return buttons[y][x]
     
     
     
-    def on_key_change(self, state) -> None:
-        return
-        self.press_state = state
+    def on_key_change(self, press_state) -> None:
+        self.press_state = press_state
 
         self.update()
 
-        if state:
-            self.own_actions_key_down_threaded()
+        state = self.get_active_state()
+
+        if press_state:
+            state.own_actions_key_down_threaded()
         else:
-            self.own_actions_key_up_threaded()
+            state.own_actions_key_up_threaded()
 
 
     
@@ -1628,8 +1612,7 @@ class ControllerKey:
         # self.labels.clear()
 
     def has_unavailable_action(self) -> bool:
-        return True
-        for action in self.get_own_actions():
+        for action in self.get_active_state().get_own_actions():
             if isinstance(action, ActionOutdated):
                 return True
             if isinstance(action, NoActionHolderFound):
@@ -1662,26 +1645,51 @@ class ControllerKeyState:
             del self.key_video
 
     def get_own_actions(self) -> list["ActionBase"]:
-        return []
-        active_page = self.deck_controller.active_page
+        active_page = self.controller_key.deck_controller.active_page
         if active_page is None:
             return []
         if active_page.action_objects is None:
             return []
-        own_coords = self.deck_controller.index_to_coords(self.key)
+        own_coords = self.controller_key.deck_controller.index_to_coords(self.controller_key.key)
         page_coords = f"{own_coords[0]}x{own_coords[1]}"
-        actions =  active_page.get_all_actions_for_key(page_coords)
+        actions =  active_page.get_all_actions_for_key_and_state(page_coords, self.state)
 
         return actions
+    
+    def set_key_image(self, key_image: "KeyImage", update: bool = True) -> None:
+        if self.key_image is not None:
+            self.key_image.close()
 
-        actions = list(active_page.action_objects.get(page_coords, {}).values())
-        # Remove all NoActionHolderFound objects
-        actions = [action for action in actions if not (isinstance(action, NoActionHolderFound) or action is None)]
-        return actions
+        self.key_image = key_image
+        self.key_video = None
+
+        if update:
+            self.update()
+
+    def set_key_video(self, key_video: "KeyVideo") -> None:
+        self.key_video = key_video
+        if self.key_image is not None:
+            self.key_image.close()
+        self.key_image = None
+
+    def remove_label(self, position: str = "center", update: bool = True) -> None:
+        if position not in ["top", "center", "bottom"]:
+            log.error(f"Invalid position: {position}, must be one of 'top', 'center', or 'bottom'.")
+            return
+        
+        if position not in self.labels:
+            return
+        del self.labels[position]
+
+        if update:
+            self.update()
+
+    def update(self) -> None:
+        if self.controller_key.state == self.state:
+            self.controller_key.update()
 
     @log.catch
     def call_action_ready_and_set_flag(self, action: "ActionBase") -> None:
-        return
         if not isinstance(action, ActionBase):
             return
         action.on_ready()
@@ -1695,7 +1703,6 @@ class ControllerKeyState:
 
     @log.catch
     def own_actions_key_down(self) -> None:
-        return
         for action in self.get_own_actions():
             if isinstance(action, ActionOutdated):
                 _id = action.id
@@ -1713,7 +1720,6 @@ class ControllerKeyState:
 
     @log.catch
     def own_actions_key_up(self) -> None:
-        return
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):
                 continue
@@ -1721,7 +1727,6 @@ class ControllerKeyState:
 
     @log.catch
     def own_actions_tick(self) -> None:
-        return
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):
                 continue

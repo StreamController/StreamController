@@ -15,7 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
-from src.backend.DeckManagement.a import add_default_keys
+from src.backend.DeckManagement.HelperMethods import add_default_keys
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")

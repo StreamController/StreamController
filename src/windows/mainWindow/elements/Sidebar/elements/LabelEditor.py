@@ -15,8 +15,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
-from src.backend.DeckManagement.a import add_default_keys
-
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, Pango, GLib
@@ -25,7 +23,7 @@ from gi.repository import Gtk, Adw, Gdk, Pango, GLib
 from loguru import logger as log
 
 # Import own modules
-from src.backend.DeckManagement.HelperMethods import font_path_from_name, font_name_from_path
+from src.backend.DeckManagement.HelperMethods import add_default_keys, font_path_from_name, font_name_from_path
 from src.backend.PageManagement.Page import NoActionHolderFound, Page
 from src.backend.DeckManagement.DeckController import ControllerKey, KeyLabel
 from GtkHelper.GtkHelper import RevertButton

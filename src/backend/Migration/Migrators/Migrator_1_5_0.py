@@ -18,6 +18,18 @@ class Migrator_1_5_0(Migrator):
             with open(page_path, "r") as f:
                 page = json.load(f)
 
+            background_path = page.get("background", {}).get("path", "")
+            if "Core447::Material Icons" in background_path:
+                page["background"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+            if "Core447::Pixabay Favorites" in background_path:
+                page["background"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+
+            screensaver_path = page.get("screensaver", {}).get("path", "")
+            if "Core447::Material Icons" in screensaver_path:
+                page["screensaver"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+            if "Core447::Pixabay Favorites" in screensaver_path:
+                page["screensaver"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+
             for key in page.get("keys", {}):
                 for label in page["keys"][key].get("labels", {}):
                     if page["keys"][key]["labels"][label].get("text") == "":
@@ -32,8 +44,37 @@ class Migrator_1_5_0(Migrator):
                     if page["keys"][key]["labels"][label].get("color") == [255, 255, 255, 255]:
                         page["keys"][key]["labels"][label]["color"] = None
 
+                media_path = page["keys"][key].get("media").get("path", "")
+                if "Core447::Material Icons" in media_path:
+                    page["keys"][key]["media"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+
+                if "Core447::Pixabay Favorites" in media_path:
+                    page["keys"][key]["media"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+
             with open(page_path, "w") as f:
                 json.dump(page, f, indent=4)
+
+        for deck_path in os.listdir(os.path.join(gl.DATA_PATH, "settings", "decks")):
+            if not deck_path.endswith(".json"):
+                continue
+            deck_path = os.path.join(gl.DATA_PATH, "settings", "decks", deck_path)
+            with open(deck_path, "r") as f:
+                deck = json.load(f)
+
+            background_path = deck.get("background", {}).get("path", "")
+            if "Core447::Material Icons" in background_path:
+                deck["background"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+            if "Core447::Pixabay Favorites" in background_path:
+                deck["background"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+
+            screensaver_path = deck.get("screensaver", {}).get("path", "")
+            if "Core447::Material Icons" in screensaver_path:
+                deck["screensaver"]["path"].replace("Core447::Material Icons", "com_core447_MaterialIcons")
+            if "Core447::Pixabay Favorites" in screensaver_path:
+                deck["screensaver"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
+
+            with open(deck_path, "w") as f:
+                json.dump(deck, f, indent=4)
 
         # Update icons and wallapers to id system
         if os.path.exists(os.path.join(gl.DATA_PATH, "icons", "Core447::Material Icons")):

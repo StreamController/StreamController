@@ -1345,20 +1345,19 @@ class ControllerKey:
             font_size = labels[label].font_size
             font = ImageFont.truetype(font_path, font_size)
 
-            if text is None:
-                continue
-            
+            _, _, w, h = draw.textbbox((0, 0), text, font=font)
+
             if label == "top":
-                position = (image.width / 2, font_size*1.125)
+                position = (image.width / 2, h/2 + 3)
 
             if label == "center":
-                position = (image.width / 2, (image.height + font_size) / 2 - 3)
+                position = ((image.width - 0) / 2, (image.height - 0) / 2)
 
             if label == "bottom":
-                position = (image.width / 2, image.height*0.875)
+                position = (image.width / 2, image.height - h/2 - 3)
 
             draw.text(position,
-                        text=text, font=font, anchor="ms",
+                        text=text, font=font, anchor="mm",
                         fill=color, stroke_width=2,
                         stroke_fill="black")
             

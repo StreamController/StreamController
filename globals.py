@@ -67,11 +67,29 @@ threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 
-app_version: str = "1.4.11-beta" # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
-release_notes: str = "<ul> \
-    <li>Bugfixes</li> \
-    <li>Svg support</li> \
-    </ul>"
+release_notes: str = """
+<ul>
+    <li>Allow image sizes above 100%</li>
+    <li>Add remove button to custom asset chooser</li>
+    <li>Add notifications for asset updates</li>
+    <li>New label overwrite system</li>
+    <li>Add autostart toggle to the settings</li>
+    <li>Add automatic page switching for X11</li>
+    <li>Plugin events by G4PLS</li>
+    <li>Improve import from streamdeck-ui</li>
+    <li>Add import/export options for pages</li>
+    <li>Sort pages naturally in the page selector</li>
+    <li>Reduce page switching time in large libraries</li>
+    <li>Improve the onboarding dialog</li>
+    <li>New store backend by G4PLS</li>
+    <li>Add basic API for page changes</li>
+    <li>Fix: Deck numbers not going higher than 2</li>
+    <li>Fix: Icons not showing in UI for Pedals</li>
+    <li>Fix: Not restoring after suspend</li>
+    <li>Fix: misc bugs</li>
+</ul>
+"""

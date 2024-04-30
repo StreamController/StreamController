@@ -41,6 +41,38 @@
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
+    <release version="1.5.0-beta" date="2024-05-01">
+      <description translatable="no">
+        <p>Features:</p>
+        <ul>
+          <li>Allow image sizes above 100%</li>
+          <li>Add remove button to custom asset chooser</li>
+          <li>Add notifications for asset updates</li>
+          <li>New label overwrite system</li>
+          <li>Add autostart toggle to the settings</li>
+          <li>Add automatic page switching for X11</li>
+          <li>Plugin events by G4PLS</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Improve import from streamdeck-ui</li>
+          <li>Add import/export options for pages</li>
+          <li>Sort pages naturally in the page selector</li>
+          <li>Reduce page switching time in large libraries</li>
+          <li>Improve the onboarding dialog</li>
+          <li>New store backend by G4PLS</li>
+          <li>Add basic API for page changes</li>
+        </ul>
+        <p>Fixes:</p>
+        <ul>
+          <li>Fix: Deck numbers not going higher than 2</li>
+          <li>Fix: Icons not showing in UI for Pedals</li>
+          <li>Fix: Not restoring after suspend</li>
+          <li>Fix: misc bugs</li>
+        </ul>
+      </description>
+    </release>
+
     <release version="1.4.11-beta" date="2024-04-14">
       <description translatable="no">
         <p>Bugfixes</p>

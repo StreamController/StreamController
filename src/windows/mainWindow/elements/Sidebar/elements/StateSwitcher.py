@@ -20,8 +20,8 @@ class StateSwitcher(Gtk.ScrolledWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # Keep track of signals - used to disconnect them in select_state
-        self.callbacks: list[callable] = []
+        self.switch_callbacks: list[callable] = []
+        self.add_new_callbacks: list[callable] = []
 
         self.build()
 
@@ -63,6 +63,10 @@ class StateSwitcher(Gtk.ScrolledWindow):
         n_states = self.get_n_states()
         self.stack.add_titled(Gtk.Box(), str(n_states + 1), f"State {n_states + 1}")
 
+        for callback in self.add_new_callbacks:
+            if callable(callback):
+                callback(n_states)
+
     def get_selected_state(self) -> int:
         name = self.stack.get_visible_child_name()
         return int(name) - 1
@@ -81,11 +85,14 @@ class StateSwitcher(Gtk.ScrolledWindow):
         except TypeError:
             pass
 
-    def add_callback(self, callback: callable):
-        self.callbacks.append(callback)
+    def add_switch_callback(self, callback: callable):
+        self.switch_callbacks.append(callback)
+
+    def add_add_new_callback(self, callback: callable):
+        self.add_new_callbacks.append(callback)
 
     def on_state_switch(self, *args):
         print("on_state_switch called")
-        for callback in self.callbacks:
+        for callback in self.switch_callbacks:
             if callable(callback):
                 callback()

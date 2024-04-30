@@ -179,7 +179,8 @@ class KeyEditor(Gtk.Box):
         self.scrolled_window.set_child(self.main_box)
 
         self.state_switcher = StateSwitcher(margin_start=20, margin_end=20, margin_top=10, margin_bottom=10, hexpand=True)
-        self.state_switcher.add_callback(self.on_state_switch)
+        self.state_switcher.add_switch_callback(self.on_state_switch)
+        self.state_switcher.add_add_new_callback(self.on_add_new_state)
         self.state_switcher.set_n_states(0)
         self.main_box.append(self.state_switcher)
 
@@ -214,6 +215,17 @@ class KeyEditor(Gtk.Box):
 
         key.set_state(state, update_sidebar=True)
         print("on_state_switch end")
+
+    def on_add_new_state(self, state):
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        
+        key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
+        key.add_new_state()
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
 

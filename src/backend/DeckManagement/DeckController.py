@@ -1215,6 +1215,37 @@ class ControllerKey:
         for i in range(n):
             self.states[i] = ControllerKeyState(self, i)
 
+    def add_new_state(self):
+        self.deck_controller.active_page.dict.setdefault("keys", {})
+        self.deck_controller.active_page.dict["keys"].setdefault(f"{self.coords[0]}x{self.coords[1]}", {})
+        self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"].setdefault("states", {})
+        self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"].setdefault(str(len(self.states)-1), {})
+        
+        # Add new state
+        self.states[len(self.states)] = ControllerKeyState(self, len(self.states))
+        # Write to json
+        for state in self.states.keys():
+            self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"].setdefault(str(state), {})
+
+        self.deck_controller.active_page.save()
+        gl.page_manager.update_dict_of_pages_with_path(self.deck_controller.active_page.json_path)
+
+    def remove_state(self, state: int):
+        if str(state) in self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"]:
+            self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"].pop(str(state))
+
+        self.deck_controller.active_page.save()
+        gl.page_manager.update_dict_of_pages_with_path(self.deck_controller.active_page.json_path)
+
+        for state in self.states.values():
+            state.close_resources()
+        
+        new_states = {}
+        for i in range(len(self.states) - 1):
+            new_states[str(i)] = self.states[i]
+        self.states = new_states
+
+
     def get_active_state(self) -> "ControllerKeyState":
         return self.states.get(self.state)
 

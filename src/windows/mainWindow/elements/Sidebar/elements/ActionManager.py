@@ -251,7 +251,7 @@ class ActionRow(Adw.PreferencesRow):
         self.total_rows = total_rows
         self.expander = expander
         self.build()
-        self.init_dnd()
+        # self.init_dnd() #FIXME: Add drag and drop
 
     def build(self):
         self.overlay = Gtk.Overlay()

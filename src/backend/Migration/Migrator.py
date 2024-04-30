@@ -1,7 +1,9 @@
 import json
+import shutil
 import globals as gl
 import os
 from packaging import version
+from loguru import logger as log
 
 class Migrator:
     SETTINGS_DIR = os.path.join(gl.DATA_PATH, "settings", "migrations.json")
@@ -39,3 +41,19 @@ class Migrator:
         os.makedirs(os.path.dirname(self.SETTINGS_DIR), exist_ok=True)
         with open(self.SETTINGS_DIR, "w") as f:
             json.dump(settings, f, indent=4)
+
+    def create_backup(self) -> None:
+        pages_path = os.path.join(gl.DATA_PATH, "pages")
+        if not os.path.exists(pages_path):
+            return
+        backup_path = os.path.join(gl.DATA_PATH, "backups")
+        os.makedirs(backup_path, exist_ok=True)
+
+        # Create zip
+        log.info(f"Creating backup to {backup_path}")
+        path = shutil.make_archive(
+            base_name=os.path.join(backup_path, f"before_{gl.app_version}_migration"),
+            format="zip",
+            root_dir=pages_path,
+        )
+        log.success(f"Saved backup to {path}")

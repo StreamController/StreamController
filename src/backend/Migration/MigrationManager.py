@@ -14,6 +14,7 @@ class MigrationManager:
         for migrator in self.get_ordered_migrators():
             if migrator.get_need_migration():
                 log.info(f"Running migrator to app version {migrator.app_version}")
+                migrator.create_backup()
                 migrator.migrate()
                 log.success(f"Successfully ran migrator to app version {migrator.app_version}")
 

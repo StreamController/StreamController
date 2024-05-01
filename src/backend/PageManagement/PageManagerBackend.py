@@ -26,6 +26,7 @@ from src.Signals import Signals
 
 # Import own modules
 from src.backend.PageManagement.Page import Page
+from src.backend.PageManagement.DummyPage import DummyPage
 from src.backend.DeckManagement.HelperMethods import natural_sort, natural_sort_by_filenames, recursive_hasattr
 
 # Import globals
@@ -50,6 +51,8 @@ class PageManagerBackend:
 
         self.auto_change_info = {}
         self.update_auto_change_info()
+
+        self.dummy_page = DummyPage()
 
     def set_n_pages_to_cache(self, n_pages):
         old_max_pages = self.max_pages

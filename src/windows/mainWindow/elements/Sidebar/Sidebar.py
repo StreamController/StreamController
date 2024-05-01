@@ -217,10 +217,7 @@ class KeyEditor(Gtk.Box):
         print("on_state_switch end")
 
     def on_add_new_state(self, state):
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
         

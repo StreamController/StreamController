@@ -133,24 +133,8 @@ class ColorRow(Adw.PreferencesRow):
         red = round(color.red * 255)
         alpha = round(color.alpha * 255)
 
-        # Get active page
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
-        if controller is None:
-            return
-        page = controller.active_page
-
-        # Set defaults
-        add_default_keys(page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.active_state), "background"])
-
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.active_state)]["background"]["color"] = [red, green, blue, alpha]
-        page.save()
-
-        # Reload key
-        key_index = controller.coords_to_index(self.active_coords)
-        controller.load_key(key_index, page=controller.active_page)
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_background_color(coords=self.active_coords, state=self.active_state, color=[red, green, blue, alpha])
 
         self.expander.reset_color_button.update()
 
@@ -160,18 +144,12 @@ class ColorRow(Adw.PreferencesRow):
         self.active_coords = coords
         self.active_state = state
 
-        # Get active page
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
-        if controller is None:
-            return
-        page = controller.active_page
-        if page is None:
-            return
+        active_page = gl.app.main_win.get_active_page()
+        color = active_page.get_background_color(coords=self.active_coords, state=self.active_state)
+        if color is None:
+            color = [0, 0, 0, 0]
 
-        self.set_color(page.dict.get("keys", {}).get(f"{self.active_coords[0]}x{self.active_coords[1]}", {}).get("states", {}).get(str(self.active_state), {}).get("background", {}).get("color", [0, 0, 0, 0]))
+        self.set_color(color)
 
         self.connect_signals()
 

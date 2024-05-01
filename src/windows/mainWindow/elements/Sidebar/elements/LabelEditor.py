@@ -140,10 +140,6 @@ class LabelRow(Adw.PreferencesRow):
         self.stroke_width_label = Gtk.Label(label=gl.lm.get("label-editor-font-weight-label"), xalign=0, hexpand=True)
         # self.stroke_width_box.append(self.stroke_width_label)
 
-        self.stroke_width_button = Gtk.SpinButton.new_with_range(0, 5, 1)
-        self.stroke_width_button.connect("value-changed", self.on_change_stroke_width)
-        # self.stroke_width_box.append(self.stroke_width_button)
-
         ## Connect reset buttons
         self.text_entry.revert_button.connect("clicked", self.on_reset_text)
         self.color_chooser_button.revert_button.connect("clicked", self.on_reset_color)
@@ -243,47 +239,10 @@ class LabelRow(Adw.PreferencesRow):
         green = round(color.green * 255)
         blue = round(color.blue * 255)
         red = round(color.red * 255)
+        alpha = round(color.alpha * 255)
 
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        current_deck_controller = visible_child.deck_controller
-        if current_deck_controller is None:
-            return
-
-        # Set defaults
-        add_default_keys(page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "labels", self.key_name])
-
-        # Get active page
-        page = current_deck_controller.active_page
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["color"] = [red, green, blue]
-        page.save()
-
-        # Reload key on all decks that have this page loaded
-        for deck_controller in gl.deck_manager.deck_controller:
-            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
-                continue
-            key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index >= len(deck_controller.keys):
-                continue
-            controller_key = deck_controller.keys[key_index]
-
-            page_label = controller_key.label_manager.page_labels.get(self.key_name)
-            if page_label is not None:
-                page_label.color = [red, green, blue]
-            controller_key.label_manager.update_label(position=self.key_name)
-
-        self.color_chooser_button.revert_button.set_visible(True)
-
-    def get_page(self) -> Page:
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
-        if controller is None:
-            return None
-        return controller.active_page
-        
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_label_font_color(coords=self.active_coords, state=self.state, label_position=self.key_name, font_color=[red, green, blue, alpha])
 
 
     def on_change_font(self, button):
@@ -294,177 +253,43 @@ class LabelRow(Adw.PreferencesRow):
         font_path = font_path_from_name(pango_font.get_family())
         font_size = pango_font.get_size()
 
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        current_deck_controller = visible_child.deck_controller
-        if current_deck_controller is None:
-            return
-        # Get active page
-        page = current_deck_controller.active_page
-
-        # Set defaults
-        add_default_keys(page.dict, ["keys", f"{self.active_coords[0]}x{self.active_coords[1]}", "states", str(self.state), "labels", self.key_name])
-
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["font-family"] = pango_font.get_family()
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["font-size"] = round(font_size/Pango.SCALE)
-
-        page.save()
-
-        # Reload key on all decks that have this page loaded
-        for deck_controller in gl.deck_manager.deck_controller:
-            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
-                continue
-            key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index >= len(deck_controller.keys):
-                continue
-            controller_key = deck_controller.keys[key_index]
-
-            page_label = controller_key.label_manager.page_labels.get(self.key_name)
-            if page_label is not None:
-                page_label.font_name = pango_font.get_family()
-                page_label.font_size = round(font_size/Pango.SCALE)
-            controller_key.label_manager.update_label(position=self.key_name)
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_label_font_family(coords=self.active_coords, state=self.state, label_position=self.key_name, font_family=pango_font.get_family(), update=False)
+        active_page.set_label_font_size(coords=self.active_coords, state=self.state, label_position=self.key_name, font_size=font_size/Pango.SCALE, update=True)
 
         self.font_chooser_button.revert_button.set_visible(True)
 
     def on_reset_font(self, button):
         #FIXME: gets called multiple times
-        # Update
-        # Set to null
-        # Hide
-        page = self.get_page()
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["font-family"] = None
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["font-size"] = None
-
-        page.save()
-
-        # Reload key on all decks that have this page loaded
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        current_deck_controller = visible_child.deck_controller
-        if current_deck_controller is None:
-            return
-        for deck_controller in gl.deck_manager.deck_controller:
-            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
-                continue
-            key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index >= len(deck_controller.keys):
-                continue
-            controller_key = deck_controller.keys[key_index]
-
-            self.update_values()
-
-            label = controller_key.label_manager.page_labels.get(self.key_name)
-            if label is not None:
-                label.font_name = None
-                label.font_size = None
-            controller_key.label_manager.update_label(position=self.key_name)
-            
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_label(coords=self.active_coords, state=self.state, label_position=self.key_name, font_family=None, update=False)
+        active_page.set_label_font_size(coords=self.active_coords, state=self.state, label_position=self.key_name, font_size=None, update=True)
 
         self.font_chooser_button.revert_button.set_visible(False)
 
     def on_reset_text(self, button):
-        page = self.get_page()
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["text"] = None
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_label_text(coords=self.active_coords, state=self.state, label_position=self.key_name, text=None)
 
-        page.save()
-
-        gl.page_manager.update_dict_of_pages_with_path(page.json_path)
-
-        # Reload key on all decks that have this page loaded
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        current_deck_controller = visible_child.deck_controller
-        if current_deck_controller is None:
-            return
-        for deck_controller in gl.deck_manager.deck_controller:
-            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
-                continue
-            key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index >= len(deck_controller.keys):
-                continue
-            controller_key = deck_controller.keys[key_index]
-
-            label = controller_key.get_active_state().label_manager.page_labels.get(self.key_name)
-            if label is not None:
-                label.text = None
-            controller_key.get_active_state().label_manager.update_label(position=self.key_name)
-
-        self.text_entry.revert_button.set_visible(False)
         self.update_values()
 
     def on_reset_color(self, button):
-        page = self.get_page()
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["color"] = None
-
-        page.save()
-
-        # Reload key on all decks that have this page loaded
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        current_deck_controller = visible_child.deck_controller
-        if current_deck_controller is None: 
-            return
-        for deck_controller in gl.deck_manager.deck_controller:
-            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
-                continue
-            key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index >= len(deck_controller.keys):
-                continue
-            controller_key = deck_controller.keys[key_index]
-
-            self.update_values()
-
-            label = controller_key.label_manager.page_labels.get(self.key_name)
-            if label is not None:
-                label.color = None
-            controller_key.label_manager.update_label(position=self.key_name)
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_label_font_color(coords=self.active_coords, state=self.state, label_position=self.key_name, font_color=None)
 
         self.color_chooser_button.revert_button.set_visible(False)
 
     def on_change_text(self, entry):
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        current_deck_controller = visible_child.deck_controller
-        if current_deck_controller is None:
-            return
-        page = current_deck_controller.active_page
+        text = entry.get_text()
 
-        # Set defaults
-        coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
-        add_default_keys(page.dict, ["keys", coords, "states", str(self.state), "labels", self.key_name])
-        page.dict["keys"][coords]["states"][str(self.state)]["labels"][self.key_name]["text"] = entry.get_text()
-        page.save()
-
-        # Hide settings if text is empty
-        vis = entry.get_text() != ""
-        self.font_chooser_box.set_visible(vis)
-        self.stroke_width_box.set_visible(vis)
-
-        # Reload key on all decks that have this page loaded
-        for current_deck_controller in gl.deck_manager.deck_controller:
-            if current_deck_controller.active_page.json_path != current_deck_controller.active_page.json_path:
-                continue
-            key_index = current_deck_controller.coords_to_index(self.active_coords)
-            if key_index >= len(current_deck_controller.keys):
-                continue
-            controller_key = current_deck_controller.keys[key_index]
-
-            page_label = controller_key.get_active_state().label_manager.page_labels.get(self.key_name)
-            if page_label is not None:
-                page_label.text = entry.get_text()
-            controller_key.get_active_state().label_manager.update_label(position=self.key_name)
-
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_label_text(coords=self.active_coords, state=self.state, label_position=self.key_name, text=text)
 
         self.text_entry.revert_button.set_visible(True)
 
     def add_new_label_if_needed(self):
         #TODO: Use this method to update everything on change
+        raise NotImplementedError #TODO: No longer needed
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
             return
@@ -490,44 +315,6 @@ class LabelRow(Adw.PreferencesRow):
             )
             controller_key.add_label(label, self.key_name, update=False)
 
-
-    def on_change_stroke_width(self, button):
-        self.add_new_label_if_needed()
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        current_deck_controller = visible_child.deck_controller
-        if current_deck_controller is None:
-            return
-        page = current_deck_controller.active_page
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["stroke-width"] = round(self.stroke_width_button.get_value())
-        page.save()
-
-        # Reload key on all decks that have this page loaded
-        for deck_controller in gl.deck_manager.deck_controller:
-            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
-                continue
-            key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index >= len(deck_controller.keys):
-                continue
-            controller_key = deck_controller.keys[key_index]
-
-            controller_key.labels[self.key_name].font_weight = round(self.stroke_width_button.get_value())
-            controller_key.update()
-
-
-    def load_defaults(self):
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
-        if controller is None:
-            return
-        page = controller.active_page
-
-        # Update ui
-        self.text_entry.set_text(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["text"])
-        self.stroke_width_button.set_value(page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["states"][str(self.state)]["labels"][self.key_name]["stroke-width"])
 
 class TextEntry(Gtk.Box):
     def __init__(self, **kwargs):

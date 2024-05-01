@@ -72,6 +72,8 @@ class StateSwitcher(Gtk.ScrolledWindow):
         return int(name) - 1
     
     def select_state(self, state: int):
+        if state >= self.get_n_states():
+            return
         self._disconnect_signal()
         self.stack.set_visible_child_name(str(state + 1))
         self._connect_signal()

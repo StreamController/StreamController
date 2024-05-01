@@ -1234,16 +1234,23 @@ class ControllerKey:
         if str(state) in self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"]:
             self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"].pop(str(state))
 
+        state_to_remove = self.states.get(state)
+        if state_to_remove:
+            state_to_remove.close_resources()
+            self.states.pop(state)
+
+        # Fill gaps in self.states
+        sorted_state_keys = sorted(self.states.keys())
+
+        new_states = {}
+        for new_key, old_key in enumerate(sorted_state_keys):
+            self.states[old_key].state = new_key
+            new_states[new_key] = self.states[old_key]
+
+        self.states = new_states
+
         self.deck_controller.active_page.save()
         gl.page_manager.update_dict_of_pages_with_path(self.deck_controller.active_page.json_path)
-
-        for state in self.states.values():
-            state.close_resources()
-        
-        new_states = {}
-        for i in range(len(self.states) - 1):
-            new_states[str(i)] = self.states[i]
-        self.states = new_states
 
 
     def get_active_state(self) -> "ControllerKeyState":

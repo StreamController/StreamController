@@ -30,6 +30,7 @@ from src.backend.PluginManager.ActionBase import ActionBase
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager.ActionHolder import ActionHolder
+    from src.backend.DeckManagement.DeckController import ControllerKeyState, ControllerKey
 
 class Page:
     def __init__(self, json_path, deck_controller, *args, **kwargs):
@@ -409,6 +410,197 @@ class Page:
             self.action_objects[page_coords][i] = action
 
         new_d = self.dict
+
+    
+    # Configuration
+    def _get_dict_value(self, keys: list[str]):
+        value = self.dict
+        for i, key in enumerate(keys):
+            fallback = {}
+            if i == len(keys) - 1:
+                fallback = None
+
+            value = value.get(key, fallback)
+        return value
+    
+    def _set_dict_value(self, keys: list[str], value, coords: str | tuple[int, int] = None, state: int = None):
+        d = self.dict
+        for i, key in enumerate(keys):
+            if i == len(keys) - 1:
+                d[key] = value
+            else:
+                d = d.setdefault(key, {})
+
+        self.save()
+        gl.page_manager.update_dict_of_pages_with_path(self.json_path)
+
+    def update_key_image(self, coords: str | tuple[int, int], state: int) -> None:
+        coords = self.get_tuple_coords(coords)
+        for controller in gl.deck_manager.deck_controller:
+            if controller.active_page.json_path != self.json_path:
+                continue
+            key_index = controller.coords_to_index(coords)
+            if key_index is None:
+                continue
+            if key_index > len(controller.keys) - 1:
+                continue
+            key = controller.keys[key_index]
+            if key.state == state:
+                key.update()
+
+    def get_controller_keys(self, coords: str | tuple[int, int]) -> list["ControllerKey"]:
+        coords = self.get_tuple_coords(coords)
+
+        keys: list["ControllerKey"] = []
+        for controller in gl.deck_manager.deck_controller:
+            if controller.active_page.json_path != self.json_path:
+                continue
+            key_index = controller.coords_to_index(coords)
+            if key_index is None:
+                continue
+            if key_index > len(controller.keys) - 1:
+                continue
+            keys.append(controller.keys[key_index])
+
+        return keys
+
+
+    def get_controller_key_states(self, coords: str | tuple[int, int], state: int) -> list["ControllerKeyState"]:
+        matching_states: list["ControllerKeyState"] = []
+
+        for key in self.get_controller_keys(coords):
+            for key_state in key.states.values():
+                if key_state.state == state:
+                    matching_states.append(key_state)
+
+        return matching_states
+    
+
+    def get_page_coords(self, coords: str | tuple[int, int]) -> str:
+        if isinstance(coords, tuple):
+            return f"{coords[0]}x{coords[1]}"
+        return coords
+    
+    def get_tuple_coords(self, coords: str | tuple[int, int]) -> tuple[int, int]:
+        if isinstance(coords, str):
+            return tuple(map(int, coords.split("x")))
+        return coords
+    
+    # Get/set methods
+
+    def get_label_text(self, coords: str | tuple[int, int], state: int, label_position: str) -> str:
+        coords = self.get_page_coords(coords)
+        return self._get_dict_value(["keys", coords, "states", str(state), "labels", label_position, "text"])
+    
+    def set_label_text(self, coords: str | tuple[int, int], state: int, label_position: str, text: str, update: bool = True) -> None:
+        coords = self.get_page_coords(coords)
+        for key_state in self.get_controller_key_states(coords, state):
+            key_state.label_manager.page_labels[label_position].text = text
+
+        self._set_dict_value(["keys", coords, "states", str(state), "labels", label_position, "text"], text, coords, state)
+
+        if update:
+            self.update_key_image(coords, state)
+
+    def get_label_font_family(self, coords: str | tuple[int, int], state: int, label_position: str) -> str:
+        coords = self.get_page_coords(coords)
+        return self._get_dict_value(["keys", coords, "states", str(state), "labels", label_position, "font-family"])
+    
+    def set_label_font_family(self, coords: str | tuple[int, int], state: int, label_position: str, font_family: str, update: bool = True) -> None:
+        coords = self.get_page_coords(coords)
+        for key_state in self.get_controller_key_states(coords, state):
+            key_state.label_manager.page_labels[label_position].font_family = font_family
+
+        self._set_dict_value(["keys", coords, "states", str(state), "labels", label_position, "font-family"], font_family, coords, state)
+
+        if update:
+            self.update_key_image(coords, state)
+
+    def get_label_font_size(self, coords: str | tuple[int, int], state: int, label_position: str) -> int:
+        coords = self.get_page_coords(coords)
+        return self._get_dict_value(["keys", coords, "states", str(state), "labels", label_position, "font-size"])
+    
+    def set_label_font_size(self, coords: str | tuple[int, int], state: int, label_position: str, font_size: int, update: bool = True) -> None:
+        coords = self.get_page_coords(coords)
+        for key_state in self.get_controller_key_states(coords, state):
+            key_state.label_manager.page_labels[label_position].font_size = font_size
+
+        self._set_dict_value(["keys", coords, "states", str(state), "labels", label_position, "font-size"], font_size, coords, state)
+
+        if update:
+            self.update_key_image(coords, state)
+
+    def get_label_font_color(self, coords: str | tuple[int, int], state: int, label_position: str) -> list[int]:
+        coords = self.get_page_coords(coords)
+        return self._get_dict_value(["keys", coords, "states", str(state), "labels", label_position, "color"])
+    
+    def set_label_font_color(self, coords: str | tuple[int, int], state: int, label_position: str, font_color: list[int], update: bool = True) -> None:
+        coords = self.get_page_coords(coords)
+        for key_state in self.get_controller_key_states(coords, state):
+            key_state.label_manager.page_labels[label_position].color = font_color
+
+        self._set_dict_value(["keys", coords, "states", str(state), "labels", label_position, "color"], font_color, coords, state)
+
+        if update:
+            self.update_key_image(coords, state)
+
+    def get_media_size(self, coords: str | tuple[int, int], state: int) -> float:
+        coords = self.get_page_coords(coords)
+        return self._get_dict_value(["keys", coords, "states", str(state), "media", "size"])
+    
+    def set_media_size(self, coords: str | tuple[int, int], state: int, size: float, update: bool = True) -> None:
+        coords = self.get_page_coords(coords)
+        for key_state in self.get_controller_key_states(coords, state):
+            key_state.layout_manager.media_size = size
+
+        self._set_dict_value(["keys", coords, "states", str(state), "media", "size"], size, coords, state)
+
+        if update:
+            self.update_key_image(coords, state)
+
+    def get_media_valign(self, coords: str | tuple[int, int], state: int) -> str:
+        coords = self.get_page_coords(coords)
+        return self._get_dict_value(["keys", coords, "states", str(state), "media", "valign"])
+
+    def set_media_valign(self, coords: str | tuple[int, int], state: int, valign: str, update: bool = True) -> None:
+        coords = self.get_page_coords(coords)
+        for key_state in self.get_controller_key_states(coords, state):
+            key_state.layout_manager.valign = valign
+
+        self._set_dict_value(["keys", coords, "states", str(state), "media", "valign"], valign, coords, state)
+
+        if update:
+            self.update_key_image(coords, state)
+
+    def get_media_halign(self, coords: str | tuple[int, int], state: int) -> str:
+        coords = self.get_page_coords(coords)
+        return self._get_dict_value(["keys", coords, "states", str(state), "media", "halign"])
+
+    def set_media_halign(self, coords: str | tuple[int, int], state: int, halign: str, update: bool = True) -> None:
+        coords = self.get_page_coords(coords)
+        for key_state in self.get_controller_key_states(coords, state):
+            key_state.layout_manager.halign = halign
+
+        self._set_dict_value(["keys", coords, "states", str(state), "media", "halign"], halign, coords, state)
+
+        if update:
+            self.update_key_image(coords, state)
+
+    def get_background_color(self, coords: str | tuple[int, int], state: int) -> list[int]:
+        coords = self.get_page_coords(coords)
+        return self._get_dict_value(["keys", coords, "states", str(state), "background", "color"])
+    
+    def set_background_color(self, coords: str | tuple[int, int], state: int, color: list[int], update: bool = True) -> None:
+        coords = self.get_page_coords(coords)
+
+        for key_state in self.get_controller_key_states(coords, state):
+            key_state.background_color = color
+
+        self._set_dict_value(["keys", coords, "states", str(state), "background", "color"], color, coords, state)
+
+        if update:
+            self.update_key_image(coords, state)
+
 
 class NoActionHolderFound:
     def __init__(self, id: str):

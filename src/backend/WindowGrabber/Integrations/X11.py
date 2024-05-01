@@ -39,14 +39,13 @@ class X11(Integration):
         super().__init__(window_grabber=window_grabber)
 
         portal = Xdp.Portal.new()
-        self.command_prefix = None
 
         self.flatpak = portal.running_under_flatpak()
 
         self.start_active_window_change_thread()
 
     def _run_command(self, command: list[str]) -> subprocess.Popen:
-        if self.command_prefix:
+        if self.flatpak:
             command.insert(0, "flatpak-spawn")
             command.insert(1, "--host")
         try:

@@ -48,7 +48,10 @@ class X11(Integration):
     def _run_command(self, command: list[str]) -> subprocess.Popen:
         if self.command_prefix:
             command.insert(0, self.command_prefix)
-        return subprocess.Popen(command, stdout=subprocess.PIPE, cwd="/")
+        try:
+            return subprocess.Popen(command, stdout=subprocess.PIPE, cwd="/")
+        except Exception as e:
+            log.error(f"An error occurred while running {command}: {e}")
 
     def start_active_window_change_thread(self):
         self.active_window_change_thread = WatchForActiveWindowChange(self)
@@ -59,6 +62,8 @@ class X11(Integration):
 
         try:
             root = self._run_command(["xprop", "-root", "_NET_CLIENT_LIST"])
+            if root is None:
+                return []
             stdout, stderr = root.communicate()
 
             window_ids = stdout.decode().split("#")[1].strip().split(", ")
@@ -80,6 +85,8 @@ class X11(Integration):
     def get_active_window(self) -> Window:
         try:
             root = self._run_command(["xprop", "-root", "_NET_ACTIVE_WINDOW"])
+            if root is None:
+                return
             stdout, stderr = root.communicate()
             window_id = stdout.strip().split()[-1]
         except subprocess.CalledProcessError as e:
@@ -99,6 +106,8 @@ class X11(Integration):
             return
         try:
             title_bytes = self._run_command(["xprop", "-id", window_id, "WM_NAME"]).communicate()[0]
+            if title_bytes is None:
+                return
             decoded = title_bytes.decode()
             split = decoded.split('"', 1)
             if len(split) < 2:
@@ -114,6 +123,8 @@ class X11(Integration):
             return
         try:
             class_bytes = self._run_command(["xprop", "-id", window_id, "WM_CLASS"]).communicate()[0]
+            if class_bytes is None:
+                return
             decoded = class_bytes.decode()
             split = decoded.split('"')
             if len(split) < 4:

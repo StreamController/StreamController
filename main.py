@@ -161,6 +161,8 @@ def reset_all_decks():
                 DeviceManager.USB_PID_STREAMDECK_MINI,
                 DeviceManager.USB_PID_STREAMDECK_XL,
                 DeviceManager.USB_PID_STREAMDECK_MK2,
+                DeviceManager.USB_PID_STREAMDECK_PEDAL,
+                DeviceManager.USB_PID_STREAMDECK_PLUS
             ]:
                 # Reset deck
                 usb.util.dispose_resources(device)

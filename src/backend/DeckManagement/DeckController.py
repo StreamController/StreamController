@@ -97,6 +97,7 @@ class MediaPlayerSetImageTask:
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] = 0
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck key image. Error: {e}")
+            return
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
             if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
                 log.debug(f"Failed to set key_image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
@@ -129,11 +130,18 @@ class MediaPlayerThread(threading.Thread):
 
         self.show_fps_warnings = gl.settings_manager.get_app_settings().get("warnings", {}).get("enable-fps-warnings", True)
 
-    @log.catch
+    # @log.catch
     def run(self):
         self.running = True
+
+        
+
+
         while True:
             start = time.time()
+
+            # self.check_connection()
+
             if not self.pause:
                 if self.deck_controller.background.video is not None:
                     if self.deck_controller.background.video.page is self.deck_controller.active_page:
@@ -246,12 +254,28 @@ class MediaPlayerThread(threading.Thread):
             except KeyError:
                 pass
 
+    def check_connection(self):
+        try:
+            self.deck_controller.deck.get_firmware_version()
+        except StreamDeck.TransportError as e:
+            log.error(f"Seams like the deck is not connected. Error: {e}")
+            MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
+            if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
+                log.debug(f"Failed to contact the deck 5 times in a row: {self.deck_controller.serial_number()}. Removing controller")
+                
+                self.deck_controller.deck.close()
+                self.deck_controller.media_player.running = False # Set stop flat - otherwise remove_controller will wait until this task is done, which it never will because it waiuts
+                gl.deck_manager.remove_controller(self.deck_controller)
+
+                gl.deck_manager.connect_new_decks()
+
 class DeckController:
     def __init__(self, deck_manager: "DeckManager", deck: StreamDeck.StreamDeck):
         self.deck_manager: DeckManager = deck_manager
         self.deck: StreamDeck = deck
         # Open the deck
         deck.open()
+        print()
         
         try:
             # Clear the deck
@@ -614,14 +638,12 @@ class DeckController:
             self.active_page.ready_to_clear = ready_to_clear
         
     def index_to_coords(self, index):
-        if not self.get_alive(): return
         rows, cols = self.deck.key_layout()    
         y = index // cols
         x = index % cols
         return x, y
     
     def coords_to_index(self, coords):
-        if not self.get_alive(): return
         x, y = map(int, coords)
         rows, cols = self.deck.key_layout()
         return y * cols + x
@@ -684,17 +706,19 @@ class DeckController:
         ))
 
     def delete(self):
-        if self.active_page is not None:
-            self.active_page.action_objects = {}
+        if hasattr(self, "active_page"):
+            if self.active_page is not None:
+                self.active_page.action_objects = {}
 
-        self.media_player.stop()
+        if hasattr(self, "media_player"):
+            self.media_player.stop()
 
         self.keep_actions_ticking = False
         self.deck.run_read_thread = False
 
     def get_alive(self) -> bool:
         try:
-            return self.deck.is_open
+            return self.deck.is_open()
         except Exception as e:
             log.debug(f"Cougth dead deck error. Error: {e}")
             return False
@@ -1533,6 +1557,7 @@ class ControllerKey:
         return buttons[x][y]
     
     def get_own_actions(self) -> list["ActionBase"]:
+        if not self.deck_controller.get_alive(): return []
         active_page = self.deck_controller.active_page
         if active_page is None:
             return []

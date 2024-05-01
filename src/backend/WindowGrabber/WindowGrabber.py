@@ -123,6 +123,14 @@ class WindowGrabber:
                     break
 
             if not found_page:
+                if deck_controller is None:
+                    return
+                if not hasattr(deck_controller, "page_auto_loaded"):
+                    return
+                if not deck_controller.deck.is_open():
+                    return
+                
+
                 if deck_controller.page_auto_loaded:
                     active_page_change_info = gl.page_manager.auto_change_info.get(os.path.abspath(deck_controller.active_page.json_path))
                     if active_page_change_info.get("stay_on_page", True):

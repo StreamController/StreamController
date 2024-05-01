@@ -48,7 +48,7 @@ class X11(Integration):
     def _run_command(self, command: list[str]) -> subprocess.Popen:
         if self.command_prefix:
             command.insert(0, self.command_prefix)
-        return subprocess.Popen(command, stdout=subprocess.PIPE)
+        return subprocess.Popen(command, stdout=subprocess.PIPE, cwd="/")
 
     def start_active_window_change_thread(self):
         self.active_window_change_thread = WatchForActiveWindowChange(self)

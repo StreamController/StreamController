@@ -40,14 +40,15 @@ class X11(Integration):
 
         portal = Xdp.Portal.new()
         self.command_prefix = None
-        if portal.running_under_flatpak():
-            self.command_prefix = "flatpak-spawn --host "
+
+        self.flatpak = portal.running_under_flatpak()
 
         self.start_active_window_change_thread()
 
     def _run_command(self, command: list[str]) -> subprocess.Popen:
         if self.command_prefix:
-            command.insert(0, self.command_prefix)
+            command.insert(0, "flatpak-spawn")
+            command.insert(1, "--host")
         try:
             return subprocess.Popen(command, stdout=subprocess.PIPE, cwd="/")
         except Exception as e:

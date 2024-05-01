@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import threading
 import gi
 
 
@@ -43,8 +44,11 @@ class DeckConfig(Gtk.Box):
         self.grid = KeyGrid(self.page_settings_page.deck_controller, self.page_settings_page)
         self.append(self.grid)
 
-        self.screenbar = ScreenBar(self.page_settings_page)
-        self.append(self.screenbar)
+        if self.page_settings_page.deck_controller.deck.is_touch():
+            self.screenbar = ScreenBar(self.page_settings_page)
+            self.append(self.screenbar)
 
-        self.dial_box = DialBox(self.page_settings_page)
+        self.dial_box = DialBox(self.page_settings_page.deck_controller, self.page_settings_page)
         self.append(self.dial_box)
+
+        threading.Timer(6, lambda: print(self.get_width())).start()

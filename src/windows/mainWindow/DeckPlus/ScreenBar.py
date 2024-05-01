@@ -13,8 +13,12 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import threading
 import gi
 
+from PIL import Image
+
+from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
 gi.require_version("Gtk", "4.0")
@@ -31,13 +35,25 @@ class ScreenBar(Gtk.Frame):
         self.page_settings_page = page_settings_page
         super().__init__(**kwargs)
         self.set_css_classes(["key-button-frame-hidden"])
+        self.set_halign(Gtk.Align.CENTER)
+        self.set_hexpand(True)
+        # self.set_size_request(80, 10)
 
         self.pixbuf = None
 
-        self.image = Gtk.Image(css_classes=["key-image", "plus-screenbar"])
-        self.image.set_overflow(Gtk.Overflow.HIDDEN)
+        # self.image = Gtk.Image(css_classes=["key-image", "plus-screenbar"], hexpand=True, vexpand=True)
+        # self.image.set_overflow(Gtk.Overflow.HIDDEN)
+        # self.image.set_from_file("Assets/800_100.png")
+
+        self.image = Gtk.Picture(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
+                                 halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
+                                 valign=Gtk.Align.CENTER, vexpand=False)
+        
+        self.set_image(Image.new("RGB", (800, 100), (255, 0, 0)))
+
         self.set_child(self.image)
 
+        # self.set_child(self.image)
         focus_controller = Gtk.EventControllerFocus()
         self.image.add_controller(focus_controller)
         focus_controller.connect("enter", self.on_focus_in)
@@ -47,10 +63,18 @@ class ScreenBar(Gtk.Frame):
         self.click_ctrl.set_button(0)
         self.image.add_controller(self.click_ctrl)
 
-    
         # Make image focusable
         self.set_focus_child(self.image)
         self.image.set_focusable(True)
+
+    def set_image(self, image: Image.Image):
+        width = 370
+        image.thumbnail((width, width/8))
+
+        pixbuf = image2pixbuf(image)
+        self.image.set_pixbuf(pixbuf)
+        del pixbuf
+
 
     def on_click(self, gesture, n_press, x, y):
         if gesture.get_current_button() == 1 and n_press == 1:

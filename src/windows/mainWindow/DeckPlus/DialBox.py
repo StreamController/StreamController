@@ -25,17 +25,19 @@ from gi.repository import Gtk, Adw, Gdk, GLib, Gio
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
+    from src.backend.DeckManagement.DeckController import DeckController
 
 class DialBox(Gtk.Box):
-    def __init__(self, page_settings_page: "PageSettingsPage", **kwargs):
+    def __init__(self, deck_controller: "DeckController", page_settings_page: "PageSettingsPage", **kwargs):
         super().__init__(**kwargs)
+        self.deck_controller = deck_controller
         self.set_hexpand(True)
         self.set_homogeneous(True)
         self.page_settings_page = page_settings_page
         self.build()
 
     def build(self):
-        for i in range(4):
+        for i in range(self.deck_controller.deck.dial_count()):
             dial = Dial(self)
             self.append(dial)
 
@@ -87,7 +89,7 @@ class Dial(Gtk.Frame):
             if self.dial_box.page_settings_page.deck_config.active_widget not in [self, None]:
                 self.dial_box.page_settings_page.deck_config.active_widget.set_border_active(False)
             self.dial_box.page_settings_page.deck_config.active_widget = self
-            self.set_css_classes(["key-button-frame"])
+            self.set_css_classes(["dial-frame", "dial-frame-visible"])
         else:
-            self.set_css_classes(["key-button-frame-hidden"])
+            self.set_css_classes(["dial-frame", "dial-frame-hidden"])
             self.dial_box.page_settings_page.deck_config.active_widget = None

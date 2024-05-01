@@ -354,7 +354,8 @@
   padding-top: 0px;
   padding-bottom: 0px;
   background-color: #363636;
-  min-height:75px;
+  min-height: 50px;
+  min-width: 400;
 }
 .dial {
   min-width:75px;	
@@ -367,7 +368,7 @@
   border-radius: 50px;
 }
 .dial-frame {
-  border-radius:50px;
+  border-radius:99999px;
   border-width: 3px;
   padding-left: 4px;
   padding-right: 4px;

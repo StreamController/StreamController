@@ -1,8 +1,8 @@
 Features:
-Allow iamge sizes above 100%
+Allow image sizes above 100%
 Add remove button to custom asset chooser
 Add notifications for asset updates
-New label overrite system
+New label override system
 Add autostart toggle to the settings
 Add automatic page switching for X11
 Plugin events by G4PLS

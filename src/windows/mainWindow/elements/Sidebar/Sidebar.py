@@ -199,6 +199,12 @@ class KeyEditor(Gtk.Box):
         self.action_editor = ActionManager(sidebar, margin_top=25, width_request=400)
         self.main_box.append(self.action_editor)
 
+        self.remove_state_button = Gtk.Button(label="Remove State", css_classes=["destructive-action"], margin_top=15, margin_bottom=15, margin_start=15, margin_end=15)
+        self.remove_state_button.connect("clicked", self.on_remove_state)
+        self.append(self.remove_state_button)
+
+
+
     def on_state_switch(self, *args):
         print("on_state_switch")
         state = self.state_switcher.get_selected_state()
@@ -214,6 +220,7 @@ class KeyEditor(Gtk.Box):
         key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
 
         key.set_state(state, update_sidebar=True)
+        print(state)
         print("on_state_switch end")
 
     def on_add_new_state(self, state):
@@ -223,6 +230,23 @@ class KeyEditor(Gtk.Box):
         
         key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
         key.add_new_state()
+
+        self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
+
+    def on_remove_state(self, button):
+        if self.state_switcher.get_n_states() <= 1:
+            return
+
+        controller = gl.app.main_win.get_active_controller()
+        if controller is None:
+            return
+        
+        active_state = self.state_switcher.get_selected_state()
+        
+        key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
+        key.remove_state(active_state)
+
+        self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
 
@@ -238,6 +262,8 @@ class KeyEditor(Gtk.Box):
         self.state_switcher.set_n_states(len(key.states.keys()))
         self.state_switcher.select_state(state)
         key.set_state(state)
+
+        self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
         self.sidebar.active_coords = coords
         self.icon_selector.load_for_coords(coords, state)

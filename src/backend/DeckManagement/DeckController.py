@@ -1215,7 +1215,7 @@ class ControllerKey:
         for i in range(n):
             self.states[i] = ControllerKeyState(self, i)
 
-    def add_new_state(self):
+    def add_new_state(self, switch: bool = True):
         self.deck_controller.active_page.dict.setdefault("keys", {})
         self.deck_controller.active_page.dict["keys"].setdefault(f"{self.coords[0]}x{self.coords[1]}", {})
         self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"].setdefault("states", {})
@@ -1230,9 +1230,18 @@ class ControllerKey:
         self.deck_controller.active_page.save()
         gl.page_manager.update_dict_of_pages_with_path(self.deck_controller.active_page.json_path)
 
+        self.update_state_switcher()
+
+        if switch:
+            print(f"key is on state: {self.state}")
+            print(f"Switching to state: {len(self.states)-1}")
+            self.set_state(len(self.states)-1)
+
     def remove_state(self, state: int):
         if str(state) in self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"]:
             self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"].pop(str(state))
+
+        old_loaded_state = int(self.state)
 
         state_to_remove = self.states.get(state)
         if state_to_remove:
@@ -1245,16 +1254,47 @@ class ControllerKey:
         new_states = {}
         for new_key, old_key in enumerate(sorted_state_keys):
             self.states[old_key].state = new_key
+
+            if self.get_active_state() is self.states[old_key]:
+                self.state = new_key
+
             new_states[new_key] = self.states[old_key]
 
         self.states = new_states
 
+        new_states_dict = {}
+        for new_key, old_key in enumerate(self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"].keys()):
+            new_states_dict[str(new_key)] = self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"][old_key]
+
+        self.deck_controller.active_page.dict["keys"][f"{self.coords[0]}x{self.coords[1]}"]["states"] = new_states_dict
+
+
         self.deck_controller.active_page.save()
         gl.page_manager.update_dict_of_pages_with_path(self.deck_controller.active_page.json_path)
 
+        self.update_state_switcher()
+
+        # Update - TODO: test
+        if state == self.state:
+            sort = sorted(list(self.states.keys()))
+            sort.reverse()
+            print()
+            for s in sort:
+                if s <= state:
+                    self.set_state(s, allow_reload=True)
+                    break
+
+
+
+
+    def update_state_switcher(self):
+        if gl.app.main_win.sidebar.active_coords != (self.coords[0], self.coords[1]):
+            return
+
+        gl.app.main_win.sidebar.key_editor.state_switcher.set_n_states(len(self.states))
 
     def get_active_state(self) -> "ControllerKeyState":
-        return self.states.get(self.state)
+        return self.states.get(self.state, ControllerKeyState(self, -1))
 
 
     def get_current_deck_image(self) -> Image.Image:
@@ -1346,8 +1386,9 @@ class ControllerKey:
     def update(self) -> None:
         self.deck_controller.update_key(self.key)
 
-    def set_state(self, state: int, update_key: bool = True, update_sidebar: bool = True) -> None:
-        if state == self.state:
+    def set_state(self, state: int, update_key: bool = True, update_sidebar: bool = True, allow_reload: bool = False) -> None:
+        if state == self.state and not allow_reload:
+            print(f"is already in state: {state}")
             return
         
         if state not in self.states:
@@ -1587,11 +1628,12 @@ class ControllerKey:
                 self.update()
 
     def clear(self, update: bool = True):
-        self.key_image = None
-        self.key_video = None
-        self.label_manager.clear_labels()
-        self.layout_manager.clear()
-        self.background_color = [0, 0, 0, 0]
+        active_state = self.get_active_state()
+        active_state.key_image = None
+        active_state.key_video = None
+        active_state.label_manager.clear_labels()
+        active_state.layout_manager.clear()
+        active_state.background_color = [0, 0, 0, 0]
         if update:
             self.update()
 

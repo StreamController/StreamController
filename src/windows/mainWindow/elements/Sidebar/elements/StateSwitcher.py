@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from typing import Type
 from gi.repository import Gtk
 
+import globals as gl
+
 class StateSwitcher(Gtk.ScrolledWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -60,6 +62,18 @@ class StateSwitcher(Gtk.ScrolledWindow):
         self._connect_signal()
 
     def on_add_click(self, button):
+        controller = gl.app.main_win.get_active_controller()
+
+        coords = gl.app.main_win.sidebar.active_coords
+        key_index = controller.coords_to_index(coords)
+
+        if key_index >= len(controller.keys):
+            return
+        key = controller.keys[key_index]
+
+        key.add_new_state()
+        return
+
         n_states = self.get_n_states()
         self.stack.add_titled(Gtk.Box(), str(n_states + 1), f"State {n_states + 1}")
 

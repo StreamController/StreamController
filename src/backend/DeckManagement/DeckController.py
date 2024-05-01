@@ -1357,7 +1357,7 @@ class ControllerKey:
                 position = (image.width / 2, image.height - h/2 - 3)
 
             draw.text(position,
-                        text=text, font=font, anchor="mm",
+                        text=text, font=font, anchor="mm", align="center",
                         fill=color, stroke_width=2,
                         stroke_fill="black")
             

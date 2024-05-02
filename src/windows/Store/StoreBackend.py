@@ -323,11 +323,14 @@ class StoreBackend:
 
         author = self.get_user_name(url)
 
+        translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
+        translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
+
         return PluginData(
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,
-            description=gl.lm.get_custom_translation(manifest.get("descriptions", {})),
-            short_description=gl.lm.get_custom_translation(manifest.get("short-descriptions", {})),
+            description=translated_description or manifest.get("description"),
+            short_description=translated_short_description or manifest.get("short-description"),
 
             github=url or None,
             author=author or None, # Formerly: user_name
@@ -399,8 +402,14 @@ class StoreBackend:
         stargazers = await self.get_stargazers(url)
         if isinstance(stargazers, NoConnectionError):
             return stargazers
+        
+        translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
+        translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
 
         return IconData(
+            description=translated_description or manifest.get("description"),
+            short_description=translated_short_description or manifest.get("short-description"),
+
             github=url or None,
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,
@@ -460,7 +469,13 @@ class StoreBackend:
         
         author = self.get_user_name(url)
 
+        translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
+        translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
+
         return WallpaperData(
+            description=translated_description or manifest.get("description"),
+            short_description=translated_short_description or manifest.get("short-description"),
+
             github=url or None,
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,

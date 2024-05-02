@@ -254,6 +254,7 @@ class StorePreview(Gtk.FlowBoxChild):
             self.install_uninstall_button.remove_css_class("red-background")
 
     def set_description(self, description: str) -> None:
+        description = description.strip()
         if description in ["", "N/A", None]:
             description = gl.lm.get("store.preview.no-description")
 

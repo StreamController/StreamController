@@ -386,11 +386,14 @@ class KeyButton(Gtk.Frame):
             #TODO: Use read_value_async to read it instead - This is more like a temporary hack
             return
         
+        # Remove the old action objects - useful in case the same action base is used across multiple actions because we would have no way to differentiate them
+        self.on_remove()
+        
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
         y, x = self.coords
-        
+
         active_page.dict["keys"][f"{x}x{y}"] = gl.app.main_win.key_dict
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 

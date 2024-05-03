@@ -120,7 +120,7 @@ def create_global_objects():
     gl.plugin_manager.generate_action_index()
 
     gl.window_grabber = WindowGrabber()
-    gl.lock_screen_detector = LockScreenDetector()
+    gl.lock_screen_detector = LockScreenManager()
 
     
     # gl.dekstop_grabber = DesktopGrabber()

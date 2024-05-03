@@ -304,7 +304,7 @@ class Page:
                             return action["settings"]
         else:
             for state in self.dict["keys"][coords].get("states", {}):
-                for i, action in enumerate(self.dict["keys"][coords]["states"][state]["actions"]):
+                for i, action in enumerate(self.dict["keys"][coords]["states"][state].get("actions", [])):
                     if not coords in self.action_objects:
                         break
                     if int(state) not in self.action_objects[coords]:

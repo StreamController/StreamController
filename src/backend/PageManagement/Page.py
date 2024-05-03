@@ -160,6 +160,22 @@ class Page:
                     break
             time.sleep(0.02)
 
+        all_old_objects: list[ActionBase] = []
+        for key in loaded_action_objects:
+            for i in loaded_action_objects[key]:
+                all_old_objects.append(loaded_action_objects[key][i])
+
+        all_action_objects: list[ActionBase] = []
+        for key in self.action_objects:
+            for i in self.action_objects[key]:
+                all_action_objects.append(self.action_objects[key][i])
+
+        for action in all_old_objects:
+            if action not in all_action_objects:
+                action.on_removed_from_cache()
+                action.page = None
+                del action
+
     def move_actions(self, from_key: str, to_key: str):
         from_actions = self.action_objects.get(from_key, {})
 

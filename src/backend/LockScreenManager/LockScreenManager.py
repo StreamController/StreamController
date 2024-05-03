@@ -1,6 +1,7 @@
 import os
 from src.backend.LockScreenManager.Detectors.Gnome import GnomeLockScreenDetector
 from src.backend.LockScreenManager.LockScreenDetector import LockScreenDetector
+from loguru import logger as log
 
 import globals as gl
 
@@ -21,6 +22,8 @@ class LockScreenManager:
     def lock(self, active):
         if active == self.locked:
             return
+        
+        log.info(f"Locking screen: {active}")
 
         for controller in gl.deck_manager.deck_controller:
             controller.allow_interaction = not active

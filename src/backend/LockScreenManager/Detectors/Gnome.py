@@ -15,9 +15,8 @@ class GnomeLockScreenDetector(LockScreenDetector):
 
     def screen_saver_active_changed(self, active):
         active = True if active == 1 else False
-        print("ScreenSaver ActiveChanged signal received with value:", active)
 
-        self.lock_screen_manager.set_screen_saver_active(active)
+        self.lock_screen_manager.lock(active)
 
     def setup_dbus(self):
         # Use the D-Bus MainLoop with glib integration

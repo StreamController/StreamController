@@ -49,6 +49,7 @@ from src.Signals.SignalManager import SignalManager
 from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
 from src.backend.GnomeExtensions import GnomeExtensions
 from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
+from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
 
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
@@ -119,6 +120,7 @@ def create_global_objects():
     gl.plugin_manager.generate_action_index()
 
     gl.window_grabber = WindowGrabber()
+    gl.lock_screen_detector = LockScreenDetector()
 
     
     # gl.dekstop_grabber = DesktopGrabber()

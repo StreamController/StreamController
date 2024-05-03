@@ -24,6 +24,7 @@ class IconPack:
     def __init__(self, path: str):
         self.path = path
         self.name = self.get_manifest().get("name") or os.path.basename(path)
+        self.pack_structure: dict[str, list[Icon]] = {}
 
     @lru_cache(maxsize=None)
     def get_manifest(self):
@@ -57,17 +58,46 @@ class IconPack:
         return None
     
     def get_icons(self) -> list[Icon]:
-        icons: list[Icon] = []
-
         manifest = self.get_manifest()
         icons_path = manifest.get("icons")
-        icons_path = os.path.join(self.path, icons_path)
+        icon_pack_path = os.path.join(self.path, icons_path)
 
-        if not os.path.exists(icons_path):
-            return icons
+        if not os.path.exists(icon_pack_path):
+            return []
 
-        for icon in os.listdir(icons_path):
-            icons.append(Icon(icon_pack=self, path=os.path.join(icons_path, icon)))
+        self.load_folder_structure(icon_pack_path)
 
+        base_dir_icons: list[Icon] = self.load_icons(icon_pack_path)
+
+        if base_dir_icons:
+            self.pack_structure["Base"] = base_dir_icons
+
+        return self.get_icons_from_structure()
+
+    def get_icons_from_structure(self) -> list[Icon]:
+        icons: list[Icon] = []
+
+        for folder_name, folder_icons in self.pack_structure.items():
+            for icon in folder_icons:
+                icons.append(icon)
+
+        return icons
+
+    def load_folder_structure(self, icon_pack_path: str):
+        subfolders = [entry for entry in os.scandir(icon_pack_path) if entry.is_dir()]
+
+        for folder in subfolders:
+            if not self.pack_structure.__contains__(folder.name):
+                self.pack_structure[folder.name] = []
+            icons = self.load_icons(folder.path)
+            self.pack_structure[folder.name] = icons
+
+    def load_icons(self, path: str) -> list[Icon]:
+        icons: list[Icon] = []
+
+        for icon in os.scandir(path):
+            if os.path.isdir(icon.path):
+                continue
+            icons.append(Icon(icon_pack=self, path=icon.path))
 
         return icons

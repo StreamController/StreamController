@@ -91,7 +91,7 @@ streamcontroller-plugin-tools==2.0.0
 streamdeck==0.9.5
 textual==0.52.1
 tinycss2==1.2.1
-tqdm==4.66.2
+tqdm==4.66.3
 types-setuptools==69.2.0.20240317
 typing_extensions==4.10.0
 uc-micro-py==1.0.3

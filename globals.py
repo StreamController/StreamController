@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from src.windows.Store.Store import Store
     from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
     from src.windows.PageManager.PageManager import PageManager
+    from src.backend.LockScreenManager.LockScreenManager
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -61,6 +62,7 @@ store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
 signal_manager: "SignalManager" = None
 window_grabber: "WindowGrabber" = None
+lock_screen_detector: "LockScreenDetector" = None
 store: "Store" = None # Only if opened
 flatpak_permission_manager: "FlatpakPermissionManager" = None
 threads_running: bool = True

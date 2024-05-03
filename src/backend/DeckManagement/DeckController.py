@@ -289,6 +289,7 @@ class DeckController:
         self.own_key_grid: "KeyGridChild" = None
 
         self.screen_saver = ScreenSaver(deck_controller=self)
+        self.allow_interaction = True
 
         self.spacing = (36, 36)
 
@@ -373,6 +374,8 @@ class DeckController:
             log.error(f"Failed to set deck key image. Error: {e}")
 
     def key_change_callback(self, deck, key, state):
+        if not self.allow_interaction:
+            return
         screensaver_was_showing = self.screen_saver.showing
         if state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it

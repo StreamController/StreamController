@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import threading
+import time
 import gi
 
 from PIL import Image
@@ -60,12 +61,19 @@ class ScreenBar(Gtk.Frame):
 
         self.click_ctrl = Gtk.GestureClick().new()
         self.click_ctrl.connect("pressed", self.on_click)
+        self.click_ctrl.connect("released", self.on_released)
         self.click_ctrl.set_button(0)
         self.image.add_controller(self.click_ctrl)
 
         # Make image focusable
         self.set_focus_child(self.image)
         self.image.set_focusable(True)
+
+        self.min_drag_distance = 20
+        self.long_press_treshold = 0.5
+
+        self.drag_start_xy: tuple[int, int] = None
+        self.drag_start_time: float = None
 
     def set_image(self, image: Image.Image):
         width = 370
@@ -77,16 +85,55 @@ class ScreenBar(Gtk.Frame):
 
 
     def on_click(self, gesture, n_press, x, y):
+        # print(f"Click: {self.parse_xy(x, y)}")
+        self.drag_start_xy = None
+        self.drag_start_time = None
         if gesture.get_current_button() == 1 and n_press == 1:
+            if self.image.has_focus():
+                self.drag_start_xy = self.parse_xy(x, y)
+                self.drag_start_time = time.time()
             # Single left click
             # Select key
             self.image.grab_focus()
 
         elif gesture.get_current_button() == 1 and n_press == 2:
+            print("Double click")
             pass
             # Double left click
             # Simulate key press
             # self.simulate_press()
+
+    def on_released(self, gesture, n_press, x, y):
+        if None in [self.drag_start_xy, self.drag_start_time]:
+            return
+        # print(f"Release: {self.parse_xy(x, y)}")
+        x, y = self.parse_xy(x, y)
+        start_x, start_y = self.drag_start_xy
+        drag_distance = abs(x - start_x) + abs(y - start_y)
+
+        if drag_distance > self.min_drag_distance:
+            print(f"Drag from {start_x}, {start_y} to {x}, {y}")
+            return
+        
+        if time.time() - self.drag_start_time > self.long_press_treshold:
+            print(f"Long press at {x}, {y}")
+            return
+        
+        else:
+            print(f"Short press at {x}, {y}")
+
+    def parse_xy(self, x, y) -> tuple[int, int]:
+        width = self.image.get_width()
+        height = self.image.get_height()
+
+        # Map xy to 800x100
+        x, y = int(x * 800 / width), int(y * 100 / height)
+
+        x = max(0, min(x, 800))
+        y = max(0, min(y, 100))
+
+        return x, y
+
 
     def on_focus_in(self, *args):
         self.set_border_active(True)

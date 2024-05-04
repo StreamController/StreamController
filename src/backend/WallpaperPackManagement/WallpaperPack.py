@@ -24,54 +24,81 @@ class WallpaperPack:
     def __init__(self, path: str):
         self.path = path
         self.name = self.get_manifest().get("name") or os.path.basename(path)
+        self.pack_structure: dict[str, list[Wallpaper]] = {}
+
+        self.generate_folder_structure("images")
 
     @lru_cache(maxsize=None)
     def get_manifest(self):
         manifest_path = os.path.join(self.path, "manifest.json")
         return self.get_json(manifest_path)
-        
+
     @lru_cache(maxsize=None)
     def get_attribution_json(self):
         attribution_path = os.path.join(self.path, "attribution.json")
         return self.get_json(attribution_path)
-    
+
     @lru_cache(maxsize=None)
     def get_pack_attribution(self):
         attribution = self.get_attribution_json()
         return attribution.get("default", attribution.get("general", attribution.get("generic", {})))
-        
+
     @lru_cache(maxsize=None)
     def get_json(self, json_path: str):
         if not os.path.exists(json_path):
             return {}
-        
+
         with open(json_path) as f:
             return json.load(f)
 
     @lru_cache(maxsize=None)
     def get_thumbnail_path(self):
         manifest = self.get_manifest()
-        path =  os.path.join(self.path, manifest.get("thumbnail"))
+        path = os.path.join(self.path, manifest.get("thumbnail"))
         if os.path.exists(path):
             return path
         return None
-    
+
     def get_wallpapers(self) -> list[Wallpaper]:
-        wallpapers: list[Wallpaper] = []
+        return self.get_content_from_structure()
 
+    def get_content_from_structure(self) -> list[Wallpaper]:
+        content: list[Wallpaper] = []
+
+        for folder_name, folder_entry in self.pack_structure.items():
+            for entry in folder_entry:
+                content.append(entry)
+
+        return content
+
+    def generate_folder_structure(self, asset_path: str):
         manifest = self.get_manifest()
-        wallpapers_path = manifest.get("images")
-        
-        if wallpapers_path is None:
-            return wallpapers
-        
-        wallpapers_path = os.path.join(self.path, wallpapers_path)
+        asset_path = manifest.get(asset_path)
+        pack_path = os.path.join(self.path, asset_path)
 
-        if not os.path.exists(wallpapers_path):
-            return wallpapers
+        if not os.path.exists(pack_path):
+            return
 
-        for wallpaper in os.listdir(wallpapers_path):
-            wallpapers.append(Wallpaper(wallpaper_pack=self, path=os.path.join(wallpapers_path, wallpaper)))
+        # Load Content From Base Directory
+        base_dir_content = self.load_content(pack_path)
+        if base_dir_content:
+            self.pack_structure["Base"] = base_dir_content
 
+        # Load content from Subfolders
+        subfolders = [entry for entry in os.scandir(pack_path) if entry.is_dir()]
 
-        return wallpapers
+        for folder in subfolders:
+            if not self.pack_structure.__contains__(folder.name):
+                self.pack_structure[folder.name] = []
+            icons = self.load_content(folder.path)
+            self.pack_structure[folder.name] = icons
+
+    def load_content(self, folder_path: str):
+        content: list = []
+
+        for entry in os.scandir(folder_path):
+            if os.path.isdir(entry.path):
+                continue
+            content.append(Wallpaper(wallpaper_pack=self, path=entry.path))
+
+        return content

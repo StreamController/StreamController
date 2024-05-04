@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import time
 import gi
 
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
@@ -62,12 +63,49 @@ class Dial(Gtk.Frame):
 
         self.click_ctrl = Gtk.GestureClick().new()
         self.click_ctrl.connect("pressed", self.on_click)
-        self.click_ctrl.set_button(0)
+        # self.click_ctrl.set_button(4)
         self.image.add_controller(self.click_ctrl)
+
+        self.scroll_ctrl = Gtk.EventControllerScroll()
+        self.scroll_ctrl.set_flags(Gtk.EventControllerScrollFlags.VERTICAL)
+
+        print(self.scroll_ctrl.get_unit())
+        unit = self.scroll_ctrl.get_unit()
+        self.scroll_ctrl.connect("scroll", self.on_scroll)
+        # self.image.add_controller(self.scroll_ctrl)
+
+        self.key_ctrl = Gtk.EventControllerKey()
+        self.key_ctrl.connect("key-pressed", self.on_key)
+        self.image.add_controller(self.key_ctrl)
+
+        # self.image.connect("scroll", self.on_scroll_event)
+
+        # Gdk.ScrollDirection.UP
+        self.image
     
         # Make image focusable
         self.set_focus_child(self.image)
         self.image.set_focusable(True)
+
+        self.last_scroll = None
+
+    def on_key(self, controller, keyval, keycode, state):
+        print(f"Key: {keyval}, {keycode}, {state}")
+
+    def on_scroll(self, gesture, dx, dy):
+        if self.last_scroll:
+            if time.time() - self.last_scroll < 0.1:
+                return
+        print(Gdk.ScrollUnit.WHEEL)
+        if gesture.get_unit() == Gdk.ScrollUnit.WHEEL:
+            dx *= 10
+            dy *= 10
+        print(f"Scroll: {dx}, {dy}")
+
+        self.last_scroll = time.time()
+
+    def on_scroll_event(self, widget, event):
+        print("Scroll event")
 
     def on_click(self, gesture, n_press, x, y):
         if gesture.get_current_button() == 1 and n_press == 1:
@@ -76,10 +114,14 @@ class Dial(Gtk.Frame):
             self.image.grab_focus()
 
         elif gesture.get_current_button() == 1 and n_press == 2:
+            print("Double click / activate")
             pass
             # Double left click
             # Simulate key press
             # self.simulate_press()
+
+        else:
+            print(f"Other click: {gesture.get_current_button()}, {n_press}")
 
     def on_focus_in(self, *args):
         self.set_border_active(True)

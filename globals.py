@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
     from src.windows.PageManager.PageManager import PageManager
     from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
+    from src.tray import TrayIcon
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -68,6 +69,7 @@ flatpak_permission_manager: "FlatpakPermissionManager" = None
 threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
+tray_icon: "TrayIcon" = None
 
 app_version: str = "1.5.0-beta.3" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False

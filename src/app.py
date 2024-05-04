@@ -155,6 +155,8 @@ class App(Adw.Application):
         for child in multiprocessing.active_children():
             child.terminate()
 
+        gl.tray_icon.stop()
+
         # Close all decks
         gl.deck_manager.close_all()
         # Stop timer

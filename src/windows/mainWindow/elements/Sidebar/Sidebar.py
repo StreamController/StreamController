@@ -17,6 +17,7 @@ import os
 import gi
 
 from src.windows.mainWindow.elements.PageSelector import PageSelector
+from src.windows.mainWindow.elements.Sidebar.elements.DialEditor import DialEditor
 
 
 gi.require_version("Gtk", "4.0")
@@ -44,6 +45,7 @@ class Sidebar(Adw.NavigationPage):
         super().__init__(hexpand=True, title="Sidebar", **kwargs)
         self.main_window = main_window
         self.active_coords: tuple = None
+        self.active_dial: int = None
         
         """
         To save performance and memory, we only load the thumbnail when the user sees the row
@@ -70,6 +72,9 @@ class Sidebar(Adw.NavigationPage):
 
         self.key_editor = KeyEditor(self)
         self.main_stack.add_named(self.key_editor, "key_editor")
+
+        self.dial_editor = DialEditor(self)
+        self.main_stack.add_named(self.dial_editor, "dial_editor")
 
         self.action_chooser = ActionChooser(self)
         self.main_stack.add_named(self.action_chooser, "action_chooser")
@@ -107,7 +112,10 @@ class Sidebar(Adw.NavigationPage):
         self.main_stack.set_visible_child(self.action_configurator)
 
     def load_for_coords(self, coords):
+        self.active_dial = None
         self.active_coords = coords
+        self.main_stack.set_visible_child(self.key_editor)
+        
         if not self.get_mapped():
             self.on_map_tasks.clear()
             self.on_map_tasks.append(lambda: self.load_for_coords(coords))
@@ -134,6 +142,12 @@ class Sidebar(Adw.NavigationPage):
 
         if self.main_stack.get_visible_child() != self.key_editor:
             self.main_stack.set_visible_child(self.key_editor)
+
+    def load_for_dial(self, n: int):
+        self.active_coords = None
+        self.active_dial = n
+        self.main_stack.set_visible_child(self.dial_editor)
+        self.dial_editor.load_for_dial(n)
 
     def show_error(self):
         if self.main_stack.get_visible_child() == self.error_page:

@@ -18,6 +18,8 @@ import gi
 
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
+import globals as gl
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
@@ -39,13 +41,14 @@ class DialBox(Gtk.Box):
 
     def build(self):
         for i in range(self.deck_controller.deck.dial_count()):
-            dial = Dial(self)
+            dial = Dial(self, i)
             self.append(dial)
 
 
 class Dial(Gtk.Frame):
-    def __init__(self, dial_box: DialBox, **kwargs):
+    def __init__(self, dial_box: DialBox, n: int, **kwargs):
         self.dial_box = dial_box
+        self.n = n
         super().__init__(**kwargs)
         self.set_halign(Gtk.Align.CENTER)
         self.set_css_classes(["dial-frame", "dial-frame-hidden"])
@@ -72,7 +75,7 @@ class Dial(Gtk.Frame):
         print(self.scroll_ctrl.get_unit())
         unit = self.scroll_ctrl.get_unit()
         self.scroll_ctrl.connect("scroll", self.on_scroll)
-        # self.image.add_controller(self.scroll_ctrl)
+        self.image.add_controller(self.scroll_ctrl)
 
         self.key_ctrl = Gtk.EventControllerKey()
         self.key_ctrl.connect("key-pressed", self.on_key)
@@ -97,6 +100,7 @@ class Dial(Gtk.Frame):
             if time.time() - self.last_scroll < 0.1:
                 return
         print(Gdk.ScrollUnit.WHEEL)
+        print(gesture.get_current_event())
         if gesture.get_unit() == Gdk.ScrollUnit.WHEEL:
             dx *= 10
             dy *= 10
@@ -104,15 +108,13 @@ class Dial(Gtk.Frame):
 
         self.last_scroll = time.time()
 
-    def on_scroll_event(self, widget, event):
-        print("Scroll event")
-
     def on_click(self, gesture, n_press, x, y):
         if gesture.get_current_button() == 1 and n_press == 1:
             # Single left click
             # Select key
             self.image.grab_focus()
 
+            gl.app.main_win.sidebar.load_for_dial(self.n)
         elif gesture.get_current_button() == 1 and n_press == 2:
             print("Double click / activate")
             pass

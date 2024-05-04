@@ -26,6 +26,8 @@ class IconPack:
         self.name = self.get_manifest().get("name") or os.path.basename(path)
         self.pack_structure: dict[str, list[Icon]] = {}
 
+        self.generate_folder_structure("icons")
+
     @lru_cache(maxsize=None)
     def get_manifest(self):
         manifest_path = os.path.join(self.path, "manifest.json")
@@ -52,52 +54,51 @@ class IconPack:
     @lru_cache(maxsize=None)
     def get_thumbnail_path(self):
         manifest = self.get_manifest()
-        path =  os.path.join(self.path, manifest.get("thumbnail"))
+        path = os.path.join(self.path, manifest.get("thumbnail"))
         if os.path.exists(path):
             return path
         return None
     
     def get_icons(self) -> list[Icon]:
+        return self.get_content_from_structure()
+
+    def get_content_from_structure(self) -> list[Icon]:
+        content: list[Icon] = []
+
+        for folder_name, folder_entry in self.pack_structure.items():
+            for entry in folder_entry:
+                content.append(entry)
+
+        return content
+
+    def generate_folder_structure(self, asset_path: str):
         manifest = self.get_manifest()
-        icons_path = manifest.get("icons")
-        icon_pack_path = os.path.join(self.path, icons_path)
+        asset_path = manifest.get(asset_path)
+        pack_path = os.path.join(self.path, asset_path)
 
-        if not os.path.exists(icon_pack_path):
-            return []
+        if not os.path.exists(pack_path):
+            return
 
-        self.load_folder_structure(icon_pack_path)
+        # Load Content From Base Directory
+        base_dir_content = self.load_content(pack_path)
+        if base_dir_content:
+            self.pack_structure["Base"] = base_dir_content
 
-        base_dir_icons: list[Icon] = self.load_icons(icon_pack_path)
-
-        if base_dir_icons:
-            self.pack_structure["Base"] = base_dir_icons
-
-        return self.get_icons_from_structure()
-
-    def get_icons_from_structure(self) -> list[Icon]:
-        icons: list[Icon] = []
-
-        for folder_name, folder_icons in self.pack_structure.items():
-            for icon in folder_icons:
-                icons.append(icon)
-
-        return icons
-
-    def load_folder_structure(self, icon_pack_path: str):
-        subfolders = [entry for entry in os.scandir(icon_pack_path) if entry.is_dir()]
+        # Load content from Subfolders
+        subfolders = [entry for entry in os.scandir(pack_path) if entry.is_dir()]
 
         for folder in subfolders:
             if not self.pack_structure.__contains__(folder.name):
                 self.pack_structure[folder.name] = []
-            icons = self.load_icons(folder.path)
+            icons = self.load_content(folder.path)
             self.pack_structure[folder.name] = icons
 
-    def load_icons(self, path: str) -> list[Icon]:
-        icons: list[Icon] = []
+    def load_content(self, folder_path: str):
+        content: list = []
 
-        for icon in os.scandir(path):
-            if os.path.isdir(icon.path):
+        for entry in os.scandir(folder_path):
+            if os.path.isdir(entry.path):
                 continue
-            icons.append(Icon(icon_pack=self, path=icon.path))
+            content.append(Icon(icon_pack=self, path=entry.path))
 
-        return icons
+        return content

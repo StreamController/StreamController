@@ -287,7 +287,7 @@ class ActionRow(Adw.PreferencesRow):
             self.left_bottom_box.set_visible(False)
             # self.left_top_box.set_
 
-        ## Move buttons
+        ## Edit buttons
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.END, valign=Gtk.Align.CENTER, margin_end=10, css_classes=["linked"])
         self.overlay.add_overlay(self.button_box)
 
@@ -298,6 +298,10 @@ class ActionRow(Adw.PreferencesRow):
         self.down_button = Gtk.Button(icon_name="go-down-symbolic")
         self.down_button.connect("clicked", self.on_click_down)
         self.button_box.append(self.down_button)
+
+        self.remove_button = Gtk.Button(icon_name="user-trash-symbolic", css_classes=["destructive-action"])
+        self.button_box.append(self.remove_button) #TODO
+        self.remove_button.connect("clicked", self.on_click_remove)
 
 
     def get_own_index(self) -> int:
@@ -322,6 +326,34 @@ class ActionRow(Adw.PreferencesRow):
 
         # self.expander.update_indices()
         
+    def on_click_remove(self, button):
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
+
+        # Remove from action_objects
+        del page.action_objects[self.action_object.page_coords][self.index]
+        page.fix_action_objects_order(self.action_object.page_coords)
+
+        # Remove from page json
+        page.dict["keys"][self.action_object.page_coords]["actions"].pop(self.index)
+        page.save()
+
+        page.reload_similar_pages(page_coords=self.action_object.page_coords)
+        print(self.action_object.page_coords)
+        page.reload_similar_pages()
+
+        if hasattr(self.action_object, "on_removed_from_cache"):
+            self.action_object.on_removed_from_cache()
+
+        self.action_object = None
+        del self.action_object
+
+        self.get_parent().remove(self)
             
         
     def init_dnd(self):

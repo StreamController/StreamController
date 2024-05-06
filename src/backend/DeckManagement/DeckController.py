@@ -27,6 +27,7 @@ from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageSequence
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
 from StreamDeck.Devices import StreamDeck
+from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 import usb.core
 import usb.util
 from loguru import logger as log
@@ -273,6 +274,8 @@ class DeckController:
         self.background = Background(self)
 
         self.deck.set_key_callback(self.key_change_callback)
+        self.deck.set_dial_callback(self.dial_change_callback)
+        self.deck.set_touchscreen_callback(self.touchscreen_event_callback)
 
         # Start media player thread
         self.media_player = MediaPlayerThread(deck_controller=self)
@@ -345,6 +348,22 @@ class DeckController:
             return
 
         self.keys[key].on_key_change(state)
+
+    def dial_change_callback(self, deck, dial, event, value):
+        if event == DialEventType.PUSH:
+            print(f"Dial {dial} pushed with value {value}")
+        elif event == DialEventType.TURN:
+            print(f"Dial {dial} turned with value {value}")
+
+    def touchscreen_event_callback(self, deck, evt_type, value):
+        if evt_type == TouchscreenEventType.SHORT:
+            print("Short touch @ " + str(value['x']) + "," + str(value['y']))
+
+        elif evt_type == TouchscreenEventType.LONG:
+            print("Long touch @ " + str(value['x']) + "," + str(value['y']))
+
+        elif evt_type == TouchscreenEventType.DRAG:
+            print("Drag started @ " + str(value['x']) + "," + str(value['y']) + " ended @ " + str(value['x_out']) + "," + str(value['y_out']))
 
     ### Helper methods
     def generate_alpha_key(self) -> Image.Image:

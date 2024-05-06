@@ -44,6 +44,10 @@ class FakeDeck:
         return self.key_layout()[0] * self.key_layout()[1]
     def set_key_callback(self, *args, **kwargs):
         return
+    def set_dial_callback(self, *args, **kwargs):
+        return
+    def set_touchscreen_callback(self, *args, **kwargs):
+        return
     def set_brightness(self, *args, **kwargs):
         return
     def set_key_image(self, *args, **kwargs):

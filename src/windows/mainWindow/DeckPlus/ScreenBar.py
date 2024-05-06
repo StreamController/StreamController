@@ -22,8 +22,12 @@ from PIL import Image
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
+from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
+
+import globals as gl
 
 from gi.repository import Gtk, Adw, Gdk, GLib, Gio
 
@@ -111,16 +115,34 @@ class ScreenBar(Gtk.Frame):
         start_x, start_y = self.drag_start_xy
         drag_distance = abs(x - start_x) + abs(y - start_y)
 
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        active_controller = visible_child.deck_controller
+        if active_controller is None:
+            return
+
         if drag_distance > self.min_drag_distance:
-            print(f"Drag from {start_x}, {start_y} to {x}, {y}")
+            # print(f"Drag from {start_x}, {start_y} to {x}, {y}")
+            value = {
+                "x": start_x,
+                "y": start_y,
+                "x_out": x,
+                "y_out": y
+            }
+            active_controller.touchscreen_event_callback(active_controller.deck, TouchscreenEventType.DRAG, value)
             return
         
         if time.time() - self.drag_start_time > self.long_press_treshold:
-            print(f"Long press at {x}, {y}")
+            # print(f"Long press at {x}, {y}")
+
+            active_controller.touchscreen_event_callback(active_controller.deck, TouchscreenEventType.LONG, {"x": x, "y": y})
             return
         
         else:
-            print(f"Short press at {x}, {y}")
+            active_controller.touchscreen_event_callback(active_controller.deck, TouchscreenEventType.SHORT, {"x": x, "y": y})
+            # print(f"Short press at {x}, {y}")
+            return
 
     def parse_xy(self, x, y) -> tuple[int, int]:
         width = self.image.get_width()

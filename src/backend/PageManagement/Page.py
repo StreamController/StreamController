@@ -172,8 +172,9 @@ class Page:
 
         for action in all_old_objects:
             if action not in all_action_objects:
-                action.on_removed_from_cache()
-                action.page = None
+                if isinstance(action, ActionBase):
+                    action.on_removed_from_cache()
+                    action.page = None
                 del action
 
     def move_actions(self, from_key: str, to_key: str):

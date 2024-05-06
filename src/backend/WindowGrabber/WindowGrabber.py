@@ -36,18 +36,21 @@ class WindowGrabber:
         self.integration: Integration = None
         self.init_integration()
 
+    @log.catch
     def get_active_environment(self) -> str:
         desktop = os.getenv("XDG_CURRENT_DESKTOP")
         if desktop is None:
             return
         return desktop.lower()
     
+    @log.catch
     def get_active_server(self) -> str:
         env = os.getenv("XDG_SESSION_TYPE")
         if env is None:
             return
         return env.lower()
     
+    @log.catch
     def init_integration(self) -> None:
         self.environment = self.get_active_environment()
         self.server = self.get_active_server()
@@ -64,6 +67,7 @@ class WindowGrabber:
         elif self.server == "x11":
             self.integration = X11(self)
 
+    @log.catch
     def get_all_windows(self) -> list[Window]:
         """
         returns a list of [wm_class, title] lists

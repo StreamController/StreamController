@@ -66,7 +66,10 @@ class X11(Integration):
                 return []
             stdout, stderr = root.communicate()
 
-            window_ids = stdout.decode().split("#")[1].strip().split(", ")
+            split = stdout.decode().split("#")
+            if len(split) < 2:
+                return windows
+            window_ids = split[1].strip().split(", ")
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running xprop: {e}")
             return windows
@@ -88,7 +91,10 @@ class X11(Integration):
             if root is None:
                 return
             stdout, stderr = root.communicate()
-            window_id = stdout.strip().split()[-1]
+            split = stdout.strip().split()
+            if len(split) == 0:
+                return
+            window_id = split[-1]
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running xprop: {e}")
             return

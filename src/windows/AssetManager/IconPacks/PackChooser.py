@@ -66,7 +66,7 @@ class IconPackChooser(ChooserPage):
         self.set_loading(False)
 
         self.build_finished = True
-        self.stack.one_load_finished()
+        self.stack.on_load_finished()
 
     def load(self):
         flow_box = self.icon_pack_chooser.flow_box

@@ -264,7 +264,7 @@ class Screensaver(Adw.PreferencesRow):
         # Update enable if not overwritten by the active page
         active_page = self.settings_page.deck_controller.active_page
         active_page.dict.setdefault("screensaver", {})
-        if not active_page.dict["screensaver"]["overwrite"]:
+        if not active_page.dict.get("screensaver", {}).get("overwrite", False):
             self.settings_page.deck_controller.screen_saver.set_enable(state)
 
         self.config_box.set_visible(state)

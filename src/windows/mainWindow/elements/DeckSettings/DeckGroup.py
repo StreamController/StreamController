@@ -257,6 +257,7 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_toggle_enable(self, toggle_switch, state):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["enable"] = state
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
@@ -270,6 +271,7 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_toggle_loop(self, toggle_switch, state):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["loop"] = state
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
@@ -281,6 +283,7 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_change_fps(self, spinner):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["fps"] = spinner.get_value_as_int()
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
@@ -291,6 +294,7 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_change_time(self, spinner):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["time-delay"] = round(spinner.get_value_as_int())
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
@@ -301,6 +305,7 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_change_brightness(self, scale):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["brightness"] = scale.get_value()
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)

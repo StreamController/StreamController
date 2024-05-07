@@ -223,7 +223,8 @@ class BackgroundVideoCache:
     
     def close(self) -> None:
         import gc
-        self.release()
+        with self.lock:
+            self.cap.release()
 
         for n in self.cache:
             for f in self.cache[n]:

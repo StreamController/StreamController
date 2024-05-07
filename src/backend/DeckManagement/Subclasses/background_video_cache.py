@@ -61,14 +61,14 @@ class BackgroundVideoCache:
         tiles = None
         with self.lock:
             if self.is_cache_complete():
-                self.release()
+                self.cap.release()
                 return self.cache.get(n, None)
-
+            
             # Otherwise, continue with video capture
             # Check if the frame is already decoded
             if n in self.cache:
                 return self.cache[n]
-
+            
             # If the requested frame is before the last decoded one, reset the capture
             if n < self.last_frame_index:
                 self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
@@ -93,7 +93,8 @@ class BackgroundVideoCache:
                     tiles.append(current_tiles)
 
                     if n >= self.n_frames - 1:
-                        self.save_cache_threaded()
+                        if not self.is_cache_complete():
+                            self.save_cache_threaded()
 
                 if self.do_caching:
                     self.cache[self.last_frame_index] = tiles
@@ -154,10 +155,6 @@ class BackgroundVideoCache:
 
         return segment
 
-    def release(self):
-        with self.lock:
-            self.cap.release()
-
     def get_video_hash(self) -> str:
         sha1sum = hashlib.md5()
         with open(self.video_path, 'rb') as video:
@@ -215,13 +212,17 @@ class BackgroundVideoCache:
             return
 
     def is_cache_complete(self) -> bool:
+        print("is comp")
         if self.n_frames != len(self.cache):
+            print("False")
             return False
         
         for key in self.cache:
             if len(self.cache[key]) != self.key_count:
+                print("False")
                 return False
 
+        print("True")
         return True
     
     def close(self) -> None:

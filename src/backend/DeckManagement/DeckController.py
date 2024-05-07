@@ -911,7 +911,8 @@ class BackgroundVideo(BackgroundVideoCache):
         self.active_frame += 1
 
         if self.active_frame >= self.n_frames:
-            self.active_frame = 0
+            if self.loop:
+                self.active_frame = 0
         
         return self.get_frame(self.active_frame)
     

@@ -300,8 +300,8 @@ class ActionRow(Adw.PreferencesRow):
         self.button_box.append(self.down_button)
 
         self.remove_button = Gtk.Button(icon_name="user-trash-symbolic", css_classes=["destructive-action"])
-        self.button_box.append(self.remove_button) #TODO
-        self.remove_button.connect("clicked", self.on_click_remove)
+        # self.button_box.append(self.remove_button) #TODO
+        # self.remove_button.connect("clicked", self.on_click_remove)
 
 
     def get_own_index(self) -> int:

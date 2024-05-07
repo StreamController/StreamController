@@ -212,17 +212,13 @@ class BackgroundVideoCache:
             return
 
     def is_cache_complete(self) -> bool:
-        print("is comp")
         if self.n_frames != len(self.cache):
-            print("False")
             return False
         
         for key in self.cache:
             if len(self.cache[key]) != self.key_count:
-                print("False")
                 return False
 
-        print("True")
         return True
     
     def close(self) -> None:

@@ -584,6 +584,11 @@ class DeckController:
         # Stop queued tasks
         self.clear_media_player_tasks()
 
+        old_tick = self.media_player.media_ticks
+        old_time = time.time()
+        while self.media_player.media_ticks <= old_tick and time.time() - old_time <= 0.5:
+            time.sleep(0.05)
+
         # Update ui
         GLib.idle_add(self.update_ui_on_page_change) #TODO: Use new signal manager instead
 

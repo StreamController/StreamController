@@ -232,7 +232,7 @@ class PageManagerBackend:
 
         # Remove default page entries
         settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        for serial_number, path in settings.get("default-pages",{}).items():
+        for serial_number, path in list(settings.get("default-pages",{}).items()):
             if path == page_path:
                 del settings["default-pages"][serial_number]
         gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)

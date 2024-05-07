@@ -23,16 +23,22 @@ class LockScreenManager:
     def __init__(self):
         self.locked = False
 
+        self.setup()
+
+    @log.catch
+    def setup(self):
         env = self.get_active_environment()
         if env == "gnome":
             self.detector = GnomeLockScreenDetector(self)
 
+    @log.catch
     def get_active_environment(self) -> str:
         desktop = os.getenv("XDG_CURRENT_DESKTOP")
         if desktop is None:
             return
         return desktop.lower()
 
+    @log.catch
     def lock(self, active):
         if active == self.locked:
             return

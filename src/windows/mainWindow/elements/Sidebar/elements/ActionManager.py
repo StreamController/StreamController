@@ -225,6 +225,9 @@ class ActionExpanderRow(BetterExpander):
         image_control_action = controller.active_page.dict["keys"][page_coords]["image-control-action"]
         controller.active_page.dict["keys"][page_coords]["image-control-action"] = reordered.index(actions[image_control_action])
 
+        label_control_action = controller.active_page.dict["keys"][page_coords]["label-control-action"]
+        controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_action])
+
         controller.active_page.save()
 
         action_objects = controller.active_page.action_objects[page_coords]

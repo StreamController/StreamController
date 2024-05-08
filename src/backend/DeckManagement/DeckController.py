@@ -1515,11 +1515,18 @@ class ControllerKey:
                         )) # Videos always update
 
             elif len(self.get_own_actions()) > 1:
-                with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
-                    self.set_key_image(KeyImage(
-                        controller_key=self,
-                        image=image.copy(),
-                    ), update=False)
+                if page_dict.get("image-control-action") is None:
+                    with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
+                        self.set_key_image(KeyImage(
+                            controller_key=self,
+                            image=image.copy(),
+                        ), update=False)
+            
+            elif len(self.get_own_actions()) == 1:
+                if page_dict.get("image-control-action") is None:
+                    self.set_key_image(None, update=False)
+                # action = self.get_own_actions()[0]
+                # if action.has_image_control()
 
             layout = KeyLayout(
                 fill_mode=page_dict.get("media", {}).get("fill-mode"),

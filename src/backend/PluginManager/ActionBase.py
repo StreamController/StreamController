@@ -138,11 +138,10 @@ class ActionBase(rpyc.Service):
         # if not self.on_ready_called:
             # update = False
 
-        # Block for multi actions
-        if self.get_is_multi_action():
+        if self.has_custom_user_asset():
             return
         
-        if self.has_custom_user_asset():
+        if not self.has_image_control():
             return
         
         if is_image(media_path) and image is None:
@@ -204,7 +203,7 @@ class ActionBase(rpyc.Service):
         if not self.on_ready_called:
             update = False
 
-        if self.get_is_multi_action():
+        if not self.has_label_control():
             return
 
         if text is None:
@@ -271,6 +270,29 @@ class ActionBase(rpyc.Service):
         if not self.get_is_present(): return
         actions = self.page.action_objects.get(self.page_coords, [])
         return len(actions) > 1
+    
+    def has_label_control(self):
+        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {})
+
+        if key_dict.get("label-control-action") is None:
+            return False
+        
+        if not self.get_is_multi_action():
+            return True
+
+        return self.get_own_action_index() == key_dict.get("label-control-action")
+    
+    def has_image_control(self):
+        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {})
+
+        if key_dict.get("image-control-action") is None:
+            return False
+        
+        if not self.get_is_multi_action():
+            return True
+
+        return self.get_own_action_index() == key_dict.get("image-control-action")
+
     
     def get_is_present(self):
         if self.page is None: return False

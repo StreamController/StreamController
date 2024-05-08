@@ -1514,7 +1514,7 @@ class ControllerKey:
                             fps = page_dict.get("media", {}).get("fps", 30),
                         )) # Videos always update
 
-            elif len(self.get_own_actions()) > 1:
+            elif len(self.get_own_actions()) > 1 and False: # Disabled for now - we might reuse it later
                 if page_dict.get("image-control-action") is None:
                     with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
                         self.set_key_image(KeyImage(

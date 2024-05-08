@@ -371,7 +371,7 @@ class KeyButton(Gtk.Frame):
         if active_page is None:
             return
         y, x = self.coords
-        key_dict = active_page.dict["keys"][f"{x}x{y}"]
+        key_dict = active_page.dict.get("keys", {}).get(f"{x}x{y}", {})
         gl.app.main_win.key_dict = key_dict
         content = Gdk.ContentProvider.new_for_value(key_dict)
         gl.app.main_win.key_clipboard.set_content(content)
@@ -394,6 +394,7 @@ class KeyButton(Gtk.Frame):
             return
         y, x = self.coords
 
+        active_page.dict.setdefault("keys", {})
         active_page.dict["keys"][f"{x}x{y}"] = gl.app.main_win.key_dict
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
@@ -411,7 +412,7 @@ class KeyButton(Gtk.Frame):
             return
         y, x = self.coords
         
-        if f"{x}x{y}" not in active_page.dict["keys"]:
+        if f"{x}x{y}" not in active_page.dict.get("keys", {}):
             return
         del active_page.dict["keys"][f"{x}x{y}"]
         active_page.save()

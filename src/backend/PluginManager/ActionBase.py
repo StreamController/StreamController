@@ -279,8 +279,8 @@ class ActionBase(rpyc.Service):
         if key_dict.get("label-control-actions") is None:
             return [False, False, False]
         
-        if not self.get_is_multi_action():
-            return [True, True, True]
+        # if not self.get_is_multi_action():
+            # return [True, True, True]
         
         return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions")]
     

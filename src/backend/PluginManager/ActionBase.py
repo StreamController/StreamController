@@ -206,6 +206,9 @@ class ActionBase(rpyc.Service):
         label_index = 0 if position == "top" else 1 if position == "center" else 2
 
         if not self.has_label_control()[label_index]:
+            lc = self.has_label_control()
+            if "Battery" in self.action_id:
+                print()
             return
 
         if text is None:
@@ -280,7 +283,7 @@ class ActionBase(rpyc.Service):
             return [False, False, False]
         
         if not self.get_is_multi_action():
-            return [True, False, False]
+            return [True, True, True]
         
         return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions")]
     

@@ -206,9 +206,6 @@ class ActionBase(rpyc.Service):
         label_index = 0 if position == "top" else 1 if position == "center" else 2
 
         if not self.has_label_control()[label_index]:
-            lc = self.has_label_control()
-            if "Battery" in self.action_id:
-                print()
             return
 
         if text is None:

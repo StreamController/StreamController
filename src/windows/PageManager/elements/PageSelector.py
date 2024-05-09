@@ -154,7 +154,7 @@ class PageSelector(Adw.NavigationPage):
     
     @lru_cache(maxsize=1000)
     def calc_ratio(self, str1, str2) -> int:
-        return fuzz.partial_ratio(str1.lower(), str2.lower())
+        return fuzz.ratio(str1.lower(), str2.lower())
 
         
     def on_search_changed(self, search_entry: Gtk.SearchEntry) -> None:

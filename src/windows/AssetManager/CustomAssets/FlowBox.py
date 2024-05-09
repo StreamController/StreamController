@@ -88,7 +88,7 @@ class CustomAssetChooserFlowBox(Gtk.Box):
         if search_string == "":
             return True
         
-        fuzz_score = fuzz.partial_ratio(search_string.lower(), child.name.lower())
+        fuzz_score = fuzz.ratio(search_string.lower(), child.name.lower())
         if fuzz_score < 40:
             return False
         
@@ -105,8 +105,8 @@ class CustomAssetChooserFlowBox(Gtk.Box):
                 return 1
             return 0
         
-        a_fuzz = fuzz.partial_ratio(search_string.lower(), a.asset["name"].lower())
-        b_fuzz = fuzz.partial_ratio(search_string.lower(), b.asset["name"].lower())
+        a_fuzz = fuzz.ratio(search_string.lower(), a.asset["name"].lower())
+        b_fuzz = fuzz.ratio(search_string.lower(), b.asset["name"].lower())
 
         if a_fuzz > b_fuzz:
             return -1

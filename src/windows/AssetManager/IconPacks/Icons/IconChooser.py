@@ -72,7 +72,7 @@ class IconChooserPage(ChooserPage):
         self.set_loading(False)
         
         self.build_finished = True
-        self.stack.one_load_finished()
+        self.stack.on_load_finished()
 
     def load_for_pack(self, pack: "IconPack"):
         self.icon_flow.set_item_list(pack.get_icons())

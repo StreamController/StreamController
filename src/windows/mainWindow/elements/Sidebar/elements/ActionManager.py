@@ -95,8 +95,8 @@ class ActionExpanderRow(BetterExpander):
         self.add_action_button = AddActionButtonRow(self)
         self.add_row(self.add_action_button)
 
-    def add_action_row(self, action_name: str, action_id: str, action_category, action_object, comment: str, index: int, total_rows: int):
-        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.sidebar, comment, index, total_rows, self)
+    def add_action_row(self, action_name: str, action_id: str, action_category, action_object, comment: str, index: int, total_rows: int, controls_image: bool = False, controls_labels: list[bool] = [False, False, False]):
+        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.sidebar, comment, index, controls_image, controls_labels, total_rows, self)
         self.add_row(action_row)
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
@@ -121,7 +121,18 @@ class ActionExpanderRow(BetterExpander):
                 # Get action comment
                 comment = controller.active_page.get_action_comment(page_coords=page_coords, index=key, state=self.active_state)
 
-                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, comment=comment, index=i, total_rows=number_of_actions)
+                image_control_action_index = controller.active_page.dict["keys"][page_coords].get("image-control-action")
+                label_control_actions = controller.active_page.dict["keys"][page_coords].get("label-control-actions", [])
+                controls_image = False
+                if image_control_action_index == key:
+                    controls_image = True
+
+                controls_labels = [False, False, False]
+                for ii, value in enumerate(label_control_actions):
+                    if value == key:
+                        controls_labels[ii] = True
+
+                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, controls_image=controls_image, controls_labels=controls_labels, comment=comment, index=i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
                 missing_button_row = MissingActionButtonRow(action.id, page_coords, i, self.active_state)
                 self.add_row(missing_button_row)
@@ -210,12 +221,19 @@ class ActionExpanderRow(BetterExpander):
 
         actions = controller.active_page.dict["keys"][page_coords]["states"][self.active_state]["actions"]
 
-        reordered = self.reorder_index_after(actions, move_index, after_index)
-        controller.active_page.dict["keys"][page_coords]["states"][self.active_state]["actions"] = reordered
+
+        reordered = self.reorder_index_after(copy(actions), move_index, after_index)
+        controller.active_page.dict["keys"][page_coords][self.active_state]["actions"] = reordered
+
+        image_control_action = controller.active_page.dict["keys"][page_coords][self.active_state]["image-control-action"]
+        controller.active_page.dict["keys"][page_coords][self.active_state]["image-control-action"] = reordered.index(actions[image_control_action])
+
+        label_control_actions = controller.active_page.dict["keys"][page_coords][self.active_state]["label-control-actions"]
+        for i, label_control_action in enumerate(label_control_actions):
+            label_control_actions[i] = reordered.index(actions[label_control_action])
+        # controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_actions])
+
         controller.active_page.save()
-        # a = controller.active_page.action_objects
-        # controller.active_page.action_objects = {}
-        # controller.active_page.load_action_objects()
 
         action_objects = controller.active_page.action_objects[page_coords]
 
@@ -224,7 +242,7 @@ class ActionExpanderRow(BetterExpander):
 
 
         controller.load_page(controller.active_page)
-
+ 
     def update_comment_for_index(self, action_index):
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
@@ -237,10 +255,97 @@ class ActionExpanderRow(BetterExpander):
         self.get_rows()[action_index].set_comment(comment)
 
 
+class ActionRowLabelToggle(Gtk.Button):
+    def __init__(self, action_row: "ActionRow"):
+        self.action_row = action_row
+        super().__init__()
+
+        self.build()
+
+    def build(self):
+        self.set_css_classes(["blue-toggle-button"])
+
+        self.main_box = Gtk.Box()
+        self.set_child(self.main_box)
+
+        self.main_box.append(Gtk.Image(icon_name="format-text-italic-symbolic"))
+
+        self.indicator_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3, valign=Gtk.Align.CENTER, margin_start=5)
+        self.main_box.append(self.indicator_box)
+
+
+        self.indicators: list[Gtk.Box] = []
+        for i in range(3):
+            indicator = Gtk.Box(css_classes=["action-row-label-toggle-inactive"])
+            self.indicator_box.append(indicator)
+            self.indicators.append(indicator)
+
+        self.config_buttons: list[Gtk.CheckButton] = []
+        self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        label_names = ["Top", "Center", "Bottom"]
+        for i, name in enumerate(label_names):
+            check = Gtk.CheckButton(label=name, name=str(i))
+            self.config_buttons.append(check)
+            if "action-row-label-toggle-active" in self.indicators[i].get_css_classes():
+                check.set_active(True)    
+            check.connect("toggled", self.on_label_toggled)
+            self.config_box.append(check)
+
+
+        self.popover = Gtk.Popover(child=self.config_box)
+        self.main_box.append(self.popover)
+
+
+        self.connect("clicked", self.on_click)
+
+    def on_click(self, button):
+        self.popover.popup()
+
+    def on_label_toggled(self, button: Gtk.CheckButton):
+        i = int(button.get_name())
+
+        indicator = self.indicators[i]
+
+        if button.get_active():
+            indicator.set_css_classes(["action-row-label-toggle-active"])
+        else:
+            indicator.set_css_classes(["action-row-label-toggle-inactive"])
+
+        self.action_row.label_toggled(i, button.get_active())
+
+    def connect_signals(self):
+        for button in self.config_buttons:
+            button.connect("toggled", self.on_label_toggled)
+
+    def disconnect_signals(self):
+        for button in self.config_buttons:
+            try:
+                button.disconnect_by_func(self.on_label_toggled)
+            except:
+                pass
+
+    def set_active(self, values: list[bool]) -> None:
+        self.disconnect_signals()
+        for i, value in enumerate(values):
+            indicator = self.indicators[i]
+            if value:
+                indicator.set_css_classes(["action-row-label-toggle-active"])
+            else:
+                indicator.set_css_classes(["action-row-label-toggle-inactive"])
+
+            self.config_buttons[i].set_active(value)
+        self.connect_signals()
+
+    def get_active(self) -> list[bool]:
+        return [indicator.get_css_classes() == ["action-row-label-toggle-active"] for indicator in self.indicators]
+
+
+
         
 
-class ActionRow(Adw.PreferencesRow):
-    def __init__(self, action_name, action_id, action_category, action_object, sidebar: "Sidebar", comment: str, index, total_rows: int, expander: ActionExpanderRow, **kwargs):
+class ActionRow(Adw.ActionRow):
+    def __init__(self, action_name, action_id, action_category, action_object, sidebar: "Sidebar", comment: str, index, controls_image: bool, controls_labels: list[bool], total_rows: int, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding"])
         self.action_name = action_name
         self.action_id = action_id
@@ -249,23 +354,41 @@ class ActionRow(Adw.PreferencesRow):
         self.action_object = action_object
         self.comment = comment
         self.index = index
+        self.controls_image = controls_image
+        self.controls_labels = controls_labels
         self.active_coords = None
         self.total_rows = total_rows
         self.expander = expander
         self.build()
-        self.init_dnd()
+        self.update_allow_box_visibility()
+        # self.init_dnd() #FIXME: Add drag and drop
 
     def build(self):
-        self.overlay = Gtk.Overlay()
-        self.set_child(self.overlay)
+        # self.overlay = Gtk.Overlay()
+        # self.set_child(self.overlay)
 
-        self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN, css_classes=["no-margin", "invisible", "action-row-button"])
-        self.button.connect("clicked", self.on_click)
-        self.overlay.set_child(self.button)
+        # self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN, css_classes=["no-margin", "invisible", "action-row-button"])
+        # self.button.connect("clicked", self.on_click)
+        # self.overlay.set_child(self.button)
+
+        self.connect("activated", self.on_click)
+
+        self.set_activatable(True)
 
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
-        self.button.set_child(self.main_box)
+        self.set_child(self.main_box)
+
+        self.allow_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["linked"], margin_end=15)
+        self.main_box.append(self.allow_box)
+
+        self.toggle = Gtk.ToggleButton(css_classes=["blue-toggle-button"], icon_name="image-x-generic-symbolic", active=self.controls_image)
+        self.toggle.connect("toggled", self.on_allow_image_toggled)
+        self.allow_box.append(self.toggle)
+
+        self.allow_label_toggle = ActionRowLabelToggle(self)
+        self.allow_label_toggle.set_active(self.controls_labels)
+        self.allow_box.append(self.allow_label_toggle)
 
         self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, valign=Gtk.Align.CENTER)
         self.main_box.append(self.left_box)
@@ -289,9 +412,10 @@ class ActionRow(Adw.PreferencesRow):
             self.left_bottom_box.set_visible(False)
             # self.left_top_box.set_
 
-        ## Move buttons
-        self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.END, valign=Gtk.Align.CENTER, margin_end=10, css_classes=["linked"])
-        self.overlay.add_overlay(self.button_box)
+        ## Edit buttons
+        self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.END, valign=Gtk.Align.CENTER, css_classes=["linked"])
+        self.main_box.append(self.button_box)
+        # self.overlay.add_overlay(self.button_box)
 
         self.up_button = Gtk.Button(icon_name="go-up-symbolic")
         self.up_button.connect("clicked", self.on_click_up)
@@ -301,7 +425,83 @@ class ActionRow(Adw.PreferencesRow):
         self.down_button.connect("clicked", self.on_click_down)
         self.button_box.append(self.down_button)
 
+        self.remove_button = Gtk.Button(icon_name="user-trash-symbolic", css_classes=["destructive-action"])
+        # self.button_box.append(self.remove_button) #TODO
+        # self.remove_button.connect("clicked", self.on_click_remove)
 
+    def update_allow_box_visibility(self):
+        hide = self.controls_image and any(self.controls_labels) and (self.total_rows == 1)
+        self.allow_box.set_visible(not hide)
+
+    def on_allow_image_toggled(self, button):
+        for child in self.expander.get_rows():
+            if child is self:
+                continue
+            if not isinstance(child, ActionRow):
+                continue
+            child.set_image_toggled(False)
+
+
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
+
+        new_value = self.index if button.get_active() else None
+        page.dict["keys"][self.action_object.page_coords]["image-control-action"] = new_value
+        page.save()
+
+        page.reload_similar_pages(page_coords=self.action_object.page_coords, reload_self=True)
+
+    def label_toggled(self, i, value):
+        for child in self.expander.get_rows():
+            if child is self:
+                continue
+            if not isinstance(child, ActionRow):
+                continue
+            # child.set_label_toggled(False)
+            active = child.allow_label_toggle.get_active()
+            active[i] = False
+            child.allow_label_toggle.set_active(active)
+
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
+
+        page.dict["keys"][self.action_object.page_coords].setdefault("label-control-actions", [None, None, None])
+        new_value = self.index if value else None
+        page.dict["keys"][self.action_object.page_coords]["label-control-actions"][i] = new_value
+        page.save()
+
+        threading.Thread(target=page.reload_similar_pages, kwargs={"page_coords":self.action_object.page_coords, "reload_self":True}).start()
+
+    def set_image_toggled(self, value: bool):
+        try:
+            self.toggle.disconnect_by_func(self.on_allow_image_toggled)
+        except:
+            pass
+
+        self.toggle.set_active(value)
+
+        self.toggle.connect("toggled", self.on_allow_image_toggled)
+
+    def set_label_toggled(self, value: bool):
+        try:
+            self.allow_label_toggle.disconnect_by_func(self.on_allow_label_toggled)
+        except:
+            pass
+
+        self.allow_label_toggle.set_active(value)
+
+        self.allow_label_toggle.connect("toggled", self.on_allow_label_toggled)
+        
     def get_own_index(self) -> int:
         return self.expander.get_index_of_child(self)
 
@@ -324,6 +524,34 @@ class ActionRow(Adw.PreferencesRow):
 
         # self.expander.update_indices()
         
+    def on_click_remove(self, button):
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        page = controller.active_page
+
+        # Remove from action_objects
+        del page.action_objects[self.action_object.page_coords][self.index]
+        page.fix_action_objects_order(self.action_object.page_coords)
+
+        # Remove from page json
+        page.dict["keys"][self.action_object.page_coords]["actions"].pop(self.index)
+        page.save()
+
+        page.reload_similar_pages(page_coords=self.action_object.page_coords)
+        print(self.action_object.page_coords)
+        page.reload_similar_pages()
+
+        if hasattr(self.action_object, "on_removed_from_cache"):
+            self.action_object.on_removed_from_cache()
+
+        self.action_object = None
+        del self.action_object
+
+        self.get_parent().remove(self)
             
         
     def init_dnd(self):
@@ -443,6 +671,12 @@ class AddActionButtonRow(Adw.PreferencesRow):
             "settings": {}
         })
 
+        if len(active_page.dict["keys"][page_coords]["actions"]) == 1:
+            if "image-control-action" not in active_page.dict["keys"][page_coords]:
+                active_page.dict["keys"][page_coords]["image-control-action"] = 0
+            if "label-control-actions" not in active_page.dict["keys"][page_coords]:
+                active_page.dict["keys"][page_coords]["label-control-actions"] = [0, 0, 0]
+
         # Save page
         active_page.save()
         # Reload page to add an object to the new action
@@ -461,7 +695,17 @@ class AddActionButtonRow(Adw.PreferencesRow):
         if controller is None:
             return
         key_index = controller.coords_to_index(self.expander.active_coords)
-        controller.load_key(key_index, page=controller.active_page)
+
+        reload_key = False
+
+        if active_page.dict["keys"][page_coords].get("label-control-action") == len(active_page.dict["keys"][page_coords]["actions"]) - 1:
+            reload_key = True
+
+        if active_page.dict["keys"][page_coords].get("image-control-action") == len(active_page.dict["keys"][page_coords]["actions"]) - 1:
+            reload_key = True
+
+        if reload_key:
+            controller.load_key(key_index, page=controller.active_page)
 
         # Open action editor if new action has configuration - qol
         rows = self.expander.get_rows()

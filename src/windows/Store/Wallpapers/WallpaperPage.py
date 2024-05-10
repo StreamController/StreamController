@@ -96,9 +96,9 @@ class WallpaperPreview(StorePreview):
         else:
             self.set_install_state(2)
 
-        description = gl.lm.get_custom_translation(self.wallpaper_data.short_descriptions)
+        description = self.wallpaper_data.short_description
         if description in ["", "N/A", None]:
-            description = gl.lm.get_custom_translation(self.wallpaper_data.descriptions)
+            description = self.wallpaper_data.description
         self.set_description(description)
 
     def install(self):

@@ -30,10 +30,11 @@ class LocaleManager:
 
     def load_csv(self) -> None:
         with open(self.csv_path, newline='') as csvfile:
-            reader = csv.reader(csvfile, delimiter=';')
+            reader = csv.reader(csvfile, delimiter=';', quotechar='"', skipinitialspace=True)
             self.available_locales = next(reader)[1:]
 
             for row in reader:
+                if row == []: continue
                 self.locale_data[row[0]] = dict(zip(self.available_locales, row[1:]))
 
     def set_language(self, language: str) -> str:
@@ -62,8 +63,18 @@ class LocaleManager:
     def get_custom_translation(self, locale_json:dict[str, str]):
         if locale_json is None:
             return ""
-        return locale_json.get(self.language, locale_json.get(self.FALLBACK_LOCALE))
+        result = locale_json.get(self.language)
+        if result in [None, ""]:
+            return locale_json.get(self.FALLBACK_LOCALE)
+        return result
 
     def get(self, key: str, fallback: str = None) -> str:
         key_dict = self.locale_data.get(key, {})
-        return key_dict.get(self.language, key_dict.get(self.FALLBACK_LOCALE, key if fallback is None else fallback))
+
+        result = key_dict.get(self.language)
+        if result in [None, ""]:
+            return key_dict.get(self.FALLBACK_LOCALE, key)
+        if result is None:
+            return key if fallback is None else fallback
+
+        return result

@@ -49,6 +49,8 @@ from src.Signals.SignalManager import SignalManager
 from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
 from src.backend.GnomeExtensions import GnomeExtensions
 from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
+from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
+from src.tray import TrayIcon
 
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
@@ -92,6 +94,9 @@ def create_cache_folder():
 
 def create_global_objects():
     # Setup locales
+    gl.tray_icon = TrayIcon()
+    # gl.tray_icon.run_detached()
+
     gl.lm = LocaleManager(csv_path=os.path.join("locales", "locales.csv"))
     gl.lm.set_to_os_default()
     gl.lm.set_fallback_language("en_US")
@@ -119,6 +124,7 @@ def create_global_objects():
     gl.plugin_manager.generate_action_index()
 
     gl.window_grabber = WindowGrabber()
+    gl.lock_screen_detector = LockScreenManager()
 
     
     # gl.dekstop_grabber = DesktopGrabber()
@@ -161,6 +167,8 @@ def reset_all_decks():
                 DeviceManager.USB_PID_STREAMDECK_MINI,
                 DeviceManager.USB_PID_STREAMDECK_XL,
                 DeviceManager.USB_PID_STREAMDECK_MK2,
+                DeviceManager.USB_PID_STREAMDECK_PEDAL,
+                DeviceManager.USB_PID_STREAMDECK_PLUS
             ]:
                 # Reset deck
                 usb.util.dispose_resources(device)

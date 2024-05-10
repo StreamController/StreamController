@@ -101,6 +101,10 @@ class IconPreview(StorePreview):
         description = gl.lm.get_custom_translation(self.icon_data.short_descriptions)
         if description in ["", "N/A", None]:
             description = gl.lm.get_custom_translation(self.icon_data.descriptions)
+
+        description = self.icon_data.short_description
+        if description in ["", "N/A", None]:
+            description = self.icon_data.description
         self.set_description(description)
 
     def install(self):

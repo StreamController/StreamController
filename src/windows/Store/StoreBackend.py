@@ -54,7 +54,7 @@ class StoreBackend:
     STORE_REPO_URL = "https://github.com/StreamController/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
-    STORE_BRANCH = "main" #FIXME: Make the cache branch specific. For now you'll have to manually delete `data/Store/cache`
+    STORE_BRANCH = "1.5.0" #FIXME: Make the cache branch specific. For now you'll have to manually delete `data/Store/cache`
 
 
     def __init__(self):
@@ -323,11 +323,14 @@ class StoreBackend:
 
         author = self.get_user_name(url)
 
+        translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
+        translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
+
         return PluginData(
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,
-            description=gl.lm.get_custom_translation(manifest.get("descriptions", {})),
-            short_description=gl.lm.get_custom_translation(manifest.get("short-descriptions", {})),
+            description=translated_description or manifest.get("description"),
+            short_description=translated_short_description or manifest.get("short-description"),
 
             github=url or None,
             author=author or None, # Formerly: user_name
@@ -399,8 +402,14 @@ class StoreBackend:
         stargazers = await self.get_stargazers(url)
         if isinstance(stargazers, NoConnectionError):
             return stargazers
+        
+        translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
+        translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
 
         return IconData(
+            description=translated_description or manifest.get("description"),
+            short_description=translated_short_description or manifest.get("short-description"),
+
             github=url or None,
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,
@@ -460,7 +469,13 @@ class StoreBackend:
         
         author = self.get_user_name(url)
 
+        translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
+        translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
+
         return WallpaperData(
+            description=translated_description or manifest.get("description"),
+            short_description=translated_short_description or manifest.get("short-description"),
+
             github=url or None,
             descriptions=manifest.get("descriptions") or None,
             short_descriptions=manifest.get("short-descriptions") or None,

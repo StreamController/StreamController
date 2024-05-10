@@ -108,7 +108,7 @@ class PluginBase(rpyc.Service):
         else:
             reason = None
 
-            if version.parse(self.min_app_version) > version.parse(gl.app_version):
+            if self._get_parsed_base_version(self.min_app_version) > self._get_parsed_base_version(gl.app_version):
                 # Plugin is too new - StreamController is too old
                 log.warning(
                     f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
@@ -137,14 +137,18 @@ class PluginBase(rpyc.Service):
                 "reason": reason
             }
 
+    def _get_parsed_base_version(self, version_str: str) -> version.Version:
+        base_version = version.parse(version_str).base_version
+        return version.parse(base_version)
+
     def get_plugin_id_from_folder_name(self) -> str:
         module = importlib.import_module(self.__module__)
         subclass_file = module.__file__
         return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
     
     def is_minimum_version_ok(self) -> bool:
-        app_version = version.parse(gl.app_version)
-        min_app_version = version.parse(self.min_app_version)
+        app_version = self._get_parsed_base_version(gl.app_version)
+        min_app_version = self._get_parsed_base_version(self.min_app_version)
 
         return app_version >= min_app_version
 

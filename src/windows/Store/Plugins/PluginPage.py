@@ -102,9 +102,9 @@ class PluginPreview(StorePreview):
         else:
             self.set_install_state(2)
 
-        description = gl.lm.get_custom_translation(self.plugin_data.short_descriptions)
+        description = self.plugin_data.short_description
         if description in ["", "N/A", None]:
-            description = gl.lm.get_custom_translation(self.plugin_data.descriptions)
+            description = self.plugin_data.description
         self.set_description(description)
 
     def install(self):

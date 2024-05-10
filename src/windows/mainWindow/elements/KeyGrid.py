@@ -377,7 +377,7 @@ class KeyButton(Gtk.Frame):
         if active_page is None:
             return
         y, x = self.coords
-        key_dict = active_page.dict["keys"][f"{x}x{y}"][str(self.state)]
+        key_dict = active_page.dict.get("keys", {}).get(f"{x}x{y}", {}).get(str(self.state), {})
         gl.app.main_win.key_dict = key_dict
         content = Gdk.ContentProvider.new_for_value(key_dict)
         gl.app.main_win.key_clipboard.set_content(content)
@@ -392,11 +392,15 @@ class KeyButton(Gtk.Frame):
             #TODO: Use read_value_async to read it instead - This is more like a temporary hack
             return
         
+        # Remove the old action objects - useful in case the same action base is used across multiple actions because we would have no way to differentiate them
+        self.on_remove()
+        
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
         y, x = self.coords
-        
+        active_page.dict.setdefault("keys", {})
+        active_page.dict["keys"].setdefault(f"{x}x{y}", {})
         active_page.dict["keys"][f"{x}x{y}"][str(self.state)] = gl.app.main_win.key_dict
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
@@ -414,7 +418,7 @@ class KeyButton(Gtk.Frame):
             return
         y, x = self.coords
         
-        if f"{x}x{y}" not in active_page.dict["keys"]:
+        if f"{x}x{y}" not in active_page.dict.get("keys", {}):
             return
         if str(self.state) not in active_page.dict["keys"][f"{x}x{y}"]:
             return

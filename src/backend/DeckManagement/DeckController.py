@@ -97,6 +97,7 @@ class MediaPlayerSetImageTask:
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] = 0
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck key image. Error: {e}")
+            return
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
             if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
                 log.debug(f"Failed to set key_image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
@@ -129,11 +130,18 @@ class MediaPlayerThread(threading.Thread):
 
         self.show_fps_warnings = gl.settings_manager.get_app_settings().get("warnings", {}).get("enable-fps-warnings", True)
 
-    @log.catch
+    # @log.catch
     def run(self):
         self.running = True
+
+        
+
+
         while True:
             start = time.time()
+
+            # self.check_connection()
+
             if not self.pause:
                 if self.deck_controller.background.video is not None:
                     if self.deck_controller.background.video.page is self.deck_controller.active_page:
@@ -246,12 +254,28 @@ class MediaPlayerThread(threading.Thread):
             except KeyError:
                 pass
 
+    def check_connection(self):
+        try:
+            self.deck_controller.deck.get_firmware_version()
+        except StreamDeck.TransportError as e:
+            log.error(f"Seams like the deck is not connected. Error: {e}")
+            MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
+            if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
+                log.debug(f"Failed to contact the deck 5 times in a row: {self.deck_controller.serial_number()}. Removing controller")
+                
+                self.deck_controller.deck.close()
+                self.deck_controller.media_player.running = False # Set stop flat - otherwise remove_controller will wait until this task is done, which it never will because it waiuts
+                gl.deck_manager.remove_controller(self.deck_controller)
+
+                gl.deck_manager.connect_new_decks()
+
 class DeckController:
     def __init__(self, deck_manager: "DeckManager", deck: StreamDeck.StreamDeck):
         self.deck_manager: DeckManager = deck_manager
         self.deck: StreamDeck = deck
         # Open the deck
         deck.open()
+        print()
         
         try:
             # Clear the deck
@@ -265,6 +289,7 @@ class DeckController:
         self.own_key_grid: "KeyGridChild" = None
 
         self.screen_saver = ScreenSaver(deck_controller=self)
+        self.allow_interaction = True
 
         self.spacing = (36, 36)
 
@@ -349,6 +374,8 @@ class DeckController:
             log.error(f"Failed to set deck key image. Error: {e}")
 
     def key_change_callback(self, deck, key, state):
+        if not self.allow_interaction:
+            return
         screensaver_was_showing = self.screen_saver.showing
         if state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
@@ -561,6 +588,11 @@ class DeckController:
         # Stop queued tasks
         self.clear_media_player_tasks()
 
+        old_tick = self.media_player.media_ticks
+        old_time = time.time()
+        while self.media_player.media_ticks <= old_tick and time.time() - old_time <= 0.5:
+            time.sleep(0.05)
+
         # Update ui
         GLib.idle_add(self.update_ui_on_page_change) #TODO: Use new signal manager instead
 
@@ -618,14 +650,12 @@ class DeckController:
             self.active_page.ready_to_clear = ready_to_clear
         
     def index_to_coords(self, index):
-        if not self.get_alive(): return
         rows, cols = self.deck.key_layout()    
         y = index // cols
         x = index % cols
         return x, y
     
     def coords_to_index(self, coords):
-        if not self.get_alive(): return
         x, y = map(int, coords)
         rows, cols = self.deck.key_layout()
         return y * cols + x
@@ -688,17 +718,19 @@ class DeckController:
         ))
 
     def delete(self):
-        if self.active_page is not None:
-            self.active_page.action_objects = {}
+        if hasattr(self, "active_page"):
+            if self.active_page is not None:
+                self.active_page.action_objects = {}
 
-        self.media_player.stop()
+        if hasattr(self, "media_player"):
+            self.media_player.stop()
 
         self.keep_actions_ticking = False
         self.deck.run_read_thread = False
 
     def get_alive(self) -> bool:
         try:
-            return self.deck.is_open
+            return self.deck.is_open()
         except Exception as e:
             log.debug(f"Cougth dead deck error. Error: {e}")
             return False
@@ -888,7 +920,8 @@ class BackgroundVideo(BackgroundVideoCache):
         self.active_frame += 1
 
         if self.active_frame >= self.n_frames:
-            self.active_frame = 0
+            if self.loop:
+                self.active_frame = 0
         
         return self.get_frame(self.active_frame)
     
@@ -1457,20 +1490,19 @@ class ControllerKey:
             font_size = labels[label].font_size
             font = ImageFont.truetype(font_path, font_size)
 
-            if text is None:
-                continue
-            
+            _, _, w, h = draw.textbbox((0, 0), text, font=font)
+
             if label == "top":
-                position = (image.width / 2, font_size*1.125)
+                position = (image.width / 2, h/2 + 3)
 
             if label == "center":
-                position = (image.width / 2, (image.height + font_size) / 2 - 3)
+                position = ((image.width - 0) / 2, (image.height - 0) / 2)
 
             if label == "bottom":
-                position = (image.width / 2, image.height*0.875)
+                position = (image.width / 2, image.height - h/2 - 3)
 
             draw.text(position,
-                        text=text, font=font, anchor="ms",
+                        text=text, font=font, anchor="mm", align="center",
                         fill=color, stroke_width=2,
                         stroke_fill="black")
             
@@ -1603,12 +1635,12 @@ class ControllerKey:
                                 fps = state_dict.get("media", {}).get("fps", 30),
                             )) # Videos always update
 
-                elif len(state.get_own_actions()) > 1:
-                    with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
-                        state.set_key_image(KeyImage(
-                            controller_key=self,
-                            image=image.copy(),
-                        ), update=False)
+            elif len(self.get_own_actions()) > 1:
+                with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
+                    self.set_key_image(KeyImage(
+                        controller_key=self,
+                        image=image.copy(),
+                    ), update=False)
 
                 layout = KeyLayout(
                     fill_mode=state_dict.get("media", {}).get("fill-mode"),
@@ -1617,6 +1649,19 @@ class ControllerKey:
                     halign=state_dict.get("media", {}).get("halign"),
                 )
                 state.layout_manager.set_page_layout(layout, update=False)
+            elif len(state.get_own_actions()) > 1 and False: # Disabled for now - we might reuse it later
+                if state_dict.get("image-control-action") is None:
+                    with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
+                        self.set_key_image(KeyImage(
+                            controller_key=self,
+                            image=image.copy(),
+                        ), update=False)
+            
+            elif len(state.get_own_actions()) == 1:
+                if state_dict.get("image-control-action") is None:
+                    self.set_key_image(None, update=False)
+                # action = self.get_own_actions()[0]
+                # if action.has_image_control()
 
             if load_background_color:
                 state.background_color = state_dict.get("background", {}).get("color", [0, 0, 0, 0])
@@ -1725,6 +1770,8 @@ class ControllerKeyState:
             del self.key_video
 
     def get_own_actions(self) -> list["ActionBase"]:
+        if not self.deck_controller.get_alive(): return []
+        active_page = self.deck_controller.active_page
         active_page = self.controller_key.deck_controller.active_page
         if active_page is None:
             return []

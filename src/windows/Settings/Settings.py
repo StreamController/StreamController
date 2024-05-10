@@ -280,19 +280,31 @@ class SystemGroup(Adw.PreferencesGroup):
         self.autostart = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-autostart"), subtitle=gl.lm.get("settings-system-settings-autostart-subtitle"), active=True)
         self.add(self.autostart)
 
+        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Only works on Gnome", active=True)
+        self.add(self.lock_on_lock_screen)
+
         self.load_defaults()
 
         # Connect signals
         self.autostart.connect("notify::active", self.on_autostart_toggled)
+        self.lock_on_lock_screen.connect("notify::active", self.on_lock_on_lock_screen_toggled)
 
     def load_defaults(self):
         self.autostart.set_active(self.settings.settings_json.get("system", {}).get("autostart", True))
+        self.lock_on_lock_screen.set_active(self.settings.settings_json.get("system", {}).get("lock-on-lock-screen", True))
 
     def on_autostart_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})
         self.settings.settings_json["system"]["autostart"] = self.autostart.get_active()
 
         setup_autostart(self.autostart.get_active())
+
+        # Save
+        self.settings.save_json()
+
+    def on_lock_on_lock_screen_toggled(self, *args):
+        self.settings.settings_json.setdefault("system", {})
+        self.settings.settings_json["system"]["lock-on-lock-screen"] = self.lock_on_lock_screen.get_active()
 
         # Save
         self.settings.save_json()

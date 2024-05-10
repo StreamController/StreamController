@@ -134,7 +134,7 @@ warning.low-fps.fix;Deaktivieren;Deactivate;Désactiver
 warning.dismiss;Verwerfen;Dismiss;Décrisser
 settings.enable-fps-warnings;FPS Warnungen aktivieren;Enable FPS warnings;Activer les avertissements FPS
 settings.performance.title;Performance;Performance;Performance
-settings.performance.header;Performance &amp; Optimierungen;Performance &amp; Optimizations;Performance & Optimisations
+settings.performance.header;"Performance &amp; Optimierungen";"Performance &amp; Optimizations";"Performance &amp; Optimisations"
 settings.performance.n-cached-pages.title;Anzahl der zu cachenden Seiten;Number of cached pages;Nombre de pages en cache
 settings.performance.n-cached-pages.subtitle;"Anzahl der Seiten; die im Caching gespeichert werden sollen";Number of pages to keep in cache;Nombre de pages à garder en cache
 settings.performance.n-cached-pages.tooltip;Eine höhere Zahl bedeutet mehr Speicherverbrauch aber schnellere Seitenladezeit.;A higher number means more memory usage but faster page loading;Un nombre plus élevé signifie une utilisation de mémoire plus importante mais un chargement de page plus rapide.

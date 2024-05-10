@@ -144,7 +144,7 @@
   min-height: 50px;
 }
 .blue-toggle-button:checked{
-  background-color: #78AEED;
+  background-color: @accent_bg_color;
 }
 .icon-selector-remove-button{
   min-width: 40px;
@@ -359,4 +359,20 @@
 }
 .state-switcher-box {
   border-radius: 6px;
+.action-row-toggle:toggled {
+  background-color: red;
+}
+
+.action-row-label-toggle-active {
+  background-color: @accent_bg_color;
+  min-width: 5px;
+  min-height: 5px;
+  border-radius: 99px;
+}
+
+.action-row-label-toggle-inactive {
+  background-color: white;
+  min-width: 5px;
+  min-height: 5px;
+  border-radius: 99px;
 }

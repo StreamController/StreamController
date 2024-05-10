@@ -36,18 +36,21 @@ class WindowGrabber:
         self.integration: Integration = None
         self.init_integration()
 
+    @log.catch
     def get_active_environment(self) -> str:
         desktop = os.getenv("XDG_CURRENT_DESKTOP")
         if desktop is None:
             return
         return desktop.lower()
     
+    @log.catch
     def get_active_server(self) -> str:
         env = os.getenv("XDG_SESSION_TYPE")
         if env is None:
             return
         return env.lower()
     
+    @log.catch
     def init_integration(self) -> None:
         self.environment = self.get_active_environment()
         self.server = self.get_active_server()
@@ -64,6 +67,7 @@ class WindowGrabber:
         elif self.server == "x11":
             self.integration = X11(self)
 
+    @log.catch
     def get_all_windows(self) -> list[Window]:
         """
         returns a list of [wm_class, title] lists
@@ -123,6 +127,14 @@ class WindowGrabber:
                     break
 
             if not found_page:
+                if deck_controller is None:
+                    return
+                if not hasattr(deck_controller, "page_auto_loaded"):
+                    return
+                if not deck_controller.deck.is_open():
+                    return
+                
+
                 if deck_controller.page_auto_loaded:
                     active_page_change_info = gl.page_manager.auto_change_info.get(os.path.abspath(deck_controller.active_page.json_path))
                     if active_page_change_info.get("stay_on_page", True):

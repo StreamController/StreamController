@@ -28,11 +28,15 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 
+from packaging import version
+
+import globals as gl
+
 class ActionHolder:
     """
     Holder for ActionBase containing important information that can be used as long as the ActionBase is not initialized
     """
-    def __init__(self, plugin_base: "PluginBase", action_base: ActionBase, action_id: str, action_name: str, icon: Gtk.Widget = None):
+    def __init__(self, plugin_base: "PluginBase", action_base: ActionBase, action_id: str, action_name: str, icon: Gtk.Widget = None, min_app_version: str = None):
         
         ## Verify variables
         if action_id in ["", None]:
@@ -48,8 +52,19 @@ class ActionHolder:
         self.action_id = action_id
         self.action_name = action_name
         self.icon = icon
+        self.min_app_version = min_app_version
+
+    def get_is_compatible(self) -> bool:
+        if self.min_app_version is not None:
+            if version.parse(gl.app_version) < version.parse(self.min_app_version):
+                return False
+            
+        return True
 
     def init_and_get_action(self, deck_controller: DeckController, page: Page, coords: str, state: int) -> ActionBase:
+        if not self.get_is_compatible():
+            return
+
         return self.action_base(
             action_id = self.action_id,
             action_name = self.action_name,

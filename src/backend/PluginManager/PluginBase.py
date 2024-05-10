@@ -168,6 +168,9 @@ class PluginBase(rpyc.Service):
         if not isinstance(action_holder, ActionHolder):
             raise ValueError("Please pass an ActionHolder")
         
+        if not action_holder.get_is_compatible():
+            return
+        
         self.action_holders[action_holder.action_id] = action_holder
 
     def add_event_holder(self, event_holder: EventHolder) -> None:

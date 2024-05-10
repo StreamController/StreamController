@@ -288,14 +288,8 @@ class ActionBase(rpyc.Service):
 
         ind = self.get_own_action_index()
 
-        r =  [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
+        return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
 
-        if True not in r:
-            if "Counter" in self.action_id:
-                print()
-
-        return r
-    
     def has_image_control(self):
         key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
 

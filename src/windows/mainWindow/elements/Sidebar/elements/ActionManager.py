@@ -57,8 +57,8 @@ class ActionManager(Gtk.Box):
 
         self.main_box.set_margin_bottom(50)
 
-    def load_for_coords(self, coords):
-        self.action_group.load_for_coords(coords)
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        self.action_group.load_for_coords(coords, state)
 
 class ActionGroup(Adw.PreferencesGroup):
     def __init__(self, sidebar, **kwargs):
@@ -75,8 +75,8 @@ class ActionGroup(Adw.PreferencesGroup):
         self.expander = ActionExpanderRow(self)
         self.add(self.expander)
 
-    def load_for_coords(self, coords):
-        self.expander.load_for_coords(coords)
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        self.expander.load_for_coords(coords, state)
 
 
 class ActionExpanderRow(BetterExpander):
@@ -85,6 +85,7 @@ class ActionExpanderRow(BetterExpander):
         self.set_expanded(True)
         self.action_group = action_group
         self.active_coords = None
+        self.active_state = None
 
         self.preview = None
 
@@ -98,9 +99,10 @@ class ActionExpanderRow(BetterExpander):
         action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.sidebar, comment, index, controls_image, controls_labels, total_rows, self)
         self.add_row(action_row)
 
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
         self.clear_actions(keep_add_button=True)
         self.active_coords = coords
+        self.active_state = state
         page_coords = f"{coords[0]}x{coords[1]}"
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
@@ -112,15 +114,15 @@ class ActionExpanderRow(BetterExpander):
             return
         
         
-        number_of_actions = len(controller.active_page.action_objects[page_coords])
-        for i, key in enumerate(controller.active_page.action_objects[page_coords]):
-            action = controller.active_page.action_objects[page_coords][key]
+        number_of_actions = len(controller.active_page.action_objects[page_coords].get(self.active_state, {}))
+        for i, key in enumerate(controller.active_page.action_objects[page_coords].get(self.active_state, {})):
+            action = controller.active_page.action_objects[page_coords][self.active_state][key]
             if isinstance(action, ActionBase):
                 # Get action comment
-                comment = controller.active_page.get_action_comment(page_coords=page_coords, index=key)
+                comment = controller.active_page.get_action_comment(page_coords=page_coords, index=key, state=self.active_state)
 
-                image_control_action_index = controller.active_page.dict["keys"][page_coords].get("image-control-action")
-                label_control_actions = controller.active_page.dict["keys"][page_coords].get("label-control-actions", [])
+                image_control_action_index = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)].get("image-control-action")
+                label_control_actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)].get("label-control-actions", [])
                 controls_image = False
                 if image_control_action_index == key:
                     controls_image = True
@@ -132,11 +134,11 @@ class ActionExpanderRow(BetterExpander):
 
                 self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, controls_image=controls_image, controls_labels=controls_labels, comment=comment, index=i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
-                missing_button_row = MissingActionButtonRow(action.id, page_coords, i)
+                missing_button_row = MissingActionButtonRow(action.id, page_coords, i, self.active_state)
                 self.add_row(missing_button_row)
             elif isinstance(action, ActionOutdated):
                 # No plugin installed for this action
-                missing_button_row = OutdatedActionRow(action.id, page_coords, i)
+                missing_button_row = OutdatedActionRow(action.id, page_coords, i, self.active_state)
                 self.add_row(missing_button_row)
                 
 
@@ -217,16 +219,16 @@ class ActionExpanderRow(BetterExpander):
             return
         page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
 
-        actions = controller.active_page.dict["keys"][page_coords]["actions"]
+        actions = controller.active_page.dict["keys"][page_coords]["states"][self.active_state]["actions"]
 
 
         reordered = self.reorder_index_after(copy(actions), move_index, after_index)
-        controller.active_page.dict["keys"][page_coords]["actions"] = reordered
+        controller.active_page.dict["keys"][page_coords][self.active_state]["actions"] = reordered
 
-        image_control_action = controller.active_page.dict["keys"][page_coords]["image-control-action"]
-        controller.active_page.dict["keys"][page_coords]["image-control-action"] = reordered.index(actions[image_control_action])
+        image_control_action = controller.active_page.dict["keys"][page_coords][self.active_state]["image-control-action"]
+        controller.active_page.dict["keys"][page_coords][self.active_state]["image-control-action"] = reordered.index(actions[image_control_action])
 
-        label_control_actions = controller.active_page.dict["keys"][page_coords]["label-control-actions"]
+        label_control_actions = controller.active_page.dict["keys"][page_coords][self.active_state]["label-control-actions"]
         for i, label_control_action in enumerate(label_control_actions):
             label_control_actions[i] = reordered.index(actions[label_control_action])
         # controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_actions])
@@ -236,7 +238,7 @@ class ActionExpanderRow(BetterExpander):
         action_objects = controller.active_page.action_objects[page_coords]
 
         reordered = self.reorder_action_objects(action_objects, move_index, after_index)
-        controller.active_page.action_objects[page_coords] = reordered
+        controller.active_page.action_objects[page_coords][self.active_state] = reordered
 
 
         controller.load_page(controller.active_page)
@@ -449,7 +451,7 @@ class ActionRow(Adw.ActionRow):
         page = controller.active_page
 
         new_value = self.index if button.get_active() else None
-        page.dict["keys"][self.action_object.page_coords]["image-control-action"] = new_value
+        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["image-control-action"] = new_value
         page.save()
 
         page.reload_similar_pages(page_coords=self.action_object.page_coords, reload_self=True)
@@ -472,10 +474,9 @@ class ActionRow(Adw.ActionRow):
         if controller is None:
             return
         page = controller.active_page
-
-        page.dict["keys"][self.action_object.page_coords].setdefault("label-control-actions", [None, None, None])
+        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)].setdefault("label-control-actions", [None, None, None])
         new_value = self.index if value else None
-        page.dict["keys"][self.action_object.page_coords]["label-control-actions"][i] = new_value
+        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["label-control-actions"][i] = new_value
         page.save()
 
         threading.Thread(target=page.reload_similar_pages, kwargs={"page_coords":self.action_object.page_coords, "reload_self":True}).start()
@@ -659,19 +660,21 @@ class AddActionButtonRow(Adw.PreferencesRow):
         # Set missing values
         active_page.dict.setdefault("keys", {})
         active_page.dict["keys"].setdefault(page_coords, {})
-        active_page.dict["keys"][page_coords].setdefault("actions", [])
+        active_page.dict["keys"][page_coords].setdefault("states", {})
+        active_page.dict["keys"][page_coords]["states"].setdefault(str(self.expander.active_state), {})
+        active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)].setdefault("actions", [])
 
         # Add action
-        active_page.dict["keys"][page_coords]["actions"].append({
+        active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"].append({
             "id": action_class.action_id,
             "settings": {}
         })
 
-        if len(active_page.dict["keys"][page_coords]["actions"]) == 1:
-            if "image-control-action" not in active_page.dict["keys"][page_coords]:
-                active_page.dict["keys"][page_coords]["image-control-action"] = 0
-            if "label-control-actions" not in active_page.dict["keys"][page_coords]:
-                active_page.dict["keys"][page_coords]["label-control-actions"] = [0, 0, 0]
+        if len(active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"]) == 1:
+            if "image-control-action" not in active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]:
+                active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["image-control-action"] = 0
+            if "label-control-actions" not in active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]:
+                active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["label-control-actions"] = [0, 0, 0]
 
         # Save page
         active_page.save()
@@ -681,7 +684,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         active_page.reload_similar_pages(page_coords=page_coords)
 
         # Reload ui
-        self.expander.load_for_coords(self.expander.active_coords)
+        self.expander.load_for_coords(self.expander.active_coords, self.expander.active_state)
 
         # Reload key
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
@@ -694,10 +697,10 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         reload_key = False
 
-        if active_page.dict["keys"][page_coords].get("label-control-action") == len(active_page.dict["keys"][page_coords]["actions"]) - 1:
+        if active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)].get("label-control-action") == len(active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"]) - 1:
             reload_key = True
 
-        if active_page.dict["keys"][page_coords].get("image-control-action") == len(active_page.dict["keys"][page_coords]["actions"]) - 1:
+        if active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)].get("image-control-action") == len(active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"]) - 1:
             reload_key = True
 
         if reload_key:

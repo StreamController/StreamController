@@ -49,12 +49,13 @@ class ActionHolder:
         self.action_name = action_name
         self.icon = icon
 
-    def init_and_get_action(self, deck_controller: DeckController, page: Page, coords: str) -> ActionBase:
+    def init_and_get_action(self, deck_controller: DeckController, page: Page, coords: str, state: int) -> ActionBase:
         return self.action_base(
             action_id = self.action_id,
             action_name = self.action_name,
             deck_controller = deck_controller,
             page = page,
             coords = coords,
-            plugin_base = self.plugin_base
+            plugin_base = self.plugin_base,
+            state = state
         )

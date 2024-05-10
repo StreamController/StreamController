@@ -16,7 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import os
 import gi
 
+from src.backend.DeckManagement.DeckController import DeckController
 from src.windows.mainWindow.elements.PageSelector import PageSelector
+from src.windows.mainWindow.elements.Sidebar.elements.StateSwitcher import StateSwitcher
 
 
 gi.require_version("Gtk", "4.0")
@@ -44,6 +46,7 @@ class Sidebar(Adw.NavigationPage):
         super().__init__(hexpand=True, title="Sidebar", **kwargs)
         self.main_window = main_window
         self.active_coords: tuple = None
+        self.active_state: int = 0
         
         """
         To save performance and memory, we only load the thumbnail when the user sees the row
@@ -83,7 +86,7 @@ class Sidebar(Adw.NavigationPage):
         self.page_selector = PageSelector(self.main_window, gl.page_manager, halign=Gtk.Align.CENTER)
         self.header.set_title_widget(self.page_selector)
 
-        self.load_for_coords((0, 0))
+        self.load_for_coords((0, 0), 0)
 
     def let_user_select_action(self, callback_function, *callback_args, **callback_kwargs):
         """
@@ -106,11 +109,13 @@ class Sidebar(Adw.NavigationPage):
     def show_action_configurator(self):
         self.main_stack.set_visible_child(self.action_configurator)
 
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
         self.active_coords = coords
+        self.active_state = state
+        self.key_editor.state_switcher.select_state(state)
         if not self.get_mapped():
             self.on_map_tasks.clear()
-            self.on_map_tasks.append(lambda: self.load_for_coords(coords))
+            self.on_map_tasks.append(lambda: self.load_for_coords(coords, state))
             return
         # Verify that a controller is selected
         if self.main_window.leftArea.deck_stack.get_visible_child() is None:
@@ -133,9 +138,9 @@ class Sidebar(Adw.NavigationPage):
             self.show_error()
             return
 
-        self.hide_error()        
+        self.hide_error()
 
-        self.key_editor.load_for_coords(coords)
+        self.key_editor.load_for_coords(coords, state)
 
         if self.main_stack.get_visible_child() != self.key_editor:
             self.main_stack.set_visible_child(self.key_editor)
@@ -158,7 +163,7 @@ class Sidebar(Adw.NavigationPage):
         self.main_stack.set_transition_duration(200)
 
     def reload(self):
-        self.load_for_coords(self.active_coords)
+        self.load_for_coords(self.active_coords, self.active_state)
 
 
 class KeyEditor(Gtk.Box):
@@ -172,6 +177,12 @@ class KeyEditor(Gtk.Box):
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.scrolled_window.set_child(self.main_box)
+
+        self.state_switcher = StateSwitcher(margin_start=20, margin_end=20, margin_top=10, margin_bottom=10, hexpand=True)
+        self.state_switcher.add_switch_callback(self.on_state_switch)
+        self.state_switcher.add_add_new_callback(self.on_add_new_state)
+        self.state_switcher.set_n_states(0)
+        self.main_box.append(self.state_switcher)
 
         self.icon_selector = IconSelector(sidebar, halign=Gtk.Align.CENTER, margin_top=40)
         self.main_box.append(self.icon_selector)
@@ -188,13 +199,78 @@ class KeyEditor(Gtk.Box):
         self.action_editor = ActionManager(sidebar, margin_top=25, width_request=400)
         self.main_box.append(self.action_editor)
 
-    def load_for_coords(self, coords):
+        self.remove_state_button = Gtk.Button(label="Remove State", css_classes=["destructive-action"], margin_top=15, margin_bottom=15, margin_start=15, margin_end=15)
+        self.remove_state_button.connect("clicked", self.on_remove_state)
+        self.append(self.remove_state_button)
+
+
+
+    def on_state_switch(self, *args):
+        print("on_state_switch")
+        state = self.state_switcher.get_selected_state()
+        # self.sidebar.active_state = self.state_switcher.get_selected_state()
+
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
+        
+        key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
+
+        key.set_state(state, update_sidebar=True)
+        print(state)
+        print("on_state_switch end")
+
+    def on_add_new_state(self, state):
+        controller = gl.app.main_win.get_active_controller()
+        if controller is None:
+            return
+        
+        key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
+        key.add_new_state()
+
+        self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
+
+    def on_remove_state(self, button):
+        if self.state_switcher.get_n_states() <= 1:
+            return
+
+        controller = gl.app.main_win.get_active_controller()
+        if controller is None:
+            return
+        
+        active_state = self.state_switcher.get_selected_state()
+        
+        key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
+        key.remove_state(active_state)
+
+        self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
+
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller: DeckController = visible_child.deck_controller
+        if controller is None:
+            return
+        
+        key = controller.keys[controller.coords_to_index(coords)]
+
+        self.state_switcher.set_n_states(len(key.states.keys()))
+        self.state_switcher.select_state(state)
+        key.set_state(state)
+
+        self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
+
         self.sidebar.active_coords = coords
-        self.icon_selector.load_for_coords(coords)
-        self.image_editor.load_for_coords(coords)
-        self.label_editor.load_for_coords(coords)
-        self.action_editor.load_for_coords(coords)
-        self.background_editor.load_for_coords(coords)
+        self.icon_selector.load_for_coords(coords, state)
+        self.image_editor.load_for_coords(coords, state)
+        self.label_editor.load_for_coords(coords, state)
+        self.action_editor.load_for_coords(coords, state)
+        self.background_editor.load_for_coords(coords, state)
 
 class PageEditor(Gtk.Box):
     def __init__(self, **kwargs):
@@ -389,13 +465,14 @@ class KeyEditorKeyBox(Gtk.Box):
         self.action_editor = ActionManager(sidebar, margin_top=25, width_request=400)
         self.main_box.append(self.action_editor)
 
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
         self.sidebar.active_coords = coords
-        self.icon_selector.load_for_coords(coords)
-        self.image_editor.load_for_coords(coords)
-        self.label_editor.load_for_coords(coords)
-        self.action_editor.load_for_coords(coords)
-        self.background_editor.load_for_coords(coords)
+        self.sidebar.active_state = state
+        self.icon_selector.load_for_coords(coords, state)
+        self.image_editor.load_for_coords(coords, state)
+        self.label_editor.load_for_coords(coords, state)
+        self.action_editor.load_for_coords(coords, state)
+        self.background_editor.load_for_coords(coords, state)
 
 class TestStack(Gtk.Stack):
     def __init__(self, **kwargs):

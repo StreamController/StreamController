@@ -369,3 +369,12 @@
   min-height: 5px;
   border-radius: 99px;
 }
+
+.state-switcher button{
+  /* border-top-right-radius: 0px; */
+  /* border-bottom-right-radius: 0px; */
+  border-radius: 0px;
+}
+.state-switcher-box {
+  border-radius: 6px;
+}

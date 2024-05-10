@@ -26,6 +26,7 @@ from src.Signals import Signals
 
 # Import own modules
 from src.backend.PageManagement.Page import Page
+from src.backend.PageManagement.DummyPage import DummyPage
 from src.backend.DeckManagement.HelperMethods import natural_sort, natural_sort_by_filenames, recursive_hasattr
 
 # Import globals
@@ -50,6 +51,8 @@ class PageManagerBackend:
 
         self.auto_change_info = {}
         self.update_auto_change_info()
+
+        self.dummy_page = DummyPage()
 
     def set_n_pages_to_cache(self, n_pages):
         old_max_pages = self.max_pages
@@ -376,12 +379,13 @@ class PageManagerBackend:
             with open(page_path, "r") as f:
                 page_dict = json.load(f)
                 for key in page_dict.get("keys", {}):
-                    dict_path = page_dict["keys"][key].get("media", {}).get("path")
-                    if dict_path is None:
-                        continue
-                    if os.path.abspath(dict_path) == os.path.abspath(path):
-                        page_had_asset = True
-                        page_dict["keys"][key]["media"]["path"] = None
+                    for state in page_dict["keys"][key].get("states", {}):
+                        dict_path = page_dict["keys"][key]["states"][state].get("media", {}).get("path")
+                        if dict_path is None:
+                            continue
+                        if os.path.abspath(dict_path) == os.path.abspath(path):
+                            page_had_asset = True
+                            page_dict["keys"][key]["states"][state]["media"]["path"] = None
 
             if page_had_asset:
                 with open(page_path, "w") as f:

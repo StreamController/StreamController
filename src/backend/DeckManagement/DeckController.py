@@ -1565,6 +1565,8 @@ class ControllerKey:
         n_states = len(page_dict.get("states", {}))
         self.create_n_states(max(1, n_states))
 
+        old_state_index = self.state
+
         self.state = 0
 
         #TODO: Reset states
@@ -1672,6 +1674,7 @@ class ControllerKey:
                     state.background_color.append(255)
 
             if update:
+                self.set_state(old_state_index)
                 self.update()
 
     def clear(self, update: bool = True):

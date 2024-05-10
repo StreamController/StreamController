@@ -52,3 +52,10 @@ class PluginInstall(Signal):
 
 class AppQuit(Signal):
     pass
+
+class RemoveState(Signal):
+    """
+    Callback:
+    state: int
+    state_map: dict {old_int: new_int}
+    """

@@ -1285,7 +1285,9 @@ class ControllerKey:
         sorted_state_keys = sorted(self.states.keys())
 
         new_states = {}
+        state_map = {}
         for new_key, old_key in enumerate(sorted_state_keys):
+            state_map[old_key] = new_key
             self.states[old_key].state = new_key
 
             if self.get_active_state() is self.states[old_key]:
@@ -1317,7 +1319,7 @@ class ControllerKey:
                     self.set_state(s, allow_reload=True)
                     break
 
-
+        gl.signal_manager.trigger_signal(Signals.RemoveState, state, state_map)
 
 
     def update_state_switcher(self):

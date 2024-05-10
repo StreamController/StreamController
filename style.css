@@ -352,13 +352,6 @@
   padding: 10px 10px;
 }
 
-.state-switcher button{
-  /* border-top-right-radius: 0px; */
-  /* border-bottom-right-radius: 0px; */
-  border-radius: 0px;
-}
-.state-switcher-box {
-  border-radius: 6px;
 .action-row-toggle:toggled {
   background-color: red;
 }
@@ -375,4 +368,13 @@
   min-width: 5px;
   min-height: 5px;
   border-radius: 99px;
+}
+
+.state-switcher button{
+  /* border-top-right-radius: 0px; */
+  /* border-bottom-right-radius: 0px; */
+  border-radius: 0px;
+}
+.state-switcher-box {
+  border-radius: 6px;
 }

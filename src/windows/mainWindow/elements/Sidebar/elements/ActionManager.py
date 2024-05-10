@@ -121,8 +121,8 @@ class ActionExpanderRow(BetterExpander):
                 # Get action comment
                 comment = controller.active_page.get_action_comment(page_coords=page_coords, index=key, state=self.active_state)
 
-                image_control_action_index = controller.active_page.dict["keys"][page_coords].get("image-control-action")
-                label_control_actions = controller.active_page.dict["keys"][page_coords].get("label-control-actions", [])
+                image_control_action_index = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)].get("image-control-action")
+                label_control_actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)].get("label-control-actions", [])
                 controls_image = False
                 if image_control_action_index == key:
                     controls_image = True
@@ -451,7 +451,7 @@ class ActionRow(Adw.ActionRow):
         page = controller.active_page
 
         new_value = self.index if button.get_active() else None
-        page.dict["keys"][self.action_object.page_coords]["image-control-action"] = new_value
+        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["image-control-action"] = new_value
         page.save()
 
         page.reload_similar_pages(page_coords=self.action_object.page_coords, reload_self=True)
@@ -474,10 +474,9 @@ class ActionRow(Adw.ActionRow):
         if controller is None:
             return
         page = controller.active_page
-
-        page.dict["keys"][self.action_object.page_coords].setdefault("label-control-actions", [None, None, None])
+        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)].setdefault("label-control-actions", [None, None, None])
         new_value = self.index if value else None
-        page.dict["keys"][self.action_object.page_coords]["label-control-actions"][i] = new_value
+        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["label-control-actions"][i] = new_value
         page.save()
 
         threading.Thread(target=page.reload_similar_pages, kwargs={"page_coords":self.action_object.page_coords, "reload_self":True}).start()
@@ -671,11 +670,11 @@ class AddActionButtonRow(Adw.PreferencesRow):
             "settings": {}
         })
 
-        if len(active_page.dict["keys"][page_coords]["actions"]) == 1:
-            if "image-control-action" not in active_page.dict["keys"][page_coords]:
-                active_page.dict["keys"][page_coords]["image-control-action"] = 0
-            if "label-control-actions" not in active_page.dict["keys"][page_coords]:
-                active_page.dict["keys"][page_coords]["label-control-actions"] = [0, 0, 0]
+        if len(active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"]) == 1:
+            if "image-control-action" not in active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]:
+                active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["image-control-action"] = 0
+            if "label-control-actions" not in active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]:
+                active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["label-control-actions"] = [0, 0, 0]
 
         # Save page
         active_page.save()
@@ -698,10 +697,10 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         reload_key = False
 
-        if active_page.dict["keys"][page_coords].get("label-control-action") == len(active_page.dict["keys"][page_coords]["actions"]) - 1:
+        if active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)].get("label-control-action") == len(active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"]) - 1:
             reload_key = True
 
-        if active_page.dict["keys"][page_coords].get("image-control-action") == len(active_page.dict["keys"][page_coords]["actions"]) - 1:
+        if active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)].get("image-control-action") == len(active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"]) - 1:
             reload_key = True
 
         if reload_key:

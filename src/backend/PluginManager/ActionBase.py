@@ -150,6 +150,9 @@ class ActionBase(rpyc.Service):
         if not self.has_image_control():
             return
         
+        if self.get_key_state() != self.state:
+            return
+        
         if is_image(media_path) and image is None:
             with Image.open(media_path) as img:
                 image = img.copy()
@@ -205,7 +208,8 @@ class ActionBase(rpyc.Service):
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
                       font_family: str = None, font_size = None, update: bool = True):
-        if not self.get_is_present(): return
+        if not self.get_is_present():
+            return
         if not self.on_ready_called:
             update = False
 
@@ -213,7 +217,7 @@ class ActionBase(rpyc.Service):
 
         if not self.has_label_control()[label_index]:
             return
-
+        
         if text is None:
             text = ""
 
@@ -280,18 +284,20 @@ class ActionBase(rpyc.Service):
         return len(actions) > 1
     
     def has_label_control(self) -> list[bool]:
-        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {})
+        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
 
-        if key_dict.get("label-control-actions") is None:
-            return [False, False, False]
-        
-        # if not self.get_is_multi_action():
-            # return [True, True, True]
-        
-        return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions")]
+        ind = self.get_own_action_index()
+
+        r =  [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
+
+        if True not in r:
+            if "Counter" in self.action_id:
+                print()
+
+        return r
     
     def has_image_control(self):
-        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {})
+        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
 
         if key_dict.get("image-control-action") is None:
             return False
@@ -305,6 +311,7 @@ class ActionBase(rpyc.Service):
     def get_is_present(self):
         if self.page is None: return False
         if self.page.deck_controller.active_page is not self.page: return False
+        if self.state != self.get_key_state().state: return False
         return self in self.page.get_all_actions()
     
     def has_custom_user_asset(self) -> bool:
@@ -314,7 +321,7 @@ class ActionBase(rpyc.Service):
     
     def get_own_action_index(self) -> int:
         if not self.get_is_present(): return -1
-        return self.page.get_all_actions_for_key(self.page_coords).index(self)
+        return self.page.get_all_actions_for_key_and_state(self.page_coords, state=self.state).index(self)
     
     # ---------- #
     # Rpyc stuff #

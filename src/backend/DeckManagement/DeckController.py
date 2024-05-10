@@ -1074,7 +1074,7 @@ class ControllerKeyLabelManager:
         if gl.app.main_win.sidebar.active_coords != (self.controller_key.coords[0], self.controller_key.coords[1]):
             return
         
-        gl.app.main_win.sidebar.key_editor.label_editor.load_for_coords(self.controller_key.coords, self.controller_key.active_state)
+        gl.app.main_win.sidebar.key_editor.label_editor.load_for_coords(self.controller_key.coords, self.controller_key.state)
         
 
     def get_use_page_label_properties(self, position: str) -> dict:
@@ -1748,6 +1748,7 @@ class ControllerKey:
 class ControllerKeyState:
     def __init__(self, controller_key: "ControllerKey", state: int):
         self.controller_key = controller_key
+        self.deck_controller = controller_key.deck_controller
         self.state = state
 
         # Variables

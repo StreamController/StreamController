@@ -276,12 +276,13 @@ class Page:
     def get_all_actions(self):
         actions = []
         for key in self.action_objects:
-            for action in self.action_objects[key].values():
-                if action is None:
-                    continue
-                if not isinstance(action, ActionBase):
-                    continue
-                actions.append(action)
+            for state in self.action_objects[key]:
+                for action in self.action_objects[key][state].values():
+                    if action is None:
+                        continue
+                    if not isinstance(action, ActionBase):
+                        continue
+                    actions.append(action)
         return actions
     
     def get_all_actions_for_key(self, key, only_action_bases: bool = False):

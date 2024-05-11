@@ -150,7 +150,7 @@ class ActionBase(rpyc.Service):
         if not self.has_image_control():
             return
         
-        if self.get_key_state() != self.state:
+        if self.get_key_state().state != self.state:
             return
         
         if is_image(media_path) and image is None:
@@ -292,6 +292,8 @@ class ActionBase(rpyc.Service):
 
     def has_image_control(self):
         key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
+        if "Analog" in self.action_id:
+            print()
 
         if key_dict.get("image-control-action") is None:
             return False
@@ -300,7 +302,6 @@ class ActionBase(rpyc.Service):
             return True
 
         return self.get_own_action_index() == key_dict.get("image-control-action")
-
     
     def get_is_present(self):
         if self.page is None: return False

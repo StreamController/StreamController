@@ -50,12 +50,8 @@ class ScreenBar(Gtk.Frame):
         # self.image.set_overflow(Gtk.Overflow.HIDDEN)
         # self.image.set_from_file("Assets/800_100.png")
 
-        self.image = Gtk.Picture(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
-                                 halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
-                                 valign=Gtk.Align.CENTER, vexpand=False)
-        
-        self.set_image(Image.new("RGB", (800, 100), (255, 0, 0)))
-
+        self.image = ScreenBarImage()
+        self.image.set_image(Image.new("RGB", (800, 100), (255, 0, 0)))
         self.set_child(self.image)
 
         # self.set_child(self.image)
@@ -79,15 +75,6 @@ class ScreenBar(Gtk.Frame):
         self.drag_start_xy: tuple[int, int] = None
         self.drag_start_time: float = None
 
-    def set_image(self, image: Image.Image):
-        width = 370
-        image.thumbnail((width, width/8))
-
-        pixbuf = image2pixbuf(image)
-        self.image.set_pixbuf(pixbuf)
-        del pixbuf
-
-
     def on_click(self, gesture, n_press, x, y):
         # print(f"Click: {self.parse_xy(x, y)}")
         self.drag_start_xy = None
@@ -100,6 +87,7 @@ class ScreenBar(Gtk.Frame):
             # Select key
             self.image.grab_focus()
 
+            gl.app.main_win.sidebar.load_for_screen()
         elif gesture.get_current_button() == 1 and n_press == 2:
             print("Double click")
             pass
@@ -169,3 +157,18 @@ class ScreenBar(Gtk.Frame):
         else:
             self.set_css_classes(["key-button-frame-hidden"])
             self.page_settings_page.deck_config.active_widget = None
+
+class ScreenBarImage(Gtk.Picture):
+    def __init__(self, **kwargs):
+        super().__init__(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
+                         halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
+                         valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
+                         **kwargs)
+        
+    def set_image(self, image: Image.Image):
+        width = 385 #TODO: Find a better way to do this
+        image.thumbnail((width, width/8))
+
+        pixbuf = image2pixbuf(image)
+        self.set_pixbuf(pixbuf)
+        del pixbuf

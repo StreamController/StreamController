@@ -359,7 +359,10 @@
   padding-bottom: 0px;
   background-color: #363636;
   min-height: 50px;
-  min-width: 400;
+  min-width: 800;
+}
+.plus-screenbar-image {
+  border-radius: 10px;
 }
 .dial {
   min-width:75px;	

@@ -20,6 +20,7 @@ from src.backend.DeckManagement.DeckController import DeckController
 from src.windows.mainWindow.elements.PageSelector import PageSelector
 from src.windows.mainWindow.elements.Sidebar.elements.DialEditor import DialEditor
 from src.windows.mainWindow.elements.Sidebar.elements.StateSwitcher import StateSwitcher
+from src.windows.mainWindow.elements.Sidebar.elements.ScreenEditor import ScreenEditor
 
 
 gi.require_version("Gtk", "4.0")
@@ -48,6 +49,7 @@ class Sidebar(Adw.NavigationPage):
         self.main_window = main_window
         self.active_coords: tuple = None
         self.active_dial: int = None
+        self.screen_active: bool = None
         self.active_state: int = 0
         
         """
@@ -73,11 +75,17 @@ class Sidebar(Adw.NavigationPage):
         self.main_stack = Gtk.Stack(transition_duration=200, transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
         self.main_box.append(self.main_stack)
 
+        self.configurator_stack = Gtk.Stack()
+        self.main_stack.add_named(self.configurator_stack, "configurator_stack")
+
         self.key_editor = KeyEditor(self)
-        self.main_stack.add_named(self.key_editor, "key_editor")
+        self.configurator_stack.add_named(self.key_editor, "key_editor")
 
         self.dial_editor = DialEditor(self)
-        self.main_stack.add_named(self.dial_editor, "dial_editor")
+        self.configurator_stack.add_named(self.dial_editor, "dial_editor")
+
+        self.screen_editor = ScreenEditor(self)
+        self.configurator_stack.add_named(self.screen_editor, "screen_editor")
 
         self.action_chooser = ActionChooser(self)
         self.main_stack.add_named(self.action_chooser, "action_chooser")
@@ -118,8 +126,10 @@ class Sidebar(Adw.NavigationPage):
         self.active_dial = None
         self.active_coords = coords
         self.active_state = state
+        self.screen_active = False
 
-        self.main_stack.set_visible_child(self.key_editor)
+        self.main_stack.set_visible_child(self.configurator_stack)
+        self.configurator_stack.set_visible_child(self.key_editor)
         self.key_editor.state_switcher.select_state(state)
         if not self.get_mapped():
             self.on_map_tasks.clear()
@@ -150,14 +160,21 @@ class Sidebar(Adw.NavigationPage):
 
         self.key_editor.load_for_coords(coords, state)
 
-        if self.main_stack.get_visible_child() != self.key_editor:
-            self.main_stack.set_visible_child(self.key_editor)
-
     def load_for_dial(self, n: int):
         self.active_coords = None
         self.active_dial = n
-        self.main_stack.set_visible_child(self.dial_editor)
+        self.screen_active = False
+        self.main_stack.set_visible_child(self.configurator_stack)
+        self.configurator_stack.set_visible_child(self.dial_editor)
         self.dial_editor.load_for_dial(n)
+
+    def load_for_screen(self):
+        self.active_coords = None
+        self.active_dial = None
+        self.screen_active = True
+        self.main_stack.set_visible_child(self.configurator_stack)
+        self.configurator_stack.set_visible_child(self.screen_editor)
+        self.screen_editor.load()
 
     def show_error(self):
         if self.main_stack.get_visible_child() == self.error_page:

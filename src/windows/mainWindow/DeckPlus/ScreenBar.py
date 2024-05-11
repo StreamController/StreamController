@@ -87,7 +87,9 @@ class ScreenBar(Gtk.Frame):
             # Select key
             self.image.grab_focus()
 
-            gl.app.main_win.sidebar.load_for_screen()
+            active_state = self.page_settings_page.deck_controller.touchscreen.active_state
+
+            gl.app.main_win.sidebar.load_for_screen(active_state)
         elif gesture.get_current_button() == 1 and n_press == 2:
             print("Double click")
             pass

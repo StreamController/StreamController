@@ -89,3 +89,14 @@ class FakeDeck:
     
     def dial_count(self) -> int:
         return self._dial_count
+    
+    def touchscreen_image_format(self) -> dict:
+        return{
+            "size": (800, 100),
+            "format": "JPEG",
+            "flip": (False, False),
+            "rotation": 0
+        }
+    
+    def set_touchscreen_image(self, *args, **kwargs):
+        return

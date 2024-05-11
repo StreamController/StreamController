@@ -22,6 +22,8 @@ from loguru import logger as log
 from copy import copy
 import shutil
 
+from numpy import isin
+
 # Import globals
 import globals as gl
 
@@ -105,6 +107,82 @@ class Page:
         self.save()
 
     def load_action_objects(self):
+        loaded_action_objects = self.action_objects.copy()
+
+        self.action_objects.clear()
+
+        for key in self.dict.get("keys", {}):
+            for state in self.dict["keys"][key].get("states", {}):
+                state = int(state)
+                for i, action in enumerate(self.dict["keys"][key]["states"][str(state)].get("actions", [])):
+                    if action.get("id") is None:
+                        continue
+
+                    self.action_objects.setdefault(key, {})
+                    self.action_objects[key].setdefault(state, {})
+
+                    action_object = self.get_action_object(
+                        loaded_action_objects=loaded_action_objects,
+                        action_id=action["id"],
+                        state=state,
+                        i=i,
+                        coords=key
+                    )
+                    self.action_objects[key][state][i] = action_object
+
+        for gesture in self.dict.get("touchscreen", {}):
+            for state in self.dict["touchscreen"][gesture].get("states", {}):
+                state = int(state)
+                for i, action in enumerate(self.dict[f"touchscreen"][gesture]["states"][str(state)].get("actions", [])):
+                    if action.get("id") is None:
+                        continue
+
+                    self.action_objects.setdefault("touchscreen", {})
+                    self.action_objects["touchscreen"].setdefault(gesture, {})
+                    self.action_objects["touchscreen"][gesture].setdefault(state, {})
+
+                    action_object = self.get_action_object(
+                        loaded_action_objects=loaded_action_objects,
+                        action_id=action["id"],
+                        state=state,
+                        i=i,
+                        touch=True
+                    )
+                    self.action_objects["touchscreen"][gesture][state][i] = action_object
+
+    # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
+
+    def get_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, coords: str = None, dial: int = None, touch: bool = True):
+        dict_key = coords or dial or touch
+
+        action_holder = gl.plugin_manager.get_action_holder_from_id(action_id)
+
+        ## No action holder found
+        if action_holder is None:
+            plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(action_id)
+            if gl.plugin_manager.get_is_plugin_out_of_date(plugin_id):
+                return ActionOutdated(id=action_id, coords=coords, dial=dial, touch=touch, state=state)
+            return NoActionHolderFound(id=action_id, coords=coords, dial=dial, touch=touch, state=state)
+
+        ## Keep old object if it exists
+        old_action = loaded_action_objects.get(dict_key, {}).get(state)
+        if old_action is not None:
+            if isinstance(old_action, action_holder.action_base):
+                return old_action #FIXME: gets never used
+
+        ## Create new action object            
+        action_object = action_holder.init_and_get_action(
+            deck_controller=self.deck_controller,
+            page=self,
+            state=i,
+            coords=coords,
+            dial=dial,
+            touch=touch
+        )
+        return action_object
+
+    def _load_action_objects(self):
+        return
         # Store loaded action objects
         loaded_action_objects = copy(self.action_objects)
 
@@ -386,8 +464,17 @@ class Page:
                 pages.append(controller.active_page)
         return pages
     
-    def reload_similar_pages(self, page_coords=None, reload_self: bool = False,
+    def reload_similar_pages(self, page_coords=None, touch: bool = None, dial: int = None, reload_self: bool = False,
                              load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True):
+        
+        if touch is not None:
+            #TODO
+            return
+        
+        if dial is not None:
+            #TODO
+            return
+
         self.save()
         for page in self.get_pages_with_same_json(get_self=reload_self):
             page.load(load_from_file=True)
@@ -398,18 +485,28 @@ class Page:
                 # Reload only given key
                 page.deck_controller.load_key(key_index, page.deck_controller.active_page)
 
-    def get_action_comment(self, page_coords: str, index: int, state: int):
-        if page_coords in self.action_objects:
-            if index in self.action_objects[page_coords]:
+    def get_action_comment(self, index: int, state: int, coords: str = None, dial: int = None, touch: bool = None):
+        if coords in self.action_objects:
+            if index in self.action_objects[coords]:
                 try:
-                    return self.dict["keys"][page_coords]["states"][str(state)]["actions"][index].get("comment")
+                    if coords is not None:
+                        return self.dict["keys"][coords]["states"][str(state)]["actions"][index].get("comment")
+                    elif dial is not None:
+                        return self.dict["dials"][str(dial)]["states"][str(state)]["actions"][index].get("comment")
+                    elif touch:
+                        return self.dict["touchscreens"]["states"][str(state)]["actions"][index].get("comment")
                 except:
                     return ""
             
-    def set_action_comment(self, page_coords: str, index: int, comment: str, state: int):
-        if page_coords in self.action_objects:
-            if index in self.action_objects[page_coords]:
-                self.dict["keys"][page_coords]["states"][str(state)]["actions"][index]["comment"] = comment
+    def set_action_comment(self, index: int, comment: str, state: int, coords: str, dial: int = None, touch: bool = None):
+        if coords in self.action_objects:
+            if index in self.action_objects[coords]:
+                if coords is not None:
+                    self.dict["keys"][coords]["states"][str(state)]["actions"][index]["comment"] = comment
+                elif dial is not None:
+                    self.dict["dials"][str(dial)]["states"][str(state)]["actions"][index]["comment"] = comment
+                elif touch:
+                    self.dict["touchscreens"]["states"][str(state)]["actions"][index]["comment"] = comment
                 self.save()
 
     def fix_action_objects_order(self, page_coords) -> None:
@@ -624,9 +721,18 @@ class Page:
 
 
 class NoActionHolderFound:
-    def __init__(self, id: str):
+    def __init__(self, id: str, state: int, coords: str = None, dial: int = None, touch: bool = None):
         self.id = id
+        self.coords = coords
+        self.dial = dial
+        self.touch = touch
+        self.state = state
+
 
 class ActionOutdated:
-    def __init__(self, id: str):
+    def __init__(self, id: str, state: int, coords: str = None, dial: int = None, touch: bool = None):
         self.id = id
+        self.coords = coords
+        self.dial = dial
+        self.touch = touch
+        self.state = state

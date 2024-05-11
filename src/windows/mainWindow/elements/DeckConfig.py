@@ -50,5 +50,3 @@ class DeckConfig(Gtk.Box):
 
         self.dial_box = DialBox(self.page_settings_page.deck_controller, self.page_settings_page)
         self.append(self.dial_box)
-
-        threading.Timer(6, lambda: print(self.get_width())).start()

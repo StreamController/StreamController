@@ -10,6 +10,8 @@ from PIL import Image
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.Sidebar.Sidebar import Sidebar
 
+import globals as gl
+
 class ScreenEditor(Gtk.ScrolledWindow):
     def __init__(self, sidebar: "Sidebar"):
         self.sidebar = sidebar
@@ -39,9 +41,6 @@ class ScreenEditor(Gtk.ScrolledWindow):
         self.swipe_right_configurator = ActionManager(self.sidebar)
         self.swipe_right_group.add(self.swipe_right_configurator)
 
-        self.swipe_left_configurator.load_for_coords((0, 0), 0)
-        self.swipe_right_configurator.load_for_coords((0, 0), 1)
-
-
-    def load(self):
-        pass
+    def load(self, state):
+        self.swipe_left_configurator.load_for_screen("swipe-left", state)
+        self.swipe_right_configurator.load_for_screen("swipe-right", state)

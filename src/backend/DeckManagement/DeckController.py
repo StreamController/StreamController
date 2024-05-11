@@ -28,6 +28,7 @@ from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
 from StreamDeck.Devices import StreamDeck
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
+from numpy import empty
 import usb.core
 import usb.util
 from loguru import logger as log
@@ -309,6 +310,8 @@ class DeckController:
         self.keys: list[ControllerKey] = []
         self.init_keys()
 
+        self.touchscreen = ControllerTouchScreen(self)
+
         self.background = Background(self)
 
         self.deck.set_key_callback(self.key_change_callback)
@@ -354,6 +357,18 @@ class DeckController:
 
         del rgb_image
         self.keys[index].set_ui_key_image(image)
+
+    def update_touchscreen(self):
+        if not self.deck.is_touch(): return
+        image = self.touchscreen.get_current_image()
+
+        rgb_image = image.convert("RGB")
+        native_image = PILHelper.to_native_touchscreen_format(self.deck, rgb_image)
+        rgb_image.close()
+        self.deck.set_touchscreen_image(native_image) #TODO: Use tasks
+
+        del rgb_image
+        self.touchscreen.set_ui_image(image)
 
     @log.catch
     def update_all_keys(self):
@@ -421,6 +436,15 @@ class DeckController:
         size = max(size[0], 72), max(size[1], 72)
         return size
     
+    @lru_cache(maxsize=None)
+    def get_touchscreen_image_size(self) -> tuple[int]:
+        if not self.get_alive(): return
+        size = self.deck.touchscreen_image_format()["size"]
+        if size is None:
+            return (800, 100)
+        size = max(size[0], 800), max(size[1], 100)
+        return size
+
     # ------------ #
     # Page Loading #
     # ------------ #
@@ -550,6 +574,10 @@ class DeckController:
         key_dict = page.dict.get("keys", {}).get(f"{coords[0]}x{coords[1]}", {})
         self.keys[key].load_from_page_dict(key_dict, update, load_labels, load_media)
 
+    def load_touchscreen(self, page: Page):
+        pass
+
+
     def update_ui_on_page_change(self):
         # Update ui
         if recursive_hasattr(gl, "app.main_win.sidebar"):
@@ -624,6 +652,8 @@ class DeckController:
             self.load_screensaver(page)
         if load_keys:
             self.media_player.add_task(self.load_all_keys, page, update=False)
+
+        self.load_touchscreen(page) #TODO: Add it as a task
 
         # Load page onto deck
         # self.update_all_keys()
@@ -705,6 +735,12 @@ class DeckController:
         native_image = PILHelper.to_native_key_format(self.deck, alpha_image.convert("RGB"))
         for i in range(self.deck.key_count()):
             self.deck.set_key_image(i, native_image)
+
+        if self.deck.is_touch():
+            empty = Image.new("RGB", self.get_touchscreen_image_size(), (0, 0, 0))
+            native_image = PILHelper.to_native_touchscreen_format(self.deck, empty)
+
+            self.deck.set_touchscreen_image(native_image)
 
     def get_own_key_grid(self) -> KeyGrid:
         # Why not just lru_cache this? Because this would also cache the None that gets returned while the ui is still loading
@@ -1768,6 +1804,29 @@ class ControllerKey:
                 return True
             
         return False
+    
+class ControllerTouchScreen:
+    def __init__(self, deck_controller: DeckController):
+        self.deck_controller = deck_controller
+
+        self.active_state = 0
+
+        self.image = self.generate_empty_image()
+
+    def generate_empty_image(self) -> Image.Image:
+        return Image.new("RGBA", self.deck_controller.get_touchscreen_image_size(), (0, 0, 0, 0))
+    
+    def set_image_ui_image(self, image: Image.Image) -> None:
+        gl.app.main_win.leftArea.deck_stack.get_visible_child().page_settings.deck_config.screenbar.image.set_image(image)
+
+    def get_current_image(self) -> Image.Image:
+        return self.image
+
+    def clear(self):
+        empty = self.generate_empty_image()
+        self.image = empty
+
+        self.deck_controller.update_touchscreen()
     
 class ControllerKeyState:
     def __init__(self, controller_key: "ControllerKey", state: int):

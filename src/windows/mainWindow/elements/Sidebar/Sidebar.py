@@ -160,7 +160,7 @@ class Sidebar(Adw.NavigationPage):
 
         self.key_editor.load_for_coords(coords, state)
 
-    def load_for_dial(self, n: int):
+    def load_for_dial(self, n: int, state: int):
         self.active_coords = None
         self.active_dial = n
         self.screen_active = False
@@ -168,13 +168,13 @@ class Sidebar(Adw.NavigationPage):
         self.configurator_stack.set_visible_child(self.dial_editor)
         self.dial_editor.load_for_dial(n)
 
-    def load_for_screen(self):
+    def load_for_screen(self, state: int    ):
         self.active_coords = None
         self.active_dial = None
         self.screen_active = True
         self.main_stack.set_visible_child(self.configurator_stack)
         self.configurator_stack.set_visible_child(self.screen_editor)
-        self.screen_editor.load()
+        self.screen_editor.load(state)
 
     def show_error(self):
         if self.main_stack.get_visible_child() == self.error_page:

@@ -35,7 +35,8 @@ if TYPE_CHECKING:
 class ActionBase(rpyc.Service):
     # Change to match your action
     def __init__(self, action_id: str, action_name: str,
-                 deck_controller: "DeckController", page: "Page", coords: str, plugin_base: "PluginBase", state: int):
+                 deck_controller: "DeckController", page: "Page", plugin_base: "PluginBase", state: int,
+                 coords: str = None, dial: int = None, touch: bool = None):
         #TODO: Add state arg to all init methods
         self.backend_connection: Connection = None
         self.backend: netref = None
@@ -44,9 +45,15 @@ class ActionBase(rpyc.Service):
         self.deck_controller = deck_controller
         self.page = page
         self.page_coords = coords
+        self.dial = dial
+        self.touch = touch
         self.state = state
-        self.coords = int(coords.split("x")[0]), int(coords.split("x")[1])
-        self.key_index = self.deck_controller.coords_to_index(self.coords)
+        if coords is None:
+            self.coords = None
+            self.key_index = None
+        else:
+            self.coords = int(coords.split("x")[0]), int(coords.split("x")[1])
+            self.key_index = self.deck_controller.coords_to_index(self.coords)
         self.action_id = action_id
         self.action_name = action_name
         self.plugin_base = plugin_base
@@ -90,6 +97,8 @@ class ActionBase(rpyc.Service):
         self.coords = coords
 
     def get_key_state(self) -> "ControllerKeyState":
+        if self.key_index is None:
+            return
         key = self.deck_controller.keys[self.key_index]
         return key.states.get(self.state)
     
@@ -306,7 +315,7 @@ class ActionBase(rpyc.Service):
     def get_is_present(self):
         if self.page is None: return False
         if self.page.deck_controller.active_page is not self.page: return False
-        if self.state != self.get_key_state().state: return False
+        # if self.state != self.get_key_state().state: return False #TODO: Check for touchscreen and dial states
         return self in self.page.get_all_actions()
     
     def has_custom_user_asset(self) -> bool:
@@ -316,7 +325,10 @@ class ActionBase(rpyc.Service):
     
     def get_own_action_index(self) -> int:
         if not self.get_is_present(): return -1
-        return self.page.get_all_actions_for_key_and_state(self.page_coords, state=self.state).index(self)
+        actions = self.page.get_all_actions_for_key_and_state(self.page_coords, state=self.state)
+        if self not in actions:
+            return
+        return actions.index(self)
     
     # ---------- #
     # Rpyc stuff #

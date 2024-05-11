@@ -1,6 +1,7 @@
-from gi.repository import Gtk
+from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.Sidebar.Sidebar import Sidebar
 
@@ -12,10 +13,11 @@ class DialEditor(Gtk.ScrolledWindow):
         self.build()
 
     def build(self):
-        self.main_box = Gtk.Box(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-        self.set_child(self.main_box)
+        self.clamp = Adw.Clamp(hexpand=True, vexpand=True)
+        self.set_child(self.clamp)
 
-        self.main_box.append(Gtk.Label(label="Coming soon", halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER))
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.clamp.set_child(self.main_box)
 
     def load_for_dial(self, n: int):
         pass

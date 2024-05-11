@@ -61,7 +61,7 @@ class ActionHolder:
             
         return True
 
-    def init_and_get_action(self, deck_controller: DeckController, page: Page, coords: str, state: int) -> ActionBase:
+    def init_and_get_action(self, deck_controller: DeckController, page: Page, state: int, coords: str = None, dial: int = None, touch: bool = None) -> ActionBase:
         if not self.get_is_compatible():
             return
 
@@ -71,6 +71,8 @@ class ActionHolder:
             deck_controller = deck_controller,
             page = page,
             coords = coords,
+            dial = dial,
+            touch = touch,
             plugin_base = self.plugin_base,
             state = state
         )

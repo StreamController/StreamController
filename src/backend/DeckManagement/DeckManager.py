@@ -56,6 +56,7 @@ class DeckManager:
     def load_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:
+            break
             try:
                 if not deck.is_open():
                     deck.open()
@@ -117,6 +118,7 @@ class DeckManager:
 
     def connect_new_decks(self):
         # Get already loaded deck serial ids
+        return
         loaded_deck_ids = []
         for controller in self.deck_controller:
             loaded_deck_ids.append(controller.deck.id())

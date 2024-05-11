@@ -341,7 +341,7 @@ class Page:
         for state in self.dict["keys"][coords].get("states", {}):
             for i, action in enumerate(self.dict["keys"][coords]["states"][state].get("actions", [])):
                 self.action_objects.setdefault(coords, {})
-                if self.action_objects[coords][int(state)][i] == action_object:
+                if self.action_objects[coords].get(int(state), {}).get(i) == action_object:
                     self.dict["keys"][coords]["states"][state]["actions"][i]["settings"] = settings
 
     def has_key_an_image_controlling_action(self, page_coords: str, state: int):
@@ -438,7 +438,10 @@ class Page:
             if i == len(keys) - 1:
                 fallback = None
 
-            value = value.get(key, fallback)
+            try:
+                value = value.get(key, fallback)
+            except:
+                return
         return value
     
     def _set_dict_value(self, keys: list[str], value, coords: str | tuple[int, int] = None, state: int = None):

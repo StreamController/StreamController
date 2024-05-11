@@ -236,7 +236,11 @@ class RemoveButton(Gtk.Button):
         self.configurator.sidebar.main_stack.set_visible_child_name("key_editor")
 
         # Remove from action_objects
-        del page.action_objects[self.action.page_coords][int(self.action.state)][self.index]
+        try:
+            del page.action_objects[self.action.page_coords][int(self.action.state)][self.index]
+        except:
+            #FIXME
+            print()
         page.fix_action_objects_order(self.action.page_coords)
 
         # Remove from page json

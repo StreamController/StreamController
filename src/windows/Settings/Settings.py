@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from autostart import setup_autostart
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio
@@ -41,11 +43,13 @@ class Settings(Adw.PreferencesWindow):
         self.store_page = StorePage(settings=self)
         self.performance_page = PerformancePage(settings=self)
         self.dev_page = DevPage(settings=self)
+        self.system_page = SystemPage(settings=self)
 
         self.add(self.ui_page)
         self.add(self.store_page)
         self.add(self.dev_page)
         self.add(self.performance_page)
+        self.add(self.system_page)
 
     def load_json(self):
         # Load settings from file
@@ -79,17 +83,22 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.allow_white_mode = Adw.SwitchRow(title=gl.lm.get("settings-allow-white-mode"), subtitle=gl.lm.get("settings-allow-white-mode-subtitle"), active=False)
         self.add(self.allow_white_mode)
 
+        self.show_notifications = Adw.SwitchRow(title=gl.lm.get("settings-show-notifications"), subtitle=gl.lm.get("settings-show-notifications-subtitle"), active=True)
+        self.add(self.show_notifications)
+
         self.load_defaults()
 
         # Connect signals
         self.emulate_row.connect("notify::active", self.on_emulate_row_toggled)
         self.enable_fps_warnings_row.connect("notify::active", self.on_enable_fps_warnings_row_toggled)
         self.allow_white_mode.connect("notify::active", self.on_allow_white_mode_toggled)
+        self.show_notifications.connect("notify::active", self.on_show_notifications_toggled)
 
     def load_defaults(self):
         self.emulate_row.set_active(self.settings.settings_json.get("key-grid", {}).get("emulate-at-double-click", True))
         self.enable_fps_warnings_row.set_active(self.settings.settings_json.get("warnings", {}).get("enable-fps-warnings", True))
         self.allow_white_mode.set_active(self.settings.settings_json.get("ui", {}).get("allow-white-mode", False))
+        self.show_notifications.set_active(self.settings.settings_json.get("ui", {}).get("show-notifications", True))
 
     def on_emulate_row_toggled(self, *args):
         self.settings.settings_json.setdefault("key-grid", {})
@@ -117,6 +126,13 @@ class UIPageGroup(Adw.PreferencesGroup):
             gl.app.style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
         else:
             gl.app.style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+
+        # Save
+        self.settings.save_json()
+
+    def on_show_notifications_toggled(self, *args):
+        self.settings.settings_json.setdefault("ui", {})
+        self.settings.settings_json["ui"]["show-notifications"] = self.show_notifications.get_active()
 
         # Save
         self.settings.save_json()
@@ -242,6 +258,53 @@ class PerformancePageGroup(Adw.PreferencesGroup):
     def on_cache_videos_toggled(self, *args):
         self.settings.settings_json.setdefault("performance", {})
         self.settings.settings_json["performance"]["cache-videos"] = self.cache_videos.get_active()
+
+        # Save
+        self.settings.save_json()
+
+
+class SystemPage(Adw.PreferencesPage):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__()
+        self.set_title(gl.lm.get("settings-system-settings-title"))
+        self.set_icon_name("system-run-symbolic")
+
+        self.add(SystemGroup(settings=settings))
+
+class SystemGroup(Adw.PreferencesGroup):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__(title=gl.lm.get("settings-system-settings-header"))
+
+        self.autostart = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-autostart"), subtitle=gl.lm.get("settings-system-settings-autostart-subtitle"), active=True)
+        self.add(self.autostart)
+
+        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Only works on Gnome", active=True)
+        self.add(self.lock_on_lock_screen)
+
+        self.load_defaults()
+
+        # Connect signals
+        self.autostart.connect("notify::active", self.on_autostart_toggled)
+        self.lock_on_lock_screen.connect("notify::active", self.on_lock_on_lock_screen_toggled)
+
+    def load_defaults(self):
+        self.autostart.set_active(self.settings.settings_json.get("system", {}).get("autostart", True))
+        self.lock_on_lock_screen.set_active(self.settings.settings_json.get("system", {}).get("lock-on-lock-screen", True))
+
+    def on_autostart_toggled(self, *args):
+        self.settings.settings_json.setdefault("system", {})
+        self.settings.settings_json["system"]["autostart"] = self.autostart.get_active()
+
+        setup_autostart(self.autostart.get_active())
+
+        # Save
+        self.settings.save_json()
+
+    def on_lock_on_lock_screen_toggled(self, *args):
+        self.settings.settings_json.setdefault("system", {})
+        self.settings.settings_json["system"]["lock-on-lock-screen"] = self.lock_on_lock_screen.get_active()
 
         # Save
         self.settings.save_json()

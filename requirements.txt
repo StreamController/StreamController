@@ -41,6 +41,7 @@ mdurl==0.1.2
 memray==1.11.0
 meson==1.4.0
 meson-python==0.15.0
+natsort==8.4.0
 nltk==3.8.1
 numpy==1.26.4
 opencv-python==4.9.0.80

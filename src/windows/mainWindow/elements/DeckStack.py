@@ -56,11 +56,6 @@ class DeckStack(Gtk.Stack):
         self.main_window.sidebar.page_selector.update_selected()
 
         child: DeckStackChild = self.get_visible_child()
-        if child.stack.get_visible_child_name() == "page-settings":
-            self.main_window.split_view.set_collapsed(False)
-
-        else:
-            self.main_window.split_view.set_collapsed(True)
 
     def build(self):
         self.connect("notify::visible-child-name", self.on_switch)

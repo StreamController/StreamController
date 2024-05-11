@@ -20,6 +20,7 @@ import math
 import json
 import requests
 import cairosvg
+import re
 from urllib.parse import urlparse
 from PIL import Image
 
@@ -206,3 +207,27 @@ def load_svg_as_pil(file_path):
 
     pil_image = Image.open(tmp)
     return pil_image
+
+def natural_keys(s):
+    return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
+
+def natural_sort(strings_list: list[str]) -> list[str]:
+    return sorted(strings_list, key=natural_keys)
+
+def natural_sort_by_filenames(paths_list: list[str]) -> list[str]:
+    sorted_paths = sorted(paths_list, key=lambda path: natural_keys(os.path.basename(path)))
+    return sorted_paths
+
+def add_default_keys(d: dict, keys: list):
+    """
+    Add nested default keys to a dictionary.
+
+    :param d: The dictionary to add keys to.
+    :param keys: A list of keys to create nested dictionaries for.
+    :return: None; the dictionary is modified in place.
+    """
+    current_level = d
+    for key in keys:
+        if key not in current_level:
+            current_level[key] = {}
+        current_level = current_level[key]

@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk
@@ -33,6 +34,8 @@ from src.windows.mainWindow.elements.NoDecksError import NoDecksError
 from src.windows.mainWindow.deckSwitcher import DeckSwitcher
 from src.windows.mainWindow.elements.PageSelector import PageSelector
 from src.windows.mainWindow.elements.HeaderHamburgerMenuButton import HeaderHamburgerMenuButton
+from src.backend.DeckManagement.DeckController import DeckController
+from src.backend.PageManagement.Page import Page
 
 
 # Import globals
@@ -135,6 +138,7 @@ class MainWindow(Adw.ApplicationWindow):
         
 
     def on_toggle_sidebar(self, button):
+        return
         if button.get_active():
             self.split_view.set_collapsed(False)
         else:
@@ -204,6 +208,7 @@ class MainWindow(Adw.ApplicationWindow):
             GLib.idle_add(self.split_view.set_collapsed, False)
             GLib.idle_add(self.sidebar_toggle_button.set_visible, True)
             GLib.idle_add(self.menu_button.set_optional_actions_state, True)
+            GLib.idle_add(self.split_view.set_collapsed, False)
             return
         
         elif error == "no-decks":
@@ -213,15 +218,15 @@ class MainWindow(Adw.ApplicationWindow):
             GLib.idle_add(self.main_stack.set_visible_child, self.no_pages_error)
 
         GLib.idle_add(self.deck_switcher.set_show_switcher, False)
-        GLib.idle_add(self.split_view.set_collapsed, True)
         GLib.idle_add(self.sidebar_toggle_button.set_visible, False)
         GLib.idle_add(self.menu_button.set_optional_actions_state, False)
+        GLib.idle_add(self.split_view.set_collapsed, True)
 
     def check_for_errors(self):
         if len(gl.deck_manager.deck_controller) == 0:
             self.set_main_error("no-decks")
 
-        elif len(gl.page_manager.get_page_names()) == 0:
+        elif len(gl.page_manager.get_page_names(add_custom_pages=False)) == 0:
             self.set_main_error("no-pages")
 
         else:
@@ -240,7 +245,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.add_on_finished(self.reload_sidebar)
             return
         
-        self.sidebar.load_for_coords(self.sidebar.active_coords)
+        self.sidebar.load_for_coords(self.sidebar.active_coords, self.sidebar.active_state)
 
     def do_after_build_tasks(self):
         for task in self.on_finished:
@@ -282,6 +287,19 @@ class MainWindow(Adw.ApplicationWindow):
             priority=Adw.ToastPriority.NORMAL
         )
         self.toast_overlay.add_toast(toast)
+
+    def get_active_controller(self) -> DeckController:
+        visible_child = self.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        return visible_child.deck_controller
+    
+    def get_active_page(self) -> Page:
+        controller = self.get_active_controller()
+        if controller is None:
+            return gl.page_manager.dummy_page
+        if hasattr(controller, "active_page"):
+            return controller.active_page
 
 
 class PageManagerNavPage(Adw.NavigationPage):

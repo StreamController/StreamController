@@ -30,6 +30,7 @@ from src.windows.AssetManager.IconPacks.Preview import IconPackPreview
 # Import python modules
 import os
 from fuzzywuzzy import fuzz
+from loguru import logger as log
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -49,6 +50,7 @@ class IconChooserPage(ChooserPage):
         self.build_finished = False
         threading.Thread(target=self.build).start()
 
+    @log.catch
     def build(self):
         self.build_finished = False
         self.set_loading(True)
@@ -70,7 +72,7 @@ class IconChooserPage(ChooserPage):
         self.set_loading(False)
         
         self.build_finished = True
-        self.stack.one_load_finished()
+        self.stack.on_load_finished()
 
     def load_for_pack(self, pack: "IconPack"):
         self.icon_flow.set_item_list(pack.get_icons())

@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.HelperMethods import add_default_keys
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
@@ -91,35 +93,44 @@ class IconSelector(Gtk.Box):
         GLib.idle_add(gl.app.let_user_select_asset, media_path, self.set_media_callback)
 
     def get_media_path(self):
-        active_page_dict = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page.dict
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return None
+        if controller.active_page is None:
+            return None
+        active_page_dict = controller.active_page.dict
         active_coords:tuple = self.sidebar.active_coords
         if active_coords is None:
             return
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
+        
+        active_state = self.sidebar.active_state
 
-        if "keys" not in active_page_dict:
-            return None
-        if page_coords not in active_page_dict["keys"]:
-            return None
-        if "media" not in active_page_dict["keys"][page_coords]:
-            return None
-        if "path" not in active_page_dict["keys"][page_coords]["media"]:
-            return None
-        return active_page_dict["keys"][page_coords]["media"]["path"]
+        return active_page_dict.get("keys", {}).get(page_coords, {}).get("states", {}).get(active_state, {}).get("media", {}).get("path")
     
     def set_media_path(self, path):
-        active_page:dict = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return None
+        active_page = controller.active_page
+        if active_page is None:
+            return
         active_coords:tuple = self.sidebar.active_coords
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
-        active_page.dict.setdefault("keys", {})
-        active_page.dict["keys"].setdefault(page_coords, {})
-        active_page.dict["keys"][page_coords].setdefault("media", {
+        add_default_keys(active_page.dict, ["keys", page_coords, "states", self.state])
+        active_page.dict["keys"][page_coords]["states"][str(self.state)].setdefault("media", {
             "path": None,
             "loop": True,
             "fps": 30
         })
-        active_page.dict["keys"][page_coords]["media"]["path"] = path
+        active_page.dict["keys"][page_coords]["states"][str(self.state)]["media"]["path"] = path
 
         # Save page
         active_page.save()
@@ -131,13 +142,23 @@ class IconSelector(Gtk.Box):
     def set_media_callback(self, path):
         self.set_media_path(path)
         # Reload key
-        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         key_index = controller.coords_to_index(self.sidebar.active_coords)
         controller.load_key(key_index, page=controller.active_page)
 
     def remove_media(self, *args):
         # Get keygrid of active controller
-        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         grid = controller.get_own_key_grid()
         # Call keys remove method
         grid.selected_key.remove_media()
@@ -147,5 +168,5 @@ class IconSelector(Gtk.Box):
     def has_image_to_remove(self):
         return self.get_media_path() is not None
     
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
         self.remove_button.set_visible(self.has_image_to_remove())

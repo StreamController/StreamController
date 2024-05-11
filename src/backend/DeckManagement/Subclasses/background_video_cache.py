@@ -61,14 +61,14 @@ class BackgroundVideoCache:
         tiles = None
         with self.lock:
             if self.is_cache_complete():
-                self.release()
+                self.cap.release()
                 return self.cache.get(n, None)
-
+            
             # Otherwise, continue with video capture
             # Check if the frame is already decoded
             if n in self.cache:
                 return self.cache[n]
-
+            
             # If the requested frame is before the last decoded one, reset the capture
             if n < self.last_frame_index:
                 self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
@@ -93,7 +93,8 @@ class BackgroundVideoCache:
                     tiles.append(current_tiles)
 
                     if n >= self.n_frames - 1:
-                        self.save_cache_threaded()
+                        if not self.is_cache_complete():
+                            self.save_cache_threaded()
 
                 if self.do_caching:
                     self.cache[self.last_frame_index] = tiles
@@ -154,10 +155,6 @@ class BackgroundVideoCache:
 
         return segment
 
-    def release(self):
-        with self.lock:
-            self.cap.release()
-
     def get_video_hash(self) -> str:
         sha1sum = hashlib.md5()
         with open(self.video_path, 'rb') as video:
@@ -171,6 +168,7 @@ class BackgroundVideoCache:
         t = threading.Thread(target=self.save_cache, name="save_video_cache")
         t.start()
         
+    @log.catch
     def save_cache(self):
         """
         Store cache using pickle
@@ -193,6 +191,7 @@ class BackgroundVideoCache:
         del data
 
 
+    @log.catch
     def load_cache(self, key_index: int = None):
         cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
         if not os.path.exists(cache_path):
@@ -224,7 +223,8 @@ class BackgroundVideoCache:
     
     def close(self) -> None:
         import gc
-        self.release()
+        with self.lock:
+            self.cap.release()
 
         for n in self.cache:
             for f in self.cache[n]:

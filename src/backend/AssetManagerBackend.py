@@ -60,16 +60,18 @@ class AssetManagerBackend(list):
             log.warning(f"File {asset_path} not found.")
             return
         
-        # Copy asset to internal folder if it does not exist
-        # This is checked before the sha comparison in case the user manually removed the asset and kept it in the Assets.json
-        if not file_in_dir(asset_path, os.path.join(gl.DATA_PATH, "cache")):
-            internal_path = self.copy_asset(asset_path)
         
         hash = sha256(asset_path)
         if self.has_by_sha256(hash):
+            #TODO: It is possible that the some image has the same sha but not the name because it got renamed
             log.warning(f"Tried to add already existing asset. Ignoring. File: {asset_path}")
             id = self.get_by_sha256(hash)["id"]
+            asset = self.get_by_id(id)
             return id
+        
+        # Copy asset to internal folder if it does not exist
+        if not file_in_dir(os.path.basename(asset_path), os.path.join(gl.DATA_PATH, "cache")):
+            internal_path = self.copy_asset(asset_path)
         
         thumbnail_path = internal_path
         
@@ -136,13 +138,14 @@ class AssetManagerBackend(list):
     def copy_asset(self, asset_path: str) -> str:
         file_name = os.path.basename(asset_path)
         dst_path = None
-        if not file_in_dir(file_name, "cache"):
+        if not file_in_dir(file_name, os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets")):
             dst_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets", file_name)
         else:
             log.warning(f"File with same name already exists but sha256 does not match, renaming: {asset_path}")
             index = 2
-            while file_in_dir(file_name, "cache"):
-                file_name = f"{file_name}-{str(index).zfill(2)}"
+            while file_in_dir(file_name, os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets")):
+                base, ext = os.path.splitext(file_name)
+                file_name = f"{base}-{str(index).zfill(2)}.{ext.replace('.', '')}"
             dst_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets", file_name)
 
         if asset_path == dst_path:
@@ -223,8 +226,11 @@ class AssetManagerBackend(list):
         self.save_json()
 
     def remove_invalid_data(self):
-        # TODO
-        pass
+        ## Remove assets that have been delted internally
+        for asset in self:
+            if not os.path.exists(asset["internal-path"]):
+                self.remove(asset)
+        self.save_json()
 
     def add_custom_media_set_by_ui(self, url: str, path: str):
         window = gl.app.main_win

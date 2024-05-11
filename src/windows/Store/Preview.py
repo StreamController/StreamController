@@ -18,6 +18,8 @@ import gi
 
 import globals as gl
 
+from loguru import logger as log
+
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -33,6 +35,7 @@ import threading
 from src.windows.Store.StorePage import StorePage
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
+from packaging import version
 
 class StorePreview(Gtk.FlowBoxChild):
     def __init__(self, store_page: StorePage):
@@ -55,6 +58,14 @@ class StorePreview(Gtk.FlowBoxChild):
                                  css_classes=["no-padding"],
                                  width_request=250, height_request=250)
         self.set_child(self.main_box)
+
+        # ADD BOX FOR SEARCHING
+        self.search_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.main_box.append(self.search_box)
+
+        # ADD SEARCH BAR
+        self.search_bar = Gtk.SearchBar()
+        self.search_box.append(self.search_bar)
 
         self.main_button = Gtk.Button(hexpand=True, vexpand=False,
                                       width_request=250, height_request=250,
@@ -84,7 +95,7 @@ class StorePreview(Gtk.FlowBoxChild):
                                       xalign=0)
         self.label_box.append(self.author_label)
 
-        self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
+        self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER,
                                  hexpand=False, vexpand=True,
                                  margin_start=6, margin_top=6, margin_bottom=6)
         # self.overlay.add_overlay(self.batch_box)
@@ -151,6 +162,8 @@ class StorePreview(Gtk.FlowBoxChild):
             self.install_spinner.set_spinning(False)
 
     def set_image(self, image:Image):
+        if image is None:
+            return
         image.thumbnail((250, 90))
         pixbuf = image2pixbuf(image, force_transparency=True)
         GLib.idle_add(self.image.set_pixbuf, pixbuf)
@@ -180,6 +193,7 @@ class StorePreview(Gtk.FlowBoxChild):
         
         threading.Thread(target=self.perform_download_threaded, args=(), name="perform_download_threaded").start()
 
+    @log.catch
     def perform_download_threaded(self):
         # Prevent multiple downloads because this may lead to errors during plugin initialization
         while self.store_page.store.currently_downloading:
@@ -239,7 +253,8 @@ class StorePreview(Gtk.FlowBoxChild):
             self.install_uninstall_button.add_css_class("confirm-button")
             self.install_uninstall_button.remove_css_class("red-background")
 
-    def set_description(self, description:str) -> None:
+    def set_description(self, description: str) -> None:
+        description = description.strip()
         if description in ["", "N/A", None]:
             description = gl.lm.get("store.preview.no-description")
 
@@ -250,3 +265,11 @@ class StorePreview(Gtk.FlowBoxChild):
         if len(description) >= 50:
             description = description[:47] + "..."
         self.description.set_label(description)
+
+    def check_required_version(self, app_version_to_check: str):
+        if app_version_to_check is None:
+            return True
+        min_version = version.parse(app_version_to_check)
+        app_version = version.parse(gl.app_version)
+
+        return min_version < app_version

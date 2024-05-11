@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
 import setproctitle
+
 setproctitle.setproctitle("StreamController")
 
 import sys
@@ -48,6 +49,12 @@ from src.Signals.SignalManager import SignalManager
 from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
 from src.backend.GnomeExtensions import GnomeExtensions
 from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
+from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
+from src.tray import TrayIcon
+
+# Migration
+from src.backend.Migration.MigrationManager import MigrationManager
+from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
 
 # Import globals
 import globals as gl
@@ -87,7 +94,10 @@ def create_cache_folder():
 
 def create_global_objects():
     # Setup locales
-    gl.lm = LocaleManager(locales_path="locales")
+    gl.tray_icon = TrayIcon()
+    # gl.tray_icon.run_detached()
+
+    gl.lm = LocaleManager(csv_path=os.path.join("locales", "locales.csv"))
     gl.lm.set_to_os_default()
     gl.lm.set_fallback_language("en_US")
 
@@ -110,14 +120,16 @@ def create_global_objects():
 
     # Plugin Manager
     gl.plugin_manager = PluginManager()
-    gl.plugin_manager.load_plugins()
+    gl.plugin_manager.load_plugins(show_notification=True)
     gl.plugin_manager.generate_action_index()
 
     gl.window_grabber = WindowGrabber()
+    gl.lock_screen_detector = LockScreenManager()
 
     
     # gl.dekstop_grabber = DesktopGrabber()
 
+@log.catch
 def update_assets():
     settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
     auto_update = settings.get("store", {}).get("auto-update", True)
@@ -155,6 +167,8 @@ def reset_all_decks():
                 DeviceManager.USB_PID_STREAMDECK_MINI,
                 DeviceManager.USB_PID_STREAMDECK_XL,
                 DeviceManager.USB_PID_STREAMDECK_MK2,
+                DeviceManager.USB_PID_STREAMDECK_PEDAL,
+                DeviceManager.USB_PID_STREAMDECK_PLUS
             ]:
                 # Reset deck
                 usb.util.dispose_resources(device)
@@ -164,11 +178,19 @@ def reset_all_decks():
 
 def quit_running():
     log.info("Checking if another instance is running")
-    DBusGMainLoop(set_as_default=True)
     session_bus = dbus.SessionBus()
+    obj: dbus.BusObject = None
+    action_interface: dbus.Interface = None
     try:
         obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
         action_interface = dbus.Interface(obj, "org.gtk.Actions")
+    except dbus.exceptions.DBusException as e:
+        log.info("No other instance running, continuing")
+        log.error(e)
+    except ValueError as e:
+        log.info("The last instance has not been properly closed, continuing... This may cause issues")
+
+    if None not in [obj, action_interface]:
         if gl.argparser.parse_args().close_running:
             log.info("Closing running instance")
             try:
@@ -177,26 +199,58 @@ def quit_running():
                 log.error("Could not close running instance: " + str(e))
                 sys.exit(0)
             time.sleep(5)
+
         else:
             action_interface.Activate("reopen", [], [])
             log.info("Already running, exiting")
             sys.exit(0)
+
+def make_api_calls():
+    if not gl.argparser.parse_args().change_page:
+        return
+    
+    session_bus = dbus.SessionBus()
+    obj: dbus.BusObject = None
+    action_interface: dbus.Interface = None
+    try:
+        obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
+        action_interface = dbus.Interface(obj, "org.gtk.Actions")
     except dbus.exceptions.DBusException as e:
-        log.info("No other instance running, continuing")
-
+        obj = None
     except ValueError as e:
-        log.info("The last instance has not been properly closed, continuing... This may cause issues")
+        obj = None
+
+    for serial_number, page_name in gl.argparser.parse_args().change_page:
+        if None in [obj, action_interface] or gl.argparser.parse_args().close_running:
+            gl.api_page_requests[serial_number] = page_name
+        else:
+            # Other instance is running - call dbus interfaces
+            action_interface.Activate("change_page", [[serial_number, page_name]], [])
 
 
+    
+@log.catch
 def main():
+    DBusGMainLoop(set_as_default=True)
     # Dbus
+    make_api_calls()
     quit_running()
 
     reset_all_decks()
 
-    setup_autostart()
+    migration_manager = MigrationManager()
+    # Add migrators
+    migration_manager.add_migrator(Migrator_1_5_0())
+    # Run migrators
+    migration_manager.run_migrators()
 
     create_global_objects()
+
+    app_settings = gl.settings_manager.get_app_settings()
+    app_settings = gl.settings_manager.get_app_settings()
+    auto_start = app_settings.get("system", {}).get("autostart", True)
+    setup_autostart(auto_start)
+    
     create_cache_folder()
     threading.Thread(target=update_assets, name="update_assets").start()
     load()

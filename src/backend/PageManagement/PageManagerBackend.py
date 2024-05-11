@@ -18,12 +18,16 @@ import os
 import shutil
 import json
 from copy import copy
+from signal import Signals
 import time
 from loguru import logger as log
 
+from src.Signals import Signals
+
 # Import own modules
 from src.backend.PageManagement.Page import Page
-from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+from src.backend.PageManagement.DummyPage import DummyPage
+from src.backend.DeckManagement.HelperMethods import natural_sort, natural_sort_by_filenames, recursive_hasattr
 
 # Import globals
 import globals as gl
@@ -48,6 +52,8 @@ class PageManagerBackend:
         self.auto_change_info = {}
         self.update_auto_change_info()
 
+        self.dummy_page = DummyPage()
+
     def set_n_pages_to_cache(self, n_pages):
         old_max_pages = self.max_pages
         self.max_pages = n_pages + 1 # +1 to keep the active page
@@ -59,7 +65,7 @@ class PageManagerBackend:
         for page in self.pages.values():
             page.save()
 
-    def get_pages(self, add_custom_pages: bool = True) -> list:
+    def get_pages(self, add_custom_pages: bool = True, sort: bool = True) -> list:
         pages = []
         # Create pages dir if it doesn't exist
         os.makedirs(os.path.join(gl.DATA_PATH, "pages"), exist_ok=True)
@@ -71,11 +77,15 @@ class PageManagerBackend:
         if add_custom_pages:
             pages.extend(self.custom_pages)
 
+        if sort:
+            pages = natural_sort_by_filenames(pages)
+
+        # print(pages)
         return pages
     
-    def get_page_names(self) -> list[str]:
+    def get_page_names(self, add_custom_pages: bool = True) -> list[str]:
         pages: list[str] = []
-        for page in self.get_pages():
+        for page in self.get_pages(add_custom_pages):
             pages.append(os.path.splitext(os.path.basename(page))[0])
         return pages
     
@@ -117,6 +127,12 @@ class PageManagerBackend:
                 lowest_page = min(self.created_pages[controller][p]["page_number"] for controller in self.created_pages for p in self.created_pages[controller])
                 for controller in self.created_pages:
                     for page in self.created_pages[controller]:
+                        if controller.active_page is None:
+                            continue
+                        if not self.created_pages[controller][page]["page"].ready_to_clear:
+                            continue
+                        if self.created_pages[controller][page]["page"] is controller.active_page:
+                            continue
                         if self.created_pages[controller][page]["page_number"] == lowest_page:
                             page_object: Page = self.created_pages[controller][page]["page"]
                             page_object.clear_action_objects()
@@ -129,11 +145,11 @@ class PageManagerBackend:
 
     def get_default_page_for_deck(self, serial_number: str) -> str:
         page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        return page_settings.get("default-pages", {}).get(serial_number, None)
-        for page in page_settings.get("default-pages", []):
-            if page["deck"] == serial_number:
-                path = page["path"]
-                return path
+        page_path = page_settings.get("default-pages", {}).get(serial_number, None)
+        if page_path is not None:
+            if not os.path.exists(page_path):
+                return None
+            return page_path
         return None
     
     def set_default_page_for_deck(self, serial_number: str, path: str):
@@ -219,7 +235,7 @@ class PageManagerBackend:
 
         # Remove default page entries
         settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        for serial_number, path in settings.get("default-pages",{}).items():
+        for serial_number, path in list(settings.get("default-pages",{}).items()):
             if path == page_path:
                 del settings["default-pages"][serial_number]
         gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)
@@ -239,13 +255,9 @@ class PageManagerBackend:
                 del self.created_pages[controller][path]
 
 
-    def add_page(self, name:str):
-        page = {
-            "keys": {}
-        }
-
+    def add_page(self, name:str, page_dict: dict = {}):
         with open(os.path.join(gl.DATA_PATH, "pages", f"{name}.json"), "w") as f:
-            json.dump(page, f)
+            json.dump(page_dict, f)
 
         # Update ui
         # self.update_ui()
@@ -261,8 +273,14 @@ class PageManagerBackend:
 
         # Update ui
         # self.update_ui()
+        gl.signal_manager.trigger_signal(Signals.PageAdd, path)
 
         self.update_auto_change_info()
+
+    def unregister_page(self, path: str):
+        self.custom_pages.remove(path)
+
+        gl.signal_manager.trigger_signal(Signals.PageDelete, path)
 
     def get_pages_with_path(self, page_path: str) -> list[Page]:
         pages: list[Page] = []
@@ -361,12 +379,13 @@ class PageManagerBackend:
             with open(page_path, "r") as f:
                 page_dict = json.load(f)
                 for key in page_dict.get("keys", {}):
-                    dict_path = page_dict["keys"][key].get("media", {}).get("path")
-                    if dict_path is None:
-                        continue
-                    if os.path.abspath(dict_path) == os.path.abspath(path):
-                        page_had_asset = True
-                        page_dict["keys"][key]["media"]["path"] = None
+                    for state in page_dict["keys"][key].get("states", {}):
+                        dict_path = page_dict["keys"][key]["states"][state].get("media", {}).get("path")
+                        if dict_path is None:
+                            continue
+                        if os.path.abspath(dict_path) == os.path.abspath(path):
+                            page_had_asset = True
+                            page_dict["keys"][key]["states"][state]["media"]["path"] = None
 
             if page_had_asset:
                 with open(page_path, "w") as f:
@@ -378,3 +397,22 @@ class PageManagerBackend:
                 for page in pages:
                     if page.deck_controller.active_page == page:
                         page.deck_controller.load_page(page, allow_reload=True)
+
+    def get_best_page_path_match_from_name(self, name: str) -> str:
+        if name in ["", None]:
+            return
+        
+        # Is a full path
+        if os.path.isfile(name):
+            return name
+        
+        # Not a full path
+        for page in self.get_pages():
+            if "app" in page and "app" in name:
+                print()
+            if os.path.basename(page) == name:
+                return page
+            if os.path.splitext(os.path.basename(page))[0] == name:
+                return page
+            
+        return

@@ -22,6 +22,7 @@ from gi.repository import Gtk, Adw
 
 # Import python modules
 import os
+from loguru import logger as log
 
 # Import own modules
 from src.windows.AssetManager.ChooserPage import ChooserPage
@@ -44,7 +45,7 @@ class WallpaperPackChooser(ChooserPage):
 
         threading.Thread(target=self.build).start()
         
-
+    @log.catch
     def build(self):
         self.type_box.set_visible(False)
 

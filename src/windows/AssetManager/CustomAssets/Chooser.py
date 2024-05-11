@@ -47,6 +47,7 @@ class CustomAssetChooser(ChooserPage):
 
         threading.Thread(target=self.build).start()
 
+    @log.catch
     def build(self):
         self.build_finished = False
         self.asset_chooser = CustomAssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)

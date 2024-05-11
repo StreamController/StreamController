@@ -105,7 +105,7 @@ class CommentGroup(Adw.PreferencesGroup):
         self.set_comment(entry.get_text())
 
         # Update ActionManager - A full reload is not efficient but ensures correct behavior if the ActionConfigurator is triggered from a plugin action
-        gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.action.page_coords.split("x"))
+        gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.action.page_coords.split("x"), self.action.state)
 
     def connect_signals(self):
         self.comment_row.connect("changed", self.on_comment_changed)
@@ -115,14 +115,24 @@ class CommentGroup(Adw.PreferencesGroup):
     
 
     def get_comment(self) -> str:
-        controller = self.parent.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         page = controller.active_page
         if page is None:
             return
-        return page.get_action_comment(self.action.page_coords, self.index)
+        return page.get_action_comment(self.action.page_coords, self.index, self.action.state)
     
     def set_comment(self, comment: str) -> None:
-        controller = self.parent.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         page = controller.active_page
         page.set_action_comment(self.action.page_coords, self.index, comment)
     
@@ -214,25 +224,42 @@ class RemoveButton(Gtk.Button):
         self.index = None
 
     def on_remove_button_click(self, button):
-        controller = self.configurator.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
+        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+        if visible_child is None:
+            return
+        controller = visible_child.deck_controller
+        if controller is None:
+            return
         page = controller.active_page
 
         # Swtich to main editor page
         self.configurator.sidebar.main_stack.set_visible_child_name("key_editor")
 
         # Remove from action_objects
-        del page.action_objects[self.action.page_coords][self.index]
+        try:
+            del page.action_objects[self.action.page_coords][int(self.action.state)][self.index]
+        except:
+            #FIXME
+            print()
         page.fix_action_objects_order(self.action.page_coords)
 
         # Remove from page json
-        page.dict["keys"][self.action.page_coords]["actions"].pop(self.index)
+        page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["actions"].pop(self.index)
+
+        if page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["image-control-action"] == self.index:
+            if len(page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["actions"]) > 0:
+                page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["image-control-action"] = 0
+            else:
+                page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["image-control-action"] = None
+
         page.save()
 
         # Reload configurator
-        self.configurator.sidebar.load_for_coords(self.action.page_coords.split("x"))
+        self.configurator.sidebar.load_for_coords(self.action.page_coords.split("x"), self.action.state)
 
         # Check whether we have to reload the key
-        load = not page.has_key_an_image_controlling_action(self.action.page_coords)
+        load = not page.has_key_an_image_controlling_action(self.action, self.action.state)
+        load = True # TODO
         if load:
             key_index = page.deck_controller.coords_to_index(self.action.page_coords.split("x"))
             controller.load_key(key_index, page=page)

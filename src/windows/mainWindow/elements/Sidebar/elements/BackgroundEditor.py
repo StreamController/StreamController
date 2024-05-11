@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.HelperMethods import add_default_keys
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, Pango
@@ -41,8 +43,8 @@ class BackgroundEditor(Gtk.Box):
         self.label_group = BackgroundGroup(self.sidebar)
         self.main_box.append(self.label_group)
 
-    def load_for_coords(self, coords):
-        self.label_group.load_for_coords(coords)
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        self.label_group.load_for_coords(coords, state)
 
 
 class BackgroundGroup(Adw.PreferencesGroup):
@@ -58,14 +60,15 @@ class BackgroundGroup(Adw.PreferencesGroup):
 
         return
 
-    def load_for_coords(self, coords):
-        self.expander.load_for_coords(coords)
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        self.expander.load_for_coords(coords, state)
 
 class BackgroundExpanderRow(Adw.ExpanderRow):
     def __init__(self, label_group):
         super().__init__(title=gl.lm.get("background-editor.header"), subtitle=gl.lm.get("background-editor-expander.subtitle"))
         self.label_group = label_group
         self.active_coords = None
+        self.active_state = None
         self.build()
 
     def build(self):
@@ -75,10 +78,11 @@ class BackgroundExpanderRow(Adw.ExpanderRow):
         self.reset_color_button = ResetColorButton(color_row=self.color_row)
         self.add_row(self.reset_color_button)
 
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
         self.active_coords = coords
+        self.active_state = state
 
-        self.color_row.load_for_coords(coords)
+        self.color_row.load_for_coords(coords, state)
         self.reset_color_button.update()
 
 class ColorRow(Adw.PreferencesRow):
@@ -87,6 +91,7 @@ class ColorRow(Adw.PreferencesRow):
         self.sidebar = sidebar
         self.expander = expander
         self.active_coords = None
+        self.active_state = None
         self.build()
 
     def build(self):
@@ -109,7 +114,10 @@ class ColorRow(Adw.PreferencesRow):
         self.color_chooser_button.connect("notify::rgba", self.on_change_color)
 
     def disconnect_signals(self):
-        self.color_chooser_button.disconnect_by_func(self.on_change_color)
+        try:
+            self.color_chooser_button.disconnect_by_func(self.on_change_color)
+        except:
+            pass
 
     def set_color(self, color_values: list):
         if len(color_values) == 3:
@@ -125,30 +133,23 @@ class ColorRow(Adw.PreferencesRow):
         red = round(color.red * 255)
         alpha = round(color.alpha * 255)
 
-        # Get active page
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"].setdefault("background", {})
-        page.dict["keys"][f"{self.active_coords[0]}x{self.active_coords[1]}"]["background"]["color"] = [red, green, blue, alpha]
-        page.save()
-
-        # Reload key
-        controller = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller
-        key_index = controller.coords_to_index(self.active_coords)
-        controller.load_key(key_index, page=controller.active_page)
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_background_color(coords=self.active_coords, state=self.active_state, color=[red, green, blue, alpha])
 
         self.expander.reset_color_button.update()
 
-    def load_for_coords(self, coords):
+    def load_for_coords(self, coords: tuple[int, int], state: int):
         self.disconnect_signals()
 
         self.active_coords = coords
+        self.active_state = state
 
-        # Get active page
-        page = self.sidebar.main_window.leftArea.deck_stack.get_visible_child().deck_controller.active_page
-        if page is None:
-            return
+        active_page = gl.app.main_win.get_active_page()
+        color = active_page.get_background_color(coords=self.active_coords, state=self.active_state)
+        if color is None:
+            color = [0, 0, 0, 0]
 
-        self.set_color(page.dict["keys"].get(f"{self.active_coords[0]}x{self.active_coords[1]}", {}).get("background", {}).get("color", [0, 0, 0, 0]))
+        self.set_color(color)
 
         self.connect_signals()
 

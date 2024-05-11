@@ -3,6 +3,7 @@ import os
 import json
 import time
 
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 from src.windows.PageManager.Importer.StreamDeckUI.helper import font_family_from_path, hex_to_rgba255
 from src.windows.PageManager.Importer.StreamDeckUI.code_conv import parse_keys_as_keycodes
 
@@ -46,7 +47,15 @@ class StreamDeckUIImporter:
             log.error(f"Failed to save {json_path}, trying again")
             self.save_json(json_path, data)
             
-    
+    def get_state_map(self, available_states: list[str]):
+        available_states = [int(state) for state in available_states]
+        available_states.sort()
+
+        state_map = {}
+        for i, original_number in enumerate(available_states):
+            state_map[str(i)] = str(original_number)
+
+        return state_map
 
     def perform_import(self):
         with open(self.json_export_path) as f:
@@ -76,113 +85,116 @@ class StreamDeckUIImporter:
 
                     # Choose first state
                     states = self.export["state"][deck]["buttons"][page_name][button]["states"]
-                    state = list(states.keys())[0]
+                    state_map = self.get_state_map(available_states=list(states.keys()))
+                    for page_state, export_state in state_map.items():
+                        page["keys"][coords].setdefault("states", {})
+                        page["keys"][coords]["states"].setdefault(page_state, {})
 
-                    ## Text
-                    font_color_hex = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("font_color")
-                    if font_color_hex in [None, ""]:
-                        font_color_hex = "#FFFFFFFF"
-                    page["keys"][coords]["labels"] = {}
-                    page["keys"][coords]["labels"]["bottom"] = {
-                        "text": self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("text", None),
-                        "color": hex_to_rgba255(font_color_hex),
-                        "font_size": None,
-                        "font_family": font_family_from_path(self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("font"))
-                    }
-                    
-                    page["keys"][coords]["background"] = {}
-                    color_hex = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("background_color")
-                    if color_hex not in [None, ""]:
-                        page["keys"][coords]["background"]["color"] = hex_to_rgba255(color_hex)
+                        ## Text
+                        font_color_hex = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("font_color")
+                        if font_color_hex in [None, ""]:
+                            font_color_hex = "#FFFFFFFF"
+                        page["keys"][coords]["states"][page_state]["labels"] = {}
+                        page["keys"][coords]["states"][page_state]["labels"]["bottom"] = {
+                            "text": self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("text", None),
+                            "color": hex_to_rgba255(font_color_hex),
+                            "font_size": None,
+                            "font_family": font_family_from_path(self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("font"))
+                        }
+                        
+                        page["keys"][coords]["states"][page_state]["background"] = {}
+                        color_hex = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("background_color")
+                        if color_hex not in [None, ""]:
+                            page["keys"][coords]["states"][page_state]["background"]["color"] = hex_to_rgba255(color_hex)
 
-                    ## Icon
-                    page["keys"][coords]["media"] = {}
-                    export_icon = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("icon")
-                    if export_icon not in [None, ""]:
-                        if os.path.exists(export_icon):
-                            asset_id = gl.asset_manager_backend.add(asset_path=export_icon)
-                            asset = gl.asset_manager_backend.get_by_id(asset_id)
-                            page["keys"][coords]["media"]["path"] = asset["internal-path"]
-                        else:
-                            log.warning(f"Icon {export_icon} not found, skipping")
+                        ## Icon
+                        page["keys"][coords]["states"][page_state]["media"] = {}
+                        export_icon = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("icon")
+                        if export_icon not in [None, ""]:
+                            if os.path.exists(export_icon):
+                                asset_id = gl.asset_manager_backend.add(asset_path=export_icon)
+                                asset = gl.asset_manager_backend.get_by_id(asset_id)
+                                page["keys"][coords]["states"][page_state]["media"]["path"] = asset["internal-path"]
+                            else:
+                                log.warning(f"Icon {export_icon} not found, skipping")
 
-                    ## Actions
-                    page["keys"][coords]["actions"] = []
+                        ## Actions
+                        page["keys"][coords]["states"][page_state]["actions"] = []
 
-                    # Keys
-                    if self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("keys") not in [None, ""]:
-                        parsed = ""
-                        try:
-                            parsed = parse_keys_as_keycodes(self.export["state"][deck]["buttons"][page_name][button]["states"][state]["keys"])[0]
-                        except Exception as e:
-                            log.error(f"Failed to parse keys: {self.export['state'][deck]['buttons'][page_name][button]['states'][state]['keys']}. Error: {e}")
+                        # Switch page
+                        export_switch_page = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("switch_page")
+                        if str(export_switch_page) != str(int(page_name)+1) and export_switch_page not in [0, "0", None, ""]:
+                            if export_switch_page not in [None, ""]:
+                                page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{export_switch_page}.json")
+                                action = {
+                                    "id": "com_core447_DeckPlugin::ChangePage",
+                                    "settings": {
+                                        "selected_page": page_path,
+                                        "deck_number": None
+                                    }
+                                }
+                                page["keys"][coords]["states"][page_state]["actions"].append(action)
 
-                        if parsed not in [None, ""]:
+                        # Hotkey
+                        if self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("keys") not in [None, ""]:
+                            parsed = ""
+                            try:
+                                parsed = parse_keys_as_keycodes(self.export["state"][deck]["buttons"][page_name][button]["states"][export_state]["keys"])[0]
+                            except Exception as e:
+                                log.error(f"Failed to parse keys: {self.export['state'][deck]['buttons'][page_name][button]['states'][export_state]['keys']}. Error: {e}")
+
+                            if parsed not in [None, ""]:
+                                action = {
+                                    "id": "com_core447_OSPlugin::Hotkey",
+                                    "settings": {
+                                        "keys": []
+                                    }
+                                }
+                                for key in parsed:
+                                    action["settings"]["keys"].append([key, 1]) # Press
+
+                                for key in parsed:
+                                    action["settings"]["keys"].append([key, 0]) # Release
+
+                                page["keys"][coords]["states"][page_state]["actions"].append(action)
+
+                        # Write text
+                        export_write = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("write")
+                        if export_write not in [None, ""]:
                             action = {
-                                "id": "com_core447_OSPlugin::Hotkey",
+                                "id": "com_core447_OSPlugin::WriteText",
                                 "settings": {
-                                    "keys": []
+                                    "text": export_write
                                 }
                             }
-                            for key in parsed:
-                                action["settings"]["keys"].append([key, 1]) # Press
+                            page["keys"][coords]["states"][page_state]["actions"].append(action)
 
-                            for key in parsed:
-                                action["settings"]["keys"].append([key, 0]) # Release
-
-                            page["keys"][coords]["actions"].append(action)
-
-                    # Write text
-                    export_write = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("write")
-                    if export_write not in [None, ""]:
-                        action = {
-                            "id": "com_core447_OSPlugin::WriteText",
-                            "settings": {
-                                "text": export_write
-                            }
-                        }
-                        page["keys"][coords]["actions"].append(action)
-
-                    # Command
-                    export_command = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("command")
-                    if export_command not in [None, ""]:
-                        action = {
-                            "id": "com_core447_OSPlugin::RunCommand",
-                            "settings": {
-                                "command": export_command
-                            }
-                        }
-                        page["keys"][coords]["actions"].append(action)
-
-                    # Brightness
-                    export_brightness_change = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("brightness_change")
-                    if export_brightness_change not in [None, "", 0]:
-                        action = None
-                        if export_brightness_change > 0:
+                        # Command
+                        export_command = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("command")
+                        if export_command not in [None, ""]:
                             action = {
-                                "id": "com_core447_DeckPlugin::IncreaseBrightness",
-                                "settings": {}
-                            }
-                        else:
-                            action = {
-                                "id": "com_core447_DeckPlugin::DecreaseBrightness",
-                                "settings": {}
-                            }
-                        page["keys"][coords]["actions"].append(action)
-
-                    # Switch page
-                    export_switch_page = self.export["state"][deck]["buttons"][page_name][button]["states"][state].get("switch_page")
-                    if str(export_switch_page) != str(int(page_name)+1) and export_switch_page not in [0, "0", None, ""]:
-                        if export_switch_page not in [None, ""]:
-                            page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{export_switch_page}.json")
-                            action = {
-                                "id": "com_core447_DeckPlugin::ChangePage",
+                                "id": "com_core447_OSPlugin::RunCommand",
                                 "settings": {
-                                    "selected_page": page_path,
-                                    "deck_number": None
+                                    "command": export_command
                                 }
                             }
-                            page["keys"][coords]["actions"].append(action)
+                            page["keys"][coords]["states"][page_state]["actions"].append(action)
+
+                        # Brightness
+                        export_brightness_change = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("brightness_change")
+                        if export_brightness_change not in [None, "", 0]:
+                            action = None
+                            if export_brightness_change > 0:
+                                action = {
+                                    "id": "com_core447_DeckPlugin::IncreaseBrightness",
+                                    "settings": {}
+                                }
+                            else:
+                                action = {
+                                    "id": "com_core447_DeckPlugin::DecreaseBrightness",
+                                    "settings": {}
+                                }
+                            page["keys"][coords]["states"][page_state]["actions"].append(action)
 
 
                 page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{int(page_name) + 1}.json")
@@ -198,6 +210,8 @@ class StreamDeckUIImporter:
 
         log.success("Imported all pages from StreamDeck UI")
 
-        GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
-        GLib.idle_add(gl.page_manager_window.page_selector.load_pages)
+        if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
+            GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
+        if recursive_hasattr(gl, "page_manager_window.page_selector"):
+            GLib.idle_add(gl.page_manager_window.page_selector.load_pages)
         log.success("Updated ui")

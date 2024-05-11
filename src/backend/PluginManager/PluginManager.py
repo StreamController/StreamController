@@ -18,7 +18,7 @@ class PluginManager:
         self.initialized_plugin_classes = list[PluginBase]()
         self.backends:list[BackendBase] = []
 
-    def load_plugins(self):
+    def load_plugins(self, show_notification: bool = False):
         # get all folders in plugins folder
         if not os.path.exists(os.path.join(gl.DATA_PATH, "plugins")):
             os.mkdir(os.path.join(gl.DATA_PATH, "plugins"))
@@ -35,6 +35,31 @@ class PluginManager:
 
         # Get all classes inheriting from PluginBase and generate objects for them
         self.init_plugins()
+
+        if show_notification:
+            self.show_n_disabled_plugins_notification()
+
+
+    def show_n_disabled_plugins_notification(self):
+        n_deactivated_plugins = len(PluginBase.disabled_plugins)
+        if n_deactivated_plugins == 0:
+            return
+        
+        body = f"{n_deactivated_plugins} plugins have been disabled because they are no longer compatible with the current app version"
+        if n_deactivated_plugins == 1:
+            body = f"{n_deactivated_plugins} plugin has been disabled because it is no longer compatible with the current app version"
+        
+        call = lambda: gl.app.send_notification(
+            "dialog-information-symbolic",
+            "Plugins",
+            body,
+            button=("Update All", "app.update-all-assets", None)
+        )
+        if gl.app is None:
+            gl.app_loading_finished_tasks.append(call)
+        else:
+            call()
+        
 
     def init_plugins(self):
         subclasses = PluginBase.__subclasses__()
@@ -71,8 +96,13 @@ class PluginManager:
                 path = get_last_dir(path)
                 self.action_index[action_id] = plugins[plugin]["object"].ACTIONS[action_id]
 
-    def get_plugins(self) -> list[PluginBase]:
-        return PluginBase.plugins
+    def get_plugins(self, include_disabled: bool = False) -> list[PluginBase]:
+        plugins = PluginBase.plugins
+
+        if include_disabled:
+            plugins.update(PluginBase.disabled_plugins)
+
+        return plugins
     
     def get_actions_for_plugin_id(self, plugin_id: str):
         return PluginBase.plugins[plugin_id]["object"].ACTIONS
@@ -87,8 +117,23 @@ class PluginManager:
             log.warning(f"Requested action {action_id} not found, skipping...")
             return None
             
-    def get_plugin_by_id(self, plugin_id:str) -> PluginBase:
-        return self.get_plugins().get(plugin_id, {}).get("object", None)
+    def get_plugin_by_id(self, plugin_id:str, include_disabled: bool = True) -> PluginBase:
+        return self.get_plugins(include_disabled).get(plugin_id, {}).get("object", None)
             
     def remove_plugin_from_list(self, plugin_base: PluginBase):
         del PluginBase.plugins[plugin_base.plugin_id]
+
+    def get_plugin_id_from_action_id(self, action_id: str) -> str:
+        if action_id is None:
+            return
+        
+        return action_id.split("::")[0]
+    
+    def get_is_plugin_out_of_date(self, plugin_id: str) -> bool:
+        plugin = PluginBase.disabled_plugins.get(plugin_id)
+        if plugin is None:
+            # Not installed
+            return False
+        
+        reason = PluginBase.disabled_plugins[plugin_id].get("reason")
+        return reason == "plugin-out-of-date"

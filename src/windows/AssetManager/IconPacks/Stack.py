@@ -67,7 +67,7 @@ class IconPackChooserStack(Gtk.Stack):
     def get_is_build_finished(self):
         return self.pack_chooser.build_finished and self.icon_chooser.build_finished
                 
-    def one_load_finished(self):
+    def on_load_finished(self):
         if self.get_is_build_finished():
             for task in self.on_loads_finished_tasks.copy():
                 task()

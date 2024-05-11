@@ -257,18 +257,21 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_toggle_enable(self, toggle_switch, state):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["enable"] = state
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
         # Update enable if not overwritten by the active page
         active_page = self.settings_page.deck_controller.active_page
-        if not active_page.dict["screensaver"]["overwrite"]:
+        active_page.dict.setdefault("screensaver", {})
+        if not active_page.dict.get("screensaver", {}).get("overwrite", False):
             self.settings_page.deck_controller.screen_saver.set_enable(state)
 
         self.config_box.set_visible(state)
 
     def on_toggle_loop(self, toggle_switch, state):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["loop"] = state
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
@@ -280,6 +283,7 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_change_fps(self, spinner):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["fps"] = spinner.get_value_as_int()
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
@@ -290,6 +294,7 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_change_time(self, spinner):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["time-delay"] = round(spinner.get_value_as_int())
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
@@ -300,6 +305,7 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_change_brightness(self, scale):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
         config["screensaver"]["brightness"] = scale.get_value()
         # Save
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)

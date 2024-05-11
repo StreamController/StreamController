@@ -25,8 +25,9 @@ from gi.repository import Gtk, Adw, Gdk
 import globals as gl
 
 # Import own modules
-from locales.LocaleManager import LocaleManager
+from locales.LegacyLocaleManager import LegacyLocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
+from src.backend.PluginManager.EventHolder import EventHolder
 
 class PluginBase(rpyc.Service):
     plugins = {}
@@ -39,24 +40,23 @@ class PluginBase(rpyc.Service):
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
 
-        self.locale_manager = LocaleManager(os.path.join(self.PATH, "locales"))
+        self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, "locales"))
         self.locale_manager.set_to_os_default()
 
         self.action_holders: dict = {}
+
+        self.event_holders: dict = {}
 
         self.registered: bool = False
 
         self.plugin_name: str = None
 
-    def register(self, plugin_name: str, github_repo: str, plugin_version: str, app_version: str):
+        self.registered_pages: list[str] = []
+
+    def register(self, plugin_name: str = None, github_repo: str = None, plugin_version: str = None,
+                 app_version: str = None):
         """
         Registers a plugin with the given information.
-
-        Args:
-            plugin_name (str): The name of the plugin.
-            github_repo (str): The GitHub repository URL of the plugin.
-            plugin_version (str): The version of the plugin.
-            app_version (str): The version of the application. Do NOT set it programmatically (e.g. by using gl.app_version).
 
         Raises:
             ValueError: If the plugin name is not specified or if the plugin already exists.
@@ -64,79 +64,210 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
-        
+
+        manifest = self.get_manifest()
+        self.plugin_name = plugin_name or manifest.get("name") or None
+        self.github_repo = github_repo or manifest.get("github") or None
+        self.plugin_version = plugin_version or manifest.get("version") or None
+        self.min_app_version = manifest.get("minimum-app-version") or "0.0.0" #TODO: IMPLEMENT BETTER WAY OF VERSION ERROR HANDLING
+        self.app_version = app_version or manifest.get("app-version") or "0.0.0"
+
         # Verify variables
-        if plugin_name in ["", None]:
+        if self.plugin_name in ["", None]:
             log.error("Plugin: Please specify a plugin name")
             return
-        if github_repo in ["", None]:
-            log.error(f"Plugin: {plugin_name}: Please specify a github repo")
+        if self.github_repo in ["", None]:
+            log.error(f"Plugin: {self.plugin_name}: Please specify a github repo")
             return
-        
-        self.plugin_id = self.get_plugin_id()
+        if self.plugin_version in ["", None]:
+            log.error(f"Plugin: {self.plugin_name}: Please specify a plugin version")
+            return
+        if self.app_version in ["", None]:
+            log.error(f"Plugin: {self.plugin_name}: Please specify a app version")
+            return
+
+        self.plugin_id = manifest.get("id") or self.get_plugin_id_from_folder_name()
 
         for plugin_id in PluginBase.plugins.keys():
             plugin = PluginBase.plugins[plugin_id]["object"]
-            if plugin.plugin_name == plugin_name:
-                log.error(f"Plugin: {plugin_name}: Plugin already exists")
+            if plugin.plugin_name == self.plugin_name:
+                log.error(f"Plugin: {self.plugin_name}: Plugin already exists")
                 return
-
-        if self.do_versions_match(app_version):
+            
+        if self.is_app_version_matching():
             # Register plugin
             PluginBase.plugins[self.plugin_id] = {
                 "object": self,
-                "github": github_repo,
-                "version": plugin_version,
-                "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
+                "plugin_version": self.plugin_version,
+                "minimum_app_version": self.min_app_version,
+                "github": self.github_repo,
+                "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
                 "file_name": os.path.basename(inspect.getfile(self.__class__))
             }
             self.registered = True
-
         else:
-            log.warning(
-                f"Plugin {plugin_name} is not compatible with this version of StreamController. "
-                f"Please update your assets! Plugin requires version {plugin_version} and you are "
-                f"running version {gl.app_version}. Disabling plugin."
-            )
+            reason = None
+
+            if self._get_parsed_base_version(self.min_app_version) > self._get_parsed_base_version(gl.app_version):
+                # Plugin is too new - StreamController is too old
+                log.warning(
+                    f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
+                    f"Please update StreamController! Plugin requires app version {self.min_app_version} "
+                    f"you are running version {gl.app_version}. Disabling plugin."
+                )
+                reason = "app-out-of-date"
+
+            elif version.parse(self.app_version).major != version.parse(gl.app_version).major:
+                # Plugin is too old - StreamController is too new
+                max_version = f"{version.parse(self.app_version).major}.x.x"
+                log.warning(
+                    f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
+                    f"Please update your assets! Plugin requires an app version between {self.min_app_version} and {max_version} "
+                    f"you are running version {gl.app_version}. Disabling plugin."
+                )
+                reason = "plugin-out-of-date"
+
             PluginBase.disabled_plugins[self.plugin_id] = {
                 "object": self,
-                "github": github_repo,
-                "version": plugin_version,
-                "folder-path": os.path.dirname(inspect.getfile(self.__class__)),
-                "file_name": os.path.basename(inspect.getfile(self.__class__))
+                "plugin_version": self.plugin_version,
+                "minimum_app_version": self.min_app_version,
+                "github": self.github_repo,
+                "folder_path": os.path.dirname(inspect.getfile(self.__class__)),
+                "file_name": os.path.basename(inspect.getfile(self.__class__)),
+                "reason": reason
             }
 
-        self.plugin_name = plugin_name
-        self.github_repo = github_repo
-        self.version = plugin_version
+    def _get_parsed_base_version(self, version_str: str) -> version.Version:
+        base_version = version.parse(version_str).base_version
+        return version.parse(base_version)
 
-    def get_plugin_id(self) -> str:
+    def get_plugin_id_from_folder_name(self) -> str:
         module = importlib.import_module(self.__module__)
         subclass_file = module.__file__
         return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
+    
+    def is_minimum_version_ok(self) -> bool:
+        app_version = self._get_parsed_base_version(gl.app_version)
+        min_app_version = self._get_parsed_base_version(self.min_app_version)
 
+        return app_version >= min_app_version
 
-    def do_versions_match(self, app_version_to_check: str):
-        if gl.exact_app_version_check:
-            gl.app_version == app_version
-            return
-        
-        # Only compare major version
+    def are_major_versions_matching(self) -> bool:
         app_version = version.parse(gl.app_version)
-        app_version_to_check = version.parse(app_version_to_check)
+        # Should use the current app version the plugin uses instead of the minimum app version
+        current_app_version = version.parse(self.app_version)
 
-        return app_version.major == app_version_to_check.major
-        
+        return app_version.major == current_app_version.major
+
+    #TODO: BETTER ERROR HANDLING FOR are_major_versions_matching and is_minimum_version_ok
+    def is_app_version_matching(self) -> bool:
+        return self.are_major_versions_matching() and self.is_minimum_version_ok()
+
 
     def add_action_holder(self, action_holder: ActionHolder):
         if not isinstance(action_holder, ActionHolder):
             raise ValueError("Please pass an ActionHolder")
         
+        if not action_holder.get_is_compatible():
+            return
+        
         self.action_holders[action_holder.action_id] = action_holder
+
+    def add_event_holder(self, event_holder: EventHolder) -> None:
+        """
+        Adds a EventHolder to the Plugin
+
+        Args:
+            event_holder (EventHolder): The Event Holder
+
+        Raises:
+            ValueError: If the event holder is not an EventHolder
+
+        Returns:
+            None
+        """
+        if not isinstance(event_holder, EventHolder):
+            raise ValueError("Please pass an SignalHolder")
+
+        self.event_holders[event_holder.event_id] = event_holder
+
+    def connect_to_event(self, event_id: str, callback: callable) -> None:
+        """
+        Connects a Callback to the Event which gets specified by the event ID
+
+        Args:
+            event_id (str): The ID of the Event.
+            callback (callable): The Callback that gets Called when the Event triggers
+
+        Returns:
+            None
+        """
+        if event_id in self.event_holders:
+            self.event_holders[event_id].add_listener(callback)
+        else:
+            log.warning(f"{event_id} does not exist in {self.plugin_name}")
+
+    def connect_to_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
+        """
+        Connects a Callback directly to a Plugin with the specified ID
+
+        Args:
+            plugin_id (str): The ID of the Plugin
+            event_id (str): The ID of the Event
+            callback (callable): The Callback that gets Called when the Event triggers
+
+        Returns:
+            None
+        """
+        plugin = self.get_plugin(plugin_id)
+        if plugin is None:
+            log.warning(f"{plugin_id} does not exist")
+        else:
+            plugin.connect_to_event(event_id, callback)
+
+    def disconnect_from_event(self, event_id: str, callback: callable) -> None:
+        """
+        Disconnects a Callback from the Event which gets specified by the event ID
+
+        Args:
+            event_id (str): The ID of the Event.
+            callback (callable): The Callback that gets Removed
+
+        Returns:
+            None
+        """
+        if event_id in self.event_holders:
+            self.event_holders[event_id].remove_listener(callback)
+        else:
+            log.warning(f"{event_id} does not exist in {self.plugin_name}")
+
+    def disconnect_from_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
+        """
+        Disconnects a Callback directly from a plugin with the specified ID
+
+        Args:
+            plugin_id (str): The ID of the Plugin
+            event_id (str): The ID of the Event.
+            callback (callable): The Callback that gets Removed
+
+        Returns:
+            None
+        """
+        plugin = self.get_plugin(plugin_id)
+        if plugin is None:
+            log.warning(f"{plugin_id} does not exist")
+        else:
+            self.disconnect_from_event(event_id, callback)
 
     def get_settings(self):
         if os.path.exists(os.path.join(self.PATH, "settings.json")):
             with open(os.path.join(self.PATH, "settings.json"), "r") as f:
+                return json.load(f)
+        return {}
+
+    def get_manifest(self):
+        if os.path.exists(os.path.join(self.PATH, "manifest.json")):
+            with open(os.path.join(self.PATH, "manifest.json"), "r") as f:
                 return json.load(f)
         return {}
     
@@ -155,17 +286,23 @@ class PluginBase(rpyc.Service):
 
     def register_page(self, path: str) -> None:
         gl.page_manager.register_page(path)
+        self.registered_pages.append(path)
 
     def get_selector_icon(self) -> Gtk.Widget:
         return Gtk.Image(icon_name="view-paged")
     
     def on_uninstall(self) -> None:
+        for page in self.registered_pages:
+            gl.page_manager.unregister_page(page)
         try:
             # Stop backend if running
             if self.backend is not None:
                 self.on_disconnect(self.backend_connection)
         except Exception as e:
             log.error(e)
+
+    def get_plugin(self, plugin_id: str) -> "PluginBase":
+        return gl.plugin_manager.get_plugin_by_id(plugin_id) or None
 
     # ---------- #
     # Rpyc stuff #

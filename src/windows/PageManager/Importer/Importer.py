@@ -18,10 +18,13 @@ import threading
 import gi
 
 from src.windows.PageManager.Importer.StreamDeckUI.StreamDeckUI import StreamDeckUIImporter
+from src.windows.PageManager.Importer.StreamController.StreamController import StreamControllerImporter
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib
+
+from loguru import logger as log
 
 class Importer(Adw.ApplicationWindow):
     def __init__(self, app, window):
@@ -47,18 +50,21 @@ class Importer(Adw.ApplicationWindow):
     def show_error(self):
         pass
 
-    def import_pages(self, path: str, app: str) -> None:
+    def import_pages(self, path: str, app: str, on_finished: callable = None) -> None:
         self.progess_bar.set_text("Importing...")
         self.progess_bar.set_fraction(0)
 
         if app == "streamdeck-ui":
-            thread = threading.Thread(target=self.import_from_streamdeck_ui, args=(path, ), name="import_from_streamdeck_ui")
+            thread = threading.Thread(target=self.import_from_streamdeck_ui, args=(path, on_finished), name="import_from_streamdeck_ui")
             thread.start()
 
-
+        if app == "streamcontroller":
+            thread = threading.Thread(target=self.import_from_streamcontroller, args=(path, on_finished), name="import_from_streamcontroller")
+            thread.start()
         
 
-    def import_from_streamdeck_ui(self, path: str) -> None:
+    @log.catch
+    def import_from_streamdeck_ui(self, path: str, on_finished: callable) -> None:
         if not os.path.exists(path):
             self.show_error()
             return
@@ -71,5 +77,28 @@ class Importer(Adw.ApplicationWindow):
 
         GLib.idle_add(self.progess_bar.set_text, "Imported!")
         GLib.idle_add(self.progess_bar.set_fraction, 1)
+
+        if on_finished:
+            on_finished()
+
+        GLib.timeout_add(1500, self.close)
+
+    @log.catch
+    def import_from_streamcontroller(self, path: str, on_finished: callable) -> None:
+        if not os.path.exists(path):
+            self.show_error()
+            return
+        if not os.path.splitext(os.path.basename(path))[1] == ".json":
+            self.show_error()
+            return
+
+        ui_importer = StreamControllerImporter(path)
+        ui_importer.perform_import()
+
+        GLib.idle_add(self.progess_bar.set_text, "Imported!")
+        GLib.idle_add(self.progess_bar.set_fraction, 1)
+
+        if on_finished:
+            on_finished()
 
         GLib.timeout_add(1500, self.close)

@@ -9,6 +9,7 @@ argparser.add_argument("-b", help="Open in background", action="store_true")
 argparser.add_argument("--devel", help="Developer mode", action="store_true")
 argparser.add_argument("--close-running", help="Close running", action="store_true")
 argparser.add_argument("--data", help="Data path", type=str)
+argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
 argparser.add_argument("app_args", nargs="*")
 
 DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
@@ -37,6 +38,8 @@ if TYPE_CHECKING:
     from src.windows.Store.Store import Store
     from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
     from src.windows.PageManager.PageManager import PageManager
+    from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
+    from src.tray import TrayIcon
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -60,16 +63,37 @@ store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
 signal_manager: "SignalManager" = None
 window_grabber: "WindowGrabber" = None
+lock_screen_detector: "LockScreenDetector" = None
 store: "Store" = None # Only if opened
 flatpak_permission_manager: "FlatpakPermissionManager" = None
 threads_running: bool = True
+app_loading_finished_tasks: callable = []
+api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
+tray_icon: "TrayIcon" = None
 
-
-app_version: str = "1.4.11-beta" # In breaking.feature.fix-state format
+app_version: str = "1.5.1-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
-release_notes: str = "<ul> \
-    <li>Bugfixes</li> \
-    <li>Svg support</li> \
-    </ul>"
+release_notes: str = """
+<ul>
+    <li>Allow image sizes above 100%</li>
+    <li>Add remove button to custom asset chooser</li>
+    <li>Add notifications for asset updates</li>
+    <li>New label overwrite system</li>
+    <li>Add autostart toggle to the settings</li>
+    <li>Add automatic page switching for X11</li>
+    <li>Plugin events by G4PLS</li>
+    <li>Improve import from streamdeck-ui</li>
+    <li>Add import/export options for pages</li>
+    <li>Sort pages naturally in the page selector</li>
+    <li>Reduce page switching time in large libraries</li>
+    <li>Improve the onboarding dialog</li>
+    <li>New store backend by G4PLS</li>
+    <li>Add basic API for page changes</li>
+    <li>Fix: Deck numbers not going higher than 2</li>
+    <li>Fix: Icons not showing in UI for Pedals</li>
+    <li>Fix: Not restoring after suspend</li>
+    <li>Fix: misc bugs</li>
+</ul>
+"""

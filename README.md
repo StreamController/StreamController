@@ -4,6 +4,12 @@
 ![main_screen](https://core447.com/assets/screenshots/main_screen.png)  
 background image by [kvacm](https://kvacm.artstation.com)
 
+## Supported devices
+* Stream Deck Original (2)
+* Stream Deck Mini
+* Stream Deck XL
+* Stream Deck Peal
+
 ## Features
 ### Plugins
 StreamController features plugin support with a built-in store to download your favorite actions. And the best part: You can also publish your own plugins [(Wiki)](https://streamcontroller.github.io/docs).

@@ -388,6 +388,7 @@ class Page:
         return actions
     
     def get_settings_for_action(self, action_object, coords: list = None, state: int = None):
+        return {} #TODO
         if coords is None or state is None:
             for key in self.dict["keys"]:
                 for state in self.dict["keys"][key].get("states", {}):

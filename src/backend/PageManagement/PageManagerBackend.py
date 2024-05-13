@@ -317,7 +317,7 @@ class PageManagerBackend:
     def update_auto_change_info(self):
         start = time.time()
         self.auto_change_info = {}
-        pages = self.get_pages()
+        pages = self.get_pages(sort=False)
         for page in pages:
             abs_path = os.path.abspath(page)
             page_dict = self.get_page_json(abs_path)

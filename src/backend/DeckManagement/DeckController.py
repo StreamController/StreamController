@@ -414,6 +414,9 @@ class DeckController:
             print(f"Dial {dial} turned with value {value}")
 
     def touchscreen_event_callback(self, deck, evt_type, value):
+        self.touchscreen.event_callback(deck, evt_type, value)
+
+        return
         if evt_type == TouchscreenEventType.SHORT:
             print("Short touch @ " + str(value['x']) + "," + str(value['y']))
 
@@ -1827,6 +1830,35 @@ class ControllerTouchScreen:
         self.image = empty
 
         self.deck_controller.update_touchscreen()
+
+    def get_own_actions(self, gesture: str) -> list["ActionBase"]:
+        if not self.deck_controller.get_alive(): return []
+        active_page = gl.app.main_win.get_active_page()
+        if active_page is None:
+            return []
+        if active_page.action_objects is None:
+            return []
+        actions =  active_page.get_all_actions_for_gesture(gesture)
+
+        return actions
+    
+    def on_gesture(self, gesture: str) -> None:
+        actions = self.get_own_actions(gesture)
+        for action in actions:
+            if gesture == "swipe-left":
+                action.on_touch_swipe_left()
+            elif gesture == "swipe-right":
+                action.on_touch_swipe_right()
+
+    def event_callback(self, deck, event_type, value):
+        if event_type == TouchscreenEventType.DRAG:
+            # Check if from left to right or the other way
+            if value['x'] > value['x_out']:
+                print("Drag to the left")
+                self.on_gesture("swipe-left")
+            else:
+                print("Drag to the right")
+                self.on_gesture("swipe-right")
     
 class ControllerKeyState:
     def __init__(self, controller_key: "ControllerKey", state: int):

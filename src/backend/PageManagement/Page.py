@@ -387,6 +387,16 @@ class Page:
                     actions.append(action)
         return actions
     
+    def get_all_actions_for_gesture(self, gesture: str):
+        actions = []
+        action_dict = self.action_objects.get("touchscreen", {}).get(gesture, {}).get(0, {})
+        for action in action_dict.values():
+            if not isinstance(action, ActionBase):
+                continue
+            actions.append(action)
+
+        return actions
+    
     def get_settings_for_action(self, action_object, coords: list = None, state: int = None):
         return {} #TODO
         if coords is None or state is None:

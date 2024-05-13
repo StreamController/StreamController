@@ -118,8 +118,37 @@ class ActionBase(rpyc.Service):
         """
         pass
 
-    def on_tick(self):
-        pass
+    def on_touch_swipe_left(self):
+        # Fallback to normal on_key_down
+        self.on_key_down()
+
+    def on_touch_swipe_right(self):
+        # Fallback to normal on_key_down
+        self.on_key_down()
+
+    def on_touch_down(self):
+        # Fallback to normal on_key_down
+        self.on_key_down()
+
+    def on_touch_up(self):
+        # Fallback to normal on_key_down
+        self.on_key_down()
+
+    def on_dial_rotate_left(self):
+        # Fallback to normal on_key_down
+        self.on_key_down()
+
+    def on_dial_rotate_right(self):
+        # Fallback to normal on_key_down
+        self.on_key_down()
+
+    def on_dial_down(self):
+        # Fallback to normal on_key_down
+        self.on_key_down()
+
+    def on_dial_up(self):
+        # Fallback to normal on_key_down
+        self.on_key_down()
 
     def set_default_image(self, image: Image.Image):
         self.default_image = image

@@ -37,6 +37,7 @@ class MultiDeckSelector(Gtk.ApplicationWindow):
         self.rows: list[DeckRow] = []
         self.build()
         self.load_decks()
+        self.set_selected_deck_serials(self.selected_deck_serials)
 
     def build(self):
         self.header = Adw.HeaderBar(css_classes=["flat"])
@@ -49,14 +50,19 @@ class MultiDeckSelector(Gtk.ApplicationWindow):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.scrolled_window.set_child(self.main_box)
 
+        self.deck_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, vexpand=True)
+        self.main_box.append(self.deck_box)
+
+        self.not_attached_label = Gtk.Label(css_classes=["dim-label"], margin_bottom=3, margin_top=3)
+        self.main_box.append(self.not_attached_label)
+
     def load_decks(self):
         for controller in gl.deck_manager.deck_controller:
             serial_number, name = gl.app.main_win.leftArea.deck_stack.get_page_attributes(controller)
 
-            active = serial_number in self.selected_deck_serials
-            row = DeckRow(self, name, serial_number, active)
+            row = DeckRow(self, name, serial_number, False)
             self.rows.append(row)
-            self.main_box.append(row)
+            self.deck_box.append(row)
 
     def call_callback(self, serial_number: str, state: bool):
         if callable(self.callback):
@@ -71,7 +77,22 @@ class MultiDeckSelector(Gtk.ApplicationWindow):
             if row.get_active():
                 n += 1
         return n
+    
+    def set_selected_deck_serials(self, serials: list[str]):
+        for row in self.rows:
+            if row.deck_serial_number in serials:
+                row.set_active(True)
+            else:
+                row.set_active(False)
 
+        n_not_connected = 0
+        connected = gl.deck_manager.get_connected_serials()
+        for serial in serials:
+            if serial not in connected:
+                n_not_connected += 1
+
+        self.not_attached_label.set_label(f"{n_not_connected} deck(s) not connected")            
+        self.not_attached_label.set_visible(n_not_connected > 0)
 
 
 class DeckRow(Gtk.CheckButton):

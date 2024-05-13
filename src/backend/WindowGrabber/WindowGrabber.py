@@ -109,6 +109,7 @@ class WindowGrabber:
                 wm_regex = info.get("wm_class")
                 title_regex = info.get("title")
                 enabled = info.get("enable", False)
+                decks = info.get("decks", [])
                 if not enabled:
                     continue
 
@@ -116,6 +117,8 @@ class WindowGrabber:
                     if not deck_controller.deck.is_open():
                         return
                     if deck_controller.active_page.json_path == page_path:
+                        continue
+                    if deck_controller.serial_number() not in decks:
                         continue
                     log.debug(f"Auto changing page: {page_path} on deck {deck_controller.deck.get_serial_number()}")
                     page = gl.page_manager.get_page(page_path, deck_controller)

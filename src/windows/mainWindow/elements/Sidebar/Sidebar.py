@@ -101,7 +101,7 @@ class Sidebar(Adw.NavigationPage):
 
         self.load_for_coords((0, 0), 0)
 
-    def let_user_select_action(self, callback_function, *callback_args, **callback_kwargs):
+    def let_user_select_action(self, callback_function, element: str, *callback_args, **callback_kwargs):
         """
         Show the action chooser to let the user select an action.
         The callback_function will be called with the following parameters:
@@ -117,7 +117,11 @@ class Sidebar(Adw.NavigationPage):
         Returns:
             None
         """
-        self.action_chooser.show(callback_function=callback_function, current_stack_page=self.main_stack.get_visible_child(), callback_args=callback_args, callback_kwargs=callback_kwargs)
+        self.action_chooser.show(callback_function=callback_function,
+                                 current_stack_page=self.main_stack.get_visible_child(),
+                                 element=element,
+                                 callback_args=callback_args,
+                                 callback_kwargs=callback_kwargs)
 
     def show_action_configurator(self):
         self.main_stack.set_visible_child(self.action_configurator)

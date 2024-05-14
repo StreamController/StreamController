@@ -654,7 +654,7 @@ class ActionRow(Adw.ActionRow):
 class AddActionButtonRow(Adw.PreferencesRow):
     def __init__(self, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding", "add-button"])
-        self.expander = expander
+        self.expander: ActionExpanderRow = expander
 
         self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN,
                                  css_classes=["no-margin", "invisible"],
@@ -665,7 +665,13 @@ class AddActionButtonRow(Adw.PreferencesRow):
         self.set_child(self.button)
 
     def on_click(self, button):
-        self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action)
+        element = "key"
+        if self.expander.active_dial is not None:
+            element = "dial"
+        elif self.expander.active_gesture is not None:
+            element = "touch"
+
+        self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action, element=element)
 
     def add_action(self, action_class):
         log.trace(f"Adding action: {action_class}")

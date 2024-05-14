@@ -14,12 +14,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 # Import own modules
+from src.backend.PluginManager.ActionSupportTypes import ActionSupports
 from src.backend.PluginManager.ActionBase import ActionBase
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.DeckController import DeckController
 
 # Import typing
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
 
@@ -36,7 +38,15 @@ class ActionHolder:
     """
     Holder for ActionBase containing important information that can be used as long as the ActionBase is not initialized
     """
-    def __init__(self, plugin_base: "PluginBase", action_base: ActionBase, action_id: str, action_name: str, icon: Gtk.Widget = None, min_app_version: str = None):
+    def __init__(self, plugin_base: "PluginBase",
+                 action_base: ActionBase,
+                 action_id: str, action_name: str,
+                 icon: Gtk.Widget = None,
+                 min_app_version: str = None,
+                 key_support: int = ActionSupports.Keys.UNTESTED,
+                 touch_support: int = ActionSupports.Touch.UNTESTED,
+                 dial_support: int = ActionSupports.Dials.UNTESTED
+                 ):
         
         ## Verify variables
         if action_id in ["", None]:
@@ -53,6 +63,9 @@ class ActionHolder:
         self.action_name = action_name
         self.icon = icon
         self.min_app_version = min_app_version
+        self.key_support = key_support
+        self.touch_support = touch_support
+        self.dial_support = dial_support
 
     def get_is_compatible(self) -> bool:
         if self.min_app_version is not None:
@@ -76,3 +89,19 @@ class ActionHolder:
             plugin_base = self.plugin_base,
             state = state
         )
+    
+    def is_compatible_with_element(self, element: str) -> bool:
+        if element == "key":
+            return self.key_support > ActionSupports.Keys.NONE
+        elif element == "touch":
+            return self.touch_support > ActionSupports.Touch.NONE
+        elif element == "dial":
+            return self.dial_support > ActionSupports.Dials.NONE
+        
+    def is_untested_for_element(self, element: str) -> bool:
+        if element == "key":
+            return self.key_support == ActionSupports.Keys.UNTESTED
+        elif element == "touch":
+            return self.touch_support == ActionSupports.Touch.UNTESTED
+        elif element == "dial":
+            return self.dial_support == ActionSupports.Dials.UNTESTED

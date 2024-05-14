@@ -152,10 +152,12 @@ class MediaPlayerThread(threading.Thread):
 
                 for key in self.deck_controller.keys:
                     # break
-                    if key.get_active_state().key_video is not None:
-                        video_each_nth_frame = self.FPS // key.key_video.fps
-                        if self.media_ticks % video_each_nth_frame == 0:
-                            key.update()
+                    active_state = key.get_active_state()
+                    if active_state is not None:
+                        if active_state.key_video is not None:
+                            video_each_nth_frame = self.FPS // active_state.key_video.fps
+                            if self.media_ticks % video_each_nth_frame == 0:
+                                key.update()
                     elif self.deck_controller.background.video is not None:
                         key.update()
 

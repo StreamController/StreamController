@@ -124,13 +124,13 @@ class IconSelector(Gtk.Box):
         active_coords:tuple = self.sidebar.active_coords
         page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
-        add_default_keys(active_page.dict, ["keys", page_coords, "states", self.state])
-        active_page.dict["keys"][page_coords]["states"][str(self.state)].setdefault("media", {
+        add_default_keys(active_page.dict, ["keys", page_coords, "states", str(self.get_selected_state())])
+        active_page.dict["keys"][page_coords]["states"][str(self.get_selected_state())].setdefault("media", {
             "path": None,
             "loop": True,
             "fps": 30
         })
-        active_page.dict["keys"][page_coords]["states"][str(self.state)]["media"]["path"] = path
+        active_page.dict["keys"][page_coords]["states"][str(self.get_selected_state())]["media"]["path"] = path
 
         # Save page
         active_page.save()
@@ -170,3 +170,10 @@ class IconSelector(Gtk.Box):
     
     def load_for_coords(self, coords: tuple[int, int], state: int):
         self.remove_button.set_visible(self.has_image_to_remove())
+
+    def get_selected_state(self) -> int:
+        controller = gl.app.main_win.get_active_controller()
+        if controller is None:
+            return
+        key_index = controller.coords_to_index(self.sidebar.active_coords)
+        return controller.keys[key_index].get_active_state().state

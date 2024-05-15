@@ -445,7 +445,10 @@ class KeyButton(Gtk.Frame):
         if f"{x}x{y}" not in active_page.dict["keys"]:
             return
         
-        if self.state not in active_page.dict["keys"][f"{x}x{y}"]["states"]:
+        if str(self.state) not in active_page.dict["keys"][f"{x}x{y}"]["states"]:
+            return
+        
+        if "media" not in active_page.dict["keys"][f"{x}x{y}"]["states"][str(self.state)]:
             return
         
         active_page.dict["keys"][f"{x}x{y}"]["states"][str(self.state)]["media"]["path"] = None

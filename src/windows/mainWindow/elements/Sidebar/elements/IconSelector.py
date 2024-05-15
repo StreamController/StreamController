@@ -93,10 +93,7 @@ class IconSelector(Gtk.Box):
         GLib.idle_add(gl.app.let_user_select_asset, media_path, self.set_media_callback)
 
     def get_media_path(self):
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return None
         if controller.active_page is None:
@@ -109,7 +106,7 @@ class IconSelector(Gtk.Box):
         
         active_state = self.sidebar.active_state
 
-        return active_page_dict.get("keys", {}).get(page_coords, {}).get("states", {}).get(active_state, {}).get("media", {}).get("path")
+        return active_page_dict.get("keys", {}).get(page_coords, {}).get("states", {}).get(str(active_state), {}).get("media", {}).get("path")
     
     def set_media_path(self, path):
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()

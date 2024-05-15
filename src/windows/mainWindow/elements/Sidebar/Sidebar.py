@@ -170,7 +170,7 @@ class Sidebar(Adw.NavigationPage):
         self.screen_active = False
         self.main_stack.set_visible_child(self.configurator_stack)
         self.configurator_stack.set_visible_child(self.dial_editor)
-        self.dial_editor.load_for_dial(n)
+        self.dial_editor.load_for_dial(n, state)
 
     def load_for_screen(self, state: int    ):
         self.active_coords = None

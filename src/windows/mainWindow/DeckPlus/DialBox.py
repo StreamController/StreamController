@@ -123,7 +123,7 @@ class Dial(Gtk.Frame):
             # Select key
             self.image.grab_focus()
 
-            gl.app.main_win.sidebar.load_for_dial(self.n)
+            gl.app.main_win.sidebar.load_for_dial(self.n, 0)
         elif gesture.get_current_button() == 1 and n_press == 2:
             # print("Double click / activate")
 

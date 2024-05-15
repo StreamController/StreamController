@@ -150,6 +150,29 @@ class Page:
                     )
                     self.action_objects["touchscreen"][gesture][state][i] = action_object
 
+        for dial in self.dict.get("dials", {}):
+            for state in self.dict["dials"][dial].get("states", {}):
+                state = int(state)
+                for i, action in enumerate(self.dict["dials"][dial]["states"][str(state)].get("actions", [])):
+                    if action.get("id") is None:
+                        continue
+
+                    self.action_objects.setdefault("dials", {})
+                    self.action_objects["dials"].setdefault(dial, {})
+                    self.action_objects["dials"][dial].setdefault(state, {})
+
+                    action_object = self.get_action_object(
+                        loaded_action_objects=loaded_action_objects,
+                        action_id=action["id"],
+                        state=state,
+                        i=i,
+                        dial=True
+                    )
+                    self.action_objects["dials"][dial][state][i] = action_object
+
+        # Go through all old actions and call on_removed_from_cache if they have been removed
+        #TODO
+
     # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
 
     def get_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, coords: str = None, dial: int = None, touch: bool = True):

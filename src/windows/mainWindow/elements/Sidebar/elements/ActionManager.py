@@ -66,6 +66,9 @@ class ActionManager(Gtk.Box):
     def load_for_screen(self, gesture: str, state: int):
         self.action_group.load_for_screen(gesture, state)
 
+    def load_for_dial(self, n: int, rotation: str, state: int):
+        self.action_group.load_for_dial(n, rotation, state)
+
 class ActionGroup(Adw.PreferencesGroup):
     def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
@@ -86,6 +89,9 @@ class ActionGroup(Adw.PreferencesGroup):
 
     def load_for_screen(self, gesture: str, state: int):
         self.expander.load_for_screen(gesture, state)
+
+    def load_for_dial(self, n: int, rotation: str, state: int):
+        self.expander.load_for_dial(n, rotation, state)
 
 
 class ActionExpanderRow(BetterExpander):
@@ -135,6 +141,18 @@ class ActionExpanderRow(BetterExpander):
         controller = gl.app.main_win.get_active_controller()
 
         actions = controller.active_page.action_objects.get("touchscreen", {}).get(gesture, {}).get(self.active_state, {})
+        self.load_for_actions(actions.values())
+
+    def load_for_dial(self, n: int, rotation: str, state: int):
+        self.clear_actions(keep_add_button=True)
+        self.active_state = state
+        self.active_dial = n
+        self.active_gesture = None
+        self.active_coords = None
+
+        controller = gl.app.main_win.get_active_controller()
+
+        actions = controller.active_page.action_objects.get("dials", {}).get(n, {}).get(rotation, {}).get(self.active_state, {})
         self.load_for_actions(actions.values())
 
         
@@ -693,6 +711,9 @@ class AddActionButtonRow(Adw.PreferencesRow):
         elif self.expander.active_gesture is not None:
             add_default_keys(active_page.dict, ["touchscreen", self.expander.active_gesture, "states", str(self.expander.active_state)])
             state_dict = active_page.dict["touchscreen"][self.expander.active_gesture]["states"][str(self.expander.active_state)]
+        elif self.expander.active_dial is not None:
+            add_default_keys(active_page.dict, ["dials", self.expander.active_dial, "states", str(self.expander.active_state)])
+            state_dict = active_page.dict["dials"][self.expander.active_dial]["states"][str(self.expander.active_state)]
 
         state_dict.setdefault("actions", [])
 

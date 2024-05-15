@@ -357,8 +357,8 @@ class Page:
         for action in self.get_all_actions():
             if hasattr(action, "on_ready"):
                 if not action.on_ready_called:
-                    action.on_ready()
                     action.on_ready_called = True
+                    action.on_ready()
 
     def clear_action_objects(self):
         for key in self.action_objects:

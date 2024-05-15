@@ -27,6 +27,7 @@ from locales.LegacyLocaleManager import LegacyLocaleManager
 
 # Import typing
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
     from src.backend.DeckManagement.DeckController import DeckController, ControllerKey, ControllerKeyState
@@ -90,6 +91,8 @@ class ActionBase(rpyc.Service):
         self.coords = coords
 
     def get_key_state(self) -> "ControllerKeyState":
+        self.raise_error_if_not_ready()
+
         key = self.deck_controller.keys[self.key_index]
         return key.states.get(self.state)
     
@@ -137,6 +140,8 @@ class ActionBase(rpyc.Service):
             }
 
     def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):
+        self.raise_error_if_not_ready()
+
         if not self.get_is_present():
             return
         if self.key_index >= self.deck_controller.deck.key_count():
@@ -185,6 +190,8 @@ class ActionBase(rpyc.Service):
             self.deck_controller.update_key(self.key_index)
 
     def set_background_color(self, color: list[int] = [255, 255, 255, 255], update: bool = True):
+        self.raise_error_if_not_ready()
+
         if self.key_index >= self.deck_controller.deck.key_count():
             return
         if not self.on_ready_called:
@@ -196,11 +203,15 @@ class ActionBase(rpyc.Service):
 
             
     def show_error(self, duration: int = -1) -> None:
+        self.raise_error_if_not_ready()
+
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
         self.get_key_state().show_error(duration=duration)
 
     def hide_error(self) -> None:
+        self.raise_error_if_not_ready()
+
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
         self.get_key_state().hide_error()
@@ -208,6 +219,8 @@ class ActionBase(rpyc.Service):
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
                       font_family: str = None, font_size = None, update: bool = True):
+        self.raise_error_if_not_ready()
+
         if not self.get_is_present():
             return
         if not self.on_ready_called:
@@ -260,12 +273,16 @@ class ActionBase(rpyc.Service):
         return
     
     def get_settings(self) -> dir:
+        self.raise_error_if_not_ready()
+
         # self.page.load()
         if self.page is None:
             return {}
         return self.page.get_settings_for_action(self, coords = self.page_coords, state=self.state)
     
     def set_settings(self, settings: dict):
+        self.raise_error_if_not_ready()
+
         if self.page is None:
             return
         self.page.set_settings_for_action(self, settings=settings, coords = self.page_coords, state=self.state)
@@ -276,14 +293,20 @@ class ActionBase(rpyc.Service):
         gl.signal_manager.connect_signal(signal = signal, callback = callback)
 
     def get_own_key(self) -> "ControllerKey":
+        self.raise_error_if_not_ready()
+
         return self.deck_controller.keys[self.key_index]
     
     def get_is_multi_action(self) -> bool:
+        self.raise_error_if_not_ready()
+
         if not self.get_is_present(): return
         actions = self.page.action_objects.get(self.page_coords, [])
         return len(actions) > 1
     
     def has_label_control(self) -> list[bool]:
+        self.raise_error_if_not_ready()
+
         key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
 
         ind = self.get_own_action_index()
@@ -291,6 +314,8 @@ class ActionBase(rpyc.Service):
         return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
 
     def has_image_control(self):
+        self.raise_error_if_not_ready()
+
         key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
         if "Analog" in self.action_id:
             print()
@@ -317,6 +342,11 @@ class ActionBase(rpyc.Service):
     def get_own_action_index(self) -> int:
         if not self.get_is_present(): return -1
         return self.page.get_all_actions_for_key_and_state(self.page_coords, state=self.state).index(self)
+    
+    def raise_error_if_not_ready(self):
+        if self.on_ready_called:
+            return
+        raise Warning("Seems like you're calling this method before the action is ready")
     
     # ---------- #
     # Rpyc stuff #

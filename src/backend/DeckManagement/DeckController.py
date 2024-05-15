@@ -1827,8 +1827,8 @@ class ControllerKeyState:
     def call_action_ready_and_set_flag(self, action: "ActionBase") -> None:
         if not isinstance(action, ActionBase):
             return
-        action.on_ready()
         action.on_ready_called = True
+        action.on_ready()
     
     def own_actions_ready(self) -> None:
         with ThreadPoolExecutor() as executor:

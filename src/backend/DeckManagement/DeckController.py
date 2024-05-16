@@ -310,6 +310,9 @@ class DeckController:
         self.keys: list[ControllerKey] = []
         self.init_keys()
 
+        self.dials: list[ControllerDial] = []
+        self.init_dials()
+
         self.touchscreen = ControllerTouchScreen(self)
 
         self.background = Background(self)
@@ -336,6 +339,11 @@ class DeckController:
         self.keys: list[ControllerKey] = []
         for i in range(self.deck.key_count()):
             self.keys.append(ControllerKey(self, i))
+
+    def init_dials(self):
+        self.dials: list[ControllerDial] = []
+        for i in range(self.deck.dial_count()):
+            self.dials.append(ControllerDial(self, i))
 
     @lru_cache(maxsize=None)
     def serial_number(self) -> str:
@@ -408,10 +416,11 @@ class DeckController:
         self.mark_page_ready_to_clear(True)
 
     def dial_change_callback(self, deck, dial, event, value):
-        if event == DialEventType.PUSH:
-            print(f"Dial {dial} pushed with value {value}")
-        elif event == DialEventType.TURN:
-            print(f"Dial {dial} turned with value {value}")
+        if not self.allow_interaction:
+            return
+        if dial >= len(self.dials): return
+
+        self.dials[dial].event_callback(deck, event, value)
 
     def touchscreen_event_callback(self, deck, evt_type, value):
         self.touchscreen.event_callback(deck, evt_type, value)
@@ -1859,6 +1868,34 @@ class ControllerTouchScreen:
             else:
                 print("Drag to the right")
                 self.on_gesture("swipe-right")
+
+
+class ControllerDial:
+    def __init__(self, deck_controller: DeckController, n: int):
+        self.n = n
+        self.deck_controller = deck_controller
+        self.active_state = 0
+
+    def get_own_actions(self) -> list["ActionBase"]:
+        if not self.deck_controller.get_alive(): return []
+        return self.deck_controller.active_page.get_all_actions_for_dial(self.n, self.active_state)
+    
+    def event_callback(self, deck, event_type, value):
+        actions = self.get_own_actions()
+        if event_type == DialEventType.PUSH:
+            for action in actions:
+                if value:
+                    action.on_dial_down()
+                else:
+                    action.on_dial_up()
+
+        elif event_type == DialEventType.TURN:
+            for action in actions:
+                if value < 0:
+                    action.on_dial_ccw()
+                else:
+                    action.on_dial_cw()
+
     
 class ControllerKeyState:
     def __init__(self, controller_key: "ControllerKey", state: int):

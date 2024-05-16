@@ -66,8 +66,8 @@ class ActionManager(Gtk.Box):
     def load_for_screen(self, gesture: str, state: int):
         self.action_group.load_for_screen(gesture, state)
 
-    def load_for_dial(self, n: int, rotation: str, state: int):
-        self.action_group.load_for_dial(n, rotation, state)
+    def load_for_dial(self, n: int, state: int):
+        self.action_group.load_for_dial(n, state)
 
 class ActionGroup(Adw.PreferencesGroup):
     def __init__(self, sidebar, **kwargs):
@@ -90,8 +90,8 @@ class ActionGroup(Adw.PreferencesGroup):
     def load_for_screen(self, gesture: str, state: int):
         self.expander.load_for_screen(gesture, state)
 
-    def load_for_dial(self, n: int, rotation: str, state: int):
-        self.expander.load_for_dial(n, rotation, state)
+    def load_for_dial(self, n: int, state: int):
+        self.expander.load_for_dial(n, state)
 
 
 class ActionExpanderRow(BetterExpander):
@@ -118,6 +118,7 @@ class ActionExpanderRow(BetterExpander):
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
         self.clear_actions(keep_add_button=True)
+        self.active_state = state
         self.active_coords = coords
         self.active_dial = None
         self.active_gesture = None
@@ -136,6 +137,7 @@ class ActionExpanderRow(BetterExpander):
         self.clear_actions(keep_add_button=True)
         self.active_state = state
         self.active_dial = None
+        self.active_coords = None
         self.active_gesture = gesture
 
         controller = gl.app.main_win.get_active_controller()
@@ -143,7 +145,7 @@ class ActionExpanderRow(BetterExpander):
         actions = controller.active_page.action_objects.get("touchscreen", {}).get(gesture, {}).get(self.active_state, {})
         self.load_for_actions(actions.values())
 
-    def load_for_dial(self, n: int, rotation: str, state: int):
+    def load_for_dial(self, n: int, state: int):
         self.clear_actions(keep_add_button=True)
         self.active_state = state
         self.active_dial = n
@@ -152,7 +154,7 @@ class ActionExpanderRow(BetterExpander):
 
         controller = gl.app.main_win.get_active_controller()
 
-        actions = controller.active_page.action_objects.get("dials", {}).get(n, {}).get(rotation, {}).get(self.active_state, {})
+        actions = controller.active_page.action_objects.get("dials", {}).get(n, {}).get(state, {})
         self.load_for_actions(actions.values())
 
         
@@ -429,9 +431,6 @@ class ActionRow(Adw.ActionRow):
         self.allow_label_toggle.set_active(self.controls_labels)
         self.allow_box.append(self.allow_label_toggle)
 
-        is_on_key = self.expander.active_coords is not None
-        self.allow_box.set_visible(is_on_key)
-
         self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, valign=Gtk.Align.CENTER)
         self.main_box.append(self.left_box)
 
@@ -472,6 +471,9 @@ class ActionRow(Adw.ActionRow):
         # self.remove_button.connect("clicked", self.on_click_remove)
 
     def update_allow_box_visibility(self):
+        if self.expander.active_coords is None:
+            self.allow_box.set_visible(False)
+            return
         hide = self.controls_image and any(self.controls_labels) and (self.total_rows == 1)
         self.allow_box.set_visible(not hide)
 
@@ -709,11 +711,13 @@ class AddActionButtonRow(Adw.PreferencesRow):
             add_default_keys(active_page.dict, ["keys", page_coords, "states", str(self.expander.active_state)])
             state_dict = active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]
         elif self.expander.active_gesture is not None:
+            gesture = self.expander.active_gesture
             add_default_keys(active_page.dict, ["touchscreen", self.expander.active_gesture, "states", str(self.expander.active_state)])
             state_dict = active_page.dict["touchscreen"][self.expander.active_gesture]["states"][str(self.expander.active_state)]
         elif self.expander.active_dial is not None:
-            add_default_keys(active_page.dict, ["dials", self.expander.active_dial, "states", str(self.expander.active_state)])
-            state_dict = active_page.dict["dials"][self.expander.active_dial]["states"][str(self.expander.active_state)]
+            dial = self.expander.active_dial
+            add_default_keys(active_page.dict, ["dials", str(self.expander.active_dial), "states", str(self.expander.active_state)])
+            state_dict = active_page.dict["dials"][str(self.expander.active_dial)]["states"][str(self.expander.active_state)]
 
         state_dict.setdefault("actions", [])
 
@@ -740,6 +744,8 @@ class AddActionButtonRow(Adw.PreferencesRow):
             self.expander.load_for_coords(self.expander.active_coords, self.expander.active_state)
         elif gesture is not None:
             self.expander.load_for_screen(gesture, self.expander.active_state)
+        elif dial is not None:
+            self.expander.load_for_dial(dial, self.expander.active_state)
 
         # # Reload key
         # controller = active_page.deck_controller

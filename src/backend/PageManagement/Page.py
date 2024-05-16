@@ -142,7 +142,7 @@ class Page:
                     self.action_objects["touchscreen"][gesture].setdefault(state, {})
 
                     action_object = self.get_action_object(
-                        loaded_action_objects=loaded_action_objects,
+                        loaded_action_objects={}, #TODO
                         action_id=action["id"],
                         state=state,
                         i=i,
@@ -153,7 +153,8 @@ class Page:
         for dial in self.dict.get("dials", {}):
             for state in self.dict["dials"][dial].get("states", {}):
                 state = int(state)
-                for i, action in enumerate(self.dict["dials"][dial]["states"][str(state)].get("actions", [])):
+                dial = int(dial)
+                for i, action in enumerate(self.dict["dials"][str(dial)]["states"][str(state)].get("actions", [])):
                     if action.get("id") is None:
                         continue
 
@@ -162,11 +163,11 @@ class Page:
                     self.action_objects["dials"][dial].setdefault(state, {})
 
                     action_object = self.get_action_object(
-                        loaded_action_objects=loaded_action_objects,
+                        loaded_action_objects={}, #TODO
                         action_id=action["id"],
                         state=state,
                         i=i,
-                        dial=True
+                        dial=dial
                     )
                     self.action_objects["dials"][dial][state][i] = action_object
 
@@ -414,6 +415,17 @@ class Page:
         actions = []
         action_dict = self.action_objects.get("touchscreen", {}).get(gesture, {}).get(0, {})
         for action in action_dict.values():
+            if not isinstance(action, ActionBase):
+                continue
+            actions.append(action)
+
+        return actions
+    
+    def get_all_actions_for_dial(self, n: int, state: int):
+        actions = []
+        state_dict = self.action_objects.get("dials", {}).get(n, {}).get(state, {})
+        print()
+        for action in state_dict.values():
             if not isinstance(action, ActionBase):
                 continue
             actions.append(action)

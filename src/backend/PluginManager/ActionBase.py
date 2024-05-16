@@ -134,11 +134,11 @@ class ActionBase(rpyc.Service):
         # Fallback to normal on_key_down
         self.on_key_down()
 
-    def on_dial_rotate_left(self):
+    def on_dial_cw(self):
         # Fallback to normal on_key_down
         self.on_key_down()
 
-    def on_dial_rotate_right(self):
+    def on_dial_ccw(self):
         # Fallback to normal on_key_down
         self.on_key_down()
 
@@ -148,7 +148,7 @@ class ActionBase(rpyc.Service):
 
     def on_dial_up(self):
         # Fallback to normal on_key_down
-        self.on_key_down()
+        self.on_key_up()
 
     def set_default_image(self, image: Image.Image):
         self.default_image = image

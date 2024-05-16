@@ -21,18 +21,11 @@ class DialEditor(Gtk.ScrolledWindow):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.main_box)
 
-        self.turn_cw_group = Adw.PreferencesGroup(title="Turn Clockwise")
-        self.main_box.append(self.turn_cw_group)
+        self.action_group = Adw.PreferencesGroup(title="Turn Clockwise")
+        self.main_box.append(self.action_group)
 
-        self.turn_ccw_group = Adw.PreferencesGroup(title="Turn Counterclockwise", margin_top=10)
-        self.main_box.append(self.turn_ccw_group)
-
-        self.turn_cw_configurator = ActionManager(self.sidebar)
-        self.turn_cw_group.add(self.turn_cw_configurator)
-
-        self.turn_ccw_configurator = ActionManager(self.sidebar)
-        self.turn_ccw_group.add(self.turn_ccw_configurator)
+        self.action_manager = ActionManager(self.sidebar)
+        self.action_group.add(self.action_manager)
 
     def load_for_dial(self, n: int, state: int):
-        self.turn_cw_configurator.load_for_dial(n, "cw", state)
-        self.turn_ccw_configurator.load_for_dial(n, "ccw", state)
+        self.action_manager.load_for_dial(n, state)

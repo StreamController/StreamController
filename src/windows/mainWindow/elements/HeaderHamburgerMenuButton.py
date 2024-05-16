@@ -93,7 +93,11 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutWindow(transient_for=self.main_window)
         self.about.set_application_name("StreamController")
-        self.about.set_version(gl.app_version)
+
+        app_version = gl.app_version
+        if gl.argparser.parse_args().devel:
+            app_version += " devel"
+        self.about.set_version(app_version)
         self.about.set_developers(["Core447"])
         self.about.set_developer_name("Core447")
         self.about.set_license_type(Gtk.License.GPL_3_0)

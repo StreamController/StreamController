@@ -109,7 +109,7 @@ class StoreBackend:
         repo_url = repo_url.replace("github.com", "raw.githubusercontent.com")
         return f"{repo_url}/{branch_name}/{file_path}"
 
-    async def get_remote_file(self, repo_url: str, file_path: str, branch_name: str = "main", data_type: str = "text"):
+    async def get_remote_file(self, repo_url: str, file_path: str, branch_name: str = "main", data_type: str = "text", force_refetch: bool = False):
         """
         This function retrieves the content of a remote file from a GitHub repository.
 
@@ -131,11 +131,13 @@ class StoreBackend:
         if data_type == "content":
             byte_suffix = "b"
 
-        is_cached = self.store_cache.is_cached(
-            url=repo_url,
-            branch=branch_name,
-            path=file_path
-        )
+        is_cached = False
+        if not force_refetch:
+            is_cached = self.store_cache.is_cached(
+                url=repo_url,
+                branch=branch_name,
+                path=file_path
+            )
         if is_cached:
             with self.store_cache.open_cache_file(url=repo_url, branch=branch_name, path=file_path, mode=f"r{byte_suffix}") as f:
                 return f.read()
@@ -164,6 +166,18 @@ class StoreBackend:
             return answer.text
         elif data_type == "content":
             return answer.content
+        
+    async def get_last_commit(self, repo_url: str, branch_name: str = "main") -> str:
+        url = f"https://api.github.com/repos/{self.get_user_name(repo_url)}/{self.get_repo_name(repo_url)}/commits?sha={branch_name}&per_page=1"
+        response = requests.get(url)
+
+        if response.status_code != 200:
+            return
+        
+        commits = response.json()
+        if len(commits) == 0:
+            return
+        return commits[0].get("sha")
     
     async def get_official_authors(self) -> list:
         authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH)
@@ -178,7 +192,7 @@ class StoreBackend:
         """
         plugins_list: list[dict] = []
         for url, branch in self.get_stores():
-            store_plugins_json = await self.get_remote_file(url, "Plugins.json", branch)
+            store_plugins_json = await self.get_remote_file(url, "Plugins.json", branch, force_refetch=True)
             if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
                 return plugins_list
             
@@ -256,7 +270,8 @@ class StoreBackend:
         manifest = await self.get_remote_file(url, "manifest.json", commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
-        
+        if manifest is None:
+            print()
         return json.loads(manifest)
     
     def remove_old_manifest_cache(self, url:str, commit_sha:str):
@@ -299,6 +314,8 @@ class StoreBackend:
             commit = plugin["commits"][version]
 
         branch = plugin.get("branch")
+        if branch is not None:
+            commit = await self.get_last_commit(url, branch)
 
         manifest = await self.get_manifest(url, commit or branch)
         if isinstance(manifest, NoConnectionError):

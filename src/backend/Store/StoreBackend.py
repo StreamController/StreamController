@@ -69,7 +69,7 @@ class StoreBackend:
         stores = []
         stores.append((self.STORE_REPO_URL, self.STORE_BRANCH))
 
-        if settings.get("enable-custom-stores", False):
+        if settings.get("store", {}).get("enable-custom-stores", False):
             for store in settings.get("store", {}).get("custom-stores", {}):
                 stores.append((store.get("url"), store.get("branch")))
 
@@ -202,6 +202,8 @@ class StoreBackend:
                 log.error(e)
                 return NoConnectionError() #TODO - make store specific
             
+            if store_plugins_json is None:
+                continue
             plugins_list.extend(store_plugins_json)
 
         for url, branch in self.get_custom_plugins():
@@ -234,6 +236,9 @@ class StoreBackend:
             except (json.decoder.JSONDecodeError, TypeError) as e:
                 log.error(e)
 
+            if store_plugins_json is None:
+                continue
+
             icons_list.extend(store_plugins_json)
 
         prepare_tasks = [self.prepare_icon(plugin) for plugin in icons_list]
@@ -257,6 +262,8 @@ class StoreBackend:
             except (json.decoder.JSONDecodeError, TypeError) as e:
                 log.error(e)
 
+            if store_plugins_json is None:
+                continue
             wallpapers_list.extend(store_plugins_json)
 
         prepare_tasks = [self.prepare_wallpaper(plugin) for plugin in wallpapers_list]

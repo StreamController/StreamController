@@ -1228,10 +1228,13 @@ class ControllerKey:
         self.key = key
         self.state = 0
 
+        self.HOLD_TIME = 0.75
+
         self.coords = deck_controller.index_to_coords(key)
 
         # Keep track of the current state of the key because self.deck_controller.deck.key_states seams to give inverted values in get_current_deck_image
         self.press_state: bool = self.deck_controller.deck.key_states()[self.key]
+        self.press_down_start_time: int = None
 
         self._show_error: bool = False
         # self.key_asset: SingleKeyAsset = SingleKeyAsset(self)
@@ -1717,9 +1720,18 @@ class ControllerKey:
         state = self.get_active_state()
 
         if press_state:
+            self.press_down_start_time = time.time()
             state.own_actions_key_down_threaded()
         else:
+            if self.press_down_start_time is not None:
+                if time.time() - self.press_down_start_time >= self.HOLD_TIME:
+                    self.press_down_start_time = None
+                    state.own_actions_key_hold_up_threaded()
+                    return
+                
             state.own_actions_key_up_threaded()
+
+            self.press_down_start_time = None
 
 
     
@@ -1861,6 +1873,13 @@ class ControllerKeyState:
             action.on_key_up()
 
     @log.catch
+    def own_actions_key_hold_up(self) -> None:
+        for action in self.get_own_actions():
+            if not isinstance(action, ActionBase):
+                continue
+            action.on_key_hold_up()
+
+    @log.catch
     def own_actions_tick(self) -> None:
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):
@@ -1878,3 +1897,6 @@ class ControllerKeyState:
 
     def own_actions_tick_threaded(self) -> None:
         threading.Thread(target=self.own_actions_tick, name="own_actions_tick").start()
+
+    def own_actions_key_hold_up_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_key_hold_up, name="own_actions_key_hold_up").start()

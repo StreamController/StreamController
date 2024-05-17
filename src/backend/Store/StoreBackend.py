@@ -223,22 +223,22 @@ class StoreBackend:
         """
         returns the number of assets that are too new for the current app version
         """
-        n_to_new_assets = 0
-        icons_json = await self.get_remote_file(self.STORE_REPO_URL, "Icons.json", self.STORE_BRANCH)
-        if isinstance(icons_json, NoConnectionError):
-            return icons_json
-        
-        try:
-            icons_json = json.loads(icons_json)
-        except (json.decoder.JSONDecodeError, TypeError) as e:
-            log.error(e)
-            return NoConnectionError()
+        icons_list: list[dict] = []
+        for url, branch in self.get_stores():
+            store_plugins_json = await self.get_remote_file(url, "Icons.json", branch, force_refetch=True)
+            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
+                return store_plugins_json
+            
+            try:
+                store_plugins_json = json.loads(store_plugins_json)
+            except (json.decoder.JSONDecodeError, TypeError) as e:
+                log.error(e)
 
-        icons = []
-        for icon in icons_json:
-            icon = await self.prepare_icon(icon)
-            if isinstance(icon, IconData):
-                icons.append(icon)
+            icons_list.extend(store_plugins_json)
+
+        prepare_tasks = [self.prepare_icon(plugin) for plugin in icons_list]
+        icons = await asyncio.gather(*prepare_tasks)
+        icons = [icon for icon in icons if isinstance(icon, IconData)]
 
         return icons
     
@@ -246,23 +246,23 @@ class StoreBackend:
         """
         returns the number of assets that are too new for the current app version
         """
-        n_to_new_assets = 0
-        wallpapers_json = await self.get_remote_file(self.STORE_REPO_URL, "Wallpapers.json", self.STORE_BRANCH)
-        if isinstance(wallpapers_json, NoConnectionError):
-            return wallpapers_json
-        
-        try:
-            wallpapers_json = json.loads(wallpapers_json)
-        except (json.decoder.JSONDecodeError, TypeError) as e:
-            log.error(e)
-            return NoConnectionError()
+        wallpapers_list: list[dict] = []
+        for url, branch in self.get_stores():
+            store_plugins_json = await self.get_remote_file(url, "Wallpapers.json", branch, force_refetch=True)
+            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
+                return store_plugins_json
+            
+            try:
+                store_plugins_json = json.loads(store_plugins_json)
+            except (json.decoder.JSONDecodeError, TypeError) as e:
+                log.error(e)
 
-        wallpapers = []
-        for wallpaper in wallpapers_json:
-            wallpaper = await self.prepare_wallpaper(wallpaper)
-            if isinstance(wallpaper, WallpaperData):
-                wallpapers.append(wallpaper)
-        
+            wallpapers_list.extend(store_plugins_json)
+
+        prepare_tasks = [self.prepare_wallpaper(plugin) for plugin in wallpapers_list]
+        wallpapers = await asyncio.gather(*prepare_tasks)
+        wallpapers = [wallpaper for wallpaper in wallpapers if isinstance(wallpaper, WallpaperData)]
+
         return wallpapers
     
     async def get_manifest(self, url:str, commit:str) -> dict:

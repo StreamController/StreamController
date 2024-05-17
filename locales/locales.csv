@@ -202,4 +202,3 @@ settings-system-settings-autostart-subtitle;App beim Systemstart automatisch sta
 onboarding.udev.header;udev Regeln;udev rules;
 onboarding.udev.detail;Es ist eine alte udev version installiert. Klicken Sie auf den Button um zu sehen was sie tun müssen; Old udev version detected. Please click on the button to see how to avoid problems;
 onboarding.udev.button;Website öffnen; Open web;
-settings-store-custom-add;Hinzufügen;Add;

@@ -63,6 +63,28 @@ class StoreBackend:
 
         self.official_authors = asyncio.run(self.get_official_authors())
 
+    def get_stores(self) -> list[tuple[str, str]]:
+        settings = gl.settings_manager.get_app_settings()
+
+        stores = []
+        stores.append((self.STORE_REPO_URL, self.STORE_BRANCH))
+
+        if settings.get("enable-custom-stores", False):
+            for store in settings.get("store", {}).get("custom-stores", {}):
+                stores.append((store.get("url"), store.get("branch")))
+
+        return stores
+    
+    def get_custom_plugins(self) -> list[tuple[str, str]]:
+        settings = gl.settings_manager.get_app_settings()
+
+        plugins = []
+        if settings.get("store", {}).get("enable-custom-plugins", False):
+            for plugin in settings.get("store", {}).get("custom-plugins", []):
+                plugins.append((plugin.get("url"), plugin.get("branch")))
+
+        return plugins
+
     async def request_from_url(self, url: str) -> requests.Response:
         try:
             req = requests.get(url, stream=True)
@@ -154,17 +176,30 @@ class StoreBackend:
         """
         Returns the number of assets that are new old for the current app version.
         """
-        plugins_json = await self.get_remote_file(self.STORE_REPO_URL, "Plugins.json", self.STORE_BRANCH)
-        if isinstance(plugins_json, NoConnectionError):
-            return plugins_json
+        plugins_list: list[dict] = []
+        for url, branch in self.get_stores():
+            store_plugins_json = await self.get_remote_file(url, "Plugins.json", branch)
+            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
+                return plugins_list
+            
+            try:
+                store_plugins_json = json.loads(store_plugins_json)
+            except (json.decoder.JSONDecodeError, TypeError) as e:
+                log.error(e)
+                return NoConnectionError() #TODO - make store specific
+            
+            plugins_list.extend(store_plugins_json)
 
-        try:
-            plugins_json = json.loads(plugins_json)
-        except (json.decoder.JSONDecodeError, TypeError) as e:
-            log.error(e)
-            return NoConnectionError()
+        for url, branch in self.get_custom_plugins():
+            if None in (url, branch):
+                continue
 
-        prepare_tasks = [self.prepare_plugin(plugin, include_images) for plugin in plugins_json]
+            plugins_list.append({
+                "url": url,
+                "branch": branch
+            })
+
+        prepare_tasks = [self.prepare_plugin(plugin, include_images) for plugin in plugins_list]
         plugins = await asyncio.gather(*prepare_tasks)
         plugins = [plugin for plugin in plugins if isinstance(plugin, PluginData)]
 
@@ -253,26 +288,30 @@ class StoreBackend:
 
         # Check if suitable version is available
         compatible = True
-        version = self.get_newest_compatible_version(plugin["commits"])
-        if version is None:
-            compatible = False
-            version = self.get_newest_version(list(plugin["commits"].keys()))
+        commit: str = None
+        if "commits" in plugin:
+            version = self.get_newest_compatible_version(plugin["commits"])
             if version is None:
-                return NoCompatibleVersion #TODO
-        commit = plugin["commits"][version]
+                compatible = False
+                version = self.get_newest_version(list(plugin["commits"].keys()))
+                if version is None:
+                    return NoCompatibleVersion #TODO
+            commit = plugin["commits"][version]
 
-        manifest = await self.get_manifest(url, commit)
+        branch = plugin.get("branch")
+
+        manifest = await self.get_manifest(url, commit or branch)
         if isinstance(manifest, NoConnectionError):
             return manifest
 
         image = None
         thumbnail_path = manifest.get("thumbnail")
         if include_image:
-            image = await self.get_web_image(url, thumbnail_path, commit)
+            image = await self.get_web_image(url, thumbnail_path, commit or branch)
             if isinstance(manifest, NoConnectionError):
                 return image
         
-        attribution = await self.get_attribution(url, commit)
+        attribution = await self.get_attribution(url, commit or branch)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
@@ -291,6 +330,7 @@ class StoreBackend:
             author=author or None, # Formerly: user_name
             official=author in self.official_authors or False,
             commit_sha=commit,
+            branch=branch,
             local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
             app_version=manifest.get("app-version") or None,
@@ -582,7 +622,7 @@ class StoreBackend:
         PLUGINS_FOLDER = "plugins"
         local_path = os.path.join(gl.DATA_PATH, PLUGINS_FOLDER, plugin_data.plugin_id)
 
-        response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_data.commit_sha)
+        response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_data.commit_sha, branch_name=plugin_data.branch)
 
         # Run install script if present
         if os.path.isfile(os.path.join(local_path, "__install__.py")):

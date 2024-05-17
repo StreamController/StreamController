@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+from re import I
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -111,12 +112,7 @@ class OpenStoreButton(Gtk.Button):
         self.connect("clicked", self.on_click)
 
     def on_click(self, button):
-        if gl.store is not None:
-            gl.store.present()
-            return
-
-        gl.store = Store(application=gl.app, main_window=gl.app.main_win)
-        gl.store.present()
+        gl.app.open_store()
 
 class PluginGroup(BetterPreferencesGroup):
     def __init__(self, action_chooser, **kwargs):

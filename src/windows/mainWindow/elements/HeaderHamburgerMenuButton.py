@@ -77,9 +77,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.set_popover(self.popover)
 
     def on_open_store(self, action, parameter):
-        if gl.store is None:
-            gl.store = Store(application=gl.app, main_window=gl.app.main_win)
-        gl.store.present()
+        gl.app.open_store()
 
     def on_open_settings(self, action, parameter):
         self.settings = Settings()

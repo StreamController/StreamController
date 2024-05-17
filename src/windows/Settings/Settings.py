@@ -52,8 +52,6 @@ class Settings(Adw.PreferencesWindow):
         self.add(self.performance_page)
         self.add(self.system_page)
 
-        self.set_visible_page(self.store_page)
-
     def load_json(self):
         # Load settings from file
         settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))

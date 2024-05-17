@@ -525,6 +525,8 @@ class StoreBackend:
             pass
         if isinstance(result, NoConnectionError):
             return result
+        if result is None:
+            return
         img = Image.open(BytesIO(result))
 
         return img

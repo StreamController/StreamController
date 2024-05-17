@@ -75,6 +75,10 @@ settings-number-of-fake-decks-hint;Für Testzwecke (App muss mölicherweise neug
 settings-store-settings-title;Store;Store;
 settings-store-settings-header;Store;Store;
 settings-store-settings-auto-update;Automatische Aktualisierung der Assets;Auto-update assets;
+settings-store-settings-custom-stores;Benutzerdefinierte Stores;Use Custom Stores;
+settings-store-settings-custom-plugins;Benutzerdefinierte Plugins;Use Custom Plugins;
+settings-store-custom-stores-header;Benutzerdefinierte Stores;Custom Stores;
+settings-store-custom-plugins-header;Benutzerdefinierte Plugins;Custom Plugins;
 settings-ui-settings-title;UI;UI;
 settings-ui-settings-key-grid-header;Tastenraster;Key Grid;
 open-about;Über;About;A propos

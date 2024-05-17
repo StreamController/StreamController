@@ -36,6 +36,7 @@ import gi
 from gi.repository import GLib
 
 # Import own modules
+from src.backend.Store.StoreCache import StoreCache
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
@@ -58,39 +59,31 @@ class StoreBackend:
 
 
     def __init__(self):
-        # API cache file
-        os.makedirs(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH), exist_ok=True)
-        if not os.path.exists(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json")):
-            with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json"), "w") as f:
-                json.dump({}, f, indent=4)
-        with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json"), "r") as f:
-            self.api_cache = json.load(f)
-        
-        # Image cache file
-        os.makedirs(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "images"), exist_ok=True)
-        if not os.path.exists(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "images.json")):
-            with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "images.json"), "w") as f:
-                json.dump({}, f, indent=4)
-        with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "images.json"), "r") as f:
-            self.image_cache = json.load(f)
-
-        # Manifest cache file
-        os.makedirs(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "manifests"), exist_ok=True)
-        if not os.path.exists(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "manifests.json")):
-            with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "manifests.json"), "w") as f:
-                json.dump({}, f, indent=4)
-        with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "manifests.json"), "r") as f:
-            self.manifest_cache = json.load(f)
-
-        # Attribution cache file
-        os.makedirs(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "attribution"), exist_ok=True)
-        if not os.path.exists(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "attribution.json")):
-            with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "attribution.json"), "w") as f:
-                json.dump({}, f, indent=4)
-        with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "attribution.json"), "r") as f:
-            self.attribution_cache = json.load(f)
+        self.store_cache = StoreCache()
 
         self.official_authors = asyncio.run(self.get_official_authors())
+
+    def get_stores(self) -> list[tuple[str, str]]:
+        settings = gl.settings_manager.get_app_settings()
+
+        stores = []
+        stores.append((self.STORE_REPO_URL, self.STORE_BRANCH))
+
+        if settings.get("enable-custom-stores", False):
+            for store in settings.get("store", {}).get("custom-stores", {}):
+                stores.append((store.get("url"), store.get("branch")))
+
+        return stores
+    
+    def get_custom_plugins(self) -> list[tuple[str, str]]:
+        settings = gl.settings_manager.get_app_settings()
+
+        plugins = []
+        if settings.get("store", {}).get("enable-custom-plugins", False):
+            for plugin in settings.get("store", {}).get("custom-plugins", []):
+                plugins.append((plugin.get("url"), plugin.get("branch")))
+
+        return plugins
 
     async def request_from_url(self, url: str) -> requests.Response:
         try:
@@ -116,7 +109,7 @@ class StoreBackend:
         repo_url = repo_url.replace("github.com", "raw.githubusercontent.com")
         return f"{repo_url}/{branch_name}/{file_path}"
 
-    async def get_remote_file(self, repo_url: str, file_path: str, branch_name: str = "main") -> requests.Response:
+    async def get_remote_file(self, repo_url: str, file_path: str, branch_name: str = "main", data_type: str = "text", force_refetch: bool = False):
         """
         This function retrieves the content of a remote file from a GitHub repository.
 
@@ -134,17 +127,62 @@ class StoreBackend:
             - If the file is located in a different domain than github.com, the function will replace the domain
               with raw.githubusercontent.com.
         """
+        byte_suffix = ""
+        if data_type == "content":
+            byte_suffix = "b"
+
+        is_cached = False
+        if not force_refetch:
+            is_cached = self.store_cache.is_cached(
+                url=repo_url,
+                branch=branch_name,
+                path=file_path
+            )
+        if is_cached:
+            with self.store_cache.open_cache_file(url=repo_url, branch=branch_name, path=file_path, mode=f"r{byte_suffix}") as f:
+                return f.read()
+        else:
+            pass
+
         url = self.build_url(repo_url, file_path, branch_name)
 
         answer = await self.request_from_url(url)
 
-        return answer
+        if isinstance(answer, NoConnectionError):
+            return answer
+        
+        if answer is None:
+            return
+        
+        with self.store_cache.open_cache_file(url=repo_url, branch=branch_name, path=file_path, mode=f"w{byte_suffix}") as f:
+            if answer is None:
+                return
+            if data_type == "text":
+                f.write(answer.text)
+            elif data_type == "content":
+                f.write(answer.content)
+
+        if data_type == "text":
+            return answer.text
+        elif data_type == "content":
+            return answer.content
+        
+    async def get_last_commit(self, repo_url: str, branch_name: str = "main") -> str:
+        url = f"https://api.github.com/repos/{self.get_user_name(repo_url)}/{self.get_repo_name(repo_url)}/commits?sha={branch_name}&per_page=1"
+        response = requests.get(url)
+
+        if response.status_code != 200:
+            return
+        
+        commits = response.json()
+        if len(commits) == 0:
+            return
+        return commits[0].get("sha")
     
     async def get_official_authors(self) -> list:
-        result = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH)
-        if isinstance(result, NoConnectionError):
-            return result
-        authors_json = result.text
+        authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH)
+        if isinstance(authors_json, NoConnectionError):
+            return authors_json
         authors_json = json.loads(authors_json)
         return authors_json
     
@@ -152,18 +190,30 @@ class StoreBackend:
         """
         Returns the number of assets that are new old for the current app version.
         """
-        result = await self.get_remote_file(self.STORE_REPO_URL, "Plugins.json", self.STORE_BRANCH)
-        if isinstance(result, NoConnectionError):
-            return result
-        plugins_json = result.text
+        plugins_list: list[dict] = []
+        for url, branch in self.get_stores():
+            store_plugins_json = await self.get_remote_file(url, "Plugins.json", branch, force_refetch=True)
+            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
+                return plugins_list
+            
+            try:
+                store_plugins_json = json.loads(store_plugins_json)
+            except (json.decoder.JSONDecodeError, TypeError) as e:
+                log.error(e)
+                return NoConnectionError() #TODO - make store specific
+            
+            plugins_list.extend(store_plugins_json)
 
-        try:
-            plugins_json = json.loads(plugins_json)
-        except json.decoder.JSONDecodeError as e:
-            log.error(e)
-            return NoConnectionError()
+        for url, branch in self.get_custom_plugins():
+            if None in (url, branch):
+                continue
 
-        prepare_tasks = [self.prepare_plugin(plugin, include_images) for plugin in plugins_json]
+            plugins_list.append({
+                "url": url,
+                "branch": branch
+            })
+
+        prepare_tasks = [self.prepare_plugin(plugin, include_images) for plugin in plugins_list]
         plugins = await asyncio.gather(*prepare_tasks)
         plugins = [plugin for plugin in plugins if isinstance(plugin, PluginData)]
 
@@ -173,22 +223,22 @@ class StoreBackend:
         """
         returns the number of assets that are too new for the current app version
         """
-        n_to_new_assets = 0
-        result = await self.get_remote_file(self.STORE_REPO_URL, "Icons.json", self.STORE_BRANCH)
-        if isinstance(result, NoConnectionError):
-            return result
-        icons_json = result.text
-        try:
-            icons_json = json.loads(icons_json)
-        except json.decoder.JSONDecodeError as e:
-            log.error(e)
-            return NoConnectionError()
+        icons_list: list[dict] = []
+        for url, branch in self.get_stores():
+            store_plugins_json = await self.get_remote_file(url, "Icons.json", branch, force_refetch=True)
+            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
+                return store_plugins_json
+            
+            try:
+                store_plugins_json = json.loads(store_plugins_json)
+            except (json.decoder.JSONDecodeError, TypeError) as e:
+                log.error(e)
 
-        icons = []
-        for icon in icons_json:
-            icon = await self.prepare_icon(icon)
-            if isinstance(icon, IconData):
-                icons.append(icon)
+            icons_list.extend(store_plugins_json)
+
+        prepare_tasks = [self.prepare_icon(plugin) for plugin in icons_list]
+        icons = await asyncio.gather(*prepare_tasks)
+        icons = [icon for icon in icons if isinstance(icon, IconData)]
 
         return icons
     
@@ -196,53 +246,33 @@ class StoreBackend:
         """
         returns the number of assets that are too new for the current app version
         """
-        n_to_new_assets = 0
-        result = await self.get_remote_file(self.STORE_REPO_URL, "Wallpapers.json", self.STORE_BRANCH)
-        if isinstance(result, NoConnectionError):
-            return result
-        wallpapers_json = result.text
-        try:
-            wallpapers_json = json.loads(wallpapers_json)
-        except json.decoder.JSONDecodeError as e:
-            log.error(e)
-            return NoConnectionError()
+        wallpapers_list: list[dict] = []
+        for url, branch in self.get_stores():
+            store_plugins_json = await self.get_remote_file(url, "Wallpapers.json", branch, force_refetch=True)
+            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
+                return store_plugins_json
+            
+            try:
+                store_plugins_json = json.loads(store_plugins_json)
+            except (json.decoder.JSONDecodeError, TypeError) as e:
+                log.error(e)
 
-        wallpapers = []
-        for wallpaper in wallpapers_json:
-            wallpaper = await self.prepare_wallpaper(wallpaper)
-            if isinstance(wallpaper, WallpaperData):
-                wallpapers.append(wallpaper)
-        
+            wallpapers_list.extend(store_plugins_json)
+
+        prepare_tasks = [self.prepare_wallpaper(plugin) for plugin in wallpapers_list]
+        wallpapers = await asyncio.gather(*prepare_tasks)
+        wallpapers = [wallpaper for wallpaper in wallpapers if isinstance(wallpaper, WallpaperData)]
+
         return wallpapers
     
     async def get_manifest(self, url:str, commit:str) -> dict:
-        url = self.build_url(url, "manifest.json", commit)
-        # Look for cached manifest - if we have a file for the same commit we can safely assume it's the same
-        if url in self.manifest_cache:
-            if os.path.isfile(self.manifest_cache[url]):
-                with open(self.manifest_cache[url], "r") as f:
-                    return json.load(f)
-
-        # Not in cache, get it
-        manifest = await self.request_from_url(url)
+        # url = self.build_url(url, "manifest.json", commit)
+        manifest = await self.get_remote_file(url, "manifest.json", commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
-        manifest = json.loads(manifest.text)
-
-        # Save to cache
-        cache_file_name = f"{self.get_repo_name(url)}::{commit}"
-        path = os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "manifests", f"{cache_file_name}.json")
-        with open(path, "w") as f:
-            json.dump(manifest, f, indent=4)
-
-        self.remove_old_manifest_cache(url, commit)
-
-        self.manifest_cache[url] = os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "manifests", f"{cache_file_name}.json")
-        # Save cache file
-        with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "manifests.json"), "w") as f:
-            json.dump(self.manifest_cache, f, indent=4)
-
-        return manifest
+        if manifest is None:
+            print()
+        return json.loads(manifest)
     
     def remove_old_manifest_cache(self, url:str, commit_sha:str):
         for cached_url in list(self.manifest_cache.keys()):
@@ -252,36 +282,14 @@ class StoreBackend:
                 del self.manifest_cache[cached_url]
 
     async def get_attribution(self, url:str, commit:str) -> dict:
-        url = self.build_url(url, "attribution.json", commit)
-        # Look for cached manifest - if we have a file for the same commit we can safely assume it's the same
-        if url in self.attribution_cache:
-            if os.path.isfile(self.attribution_cache[url]):
-                with open(self.attribution_cache[url], "r") as f:
-                    return json.load(f)
-
-        # Not in cache, get it
-        attribution = await self.request_from_url(url)
-        if isinstance(attribution, NoConnectionError):
-            return attribution
+        result = await self.get_remote_file(url, "attribution.json", commit)
+        if isinstance(result, NoConnectionError):
+            return result
         
-        if attribution is None:
+        try:
+            return json.loads(result)
+        except (json.decoder.JSONDecodeError, TypeError) as e:
             return {}
-
-        attribution = json.loads(attribution.text)
-
-        cache_file_name = f"{self.get_repo_name(url)}::{commit}"
-        path = os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "attribution", f"{cache_file_name}.json")
-        with open(path, "w") as f:
-            json.dump(attribution, f, indent=4)
-
-        self.remove_old_attribution_cache(url, commit)
-
-        self.attribution_cache[url] = os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "attribution", f"{cache_file_name}.json")
-        # Save cache file
-        with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "attribution.json"), "w") as f:
-            json.dump(self.attribution_cache, f, indent=4)
-
-        return attribution
     
     def remove_old_attribution_cache(self, url:str, commit_sha:str):
         for cached_url in list(self.attribution_cache.keys()):
@@ -295,26 +303,32 @@ class StoreBackend:
 
         # Check if suitable version is available
         compatible = True
-        version = self.get_newest_compatible_version(plugin["commits"])
-        if version is None:
-            compatible = False
-            version = self.get_newest_version(list(plugin["commits"].keys()))
+        commit: str = None
+        if "commits" in plugin:
+            version = self.get_newest_compatible_version(plugin["commits"])
             if version is None:
-                return NoCompatibleVersion #TODO
-        commit = plugin["commits"][version]
+                compatible = False
+                version = self.get_newest_version(list(plugin["commits"].keys()))
+                if version is None:
+                    return NoCompatibleVersion #TODO
+            commit = plugin["commits"][version]
 
-        manifest = await self.get_manifest(url, commit)
+        branch = plugin.get("branch")
+        if branch is not None:
+            commit = await self.get_last_commit(url, branch)
+
+        manifest = await self.get_manifest(url, commit or branch)
         if isinstance(manifest, NoConnectionError):
             return manifest
 
         image = None
         thumbnail_path = manifest.get("thumbnail")
         if include_image:
-            image = await self.image_from_url(self.build_url(url, thumbnail_path, commit))
+            image = await self.get_web_image(url, thumbnail_path, commit or branch)
             if isinstance(manifest, NoConnectionError):
                 return image
         
-        attribution = await self.get_attribution(url, commit)
+        attribution = await self.get_attribution(url, commit or branch)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
@@ -336,6 +350,7 @@ class StoreBackend:
             author=author or None, # Formerly: user_name
             official=author in self.official_authors or False,
             commit_sha=commit,
+            branch=branch,
             local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
             app_version=manifest.get("app-version") or None,
@@ -393,7 +408,7 @@ class StoreBackend:
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
         thumbnail_path = manifest.get("thumbnail")
-        image = await self.image_from_url(self.build_url(url, thumbnail_path, commit))
+        image = await self.get_web_image(url, thumbnail_path, commit)
         if isinstance(image, NoConnectionError):
             return image
 
@@ -459,7 +474,7 @@ class StoreBackend:
             return manifest
 
         thumbnail_path = manifest.get("thumbnail")
-        image = await self.image_from_url(self.build_url(url, thumbnail_path, commit))
+        image = await self.get_web_image(url, thumbnail_path, commit)
         if isinstance(image, NoConnectionError):
             return image
         attribution = await self.get_attribution(url, commit)
@@ -503,31 +518,17 @@ class StoreBackend:
             is_compatible=compatible
         )
 
-    async def image_from_url(self, url):
-        # Search in cache
-        if url in self.image_cache:
-            if os.path.isfile(self.image_cache[url]):
-                return Image.open(self.image_cache[url])
-        
-        result = await self.request_from_url(url)
+    async def get_web_image(self, url: str, path: str, branch: str = "main") -> Image:
+        try:
+            result = await self.get_remote_file(url, path, branch, data_type="content")
+        except:
+            pass
         if isinstance(result, NoConnectionError):
             return result
-        img = Image.open(BytesIO(result.content))
-        
-        ## Save to cache
-        image_uuid = str(uuid.uuid4())
-        save_path = f"{self.STORE_CACHE_PATH}images/{self.get_repo_name(url)}::{image_uuid}.png"
-        save_path = os.path.join(gl.DATA_PATH, save_path)
-        if url in self.image_cache:
-            # Remove the old file
-            if os.path.isfile(self.image_cache[url]):
-                os.remove(self.image_cache[url])
-        self.image_cache[url] = save_path
-        # Update image cache json file
-        with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "images.json"), "w") as f:
-            json.dump(self.image_cache, f, indent=4)
+        img = Image.open(BytesIO(result))
 
         return img
+
     
     async def get_stargazers(self, repo_url: str) -> int:
         "Deactivated for now because of rate limits"
@@ -653,7 +654,7 @@ class StoreBackend:
         PLUGINS_FOLDER = "plugins"
         local_path = os.path.join(gl.DATA_PATH, PLUGINS_FOLDER, plugin_data.plugin_id)
 
-        response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_data.commit_sha)
+        response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_data.commit_sha, branch_name=plugin_data.branch)
 
         # Run install script if present
         if os.path.isfile(os.path.join(local_path, "__install__.py")):

@@ -378,3 +378,11 @@
 .state-switcher-box {
   border-radius: 6px;
 }
+
+.destructive-action-on-hover{
+
+}
+
+.destructive-action-on-hover:hover{
+  background-color: @destructive_bg_color;
+}

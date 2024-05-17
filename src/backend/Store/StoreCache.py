@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import globals as gl
 
@@ -10,8 +11,36 @@ class StoreCache:
         self.files_json = os.path.join(self.CACHE_PATH, "files.json")
         self.files_dir = os.path.join(self.CACHE_PATH, "files")
 
+        self.files = self.get_files()
+        self.remove_old_cache_files()
+
         self.create_cache_dirs()
         self.create_cache_files()
+
+    def get_files(self) -> dict:
+        with open(self.files_json, "r") as f:
+            return json.load(f)
+        
+    def set_files(self, files: dict):
+        with open(self.files_json, "w") as f:
+            json.dump(files, f, indent=4)
+
+    def remove_old_cache_files(self):
+        DAYS_TO_KEEP = 3
+        for string in self.files.copy():
+            path = self.files[string].get("path")
+            if not os.path.exists(path):
+                continue
+            date = self.files[string].get("date")
+            if date is None:
+                os.remove(path)
+                self.files.pop(string)
+
+            if time.time() - date > DAYS_TO_KEEP * 24 * 60 * 60:
+                os.remove(path)
+                self.files.pop(string)
+
+        self.set_files(self.files)
 
     def create_cache_dirs(self):
         os.makedirs(self.CACHE_PATH, exist_ok=True)
@@ -47,14 +76,34 @@ class StoreCache:
         repo = self.get_repo_name(url)
         return f"{user}::{repo}::{branch}::{data_type}::{path}"
     
-    def generate_cache_path(self, url: str, path: str, branch: str = "main", data_type: str = "text") -> str:
-        return os.path.join(self.files_dir, self.generate_cache_string(url, path, branch, data_type))
+    def get_cache_path(self, url: str, path: str, branch: str = "main", data_type: str = "text") -> str:
+        # return os.path.join(self.files_dir, self.generate_cache_string(url, path, branch, data_type))
+
+        cache_string = self.generate_cache_string(url, path, branch, data_type)
+        if cache_string in self.files:
+            return self.files[cache_string].get("path")
+        
+        else:
+            path = os.path.join(self.files_dir, cache_string)
+            self.files[cache_string] = {
+                "path": path,
+                "date": time.time()
+            }
+            self.set_files(self.files)
+            return path
     
     def is_cached(self, url: str, path: str, branch: str = "main", data_type: str = "text") -> bool:
-        return os.path.isfile(self.generate_cache_path(url, path, branch, data_type))
+        cache_string = self.generate_cache_string(url, path, branch, data_type)
+        if cache_string not in self.files:
+            return False
+        
+        if self.files[cache_string].get("path") is None:
+            return False
+        
+        return os.path.exists(self.files[cache_string].get("path"))
 
     def open_cache_file(self, url: str, path: str, branch: str = "main", data_type: str = "text", mode: str = "r") -> str:
-        path = self.generate_cache_path(url, path, branch, data_type)
+        path = self.get_cache_path(url, path, branch, data_type)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         
         return open(path, mode)

@@ -55,7 +55,7 @@ class StoreBackend:
     STORE_REPO_URL = "https://github.com/StreamController/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
-    STORE_BRANCH = "main" #FIXME: Make the cache branch specific. For now you'll have to manually delete `data/Store/cache`
+    STORE_BRANCH = "1.5.0" #FIXME: Make the cache branch specific. For now you'll have to manually delete `data/Store/cache`
 
 
     def __init__(self):

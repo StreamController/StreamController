@@ -18,10 +18,13 @@ class StoreCache:
         self.create_cache_files()
 
     def get_files(self) -> dict:
+        if not os.path.exists(os.path.basename(self.files_json)):
+            return {}
         with open(self.files_json, "r") as f:
             return json.load(f)
         
     def set_files(self, files: dict):
+        os.makedirs(os.path.dirname(self.files_json), exist_ok=True)
         with open(self.files_json, "w") as f:
             json.dump(files, f, indent=4)
 

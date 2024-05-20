@@ -391,6 +391,7 @@ class DeckController:
         self.keys[key].on_key_change(state)
         self.mark_page_ready_to_clear(True)
 
+
     ### Helper methods
     def generate_alpha_key(self) -> Image.Image:
         return Image.new("RGBA", self.get_key_image_size(), (0, 0, 0, 0))
@@ -1235,6 +1236,7 @@ class ControllerKey:
         # Keep track of the current state of the key because self.deck_controller.deck.key_states seams to give inverted values in get_current_deck_image
         self.press_state: bool = self.deck_controller.deck.key_states()[self.key]
         self.press_down_start_time: int = None
+        self.hold_start_timer: threading.Timer = None
 
         self._show_error: bool = False
         # self.key_asset: SingleKeyAsset = SingleKeyAsset(self)
@@ -1244,6 +1246,23 @@ class ControllerKey:
         self.states = {
             0: ControllerKeyState(self, 0),
         }
+
+    def start_hold_timer(self):
+        if self.hold_start_timer is not None:
+            self.hold_start_timer.cancel()
+            self.hold_start_timer = None
+
+        self.hold_start_timer = threading.Timer(self.HOLD_TIME, self.on_hold_timer_end)
+        self.hold_start_timer.setDaemon(True)
+        self.hold_start_timer.setName("HoldTimer")
+        self.hold_start_timer.start()
+
+    def stop_hold_timer(self):
+        if self.hold_start_timer is None:
+            return
+        
+        self.hold_start_timer.cancel()
+        self.hold_start_timer = None
 
     def create_n_states(self, n: int):
         for state in self.states.values():
@@ -1722,16 +1741,24 @@ class ControllerKey:
         if press_state:
             self.press_down_start_time = time.time()
             state.own_actions_key_down_threaded()
+            self.start_hold_timer()
         else:
+            self.stop_hold_timer()
             if self.press_down_start_time is not None:
                 if time.time() - self.press_down_start_time >= self.HOLD_TIME:
                     self.press_down_start_time = None
-                    state.own_actions_key_hold_up_threaded()
+                    state.own_actions_key_hold_stop_threaded()
                     return
                 
             state.own_actions_key_up_threaded()
 
             self.press_down_start_time = None
+
+    def on_hold_timer_end(self) -> None:
+        state = self.get_active_state()
+        if state is None:
+            return
+        state.own_actions_key_hold_start_threaded()
 
 
     
@@ -1873,11 +1900,18 @@ class ControllerKeyState:
             action.on_key_up()
 
     @log.catch
-    def own_actions_key_hold_up(self) -> None:
+    def own_actions_key_hold_start(self) -> None:
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):
                 continue
-            action.on_key_hold_up()
+            action.on_key_hold_start()
+
+    @log.catch
+    def own_actions_key_hold_stop(self) -> None:
+        for action in self.get_own_actions():
+            if not isinstance(action, ActionBase):
+                continue
+            action.on_key_hold_stop()
 
     @log.catch
     def own_actions_tick(self) -> None:
@@ -1898,5 +1932,8 @@ class ControllerKeyState:
     def own_actions_tick_threaded(self) -> None:
         threading.Thread(target=self.own_actions_tick, name="own_actions_tick").start()
 
-    def own_actions_key_hold_up_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_key_hold_up, name="own_actions_key_hold_up").start()
+    def own_actions_key_hold_start_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_key_hold_start, name="own_actions_key_hold_start").start()
+
+    def own_actions_key_hold_stop_threaded(self) -> None:
+        threading.Thread(target=self.own_actions_key_hold_stop, name="own_actions_key_hold_stop").start()

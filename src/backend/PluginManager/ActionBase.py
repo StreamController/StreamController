@@ -102,7 +102,10 @@ class ActionBase(rpyc.Service):
     def on_key_up(self):
         pass
 
-    def on_key_hold_up(self):
+    def on_key_hold_start(self):
+        pass
+
+    def on_key_hold_stop(self):
         pass
 
     def on_tick(self):

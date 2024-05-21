@@ -134,7 +134,7 @@ class CommentGroup(Adw.PreferencesGroup):
         if controller is None:
             return
         page = controller.active_page
-        page.set_action_comment(self.action.page_coords, self.index, comment)
+        page.set_action_comment(self.action.page_coords, self.index, comment, self.action.state)
     
 
 

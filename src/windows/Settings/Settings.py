@@ -195,10 +195,14 @@ class StorePageGroup(Adw.PreferencesGroup):
         self.auto_update = Adw.SwitchRow(title=gl.lm.get("settings-store-settings-auto-update"), active=True)
         self.add(self.auto_update)
 
-        self.custom_stores = CustomContentGroup(title=gl.lm.get("settings-store-custom-stores-header"), custom_type="stores", margin_top=12)
+        self.custom_stores = CustomContentGroup(title=gl.lm.get("settings-store-custom-stores-header"),
+                                                description=gl.lm.get("settings-store-custom-stores-subtitle"),
+                                                custom_type="stores", margin_top=12)
         self.add(self.custom_stores)
 
-        self.custom_plugins = CustomContentGroup(title=gl.lm.get("settings-store-custom-plugins-header"), custom_type="plugins", margin_top=12)
+        self.custom_plugins = CustomContentGroup(title=gl.lm.get("settings-store-custom-plugins-header"),
+                                                 description=gl.lm.get("settings-store-custom-plugins-subtitle"),
+                                                 custom_type="plugins", margin_top=12)
         self.add(self.custom_plugins)
 
         self.load_defaults()
@@ -217,8 +221,8 @@ class StorePageGroup(Adw.PreferencesGroup):
         self.settings.save_json()
 
 class CustomContentGroup(BetterPreferencesGroup):
-    def __init__(self, title: str, custom_type: str, **kwargs):
-        super().__init__(title=title, **kwargs)
+    def __init__(self, title: str, description: str,custom_type: str, **kwargs):
+        super().__init__(title=title, description=description, **kwargs)
 
         self.custom_type = custom_type
         self.enable_key = f"enable-custom-{self.custom_type}"

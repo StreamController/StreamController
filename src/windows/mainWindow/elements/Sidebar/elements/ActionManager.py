@@ -681,30 +681,10 @@ class AddActionButtonRow(Adw.PreferencesRow):
         # Reload page to add an object to the new action
         active_page.load()
         # Reload the key on all decks
-        active_page.reload_similar_pages(page_coords=page_coords)
+        active_page.reload_similar_pages(page_coords=page_coords, reload_self=True)
 
         # Reload ui
         self.expander.load_for_coords(self.expander.active_coords, self.expander.active_state)
-
-        # Reload key
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
-        if controller is None:
-            return
-        key_index = controller.coords_to_index(self.expander.active_coords)
-
-        reload_key = False
-
-        if active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)].get("label-control-action") == len(active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"]) - 1:
-            reload_key = True
-
-        if active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)].get("image-control-action") == len(active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"]) - 1:
-            reload_key = True
-
-        if reload_key:
-            controller.load_key(key_index, page=controller.active_page)
 
         # Open action editor if new action has configuration - qol
         rows = self.expander.get_rows()

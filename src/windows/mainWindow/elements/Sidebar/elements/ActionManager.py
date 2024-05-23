@@ -219,23 +219,23 @@ class ActionExpanderRow(BetterExpander):
             return
         page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
 
-        actions = controller.active_page.dict["keys"][page_coords]["states"][self.active_state]["actions"]
+        actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["actions"]
 
 
         reordered = self.reorder_index_after(copy(actions), move_index, after_index)
-        controller.active_page.dict["keys"][page_coords][self.active_state]["actions"] = reordered
+        controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["actions"] = reordered
 
-        image_control_action = controller.active_page.dict["keys"][page_coords][self.active_state]["image-control-action"]
-        controller.active_page.dict["keys"][page_coords][self.active_state]["image-control-action"] = reordered.index(actions[image_control_action])
+        image_control_action = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["image-control-action"]
+        controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["image-control-action"] = reordered.index(actions[image_control_action])
 
-        label_control_actions = controller.active_page.dict["keys"][page_coords][self.active_state]["label-control-actions"]
+        label_control_actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["label-control-actions"]
         for i, label_control_action in enumerate(label_control_actions):
             label_control_actions[i] = reordered.index(actions[label_control_action])
         # controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_actions])
 
         controller.active_page.save()
 
-        action_objects = controller.active_page.action_objects[page_coords]
+        action_objects = controller.active_page.action_objects[page_coords][self.active_state]
 
         reordered = self.reorder_action_objects(action_objects, move_index, after_index)
         controller.active_page.action_objects[page_coords][self.active_state] = reordered

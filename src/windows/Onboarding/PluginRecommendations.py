@@ -100,4 +100,4 @@ class PluginRow(Adw.ActionRow):
         self.check.set_active(not self.check.get_active())
 
     def on_toggled(self, button):
-        print("Toggled")
+        pass

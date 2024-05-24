@@ -1467,27 +1467,19 @@ class ControllerKey:
 
 
     def reload_sidebar(self) -> None:
-        print()
-        print("reload sidebar")
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
-            print("no visible child")
             return
         controller = visible_child.deck_controller
         if controller is None:
-            print("no controller")
             return
         
         if controller is not self.deck_controller:
-            print("controller is not self.deck_controller")
             return
         
         if tuple(self.coords) != tuple(gl.app.main_win.sidebar.active_coords):
-            print("coords are not equal")
             return
         
-        print("reload")
-        print(f"active_state: {self.state}, state: {self.state}")
         gl.app.main_win.sidebar.active_state = self.state
         GLib.idle_add(gl.app.main_win.sidebar.reload)
 

@@ -206,7 +206,6 @@ class KeyEditor(Gtk.Box):
 
 
     def on_state_switch(self, *args):
-        print("on_state_switch")
         state = self.state_switcher.get_selected_state()
         # self.sidebar.active_state = self.state_switcher.get_selected_state()
 
@@ -220,8 +219,6 @@ class KeyEditor(Gtk.Box):
         key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
 
         key.set_state(state, update_sidebar=True)
-        print(state)
-        print("on_state_switch end")
 
     def on_add_new_state(self, state):
         controller = gl.app.main_win.get_active_controller()

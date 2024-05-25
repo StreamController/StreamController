@@ -307,7 +307,7 @@ class ActionBase(rpyc.Service):
         self.raise_error_if_not_ready()
 
         if not self.get_is_present(): return
-        actions = self.page.action_objects.get(self.page_coords, [])
+        actions = self.page.action_objects.get(self.page_coords, {}).get(self.state, [])
         return len(actions) > 1
     
     def has_label_control(self) -> list[bool]:

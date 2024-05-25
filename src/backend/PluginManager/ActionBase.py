@@ -323,8 +323,6 @@ class ActionBase(rpyc.Service):
         self.raise_error_if_not_ready()
 
         key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
-        if "Analog" in self.action_id:
-            print()
 
         if key_dict.get("image-control-action") is None:
             return False

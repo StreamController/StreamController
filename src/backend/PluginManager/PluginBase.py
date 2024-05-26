@@ -39,6 +39,7 @@ class PluginBase(rpyc.Service):
         self.server: ThreadedServer = None
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
+        self.settings_path: str = None
 
         self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, "locales"))
         self.locale_manager.set_to_os_default()
@@ -87,6 +88,8 @@ class PluginBase(rpyc.Service):
             return
 
         self.plugin_id = manifest.get("id") or self.get_plugin_id_from_folder_name()
+
+        self.settings_path = os.path.join(gl.DATA_PATH, "settings", "plugins", self.plugin_id, "settings.json")
 
         for plugin_id in PluginBase.plugins.keys():
             plugin = PluginBase.plugins[plugin_id]["object"]
@@ -260,10 +263,10 @@ class PluginBase(rpyc.Service):
             self.disconnect_from_event(event_id, callback)
 
     def get_settings(self):
-        if os.path.exists(os.path.join(self.PATH, "settings.json")):
-            with open(os.path.join(self.PATH, "settings.json"), "r") as f:
-                return json.load(f)
-        return {}
+        if not os.path.exists(self.settings_path):
+            return {}
+        with open(self.settings_path, "r") as f:
+            return json.load(f)
 
     def get_manifest(self):
         if os.path.exists(os.path.join(self.PATH, "manifest.json")):
@@ -272,7 +275,8 @@ class PluginBase(rpyc.Service):
         return {}
     
     def set_settings(self, settings):
-        with open(os.path.join(self.PATH, "settings.json"), "w") as f:
+        os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
+        with open(self.settings_path, "w") as f:
             json.dump(settings, f, indent=4)
 
     def add_css_stylesheet(self, path):

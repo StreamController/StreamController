@@ -230,6 +230,8 @@ class ActionExpanderRow(BetterExpander):
 
         label_control_actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["label-control-actions"]
         for i, label_control_action in enumerate(label_control_actions):
+            if label_control_action is None:
+                continue
             label_control_actions[i] = reordered.index(actions[label_control_action])
         # controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_actions])
 

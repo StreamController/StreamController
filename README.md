@@ -15,7 +15,7 @@ background image by [kvacm](https://kvacm.artstation.com)
 * Stream Deck Original (2)
 * Stream Deck Mini
 * Stream Deck XL
-* Stream Deck Peal
+* Stream Deck Pedal
 
 ## Features
 ### Plugins

@@ -1,18 +1,10 @@
 # StreamController
 
-<img alt="Flathub Downloads" src="https://img.shields.io/flathub/downloads/com.core447.StreamController?style=flat&label=Flathub%20Downloads&link=https%3A%2F%2Fflathub.org%2Fapps%2Fcom.core447.StreamController">
-
-<img alt="Discord" src="https://img.shields.io/discord/1221536306367303690?label=Discord&link=https%3A%2F%2Fdiscord.gg%2FMSyHM8TN3u">
-
-<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank">
-    <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3">
-</a>
-
-<a href="https://www.python.org/" target="_blank">
-    <img src="https://img.shields.io/badge/Made%20with-Python-ff7b3f.svg" alt="made-with-python">
-</a>
-
-<img alt="Flathub Version" src="https://img.shields.io/flathub/v/com.core447.StreamController?label=Flathub%20Version">
+[![Flathub Downloads](https://img.shields.io/flathub/downloads/com.core447.StreamController?style=flat&label=Flathub%20Downloads&link=https%3A%2F%2Fflathub.org%2Fapps%2Fcom.core447.StreamController)](https://flathub.org/apps/com.core447.StreamController)
+[![Discord](https://img.shields.io/discord/1221536306367303690?label=Discord&link=https%3A%2F%2Fdiscord.gg%2FMSyHM8TN3u)](https://discord.gg/MSyHM8TN3u)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Made with Python](https://img.shields.io/badge/Made%20with-Python-ff7b3f.svg)](https://www.python.org/)
+[![Flathub Version](https://img.shields.io/flathub/v/com.core447.StreamController?label=Flathub%20Version)](https://flathub.org/apps/com.core447.StreamController)
 
 **An elegant Linux app for the Elgato Stream Deck with advanced features such as plug-ins and automatic page switching.**
 

@@ -24,6 +24,9 @@ import usb.core
 import usb.util
 import os
 
+from StreamDeck.Devices.StreamDeck import ControlType, DialEventType
+from StreamDeck.Transport.Transport import TransportError
+
 # Import own modules
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
@@ -54,9 +57,15 @@ class DeckManager:
         resume_thread.start()
 
     def load_decks(self):
+        import types
         decks=DeviceManager().enumerate()
         for deck in decks:
             try:
+                deck.reconnect_after_suspend = True
+
+                deck._read = self._read
+                deck._read = types.MethodType(self._read, deck)
+                # deck._read = lambda *args, **kwargs: None
                 if not deck.is_open():
                     deck.open()
             except:
@@ -239,6 +248,50 @@ class DeckManager:
     def get_connected_serials(self) -> list[str]:
         return [controller.serial_number() for controller in self.deck_controller]
 
+    def _read(parent, self):
+        """
+        Read handler for the underlying transport, listening for button state
+        changes on the underlying device, caching the new states and firing off
+        any registered callbacks.
+        """
+        while self.run_read_thread:
+            try:
+                control_states = self._read_control_states()
+                if control_states is None:
+                    time.sleep(1.0 / self.read_poll_hz)
+                    continue
+
+                if ControlType.KEY in control_states and self.key_callback is not None:
+                    for k, (old, new) in enumerate(zip(self.last_key_states, control_states[ControlType.KEY])):
+                        if old != new:
+                            self.last_key_states[k] = new
+                            self.key_callback(self, k, new)
+
+                elif ControlType.DIAL in control_states and self.dial_callback is not None:
+                    if DialEventType.PUSH in control_states[ControlType.DIAL]:
+                        for k, (old, new) in enumerate(zip(self.last_dial_states,
+                                                           control_states[ControlType.DIAL][DialEventType.PUSH])):
+                            if old != new:
+                                self.last_dial_states[k] = new
+                                self.dial_callback(self, k, DialEventType.PUSH, new)
+
+                    if DialEventType.TURN in control_states[ControlType.DIAL]:
+                        for k, amount in enumerate(control_states[ControlType.DIAL][DialEventType.TURN]):
+                            if amount != 0:
+                                self.dial_callback(self, k, DialEventType.TURN, amount)
+
+                elif ControlType.TOUCHSCREEN in control_states and self.touchscreen_callback is not None:
+                    self.touchscreen_callback(self, *control_states[ControlType.TOUCHSCREEN])
+
+            except TransportError:
+                self.run_read_thread = False
+                self.close()
+
+                if self.reconnect_after_suspend:
+                    if self.connected() and not self.is_open():
+                        # This is the case when resuming from suspend
+                        self.open()
+
 class DetectResumeThread(threading.Thread):
     def __init__(self, deck_manager: DeckManager):
         super().__init__()
@@ -248,6 +301,7 @@ class DetectResumeThread(threading.Thread):
         self.last_2 = time.time()
 
     def run(self):
+        return
         while gl.threads_running:
             self.last_1 = time.time()
             if time.time() - self.last_1 >= 5 or time.time() - self.last_2 >= 5:

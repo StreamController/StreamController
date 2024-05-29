@@ -533,12 +533,10 @@ class StoreBackend:
             pass
         if isinstance(result, NoConnectionError):
             return result
-        if result is None:
+        try:
+            return Image.open(BytesIO(result))
+        except:
             return
-        img = Image.open(BytesIO(result))
-
-        return img
-
     
     async def get_stargazers(self, repo_url: str) -> int:
         "Deactivated for now because of rate limits"

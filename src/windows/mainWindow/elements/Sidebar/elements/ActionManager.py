@@ -13,7 +13,6 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
-from sys import activate_stack_trampoline
 import gi
 
 from src.backend.DeckManagement.HelperMethods import add_default_keys

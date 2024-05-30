@@ -1564,6 +1564,9 @@ class ControllerKey:
             self.update()
             self.hide_error_timer = Timer(duration, self.hide_error)
             self.hide_error_timer.start()
+        else:
+            self._show_error = True
+            self.update()
 
     def hide_error(self):
         self._show_error = False

@@ -90,6 +90,11 @@ class ActionBase(rpyc.Service):
         """
         self.coords = coords
 
+    def get_key(self) -> "ControllerKey":
+        self.raise_error_if_not_ready()
+
+        return self.deck_controller.keys[self.key_index]
+
     def get_key_state(self) -> "ControllerKeyState":
         self.raise_error_if_not_ready()
 
@@ -213,14 +218,14 @@ class ActionBase(rpyc.Service):
 
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
-        self.get_key_state().show_error(duration=duration)
+        self.get_key().show_error(duration=duration)
 
     def hide_error(self) -> None:
         self.raise_error_if_not_ready()
 
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
-        self.get_key_state().hide_error()
+        self.get_key().hide_error()
         
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = None,

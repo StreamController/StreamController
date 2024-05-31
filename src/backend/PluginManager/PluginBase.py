@@ -39,7 +39,7 @@ class PluginBase(rpyc.Service):
         self.server: ThreadedServer = None
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
-        self.settings_path: str = None
+        self.settings_path: str = os.path.join(gl.DATA_PATH, "settings", "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well
 
         self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, "locales"))
         self.locale_manager.set_to_os_default()
@@ -88,8 +88,6 @@ class PluginBase(rpyc.Service):
             return
 
         self.plugin_id = manifest.get("id") or self.get_plugin_id_from_folder_name()
-
-        self.settings_path = os.path.join(gl.DATA_PATH, "settings", "plugins", self.plugin_id, "settings.json")
 
         for plugin_id in PluginBase.plugins.keys():
             plugin = PluginBase.plugins[plugin_id]["object"]

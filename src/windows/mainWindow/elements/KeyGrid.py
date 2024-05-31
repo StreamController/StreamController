@@ -43,7 +43,8 @@ class KeyGrid(Gtk.Grid):
 
         self.selected_key = None # The selected key, indicated by a blue frame around it
 
-        self.buttons = [[None] * deck_controller.deck.key_layout()[1] for i in range(deck_controller.deck.key_layout()[0])]
+        [y, x] = self.deck_controller.deck.key_layout()
+        self.buttons = [[None] * y for i in range(x)]
 
         # Store the copied key from the page
         self.copied_key:dict = None
@@ -58,18 +59,18 @@ class KeyGrid(Gtk.Grid):
         GLib.idle_add(self.select_key, 0, 0)
 
     def regenerate_buttons(self):
-        self.buttons = [[None] * self.deck_controller.deck.key_layout()[1] for i in range(self.deck_controller.deck.key_layout()[0])]
+        [y, x] = self.deck_controller.deck.key_layout()
+        self.buttons = [[None] * y for i in range(x)]
     
     def build(self):
         self.clear()
 
         layout = self.deck_controller.deck.key_layout()
-        for x in range(layout[0]):
-            for y in range(layout[1]):
-                button = KeyButton(self, (layout[0] - x - 1, y))
-                self.attach(button, y, layout[0] - x, 1, 1)
+        for x in range(layout[1]):
+            for y in range(layout[0]):
+                button = KeyButton(self, (x, y))
+                self.attach(button, x, y, 1, 1)
                 button._set_visible(False) # Hide buttons per default - they will be shown when the the grid is mapped to prevent large grids to resize every child
-                x = layout[0] - 1 - x
                 self.buttons[x][y] = button
         return
         log.debug(self.deck_controller.deck.key_layout())
@@ -110,8 +111,8 @@ class KeyGrid(Gtk.Grid):
             self.remove(self.get_first_child())
 
     def set_buttons_visible(self, visible):
-        for x in range(self.deck_controller.deck.key_layout()[0]):
-            for y in range(self.deck_controller.deck.key_layout()[1]):
+        for x in range(self.deck_controller.deck.key_layout()[1]):
+            for y in range(self.deck_controller.deck.key_layout()[0]):
                 self.buttons[x][y]._set_visible(visible)
 
 
@@ -187,7 +188,7 @@ class KeyButton(Gtk.Frame):
             return
         
         ## Fetch own key_dict
-        target_y, target_x = self.coords
+        target_x, target_y = self.coords
         target_key_dict = active_page.dict.get("keys", {}).get("states", {}).get(str(self.state), {}).get(f"{target_x}x{target_y}", {})
 
         ## Fetch dropped key_dict
@@ -204,13 +205,13 @@ class KeyButton(Gtk.Frame):
         active_page.dict["keys"][f"{dropped_x}x{dropped_y}"]["states"][dropped_state] = target_key_dict
         active_page.save()
 
-        active_page.switch_actions_of_keys(f"{target_x}x{target_y}", f"{dropped_x}x{dropped_y}")
+        active_page.switch_actions_of_keys("keys", f"{target_x}x{target_y}", f"{dropped_x}x{dropped_y}")
 
         active_page.reload_similar_pages(page_coords=f"{target_x}x{target_y}", reload_self=True)
         active_page.reload_similar_pages(page_coords=f"{dropped_x}x{dropped_y}", reload_self=True)
 
         # Reload sidebar
-        gl.app.main_win.sidebar.load_for_coords(gl.app.main_win.sidebar.active_coords)
+        gl.app.main_win.sidebar.reload()
 
     def handle_file_drop(self, drop: Gtk.DropTarget, value: Gdk.ContentProvider, x, y):
         files = value.get_files()
@@ -229,7 +230,7 @@ class KeyButton(Gtk.Frame):
         # Set media to key
         active_page = self.key_grid.deck_controller.active_page
 
-        page_coords = f"{self.coords[1]}x{self.coords[0]}"
+        page_coords = f"{self.coords[0]}x{self.coords[1]}"
         
         active_page.dict["keys"].setdefault(page_coords, {})
         active_page.dict["keys"][page_coords].setdefault("states", {})
@@ -242,13 +243,13 @@ class KeyButton(Gtk.Frame):
         active_page.dict["keys"][page_coords]["states"][str(self.state)]["media"]["path"] = internal_path
         # Save page
         active_page.save()
-        key_index = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
+        key_index = self.key_grid.deck_controller.coords_to_index(self.coords)
         self.key_grid.deck_controller.load_key(key_index, page=active_page)
 
         # Update icon selector if current key is selected
-        active_coords = gl.app.main_win.sidebar.active_coords
-        if active_coords == (self.coords[1], self.coords[0]):
-            gl.app.main_win.sidebar.key_editor.icon_selector.load_for_coords((self.coords[1], self.coords[0]))
+        active_identifier = gl.app.main_win.sidebar.active_identifier
+        if active_identifier == f"{self.coords[0]}x{self.coords[1]}":
+            gl.app.main_win.sidebar.key_editor.icon_selector.load_for_coords((self.coords[0], self.coords[1]))
 
         
     def on_drag_begin(self, drag_source, data):
@@ -290,7 +291,7 @@ class KeyButton(Gtk.Frame):
         sidebar = gl.app.main_win.sidebar
         if pixbuf is None:
             return
-        if sidebar.key_editor.label_editor.label_group.expander.active_coords != (self.coords[1], self.coords[0]):
+        if sidebar.key_editor.label_editor.label_group.expander.active_coords != (self.coords[0], self.coords[1]):
             return
         child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if child is None:
@@ -331,7 +332,7 @@ class KeyButton(Gtk.Frame):
             return
         
         deck = self.key_grid.deck_controller.deck
-        key = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
+        key = self.key_grid.deck_controller.coords_to_index(self.coords)
         self.key_grid.deck_controller.key_change_callback(deck, key, True)
         # Release key after 100ms
         GLib.timeout_add(100, self.key_grid.deck_controller.key_change_callback, deck, key, False)
@@ -364,18 +365,18 @@ class KeyButton(Gtk.Frame):
             return
         sidebar = gl.app.main_win.sidebar
         # Check if already loaded for this coords
-        if sidebar.active_coords == (self.coords[1], self.coords[0]):
+        if sidebar.active_identifier == f"{self.coords[0]}x{self.coords[1]}":
             if not self.get_mapped():
                 return
             
-        sidebar.load_for_coords((self.coords[1], self.coords[0]), self.state)
+        sidebar.load_for_coords((self.coords[0], self.coords[1]), self.state)
 
     # Modifier
     def on_copy(self, *args):
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
-        y, x = self.coords
+        x, y = self.coords
         key_dict = active_page.dict.get("keys", {}).get(f"{x}x{y}", {}).get(str(self.state), {})
         gl.app.main_win.key_dict = key_dict
         content = Gdk.ContentProvider.new_for_value(key_dict)
@@ -397,7 +398,7 @@ class KeyButton(Gtk.Frame):
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
-        y, x = self.coords
+        x, y = self.coords
         active_page.dict.setdefault("keys", {})
         active_page.dict["keys"].setdefault(f"{x}x{y}", {})
         active_page.dict["keys"][f"{x}x{y}"][str(self.state)] = gl.app.main_win.key_dict
@@ -415,7 +416,7 @@ class KeyButton(Gtk.Frame):
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
-        y, x = self.coords
+        x, y = self.coords
         
         if f"{x}x{y}" not in active_page.dict.get("keys", {}):
             return
@@ -439,7 +440,7 @@ class KeyButton(Gtk.Frame):
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
-        y, x = self.coords
+        x, y = self.coords
 
         if f"{x}x{y}" not in active_page.dict["keys"]:
             return

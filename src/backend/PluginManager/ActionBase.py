@@ -36,7 +36,7 @@ class ActionBase(rpyc.Service):
     # Change to match your action
     def __init__(self, action_id: str, action_name: str,
                  deck_controller: "DeckController", page: "Page", plugin_base: "PluginBase", state: int,
-                 coords: str = None, dial: int = None, touch: bool = None):
+                 type: str, identifier: str = None):
         #TODO: Add state arg to all init methods
         self.backend_connection: Connection = None
         self.backend: netref = None
@@ -44,16 +44,11 @@ class ActionBase(rpyc.Service):
         
         self.deck_controller = deck_controller
         self.page = page
-        self.page_coords = coords
-        self.dial = dial
-        self.touch = touch
         self.state = state
-        if coords is None:
-            self.coords = None
-            self.key_index = None
-        else:
-            self.coords = int(coords.split("x")[0]), int(coords.split("x")[1])
-            self.key_index = self.deck_controller.coords_to_index(self.coords)
+        self.type = type
+        self.identifier = identifier
+#        if self.type == "keys":
+#            self.key_index = self.deck_controller.coords_to_index(self.identifier)
         self.action_id = action_id
         self.action_name = action_name
         self.plugin_base = plugin_base
@@ -66,10 +61,10 @@ class ActionBase(rpyc.Service):
         self.has_configuration = False
 
         self.labels = {}
-        self.current_key = {
-            "key": self.key_index,
-            "image": None,
-         }
+#        self.current_key = {
+#            "key": self.key_index,
+#            "image": None,
+#        }
         
         self.default_image = None
         self.default_labels = {}
@@ -90,18 +85,43 @@ class ActionBase(rpyc.Service):
         """
         self.page = page
 
-    def set_coords(self, coords):
+    def set_identifier(self, identifier):
         """
         Internal function, do not call manually
         """
-        self.coords = coords
+        self.identifier = identifier
+
+    @property
+    def key_index(self) -> int:
+        if self.type == "keys":
+            return self.deck_controller.coords_to_index(self.identifier)
+        return None
 
     def get_key_state(self) -> "ControllerKeyState":
-        if self.key_index is None:
-            return
-        key = self.deck_controller.keys[self.key_index]
-        return key.states.get(self.state)
+        if self.type == "keys":
+            for k in self.deck_controller.keys:
+                if k.identifier == self.identifier:
+                    return k.states.get(self.state)
     
+    def get_dial_state(self) -> "ControllerDialState":
+        if self.type == "dials":
+            for d in self.deck_controller.dials:
+                if d.identifier == self.identifier:
+                    return d.states.get(self.state)
+
+    def get_touchscreen_state(self) -> "ControllerTouchScreenState":
+        if self.type == "touchscreens":
+            for t in self.deck_controller.touchscreens:
+                if t.identifier == self.identifier:
+                    return t.states.get(self.state)
+
+    def get_input_state(self) -> "ControllerInputState":
+        return {
+            "keys": self.get_key_state(),
+            "dials": self.get_dial_state(),
+            "touchscreens": self.get_touchscreen_state(),
+        }[self.type]
+
     def on_key_down(self):
         pass
 
@@ -131,8 +151,8 @@ class ActionBase(rpyc.Service):
         self.on_key_down()
 
     def on_touch_up(self):
-        # Fallback to normal on_key_down
-        self.on_key_down()
+        # Fallback to normal on_key_up
+        self.on_key_up()
 
     def on_dial_cw(self):
         # Fallback to normal on_key_down
@@ -147,7 +167,7 @@ class ActionBase(rpyc.Service):
         self.on_key_down()
 
     def on_dial_up(self):
-        # Fallback to normal on_key_down
+        # Fallback to normal on_key_up
         self.on_key_up()
 
     def set_default_image(self, image: Image.Image):
@@ -176,6 +196,8 @@ class ActionBase(rpyc.Service):
 
     def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):
         if not self.get_is_present():
+            return
+        if self.type != "keys":
             return
         if self.key_index >= self.deck_controller.deck.key_count():
             return
@@ -223,10 +245,12 @@ class ActionBase(rpyc.Service):
             self.deck_controller.update_key(self.key_index)
 
     def set_background_color(self, color: list[int] = [255, 255, 255, 255], update: bool = True):
-        if self.key_index >= self.deck_controller.deck.key_count():
-            return
         if not self.on_ready_called:
             update = False
+        if self.type != "keys":
+            return
+        if self.key_index >= self.deck_controller.deck.key_count():
+            return
 
         self.get_key_state().background_color = color
         if update:
@@ -236,13 +260,18 @@ class ActionBase(rpyc.Service):
     def show_error(self, duration: int = -1) -> None:
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
-        self.get_key_state().show_error(duration=duration)
+        try:
+            self.get_input_state().show_error(duration=duration)
+        except AttributeError:
+            pass
 
     def hide_error(self) -> None:
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
-        self.get_key_state().hide_error()
-        
+        try:
+            self.get_input_state().hide_error()
+        except AttributeError:
+            pass
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
                       font_family: str = None, font_size = None, update: bool = True):
@@ -250,6 +279,10 @@ class ActionBase(rpyc.Service):
             return
         if not self.on_ready_called:
             update = False
+        if self.type != "keys":
+            return
+        if not text:
+            return
 
         label_index = 0 if position == "top" else 1 if position == "center" else 2
 
@@ -301,12 +334,12 @@ class ActionBase(rpyc.Service):
         # self.page.load()
         if self.page is None:
             return {}
-        return self.page.get_settings_for_action(self, coords = self.page_coords, state=self.state)
+        return self.page.get_settings_for_action(self, type=self.type, identifier=self.identifier, state=self.state)
     
     def set_settings(self, settings: dict):
         if self.page is None:
             return
-        self.page.set_settings_for_action(self, settings=settings, coords = self.page_coords, state=self.state)
+        self.page.set_settings_for_action(self, settings=settings, type=self.type, identifier=self.identifier, state=self.state)
         self.page.save()
 
     def connect(self, signal:Signal = None, callback: callable = None) -> None:
@@ -318,18 +351,18 @@ class ActionBase(rpyc.Service):
     
     def get_is_multi_action(self) -> bool:
         if not self.get_is_present(): return
-        actions = self.page.action_objects.get(self.page_coords, [])
+        actions = self.page.action_objects.get(self.type, {}).get(self.identifier, [])
         return len(actions) > 1
     
     def has_label_control(self) -> list[bool]:
-        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
+        key_dict = self.page.dict.get(self.type, {}).get(self.identifier, {}).get("states", {}).get(str(self.state), {})
 
         ind = self.get_own_action_index()
 
         return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
 
     def has_image_control(self):
-        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
+        key_dict = self.page.dict.get(self.type, {}).get(self.identifier, {}).get("states", {}).get(str(self.state), {})
         if "Analog" in self.action_id:
             print()
 
@@ -349,12 +382,12 @@ class ActionBase(rpyc.Service):
     
     def has_custom_user_asset(self) -> bool:
         if not self.get_is_present(): return False
-        media = self.page.dict["keys"][self.page_coords]["states"][str(self.state)].get("media", {})
+        media = self.page.dict[self.type][self.identifier]["states"].get(str(self.state), {}).get("media", {})
         return media.get("path", None) is not None
     
     def get_own_action_index(self) -> int:
         if not self.get_is_present(): return -1
-        actions = self.page.get_all_actions_for_key_and_state(self.page_coords, state=self.state)
+        actions = self.page.get_all_actions_for_type_and_state(self.type, self.identifier, state=self.state)
         if self not in actions:
             return
         return actions.index(self)

@@ -47,10 +47,8 @@ class Sidebar(Adw.NavigationPage):
     def __init__(self, main_window, **kwargs):
         super().__init__(hexpand=True, title="Sidebar", **kwargs)
         self.main_window = main_window
-        self.active_coords: tuple = None
-        self.active_dial: int = None
-        self.screen_active: bool = None
-        self.active_state: int = 0
+        self.active_type: str = None
+        self.active_identifier: str = None
         
         """
         To save performance and memory, we only load the thumbnail when the user sees the row
@@ -127,8 +125,10 @@ class Sidebar(Adw.NavigationPage):
         self.main_stack.set_visible_child(self.action_configurator)
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.active_dial = None
-        self.active_coords = coords
+        if type(coords) is str:
+            coords = coords.split("x")
+        self.active_type = "keys"
+        self.active_identifier = f"{coords[0]}x{coords[1]}"
         self.active_state = state
         self.screen_active = False
 
@@ -165,20 +165,21 @@ class Sidebar(Adw.NavigationPage):
         self.key_editor.load_for_coords(coords, state)
 
     def load_for_dial(self, n: int, state: int):
-        self.active_coords = None
-        self.active_dial = n
+        if type(n) is str:
+            n = int(n)
+        self.active_type = "dials"
+        self.active_identifier = str(n)
         self.screen_active = False
         self.main_stack.set_visible_child(self.configurator_stack)
         self.configurator_stack.set_visible_child(self.dial_editor)
         self.dial_editor.load_for_dial(n, state)
 
-    def load_for_screen(self, state: int    ):
-        self.active_coords = None
-        self.active_dial = None
-        self.screen_active = True
+    def load_for_screen(self, identifier: str, state: int):
+        self.active_type = "touchscreens"
+        self.active_identifier = identifier
         self.main_stack.set_visible_child(self.configurator_stack)
         self.configurator_stack.set_visible_child(self.screen_editor)
-        self.screen_editor.load(state)
+        self.screen_editor.load_for_identifier(identifier, state)
 
     def show_error(self):
         if self.main_stack.get_visible_child() == self.error_page:
@@ -198,7 +199,12 @@ class Sidebar(Adw.NavigationPage):
         self.main_stack.set_transition_duration(200)
 
     def reload(self):
-        self.load_for_coords(self.active_coords, self.active_state)
+        if self.active_type == "keys":
+            self.load_for_coords(self.active_identifier, self.active_state)
+        elif self.active_type == "dials":
+            self.load_for_dial(self.active_identifier, self.active_state)
+        elif self.active_type == "touchscreens":
+            self.load_for_screen(self.active_identifier, self.active_state)
 
 
 class KeyEditor(Gtk.Box):
@@ -213,7 +219,7 @@ class KeyEditor(Gtk.Box):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.scrolled_window.set_child(self.main_box)
 
-        self.state_switcher = StateSwitcher(margin_start=20, margin_end=20, margin_top=10, margin_bottom=10, hexpand=True)
+        self.state_switcher = StateSwitcher("keys", margin_start=20, margin_end=20, margin_top=10, margin_bottom=10, hexpand=True)
         self.state_switcher.add_switch_callback(self.on_state_switch)
         self.state_switcher.add_add_new_callback(self.on_add_new_state)
         self.state_switcher.set_n_states(0)
@@ -238,8 +244,6 @@ class KeyEditor(Gtk.Box):
         self.remove_state_button.connect("clicked", self.on_remove_state)
         self.append(self.remove_state_button)
 
-
-
     def on_state_switch(self, *args):
         print("on_state_switch")
         state = self.state_switcher.get_selected_state()
@@ -252,7 +256,7 @@ class KeyEditor(Gtk.Box):
         if controller is None:
             return
         
-        key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
+        key = controller.keys[controller.coords_to_index(self.sidebar.active_identifier)]
 
         key.set_state(state, update_sidebar=True)
         print(state)
@@ -263,7 +267,7 @@ class KeyEditor(Gtk.Box):
         if controller is None:
             return
         
-        key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
+        key = controller.keys[controller.coords_to_index(self.sidebar.active_identifier)]
         key.add_new_state()
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
@@ -278,12 +282,14 @@ class KeyEditor(Gtk.Box):
         
         active_state = self.state_switcher.get_selected_state()
         
-        key = controller.keys[controller.coords_to_index(self.sidebar.active_coords)]
+        key = controller.keys[controller.coords_to_index(self.sidebar.active_identifier)]
         key.remove_state(active_state)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
+        if type(coords) is str:
+            coords = coords.split("x")
 
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
@@ -300,7 +306,8 @@ class KeyEditor(Gtk.Box):
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
-        self.sidebar.active_coords = coords
+        self.sidebar.active_type = "keys"
+        self.sidebar.active_identifier = f"{coords[0]}x{coords[1]}"
         self.icon_selector.load_for_coords(coords, state)
         self.image_editor.load_for_coords(coords, state)
         self.label_editor.load_for_coords(coords, state)
@@ -501,7 +508,8 @@ class KeyEditorKeyBox(Gtk.Box):
         self.main_box.append(self.action_editor)
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.sidebar.active_coords = coords
+        self.sidebar.active_type = "keys"
+        self.sidebar.active_identifier = f"{coords[0]}x{coords[1]}"
         self.sidebar.active_state = state
         self.icon_selector.load_for_coords(coords, state)
         self.image_editor.load_for_coords(coords, state)

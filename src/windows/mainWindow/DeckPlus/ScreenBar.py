@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 class ScreenBar(Gtk.Frame):
     def __init__(self, page_settings_page: "PageSettingsPage", **kwargs):
         self.page_settings_page = page_settings_page
+        self.identifier = "touchscreen" # TODO: change
         super().__init__(**kwargs)
         self.set_css_classes(["key-button-frame-hidden"])
         self.set_halign(Gtk.Align.CENTER)
@@ -87,9 +88,10 @@ class ScreenBar(Gtk.Frame):
             # Select key
             self.image.grab_focus()
 
-            active_state = self.page_settings_page.deck_controller.touchscreen.active_state
-
-            gl.app.main_win.sidebar.load_for_screen(active_state)
+            for t in self.page_settings_page.deck_controller.touchscreens:
+                if t.identifier == self.identifier:
+                    active_state = t.get_active_state().state
+                    gl.app.main_win.sidebar.load_for_screen(t.identifier, active_state)
         elif gesture.get_current_button() == 1 and n_press == 2:
             print("Double click")
             pass

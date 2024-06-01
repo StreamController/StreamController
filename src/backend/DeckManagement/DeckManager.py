@@ -56,7 +56,6 @@ class DeckManager:
     def load_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:
-            break
             try:
                 if not deck.is_open():
                     deck.open()
@@ -106,13 +105,11 @@ class DeckManager:
         if hasattr(gl.app, "main_win"):
             gl.app.main_win.check_for_errors()
 
-
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device
         if device_info["ID_VENDOR"] != "Elgato":
             return
-        
         
         self.connect_new_decks()
 

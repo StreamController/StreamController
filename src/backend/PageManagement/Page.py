@@ -313,22 +313,22 @@ class Page:
 
         return True
     
-    def get_keys_with_plugin(self, plugin_id: str):
-        plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
-        if plugin_obj is None:
-            return []
-        
-        keys = []
-        for type in self.action_objects.values():
-            for key in self.action_objects[type]:
-                for state in self.action_objects[type][state]:
-                    for action in self.action_objects[type][state][key].values():
-                        if not isinstance(action, ActionBase):
-                            continue
-                        if action.plugin_base == plugin_obj:
-                            keys.append(key)
-
-        return keys
+#    def get_keys_with_plugin(self, plugin_id: str):
+#        plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
+#        if plugin_obj is None:
+#            return []
+#        
+#        keys = []
+#        for type in self.action_objects.values():
+#            for key in self.action_objects[type]:
+#                for state in self.action_objects[type][state]:
+#                    for action in self.action_objects[type][state][key].values():
+#                        if not isinstance(action, ActionBase):
+#                            continue
+#                        if action.plugin_base == plugin_obj:
+#                            keys.append(key)
+#
+#        return keys
 
     def remove_plugin_actions_from_json(self, plugin_id: str):
         for type in KEY_TYPES:
@@ -336,7 +336,7 @@ class Page:
                 for state in self.dict[type][key].get("states", {}):
                     for i, action in enumerate(self.dict[type][key]["states"][state]["actions"]):
                         # Check if the action is from the plugin by using the plugin id before the action name
-                        if self.dict[type][key]["states"][state]["actions"].split("::")[0] == plugin_id:
+                        if action.id.split("::")[0] == plugin_id:
                             del self.dict[type][key]["states"][state]["actions"][i]
 
         self.save()
@@ -420,12 +420,13 @@ class Page:
                     if self.action_objects[type][identifier][int(state)][i] == action_object:
                         return action["settings"]
         return {}
-                
+
     def set_settings_for_action(self, action_object, settings: dict, type: str, identifier: str = None, state: int = None):
         if identifier is None or state is None and action_object:
             identifier = action_object.page_coords
             state = action_object.state
-        for state in self.dict[type][identifier].get("states", {}):
+        state = str(state)
+        if state in self.dict[type][identifier].get("states", {}):
             for i, action in enumerate(self.dict[type][identifier]["states"][state].get("actions", [])):
                 self.action_objects[type].setdefault(identifier, {})
                 if self.action_objects[type][identifier].get(int(state), {}).get(i) == action_object:

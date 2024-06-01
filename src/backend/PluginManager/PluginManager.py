@@ -39,7 +39,6 @@ class PluginManager:
         if show_notification:
             self.show_n_disabled_plugins_notification()
 
-
     def show_n_disabled_plugins_notification(self):
         n_deactivated_plugins = len(PluginBase.disabled_plugins)
         if n_deactivated_plugins == 0:
@@ -59,7 +58,6 @@ class PluginManager:
             gl.app_loading_finished_tasks.append(call)
         else:
             call()
-        
 
     def init_plugins(self):
         subclasses = PluginBase.__subclasses__()

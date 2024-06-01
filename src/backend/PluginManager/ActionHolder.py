@@ -14,7 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 # Import own modules
-from src.backend.PluginManager.ActionSupportTypes import ActionSupports
+from src.backend.PluginManager.ActionSupportTypes import ActionSupports, TypeSupport
 from src.backend.PluginManager.ActionBase import ActionBase
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.DeckController import DeckController
@@ -34,6 +34,8 @@ from packaging import version
 
 import globals as gl
 
+import traceback
+
 class ActionHolder:
     """
     Holder for ActionBase containing important information that can be used as long as the ActionBase is not initialized
@@ -43,9 +45,7 @@ class ActionHolder:
                  action_id: str, action_name: str,
                  icon: Gtk.Widget = None,
                  min_app_version: str = None,
-                 key_support: int = ActionSupports.Keys.UNTESTED,
-                 touch_support: int = ActionSupports.Touch.UNTESTED,
-                 dial_support: int = ActionSupports.Dials.UNTESTED
+                 action_support = [],
                  ):
         
         ## Verify variables
@@ -63,10 +63,7 @@ class ActionHolder:
         self.action_name = action_name
         self.icon = icon
         self.min_app_version = min_app_version
-        self.key_support = key_support
-        self.touch_support = touch_support
-        self.dial_support = dial_support
-
+        self.action_support = action_support
     def get_is_compatible(self) -> bool:
         if self.min_app_version is not None:
             if version.parse(gl.app_version) < version.parse(self.min_app_version):
@@ -89,18 +86,24 @@ class ActionHolder:
             state = state
         )
     
-    def is_compatible_with_element(self, element: str) -> bool:
-        if element == "key":
-            return self.key_support > ActionSupports.Keys.NONE
-        elif element == "touch":
-            return self.touch_support > ActionSupports.Touch.NONE
-        elif element == "dial":
-            return self.dial_support > ActionSupports.Dials.NONE
+    def is_compatible_with_type(self, type: str) -> bool:
+        if type is None:
+            type = "keys"
+        # legacy
+        if type == "keys" and len(self.action_support) == 0:
+            return True
+        for s in self.action_support:
+            if s.type == type and int(s) > int(TypeSupport(type).NONE):
+                return True
+        return False
         
-    def is_untested_for_element(self, element: str) -> bool:
-        if element == "key":
-            return self.key_support == ActionSupports.Keys.UNTESTED
-        elif element == "touch":
-            return self.touch_support == ActionSupports.Touch.UNTESTED
-        elif element == "dial":
-            return self.dial_support == ActionSupports.Dials.UNTESTED
+    def is_untested_for_type(self, type: str) -> bool:
+        if type is None:
+            type = "keys"
+        # legacy
+        if type == "keys" and len(self.action_support) == 0:
+            return True
+        for s in self.action_support:
+            if s.type == type and int(s) == int(TypeSupport(type).UNTESTED):
+                return True
+        return False

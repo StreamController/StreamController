@@ -246,12 +246,13 @@ class ActionExpanderRow(BetterExpander):
         reordered = self.reorder_index_after(copy(actions), move_index, after_index)
         controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["actions"] = reordered
 
-        image_control_action = controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["image-control-action"]
-        controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["image-control-action"] = reordered.index(actions[image_control_action])
+        if self.active_type == "keys":
+            image_control_action = controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["image-control-action"]
+            controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["image-control-action"] = reordered.index(actions[image_control_action])
 
-        label_control_actions = controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["label-control-actions"]
-        for i, label_control_action in enumerate(label_control_actions):
-            label_control_actions[i] = reordered.index(actions[label_control_action])
+            label_control_actions = controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["label-control-actions"]
+            for i, label_control_action in enumerate(label_control_actions):
+                label_control_actions[i] = reordered.index(actions[label_control_action])
         # controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_actions])
 
         controller.active_page.save()
@@ -646,7 +647,6 @@ class ActionRow(Adw.ActionRow):
 
         self.comment_row.set_text(comment)
 
-
 class AddActionButtonRow(Adw.PreferencesRow):
     def __init__(self, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding", "add-button"])
@@ -661,13 +661,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         self.set_child(self.button)
 
     def on_click(self, button):
-        element = "key"
-        if self.expander.active_dial is not None:
-            element = "dial"
-        elif self.expander.active_gesture is not None:
-            element = "touch"
-
-        self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action, element=element)
+        self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action, type=self.expander.active_type)
 
     def add_action(self, action_class):
         log.trace(f"Adding action: {action_class}")

@@ -74,7 +74,7 @@ class ActionConfigurator(Gtk.Box):
         self.comment_group.load_for_action(action, index)
 
     def on_back_button_click(self, button):
-        self.sidebar.main_stack.set_visible_child_name("key_editor")
+        self.sidebar.main_stack.set_visible_child_name("configurator_stack")
 
 class CommentGroup(Adw.PreferencesGroup):
     def __init__(self, parent, **kwargs):
@@ -234,7 +234,7 @@ class RemoveButton(Gtk.Button):
         page = controller.active_page
 
         # Swtich to main editor page
-        self.configurator.sidebar.main_stack.set_visible_child_name("key_editor")
+        self.configurator.sidebar.main_stack.set_visible_child_name("configurator_stack")
 
         # Remove from action_objects
         try:
@@ -245,10 +245,9 @@ class RemoveButton(Gtk.Button):
         page.fix_action_objects_order(self.action.identifier)
 
         # Remove from page json
-        print(page.dict[self.action.type][self.action.identifier]["states"])
         page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["actions"].pop(self.index)
 
-        if page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["image-control-action"] == self.index:
+        if self.action.type == "keys" and page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["image-control-action"] == self.index:
             if len(page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["actions"]) > 0:
                 page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["image-control-action"] = 0
             else:

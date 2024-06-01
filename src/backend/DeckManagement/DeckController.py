@@ -319,7 +319,6 @@ class DeckController:
         self.deck: StreamDeck = deck
         # Open the deck
         deck.open()
-        print()
         
         try:
             # Clear the deck
@@ -341,6 +340,7 @@ class DeckController:
         self.media_player_tasks: list[MediaPlayerTask] = []
         self.media_player_tasks: Queue[MediaPlayerTask] = Queue()
 
+        print()
         self.ui_grid_buttons_changes_while_hidden: dict = {}
 
         self.active_page: Page = None
@@ -1940,8 +1940,9 @@ class ControllerKey(ControllerInput):
                 self.update()
 
     def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False) -> None:
+        old_state = self.state
         super().set_state(state, False, allow_reload)
-        if state == self.state and not allow_reload:
+        if state == old_state and not allow_reload:
             return
         self.get_own_ui_key().state = state
         if update_sidebar:

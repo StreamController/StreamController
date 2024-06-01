@@ -374,6 +374,13 @@ class ActionBase(rpyc.Service):
         self.start_server()
         port = self.server.port
 
+        if venv_path is not None:
+            if not os.path.exists(venv_path):
+                raise ValueError(f"Venv path does not exist: {venv_path}")
+        if backend_path is None:
+            if  not os.path.exists(backend_path):
+                raise ValueError(f"Backend path does not exist: {backend_path}")
+
         ## Launch
         if open_in_terminal:
             command = "gnome-terminal -- bash -c '"

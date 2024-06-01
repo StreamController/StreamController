@@ -1237,10 +1237,10 @@ class ControllerKeyLabelManager:
         if active_controller is not self.controller_key.deck_controller:
             return
 
-        if gl.app.main_win.sidebar.active_coords != (self.controller_key.coords[0], self.controller_key.coords[1]):
+        if gl.app.main_win.sidebar.active_type != self.controller_key or gl.app.main_win.sidebar.active_identifier != self.controller_key.identifier:
             return
         
-        gl.app.main_win.sidebar.key_editor.label_editor.load_for_coords(self.controller_key.coords, self.controller_key.state)
+        gl.app.main_win.sidebar.key_editor.label_editor.load_for_coords(self.controller_key.deck_controller.index_to_coords(self.controller_key.key), self.controller_key.state)
         
 
     def get_use_page_label_properties(self, position: str) -> dict:
@@ -2025,6 +2025,22 @@ class ControllerDial(ControllerInput):
         super().__init__(deck_controller, ControllerDialState, "dials", str(n))
 
     def event_callback(self, deck, event_type, value):
+        state = self.get_active_state()
+        state.on_event_threaded(event_type, value)
+
+class ControllerTouchScreenState(ControllerInputState):
+    def __init__(self, controller_touch: "ControllerTouchScreen", state: int):
+        super().__init__(controller_touch, state)
+
+    def close_resources(self) -> None:
+        pass
+
+class ControllerDialState(ControllerInputState):
+    def __init__(self, controller_dial: "ControllerDial", state: int):
+        super().__init__(controller_dial, state)
+
+    @log.catch
+    def on_event(self, event_type, value) -> None:
         actions = self.get_own_actions()
         if event_type == DialEventType.PUSH:
             for action in actions:
@@ -2040,16 +2056,8 @@ class ControllerDial(ControllerInput):
                 else:
                     action.on_dial_cw()
 
-class ControllerTouchScreenState(ControllerInputState):
-    def __init__(self, controller_touch: "ControllerTouchScreen", state: int):
-        super().__init__(controller_touch, state)
-
-    def close_resources(self) -> None:
-        pass
-
-class ControllerDialState(ControllerInputState):
-    def __init__(self, controller_dial: "ControllerDial", state: int):
-        super().__init__(controller_dial, state)
+    def on_event_threaded(self, event_type, value) -> None:
+        threading.Thread(target=self.on_event, name="on_event", args=(event_type, value)).start()
 
 class ControllerKeyState(ControllerInputState):
     def __init__(self, controller_key: "ControllerKey", state: int):

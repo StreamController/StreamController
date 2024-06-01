@@ -30,7 +30,7 @@ class DialEditor(Gtk.ScrolledWindow):
         self.state_switcher.set_n_states(0)
         self.main_box.append(self.state_switcher)
 
-        self.action_group = Adw.PreferencesGroup(title="Turn Clockwise")
+        self.action_group = Adw.PreferencesGroup(title="Dial")
         self.main_box.append(self.action_group)
 
         self.action_manager = ActionManager(self.sidebar)

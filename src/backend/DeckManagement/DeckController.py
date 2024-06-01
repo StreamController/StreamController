@@ -1957,7 +1957,7 @@ class ControllerKey(ControllerInput):
 
         if self.deck_controller.get_own_key_grid() is None or not gl.app.main_win.get_mapped():
             # Save to use later
-            self.deck_controller.ui_grid_buttons_changes_while_hidden[(y, x)] = image # The ui key coords are in reverse order
+            self.deck_controller.ui_grid_buttons_changes_while_hidden[(x, y)] = image # The ui key coords are in reverse order
         else:
             self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
         

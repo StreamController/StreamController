@@ -186,91 +186,47 @@ class StoreBackend:
         authors_json = json.loads(authors_json)
         return authors_json
     
+    async def fetch_and_parse_json(self, url: str, filename: str, branch: str, n_stores_with_errors: int = 0):
+        try:
+            store_file_json = await self.get_remote_file(url, filename, branch, force_refetch=True)
+            if isinstance(store_file_json, NoConnectionError):
+                n_stores_with_errors += 1
+                return None, n_stores_with_errors
+            store_file_json = json.loads(store_file_json)
+            return store_file_json, n_stores_with_errors
+        except (json.decoder.JSONDecodeError, TypeError) as e:
+            n_stores_with_errors += 1
+            log.error(e)
+            return None, n_stores_with_errors
+
+    async def process_store_data(self, filename: str, process_func: callable, data_class, include_images=True):
+        n_stores_with_errors = 0
+        data_list = []
+
+        stores = self.get_stores()
+
+        for url, branch in stores:
+            store_file_json, n_stores_with_errors = await self.fetch_and_parse_json(url, filename, branch, n_stores_with_errors)
+            if store_file_json is not None:
+                data_list.extend(store_file_json)
+
+        if n_stores_with_errors >= len(stores):
+            return NoConnectionError()
+
+        prepare_tasks = [process_func(data, include_images) for data in data_list]
+        results = await asyncio.gather(*prepare_tasks)
+        results = [result for result in results if isinstance(result, data_class)]
+
+        return results
+
     async def get_all_plugins_async(self, include_images: bool = True) -> int:
-        """
-        Returns the number of assets that are new old for the current app version.
-        """
-        plugins_list: list[dict] = []
-        for url, branch in self.get_stores():
-            store_plugins_json = await self.get_remote_file(url, "Plugins.json", branch, force_refetch=True)
-            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
-                return plugins_list
-            
-            try:
-                store_plugins_json = json.loads(store_plugins_json)
-            except (json.decoder.JSONDecodeError, TypeError) as e:
-                log.error(e)
-                return NoConnectionError() #TODO - make store specific
-            
-            if store_plugins_json is None:
-                continue
-            plugins_list.extend(store_plugins_json)
+        return await self.process_store_data("Plugins.json", self.prepare_plugin, PluginData, include_images)
 
-        for url, branch in self.get_custom_plugins():
-            if None in (url, branch):
-                continue
-
-            plugins_list.append({
-                "url": url,
-                "branch": branch
-            })
-
-        prepare_tasks = [self.prepare_plugin(plugin, include_images) for plugin in plugins_list]
-        plugins = await asyncio.gather(*prepare_tasks)
-        plugins = [plugin for plugin in plugins if isinstance(plugin, PluginData)]
-
-        return plugins
-        
     async def get_all_icons(self) -> int:
-        """
-        returns the number of assets that are too new for the current app version
-        """
-        icons_list: list[dict] = []
-        for url, branch in self.get_stores():
-            store_plugins_json = await self.get_remote_file(url, "Icons.json", branch, force_refetch=True)
-            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
-                return store_plugins_json
-            
-            try:
-                store_plugins_json = json.loads(store_plugins_json)
-            except (json.decoder.JSONDecodeError, TypeError) as e:
-                log.error(e)
+        return await self.process_store_data("Icons.json", self.prepare_icon, IconData)
 
-            if store_plugins_json is None:
-                continue
-
-            icons_list.extend(store_plugins_json)
-
-        prepare_tasks = [self.prepare_icon(plugin) for plugin in icons_list]
-        icons = await asyncio.gather(*prepare_tasks)
-        icons = [icon for icon in icons if isinstance(icon, IconData)]
-
-        return icons
-    
     async def get_all_wallpapers(self) -> int:
-        """
-        returns the number of assets that are too new for the current app version
-        """
-        wallpapers_list: list[dict] = []
-        for url, branch in self.get_stores():
-            store_plugins_json = await self.get_remote_file(url, "Wallpapers.json", branch, force_refetch=True)
-            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
-                return store_plugins_json
-            
-            try:
-                store_plugins_json = json.loads(store_plugins_json)
-            except (json.decoder.JSONDecodeError, TypeError) as e:
-                log.error(e)
-
-            if store_plugins_json is None:
-                continue
-            wallpapers_list.extend(store_plugins_json)
-
-        prepare_tasks = [self.prepare_wallpaper(plugin) for plugin in wallpapers_list]
-        wallpapers = await asyncio.gather(*prepare_tasks)
-        wallpapers = [wallpaper for wallpaper in wallpapers if isinstance(wallpaper, WallpaperData)]
-
-        return wallpapers
+        return await self.process_store_data("Wallpapers.json", self.prepare_wallpaper, WallpaperData)
     
     async def get_manifest(self, url:str, commit:str) -> dict:
         # url = self.build_url(url, "manifest.json", commit)
@@ -391,7 +347,9 @@ class StoreBackend:
             return
         return sha
     
-    async def prepare_icon(self, icon):
+    async def prepare_icon(self, icon, include_image: bool = True):
+        if not include_image:
+            raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in icon:
             return None
 
@@ -461,7 +419,9 @@ class StoreBackend:
         )
 
     
-    async def prepare_wallpaper(self, wallpaper):
+    async def prepare_wallpaper(self, wallpaper, include_image: bool = True):
+        if not include_image:
+            raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in wallpaper:
             return None
 

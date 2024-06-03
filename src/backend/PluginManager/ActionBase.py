@@ -279,16 +279,12 @@ class ActionBase(rpyc.Service):
         return
     
     def get_settings(self) -> dir:
-        self.raise_error_if_not_ready()
-
         # self.page.load()
         if self.page is None:
             return {}
         return self.page.get_settings_for_action(self, coords = self.page_coords, state=self.state)
     
     def set_settings(self, settings: dict):
-        self.raise_error_if_not_ready()
-
         if self.page is None:
             return
         self.page.set_settings_for_action(self, settings=settings, coords = self.page_coords, state=self.state)

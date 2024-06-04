@@ -133,6 +133,10 @@ def create_global_objects():
 def update_assets():
     settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
     auto_update = settings.get("store", {}).get("auto-update", True)
+
+    if gl.argparser.parse_args().devel:
+        auto_update = False
+
     if not auto_update:
         log.info("Skipping store asset update")
         return

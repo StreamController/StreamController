@@ -6,7 +6,7 @@ import sys
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
-argparser.add_argument("--devel", help="Developer mode", action="store_true")
+argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
 argparser.add_argument("--close-running", help="Close running", action="store_true")
 argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))

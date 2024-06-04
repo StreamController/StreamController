@@ -58,6 +58,9 @@ class App(Adw.Application):
         css_provider.load_from_path(os.path.join(gl.top_level_dir, "style.css"))
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
+        icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+        icon_theme.add_search_path(os.path.join(gl.top_level_dir, "Assets", "icons"))
+        
         allow_white_mode = gl.settings_manager.get_app_settings().get("ui", {}).get("allow-white-mode", False)
 
         self.style_manager = self.get_style_manager()

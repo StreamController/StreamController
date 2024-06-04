@@ -94,8 +94,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/StreamController/StreamController.git
-        # tag: 1.4.10-beta
-        branch: main
+        # tag: 1.4.11-beta
+        branch: ship-icons
 
 # Install via: flatpak-builder --repo=repo --force-clean --install --user build-dir com.core447.StreamController.yml
 # Use git submodule update --init if the shared-modules folder is empty

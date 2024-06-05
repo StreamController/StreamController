@@ -415,4 +415,9 @@ class ActionBase(rpyc.Service):
         return True
     
     def on_removed_from_cache(self) -> None:
+        #TODO: Fully implement
+        pass
+
+    def on_remove(self) -> None:
+        #TODO: Fully implement
         pass

@@ -28,13 +28,14 @@ from numpy import isin
 import globals as gl
 
 from src.backend.PluginManager.ActionBase import ActionBase
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 # Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager.ActionHolder import ActionHolder
     from src.backend.DeckManagement.DeckController import ControllerKeyState, ControllerKey
 
-KEY_TYPES = ("keys", "dials", "touchscreens")
+KEY_TYPES = map(lambda x: x.input_type, Input.All)
 
 class Page:
     def __init__(self, json_path, deck_controller, *args, **kwargs):
@@ -47,8 +48,6 @@ class Page:
 
         # Dir that contains all actions this allows us to keep them at reload
         self.action_objects = {}
-        for t in KEY_TYPES:
-            self.action_objects[t] = {}
 
         self.ready_to_clear = True
 
@@ -116,37 +115,36 @@ class Page:
 
         self.action_objects.clear()
 
-        for type in KEY_TYPES:
-            for key in self.dict.get(type, {}):
-                for state in self.dict[type][key].get("states", {}):
+        for input_type in KEY_TYPES:
+            for key in self.dict.get(input_type, {}):
+                for state in self.dict[input_type][key].get("states", {}):
                     try:
                         state = int(state)
                     except ValueError:
                         continue
-                    for i, action in enumerate(self.dict[type][key]["states"][str(state)].get("actions", [])):
+                    for i, action in enumerate(self.dict[input_type][key]["states"][str(state)].get("actions", [])):
                         if action.get("id") is None:
                             continue
 
-                        self.action_objects.setdefault(type, {})
-                        self.action_objects[type].setdefault(key, {})
-                        self.action_objects[type][key].setdefault(state, {})
+                        input_ident = Input.FromTypeIdentifier(input_type, key)
+                        input_action_objects = input_ident.get_dict(self.action_objects)
+                        input_action_objects.setdefault(state, {})
 
                         action_object = self.get_action_object(
                             loaded_action_objects=loaded_action_objects,
                             action_id=action["id"],
                             state=state,
                             i=i,
-                            type=type,
-                            identifier=key,
+                            input_ident=input_ident,
                         )
-                        self.action_objects[type][key][state][i] = action_object
+                        input_action_objects[state][i] = action_object
 
         # Go through all old actions and call on_removed_from_cache if they have been removed
         #TODO
 
     # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
 
-    def get_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, type: str, identifier: str = None):
+    def get_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, input_ident):
         
         action_holder = gl.plugin_manager.get_action_holder_from_id(action_id)
 
@@ -154,11 +152,11 @@ class Page:
         if action_holder is None:
             plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(action_id)
             if gl.plugin_manager.get_is_plugin_out_of_date(plugin_id):
-                return ActionOutdated(id=action_id, type=type, identifier=identifier, state=state)
-            return NoActionHolderFound(id=action_id, type=type, identifier=identifier, state=state)
+                return ActionOutdated(id=action_id, input_ident=input_ident, state=state)
+            return NoActionHolderFound(id=action_id, input_ident=input_ident, state=state)
 
         ## Keep old object if it exists
-        old_action = loaded_action_objects.get(type, {}).get(identifier, {}).get(state)
+        old_action = input_ident.get_dict(loaded_action_objects).get(state)
         if old_action is not None:
             if isinstance(old_action, action_holder.action_base):
                 return old_action #FIXME: gets never used
@@ -168,8 +166,7 @@ class Page:
             deck_controller=self.deck_controller,
             page=self,
             state=i,
-            type=type,
-            identifier=identifier,
+            input_ident=input_ident,
         )
         return action_object
 
@@ -182,48 +179,49 @@ class Page:
 
         # Load action objects
         self.action_objects = {}
-        for type in KEY_TYPES:
-            for key in self.dict.get(type, {}):
-                for state in self.dict[type][key].get("states", {}):
+        for input_type in KEY_TYPES:
+            for input_identifier in self.dict.get(input_type, {}):
+                for state in self.dict[input_type][input_identifier].get("states", {}):
                     state = int(state)
-                    if "actions" not in self.dict[type][key]["states"][str(state)]:
+                    input_ident = Input.FromTypeIdentifier(input_type, input_identifier)
+                    if "actions" not in input_ident.get_config(self.dict)["states"][str(state)]:
                         continue
-                    for i, action in enumerate(self.dict[type][key]["states"][str(state)]["actions"]):
+                    for i, action in enumerate(input_ident.get_config(self.dict)["states"][str(state)]["actions"]):
                         if action.get("id") is None:
                             continue
 
-                        self.action_objects.setdefault(type, {})
-                        self.action_objects[type].setdefault(key, {})
-                        self.action_objects[type][key].setdefault(state, {})
+                        input_action_objects = input_ident.get_dict(self.action_objects)
+                        input_action_objects.setdefault(state, {})
 
                         action_holder = gl.plugin_manager.get_action_holder_from_id(action["id"])
                         if action_holder is None:
                             plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(action["id"])
                             if gl.plugin_manager.get_is_plugin_out_of_date(plugin_id):
-                                self.action_objects[type][key][state][i] = ActionOutdated(id=action["id"])
+                                input_action_objects[state][i] = ActionOutdated(id=action["id"])
                             else:
-                                self.action_objects[type][key][state][i] = NoActionHolderFound(id=action["id"])
+                                input_action_objects[state][i] = NoActionHolderFound(id=action["id"])
                             continue
                         action_class = action_holder.action_base
                         
                         if action_class is None:
-                            self.action_objects[type][key][state][i] = NoActionHolderFound(id=action["id"])
+                            input_action_objects[state][i] = NoActionHolderFound(id=action["id"])
                             continue
 
-                        old_object = loaded_action_objects.get(type, {}).get(key, {}).get(state, {}).get(i)
+                        old_action_object = input_ident.get_dict(loaded_action_objects)
+                        old_object = old_action_object.get(state, {}).get(i)
                         
-                        if i in loaded_action_objects.get(type, {}).get(key, {}).get(state, {}):
+                        if i in old_action_object.get(state, {}):
                             # if isinstance(loaded_action_objects.get(key, {}).get(i), action_class):
                             if old_object is not None:
                                 if isinstance(old_object, action_class):
-                                    self.action_objects[type][key][state][i] = loaded_action_objects[type][key][state][i]
+                                    input_action_objects[state][i] = old_action_object[state][i]
                                     continue
 
                         # action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, coords=key)
                         # self.action_objects[key][i] = action_object
                         if type == "keys" and self.deck_controller.coords_to_index(key.split("x")) > self.deck_controller.deck.key_count():
                             continue
-                        thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, type, key, state, i), name=f"add_action_object_from_holder_{key}_{state}_{i}")
+                        thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, input_ident, state, i), name=f"add_action_object_from_holder_{input_ident.input_identifier}_{state}_{i}")
                         thread.start()
                         add_threads.append(thread)
 
@@ -284,14 +282,14 @@ class Page:
 
 
     @log.catch
-    def add_action_object_from_holder(self, action_holder: "ActionHolder", type: str, key: str, state: str, i: int):
-        action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, type=type, identifier=key, state=state)
+    def add_action_object_from_holder(self, action_holder: "ActionHolder", input_ident: "InputIdentifier", state: str, i: int):
+        action_object = action_holder.init_and_get_action(deck_controller=self.deck_controller, page=self, input_ident=input_ident, state=state)
         if action_object is None:
             return
-        self.action_objects.setdefault(type, {})
-        self.action_objects[type].setdefault(key, {})
-        self.action_objects[type][key].setdefault(int(state), {})
-        self.action_objects[type][key][int(state)][i] = action_object
+        self.action_objects.setdefault(input_ident.input_type, {})
+        self.action_objects[input_ident.input_type].setdefault(input_ident.input_identifier, {})
+        self.action_objects[input_ident.input_type][input_ident.input_identifier].setdefault(int(state), {})
+        self.action_objects[input_ident.input_type][input_ident.input_identifier][int(state)][i] = action_object
 
     def remove_plugin_action_objects(self, plugin_id: str) -> bool:
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
@@ -367,11 +365,13 @@ class Page:
                         actions.append(action)
         return actions
     
-    def get_all_actions_for_type(self, type: str, identifier: str, only_action_bases: bool = False):
+    def get_all_actions_for_type(self, ident, only_action_bases: bool = False):
         actions = []
-        if identifier in self.action_objects.get(type, {}):
-            for state in self.action_objects[type].get(identifier, {}):
-                for action in self.action_objects[type][identifier].get(state, {}).values():
+        input_type = ident.input_type
+        input_identifier = ident.input_identifier
+        if input_identifier in self.action_objects.get(input_type, {}):
+            for state in self.action_objects[input_type].get(input_identifier, {}):
+                for action in self.action_objects[input_type][input_identifier].get(state, {}).values():
                     if action is None or not action:
                         continue
                     if only_action_bases and not isinstance(action, ActionBase):
@@ -379,11 +379,13 @@ class Page:
                     actions.append(action)
         return actions
     
-    def get_all_actions_for_type_and_state(self, type: str, identifier: str, state, only_action_bases: bool = False):
+    def get_all_actions_for_input(self, ident, state, only_action_bases: bool = False):
         actions = []
-        if identifier in self.action_objects.get(type, {}):
-            if state in self.action_objects[type].get(identifier, {}):
-                for action in self.action_objects[type][identifier].get(state, {}).values():
+        input_type = ident.input_type
+        input_identifier = ident.input_identifier
+        if input_identifier in self.action_objects.get(input_type, {}):
+            if state in self.action_objects[input_type].get(input_identifier, {}):
+                for action in self.action_objects[input_type][input_identifier].get(state, {}).values():
                     if action is None or not action:
                         continue
                     if only_action_bases and not isinstance(action, ActionBase):
@@ -391,51 +393,54 @@ class Page:
                     actions.append(action)
         return actions
     
-    def get_settings_for_action(self, action_object, type: str, identifier: str = None, state: int = None):
-        if identifier is None or state is None:
-            for key in self.dict[type]:
-                for state in self.dict[type][key].get("states", {}):
-                    for i, action in enumerate(self.dict[type][key]["states"][state]["actions"]):
-                        if type not in self.action_objects:
+    def get_settings_for_action(self, action_object = None, input_ident = None, state: int = None):
+        input_type = input_ident.input_type
+        input_identifier = input_ident.input_identifier
+        if action_object is None or state is None:
+            for key in self.dict[input_type]:
+                for state in self.dict[input_type][key].get("states", {}):
+                    for i, action in enumerate(self.dict[input_type][key]["states"][state].get("actions", {})):
+                        if input_type not in self.action_objects:
                             break
-                        if key not in self.action_objects[type]:
+                        if key not in self.action_objects[input_type]:
                             break
-                        if int(state) not in self.action_objects[type][key]:
+                        if int(state) not in self.action_objects[input_type][key]:
                             break
-                        if i not in self.action_objects[type][key][int(state)]:
+                        if i not in self.action_objects[input_type][key][int(state)]:
                             break
-                        if self.action_objects[type][key][int(state)][i] == action_object:
+                        if self.action_objects[input_type][key][int(state)][i] == action_object:
                             return action["settings"]
         else:
-            for state in self.dict[type][identifier].get("states", {}):
-                for i, action in enumerate(self.dict[type][identifier]["states"][state].get("actions", [])):
-                    if type not in self.action_objects:
+            for state in self.dict[input_type][input_identifier].get("states", {}):
+                for i, action in enumerate(self.dict[input_type][input_identifier]["states"][state].get("actions", [])):
+                    if input_type not in self.action_objects:
                         break
-                    if identifier not in self.action_objects[type]:
+                    if input_identifier not in self.action_objects[input_type]:
                         break
-                    if int(state) not in self.action_objects[type][identifier]:
+                    if int(state) not in self.action_objects[input_type][input_identifier]:
                         break
-                    if i not in self.action_objects[type][identifier][int(state)]:
+                    if i not in self.action_objects[input_type][input_identifier][int(state)]:
                         break
-                    if self.action_objects[type][identifier][int(state)][i] == action_object:
+                    if self.action_objects[input_type][input_identifier][int(state)][i] == action_object:
                         return action["settings"]
         return {}
 
-    def set_settings_for_action(self, action_object, settings: dict, type: str, identifier: str = None, state: int = None):
-        if identifier is None or state is None and action_object:
-            identifier = action_object.page_coords
-            state = action_object.state
+    def set_settings_for_action(self, settings: dict, ident, state: int = None):
         state = str(state)
-        if state in self.dict[type][identifier].get("states", {}):
-            for i, action in enumerate(self.dict[type][identifier]["states"][state].get("actions", [])):
-                self.action_objects[type].setdefault(identifier, {})
-                if self.action_objects[type][identifier].get(int(state), {}).get(i) == action_object:
-                    self.dict[type][identifier]["states"][state]["actions"][i]["settings"] = settings
+        input_type = ident.input_type
+        input_identifier = ident.input_identifier
+        if state in self.dict[input_type][input_identifier].get("states", {}):
+            for i, action in enumerate(self.dict[input_type][input_identifier]["states"][state].get("actions", [])):
+                self.action_objects[input_type].setdefault(input_identifier, {})
+                if self.action_objects[input_type][input_identifier].get(int(state), {}).get(i) == action_object:
+                    self.dict[input_type][input_identifier]["states"][state]["actions"][i]["settings"] = settings
 
-    def has_key_an_image_controlling_action(self, type: str, identifier: str, state: int):
-        if type not in self.action_objects or identifier not in self.action_objects[type]:
+    def has_key_an_image_controlling_action(self, ident, state: int):
+        input_type = ident.input_type
+        input_identifier = ident.input_identifier
+        if input_type not in self.action_objects or input_identifier not in self.action_objects[input_type]:
             return False
-        for action in self.action_objects[type][identifier][state].values():
+        for action in self.action_objects[input_type][input_identifier][state].values():
             if hasattr(action, "CONTROLS_KEY_IMAGE"):
                 if action.CONTROLS_KEY_IMAGE:
                     return True

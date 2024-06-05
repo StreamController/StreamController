@@ -18,6 +18,7 @@ from src.backend.DeckManagement.Subclasses.KeyImage import KeyImage
 from src.backend.DeckManagement.Subclasses.KeyVideo import KeyVideo
 from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
 from src.backend.DeckManagement.Subclasses.KeyLayout import KeyLayout
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 
 # Import globals
 import globals as gl
@@ -36,7 +37,7 @@ class ActionBase(rpyc.Service):
     # Change to match your action
     def __init__(self, action_id: str, action_name: str,
                  deck_controller: "DeckController", page: "Page", plugin_base: "PluginBase", state: int,
-                 type: str, identifier: str = None):
+                 input_ident: "InputIdentifier"):
         #TODO: Add state arg to all init methods
         self.backend_connection: Connection = None
         self.backend: netref = None
@@ -45,10 +46,7 @@ class ActionBase(rpyc.Service):
         self.deck_controller = deck_controller
         self.page = page
         self.state = state
-        self.type = type
-        self.identifier = identifier
-#        if self.type == "keys":
-#            self.key_index = self.deck_controller.coords_to_index(self.identifier)
+        self.input_ident = input_ident
         self.action_id = action_id
         self.action_name = action_name
         self.plugin_base = plugin_base
@@ -85,42 +83,13 @@ class ActionBase(rpyc.Service):
         """
         self.page = page
 
-    def set_identifier(self, identifier):
-        """
-        Internal function, do not call manually
-        """
-        self.identifier = identifier
+    def get_input(self) -> "ControllerInput":
+        return self.deck_controller.get_input(self.input_ident)
 
-    @property
-    def key_index(self) -> int:
-        if self.type == "keys":
-            return self.deck_controller.coords_to_index(self.identifier)
-        return None
-
-    def get_key_state(self) -> "ControllerKeyState":
-        if self.type == "keys":
-            for k in self.deck_controller.keys:
-                if k.identifier == self.identifier:
-                    return k.states.get(self.state)
-    
-    def get_dial_state(self) -> "ControllerDialState":
-        if self.type == "dials":
-            for d in self.deck_controller.dials:
-                if d.identifier == self.identifier:
-                    return d.states.get(self.state)
-
-    def get_touchscreen_state(self) -> "ControllerTouchScreenState":
-        if self.type == "touchscreens":
-            for t in self.deck_controller.touchscreens:
-                if t.identifier == self.identifier:
-                    return t.states.get(self.state)
-
-    def get_input_state(self) -> "ControllerInputState":
-        return {
-            "keys": self.get_key_state(),
-            "dials": self.get_dial_state(),
-            "touchscreens": self.get_touchscreen_state(),
-        }[self.type]
+    def get_state(self) -> "ControllerInputState":
+        i = self.get_input()
+        if i is None: return
+        return i.states.get(self.state)
 
     def on_key_down(self):
         pass
@@ -195,24 +164,11 @@ class ActionBase(rpyc.Service):
             }
 
     def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):
-        if not self.get_is_present():
-            return
-        if self.type != "keys":
-            return
-        if self.key_index >= self.deck_controller.deck.key_count():
-            return
-        # if not self.on_ready_called:
-            # update = False
+        if not self.get_is_present(): return
+        if self.has_custom_user_asset(): return
+        if not self.has_image_control(): return
+        if self.get_state() is None or self.get_state().state != self.state: return
 
-        if self.has_custom_user_asset():
-            return
-        
-        if not self.has_image_control():
-            return
-        
-        if self.get_key_state().state != self.state:
-            return
-        
         if is_image(media_path) and image is None:
             with Image.open(media_path) as img:
                 image = img.copy()
@@ -221,42 +177,38 @@ class ActionBase(rpyc.Service):
             image = gl.media_manager.generate_svg_thumbnail(media_path)
 
         if image is not None or media_path is None:
-            self.get_key_state().set_key_image(KeyImage(
-                controller_key=self.deck_controller.keys[self.key_index],
+            self.get_state().set_key_image(KeyImage(
+                controller_key=self.get_state().controller_input,
                 image=image,
             ), update=False)
         elif is_video(media_path):
-            self.get_key_state().set_key_video(KeyVideo(
-                controller_key=self.deck_controller.keys[self.key_index],
+            self.get_state().set_key_video(KeyVideo(
+                controller_key=self.get_state().controller_input,
                 video_path=media_path,
                 fps=fps,
                 loop=loop
             ))
 
-        self.get_key_state().layout_manager.set_action_layout(KeyLayout(
+        self.get_state().layout_manager.set_action_layout(KeyLayout(
             valign=valign,
             halign=halign,
             size=size
         ), update=False)
 
-
-
         if update:
-            self.deck_controller.update_key(self.key_index)
+            self.get_input().update()
 
     def set_background_color(self, color: list[int] = [255, 255, 255, 255], update: bool = True):
         if not self.on_ready_called:
             update = False
-        if self.type != "keys":
-            return
         if self.key_index >= self.deck_controller.deck.key_count():
             return
+        if self.get_state() is None or self.get_state().state != self.state: return
 
-        self.get_key_state().background_color = color
+        self.get_state().background_color = color
         if update:
-            self.deck_controller.update_key(self.key_index)
+            self.get_input().update()
 
-            
     def show_error(self, duration: int = -1) -> None:
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
@@ -279,10 +231,7 @@ class ActionBase(rpyc.Service):
             return
         if not self.on_ready_called:
             update = False
-        if self.type != "keys":
-            return
-        if not text:
-            return
+        if self.get_state() is None or self.get_state().state != self.state: return
 
         label_index = 0 if position == "top" else 1 if position == "center" else 2
 
@@ -300,13 +249,13 @@ class ActionBase(rpyc.Service):
         }
         
         key_label = KeyLabel(
-            controller_key=self.deck_controller.keys[self.key_index],
+            controller_key=self.get_state().controller_input,
             text=text,
             font_size=font_size,
             font_name=font_family,
             color=color,
         )
-        self.get_key_state().label_manager.set_action_label(label=key_label, position=position, update=update)
+        self.get_state().label_manager.set_action_label(label=key_label, position=position, update=update)
 
     def set_top_label(self, text: str, color: list[int] = None,
                       font_family: str = None, font_size = None, update: bool = True):
@@ -334,35 +283,32 @@ class ActionBase(rpyc.Service):
         # self.page.load()
         if self.page is None:
             return {}
-        return self.page.get_settings_for_action(self, type=self.type, identifier=self.identifier, state=self.state)
+        return self.page.get_settings_for_action(input_ident = self.input_ident, state = self.state)
     
     def set_settings(self, settings: dict):
         if self.page is None:
             return
-        self.page.set_settings_for_action(self, settings=settings, type=self.type, identifier=self.identifier, state=self.state)
+        self.page.set_settings_for_action(self, settings, self.input_ident, self.state)
         self.page.save()
 
     def connect(self, signal:Signal = None, callback: callable = None) -> None:
         # Connect
         gl.signal_manager.connect_signal(signal = signal, callback = callback)
-
-    def get_own_key(self) -> "ControllerKey":
-        return self.deck_controller.keys[self.key_index]
     
     def get_is_multi_action(self) -> bool:
         if not self.get_is_present(): return
-        actions = self.page.action_objects.get(self.type, {}).get(self.identifier, [])
+        actions = self.page.action_objects.get(self.input_ident.input_type, {}).get(self.input_ident.input_identifier, [])
         return len(actions) > 1
     
     def has_label_control(self) -> list[bool]:
-        key_dict = self.page.dict.get(self.type, {}).get(self.identifier, {}).get("states", {}).get(str(self.state), {})
+        key_dict = self.input_ident.get_config(self.page.dict)["states"].get(str(self.state), {})
 
         ind = self.get_own_action_index()
 
         return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
 
     def has_image_control(self):
-        key_dict = self.page.dict.get(self.type, {}).get(self.identifier, {}).get("states", {}).get(str(self.state), {})
+        key_dict = self.input_ident.get_config(self.page.dict)["states"].get(str(self.state), {})
         if "Analog" in self.action_id:
             print()
 
@@ -377,17 +323,17 @@ class ActionBase(rpyc.Service):
     def get_is_present(self):
         if self.page is None: return False
         if self.page.deck_controller.active_page is not self.page: return False
-        # if self.state != self.get_key_state().state: return False #TODO: Check for touchscreen and dial states
+        # if self.state != self.get_state().state: return False #TODO: Check for touchscreen and dial states
         return self in self.page.get_all_actions()
     
     def has_custom_user_asset(self) -> bool:
         if not self.get_is_present(): return False
-        media = self.page.dict[self.type][self.identifier]["states"].get(str(self.state), {}).get("media", {})
+        media = self.input_ident.get_config(self.page.dict)["states"].get(str(self.state), {}).get("media", {})
         return media.get("path", None) is not None
     
     def get_own_action_index(self) -> int:
         if not self.get_is_present(): return -1
-        actions = self.page.get_all_actions_for_type_and_state(self.type, self.identifier, state=self.state)
+        actions = self.page.get_all_actions_for_input(self.input_ident, self.state)
         if self not in actions:
             return
         return actions.index(self)

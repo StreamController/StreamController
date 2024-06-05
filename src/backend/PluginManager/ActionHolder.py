@@ -18,6 +18,7 @@ from src.backend.PluginManager.ActionSupportTypes import ActionSupports, TypeSup
 from src.backend.PluginManager.ActionBase import ActionBase
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.DeckController import DeckController
+from src.backend.DeckManagement.InputIdentifier import InputIdentifier
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -71,7 +72,7 @@ class ActionHolder:
             
         return True
 
-    def init_and_get_action(self, deck_controller: DeckController, page: Page, state: int, type: str, identifier: str = None) -> ActionBase:
+    def init_and_get_action(self, deck_controller: DeckController, page: Page, state: int, input_ident: InputIdentifier) -> ActionBase:
         if not self.get_is_compatible():
             return
 
@@ -80,8 +81,7 @@ class ActionHolder:
             action_name = self.action_name,
             deck_controller = deck_controller,
             page = page,
-            type = type,
-            identifier = identifier,
+            input_ident = input_ident,
             plugin_base = self.plugin_base,
             state = state
         )

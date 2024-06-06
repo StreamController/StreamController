@@ -125,6 +125,7 @@ class Page:
                     self.action_objects[key].setdefault(state, {})
 
                     action_holder = gl.plugin_manager.get_action_holder_from_id(action["id"])
+
                     if action_holder is None:
                         plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(action["id"])
                         if gl.plugin_manager.get_is_plugin_out_of_date(plugin_id):
@@ -132,7 +133,13 @@ class Page:
                         else:
                             self.action_objects[key][state][i] = NoActionHolderFound(id=action["id"])
                         continue
+
                     action_class = action_holder.action_base
+
+                    action_holder.has_image_control = action.get("has_image_control", False)
+                    action_holder.has_top_label_control = action.get("has_top_label_control", False)
+                    action_holder.has_center_label_control = action.get("has_center_label_control", False)
+                    action_holder.has_bottom_label_control = action.get("has_bottom_label_control", False)
                     
                     if action_class is None:
                         self.action_objects[key][state][i] = NoActionHolderFound(id=action["id"])

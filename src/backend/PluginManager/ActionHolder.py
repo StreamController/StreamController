@@ -53,6 +53,10 @@ class ActionHolder:
         self.action_name = action_name
         self.icon = icon
         self.min_app_version = min_app_version
+        self.has_image_control = False
+        self.has_top_label_control = False
+        self.has_center_label_control = False
+        self.has_bottom_label_control = False
 
     def get_is_compatible(self) -> bool:
         if self.min_app_version is not None:
@@ -72,5 +76,9 @@ class ActionHolder:
             page = page,
             coords = coords,
             plugin_base = self.plugin_base,
-            state = state
+            state = state,
+            has_image_control = self.has_image_control,
+            has_top_label_control = self.has_top_label_control,
+            has_center_label_control = self.has_center_label_control,
+            has_bottom_label_control = self.has_bottom_label_control,
         )

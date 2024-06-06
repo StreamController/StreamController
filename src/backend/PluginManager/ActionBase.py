@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 class ActionBase(rpyc.Service):
     # Change to match your action
     def __init__(self, action_id: str, action_name: str,
-                 deck_controller: "DeckController", page: "Page", coords: str, plugin_base: "PluginBase", state: int):
+                 deck_controller: "DeckController", page: "Page", coords: str, plugin_base: "PluginBase", state: int, has_image_control: bool = False, has_top_label_control: bool = False, has_center_label_control: bool = False, has_bottom_label_control: bool = False):
         #TODO: Add state arg to all init methods
         self.backend_connection: Connection = None
         self.backend: netref = None
@@ -58,6 +58,10 @@ class ActionBase(rpyc.Service):
         self.KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
         self.LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
         self.has_configuration = False
+        self.has_image_control = has_image_control
+        self.has_top_label_control = has_top_label_control
+        self.has_center_label_control = has_center_label_control
+        self.has_bottom_label_control = has_bottom_label_control
 
         self.labels = {}
         self.current_key = {
@@ -158,7 +162,7 @@ class ActionBase(rpyc.Service):
         if self.has_custom_user_asset():
             return
         
-        if not self.has_image_control():
+        if not self.has_image_control:
             return
         
         if self.get_key_state().state != self.state:
@@ -221,7 +225,6 @@ class ActionBase(rpyc.Service):
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
         self.get_key_state().hide_error()
-        
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
                       font_family: str = None, font_size = None, update: bool = True):
@@ -232,11 +235,9 @@ class ActionBase(rpyc.Service):
         if not self.on_ready_called:
             update = False
 
-        label_index = 0 if position == "top" else 1 if position == "center" else 2
-
-        if not self.has_label_control()[label_index]:
+        if not self.has_label_control(position):
             return
-        
+
         if text is None:
             text = ""
 
@@ -306,27 +307,15 @@ class ActionBase(rpyc.Service):
         actions = self.page.action_objects.get(self.page_coords, {}).get(self.state, [])
         return len(actions) > 1
     
-    def has_label_control(self) -> list[bool]:
+    def has_label_control(self, position: str) -> bool:
         self.raise_error_if_not_ready()
 
-        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
-
-        ind = self.get_own_action_index()
-
-        return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
-
-    def has_image_control(self):
-        self.raise_error_if_not_ready()
-
-        key_dict = self.page.dict.get("keys", {}).get(self.page_coords, {}).get("states", {}).get(str(self.state), {})
-
-        if key_dict.get("image-control-action") is None:
-            return False
-        
-        if not self.get_is_multi_action():
-            return True
-
-        return self.get_own_action_index() == key_dict.get("image-control-action")
+        if position == "top":
+            return self.has_top_label_control
+        elif position == "center":
+            return self.has_center_label_control
+        else:
+            return self.has_bottom_label_control
     
     def get_is_present(self):
         if self.page is None: return False

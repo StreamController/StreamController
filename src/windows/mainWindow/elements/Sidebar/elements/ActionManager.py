@@ -13,7 +13,6 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
-from sys import activate_stack_trampoline
 import gi
 
 from src.backend.DeckManagement.HelperMethods import add_default_keys
@@ -60,11 +59,14 @@ class ActionManager(Gtk.Box):
 
         self.main_box.set_margin_bottom(50)
 
+    def load_for_identifier(self, type: str, identifier: str, state: int):
+        self.action_group.load_for_identifier(type, identifier, state)
+
     def load_for_coords(self, coords: tuple[int, int], state: int):
         self.action_group.load_for_coords(coords, state)
 
-    def load_for_screen(self, gesture: str, state: int):
-        self.action_group.load_for_screen(gesture, state)
+    def load_for_screen(self, identifier: str, state: int):
+        self.action_group.load_for_screen(identifier, state)
 
     def load_for_dial(self, n: int, state: int):
         self.action_group.load_for_dial(n, state)
@@ -73,8 +75,8 @@ class ActionGroup(Adw.PreferencesGroup):
     def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
         self.sidebar = sidebar
-
-        self.active_coords = None
+        self.active_type = None
+        self.active_identifier = None
 
         self.actions = []
 
@@ -83,6 +85,9 @@ class ActionGroup(Adw.PreferencesGroup):
     def build(self):
         self.expander = ActionExpanderRow(self)
         self.add(self.expander)
+
+    def load_for_identifier(self, type: str, identifier: str, state: int):
+        self.expander.load_for_identifier(type, identifier, state)
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
         self.expander.load_for_coords(coords, state)
@@ -98,10 +103,9 @@ class ActionExpanderRow(BetterExpander):
     def __init__(self, action_group):
         super().__init__(title=gl.lm.get("action-editor-header"), subtitle=gl.lm.get("action-editor-expander-subtitle"))
         self.set_expanded(True)
+        self.active_type = None
+        self.active_identifier = None
         self.action_group = action_group
-        self.active_coords = None
-        self.active_dial: int = None
-        self.active_gesture: bool = None
         self.active_state = None
 
         self.preview = None
@@ -116,48 +120,27 @@ class ActionExpanderRow(BetterExpander):
         action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.sidebar, comment, index, controls_image, controls_labels, total_rows, self)
         self.add_row(action_row)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
+    def load_for_identifier(self, type: str, identifier: str, state: int):
         self.clear_actions(keep_add_button=True)
         self.active_state = state
-        self.active_coords = coords
-        self.active_dial = None
-        self.active_gesture = None
-
-        self.active_state = state
-        page_coords = f"{coords[0]}x{coords[1]}"
-        
-        controller = gl.app.main_win.get_active_controller()
-        if page_coords not in controller.active_page.action_objects:
-            return
-        
-        state_dict = controller.active_page.action_objects[page_coords].get(self.active_state, {})
-        self.load_for_actions(state_dict.values())
-
-    def load_for_screen(self, gesture: str, state: int):
-        self.clear_actions(keep_add_button=True)
-        self.active_state = state
-        self.active_dial = None
-        self.active_coords = None
-        self.active_gesture = gesture
 
         controller = gl.app.main_win.get_active_controller()
 
-        actions = controller.active_page.action_objects.get("touchscreen", {}).get(gesture, {}).get(self.active_state, {})
+        actions = controller.active_page.action_objects.get(type, {}).get(identifier, {}).get(state, {})
+        self.active_type = type
+        self.active_identifier = identifier
         self.load_for_actions(actions.values())
+
+    def load_for_coords(self, coords: tuple[int, int], state: int):
+        page_coords = f"{coords[0]}x{coords[1]}"
+        self.load_for_identifier("keys", page_coords, state)
+
+    def load_for_screen(self, identifier: str, state: int):
+        self.load_for_identifier("touchscreens", identifier, state)
 
     def load_for_dial(self, n: int, state: int):
-        self.clear_actions(keep_add_button=True)
-        self.active_state = state
-        self.active_dial = n
-        self.active_gesture = None
-        self.active_coords = None
+        self.load_for_identifier("dials", str(n), state)
 
-        controller = gl.app.main_win.get_active_controller()
-
-        actions = controller.active_page.action_objects.get("dials", {}).get(n, {}).get(state, {})
-        self.load_for_actions(actions.values())
-
-        
     def load_for_actions(self, actions: list[ActionBase]):
         number_of_actions = len(actions)
         for i, action in enumerate(actions):
@@ -165,9 +148,8 @@ class ActionExpanderRow(BetterExpander):
                 # Get action comment
                 comment = action.page.get_action_comment(index=i,
                                                          state=action.state,
-                                                         coords=action.coords,
-                                                         dial=action.dial,
-                                                         touch=action.touch)
+                                                         type=action.type,
+                                                         identifier=action.identifier)
 
                 controls_image = action.has_image_control()
                 controls_labels = action.has_label_control()
@@ -175,12 +157,12 @@ class ActionExpanderRow(BetterExpander):
                 self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, controls_image=controls_image, controls_labels=controls_labels, comment=comment, index=i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
                 action: NoActionHolderFound
-                missing_button_row = MissingActionButtonRow(action.id, action.coords, i, self.active_state)
+                missing_button_row = MissingActionButtonRow(action.id, action.type, action.identifier, self.active_state)
                 self.add_row(missing_button_row)
             elif isinstance(action, ActionOutdated):
                 # No plugin installed for this action
                 action: ActionOutdated
-                missing_button_row = OutdatedActionRow(action.id, action.coords, i, self.active_state)
+                missing_button_row = OutdatedActionRow(action.id, action.type, action.identifier, self.active_state)
                 self.add_row(missing_button_row)
 
         # Place add button at the end
@@ -258,28 +240,27 @@ class ActionExpanderRow(BetterExpander):
         controller = visible_child.deck_controller
         if controller is None:
             return
-        page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
 
-        actions = controller.active_page.dict["keys"][page_coords]["states"][self.active_state]["actions"]
-
+        actions = controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["actions"]
 
         reordered = self.reorder_index_after(copy(actions), move_index, after_index)
-        controller.active_page.dict["keys"][page_coords][self.active_state]["actions"] = reordered
+        controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["actions"] = reordered
 
-        image_control_action = controller.active_page.dict["keys"][page_coords][self.active_state]["image-control-action"]
-        controller.active_page.dict["keys"][page_coords][self.active_state]["image-control-action"] = reordered.index(actions[image_control_action])
+        if self.active_type == "keys":
+            image_control_action = controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["image-control-action"]
+            controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["image-control-action"] = reordered.index(actions[image_control_action])
 
-        label_control_actions = controller.active_page.dict["keys"][page_coords][self.active_state]["label-control-actions"]
-        for i, label_control_action in enumerate(label_control_actions):
-            label_control_actions[i] = reordered.index(actions[label_control_action])
+            label_control_actions = controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["label-control-actions"]
+            for i, label_control_action in enumerate(label_control_actions):
+                label_control_actions[i] = reordered.index(actions[label_control_action])
         # controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_actions])
 
         controller.active_page.save()
 
-        action_objects = controller.active_page.action_objects[page_coords]
+        action_objects = controller.active_page.action_objects[self.active_type][self.active_identifier][self.active_state]
 
         reordered = self.reorder_action_objects(action_objects, move_index, after_index)
-        controller.active_page.action_objects[page_coords][self.active_state] = reordered
+        controller.active_page.action_objects[self.active_type][self.active_identifier][self.active_state] = reordered
 
 
         controller.load_page(controller.active_page)
@@ -291,8 +272,7 @@ class ActionExpanderRow(BetterExpander):
         controller = visible_child.deck_controller
         if controller is None:
             return
-        page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
-        comment = controller.active_page.get_action_comment(page_coords=page_coords, index=action_index)
+        comment = controller.active_page.get_action_comment(type=self.active_type, identifier=self.active_identifier, index=action_index)
         self.get_rows()[action_index].set_comment(comment)
 
 
@@ -382,9 +362,6 @@ class ActionRowLabelToggle(Gtk.Button):
         return [indicator.get_css_classes() == ["action-row-label-toggle-active"] for indicator in self.indicators]
 
 
-
-        
-
 class ActionRow(Adw.ActionRow):
     def __init__(self, action_name, action_id, action_category, action_object, sidebar: "Sidebar", comment: str, index, controls_image: bool, controls_labels: list[bool], total_rows: int, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding"])
@@ -397,7 +374,8 @@ class ActionRow(Adw.ActionRow):
         self.index = index
         self.controls_image = controls_image
         self.controls_labels = controls_labels
-        self.active_coords = None
+        self.active_type = None
+        self.active_identifier = None
         self.total_rows = total_rows
         self.expander = expander
         self.build()
@@ -471,7 +449,7 @@ class ActionRow(Adw.ActionRow):
         # self.remove_button.connect("clicked", self.on_click_remove)
 
     def update_allow_box_visibility(self):
-        if self.expander.active_coords is None:
+        if self.expander.active_type is None or self.expander.active_identifier is None:
             self.allow_box.set_visible(False)
             return
         hide = self.controls_image and any(self.controls_labels) and (self.total_rows == 1)
@@ -495,10 +473,10 @@ class ActionRow(Adw.ActionRow):
         page = controller.active_page
 
         new_value = self.index if button.get_active() else None
-        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["image-control-action"] = new_value
+        page.dict[self.action_object.type][self.action_object.identifier]["states"][str(self.expander.active_state)]["image-control-action"] = new_value
         page.save()
 
-        page.reload_similar_pages(page_coords=self.action_object.page_coords, reload_self=True)
+        page.reload_similar_pages(type=self.action_object.type, identifier=self.action_object.identifier, reload_self=True)
 
     def label_toggled(self, i, value):
         for child in self.expander.get_rows():
@@ -518,12 +496,12 @@ class ActionRow(Adw.ActionRow):
         if controller is None:
             return
         page = controller.active_page
-        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)].setdefault("label-control-actions", [None, None, None])
+        page.dict[self.action_object.type][self.action_object.identifier]["states"][str(self.expander.active_state)].setdefault("label-control-actions", [None, None, None])
         new_value = self.index if value else None
-        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["label-control-actions"][i] = new_value
+        page.dict[self.action_object.type][self.action_object.identifier]["states"][str(self.expander.active_state)]["label-control-actions"][i] = new_value
         page.save()
 
-        threading.Thread(target=page.reload_similar_pages, kwargs={"page_coords":self.action_object.page_coords, "reload_self":True}).start()
+        threading.Thread(target=page.reload_similar_pages, kwargs={"type": self.action_object.type, "identifier":self.action_object.identifier, "reload_self":True}).start()
 
     def set_image_toggled(self, value: bool):
         try:
@@ -577,15 +555,14 @@ class ActionRow(Adw.ActionRow):
         page = controller.active_page
 
         # Remove from action_objects
-        del page.action_objects[self.action_object.page_coords][self.index]
-        page.fix_action_objects_order(self.action_object.page_coords)
+        del page.action_objects[self.action_object.type][self.action_object.identifier][self.index]
+        page.fix_action_objects_order(self.action_object.type, self.action_object.identifier)
 
         # Remove from page json
-        page.dict["keys"][self.action_object.page_coords]["actions"].pop(self.index)
+        page.dict[self.action_object.type][self.action_object.identifier]["actions"].pop(self.index)
         page.save()
 
-        page.reload_similar_pages(page_coords=self.action_object.page_coords)
-        print(self.action_object.page_coords)
+        page.reload_similar_pages(type=self.action_object.type, identifier=self.action_object.identifier)
         page.reload_similar_pages()
 
         if hasattr(self.action_object, "on_removed_from_cache"):
@@ -670,7 +647,6 @@ class ActionRow(Adw.ActionRow):
 
         self.comment_row.set_text(comment)
 
-
 class AddActionButtonRow(Adw.PreferencesRow):
     def __init__(self, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding", "add-button"])
@@ -685,13 +661,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         self.set_child(self.button)
 
     def on_click(self, button):
-        element = "key"
-        if self.expander.active_dial is not None:
-            element = "dial"
-        elif self.expander.active_gesture is not None:
-            element = "touch"
-
-        self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action, element=element)
+        self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action, type=self.expander.active_type)
 
     def add_action(self, action_class):
         log.trace(f"Adding action: {action_class}")
@@ -702,23 +672,8 @@ class AddActionButtonRow(Adw.PreferencesRow):
         if active_page is None:
             return
         
-        page_coords = None
-        gesture = None
-        dial = None
-        
-        if self.expander.active_coords is not None:
-            page_coords = f"{self.expander.active_coords[0]}x{self.expander.active_coords[1]}"
-            add_default_keys(active_page.dict, ["keys", page_coords, "states", str(self.expander.active_state)])
-            state_dict = active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]
-        elif self.expander.active_gesture is not None:
-            gesture = self.expander.active_gesture
-            add_default_keys(active_page.dict, ["touchscreen", self.expander.active_gesture, "states", str(self.expander.active_state)])
-            state_dict = active_page.dict["touchscreen"][self.expander.active_gesture]["states"][str(self.expander.active_state)]
-        elif self.expander.active_dial is not None:
-            dial = self.expander.active_dial
-            add_default_keys(active_page.dict, ["dials", str(self.expander.active_dial), "states", str(self.expander.active_state)])
-            state_dict = active_page.dict["dials"][str(self.expander.active_dial)]["states"][str(self.expander.active_state)]
-
+        add_default_keys(active_page.dict, [self.expander.active_type, self.expander.active_identifier, "states", str(self.expander.active_state)])
+        state_dict = active_page.dict[self.expander.active_type][self.expander.active_identifier]["states"][str(self.expander.active_state)]
         state_dict.setdefault("actions", [])
 
         # Add action
@@ -727,7 +682,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
             "settings": {}
         })
 
-        if page_coords is not None:
+        if self.expander.active_type == "keys":
             if len(state_dict["actions"]) == 1:
                 state_dict.setdefault("image-control-action", 0)
                 state_dict.setdefault("label-control-actions", [0, 0, 0])
@@ -737,15 +692,10 @@ class AddActionButtonRow(Adw.PreferencesRow):
         # Reload page to add an object to the new action
         active_page.load()
         # Reload the key on all decks
-        active_page.reload_similar_pages(page_coords=page_coords, touch=gesture is not None, dial=dial)
+        active_page.reload_similar_pages(type=self.expander.active_type, identifier=self.expander.active_identifier)
 
         # Reload ui
-        if page_coords is not None:
-            self.expander.load_for_coords(self.expander.active_coords, self.expander.active_state)
-        elif gesture is not None:
-            self.expander.load_for_screen(gesture, self.expander.active_state)
-        elif dial is not None:
-            self.expander.load_for_dial(dial, self.expander.active_state)
+        self.expander.load_for_identifier(self.expander.active_type, self.expander.active_identifier, self.expander.active_state)
 
         # # Reload key
         # controller = active_page.deck_controller

@@ -1,12 +1,24 @@
+class TypeSupportStatus:
+    def __init__(self, num, type):
+        self.num = num
+        self.type = type
+    def __int__(self):
+        return self.num
+
 class TypeSupport:
-    NONE = 0
-    UNTESTED = 1
-    FULL = 2
+    def __init__(self, type):
+        self.type = type
+        self.NONE = TypeSupportStatus(0, type)
+        self.UNTESTED = TypeSupportStatus(1, type)
+        self.FULL = TypeSupportStatus(2, type)
 
 class ActionSupports:
     class Keys(TypeSupport):
-        pass
+        def __init__(self):
+            super().__init__("keys")
     class Dials(TypeSupport):
-        pass
+        def __init__(self):
+            super().__init__("dials")
     class Touch(TypeSupport):
-        pass
+        def __init__(self):
+            super().__init__("touchscreens")

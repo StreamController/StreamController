@@ -56,7 +56,6 @@ class DeckManager:
     def load_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:
-            break
             try:
                 if not deck.is_open():
                     deck.open()
@@ -106,19 +105,16 @@ class DeckManager:
         if hasattr(gl.app, "main_win"):
             gl.app.main_win.check_for_errors()
 
-
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device
         if device_info["ID_VENDOR"] != "Elgato":
             return
         
-        
         self.connect_new_decks()
 
     def connect_new_decks(self):
         # Get already loaded deck serial ids
-        return
         loaded_deck_ids = []
         for controller in self.deck_controller:
             loaded_deck_ids.append(controller.deck.id())
@@ -144,16 +140,10 @@ class DeckManager:
         gl.app.main_win.check_for_errors()
 
     def remove_controller(self, deck_controller: DeckController) -> None:
-        print("1")
         self.deck_controller.remove(deck_controller)
-        print("2")
         gl.app.main_win.leftArea.deck_stack.remove_page(deck_controller)
-        print("3")
         deck_controller.delete()
-        print("4")
         del deck_controller
-        print("5")
-
 
     def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):
         deck_controller = DeckController(self, deck)
@@ -228,9 +218,11 @@ class DeckManager:
             if new_device:
                 log.info(f"Replacing deck")
                 deck_controller.deck = new_device
-                deck_controller.update_all_keys()
+                deck_controller.update_all_inputs()
 
-                deck_controller.deck.set_key_callback(deck_controller.key_change_callback)
+                deck_controller.deck.set_key_callback(deck_controller.key_event_callback)
+                deck_controller.deck.set_dial_callback(deck_controller.dial_event_callback)
+                deck_controller.deck.set_touchscreen_callback(deck_controller.touchscreen_event_callback)
 
                 # deck_controller.deck._setup_reader(deck_controller.deck._read)
 

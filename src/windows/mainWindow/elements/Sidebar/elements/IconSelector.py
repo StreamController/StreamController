@@ -102,14 +102,10 @@ class IconSelector(Gtk.Box):
         if controller.active_page is None:
             return None
         active_page_dict = controller.active_page.dict
-        active_coords:tuple = self.sidebar.active_coords
-        if active_coords is None:
-            return
-        page_coords = f"{active_coords[0]}x{active_coords[1]}"
         
         active_state = self.sidebar.active_state
 
-        return active_page_dict.get("keys", {}).get(page_coords, {}).get("states", {}).get(active_state, {}).get("media", {}).get("path")
+        return active_page_dict.get("keys", {}).get(self.sidebar.active_identifier, {}).get("states", {}).get(active_state, {}).get("media", {}).get("path")
     
     def set_media_path(self, path):
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
@@ -121,16 +117,14 @@ class IconSelector(Gtk.Box):
         active_page = controller.active_page
         if active_page is None:
             return
-        active_coords:tuple = self.sidebar.active_coords
-        page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
-        add_default_keys(active_page.dict, ["keys", page_coords, "states", self.state])
-        active_page.dict["keys"][page_coords]["states"][str(self.state)].setdefault("media", {
+        add_default_keys(active_page.dict, ["keys", self.sidebar.active_identifier, "states", self.state])
+        active_page.dict["keys"][self.sidebar.active_identifier]["states"][str(self.state)].setdefault("media", {
             "path": None,
             "loop": True,
             "fps": 30
         })
-        active_page.dict["keys"][page_coords]["states"][str(self.state)]["media"]["path"] = path
+        active_page.dict["keys"][self.sidebar.active_identifier]["states"][str(self.state)]["media"]["path"] = path
 
         # Save page
         active_page.save()
@@ -148,7 +142,7 @@ class IconSelector(Gtk.Box):
         controller = visible_child.deck_controller
         if controller is None:
             return
-        key_index = controller.coords_to_index(self.sidebar.active_coords)
+        key_index = controller.coords_to_index(self.sidebar.active_identifier)
         controller.load_key(key_index, page=controller.active_page)
 
     def remove_media(self, *args):

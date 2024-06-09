@@ -19,8 +19,9 @@ from gi.repository import Gtk
 import globals as gl
 
 class StateSwitcher(Gtk.ScrolledWindow):
-    def __init__(self, **kwargs):
+    def __init__(self, type, **kwargs):
         super().__init__(**kwargs)
+        self.type = type
 
         self.switch_callbacks: list[callable] = []
         self.add_new_callbacks: list[callable] = []
@@ -63,16 +64,15 @@ class StateSwitcher(Gtk.ScrolledWindow):
 
     def on_add_click(self, button):
         controller = gl.app.main_win.get_active_controller()
-
-        coords = gl.app.main_win.sidebar.active_coords
-        key_index = controller.coords_to_index(coords)
-
-        if key_index >= len(controller.keys):
-            return
-        key = controller.keys[key_index]
-
-        key.add_new_state()
-        return
+        input_element_dict = {
+            "keys": controller.keys,
+            "dials": controller.dials,
+            "touchscreens": controller.touchscreens,
+        }[self.type]
+        for d in input_element_dict:
+            if d.identifier == gl.app.main_win.sidebar.active_identifier:
+                d.add_new_state()
+                return
 
         n_states = self.get_n_states()
         self.stack.add_titled(Gtk.Box(), str(n_states + 1), f"State {n_states + 1}")

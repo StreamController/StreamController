@@ -47,7 +47,7 @@ class ActionChooser(Gtk.Box):
         self.callback_function = None
         self.callback_args = None
         self.callback_kwargs = None
-        self.element: str = None # key, deck, touch
+        self.type: str = None
 
         self.build()
 
@@ -81,7 +81,7 @@ class ActionChooser(Gtk.Box):
         self.open_store_button = OpenStoreButton(margin_top=40)
         self.main_box.append(self.open_store_button)
 
-    def show(self, callback_function, current_stack_page, element: str, callback_args, callback_kwargs):
+    def show(self, callback_function, current_stack_page, type: str, callback_args, callback_kwargs):
         # The current-stack_page is usefull in case the let_user_select_action is called by an plugin action in the action_configurator
 
         # Validate the callback function
@@ -91,20 +91,20 @@ class ActionChooser(Gtk.Box):
             self.callback_args = None
             self.callback_kwargs = None
             self.current_stack_page = None
-            self.element = None
+            self.type = None
             return
         
         self.callback_function = callback_function
         self.current_stack_page = current_stack_page
         self.callback_args = callback_args
         self.callback_kwargs = callback_kwargs
-        self.element = element
-        self.plugin_group.set_element(element)
+        self.type = type
+        self.plugin_group.set_type(type)
 
         self.sidebar.main_stack.set_visible_child(self)
 
     def on_back_button_click(self, button):
-        self.sidebar.main_stack.set_visible_child_name("key_editor")
+        self.sidebar.main_stack.set_visible_child_name("configurator_stack")
 
     def on_search_changed(self, search_entry):
         self.plugin_group.search()
@@ -198,9 +198,9 @@ class PluginGroup(BetterPreferencesGroup):
             return True
         return False
     
-    def set_element(self, element):
+    def set_type(self, type):
         for expander in self.expander:
-            expander.set_element(element)
+            expander.set_type(type)
             expander.invalidate_filter()
 
 
@@ -268,8 +268,8 @@ class PluginExpander(BetterExpander):
 
         # if not row.warning_icon.get_visible():
             # return False
-        if not row.action_holder.is_compatible_with_element(self.plugin_group.action_chooser.element):
-            c = row.action_holder.is_compatible_with_element(self.plugin_group.action_chooser.element)
+        if not row.action_holder.is_compatible_with_type(self.plugin_group.action_chooser.type):
+            c = row.action_holder.is_compatible_with_type(self.plugin_group.action_chooser.type)
             return False
 
         if search_string == "":
@@ -287,9 +287,9 @@ class PluginExpander(BetterExpander):
             return True
         return False
     
-    def set_element(self, element):
+    def set_type(self, type):
         for row in self.get_rows():
-            row.set_element(element)
+            row.set_type(type)
 
 
 class ActionRow(Adw.ActionRow):
@@ -346,6 +346,6 @@ class ActionRow(Adw.ActionRow):
         if show and tooltip is not None:
             self.warning_icon.set_tooltip_text(tooltip)
 
-    def set_element(self, element):
-        warning = self.action_holder.is_untested_for_element(element)
-        self.show_warning(warning, f"Action might not work for {element}")
+    def set_type(self, type):
+        warning = self.action_holder.is_untested_for_type(type)
+        self.show_warning(warning, f"Action might not work for {type}")

@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 from src.backend.DeckManagement.HelperMethods import add_default_keys
 
 gi.require_version("Gtk", "4.0")
@@ -50,8 +51,8 @@ class ImageEditor(Gtk.Box):
         self.image_group = ImageGroup(self.sidebar)
         self.main_box.append(self.image_group)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.image_group.load_for_coords(coords, state)
+    def load_for_key(self, identifier: InputIdentifier, state: int):
+        self.image_group.load_for_key(identifier, state)
 
 
 class ImageGroup(Adw.PreferencesGroup):
@@ -67,15 +68,15 @@ class ImageGroup(Adw.PreferencesGroup):
 
         return
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.expander.load_for_coords(coords, state)
+    def load_for_key(self, identifier: InputIdentifier, state: int):
+        self.expander.load_for_key(identifier, state)
 
 
 class Layout(Adw.ExpanderRow):
     def __init__(self, margin_group):
         super().__init__(title=gl.lm.get("right-area.image-editor.layout.header"), subtitle=gl.lm.get("right-area.image-editor.layout.subtitle"))
         self.margin_group = margin_group
-        self.active_coords = None
+        self.identifier: InputIdentifier = None
         self.active_state: int = None
         self.build()
 
@@ -89,20 +90,20 @@ class Layout(Adw.ExpanderRow):
         self.halign_row = HalignRow(sidebar=self.margin_group.sidebar)
         self.add_row(self.halign_row)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.active_coords = coords
+    def load_for_key(self, identifier: InputIdentifier, state: int):
+        self.active_identifier = identifier
         self.active_state = state
 
-        self.size_row.load_for_coords(coords, state)
-        self.valign_row.load_for_coords(coords, state)
-        self.halign_row.load_for_coords(coords, state)
+        self.size_row.load_for_identifier(identifier, state)
+        self.valign_row.load_for_identifier(identifier, state)
+        self.halign_row.load_for_identifier(identifier, state)
 
 
 class SizeRow(Adw.PreferencesRow):
     def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
         self.sidebar = sidebar
-        self.active_coords = None
+        self.active_identifier: InputIdentifier = None
         self.build()
 
         self.connect_signals()
@@ -120,21 +121,17 @@ class SizeRow(Adw.PreferencesRow):
 
         self.size_spinner.revert_button.connect("clicked", self.on_size_reset)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
         self.disconnect_signals()
-        self.active_coords = coords
+        self.active_identifier = identifier
         self.active_state = state
 
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        deck_controller = visible_child.deck_controller
-        if deck_controller is None:
+        controller = gl.app.main_win.get_active_controller()
+        if controller is None:
             return
 
-        key_index = deck_controller.coords_to_index(self.active_coords)
-
-        use_page_properties = deck_controller.keys[key_index].get_active_state().layout_manager.get_use_page_layout_properties()
+        controller_input = controller.get_input(identifier)
+        use_page_properties = controller_input.get_active_state().layout_manager.get_use_page_layout_properties()
         self.size_spinner.revert_button.set_visible(use_page_properties.get("size", False))
 
         self.update_values()
@@ -147,11 +144,11 @@ class SizeRow(Adw.PreferencesRow):
             visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
             if visible_child is None:
                 return
-            deck_controller = visible_child.deck_controller
-            if deck_controller is None:
+            controller = visible_child.deck_controller
+            if controller is None:
                 return
-            controller_key = deck_controller.keys[deck_controller.coords_to_index(self.active_coords)]
-            composed_label = controller_key.get_active_state().layout_manager.get_composed_layout()
+            controller_input = controller.get_input(self.active_identifier)
+            composed_label = controller_input.get_active_state().layout_manager.get_composed_layout()
 
         self.size_spinner.button.set_value(composed_label.size*100)
 
@@ -203,21 +200,14 @@ class ValignRow(Adw.PreferencesRow):
 
         self.valign_spinner.revert_button.connect("clicked", self.on_valign_reset)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.active_identifier = identifier
         self.disconnect_signals()
-        self.active_coords = coords
-        self.active_state = state
 
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        deck_controller = visible_child.deck_controller
-        if deck_controller is None:
-            return
+        controller = gl.app.main_win.get_active_controller()
 
-        key_index = deck_controller.coords_to_index(self.active_coords)
-
-        use_page_properties = deck_controller.keys[key_index].get_active_state().layout_manager.get_use_page_layout_properties()
+        controller_input = controller.get_input(identifier)
+        use_page_properties = controller_input.get_active_state().layout_manager.get_use_page_layout_properties()
         self.valign_spinner.revert_button.set_visible(use_page_properties.get("valign", False))
 
         self.connect_signals()
@@ -232,7 +222,7 @@ class ValignRow(Adw.PreferencesRow):
             deck_controller = visible_child.deck_controller
             if deck_controller is None:
                 return
-            controller_key = deck_controller.keys[deck_controller.coords_to_index(self.active_coords)]
+            controller_key = deck_controller.inputs[Input.Key][deck_controller.coords_to_index(self.active_identifier.coords)]
             composed_label = controller_key.get_active_state().layout_manager.get_composed_layout()
 
         self.valign_spinner.button.set_value(composed_label.valign)
@@ -282,7 +272,8 @@ class HalignRow(Adw.PreferencesRow):
 
         self.halign_spinner.revert_button.connect("clicked", self.on_halign_reset)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
+    def load_for_identifier(self, coords: tuple[int, int], state: int):
+        return
         self.disconnect_signals()
         self.active_coords = coords
         self.active_state = state

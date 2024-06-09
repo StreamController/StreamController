@@ -283,13 +283,12 @@ class ActionBase(rpyc.Service):
         # self.page.load()
         if self.page is None:
             return {}
-        return self.page.get_settings_for_action(input_ident = self.input_ident, state = self.state)
+        return self.page.get_action_settings(action_object=self)
     
     def set_settings(self, settings: dict):
         if self.page is None:
             return
-        self.page.set_settings_for_action(self, settings, self.input_ident, self.state)
-        self.page.save()
+        self.page.set_action_settings(action_object=self, settings=settings)
 
     def connect(self, signal:Signal = None, callback: callable = None) -> None:
         # Connect
@@ -297,18 +296,18 @@ class ActionBase(rpyc.Service):
     
     def get_is_multi_action(self) -> bool:
         if not self.get_is_present(): return
-        actions = self.page.action_objects.get(self.input_ident.input_type, {}).get(self.input_ident.input_identifier, [])
+        actions = self.page.action_objects.get(self.input_ident.input_type, {}).get(self.input_ident.json_identifier, [])
         return len(actions) > 1
     
     def has_label_control(self) -> list[bool]:
-        key_dict = self.input_ident.get_config(self.page.dict)["states"].get(str(self.state), {})
+        key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
 
         ind = self.get_own_action_index()
 
         return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
 
     def has_image_control(self):
-        key_dict = self.input_ident.get_config(self.page.dict)["states"].get(str(self.state), {})
+        key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
         if "Analog" in self.action_id:
             print()
 
@@ -328,7 +327,7 @@ class ActionBase(rpyc.Service):
     
     def has_custom_user_asset(self) -> bool:
         if not self.get_is_present(): return False
-        media = self.input_ident.get_config(self.page.dict)["states"].get(str(self.state), {}).get("media", {})
+        media = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {}).get("media", {})
         return media.get("path", None) is not None
     
     def get_own_action_index(self) -> int:

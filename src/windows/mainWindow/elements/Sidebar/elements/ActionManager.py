@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 from src.backend.DeckManagement.HelperMethods import add_default_keys
 
 gi.require_version("Gtk", "4.0")
@@ -59,23 +60,13 @@ class ActionManager(Gtk.Box):
 
         self.main_box.set_margin_bottom(50)
 
-    def load_for_identifier(self, type: str, identifier: str, state: int):
-        self.action_group.load_for_identifier(type, identifier, state)
-
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.action_group.load_for_coords(coords, state)
-
-    def load_for_screen(self, identifier: str, state: int):
-        self.action_group.load_for_screen(identifier, state)
-
-    def load_for_dial(self, n: int, state: int):
-        self.action_group.load_for_dial(n, state)
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.action_group.load_for_identifier(identifier, state)
 
 class ActionGroup(Adw.PreferencesGroup):
     def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
         self.sidebar = sidebar
-        self.active_type = None
         self.active_identifier = None
 
         self.actions = []
@@ -86,8 +77,9 @@ class ActionGroup(Adw.PreferencesGroup):
         self.expander = ActionExpanderRow(self)
         self.add(self.expander)
 
-    def load_for_identifier(self, type: str, identifier: str, state: int):
-        self.expander.load_for_identifier(type, identifier, state)
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.active_identifier = identifier
+        self.expander.load_for_identifier(identifier, state)
 
     def load_for_coords(self, coords: tuple[int, int], state: int):
         self.expander.load_for_coords(coords, state)
@@ -103,7 +95,6 @@ class ActionExpanderRow(BetterExpander):
     def __init__(self, action_group):
         super().__init__(title=gl.lm.get("action-editor-header"), subtitle=gl.lm.get("action-editor-expander-subtitle"))
         self.set_expanded(True)
-        self.active_type = None
         self.active_identifier = None
         self.action_group = action_group
         self.active_state = None
@@ -120,36 +111,28 @@ class ActionExpanderRow(BetterExpander):
         action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.sidebar, comment, index, controls_image, controls_labels, total_rows, self)
         self.add_row(action_row)
 
-    def load_for_identifier(self, type: str, identifier: str, state: int):
-        self.clear_actions(keep_add_button=True)
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        if not isinstance(identifier, InputIdentifier):
+            raise ValueError("Invalid identifier given to load_for_identifier")
         self.active_state = state
+        self.active_identifier = identifier
+
+        self.clear_actions(keep_add_button=True)
 
         controller = gl.app.main_win.get_active_controller()
 
-        actions = controller.active_page.action_objects.get(type, {}).get(identifier, {}).get(state, {})
-        self.active_type = type
-        self.active_identifier = identifier
+        actions = controller.active_page.action_objects.get(identifier.input_type, {}).get(identifier.json_identifier, {}).get(state, {})
         self.load_for_actions(actions.values())
-
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        page_coords = f"{coords[0]}x{coords[1]}"
-        self.load_for_identifier("keys", page_coords, state)
-
-    def load_for_screen(self, identifier: str, state: int):
-        self.load_for_identifier("touchscreens", identifier, state)
-
-    def load_for_dial(self, n: int, state: int):
-        self.load_for_identifier("dials", str(n), state)
 
     def load_for_actions(self, actions: list[ActionBase]):
         number_of_actions = len(actions)
         for i, action in enumerate(actions):
             if isinstance(action, ActionBase):
                 # Get action comment
+                print()
                 comment = action.page.get_action_comment(index=i,
                                                          state=action.state,
-                                                         type=action.type,
-                                                         identifier=action.identifier)
+                                                         identifier=action.input_ident)
 
                 controls_image = action.has_image_control()
                 controls_labels = action.has_label_control()
@@ -449,7 +432,7 @@ class ActionRow(Adw.ActionRow):
         # self.remove_button.connect("clicked", self.on_click_remove)
 
     def update_allow_box_visibility(self):
-        if self.expander.active_type is None or self.expander.active_identifier is None:
+        if self.expander.active_identifier is None:
             self.allow_box.set_visible(False)
             return
         hide = self.controls_image and any(self.controls_labels) and (self.total_rows == 1)
@@ -473,10 +456,10 @@ class ActionRow(Adw.ActionRow):
         page = controller.active_page
 
         new_value = self.index if button.get_active() else None
-        page.dict[self.action_object.type][self.action_object.identifier]["states"][str(self.expander.active_state)]["image-control-action"] = new_value
+        page.dict[self.action_object.input_ident.input_type][self.action_object.input_ident.json_identifier]["states"][str(self.expander.active_state)]["image-control-action"] = new_value
         page.save()
 
-        page.reload_similar_pages(type=self.action_object.type, identifier=self.action_object.identifier, reload_self=True)
+        page.reload_similar_pages(identifier=self.action_object.input_ident, reload_self=True)
 
     def label_toggled(self, i, value):
         for child in self.expander.get_rows():
@@ -496,12 +479,12 @@ class ActionRow(Adw.ActionRow):
         if controller is None:
             return
         page = controller.active_page
-        page.dict[self.action_object.type][self.action_object.identifier]["states"][str(self.expander.active_state)].setdefault("label-control-actions", [None, None, None])
+        page.dict[self.action_object.input_ident.input_type][self.action_object.input_ident.json_identifier]["states"][str(self.expander.active_state)].setdefault("label-control-actions", [None, None, None])
         new_value = self.index if value else None
-        page.dict[self.action_object.type][self.action_object.identifier]["states"][str(self.expander.active_state)]["label-control-actions"][i] = new_value
+        page.dict[self.action_object.input_ident.input_type][self.action_object.input_ident.json_identifier]["states"][str(self.expander.active_state)]["label-control-actions"][i] = new_value
         page.save()
 
-        threading.Thread(target=page.reload_similar_pages, kwargs={"type": self.action_object.type, "identifier":self.action_object.identifier, "reload_self":True}).start()
+        threading.Thread(target=page.reload_similar_pages, kwargs={"identifier":self.action_object.input_ident, "reload_self":True}).start()
 
     def set_image_toggled(self, value: bool):
         try:
@@ -661,7 +644,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         self.set_child(self.button)
 
     def on_click(self, button):
-        self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action, type=self.expander.active_type)
+        self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action, identifier=self.expander.active_identifier)
 
     def add_action(self, action_class):
         log.trace(f"Adding action: {action_class}")
@@ -672,8 +655,8 @@ class AddActionButtonRow(Adw.PreferencesRow):
         if active_page is None:
             return
         
-        add_default_keys(active_page.dict, [self.expander.active_type, self.expander.active_identifier, "states", str(self.expander.active_state)])
-        state_dict = active_page.dict[self.expander.active_type][self.expander.active_identifier]["states"][str(self.expander.active_state)]
+        add_default_keys(active_page.dict, [self.expander.active_identifier.input_type, self.expander.active_identifier.json_identifier, "states", str(self.expander.active_state)])
+        state_dict = active_page.dict[self.expander.active_identifier.input_type][self.expander.active_identifier.json_identifier]["states"][str(self.expander.active_state)]
         state_dict.setdefault("actions", [])
 
         # Add action
@@ -682,7 +665,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
             "settings": {}
         })
 
-        if self.expander.active_type == "keys":
+        if isinstance(self.expander.active_identifier, Input.Key):
             if len(state_dict["actions"]) == 1:
                 state_dict.setdefault("image-control-action", 0)
                 state_dict.setdefault("label-control-actions", [0, 0, 0])
@@ -692,10 +675,10 @@ class AddActionButtonRow(Adw.PreferencesRow):
         # Reload page to add an object to the new action
         active_page.load()
         # Reload the key on all decks
-        active_page.reload_similar_pages(type=self.expander.active_type, identifier=self.expander.active_identifier)
+        active_page.reload_similar_pages(identifier=self.expander.active_identifier, reload_self=True)
 
         # Reload ui
-        self.expander.load_for_identifier(self.expander.active_type, self.expander.active_identifier, self.expander.active_state)
+        self.expander.load_for_identifier(self.expander.active_identifier, self.expander.active_state)
 
         # # Reload key
         # controller = active_page.deck_controller

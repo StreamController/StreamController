@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import Input
+
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -122,6 +124,8 @@ class KeyButton(Gtk.Frame):
         self.set_css_classes(["key-button-frame-hidden"])
         self.coords = coords
         self.state = 0
+        self.identifier = Input.Key(f"{coords[0]}x{coords[1]}")
+
         self.key_grid = key_grid
 
         self.pixbuf = None
@@ -211,7 +215,7 @@ class KeyButton(Gtk.Frame):
         active_page.reload_similar_pages(page_coords=f"{dropped_x}x{dropped_y}", reload_self=True)
 
         # Reload sidebar
-        gl.app.main_win.sidebar.reload()
+        gl.app.main_win.sidebar.update()
 
     def handle_file_drop(self, drop: Gtk.DropTarget, value: Gdk.ContentProvider, x, y):
         files = value.get_files()
@@ -249,7 +253,7 @@ class KeyButton(Gtk.Frame):
         # Update icon selector if current key is selected
         active_identifier = gl.app.main_win.sidebar.active_identifier
         if active_identifier == f"{self.coords[0]}x{self.coords[1]}":
-            gl.app.main_win.sidebar.key_editor.icon_selector.load_for_coords((self.coords[0], self.coords[1]))
+            gl.app.main_win.sidebar.key_editor.icon_selector.load_for_key((self.coords[0], self.coords[1]))
 
         
     def on_drag_begin(self, drag_source, data):
@@ -291,7 +295,7 @@ class KeyButton(Gtk.Frame):
         sidebar = gl.app.main_win.sidebar
         if pixbuf is None:
             return
-        if sidebar.key_editor.label_editor.label_group.expander.active_coords != (self.coords[0], self.coords[1]):
+        if sidebar.key_editor.label_editor.label_group.expander.active_identifier != self.identifier:
             return
         child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if child is None:
@@ -365,11 +369,11 @@ class KeyButton(Gtk.Frame):
             return
         sidebar = gl.app.main_win.sidebar
         # Check if already loaded for this coords
-        if sidebar.active_identifier == f"{self.coords[0]}x{self.coords[1]}":
+        if sidebar.active_identifier == self.identifier:
             if not self.get_mapped():
                 return
             
-        sidebar.load_for_coords((self.coords[0], self.coords[1]), self.state)
+        sidebar.load_for_key(self.identifier, self.state)
 
     # Modifier
     def on_copy(self, *args):
@@ -405,7 +409,7 @@ class KeyButton(Gtk.Frame):
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
         # Reload ui
-        gl.app.main_win.sidebar.load_for_coords((x, y))
+        gl.app.main_win.sidebar.load_for_key((x, y))
 
     def on_paste_finished(self, result, data, user_data):
         print(f"result: {result}, data: {data} user_data: {user_data}")
@@ -434,7 +438,7 @@ class KeyButton(Gtk.Frame):
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
         # Reload ui
-        gl.app.main_win.sidebar.load_for_coords((x, y))
+        gl.app.main_win.sidebar.load_for_key((x, y))
 
     def remove_media(self):
         active_page = self.key_grid.deck_controller.active_page

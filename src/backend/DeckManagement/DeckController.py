@@ -182,7 +182,7 @@ class MediaPlayerThread(threading.Thread):
                             self.deck_controller.background.update_tiles()
 
                 #TODO: generalize
-                for key in self.deck_controller.inputs["keys"]:
+                for key in self.deck_controller.inputs[Input.Key]:
                     # break
                     if key.get_active_state().key_video is not None:
                         video_each_nth_frame = self.FPS // key.key_video.fps
@@ -353,7 +353,7 @@ class DeckController:
         print(Input.All)
         print(type(Input.All))
         for i in Input.All:
-            self.inputs[i.input_type] = []
+            self.inputs[i] = []
         self.init_inputs()
 
         self.background = Background(self)
@@ -378,14 +378,21 @@ class DeckController:
 
     def init_inputs(self):
         for i in Input.All:
-            self.inputs[i.input_type] = []
-            new_class = getattr(sys.modules[__name__], i.controller_class_name)
-            for k in new_class.Available_Identifiers(self.deck):
-                self.inputs[i.input_type].append(new_class(self, Input.FromTypeIdentifier(i.input_type, k)))
+            self.inputs[i] = []
+            input_class = getattr(sys.modules[__name__], i.controller_class_name)
 
-    def get_input(self, ident: InputIdentifier):
-        for i in self.inputs[ident.input_type]:
-            if i.input_ident == ident:
+            for k in input_class.Available_Identifiers(self.deck):
+                self.inputs[i].append(input_class(self, Input.FromTypeIdentifier(i.input_type, k)))
+
+    def get_inputs(self, identifier: InputIdentifier) -> list["ControllerInput"]:
+        input_type = type(identifier)
+        if input_type not in self.inputs:
+            raise ValueError(f"Unknown input type: {input_type}")
+        return self.inputs[input_type]
+
+    def get_input(self, identifier: InputIdentifier):
+        for i in self.get_inputs(identifier):
+            if i.identifier == identifier:
                 return i
         return None
 
@@ -393,13 +400,13 @@ class DeckController:
     def serial_number(self) -> str:
         return self.deck.get_serial_number()
     
-    @lru_cache(maxsize=None)
     def is_visual(self) -> bool:
         return self.deck.is_visual()
 
-    def update_input(self, ident: InputIdentifier):
-        i = self.get_input(ident)
-        if not i: return
+    def update_input(self, identifier: InputIdentifier):
+        i = self.get_input(identifier)
+        if not i:
+            return
         i.update()
 
     @log.catch
@@ -422,11 +429,12 @@ class DeckController:
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck key image. Error: {e}")
 
-    def event_callback(ident: InputIdentifier, *args, **kwargs):
+    def event_callback(self, ident: InputIdentifier, *args, **kwargs):
         if not self.allow_interaction:
             return
         i = self.get_input(ident)
-        if not i: return
+        if not i:
+            return
         i.event_callback(*args, **kwargs)
 
     def key_event_callback(self, deck, key, *args, **kwargs):
@@ -582,15 +590,20 @@ class DeckController:
         with ThreadPoolExecutor() as executor:
             futures = []
             for t in self.inputs:
-                for i in self.inputs[t]:
-                    futures.append(executor.submit(self.load_input, i, page, update))
+                for controller_input in self.inputs[t]:
+                    futures.append(executor.submit(self.load_input, controller_input, page, update))
             for future in futures:
                 future.result()
         log.info(f"Loading all inputs took {time.time() - start} seconds")
 
-    def load_input(self, i, page: Page, update: bool = True):
-        input_dict = i.input_ident.get_config(page.dict)
-        i.load_from_page_dict(input_dict, update)
+    def load_input_from_identifier(self, identifier: str, page: Page, update: bool = True, d = False):
+        controller_input = self.get_input(identifier)
+        if controller_input is not None:
+            self.load_input(controller_input, page, update)
+
+    def load_input(self, controller_input: "ControllerInput", page: Page, update: bool = True):
+        input_dict = controller_input.identifier.get_config(page)
+        controller_input.load_from_page_dict(input_dict, update)
 
     def update_ui_on_page_change(self):
         # Update ui
@@ -606,7 +619,7 @@ class DeckController:
                 settings_group.screensaver.load_defaults_from_page()
                 background_group.media_row.load_defaults_from_page()
 
-                gl.app.main_win.sidebar.reload()
+                gl.app.main_win.sidebar.update()
             except AttributeError as e:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
 
@@ -703,6 +716,22 @@ class DeckController:
     # -------------- #
     # Helper methods #
     # -------------- #
+
+    def coords_to_index(self, coords: tuple) -> int:
+        return ControllerKey.Coords_To_Index(self.deck, coords)
+    
+    def index_to_coords(self, index: int) -> tuple:
+        return ControllerKey.Index_To_Coords(self.deck, index)
+    
+    def get_key_by_coords(self, coords: tuple) -> "ControllerKey":
+        index = self.coords_to_index(coords)
+        return self.get_key_by_index(index)
+    
+    def get_key_by_index(self, index: int) -> "ControllerKey":
+        keys = self.inputs.get(Input.Key, [])
+        if index < 0 or index >= len(keys):
+            return
+        return keys[index]
 
     def mark_page_ready_to_clear(self, ready_to_clear: bool):
         if self.active_page is not None:
@@ -1125,7 +1154,7 @@ class ControllerKeyLabelManager:
         if gl.app.main_win.sidebar.active_type != self.controller_key or gl.app.main_win.sidebar.active_identifier != self.controller_key.identifier:
             return
         
-        gl.app.main_win.sidebar.key_editor.label_editor.load_for_coords(ControllerKey.Index_To_Coords(self.controller_key.deck_controller.deck, self.controller_key.key), self.controller_key.state)
+        gl.app.main_win.sidebar.key_editor.label_editor.load_for_identifier(ControllerKey.Index_To_Coords(self.controller_key.deck_controller.deck, self.controller_key.index), self.controller_key.state)
         
 
     def get_use_page_label_properties(self, position: str) -> dict:
@@ -1268,7 +1297,7 @@ class ControllerKeyLayoutManager:
         if gl.app.main_win.sidebar.active_coords != (self.controller_key.coords[0], self.controller_key.coords[1]):
             return
         
-        gl.app.main_win.sidebar.key_editor.image_editor.load_for_coords(self.controller_key.coords)
+        gl.app.main_win.sidebar.key_editor.image_editor.load_for_key(self.controller_key.coords)
 
 class ControllerInputState:
     def __init__(self, controller_input: "ControllerInput", state: int):
@@ -1318,7 +1347,7 @@ class ControllerInputState:
             return []
         if active_page.action_objects is None:
             return []
-        actions = self.deck_controller.active_page.get_all_actions_for_input(self.controller_input.input_ident, self.state)
+        actions = self.deck_controller.active_page.get_all_actions_for_input(self.controller_input.identifier, self.state)
 
         return actions
 
@@ -1334,6 +1363,7 @@ class ControllerInputState:
         action.on_ready_called = True
     
     def own_actions_ready(self) -> None:
+        print("ready own actions")
         with ThreadPoolExecutor() as executor:
             futures = [executor.submit(self.call_action_ready_and_set_flag, action) for action in self.get_own_actions()]
             for future in futures:
@@ -1353,12 +1383,12 @@ class ControllerInputState:
         threading.Thread(target=self.own_actions_tick, name="own_actions_tick").start()
 
 class ControllerInput:
-    def __init__(self, deck_controller: DeckController, state_class: ControllerInputState, input_ident: InputIdentifier):
+    def __init__(self, deck_controller: DeckController, state_class: ControllerInputState, identifier: InputIdentifier):
         self.deck_controller = deck_controller
         self.state = 0
         self.hide_error_timer: Timer = None
         self.ControllerStateClass = state_class
-        self.input_ident: InputIdentifier = input_ident
+        self.identifier: InputIdentifier = identifier
 
         self.states = {
             0: self.ControllerStateClass(self, 0),
@@ -1386,7 +1416,7 @@ class ControllerInput:
         pass
 
     def add_new_state(self, switch: bool = True):
-        d = self.input_ident.get_config(self.deck_controller.active_page.dict)
+        d = self.identifier.get_config(self.deck_controller.active_page)
 
         # Add new state
         self.states[len(self.states)] = self.ControllerStateClass(self, len(self.states))
@@ -1400,12 +1430,12 @@ class ControllerInput:
         self.update_state_switcher()
 
         if switch:
-            print(f"{self.type} is on state: {self.state}")
+            print(f"{self.identifier} is on state: {self.state}")
             print(f"Switching to state: {len(self.states)-1}")
             self.set_state(len(self.states)-1)
 
     def remove_state(self, state: int):
-        d = self.input_ident.get_config(self.deck_controller.active_page.dict)
+        d = self.identifier.get_config(self.deck_controller.active_page)
 
         if str(state) in d["states"]:
             d["states"].pop(str(state))
@@ -1458,7 +1488,7 @@ class ControllerInput:
         gl.signal_manager.trigger_signal(Signals.RemoveState, state, state_map)
 
     def update_state_switcher(self):
-        if gl.app.main_win.sidebar.active_input != self.input_ident:
+        if gl.app.main_win.sidebar.active_identifier != self.identifier:
             return
 
         gl.app.main_win.sidebar.key_editor.state_switcher.set_n_states(len(self.states))
@@ -1467,6 +1497,9 @@ class ControllerInput:
         return self.states.get(self.state, self.ControllerStateClass(self, -1))
 
     def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False) -> None:
+        print(f"set state: {state}")
+        if state == 1:
+            print()
         if state == self.state and not allow_reload:
             print(f"is already in state: {state}")
             return
@@ -1477,6 +1510,7 @@ class ControllerInput:
         self.state = state
 
         self.get_active_state().own_actions_ready()
+        self.get_active_state().update()
 
         if update_sidebar:
             self.reload_sidebar()
@@ -1497,14 +1531,14 @@ class ControllerInput:
         if controller is not self.deck_controller:
             print("controller is not self.deck_controller")
             return
-        if self.input_ident != gl.app.main_win.sidebar.active_input:
+        if self.identifier != gl.app.main_win.sidebar.active_identifier:
             print("input_ident is not equal")
             return
         
         print("reload")
         print(f"active_state: {gl.app.main_win.sidebar.active_state}, state: {self.state}")
         gl.app.main_win.sidebar.active_state = self.state
-        GLib.idle_add(gl.app.main_win.sidebar.reload)
+        GLib.idle_add(gl.app.main_win.sidebar.update)
 
     def load_from_config(self, config, update: bool = True):
         n_states = len(config.get("states", {}))
@@ -1560,11 +1594,11 @@ class ControllerInput:
         return False
 
 class ControllerKey(ControllerInput):
-    def __init__(self, deck_controller: DeckController, ident: InputIdentifier):
+    def __init__(self, deck_controller: DeckController, ident: Input.Key):
         super().__init__(deck_controller, ControllerKeyState, ident)
-        self.key: int = ControllerKey.Coords_To_Index(self.deck_controller.deck, ident.input_identifier)
+        self.index = ident.get_index(deck_controller)
         # Keep track of the current state of the key because self.deck_controller.deck.key_states seams to give inverted values in get_current_deck_image
-        self.press_state: bool = self.deck_controller.deck.key_states()[self.key]
+        self.press_state: bool = self.deck_controller.deck.key_states()[self.index]
 
     @staticmethod
     def Available_Identifiers(deck):
@@ -1592,30 +1626,31 @@ class ControllerKey(ControllerInput):
         if self.deck_controller.is_visual():
             native_image = PILHelper.to_native_key_format(self.deck_controller.deck, rgb_image)
             rgb_image.close()
-            self.deck_controller.media_player.add_image_task(self.key, native_image)
+            self.deck_controller.media_player.add_image_task(self.index, native_image)
 
         del rgb_image
         self.set_ui_key_image(image)
 
-    def event_callback(self, state):
+    def event_callback(self, press_state):
+        print()
         screensaver_was_showing = self.deck_controller.screen_saver.showing
-        if state:
+        if press_state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
             self.deck_controller.screen_saver.on_key_change()
         if screensaver_was_showing:
             return
         
         self.deck_controller.mark_page_ready_to_clear(False)
-        self.press_state = state
+        self.press_state = press_state
 
         self.update()
 
-        state = self.get_active_state()
-
-        if state:
-            state.own_actions_key_down_threaded()
+        active_state = self.get_active_state()
+        #TODO: Implement hold etc
+        if press_state:
+            active_state.own_actions_key_down_threaded()
         else:
-            state.own_actions_key_up_threaded()
+            active_state.own_actions_key_up_threaded()
         self.deck_controller.mark_page_ready_to_clear(True)
 
     def get_current_deck_image(self) -> Image.Image:
@@ -1625,7 +1660,7 @@ class ControllerKey(ControllerInput):
         background: Image.Image = None
         # Only load the background image if it's not gonna be hidden by the background color
         if self.get_active_state().background_color[-1] < 255:
-            background = copy(self.deck_controller.background.tiles[self.key])
+            background = copy(self.deck_controller.background.tiles[self.index])
 
         if self.get_active_state().background_color[-1] > 0:
             background_color_img = Image.new("RGBA", self.deck_controller.get_key_image_size(), color=tuple(state.background_color))
@@ -1888,7 +1923,7 @@ class ControllerKey(ControllerInput):
         if image is None:
             return
         
-        x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.key)
+        x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)
 
 
         if self.deck_controller.get_own_key_grid() is None or not gl.app.main_win.get_mapped():
@@ -1898,7 +1933,7 @@ class ControllerKey(ControllerInput):
             self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
         
     def get_own_ui_key(self) -> KeyButton:
-        x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.key)
+        x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)
         buttons = self.deck_controller.get_own_key_grid().buttons # The ui key coords are in reverse order
         return buttons[x][y]
 
@@ -1911,7 +1946,7 @@ class ControllerTouchScreen(ControllerInput):
     @staticmethod
     def Available_Identifiers(deck):
         if deck.is_touch():
-            return ["touchscreen"]
+            return ["sd-plus"]
         return []
 
     def update(self) -> None:
@@ -1927,7 +1962,9 @@ class ControllerTouchScreen(ControllerInput):
     def generate_empty_image(self) -> Image.Image:
         return Image.new("RGBA", self.deck_controller.get_touchscreen_image_size(), (0, 0, 0, 0))
 
-    def set_image_ui_image(self, image: Image.Image) -> None:
+    def set_ui_image(self, image: Image.Image) -> None:
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
         gl.app.main_win.leftArea.deck_stack.get_visible_child().page_settings.deck_config.screenbar.image.set_image(image)
 
     def get_current_image(self) -> Image.Image:

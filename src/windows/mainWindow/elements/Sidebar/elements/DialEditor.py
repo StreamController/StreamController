@@ -2,6 +2,7 @@ from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
 
+from src.backend.DeckManagement.InputIdentifier import Input
 from src.windows.mainWindow.elements.Sidebar.elements.ActionManager import ActionManager
 from src.windows.mainWindow.elements.Sidebar.elements.StateSwitcher import StateSwitcher
 
@@ -30,7 +31,7 @@ class DialEditor(Gtk.ScrolledWindow):
         self.state_switcher.set_n_states(0)
         self.main_box.append(self.state_switcher)
 
-        self.action_group = Adw.PreferencesGroup(title="Dial")
+        self.action_group = Adw.PreferencesGroup(title="Actions")
         self.main_box.append(self.action_group)
 
         self.action_manager = ActionManager(self.sidebar)
@@ -83,22 +84,18 @@ class DialEditor(Gtk.ScrolledWindow):
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
-    def load_for_dial(self, n: int, state: int):
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller: DeckController = visible_child.deck_controller
+    def load_for_dial(self, identifier: Input.Dial, state: int):
+        self.sidebar.active_identifier = identifier
+
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
 
-        dial = controller.dials[n]
+        dial = controller.get_input(identifier)
         self.state_switcher.set_n_states(len(dial.states.keys()))
         self.state_switcher.select_state(state)
         dial.set_state(state)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
-        self.sidebar.active_type = "dials"
-        self.sidebar.active_identifier = str(n)
-
-        self.action_manager.load_for_dial(n, state)
+        self.action_manager.load_for_identifier(identifier, state)

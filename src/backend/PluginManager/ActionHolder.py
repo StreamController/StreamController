@@ -14,11 +14,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 # Import own modules
-from src.backend.PluginManager.ActionSupportTypes import ActionSupports, TypeSupport
+from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 from src.backend.PluginManager.ActionBase import ActionBase
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.DeckController import DeckController
-from src.backend.DeckManagement.InputIdentifier import InputIdentifier
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -46,7 +46,11 @@ class ActionHolder:
                  action_id: str, action_name: str,
                  icon: Gtk.Widget = None,
                  min_app_version: str = None,
-                 action_support = [],
+                 action_support = {
+                     Input.Key: ActionInputSupport.UNTESTED,
+                     Input.Dial: ActionInputSupport.UNTESTED,
+                     Input.Touchscreen: ActionInputSupport.UNTESTED
+                 },
                  ):
         
         ## Verify variables
@@ -65,6 +69,7 @@ class ActionHolder:
         self.icon = icon
         self.min_app_version = min_app_version
         self.action_support = action_support
+        
     def get_is_compatible(self) -> bool:
         if self.min_app_version is not None:
             if version.parse(gl.app_version) < version.parse(self.min_app_version):
@@ -77,33 +82,14 @@ class ActionHolder:
             return
 
         return self.action_base(
-            action_id = self.action_id,
-            action_name = self.action_name,
-            deck_controller = deck_controller,
-            page = page,
-            input_ident = input_ident,
-            plugin_base = self.plugin_base,
-            state = state
+            action_id=self.action_id,
+            action_name=self.action_name,
+            deck_controller=deck_controller,
+            page=page,
+            input_ident=input_ident,
+            plugin_base=self.plugin_base,
+            state=state
         )
     
-    def is_compatible_with_type(self, type: str) -> bool:
-        if type is None:
-            type = "keys"
-        # legacy
-        if type == "keys" and len(self.action_support) == 0:
-            return True
-        for s in self.action_support:
-            if s.type == type and int(s) > int(TypeSupport(type).NONE):
-                return True
-        return False
-        
-    def is_untested_for_type(self, type: str) -> bool:
-        if type is None:
-            type = "keys"
-        # legacy
-        if type == "keys" and len(self.action_support) == 0:
-            return True
-        for s in self.action_support:
-            if s.type == type and int(s) == int(TypeSupport(type).UNTESTED):
-                return True
-        return False
+    def get_input_compatibility(self, identifier: InputIdentifier) -> ActionInputSupport:
+        return self.action_support.get(type(identifier), ActionInputSupport.NO)

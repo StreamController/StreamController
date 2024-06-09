@@ -245,7 +245,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.add_on_finished(self.reload_sidebar)
             return
         
-        self.sidebar.reload()
+        self.sidebar.update()
 
     def do_after_build_tasks(self):
         for task in self.on_finished:

@@ -88,11 +88,13 @@ class ScreenSaver:
         self.show()
 
     def show(self):
+        #TODO: Support for other input types
         log.info("Showing screen saver")
         # Stop timer - in case this method is called manually
         self.timer.cancel()
         # Set showing = True - in case this method is called manually
         self.showing = True
+        return
 
         # Store original keys and background
         self.original_keys = self.deck_controller.keys

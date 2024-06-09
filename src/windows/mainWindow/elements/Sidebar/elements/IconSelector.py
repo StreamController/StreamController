@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import InputIdentifier
 from src.backend.DeckManagement.HelperMethods import add_default_keys
 
 gi.require_version("Gtk", "4.0")
@@ -105,7 +106,7 @@ class IconSelector(Gtk.Box):
         
         active_state = self.sidebar.active_state
 
-        return active_page_dict.get("keys", {}).get(self.sidebar.active_identifier, {}).get("states", {}).get(active_state, {}).get("media", {}).get("path")
+        return active_page_dict.get("keys", {}).get(self.sidebar.active_identifier.json_identifier, {}).get("states", {}).get(active_state, {}).get("media", {}).get("path")
     
     def set_media_path(self, path):
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
@@ -118,8 +119,8 @@ class IconSelector(Gtk.Box):
         if active_page is None:
             return
 
-        add_default_keys(active_page.dict, ["keys", self.sidebar.active_identifier, "states", self.state])
-        active_page.dict["keys"][self.sidebar.active_identifier]["states"][str(self.state)].setdefault("media", {
+        add_default_keys(active_page.dict, ["keys", self.sidebar.active_identifier.json_identifier, "states", self.state])
+        active_page.dict["keys"][self.sidebar.active_identifier.json_identifier]["states"][str(self.state)].setdefault("media", {
             "path": None,
             "loop": True,
             "fps": 30
@@ -162,5 +163,5 @@ class IconSelector(Gtk.Box):
     def has_image_to_remove(self):
         return self.get_media_path() is not None
     
-    def load_for_coords(self, coords: tuple[int, int], state: int):
+    def load_for_key(self, identifier: InputIdentifier, state: int):
         self.remove_button.set_visible(self.has_image_to_remove())

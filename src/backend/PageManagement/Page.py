@@ -25,6 +25,7 @@ import shutil
 from numpy import isin
 
 # Import globals
+from src.backend.DeckManagement.ImageHelpers import crop_key_image_from_deck_sized_image
 import globals as gl
 
 from src.backend.PluginManager.ActionBase import ActionBase
@@ -35,7 +36,6 @@ if TYPE_CHECKING:
     from src.backend.PluginManager.ActionHolder import ActionHolder
     from src.backend.DeckManagement.DeckController import ControllerKeyState, ControllerKey
 
-KEY_TYPES = map(lambda x: x.input_type, Input.All)
 
 class Page:
     def __init__(self, json_path, deck_controller, *args, **kwargs):
@@ -79,7 +79,7 @@ class Page:
 
         without_objects = self.get_without_action_objects()
         # Make keys last element
-        for type in KEY_TYPES:
+        for type in Input.KeyTypes:
             self.move_key_to_end(without_objects, type)
         with open(self.json_path, "w") as f:
             json.dump(without_objects, f, indent=4)
@@ -111,11 +111,10 @@ class Page:
         self.save()
 
     def load_action_objects(self):
-        loaded_action_objects = self.action_objects.copy()
+        new_action_objects = {}
 
-        self.action_objects.clear()
-
-        for input_type in KEY_TYPES:
+        for input_type in Input.KeyTypes:
+            print()
             for key in self.dict.get(input_type, {}):
                 for state in self.dict[input_type][key].get("states", {}):
                     try:
@@ -125,26 +124,41 @@ class Page:
                     for i, action in enumerate(self.dict[input_type][key]["states"][str(state)].get("actions", [])):
                         if action.get("id") is None:
                             continue
+                        print()
 
                         input_ident = Input.FromTypeIdentifier(input_type, key)
-                        input_action_objects = input_ident.get_dict(self.action_objects)
-                        input_action_objects.setdefault(state, {})
+                        # input_action_objects = input_ident.get_dict(new_action_objects)
+                        # input_action_objects.setdefault(state, {})
+                        if state != 0:
+                            print()
 
-                        action_object = self.get_action_object(
-                            loaded_action_objects=loaded_action_objects,
+                        action_object = self.get_new_action_object(
+                            # loaded_action_objects=self.action_objects,
+                            loaded_action_objects=self.action_objects,
                             action_id=action["id"],
                             state=state,
                             i=i,
                             input_ident=input_ident,
                         )
-                        input_action_objects[state][i] = action_object
+                        # input_action_objects[state][i] = action_object
+                        new_action_objects.setdefault(input_type, {})
+                        new_action_objects[input_type].setdefault(key, {})
+                        new_action_objects[input_type][key].setdefault(state, {})
+                        # new_action_objects[input_type][key][state].setdefault(i, {})
+                        new_action_objects[input_type][key][state][i] = action_object
 
-        # Go through all old actions and call on_removed_from_cache if they have been removed
-        #TODO
+        old_actions = self.get_all_actions(self.action_objects)
+        new_actions = self.get_all_actions(new_action_objects)
+
+        for old_action in old_actions:
+            if old_action not in new_actions:
+                old_action.on_removed_from_cache()
+
+        self.action_objects = new_action_objects
 
     # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
 
-    def get_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, input_ident):
+    def get_new_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, input_ident):
         
         action_holder = gl.plugin_manager.get_action_holder_from_id(action_id)
 
@@ -152,20 +166,20 @@ class Page:
         if action_holder is None:
             plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(action_id)
             if gl.plugin_manager.get_is_plugin_out_of_date(plugin_id):
-                return ActionOutdated(id=action_id, input_ident=input_ident, state=state)
-            return NoActionHolderFound(id=action_id, input_ident=input_ident, state=state)
+                return ActionOutdated(id=action_id, identifier=input_ident, state=state)
+            return NoActionHolderFound(id=action_id, identifier=input_ident, state=state)
 
         ## Keep old object if it exists
-        old_action = input_ident.get_dict(loaded_action_objects).get(state)
+        old_action = loaded_action_objects.get(input_ident.input_type, {}).get(input_ident.json_identifier, {}).get(state, {}).get(i)
         if old_action is not None:
             if isinstance(old_action, action_holder.action_base):
                 return old_action #FIXME: gets never used
-
+            
         ## Create new action object            
         action_object = action_holder.init_and_get_action(
             deck_controller=self.deck_controller,
             page=self,
-            state=i,
+            state=state,
             input_ident=input_ident,
         )
         return action_object
@@ -179,7 +193,7 @@ class Page:
 
         # Load action objects
         self.action_objects = {}
-        for input_type in KEY_TYPES:
+        for input_type in Input.KeyTypes:
             for input_identifier in self.dict.get(input_type, {}):
                 for state in self.dict[input_type][input_identifier].get("states", {}):
                     state = int(state)
@@ -221,7 +235,7 @@ class Page:
                         # self.action_objects[key][i] = action_object
                         if type == "keys" and self.deck_controller.coords_to_index(key.split("x")) > self.deck_controller.deck.key_count():
                             continue
-                        thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, input_ident, state, i), name=f"add_action_object_from_holder_{input_ident.input_identifier}_{state}_{i}")
+                        thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, input_ident, state, i), name=f"add_action_object_from_holder_{input_ident.json_identifier}_{state}_{i}")
                         thread.start()
                         add_threads.append(thread)
 
@@ -287,9 +301,9 @@ class Page:
         if action_object is None:
             return
         self.action_objects.setdefault(input_ident.input_type, {})
-        self.action_objects[input_ident.input_type].setdefault(input_ident.input_identifier, {})
-        self.action_objects[input_ident.input_type][input_ident.input_identifier].setdefault(int(state), {})
-        self.action_objects[input_ident.input_type][input_ident.input_identifier][int(state)][i] = action_object
+        self.action_objects[input_ident.input_type].setdefault(input_ident.json_identifier, {})
+        self.action_objects[input_ident.input_type][input_ident.json_identifier].setdefault(int(state), {})
+        self.action_objects[input_ident.input_type][input_ident.json_identifier][int(state)][i] = action_object
 
     def remove_plugin_action_objects(self, plugin_id: str) -> bool:
         plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
@@ -329,7 +343,7 @@ class Page:
 #        return keys
 
     def remove_plugin_actions_from_json(self, plugin_id: str):
-        for type in KEY_TYPES:
+        for type in Input.KeyTypes:
             for key in self.dict[type]:
                 for state in self.dict[type][key].get("states", {}):
                     for i, action in enumerate(self.dict[type][key]["states"][state]["actions"]):
@@ -341,7 +355,7 @@ class Page:
 
     def get_without_action_objects(self):
         dictionary = copy(self.dict)
-        for type in KEY_TYPES:
+        for type in Input.KeyTypes:
             for key in dictionary.get(type, {}):
                 for state in dictionary[type][key].get("states", {}):
                     if "actions" not in dictionary[type][key]["states"][state]:
@@ -352,12 +366,14 @@ class Page:
 
         return dictionary
 
-    def get_all_actions(self):
+    def get_all_actions(self, action_dict: dict = None):
+        if action_dict is None:
+            action_dict = self.action_objects
         actions = []
-        for type in self.action_objects:
-            for key in self.action_objects[type]:
-                for state in self.action_objects[type][key]:
-                    for action in self.action_objects[type][key][state].values():
+        for input_type in action_dict:
+            for key in action_dict[input_type]:
+                for state in action_dict[input_type][key]:
+                    for action in action_dict[input_type][key][state].values():
                         if action is None:
                             continue
                         if not isinstance(action, ActionBase):
@@ -368,7 +384,7 @@ class Page:
     def get_all_actions_for_type(self, ident, only_action_bases: bool = False):
         actions = []
         input_type = ident.input_type
-        input_identifier = ident.input_identifier
+        input_identifier = ident.json_identifier
         if input_identifier in self.action_objects.get(input_type, {}):
             for state in self.action_objects[input_type].get(input_identifier, {}):
                 for action in self.action_objects[input_type][input_identifier].get(state, {}).values():
@@ -382,10 +398,10 @@ class Page:
     def get_all_actions_for_input(self, ident, state, only_action_bases: bool = False):
         actions = []
         input_type = ident.input_type
-        input_identifier = ident.input_identifier
-        if input_identifier in self.action_objects.get(input_type, {}):
-            if state in self.action_objects[input_type].get(input_identifier, {}):
-                for action in self.action_objects[input_type][input_identifier].get(state, {}).values():
+        json_identifier = ident.json_identifier
+        if json_identifier in self.action_objects.get(input_type, {}):
+            if state in self.action_objects[input_type].get(json_identifier, {}):
+                for action in self.action_objects[input_type][json_identifier].get(state, {}).values():
                     if action is None or not action:
                         continue
                     if only_action_bases and not isinstance(action, ActionBase):
@@ -393,54 +409,53 @@ class Page:
                     actions.append(action)
         return actions
     
-    def get_settings_for_action(self, action_object = None, input_ident = None, state: int = None):
-        input_type = input_ident.input_type
-        input_identifier = input_ident.input_identifier
-        if action_object is None or state is None:
-            for key in self.dict[input_type]:
-                for state in self.dict[input_type][key].get("states", {}):
-                    for i, action in enumerate(self.dict[input_type][key]["states"][state].get("actions", {})):
-                        if input_type not in self.action_objects:
-                            break
-                        if key not in self.action_objects[input_type]:
-                            break
-                        if int(state) not in self.action_objects[input_type][key]:
-                            break
-                        if i not in self.action_objects[input_type][key][int(state)]:
-                            break
-                        if self.action_objects[input_type][key][int(state)][i] == action_object:
-                            return action["settings"]
-        else:
-            for state in self.dict[input_type][input_identifier].get("states", {}):
-                for i, action in enumerate(self.dict[input_type][input_identifier]["states"][state].get("actions", [])):
-                    if input_type not in self.action_objects:
-                        break
-                    if input_identifier not in self.action_objects[input_type]:
-                        break
-                    if int(state) not in self.action_objects[input_type][input_identifier]:
-                        break
-                    if i not in self.action_objects[input_type][input_identifier][int(state)]:
-                        break
-                    if self.action_objects[input_type][input_identifier][int(state)][i] == action_object:
-                        return action["settings"]
+    def get_action(self, identifier: InputIdentifier = None, state: int = None, index: int = None):
+        return self.action_objects.get(identifier.input_type, {}).get(identifier.json_identifier, {}).get(state, {}).get(index)
+    
+    def get_action_settings(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
+        # Arg validation
+        if action_object is None:
+            if None in (identifier, state, index):
+                raise ValueError("Please pass an identifier, state and index or an action object")
+            
+        if action_object is None:
+            action_object = self.get_action(identifier, state, index)
+
+        if action_object is None:
+            raise ValueError("Could not find action object")
+
+        for state in self.dict.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get("states", {}):
+            for i, action_dict in enumerate(self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state].get("actions", [])):
+                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {})[i] is action_object:
+                    return action_dict["settings"]
         return {}
+    
+    def set_action_settings(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None, settings: dict = None):
+        # Arg validation
+        if action_object is None:
+            if None in (identifier, state, index):
+                raise ValueError("Please pass an identifier, state and index or an action object")
+            
+        if action_object is None:
+            action_object = self.get_action(identifier, state, index)
 
-    def set_settings_for_action(self, settings: dict, ident, state: int = None):
-        state = str(state)
-        input_type = ident.input_type
-        input_identifier = ident.input_identifier
-        if state in self.dict[input_type][input_identifier].get("states", {}):
-            for i, action in enumerate(self.dict[input_type][input_identifier]["states"][state].get("actions", [])):
-                self.action_objects[input_type].setdefault(input_identifier, {})
-                if self.action_objects[input_type][input_identifier].get(int(state), {}).get(i) == action_object:
-                    self.dict[input_type][input_identifier]["states"][state]["actions"][i]["settings"] = settings
+        if action_object is None:
+            raise ValueError("Could not find action object")
 
-    def has_key_an_image_controlling_action(self, ident, state: int):
-        input_type = ident.input_type
-        input_identifier = ident.input_identifier
-        if input_type not in self.action_objects or input_identifier not in self.action_objects[input_type]:
+        for state in self.dict.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get("states", {}):
+            for i, action_dict in enumerate(self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state].get("actions", [])):
+                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {})[i] is action_object:
+                    action_dict["settings"] = settings
+
+        self.save()
+
+
+    def has_key_an_image_controlling_action(self, identifier, state: int):
+        input_type = identifier.input_type
+        json_identifier = identifier.json_identifier
+        if input_type not in self.action_objects or json_identifier not in self.action_objects[input_type]:
             return False
-        for action in self.action_objects[input_type][input_identifier][state].values():
+        for action in self.action_objects[input_type][json_identifier][state].values():
             if hasattr(action, "CONTROLS_KEY_IMAGE"):
                 if action.CONTROLS_KEY_IMAGE:
                     return True
@@ -480,49 +495,39 @@ class Page:
                 pages.append(controller.active_page)
         return pages
     
-    def reload_similar_pages(self, type: str, identifier: str=None, reload_self: bool = False,
+    def reload_similar_pages(self, identifier: InputIdentifier, reload_self: bool = False,
                              load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
                              load_dials: bool = True, load_touchscreens: bool = True):
         
         self.save()
         for page in self.get_pages_with_same_json(get_self=reload_self):
             page.load(load_from_file=True)
-            if type != "keys":
-                page.deck_controller.load_page(page, load_brightness, load_screensaver, load_background, load_keys, load_dials, load_touchscreens)
-            else:
-                key_index = page.deck_controller.coords_to_index(identifier.split("x"))
-                # Reload only given key
-                page.deck_controller.load_key(key_index, page.deck_controller.active_page)
+            # page.deck_controller.update_input(identifier)
+            page.deck_controller.load_input_from_identifier(identifier, page)
 
-    def get_action_comment(self, index: int, state: int, type: str, identifier: str = None):
-        if type in self.action_objects and identifier in self.action_objects[type] and index in self.action_objects[type][identifier]:
-            try:
-                return self.dict[type][identifier]["states"][str(state)]["actions"][index].get("comment")
-            except:
-                return ""
+    def get_action_comment(self, index: int, state: int, identifier: InputIdentifier) -> str:
+        try:
+            return self.dict[identifier.input_type][identifier.json_identifier]["states"][str(state)]["actions"][index].get("comment")
+        except KeyError:
+            return ""
 
-    def set_action_comment(self, index: int, comment: str, state: int, type: str, identifier: str):
-        if type in self.action_objects and identifier in self.action_objects[type] and index in self.action_objects[type][identifier]:
-            self.dict[type][identifier]["states"][str(state)]["actions"][index]["comment"] = comment
+    def set_action_comment(self, index: int, comment: str, state: int, identifier: InputIdentifier):
+        if identifier.json_identifier in self.action_objects[identifier.input_type] and index in self.action_objects[identifier.input_type][identifier.json_identifier][state]:
+            self.dict[identifier.input_type][identifier.json_identifier]["states"][str(state)]["actions"][index]["comment"] = comment
             self.save()
 
-    def fix_action_objects_order(self, page_coords) -> None:
+    def fix_action_objects_order(self, identifier: InputIdentifier) -> None:
         """
         #TODO: Switch to list instead of dict to avoid this
         """
-        if page_coords not in self.action_objects["keys"]:
+        if identifier.json_identifier not in self.action_objects.get(identifier.input_type, {}):
             return
         
-        actions = list(self.action_objects["keys"][page_coords].values())
+        actions = list(self.action_objects[identifier.input_type][identifier.json_identifier].values())
 
-        d = self.dict.copy()
-
-        self.action_objects["keys"][page_coords] = {}
+        self.action_objects[identifier.input_type][identifier.json_identifier] = {}
         for i, action in enumerate(actions):
-            self.action_objects["keys"][page_coords][i] = action
-
-        new_d = self.dict
-
+            self.action_objects[identifier.input_type][identifier.json_identifier][i] = action
     
     # Configuration
     def _get_dict_value(self, keys: list[str]):
@@ -550,6 +555,8 @@ class Page:
         gl.page_manager.update_dict_of_pages_with_path(self.json_path)
 
     def update_key_image(self, coords: str | tuple[int, int], state: int) -> None:
+        #TODO: Move to DeckController
+        #TODO: Make input specific
         coords = self.get_tuple_coords(coords)
         for controller in gl.deck_manager.deck_controller:
             if controller.active_page.json_path != self.json_path:
@@ -557,39 +564,42 @@ class Page:
             key_index = controller.coords_to_index(coords)
             if key_index is None:
                 continue
-            if key_index > len(controller.keys) - 1:
+            if key_index > len(controller.inputs[Input.Key]) - 1:
                 continue
-            key = controller.keys[key_index]
+            key = controller.inputs[Input.Key][key_index]
             if key.state == state:
                 key.update()
 
-    def get_controller_keys(self, coords: str | tuple[int, int]) -> list["ControllerKey"]:
-        coords = self.get_tuple_coords(coords)
-
-        keys: list["ControllerKey"] = []
+    def update_input(self, identifier: InputIdentifier, state: int) -> None:
         for controller in gl.deck_manager.deck_controller:
             if controller.active_page.json_path != self.json_path:
                 continue
-            key_index = controller.coords_to_index(coords)
-            if key_index is None:
+            c_input = controller.get_input(identifier)
+            if c_input is None:
                 continue
-            if key_index > len(controller.keys) - 1:
+            if c_input.state != state:
                 continue
-            keys.append(controller.keys[key_index])
+            c_input.update()
 
-        return keys
+    def get_controller_inputs(self, identifier: InputIdentifier) -> list["ControllerInput"]:
+        inputs: list["ControllerInput"] = []
 
+        for controller in gl.deck_manager.deck_controller:
+            for c_input in controller.get_inputs(identifier):
+                if c_input.identifier == identifier:
+                    inputs.append(c_input)
 
-    def get_controller_key_states(self, coords: str | tuple[int, int], state: int) -> list["ControllerKeyState"]:
+        return inputs
+
+    def get_controller_input_states(self, identifier: InputIdentifier, state: int) -> list["ControllerKeyState"]:
         matching_states: list["ControllerKeyState"] = []
 
-        for key in self.get_controller_keys(coords):
-            for key_state in key.states.values():
-                if key_state.state == state:
-                    matching_states.append(key_state)
+        for controller_input in self.get_controller_inputs(identifier):
+            for input_state in controller_input.states.values():
+                if input_state.state == state:
+                    matching_states.append(input_state)
 
         return matching_states
-    
 
     def get_page_coords(self, coords: str | tuple[int, int]) -> str:
         if isinstance(coords, tuple):
@@ -603,122 +613,104 @@ class Page:
     
     # Get/set methods
 
-    def get_label_text(self, key: str, coords: str | tuple[int, int], state: int, label_position: str) -> str:
-        coords = self.get_page_coords(coords)
-        return self._get_dict_value(["keys", coords, "states", str(state), "labels", label_position, "text"])
-    
-    def set_label_text(self, coords: str | tuple[int, int], state: int, label_position: str, text: str, update: bool = True) -> None:
-        coords = self.get_page_coords(coords)
-        for key_state in self.get_controller_key_states(coords, state):
+    def get_label_text(self, identifier: InputIdentifier, state: int, label_position: str) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "text"])
+
+    def set_label_text(self, identifier: InputIdentifier, state: int, label_position: str, text: str, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
             key_state.label_manager.page_labels[label_position].text = text
 
-        self._set_dict_value(["keys", coords, "states", str(state), "labels", label_position, "text"], text)
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "text"], text)
 
         if update:
-            self.update_key_image(coords, state)
+            self.update_input(identifier, state)
 
-    def get_label_font_family(self, coords: str | tuple[int, int], state: int, label_position: str) -> str:
-        coords = self.get_page_coords(coords)
-        return self._get_dict_value(["keys", coords, "states", str(state), "labels", label_position, "font-family"])
-    
-    def set_label_font_family(self, coords: str | tuple[int, int], state: int, label_position: str, font_family: str, update: bool = True) -> None:
-        coords = self.get_page_coords(coords)
-        for key_state in self.get_controller_key_states(coords, state):
+    def get_label_font_family(self, identifier: InputIdentifier, state: int, label_position: str) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-family"])
+
+    def set_label_font_family(self, identifier: InputIdentifier, state: int, label_position: str, font_family: str, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
             key_state.label_manager.page_labels[label_position].font_family = font_family
 
-        self._set_dict_value(["keys", coords, "states", str(state), "labels", label_position, "font-family"], font_family)
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-family"], font_family)
 
         if update:
-            self.update_key_image(coords, state)
+            self.update_input(identifier, state)
 
-    def get_label_font_size(self, coords: str | tuple[int, int], state: int, label_position: str) -> int:
-        coords = self.get_page_coords(coords)
-        return self._get_dict_value(["keys", coords, "states", str(state), "labels", label_position, "font-size"])
-    
-    def set_label_font_size(self, coords: str | tuple[int, int], state: int, label_position: str, font_size: int, update: bool = True) -> None:
-        coords = self.get_page_coords(coords)
-        for key_state in self.get_controller_key_states(coords, state):
+    def get_label_font_size(self, identifier: InputIdentifier, state: int, label_position: str) -> int:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-size"])
+
+    def set_label_font_size(self, identifier: InputIdentifier, state: int, label_position: str, font_size: int, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
             key_state.label_manager.page_labels[label_position].font_size = font_size
 
-        self._set_dict_value(["keys", coords, "states", str(state), "labels", label_position, "font-size"], font_size)
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-size"], font_size)
 
         if update:
-            self.update_key_image(coords, state)
+            self.update_input(identifier, state)
 
-    def get_label_font_color(self, coords: str | tuple[int, int], state: int, label_position: str) -> list[int]:
-        coords = self.get_page_coords(coords)
-        return self._get_dict_value(["keys", coords, "states", str(state), "labels", label_position, "color"])
-    
-    def set_label_font_color(self, coords: str | tuple[int, int], state: int, label_position: str, font_color: list[int], update: bool = True) -> None:
-        coords = self.get_page_coords(coords)
-        for key_state in self.get_controller_key_states(coords, state):
+    def get_label_font_color(self, identifier: InputIdentifier, state: int, label_position: str) -> list[int]:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "color"])
+
+    def set_label_font_color(self, identifier: InputIdentifier, state: int, label_position: str, font_color: list[int], update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
             key_state.label_manager.page_labels[label_position].color = font_color
 
-        self._set_dict_value(["keys", coords, "states", str(state), "labels", label_position, "color"], font_color)
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "color"], font_color)
 
         if update:
-            self.update_key_image(coords, state)
+            self.update_input(identifier, state)
 
-    def get_media_size(self, coords: str | tuple[int, int], state: int) -> float:
-        coords = self.get_page_coords(coords)
-        return self._get_dict_value(["keys", coords, "states", str(state), "media", "size"])
-    
-    def set_media_size(self, coords: str | tuple[int, int], state: int, size: float, update: bool = True) -> None:
-        coords = self.get_page_coords(coords)
-        for key_state in self.get_controller_key_states(coords, state):
+    def get_media_size(self, identifier: InputIdentifier, state: int) -> float:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "size"])
+
+    def set_media_size(self, identifier: InputIdentifier, state: int, size: float, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
             key_state.layout_manager.media_size = size
 
-        self._set_dict_value(["keys", coords, "states", str(state), "media", "size"], size)
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "size"], size)
 
         if update:
-            self.update_key_image(coords, state)
+            self.update_input(identifier, state)
 
-    def get_media_valign(self, coords: str | tuple[int, int], state: int) -> str:
-        coords = self.get_page_coords(coords)
-        return self._get_dict_value(["keys", coords, "states", str(state), "media", "valign"])
+    def get_media_valign(self, identifier: InputIdentifier, state: int) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "valign"])
 
-    def set_media_valign(self, coords: str | tuple[int, int], state: int, valign: str, update: bool = True) -> None:
-        coords = self.get_page_coords(coords)
-        for key_state in self.get_controller_key_states(coords, state):
+    def set_media_valign(self, identifier: InputIdentifier, state: int, valign: str, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
             key_state.layout_manager.valign = valign
 
-        self._set_dict_value(["keys", coords, "states", str(state), "media", "valign"], valign)
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "valign"], valign)
 
         if update:
-            self.update_key_image(coords, state)
+            self.update_input(identifier, state)
 
-    def get_media_halign(self, coords: str | tuple[int, int], state: int) -> str:
-        coords = self.get_page_coords(coords)
-        return self._get_dict_value(["keys", coords, "states", str(state), "media", "halign"])
+    def get_media_halign(self, identifier: InputIdentifier, state: int) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "halign"])
 
-    def set_media_halign(self, coords: str | tuple[int, int], state: int, halign: str, update: bool = True) -> None:
-        coords = self.get_page_coords(coords)
-        for key_state in self.get_controller_key_states(coords, state):
+    def set_media_halign(self, identifier: InputIdentifier, state: int, halign: str, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
             key_state.layout_manager.halign = halign
 
-        self._set_dict_value(["keys", coords, "states", str(state), "media", "halign"], halign)
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "halign"], halign)
 
         if update:
-            self.update_key_image(coords, state)
+            self.update_input(identifier, state)
 
-    def get_background_color(self, coords: str | tuple[int, int], state: int) -> list[int]:
-        coords = self.get_page_coords(coords)
-        return self._get_dict_value(["keys", coords, "states", str(state), "background", "color"])
-    
-    def set_background_color(self, coords: str | tuple[int, int], state: int, color: list[int], update: bool = True) -> None:
-        coords = self.get_page_coords(coords)
+    def get_background_color(self, identifier: InputIdentifier, state: int) -> list[int]:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "background", "color"])
 
-        for key_state in self.get_controller_key_states(coords, state):
+    def set_background_color(self, identifier: InputIdentifier, state: int, color: list[int], update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
             key_state.background_color = color
 
-        self._set_dict_value(["keys", coords, "states", str(state), "background", "color"], color)
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "background", "color"], color)
 
         if update:
-            self.update_key_image(coords, state)
-
+            self.update_input(identifier, state)
 
 class NoActionHolderFound:
-    def __init__(self, id: str, state: int, type: str, identifier: str = None):
+    def __init__(self, id: str, state: int, identifier: InputIdentifier = None):
         self.id = id
         self.type = type
         self.identifier = identifier
@@ -726,7 +718,7 @@ class NoActionHolderFound:
 
 
 class ActionOutdated:
-    def __init__(self, id: str, state: int, type: str, identifier: str = None):
+    def __init__(self, id: str, state: int, identifier: InputIdentifier = None):
         self.id = id
         self.type = type
         self.identifier = identifier

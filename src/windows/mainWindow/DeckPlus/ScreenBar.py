@@ -19,6 +19,7 @@ import gi
 
 from PIL import Image
 
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
@@ -36,9 +37,9 @@ if TYPE_CHECKING:
     from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
 
 class ScreenBar(Gtk.Frame):
-    def __init__(self, page_settings_page: "PageSettingsPage", **kwargs):
+    def __init__(self, page_settings_page: "PageSettingsPage", identifier: Input.Touchscreen, **kwargs):
         self.page_settings_page = page_settings_page
-        self.identifier = "touchscreen" # TODO: change
+        self.identifier = identifier
         super().__init__(**kwargs)
         self.set_css_classes(["key-button-frame-hidden"])
         self.set_halign(Gtk.Align.CENTER)
@@ -88,10 +89,10 @@ class ScreenBar(Gtk.Frame):
             # Select key
             self.image.grab_focus()
 
-            for t in self.page_settings_page.deck_controller.touchscreens:
-                if t.identifier == self.identifier:
-                    active_state = t.get_active_state().state
-                    gl.app.main_win.sidebar.load_for_screen(t.identifier, active_state)
+            controller_input = self.page_settings_page.deck_controller.get_input(self.identifier)
+            state = controller_input.get_active_state().state
+            gl.app.main_win.sidebar.load_for_identifier(self.identifier, state)
+            
         elif gesture.get_current_button() == 1 and n_press == 2:
             print("Double click")
             pass

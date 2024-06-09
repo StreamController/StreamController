@@ -16,7 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import os
 import gi
 
-from src.backend.DeckManagement.DeckController import DeckController
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
+from src.backend.DeckManagement.DeckController import ControllerKey, DeckController
 from src.windows.mainWindow.elements.PageSelector import PageSelector
 from src.windows.mainWindow.elements.Sidebar.elements.DialEditor import DialEditor
 from src.windows.mainWindow.elements.Sidebar.elements.StateSwitcher import StateSwitcher
@@ -48,7 +49,7 @@ class Sidebar(Adw.NavigationPage):
         super().__init__(hexpand=True, title="Sidebar", **kwargs)
         self.main_window = main_window
         self.active_type: str = None
-        self.active_identifier: str = None
+        self._active_identifier: str = None
         
         """
         To save performance and memory, we only load the thumbnail when the user sees the row
@@ -57,6 +58,16 @@ class Sidebar(Adw.NavigationPage):
         self.connect("map", self.on_map)
 
         self.build()
+
+    @property
+    def active_identifier(self):
+        return self._active_identifier
+    
+    @active_identifier.setter
+    def active_identifier(self, value):
+        if not isinstance(value, InputIdentifier):
+            raise ValueError("active_identifier must be of type InputIdentifier")
+        self._active_identifier = value
 
     def on_map(self, widget):
         for f in self.on_map_tasks:
@@ -97,9 +108,9 @@ class Sidebar(Adw.NavigationPage):
         self.page_selector = PageSelector(self.main_window, gl.page_manager, halign=Gtk.Align.CENTER)
         self.header.set_title_widget(self.page_selector)
 
-        self.load_for_coords((0, 0), 0)
+        self.load_for_identifier(Input.Key("0x0"), 0)
 
-    def let_user_select_action(self, callback_function, type: str, *callback_args, **callback_kwargs):
+    def let_user_select_action(self, callback_function, identifier: InputIdentifier, *callback_args, **callback_kwargs):
         """
         Show the action chooser to let the user select an action.
         The callback_function will be called with the following parameters:
@@ -115,29 +126,28 @@ class Sidebar(Adw.NavigationPage):
         Returns:
             None
         """
+        print()
         self.action_chooser.show(callback_function=callback_function,
                                  current_stack_page=self.main_stack.get_visible_child(),
-                                 type=type,
+                                 identifier=identifier,
                                  callback_args=callback_args,
                                  callback_kwargs=callback_kwargs)
 
     def show_action_configurator(self):
         self.main_stack.set_visible_child(self.action_configurator)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        if type(coords) is str:
-            coords = coords.split("x")
-        self.active_type = "keys"
-        self.active_identifier = f"{coords[0]}x{coords[1]}"
+    def load_for_key(self, identifier: Input.Key, state: int):
+        if not isinstance(identifier, Input.Key):
+            raise ValueError
+        self.active_identifier = identifier
         self.active_state = state
-        self.screen_active = False
 
         self.main_stack.set_visible_child(self.configurator_stack)
         self.configurator_stack.set_visible_child(self.key_editor)
         self.key_editor.state_switcher.select_state(state)
         if not self.get_mapped():
             self.on_map_tasks.clear()
-            self.on_map_tasks.append(lambda: self.load_for_coords(coords, state))
+            self.on_map_tasks.append(lambda: self.load_for_key(identifier, state))
             return
         # Verify that a controller is selected
         if self.main_window.leftArea.deck_stack.get_visible_child() is None:
@@ -162,23 +172,27 @@ class Sidebar(Adw.NavigationPage):
 
         self.hide_error()
 
-        self.key_editor.load_for_coords(coords, state)
+        self.key_editor.load_for_key(identifier, state)
 
-    def load_for_dial(self, n: int, state: int):
-        if type(n) is str:
-            n = int(n)
-        self.active_type = "dials"
-        self.active_identifier = str(n)
+    def load_for_dial(self, identifier: Input.Dial, state: int):
+        self.active_identifier = identifier
         self.main_stack.set_visible_child(self.configurator_stack)
         self.configurator_stack.set_visible_child(self.dial_editor)
-        self.dial_editor.load_for_dial(n, state)
+        self.dial_editor.load_for_dial(identifier, state)
 
-    def load_for_screen(self, identifier: str, state: int):
-        self.active_type = "touchscreens"
+    def load_for_touchscreen(self, identifier: Input.Touchscreen, state: int):
         self.active_identifier = identifier
         self.main_stack.set_visible_child(self.configurator_stack)
         self.configurator_stack.set_visible_child(self.screen_editor)
         self.screen_editor.load_for_identifier(identifier, state)
+
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        if isinstance(identifier, Input.Key):
+            self.load_for_key(identifier, state)
+        elif isinstance(identifier, Input.Dial):
+            self.load_for_dial(identifier, state)
+        elif isinstance(identifier, Input.Touchscreen):
+            self.load_for_touchscreen(identifier, state)
 
     def show_error(self):
         if self.main_stack.get_visible_child() == self.error_page:
@@ -197,13 +211,8 @@ class Sidebar(Adw.NavigationPage):
         self.main_stack.set_visible_child(self.key_editor)
         self.main_stack.set_transition_duration(200)
 
-    def reload(self):
-        if self.active_type == "keys":
-            self.load_for_coords(self.active_identifier, self.active_state)
-        elif self.active_type == "dials":
-            self.load_for_dial(self.active_identifier, self.active_state)
-        elif self.active_type == "touchscreens":
-            self.load_for_screen(self.active_identifier, self.active_state)
+    def update(self):
+        self.load_for_identifier(self.active_identifier, self.active_state)
 
 
 class KeyEditor(Gtk.Box):
@@ -244,29 +253,23 @@ class KeyEditor(Gtk.Box):
         self.append(self.remove_state_button)
 
     def on_state_switch(self, *args):
-        print("on_state_switch")
         state = self.state_switcher.get_selected_state()
-        # self.sidebar.active_state = self.state_switcher.get_selected_state()
 
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
         
-        key = controller.keys[controller.coords_to_index(self.sidebar.active_identifier)]
-
-        key.set_state(state, update_sidebar=True)
-        print(state)
-        print("on_state_switch end")
+        controller_input = controller.get_input(self.sidebar.active_identifier)
+        log.info(f"Going to state {state} from {controller_input.state}")
+        controller_input.set_state(state=state, update_sidebar=True)
 
     def on_add_new_state(self, state):
         controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
         
-        key = controller.keys[controller.coords_to_index(self.sidebar.active_identifier)]
+        # key = controller.keys[controller.coords_to_index(self.sidebar.active_identifier)]
+        key = controller.get_key_by_index(self.sidebar.active_identifier)
         key.add_new_state()
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
@@ -281,23 +284,19 @@ class KeyEditor(Gtk.Box):
         
         active_state = self.state_switcher.get_selected_state()
         
-        key = controller.keys[controller.coords_to_index(self.sidebar.active_identifier)]
-        key.remove_state(active_state)
+        controller_input = controller.get_input(self.sidebar.active_identifier)
+        controller_input.remove_state(active_state)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        if type(coords) is str:
-            coords = coords.split("x")
+    def load_for_key(self, identifier: Input.Key, state: int):
+        self.sidebar.active_identifier = identifier
 
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller: DeckController = visible_child.deck_controller
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
         
-        key = controller.keys[controller.coords_to_index(coords)]
+        key = controller.inputs[Input.Key][identifier.get_index(controller)]
 
         self.state_switcher.set_n_states(len(key.states.keys()))
         self.state_switcher.select_state(state)
@@ -305,13 +304,12 @@ class KeyEditor(Gtk.Box):
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
-        self.sidebar.active_type = "keys"
-        self.sidebar.active_identifier = f"{coords[0]}x{coords[1]}"
-        self.icon_selector.load_for_coords(coords, state)
-        self.image_editor.load_for_coords(coords, state)
-        self.label_editor.load_for_coords(coords, state)
-        self.action_editor.load_for_coords(coords, state)
-        self.background_editor.load_for_coords(coords, state)
+
+        self.icon_selector.load_for_key(identifier, state)
+        self.image_editor.load_for_key(identifier, state)
+        self.label_editor.load_for_identifier(identifier, state)
+        self.action_editor.load_for_identifier(identifier, state)
+        self.background_editor.load_for_identifier(identifier, state)
 
 class PageEditor(Gtk.Box):
     def __init__(self, **kwargs):
@@ -506,15 +504,17 @@ class KeyEditorKeyBox(Gtk.Box):
         self.action_editor = ActionManager(sidebar, margin_top=25, width_request=400)
         self.main_box.append(self.action_editor)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.sidebar.active_type = "keys"
-        self.sidebar.active_identifier = f"{coords[0]}x{coords[1]}"
+    def load_for_key(self, key: Input.Key, state: int):
+        if not isinstance(key, Input.Key):
+            raise TypeError("Input.Key expected")
+        self.sidebar.active_identifier = key
         self.sidebar.active_state = state
-        self.icon_selector.load_for_coords(coords, state)
-        self.image_editor.load_for_coords(coords, state)
-        self.label_editor.load_for_coords(coords, state)
-        self.action_editor.load_for_coords(coords, state)
-        self.background_editor.load_for_coords(coords, state)
+        #TODO: Migrate to identifier
+        self.icon_selector.load_for_key(key.coords, state)
+        self.image_editor.load_for_key(key.coords, state)
+        self.label_editor.load_for_identifier(key, state)
+        self.action_editor.load_for_coords(key.coords, state)
+        self.background_editor.load_for_identifier(key, state)
 
 class TestStack(Gtk.Stack):
     def __init__(self, **kwargs):

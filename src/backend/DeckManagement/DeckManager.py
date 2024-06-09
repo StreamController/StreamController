@@ -51,7 +51,8 @@ class DeckManager:
         self.usb_monitor.start_monitoring(on_connect=self.on_connect, on_disconnect=self.on_disconnect)
 
         resume_thread = DetectResumeThread(self)
-        resume_thread.start()
+        return
+        resume_thread.start() #TODO
 
     def load_decks(self):
         decks=DeviceManager().enumerate()

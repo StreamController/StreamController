@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import threading
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import Input
+
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -45,7 +47,7 @@ class DeckConfig(Gtk.Box):
         self.append(self.grid)
 
         if self.page_settings_page.deck_controller.deck.is_touch():
-            self.screenbar = ScreenBar(self.page_settings_page)
+            self.screenbar = ScreenBar(self.page_settings_page, Input.Touchscreen("sd-plus"))
             self.append(self.screenbar)
 
         self.dial_box = DialBox(self.page_settings_page.deck_controller, self.page_settings_page)

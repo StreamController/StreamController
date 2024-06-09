@@ -105,8 +105,8 @@ class CommentGroup(Adw.PreferencesGroup):
         self.set_comment(entry.get_text())
 
         # Update ActionManager - A full reload is not efficient but ensures correct behavior if the ActionConfigurator is triggered from a plugin action
-        if self.action.type == "keys":
-            gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.action.identifier.split("x"), self.action.state)
+        if self.action.input_ident.input_type == "keys":
+            gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.action.input_ident.coords, self.action.state)
 
     def connect_signals(self):
         self.comment_row.connect("changed", self.on_comment_changed)
@@ -125,7 +125,7 @@ class CommentGroup(Adw.PreferencesGroup):
         page = controller.active_page
         if page is None:
             return
-        return page.get_action_comment(self.index, self.action.state, self.action.type, self.action.identifier)
+        return page.get_action_comment(self.index, self.action.state, self.action.input_ident)
     
     def set_comment(self, comment: str) -> None:
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
@@ -135,7 +135,7 @@ class CommentGroup(Adw.PreferencesGroup):
         if controller is None:
             return
         page = controller.active_page
-        page.set_action_comment(self.index, comment, self.action.state, self.action.type, self.action.identifier)
+        page.set_action_comment(self.index, comment, self.action.state, self.action.input_ident)
     
 
 
@@ -238,35 +238,32 @@ class RemoveButton(Gtk.Button):
 
         # Remove from action_objects
         try:
-            del page.action_objects[self.action.type][self.action.identifier][int(self.action.state)][self.index]
-        except:
+            del page.action_objects[self.action.input_ident.input_type][self.action.input_ident.json_identifier][int(self.action.state)][self.index]
+        except KeyError:
             #FIXME
-            print()
-        page.fix_action_objects_order(self.action.identifier)
+            pass
+        page.fix_action_objects_order(self.action.input_ident)
 
         # Remove from page json
-        page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["actions"].pop(self.index)
+        page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)]["actions"].pop(self.index)
 
-        if self.action.type == "keys" and page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["image-control-action"] == self.index:
-            if len(page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["actions"]) > 0:
-                page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["image-control-action"] = 0
+        #TODO: Also update if action before this one has the access
+        if self.action.input_ident.input_type == "keys" and page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)].get("image-control-action") == self.index:
+            if len(page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)]["actions"]) > 0:
+                page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)]["image-control-action"] = 0
             else:
-                page.dict[self.action.type][self.action.identifier]["states"][str(self.action.state)]["image-control-action"] = None
+                page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)]["image-control-action"] = None
 
         page.save()
 
         # Reload configurator
-        self.configurator.sidebar.reload()
+        self.configurator.sidebar.update()
 
         # Check whether we have to reload the key
-        load = not page.has_key_an_image_controlling_action(self.action.type, self.action.identifier, self.action.state)
+        load = not page.has_key_an_image_controlling_action(self.action.input_ident, self.action.state)
         load = True # TODO
         if load:
-            if self.action.type == "keys":
-                key_index = page.deck_controller.coords_to_index(self.action.identifier.split("x"))
-                controller.load_key(key_index, page=page)
-            # Reload key on similar pages
-            page.reload_similar_pages(type=self.action.type, identifier=self.action.identifier)
+            page.reload_similar_pages(identifier=self.action.input_ident)
 
         # Destroy the actual action
         del self.action

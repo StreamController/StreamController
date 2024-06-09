@@ -64,6 +64,15 @@ class StateSwitcher(Gtk.ScrolledWindow):
 
     def on_add_click(self, button):
         controller = gl.app.main_win.get_active_controller()
+        c_input = controller.get_input(gl.app.main_win.sidebar.active_identifier)
+
+        if c_input is None:
+            return
+        
+        c_input.add_new_state()
+        return
+
+
         input_element_dict = {
             "keys": controller.keys,
             "dials": controller.dials,

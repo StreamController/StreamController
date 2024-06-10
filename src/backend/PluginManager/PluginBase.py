@@ -70,12 +70,16 @@ class PluginBase(rpyc.Service):
         self.plugin_name = plugin_name or manifest.get("name") or None
         self.github_repo = github_repo or manifest.get("github") or None
         self.plugin_version = plugin_version or manifest.get("version") or None
-        self.min_app_version = manifest.get("minimum-app-version") or "0.0.0" #TODO: IMPLEMENT BETTER WAY OF VERSION ERROR HANDLING
-        self.app_version = app_version or manifest.get("app-version") or "0.0.0"
+        self.min_app_version = manifest.get("minimum-app-version")
+        self.app_version = app_version or manifest.get("app-version")
+        self.plugin_id = manifest.get("id") or self.get_plugin_id_from_folder_name()
 
         # Verify variables
         if self.plugin_name in ["", None]:
             log.error("Plugin: Please specify a plugin name")
+            return
+        if self.plugin_id in ["", None]:
+            log.error(f"Plugin: {self.plugin_name}: Please specify a plugin id")
             return
         if self.github_repo in ["", None]:
             log.error(f"Plugin: {self.plugin_name}: Please specify a github repo")
@@ -87,7 +91,6 @@ class PluginBase(rpyc.Service):
             log.error(f"Plugin: {self.plugin_name}: Please specify a app version")
             return
 
-        self.plugin_id = manifest.get("id") or self.get_plugin_id_from_folder_name()
 
         for plugin_id in PluginBase.plugins.keys():
             plugin = PluginBase.plugins[plugin_id]["object"]
@@ -139,6 +142,8 @@ class PluginBase(rpyc.Service):
             }
 
     def _get_parsed_base_version(self, version_str: str) -> version.Version:
+        if version_str is None:
+            return
         base_version = version.parse(version_str).base_version
         return version.parse(base_version)
 
@@ -148,6 +153,9 @@ class PluginBase(rpyc.Service):
         return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
     
     def is_minimum_version_ok(self) -> bool:
+        if self.min_app_version is None:
+            return True
+        
         app_version = self._get_parsed_base_version(gl.app_version)
         min_app_version = self._get_parsed_base_version(self.min_app_version)
 

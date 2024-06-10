@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+import enum
 
 if TYPE_CHECKING:
     from src.backend.PageManagement.Page import Page
@@ -32,11 +33,29 @@ class InputIdentifier:
     def __str__(self):
         return f"Input({self.input_type}, {self.json_identifier})"
 
+class InputEvent:
+    def __init__(self, input_type: str, n: int):
+        self.input_type = input_type
+        self.n = n
+
+    def __eq__(self, o: "InputEvent"):
+        if o is None:
+            return False
+        if not isinstance(o, InputEvent):
+            raise ValueError(f"Invalid type {type(o)} for InputEvent")
+        return self.input_type == o.input_type and self.n == o.n
+
 
 class Input:
     class Key(InputIdentifier):
         input_type = "keys"
         controller_class_name = "ControllerKey"
+
+        class Events(enum.Enum):
+            UP = InputEvent("keys", 0)
+            DOWN = InputEvent("keys", 1)
+            HOLD_START = InputEvent("keys", 2)
+            HOLD_UP = InputEvent("keys", 3)
 
         def __init__(self, json_identifier: str):
             self.coords = Input.Key.Coords_From_PageCoords(json_identifier)

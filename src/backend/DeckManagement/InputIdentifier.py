@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING
 import enum
 
+from attr import dataclass
+
 if TYPE_CHECKING:
     from src.backend.PageManagement.Page import Page
     from src.backend.DeckManagement.DeckController import DeckController, ControllerInput
@@ -44,18 +46,18 @@ class InputEvent:
         if not isinstance(o, InputEvent):
             raise ValueError(f"Invalid type {type(o)} for InputEvent")
         return self.input_type == o.input_type and self.n == o.n
-
-
+    
+    
 class Input:
     class Key(InputIdentifier):
         input_type = "keys"
         controller_class_name = "ControllerKey"
 
-        class Events(enum.Enum):
+        class Events():
             UP = InputEvent("keys", 0)
             DOWN = InputEvent("keys", 1)
             HOLD_START = InputEvent("keys", 2)
-            HOLD_UP = InputEvent("keys", 3)
+            HOLD_STOP = InputEvent("keys", 3)
 
         def __init__(self, json_identifier: str):
             self.coords = Input.Key.Coords_From_PageCoords(json_identifier)
@@ -95,6 +97,14 @@ class Input:
     class Dial(InputIdentifier):
         input_type = "dials"
         controller_class_name = "ControllerDial"
+
+        class Events():
+            UP = InputEvent("dials", 0)
+            DOWN = InputEvent("dials", 1)
+            HOLD_START = InputEvent("dials", 2)
+            HOLD_STOP = InputEvent("dials", 3)
+            TURN_CW = InputEvent("dials", 5)
+            TURN_CCW = InputEvent("dials", 4)
   
         def __init__(self, json_identifier: str):
             self.index = str(json_identifier)
@@ -103,6 +113,12 @@ class Input:
     class Touchscreen(InputIdentifier):
         input_type = "touchscreens"
         controller_class_name = "ControllerTouchScreen"
+
+        class Events():
+            SHORT_PRESS = InputEvent("touchscreens", 0)
+            LONG_PRESS = InputEvent("touchscreens", 1)
+            DRAG_LEFT = InputEvent("touchscreens", 2)
+            DRAG_RIGHT = InputEvent("touchscreens", 3)
 
         def __init__(self, json_identifier: str):
             self.index = str(json_identifier)

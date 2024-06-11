@@ -18,7 +18,7 @@ from src.backend.DeckManagement.Subclasses.KeyImage import KeyImage
 from src.backend.DeckManagement.Subclasses.KeyVideo import KeyVideo
 from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
 from src.backend.DeckManagement.Subclasses.KeyLayout import KeyLayout
-from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
+from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
 
 # Import globals
 import globals as gl
@@ -90,6 +90,38 @@ class ActionBase(rpyc.Service):
         i = self.get_input()
         if i is None: return
         return i.states.get(self.state)
+    
+    def event_callback(self, event: InputEvent, data: dict = None):
+        if event == Input.Key.Events.DOWN:
+            print("on_key_down")
+            self.on_key_down()
+        elif event == Input.Key.Events.UP:
+            print("on_key_up")
+            self.on_key_up()
+        elif event == Input.Key.Events.HOLD_START:
+            print("hold_start")
+        elif event == Input.Key.Events.HOLD_STOP:
+            print("hold_stop")
+        elif event == Input.Dial.Events.DOWN:
+            print("on_dial_down")
+        elif event == Input.Dial.Events.UP:
+            print("on_dial_up")
+        elif event == Input.Dial.Events.TURN_CCW:
+            print("on_dial_ccw")
+        elif event == Input.Dial.Events.TURN_CW:
+            print("on_dial_cw")
+        elif event == Input.Dial.Events.HOLD_START:
+            print("on_dial_hold_start")
+        elif event == Input.Dial.Events.HOLD_STOP:
+            print("on_dial_hold_stop")
+        elif event == Input.Touchscreen.Events.DRAG_LEFT:
+            print("on_touch_swipe_left")
+        elif event == Input.Touchscreen.Events.DRAG_RIGHT:
+            print("on_touch_swipe_right")
+        elif event == Input.Touchscreen.Events.SHORT_PRESS:
+            print("on_touch_short")
+        elif event == Input.Touchscreen.Events.LONG_PRESS:
+            print("on_touch_long")
 
     def on_key_down(self):
         pass

@@ -111,11 +111,11 @@ class Dial(Gtk.Frame):
             dy *= 10
         # print(f"Scroll: {dx}, {dy}")
 
-        value = -1 if dy < 0 else 1
+        value = -1 if dy > 0 else 1
 
         controller = gl.app.main_win.get_active_controller()
         if controller is not None:
-            controller.dial_change_callback(controller.deck, self.n, DialEventType.TURN, value)
+            controller.event_callback(self.identifier, DialEventType.TURN, value)
 
         self.last_scroll = time.time()
 
@@ -133,16 +133,14 @@ class Dial(Gtk.Frame):
             gl.app.main_win.sidebar.load_for_dial(self.identifier, state
                                                   )
         elif gesture.get_current_button() == 1 and n_press == 2:
-            # print("Double click / activate")
-
-            controller = gl.app.main_win.get_active_controller()
-            if controller is not None:
-                controller.dial_change_callback(controller.deck, self.n, DialEventType.PUSH, 1)
-                threading.Timer(0.2, lambda: controller.dial_change_callback(controller.deck, self.n, DialEventType.PUSH, 0)).start()
-            pass
             # Double left click
             # Simulate key press
-            # self.simulate_press()
+            controller = gl.app.main_win.get_active_controller()
+            if controller is not None:
+                controller.event_callback(self.identifier, DialEventType.PUSH, 1)
+                # Release after 100ms
+                GLib.timeout_add(1000, controller.event_callback, self.identifier, DialEventType.PUSH, 0)
+            pass
 
         else:
             print(f"Other click: {gesture.get_current_button()}, {n_press}")

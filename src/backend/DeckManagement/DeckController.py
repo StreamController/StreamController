@@ -46,7 +46,7 @@ import gc
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
-from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
+from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
 from src.backend.PageManagement.Page import ActionOutdated, Page, NoActionHolderFound
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
 
@@ -1376,11 +1376,33 @@ class ControllerInputState:
                 continue
             action.on_tick()
 
+    @log.catch
+    def own_actions_event_callback(self, event: InputEvent, data: dict = None, show_notifications: bool = False) -> None:
+        for action in self.get_own_actions():
+            if isinstance(action, ActionOutdated):
+                if show_notifications:
+                    plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(action.id)
+                    gl.app.send_outdated_plugin_notification(plugin_id)
+                continue
+            if isinstance(action, NoActionHolderFound):
+                if show_notifications:
+                    plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(action.id)
+                    gl.app.send_missing_plugin_notification(plugin_id)
+                continue
+
+            if not isinstance(action, ActionBase):
+                continue
+            action.event_callback(event, data)
+
     def own_actions_ready_threaded(self) -> None:
         threading.Thread(target=self.own_actions_ready, name="own_actions_ready").start()
 
     def own_actions_tick_threaded(self) -> None:
         threading.Thread(target=self.own_actions_tick, name="own_actions_tick").start()
+
+    def own_actions_event_callback_threaded(self, event: InputEvent, data: dict = None, show_notifications: bool = False) -> None:
+        threading.Thread(target=self.own_actions_event_callback, args=(event, data, show_notifications), name="own_actions_event_callback").start()
+
 
 class ControllerInput:
     def __init__(self, deck_controller: DeckController, state_class: ControllerInputState, identifier: InputIdentifier):
@@ -1569,21 +1591,6 @@ class ControllerInput:
         if update:
             self.update()
 
-    def send_outdated_plugin_notification(self, plugin_id: str) -> None:
-        gl.app.send_notification(
-            "software-update-available-symbolic",
-            "Plugin out of date",
-            f"The plugin {plugin_id} is out of date and needs to be updated"
-        )
-
-    def send_missing_plugin_notification(self, plugin_id: str) -> None:
-        gl.app.send_notification(
-            "dialog-information-symbolic",
-            "Plugin missing",
-            f"The plugin {plugin_id} is missing. Please install it.",
-            button=("Install", "app.install-plugin", GLib.Variant.new_string(plugin_id))
-        )
-
     def has_unavailable_action(self) -> bool:
         for action in self.get_active_state().get_own_actions():
             if isinstance(action, ActionOutdated):
@@ -1599,6 +1606,30 @@ class ControllerKey(ControllerInput):
         self.index = ident.get_index(deck_controller)
         # Keep track of the current state of the key because self.deck_controller.deck.key_states seams to give inverted values in get_current_deck_image
         self.press_state: bool = self.deck_controller.deck.key_states()[self.index]
+
+        self.down_start_time: float = None
+
+        self.HOLD_TIME = 0.5
+        self.hold_timer: Timer = None
+
+    def start_hold_timer(self):
+        self.stop_hold_timer()
+
+        self.hold_timer = Timer(self.HOLD_TIME, self.on_hold_timer_end)
+        self.hold_timer.setDaemon(True)
+        self.hold_timer.setName("HoldTimer")
+        self.hold_timer.start()
+
+    def stop_hold_timer(self):
+        if self.hold_timer is not None:
+            self.hold_timer.cancel()
+            self.hold_timer = None
+
+    def on_hold_timer_end(self):
+        state = self.get_active_state()
+        state.own_actions_event_callback_threaded(
+            event=Input.Key.Events.HOLD_START
+        )
 
     @staticmethod
     def Available_Identifiers(deck):
@@ -1632,7 +1663,6 @@ class ControllerKey(ControllerInput):
         self.set_ui_key_image(image)
 
     def event_callback(self, press_state):
-        print()
         screensaver_was_showing = self.deck_controller.screen_saver.showing
         if press_state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
@@ -1646,11 +1676,25 @@ class ControllerKey(ControllerInput):
         self.update()
 
         active_state = self.get_active_state()
-        #TODO: Implement hold etc
-        if press_state:
-            active_state.own_actions_key_down_threaded()
-        else:
-            active_state.own_actions_key_up_threaded()
+        if press_state: # Key down
+            self.down_start_time = time.time()
+            self.start_hold_timer()
+            active_state.own_actions_event_callback_threaded(
+                event=Input.Key.Events.DOWN,
+                show_notifications=True
+            )
+
+        elif self.down_start_time is not None: # Key up
+            if time.time() - self.down_start_time >= self.HOLD_TIME:
+                active_state.own_actions_event_callback_threaded(
+                    event=Input.Key.Events.HOLD_STOP
+                )
+            self.down_start_time = None
+            self.stop_hold_timer()
+            active_state.own_actions_event_callback_threaded(
+                event=Input.Key.Events.UP,
+                show_notifications=False
+            )
         self.deck_controller.mark_page_ready_to_clear(True)
 
     def get_current_deck_image(self) -> Image.Image:
@@ -1984,27 +2028,109 @@ class ControllerTouchScreen(ControllerInput):
             elif gesture == "swipe-right":
                 action.on_touch_swipe_right()
 
-    def event_callback(self, deck, event_type, value):
+    def event_callback(self, event_type, value):
+        active_state = self.get_active_state()
         if event_type == TouchscreenEventType.DRAG:
             # Check if from left to right or the other way
             if value['x'] > value['x_out']:
                 print("Drag to the left")
-                self.on_gesture("swipe-left")
+                active_state.own_actions_event_callback_threaded(
+                    Input.Touchscreen.Events.DRAG_LEFT
+                )
             else:
                 print("Drag to the right")
-                self.on_gesture("swipe-right")
+                active_state.own_actions_event_callback_threaded(
+                    Input.Touchscreen.Events.DRAG_RIGHT
+                )
+
+
+        #TODO get matching actions from the dials
+        elif event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG):
+            dial = self.get_dial_for_touch_x(value['x'])
+            if dial is not None:
+                dial_active_state = dial.get_active_state()
+                if dial_active_state is not None:
+
+                    event = Input.Touchscreen.Events.SHORT_PRESS
+                    if event_type == TouchscreenEventType.LONG:
+                        event = Input.Touchscreen.Events.LONG_PRESS
+
+                    dial_active_state.own_actions_event_callback_threaded(
+                        event,
+                        data={"x": value['x'], "y": value['y']},
+                        show_notifications=True
+                    )
+
+    def get_dial_for_touch_x(self, touch_x: float) -> "ControllerDial":
+        screen_width = self.deck_controller.get_touchscreen_image_size()[0]
+        n_dials = len(self.deck_controller.inputs[Input.Dial])
+        dial_index = int((touch_x / screen_width) * n_dials)
+
+        return self.deck_controller.get_input(Input.Dial(str(dial_index)))
 
 class ControllerDial(ControllerInput):
     def __init__(self, deck_controller: DeckController, ident: InputIdentifier):
         super().__init__(deck_controller, ControllerDialState, ident)
+
+        self.down_start_time: float = None
+
+        self.HOLD_TIME = 0.5
+        self.hold_timer: Timer = None
+
+    def start_hold_timer(self):
+        self.stop_hold_timer()
+
+        self.hold_timer = Timer(self.HOLD_TIME, self.on_hold_timer_end)
+        self.hold_timer.setDaemon(True)
+        self.hold_timer.setName("HoldTimer")
+        self.hold_timer.start()
+
+    def stop_hold_timer(self):
+        if self.hold_timer is not None:
+            self.hold_timer.cancel()
+            self.hold_timer = None
+
+    def on_hold_timer_end(self):
+        state = self.get_active_state()
+        state.own_actions_event_callback_threaded(
+            event=Input.Dial.Events.HOLD_START
+        )
 
     @staticmethod
     def Available_Identifiers(deck):
         return map(str, range(deck.dial_count()))
 
     def event_callback(self, event_type, value):
-        state = self.get_active_state()
-        state.on_event_threaded(event_type, value)
+        active_state = self.get_active_state()
+        if event_type == DialEventType.PUSH:
+            if value:
+                self.down_start_time = time.time()
+                self.start_hold_timer()
+                active_state.own_actions_event_callback_threaded(
+                    event=Input.Dial.Events.DOWN,
+                    show_notifications=True
+                )
+            elif self.down_start_time is not None:
+                self.stop_hold_timer()
+                if time.time() >= self.down_start_time + self.HOLD_TIME:
+                    active_state.own_actions_event_callback_threaded(
+                        event=Input.Dial.Events.HOLD_STOP
+                    )
+                self.down_start_time = None
+                active_state.own_actions_event_callback_threaded(
+                    event=Input.Dial.Events.UP
+                )
+        
+        elif event_type == DialEventType.TURN:
+            if value < 0:
+                active_state.own_actions_event_callback_threaded(
+                    event=Input.Dial.Events.TURN_CCW
+                )
+            else:
+                active_state.own_actions_event_callback_threaded(
+                    event=Input.Dial.Events.TURN_CW
+                )
+                    
 
 class ControllerTouchScreenState(ControllerInputState):
     def __init__(self, controller_touch: "ControllerTouchScreen", state: int):

@@ -265,3 +265,18 @@ class App(Adw.Application):
                     continue
 
                 controller.load_page(page)
+
+    def send_outdated_plugin_notification(self, plugin_id: str) -> None:
+        self.send_notification(
+            "software-update-available-symbolic",
+            "Plugin out of date",
+            f"The plugin {plugin_id} is out of date and needs to be updated"
+        )
+
+    def send_missing_plugin_notification(self, plugin_id: str) -> None:
+        self.send_notification(
+            "dialog-information-symbolic",
+            "Plugin missing",
+            f"The plugin {plugin_id} is missing. Please install it.",
+            button=("Install", "app.install-plugin", GLib.Variant.new_string(plugin_id))
+        )

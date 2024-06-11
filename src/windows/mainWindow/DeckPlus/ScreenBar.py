@@ -108,11 +108,8 @@ class ScreenBar(Gtk.Frame):
         start_x, start_y = self.drag_start_xy
         drag_distance = abs(x - start_x) + abs(y - start_y)
 
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        active_controller = visible_child.deck_controller
-        if active_controller is None:
+        controller = gl.app.main_win.get_active_controller()
+        if controller is None:
             return
 
         if drag_distance > self.min_drag_distance:
@@ -123,19 +120,15 @@ class ScreenBar(Gtk.Frame):
                 "x_out": x,
                 "y_out": y
             }
-            active_controller.touchscreen_event_callback(active_controller.deck, TouchscreenEventType.DRAG, value)
+            # controller.touchscreen_event_callback(controller.deck, TouchscreenEventType.DRAG, value)
+            controller.event_callback(self.identifier, TouchscreenEventType.DRAG, value)
             return
         
-        if time.time() - self.drag_start_time > self.long_press_treshold:
-            # print(f"Long press at {x}, {y}")
-
-            active_controller.touchscreen_event_callback(active_controller.deck, TouchscreenEventType.LONG, {"x": x, "y": y})
-            return
+        if time.time() - self.drag_start_time >= self.long_press_treshold:
+            controller.event_callback(self.identifier, TouchscreenEventType.LONG, {"x": x, "y": y})
         
         else:
-            active_controller.touchscreen_event_callback(active_controller.deck, TouchscreenEventType.SHORT, {"x": x, "y": y})
-            # print(f"Short press at {x}, {y}")
-            return
+            controller.event_callback(self.identifier, TouchscreenEventType.SHORT, {"x": x, "y": y})
 
     def parse_xy(self, x, y) -> tuple[int, int]:
         width = self.image.get_width()

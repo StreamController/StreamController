@@ -335,11 +335,9 @@ class KeyButton(Gtk.Frame):
         if not settings.get("key-grid", {}).get("emulate-at-double-click", True):
             return
         
-        deck = self.key_grid.deck_controller.deck
-        key = self.key_grid.deck_controller.coords_to_index(self.coords)
-        self.key_grid.deck_controller.key_change_callback(deck, key, True)
+        self.key_grid.deck_controller.event_callback(self.identifier, True)
         # Release key after 100ms
-        GLib.timeout_add(100, self.key_grid.deck_controller.key_change_callback, deck, key, False)
+        GLib.timeout_add(100, self.key_grid.deck_controller.event_callback, self.identifier, False)
 
     def set_border_active(self, visible):
         if visible:

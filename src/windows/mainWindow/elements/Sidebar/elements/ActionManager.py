@@ -428,7 +428,7 @@ class ActionRow(Adw.ActionRow):
                 # this recursively triggers this function for the other actions
                 child.toggle.set_active(False)
 
-        self.action_object.has_image_control = True
+        self.action_object.has_image_control = button.get_active()
 
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
 
@@ -447,7 +447,6 @@ class ActionRow(Adw.ActionRow):
         page.reload_similar_pages(page_coords=self.action_object.page_coords, reload_self=True)
 
     def label_toggled(self, i, value: bool):
-        print(f"start {self.index}, {i}, {value}")
         children_to_update = []
 
         if value:
@@ -482,7 +481,6 @@ class ActionRow(Adw.ActionRow):
             action.has_center_label_control = value
             page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["actions"][self.index]["has_center_label_control"] = value
         else:
-            print(f"mid {self.index}, {i}, {value}")
             action.has_bottom_label_control = value
             page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["actions"][self.index]["has_bottom_label_control"] = value
 

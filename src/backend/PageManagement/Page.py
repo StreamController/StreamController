@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from src.backend.PluginManager.ActionHolder import ActionHolder
     from src.backend.DeckManagement.DeckController import ControllerKeyState, ControllerKey
 
+
 class Page:
     def __init__(self, json_path, deck_controller, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -47,6 +48,8 @@ class Page:
         self.ready_to_clear = True
 
         self.load(load_from_file=True)
+
+        self.file_access_semaphore = threading.Semaphore()
 
     def get_name(self) -> str:
         return os.path.splitext(os.path.basename(self.json_path))[0]
@@ -69,6 +72,7 @@ class Page:
         log.debug(f"Loaded page {self.get_name()} in {end - start:.2f} seconds")
 
     def save(self):
+        self.file_access_semaphore.acquire()
         # Make backup in case something goes wrong
         self.make_backup()
 
@@ -77,6 +81,7 @@ class Page:
         self.move_key_to_end(without_objects, "keys")
         with open(self.json_path, "w") as f:
             json.dump(without_objects, f, indent=4)
+        self.file_access_semaphore.release()
 
     def make_backup(self):
         os.makedirs(os.path.join(gl.DATA_PATH, "pages","backups"), exist_ok=True)

@@ -490,7 +490,7 @@ class StoreBackend:
         try:
             result = await self.get_remote_file(url, path, branch, data_type="content")
         except:
-            pass
+            return
         if isinstance(result, NoConnectionError):
             return result
         try:

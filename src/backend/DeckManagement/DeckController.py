@@ -1095,7 +1095,7 @@ class ControllerKeyLabelManager:
             "font-size": self.page_labels[position].font_size is not None
         }
     
-    def get_composed_label(self, position: str) -> str:
+    def get_composed_label(self, position: str) -> KeyLabel:
         use_page_label_properties = self.get_use_page_label_properties(position)
         
         label = copy(self.action_labels.get(position)) or KeyLabel(self.controller_key)
@@ -1355,10 +1355,8 @@ class ControllerKey:
     def get_active_state(self) -> "ControllerKeyState":
         return self.states.get(self.state, ControllerKeyState(self, -1))
 
-
     def get_current_deck_image(self) -> Image.Image:
         state = self.get_active_state()
-
 
         background: Image.Image = None
         # Only load the background image if it's not gonna be hidden by the background color
@@ -1373,7 +1371,6 @@ class ControllerKey:
                 background = background_color_img
             else:
                 background.paste(background_color_img, (0, 0), background_color_img)
-
 
         if background is None:
             background = self.deck_controller.generate_alpha_key().copy()
@@ -1514,7 +1511,7 @@ class ControllerKey:
                 position = (image.width / 2, h/2 + 3)
 
             if label == "center":
-                position = ((image.width - 0) / 2, (image.height - 0) / 2)
+                position = (image.width / 2, image.height / 2)
 
             if label == "bottom":
                 position = (image.width / 2, image.height - h/2 - 3)
@@ -1670,7 +1667,7 @@ class ControllerKey:
                 )
                 state.layout_manager.set_page_layout(layout, update=False)
             elif len(state.get_own_actions()) > 1 and False: # Disabled for now - we might reuse it later
-                if state_dict.get("image-control-action") is None:
+                if not state_dict.get("image-control-action", False): # this image-control logic is deprecated
                     with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
                         self.set_key_image(KeyImage(
                             controller_key=self,
@@ -1678,7 +1675,7 @@ class ControllerKey:
                         ), update=False)
             
             elif len(state.get_own_actions()) == 1:
-                if state_dict.get("image-control-action") is None:
+                if not state.get_own_actions()[0].has_image_control:
                     self.set_key_image(None, update=False)
                 # action = self.get_own_actions()[0]
                 # if action.has_image_control()

@@ -121,16 +121,8 @@ class ActionExpanderRow(BetterExpander):
                 # Get action comment
                 comment = controller.active_page.get_action_comment(page_coords=page_coords, index=key, state=self.active_state)
 
-                image_control_action_index = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)].get("image-control-action")
-                label_control_actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)].get("label-control-actions", [])
-                controls_image = False
-                if image_control_action_index == key:
-                    controls_image = True
-
-                controls_labels = [False, False, False]
-                for ii, value in enumerate(label_control_actions):
-                    if value == key:
-                        controls_labels[ii] = True
+                controls_image = action.has_image_control
+                controls_labels = [action.has_top_label_control, action.has_center_label_control, action.has_bottom_label_control]
 
                 self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, controls_image=controls_image, controls_labels=controls_labels, comment=comment, index=i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
@@ -221,19 +213,8 @@ class ActionExpanderRow(BetterExpander):
 
         actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["actions"]
 
-
         reordered = self.reorder_index_after(copy(actions), move_index, after_index)
         controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["actions"] = reordered
-
-        image_control_action = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["image-control-action"]
-        controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["image-control-action"] = reordered.index(actions[image_control_action])
-
-        label_control_actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["label-control-actions"]
-        for i, label_control_action in enumerate(label_control_actions):
-            if label_control_action is None:
-                continue
-            label_control_actions[i] = reordered.index(actions[label_control_action])
-        # controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_actions])
 
         controller.active_page.save()
 
@@ -241,7 +222,6 @@ class ActionExpanderRow(BetterExpander):
 
         reordered = self.reorder_action_objects(action_objects, move_index, after_index)
         controller.active_page.action_objects[page_coords][self.active_state] = reordered
-
 
         controller.load_page(controller.active_page)
  
@@ -436,38 +416,52 @@ class ActionRow(Adw.ActionRow):
         self.allow_box.set_visible(not hide)
 
     def on_allow_image_toggled(self, button):
-        for child in self.expander.get_rows():
-            if child is self:
-                continue
-            if not isinstance(child, ActionRow):
-                continue
-            child.set_image_toggled(False)
+        if button.get_active():
+            # images were allowed for this action - disallow others
+            for child in self.expander.get_rows():
+                if child is self:
+                    continue
 
+                if not isinstance(child, ActionRow):
+                    continue
+
+                # this recursively triggers this function for the other actions
+                child.toggle.set_active(False)
+
+        self.action_object.has_image_control = button.get_active()
 
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
+
         if visible_child is None:
             return
+
         controller = visible_child.deck_controller
+
         if controller is None:
             return
+
         page = controller.active_page
+        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["actions"][self.index]["has_image_control"] = button.get_active()
 
-        new_value = self.index if button.get_active() else None
-        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["image-control-action"] = new_value
         page.save()
-
         page.reload_similar_pages(page_coords=self.action_object.page_coords, reload_self=True)
 
-    def label_toggled(self, i, value):
-        for child in self.expander.get_rows():
-            if child is self:
-                continue
-            if not isinstance(child, ActionRow):
-                continue
-            # child.set_label_toggled(False)
-            active = child.allow_label_toggle.get_active()
-            active[i] = False
-            child.allow_label_toggle.set_active(active)
+    def label_toggled(self, i, value: bool):
+        children_to_update = []
+
+        if value:
+            # labels were allowed for this action - disallow others
+            for child in self.expander.get_rows():
+                if child is self:
+                    continue
+
+                if not isinstance(child, ActionRow):
+                    continue
+
+                active = child.allow_label_toggle.get_active()
+                active[i] = False
+                child.allow_label_toggle.set_active(active)
+                children_to_update.append(child)
 
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
@@ -475,33 +469,27 @@ class ActionRow(Adw.ActionRow):
         controller = visible_child.deck_controller
         if controller is None:
             return
+
+        action = self.action_object
+
         page = controller.active_page
-        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)].setdefault("label-control-actions", [None, None, None])
-        new_value = self.index if value else None
-        page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["label-control-actions"][i] = new_value
+
+        if i == 0:
+            action.has_top_label_control = value
+            page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["actions"][self.index]["has_top_label_control"] = value
+        elif i == 1:
+            action.has_center_label_control = value
+            page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["actions"][self.index]["has_center_label_control"] = value
+        else:
+            action.has_bottom_label_control = value
+            page.dict["keys"][self.action_object.page_coords]["states"][str(self.expander.active_state)]["actions"][self.index]["has_bottom_label_control"] = value
+
         page.save()
 
-        threading.Thread(target=page.reload_similar_pages, kwargs={"page_coords":self.action_object.page_coords, "reload_self":True}).start()
+        threading.Thread(target=page.reload_similar_pages, kwargs={"page_coords": self.action_object.page_coords, "reload_self": True}).start()
 
-    def set_image_toggled(self, value: bool):
-        try:
-            self.toggle.disconnect_by_func(self.on_allow_image_toggled)
-        except:
-            pass
-
-        self.toggle.set_active(value)
-
-        self.toggle.connect("toggled", self.on_allow_image_toggled)
-
-    def set_label_toggled(self, value: bool):
-        try:
-            self.allow_label_toggle.disconnect_by_func(self.on_allow_label_toggled)
-        except:
-            pass
-
-        self.allow_label_toggle.set_active(value)
-
-        self.allow_label_toggle.connect("toggled", self.on_allow_label_toggled)
+        for child in children_to_update:
+            child.label_toggled(i, False)
         
     def get_own_index(self) -> int:
         return self.expander.get_index_of_child(self)
@@ -671,12 +659,6 @@ class AddActionButtonRow(Adw.PreferencesRow):
             "id": action_class.action_id,
             "settings": {}
         })
-
-        if len(active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["actions"]) == 1:
-            if "image-control-action" not in active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]:
-                active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["image-control-action"] = 0
-            if "label-control-actions" not in active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]:
-                active_page.dict["keys"][page_coords]["states"][str(self.expander.active_state)]["label-control-actions"] = [0, 0, 0]
 
         # Save page
         active_page.save()

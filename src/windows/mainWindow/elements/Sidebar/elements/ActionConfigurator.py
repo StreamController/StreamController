@@ -245,13 +245,6 @@ class RemoveButton(Gtk.Button):
 
         # Remove from page json
         page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["actions"].pop(self.index)
-
-        if page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["image-control-action"] == self.index:
-            if len(page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["actions"]) > 0:
-                page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["image-control-action"] = 0
-            else:
-                page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["image-control-action"] = None
-
         page.save()
 
         # Reload configurator

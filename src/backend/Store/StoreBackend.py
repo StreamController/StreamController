@@ -314,7 +314,7 @@ class StoreBackend:
             official=author in self.official_authors or False,
             commit_sha=commit,
             branch=branch,
-            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
+            local_sha=await self.get_local_sha(os.path.join(gl.PLUGIN_DIR, manifest.get("id"))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
             app_version=manifest.get("app-version") or None,
             repository_name=self.get_repo_name(url),
@@ -619,8 +619,7 @@ class StoreBackend:
     async def install_plugin(self, plugin_data:PluginData, auto_update: bool = False):
         url = plugin_data.github
 
-        PLUGINS_FOLDER = "plugins"
-        local_path = os.path.join(gl.DATA_PATH, PLUGINS_FOLDER, plugin_data.plugin_id)
+        local_path = os.path.join(gl.PLUGIN_DIR, plugin_data.plugin_id)
 
         response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_data.commit_sha, branch_name=plugin_data.branch)
 

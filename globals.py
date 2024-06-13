@@ -16,6 +16,14 @@ DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.St
 if argparser.parse_args().data:
     DATA_PATH = argparser.parse_args().data
 
+PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")
+
+# Used for nix packaging
+if os.getenv("PLUGIN_DIR") is not None:
+    PLUGIN_DIR = os.getenv("PLUGIN_DIR")
+    top_level_folder = os.path.dirname(PLUGIN_DIR)
+    sys.path.append(top_level_folder)
+
 # Add data path to sys.path
 sys.path.append(DATA_PATH)
 

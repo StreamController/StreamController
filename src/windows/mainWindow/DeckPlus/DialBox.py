@@ -41,11 +41,15 @@ class DialBox(Gtk.Box):
         self.set_hexpand(True)
         self.set_homogeneous(True)
         self.page_settings_page = page_settings_page
+
+        self.dials: list[Dial] = []
         self.build()
+
 
     def build(self):
         for i in range(self.deck_controller.deck.dial_count()):
             dial = Dial(self, Input.Dial(str(i)))
+            self.dials.append(dial)
             self.append(dial)
 
 
@@ -89,7 +93,6 @@ class Dial(Gtk.Frame):
         # self.image.connect("scroll", self.on_scroll_event)
 
         # Gdk.ScrollDirection.UP
-        self.image
     
         # Make image focusable
         self.set_focus_child(self.image)
@@ -122,7 +125,7 @@ class Dial(Gtk.Frame):
     def on_click(self, gesture, n_press, x, y):
         if gesture.get_current_button() == 1 and n_press == 1:
             # Single left click
-            # Select key
+            # Select dial
             self.image.grab_focus()
 
             controller = gl.app.main_win.get_active_controller()
@@ -130,8 +133,11 @@ class Dial(Gtk.Frame):
 
             state = dial.get_active_state().state
 
-            gl.app.main_win.sidebar.load_for_dial(self.identifier, state
-                                                  )
+            gl.app.main_win.sidebar.load_for_dial(self.identifier, state)
+
+            dial_image = dial.get_active_state().get_rendered_touch_image()
+            gl.app.main_win.sidebar.dial_editor.icon_selector.set_image(dial_image)
+
         elif gesture.get_current_button() == 1 and n_press == 2:
             # Double left click
             # Simulate key press
@@ -139,7 +145,7 @@ class Dial(Gtk.Frame):
             if controller is not None:
                 controller.event_callback(self.identifier, DialEventType.PUSH, 1)
                 # Release after 100ms
-                GLib.timeout_add(1000, controller.event_callback, self.identifier, DialEventType.PUSH, 0)
+                GLib.timeout_add(100, controller.event_callback, self.identifier, DialEventType.PUSH, 0)
             pass
 
         else:

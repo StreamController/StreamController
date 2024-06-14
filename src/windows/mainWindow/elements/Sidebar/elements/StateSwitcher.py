@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from typing import Type
 from gi.repository import Gtk
 
+from src.backend.DeckManagement.DeckController import ControllerInput
+from src.backend.DeckManagement.InputIdentifier import InputIdentifier
 import globals as gl
 
 class StateSwitcher(Gtk.ScrolledWindow):
@@ -121,3 +123,14 @@ class StateSwitcher(Gtk.ScrolledWindow):
         for callback in self.switch_callbacks:
             if callable(callback):
                 callback()
+
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        c_input = gl.app.main_win.get_active_controller().get_input(identifier)
+
+        self.load_for_input(c_input, state)
+
+    def load_for_input(self, c_input: ControllerInput, state: int = None) -> None:
+        self.set_n_states(len(c_input.states.keys()))
+        self.select_state(state or c_input.state)
+
+        self.set_visible(c_input.enable_states)

@@ -5,6 +5,9 @@ from typing import TYPE_CHECKING
 from src.backend.DeckManagement.InputIdentifier import Input
 from src.windows.mainWindow.elements.Sidebar.elements.ActionManager import ActionManager
 from src.windows.mainWindow.elements.Sidebar.elements.StateSwitcher import StateSwitcher
+from src.windows.mainWindow.elements.Sidebar.elements.ImageEditor import ImageEditor
+from src.windows.mainWindow.elements.Sidebar.elements.LabelEditor import LabelEditor
+from src.windows.mainWindow.elements.Sidebar.elements.IconSelector import IconSelector
 
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.Sidebar.Sidebar import Sidebar
@@ -30,6 +33,17 @@ class DialEditor(Gtk.ScrolledWindow):
         self.state_switcher.add_add_new_callback(self.on_add_new_state)
         self.state_switcher.set_n_states(0)
         self.main_box.append(self.state_switcher)
+
+        self.icon_selector = IconSelector(self.sidebar, halign=Gtk.Align.CENTER, margin_top=40)
+        self.main_box.append(self.icon_selector)
+
+        self.image_editor = ImageEditor(self.sidebar, margin_top=100)
+        self.main_box.append(self.image_editor)
+
+        self.label_editor = LabelEditor(self.sidebar, margin_top=25)
+        self.main_box.append(self.label_editor)
+
+        self.image_editor.image_group.expander.set_expanded(True)
 
         self.action_group = Adw.PreferencesGroup(title="Actions")
         self.main_box.append(self.action_group)
@@ -90,11 +104,14 @@ class DialEditor(Gtk.ScrolledWindow):
         controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
+        
+        self.image_editor.load_for_identifier(identifier, state)
+        self.label_editor.load_for_identifier(identifier, state)
+        self.icon_selector.load_for_identifier(identifier, state)
 
+        self.state_switcher.load_for_identifier(identifier, state)
         dial = controller.get_input(identifier)
-        self.state_switcher.set_n_states(len(dial.states.keys()))
-        self.state_switcher.select_state(state)
-        dial.set_state(state)
+        dial.set_state(state, update_sidebar=False)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 

@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -289,6 +291,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.toast_overlay.add_toast(toast)
 
     def get_active_controller(self) -> DeckController:
+        if not recursive_hasattr(self, "leftArea.deck_stack"): return
         visible_child = self.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
             return

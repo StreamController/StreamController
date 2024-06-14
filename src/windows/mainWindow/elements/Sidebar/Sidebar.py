@@ -48,8 +48,8 @@ class Sidebar(Adw.NavigationPage):
     def __init__(self, main_window, **kwargs):
         super().__init__(hexpand=True, title="Sidebar", **kwargs)
         self.main_window = main_window
-        self.active_type: str = None
-        self._active_identifier: str = None
+        self.active_identifier: InputIdentifier = None
+        self.active_state: int = None
         
         """
         To save performance and memory, we only load the thumbnail when the user sees the row
@@ -58,16 +58,6 @@ class Sidebar(Adw.NavigationPage):
         self.connect("map", self.on_map)
 
         self.build()
-
-    @property
-    def active_identifier(self):
-        return self._active_identifier
-    
-    @active_identifier.setter
-    def active_identifier(self, value):
-        if not isinstance(value, InputIdentifier):
-            raise ValueError("active_identifier must be of type InputIdentifier")
-        self._active_identifier = value
 
     def on_map(self, widget):
         for f in self.on_map_tasks:
@@ -176,12 +166,14 @@ class Sidebar(Adw.NavigationPage):
 
     def load_for_dial(self, identifier: Input.Dial, state: int):
         self.active_identifier = identifier
+        self.active_state = state
         self.main_stack.set_visible_child(self.configurator_stack)
         self.configurator_stack.set_visible_child(self.dial_editor)
         self.dial_editor.load_for_dial(identifier, state)
 
     def load_for_touchscreen(self, identifier: Input.Touchscreen, state: int):
         self.active_identifier = identifier
+        self.active_state = state
         self.main_stack.set_visible_child(self.configurator_stack)
         self.configurator_stack.set_visible_child(self.screen_editor)
         self.screen_editor.load_for_identifier(identifier, state)
@@ -298,15 +290,16 @@ class KeyEditor(Gtk.Box):
         
         key = controller.inputs[Input.Key][identifier.get_index(controller)]
 
-        self.state_switcher.set_n_states(len(key.states.keys()))
-        self.state_switcher.select_state(state)
+        # self.state_switcher.set_n_states(len(key.states.keys()))
+        # self.state_switcher.select_state(state)
+        self.state_switcher.load_for_identifier(identifier, state)
         key.set_state(state)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
 
-        self.icon_selector.load_for_key(identifier, state)
-        self.image_editor.load_for_key(identifier, state)
+        self.icon_selector.load_for_identifier(identifier, state)
+        self.image_editor.load_for_identifier(identifier, state)
         self.label_editor.load_for_identifier(identifier, state)
         self.action_editor.load_for_identifier(identifier, state)
         self.background_editor.load_for_identifier(identifier, state)
@@ -510,8 +503,8 @@ class KeyEditorKeyBox(Gtk.Box):
         self.sidebar.active_identifier = key
         self.sidebar.active_state = state
         #TODO: Migrate to identifier
-        self.icon_selector.load_for_key(key.coords, state)
-        self.image_editor.load_for_key(key.coords, state)
+        self.icon_selector.load_for_identifier(key, state)
+        self.image_editor.load_for_identifier(key.coords, state)
         self.label_editor.load_for_identifier(key, state)
         self.action_editor.load_for_coords(key.coords, state)
         self.background_editor.load_for_identifier(key, state)

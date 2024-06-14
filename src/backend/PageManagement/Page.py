@@ -156,6 +156,8 @@ class Page:
 
         self.action_objects = new_action_objects
 
+        self.call_actions_ready_and_set_flag()
+
     # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
 
     def get_new_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, input_ident):
@@ -412,7 +414,48 @@ class Page:
     def get_action(self, identifier: InputIdentifier = None, state: int = None, index: int = None):
         return self.action_objects.get(identifier.input_type, {}).get(identifier.json_identifier, {}).get(state, {}).get(index)
     
+    def get_action_dict(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
+        # Arg validation
+        if action_object is None:
+            if None in (identifier, state, index):
+                raise ValueError("Please pass an identifier, state and index or an action object")
+            
+        if action_object is None:
+            action_object = self.get_action(identifier, state, index)
+
+        if action_object is None:
+            raise ValueError("Could not find action object")
+        
+        for state in self.dict.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get("states", {}):
+            for i, action_dict in enumerate(self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state].get("actions", [])):
+                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {})[i] is action_object:
+                    return action_dict
+                
+        return {}
+                
+    def set_action_dict(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None, action_dict: dict = None):
+        # Arg validation
+        if action_object is None:
+            if None in (identifier, state, index):
+                raise ValueError("Please pass an identifier, state and index or an action object")
+            
+        if action_object is None:
+            action_object = self.get_action(identifier, state, index)
+
+        if action_object is None:
+            raise ValueError("Could not find action object")
+        
+        for state in self.dict.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get("states", {}):
+            for i, action_dict in enumerate(self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state].get("actions", [])):
+                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {})[i] is action_object:
+                    self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state]["actions"][i] = action_dict
+                    break
+
+        self.save()
+    
     def get_action_settings(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
+        action_dict = self.get_action_dict(action_object, identifier, state, index)
+        return action_dict.get("settings", {})
         # Arg validation
         if action_object is None:
             if None in (identifier, state, index):
@@ -431,6 +474,10 @@ class Page:
         return {}
     
     def set_action_settings(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None, settings: dict = None):
+        action_dict = self.get_action_dict(action_object, identifier, state, index)
+        action_dict["settings"] = settings
+        self.set_action_dict(action_object, identifier, state, index, action_dict)
+        return
         # Arg validation
         if action_object is None:
             if None in (identifier, state, index):
@@ -449,6 +496,15 @@ class Page:
 
         self.save()
 
+    def get_action_event_assignments(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
+        action_dict = self.get_action_dict(action_object, identifier, state, index)
+        return action_dict.get("event-assignments", {})
+    
+    def set_action_event_assignments(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None, event_assignments: dict = None):
+        action_dict = self.get_action_dict(action_object, identifier, state, index)
+        action_dict["event-assignments"] = event_assignments
+        self.set_action_dict(action_object, identifier, state, index, action_dict)
+
 
     def has_key_an_image_controlling_action(self, identifier, state: int):
         input_type = identifier.input_type
@@ -461,7 +517,8 @@ class Page:
                     return True
         return False
 
-    def call_actions_ready(self):
+    @log.catch
+    def call_actions_ready_and_set_flag(self):
         for action in self.get_all_actions():
             if hasattr(action, "on_ready"):
                 if not action.on_ready_called:
@@ -617,8 +674,8 @@ class Page:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "text"])
 
     def set_label_text(self, identifier: InputIdentifier, state: int, label_position: str, text: str, update: bool = True) -> None:
-        for key_state in self.get_controller_input_states(identifier, state):
-            key_state.label_manager.page_labels[label_position].text = text
+        for input_state in self.get_controller_input_states(identifier, state):
+            input_state.label_manager.page_labels[label_position].text = text
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "text"], text)
 
@@ -629,8 +686,8 @@ class Page:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-family"])
 
     def set_label_font_family(self, identifier: InputIdentifier, state: int, label_position: str, font_family: str, update: bool = True) -> None:
-        for key_state in self.get_controller_input_states(identifier, state):
-            key_state.label_manager.page_labels[label_position].font_family = font_family
+        for input_state in self.get_controller_input_states(identifier, state):
+            input_state.label_manager.page_labels[label_position].font_family = font_family
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-family"], font_family)
 
@@ -666,7 +723,7 @@ class Page:
 
     def set_media_size(self, identifier: InputIdentifier, state: int, size: float, update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
-            key_state.layout_manager.media_size = size
+            key_state.layout_manager.page_layout.size = size
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "size"], size)
 
@@ -678,7 +735,7 @@ class Page:
 
     def set_media_valign(self, identifier: InputIdentifier, state: int, valign: str, update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
-            key_state.layout_manager.valign = valign
+            key_state.layout_manager.page_layout.valign = valign
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "valign"], valign)
 
@@ -690,9 +747,21 @@ class Page:
 
     def set_media_halign(self, identifier: InputIdentifier, state: int, halign: str, update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
-            key_state.layout_manager.halign = halign
+            key_state.layout_manager.page_layout.halign = halign
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "halign"], halign)
+
+        if update:
+            self.update_input(identifier, state)
+
+    def get_media_path(self, identifier: InputIdentifier, state: int) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "path"])
+
+    def set_media_path(self, identifier: InputIdentifier, state: int, path: str, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
+            key_state.layout_manager.page_layout.path = path
+
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "path"], path)
 
         if update:
             self.update_input(identifier, state)

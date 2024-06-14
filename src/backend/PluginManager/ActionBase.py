@@ -14,10 +14,10 @@ from rpyc.core import netref
 # Import own modules
 from src.Signals.Signals import Signal
 from src.backend.DeckManagement.HelperMethods import is_image, is_svg, is_video
-from src.backend.DeckManagement.Subclasses.KeyImage import KeyImage
-from src.backend.DeckManagement.Subclasses.KeyVideo import KeyVideo
+from src.backend.DeckManagement.Subclasses.KeyImage import InputImage
+from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
 from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
-from src.backend.DeckManagement.Subclasses.KeyLayout import KeyLayout
+from src.backend.DeckManagement.Subclasses.KeyLayout import ImageLayout
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
 
 # Import globals
@@ -92,36 +92,15 @@ class ActionBase(rpyc.Service):
         return i.states.get(self.state)
     
     def event_callback(self, event: InputEvent, data: dict = None):
+        ## backward compatibility
         if event == Input.Key.Events.DOWN:
-            print("on_key_down")
             self.on_key_down()
         elif event == Input.Key.Events.UP:
-            print("on_key_up")
             self.on_key_up()
-        elif event == Input.Key.Events.HOLD_START:
-            print("hold_start")
-        elif event == Input.Key.Events.HOLD_STOP:
-            print("hold_stop")
         elif event == Input.Dial.Events.DOWN:
-            print("on_dial_down")
+            self.on_key_down()
         elif event == Input.Dial.Events.UP:
-            print("on_dial_up")
-        elif event == Input.Dial.Events.TURN_CCW:
-            print("on_dial_ccw")
-        elif event == Input.Dial.Events.TURN_CW:
-            print("on_dial_cw")
-        elif event == Input.Dial.Events.HOLD_START:
-            print("on_dial_hold_start")
-        elif event == Input.Dial.Events.HOLD_STOP:
-            print("on_dial_hold_stop")
-        elif event == Input.Touchscreen.Events.DRAG_LEFT:
-            print("on_touch_swipe_left")
-        elif event == Input.Touchscreen.Events.DRAG_RIGHT:
-            print("on_touch_swipe_right")
-        elif event == Input.Touchscreen.Events.SHORT_PRESS:
-            print("on_touch_short")
-        elif event == Input.Touchscreen.Events.LONG_PRESS:
-            print("on_touch_long")
+            self.on_key_up()
 
     def on_key_down(self):
         pass
@@ -138,6 +117,9 @@ class ActionBase(rpyc.Service):
         Setting the default image in this method is recommended over setting it in the constructor.
         """
         pass
+
+    def on_update(self):
+        self.on_ready() # backward compatibility
 
     def on_touch_swipe_left(self):
         # Fallback to normal on_key_down
@@ -196,10 +178,19 @@ class ActionBase(rpyc.Service):
             }
 
     def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):
+        if type(self.input_ident) not in [Input.Key, Input.Dial]:
+            return
+
         if not self.get_is_present(): return
         if self.has_custom_user_asset(): return
-        if not self.has_image_control(): return
-        if self.get_state() is None or self.get_state().state != self.state: return
+        # if not self.has_image_control(): return #TODO
+        
+        input_state = self.get_state()
+
+        if input_state is None:
+            return
+        if self.get_state().state != self.state:
+            return
 
         if is_image(media_path) and image is None:
             with Image.open(media_path) as img:
@@ -209,19 +200,20 @@ class ActionBase(rpyc.Service):
             image = gl.media_manager.generate_svg_thumbnail(media_path)
 
         if image is not None or media_path is None:
-            self.get_state().set_key_image(KeyImage(
-                controller_key=self.get_state().controller_input,
+            input_state.set_image(InputImage(
+                controller_input=self.get_state().controller_input,
                 image=image,
             ), update=False)
+
         elif is_video(media_path):
-            self.get_state().set_key_video(KeyVideo(
-                controller_key=self.get_state().controller_input,
+            input_state.set_video(InputVideo(
+                controller_input=self.get_state().controller_input,
                 video_path=media_path,
                 fps=fps,
                 loop=loop
             ))
 
-        self.get_state().layout_manager.set_action_layout(KeyLayout(
+        self.get_state().layout_manager.set_action_layout(ImageLayout(
             valign=valign,
             halign=halign,
             size=size
@@ -259,10 +251,14 @@ class ActionBase(rpyc.Service):
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
                       font_family: str = None, font_size = None, update: bool = True):
+        if type(self.input_ident) not in [Input.Key, Input.Dial]:
+            return
+        
         if not self.get_is_present():
             return
         if not self.on_ready_called:
             update = False
+            update = True #FIXME
         if self.get_state() is None or self.get_state().state != self.state: return
 
         label_index = 0 if position == "top" else 1 if position == "center" else 2
@@ -281,7 +277,7 @@ class ActionBase(rpyc.Service):
         }
         
         key_label = KeyLabel(
-            controller_key=self.get_state().controller_input,
+            controller_input=self.get_state().controller_input,
             text=text,
             font_size=font_size,
             font_name=font_family,
@@ -334,14 +330,10 @@ class ActionBase(rpyc.Service):
     def has_label_control(self) -> list[bool]:
         key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
 
-        ind = self.get_own_action_index()
-
         return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
 
     def has_image_control(self):
         key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
-        if "Analog" in self.action_id:
-            print()
 
         if key_dict.get("image-control-action") is None:
             return False
@@ -368,6 +360,56 @@ class ActionBase(rpyc.Service):
         if self not in actions:
             return
         return actions.index(self)
+    
+    def set_dial_touch_image(self, image: Image.Image = None, image_path: str = None) -> None:
+        if not isinstance(self.input_ident, Input.Dial):
+            return
+
+        if image_path is not None:
+            image = Image.open(image_path)
+        touch_screen = self.deck_controller.get_input(Input.Touchscreen("sd-plus"))
+        state = touch_screen.get_active_state()
+        state.set_dial_image(self.input_ident, image)
+
+    def get_page_event_assignments(self) -> dict[InputEvent, InputEvent]:
+        assignment = {}
+
+        page_assignment_dict = self.page.get_action_event_assignments(action_object=self)
+
+        all_events = Input.AllEvents()
+        for event in all_events:
+            if event.string_name in page_assignment_dict:
+                assignment[event] = Input.EventFromStringName(page_assignment_dict[event.string_name])
+            else:
+                assignment[event] = event
+
+        return assignment
+    
+    def get_event_assignments(self) -> dict[InputEvent, InputEvent]:
+        assignments = {}
+
+        page_assignment_dict = self.page.get_action_event_assignments(action_object=self)
+
+        all_events = Input.AllEvents()
+        for event in all_events:
+            if event.string_name in page_assignment_dict:
+                assignments[event] = Input.EventFromStringName(page_assignment_dict[event.string_name])
+            else:
+                assignments[event] = event
+
+        return assignments
+    
+    def set_event_assignments(self, assignments: dict[InputEvent, InputEvent]):
+        assignments_strings = {}
+
+        for key, value in assignments.items():
+            if key == value:
+                continue
+
+            assignments_strings[key.string_name] = value.string_name
+
+        self.page.set_action_event_assignments(action_object=self, event_assignments=assignments_strings)
+
     
     # ---------- #
     # Rpyc stuff #

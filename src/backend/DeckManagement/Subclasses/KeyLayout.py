@@ -15,7 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from dataclasses import dataclass
 
 @dataclass
-class KeyLayout:
+class ImageLayout:
     valign: float = None
     halign: float = None
     fill_mode: str = None

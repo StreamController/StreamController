@@ -432,6 +432,8 @@ class ActionRow(Adw.ActionRow):
         # self.remove_button.connect("clicked", self.on_click_remove)
 
     def update_allow_box_visibility(self):
+        self.allow_box.set_visible(True) #TODO
+        return
         if self.expander.active_identifier is None:
             self.allow_box.set_visible(False)
             return
@@ -472,10 +474,7 @@ class ActionRow(Adw.ActionRow):
             active[i] = False
             child.allow_label_toggle.set_active(active)
 
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
         page = controller.active_page
@@ -665,10 +664,9 @@ class AddActionButtonRow(Adw.PreferencesRow):
             "settings": {}
         })
 
-        if isinstance(self.expander.active_identifier, Input.Key):
-            if len(state_dict["actions"]) == 1:
-                state_dict.setdefault("image-control-action", 0)
-                state_dict.setdefault("label-control-actions", [0, 0, 0])
+        if len(state_dict["actions"]) == 1:
+            state_dict.setdefault("image-control-action", 0)
+            state_dict.setdefault("label-control-actions", [0, 0, 0])
 
         # Save page
         active_page.save()

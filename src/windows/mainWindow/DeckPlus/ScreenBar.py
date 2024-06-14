@@ -19,6 +19,9 @@ import gi
 
 from PIL import Image
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.DeckManagement.DeckController import ControllerDial, ControllerTouchScreen
 from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
@@ -40,6 +43,7 @@ class ScreenBar(Gtk.Frame):
     def __init__(self, page_settings_page: "PageSettingsPage", identifier: Input.Touchscreen, **kwargs):
         self.page_settings_page = page_settings_page
         self.identifier = identifier
+
         super().__init__(**kwargs)
         self.set_css_classes(["key-button-frame-hidden"])
         self.set_halign(Gtk.Align.CENTER)
@@ -52,8 +56,8 @@ class ScreenBar(Gtk.Frame):
         # self.image.set_overflow(Gtk.Overflow.HIDDEN)
         # self.image.set_from_file("Assets/800_100.png")
 
-        self.image = ScreenBarImage()
-        self.image.set_image(Image.new("RGB", (800, 100), (255, 0, 0)))
+        self.image = ScreenBarImage(self)
+        self.image.set_image(Image.new("RGBA", (800, 100), (0, 0, 0, 0)))
         self.set_child(self.image)
 
         # self.set_child(self.image)
@@ -157,16 +161,62 @@ class ScreenBar(Gtk.Frame):
             self.page_settings_page.deck_config.active_widget = None
 
 class ScreenBarImage(Gtk.Picture):
-    def __init__(self, **kwargs):
+    def __init__(self, screenbar: ScreenBar, **kwargs):
         super().__init__(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
                          halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
                          valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
                          **kwargs)
         
-    def set_image(self, image: Image.Image):
-        width = 385 #TODO: Find a better way to do this
-        image.thumbnail((width, width/8))
+        self.screenbar = screenbar
 
-        pixbuf = image2pixbuf(image)
+        self.on_map_tasks: list[callable] = []
+        self.connect("map", self.on_map)
+
+
+        # screen_image = self.get_controller_touch_screen().get_current_image()
+        # self.set_image(screen_image)
+
+    def on_map(self, *args):
+        for task in self.on_map_tasks:
+            task()
+        self.on_map_tasks.clear()
+        
+    def get_controller_touch_screen(self) -> "ControllerTouchScreen":
+        controller = gl.app.main_win.get_active_controller()
+        return controller.get_input(Input.Touchscreen("sd-plus"))
+    
+    def get_controller_dial(self, identifier: InputIdentifier) -> "ControllerDial":
+        controller = gl.app.main_win.get_active_controller()
+        return controller.get_input(identifier)
+        
+    def set_image(self, image: Image.Image):
+        if not self.get_mapped():
+            self.on_map_tasks.append(lambda: self.set_image(image))
+            return
+
+        width = 385 #TODO: Find a better way to do this
+        thumbnail = image.copy()
+        thumbnail.thumbnail((width, width/8))
+
+        pixbuf = image2pixbuf(thumbnail.convert("RGBA"), force_transparency=True)
+        GLib.idle_add(self.set_pixbuf_and_del, pixbuf, priority=GLib.PRIORITY_HIGH)
+
+        thumbnail.close()
+        del thumbnail
+        
+        if not recursive_hasattr(gl, "app.main_win.sidebar"):
+            return
+
+        
+        identifier = gl.app.main_win.sidebar.active_identifier
+        if isinstance(identifier, Input.Dial):
+            dial_image_area = self.get_controller_touch_screen().get_dial_image_area(identifier)
+            print(dial_image_area)
+
+            dial_image = image.crop(dial_image_area)
+
+            gl.app.main_win.sidebar.dial_editor.icon_selector.set_image(dial_image)
+
+    def set_pixbuf_and_del(self, pixbuf):
         self.set_pixbuf(pixbuf)
         del pixbuf

@@ -25,23 +25,27 @@
 .icon-selector{
   border-radius: 10px;
   margin: 10px;
-  min-width:175px;	
-	min-height:175px;
 }
-.icon-selector-image-normal {
+
+.icon-selector-image-base {
   border-radius: 10px;
-  min-width:175px;
-  min-height:175px;
   opacity: 1;
   transition: opacity 0.2s;
 }
 .icon-selector-image-hover {
-  border-radius: 10px;
-  min-width:175px;
-  min-height:175px;
   opacity: 0.25;
   transition: opacity 0.2s;
 }
+.icon-selector-image-key {
+  min-height: 175px;
+  min-width: 175px;
+}
+.icon-selector-image-dial {
+  min-height: calc(175px /2);
+  min-width: 175px;
+}
+
+
 .icon-selector-hint-label-visible {
   font-size: 16px;
   opacity: 1;
@@ -363,6 +367,7 @@
 }
 .plus-screenbar-image {
   border-radius: 10px;
+  background-color: #363636;
 }
 .dial {
   min-width:75px;	

@@ -1,3 +1,4 @@
+from turtle import update
 from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
@@ -110,9 +111,8 @@ class ScreenEditor(Gtk.ScrolledWindow):
             return
         
         controller_input = controller.get_input(identifier)
-        self.state_switcher.set_n_states(len(controller_input.states.keys()))
-        self.state_switcher.select_state(state)
-        controller_input.set_state(state)
+        self.state_switcher.load_for_identifier(identifier, state)
+        controller_input.set_state(state, update_sidebar=False)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 

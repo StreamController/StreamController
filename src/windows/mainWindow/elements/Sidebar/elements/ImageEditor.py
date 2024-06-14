@@ -51,8 +51,8 @@ class ImageEditor(Gtk.Box):
         self.image_group = ImageGroup(self.sidebar)
         self.main_box.append(self.image_group)
 
-    def load_for_key(self, identifier: InputIdentifier, state: int):
-        self.image_group.load_for_key(identifier, state)
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.image_group.load_for_identifier(identifier, state)
 
 
 class ImageGroup(Adw.PreferencesGroup):
@@ -68,8 +68,8 @@ class ImageGroup(Adw.PreferencesGroup):
 
         return
 
-    def load_for_key(self, identifier: InputIdentifier, state: int):
-        self.expander.load_for_key(identifier, state)
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.expander.load_for_identifier(identifier, state)
 
 
 class Layout(Adw.ExpanderRow):
@@ -90,7 +90,7 @@ class Layout(Adw.ExpanderRow):
         self.halign_row = HalignRow(sidebar=self.margin_group.sidebar)
         self.add_row(self.halign_row)
 
-    def load_for_key(self, identifier: InputIdentifier, state: int):
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
         self.active_identifier = identifier
         self.active_state = state
 
@@ -156,13 +156,13 @@ class SizeRow(Adw.PreferencesRow):
 
     def on_size_changed(self, widget):
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_media_size(coords=self.active_coords, state=self.active_state, size=widget.get_value()/100)
+        active_page.set_media_size(identifier=self.active_identifier, state=self.active_state, size=widget.get_value()/100)
 
         self.size_spinner.revert_button.set_visible(True)
 
     def on_size_reset(self, widget):
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_media_size(coords=self.active_coords, state=self.active_state, size=None)
+        active_page.set_media_size(identifier=self.active_identifier, state=self.active_state, size=None)
 
         self.size_spinner.revert_button.set_visible(False)
         self.update_values()
@@ -177,38 +177,40 @@ class SizeRow(Adw.PreferencesRow):
             pass
 
 
-class ValignRow(Adw.PreferencesRow):
-    def __init__(self, sidebar, **kwargs):
+class AlignmentRow(Adw.PreferencesRow):
+    def __init__(self, sidebar, label_text, property_name, **kwargs):
         super().__init__(**kwargs)
         self.sidebar = sidebar
-        self.active_coords = None
-        self.active_state = None
-        self.build()
+        self.property_name = property_name
+        self.active_identifier: InputIdentifier = None
+        self.active_state: int = None
+        self.build(label_text)
 
         self.connect_signals()
 
-    def build(self):
+    def build(self, label_text):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
         self.set_child(self.main_box)
 
-        self.label = Gtk.Label(label=gl.lm.get("right-area.image-editor.layout.valign.label"), hexpand=True, xalign=0)
+        self.label = Gtk.Label(label=label_text, hexpand=True, xalign=0)
         self.main_box.append(self.label)
 
-        self.valign_spinner = SpinButton(-1, 1, 0.1)
-        self.main_box.append(self.valign_spinner)
+        self.alignment_spinner = SpinButton(-1, 1, 0.1)
+        self.main_box.append(self.alignment_spinner)
 
-        self.valign_spinner.revert_button.connect("clicked", self.on_valign_reset)
+        self.alignment_spinner.revert_button.connect("clicked", self.on_alignment_reset)
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
         self.active_identifier = identifier
+        self.active_state = state
         self.disconnect_signals()
 
         controller = gl.app.main_win.get_active_controller()
 
         controller_input = controller.get_input(identifier)
         use_page_properties = controller_input.get_active_state().layout_manager.get_use_page_layout_properties()
-        self.valign_spinner.revert_button.set_visible(use_page_properties.get("valign", False))
+        self.alignment_spinner.revert_button.set_visible(use_page_properties.get(self.property_name, False))
 
         self.connect_signals()
         self.update_values()
@@ -216,117 +218,47 @@ class ValignRow(Adw.PreferencesRow):
     def update_values(self, composed_label: KeyLabel = None):
         self.disconnect_signals()
         if composed_label is None:
-            visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-            if visible_child is None:
+            controller = gl.app.main_win.get_active_controller()
+            if controller is None:
                 return
-            deck_controller = visible_child.deck_controller
-            if deck_controller is None:
-                return
-            controller_key = deck_controller.inputs[Input.Key][deck_controller.coords_to_index(self.active_identifier.coords)]
-            composed_label = controller_key.get_active_state().layout_manager.get_composed_layout()
+            controller_input = controller.get_input(self.active_identifier)
+            composed_label = controller_input.get_active_state().layout_manager.get_composed_layout()
 
-        self.valign_spinner.button.set_value(composed_label.valign)
+        self.alignment_spinner.button.set_value(getattr(composed_label, self.property_name))
 
         self.connect_signals()
 
-    def on_valign_changed(self, widget):
+    def on_alignment_changed(self, widget):
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_media_valign(coords=self.active_coords, state=self.active_state, valign=widget.get_value())
 
-        self.valign_spinner.revert_button.set_visible(True)
+        page_method = getattr(active_page, f"set_media_{self.property_name}")
+        page_method(self.active_identifier, self.active_state, widget.get_value())
 
-    def on_valign_reset(self, widget):
+        self.alignment_spinner.revert_button.set_visible(True)
+
+    def on_alignment_reset(self, widget):
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_media_valign(coords=self.active_coords, state=self.active_state, valign=None)
 
-        self.valign_spinner.revert_button.set_visible(False)
+        page_method = getattr(active_page, f"set_media_{self.property_name}")
+        page_method(self.active_identifier, self.active_state, None)
+
+        self.alignment_spinner.revert_button.set_visible(False)
         self.update_values()
 
     def connect_signals(self):
-        self.valign_spinner.button.connect("value-changed", self.on_valign_changed)
+        self.alignment_spinner.button.connect("value-changed", self.on_alignment_changed)
 
     def disconnect_signals(self):
-        self.valign_spinner.button.disconnect_by_func(self.on_valign_changed)
+        self.alignment_spinner.button.disconnect_by_func(self.on_alignment_changed)
 
-
-class HalignRow(Adw.PreferencesRow):
+class ValignRow(AlignmentRow):
     def __init__(self, sidebar, **kwargs):
-        super().__init__(**kwargs)
-        self.sidebar = sidebar
-        self.active_coords = None
-        self.active_state = None
-        self.build()
+        super().__init__(sidebar, label_text=gl.lm.get("right-area.image-editor.layout.valign.label"), property_name="valign", **kwargs)
 
-        self.connect_signals()
+class HalignRow(AlignmentRow):
+    def __init__(self, sidebar, **kwargs):
+        super().__init__(sidebar, label_text=gl.lm.get("right-area.image-editor.layout.halign.label"), property_name="halign", **kwargs)
 
-    def build(self):
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
-                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
-        self.set_child(self.main_box)
-
-        self.label = Gtk.Label(label=gl.lm.get("right-area.image-editor.layout.halign.label"), hexpand=True, xalign=0)
-        self.main_box.append(self.label)
-
-        self.halign_spinner = SpinButton(-1, 1, 0.1)
-        self.main_box.append(self.halign_spinner)
-
-        self.halign_spinner.revert_button.connect("clicked", self.on_halign_reset)
-
-    def load_for_identifier(self, coords: tuple[int, int], state: int):
-        return
-        self.disconnect_signals()
-        self.active_coords = coords
-        self.active_state = state
-
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        deck_controller = visible_child.deck_controller
-        if deck_controller is None:
-            return
-
-        key_index = deck_controller.coords_to_index(self.active_coords)
-
-        use_page_properties = deck_controller.keys[key_index].get_active_state().layout_manager.get_use_page_layout_properties()
-        self.halign_spinner.revert_button.set_visible(use_page_properties.get("halign", False))
-
-        self.connect_signals()
-        self.update_values()
-
-    def update_values(self, composed_label: KeyLabel = None):
-        self.disconnect_signals()
-        if composed_label is None:
-            visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-            if visible_child is None:
-                return
-            deck_controller = visible_child.deck_controller
-            if deck_controller is None:
-                return
-            controller_key = deck_controller.keys[deck_controller.coords_to_index(self.active_coords)]
-            composed_label = controller_key.get_active_state().layout_manager.get_composed_layout()
-
-        self.halign_spinner.button.set_value(composed_label.halign)
-
-        self.connect_signals()
-
-    def on_halign_changed(self, widget):
-        active_page = gl.app.main_win.get_active_page()
-        active_page.set_media_halign(coords=self.active_coords, state=self.active_state, halign=widget.get_value())
-
-        self.halign_spinner.revert_button.set_visible(True)
-
-    def on_halign_reset(self, widget):
-        active_page = gl.app.main_win.get_active_page()
-        active_page.set_media_halign(coords=self.active_coords, state=self.active_state, halign=None)
-
-        self.halign_spinner.revert_button.set_visible(False)
-        self.update_values()
-
-    def connect_signals(self):
-        self.halign_spinner.button.connect("value-changed", self.on_halign_changed)
-
-    def disconnect_signals(self):
-        self.halign_spinner.button.disconnect_by_func(self.on_halign_changed)
 
 class SpinButton(Gtk.Box):
     def __init__(self, start: float, end: float, step: float, **kwargs):

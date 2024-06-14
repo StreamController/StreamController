@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-import enum
+from enum import Enum
 
 from attr import dataclass
 
@@ -35,17 +35,11 @@ class InputIdentifier:
     def __str__(self):
         return f"Input({self.input_type}, {self.json_identifier})"
 
-class InputEvent:
-    def __init__(self, input_type: str, n: int):
-        self.input_type = input_type
-        self.n = n
-
-    def __eq__(self, o: "InputEvent"):
-        if o is None:
-            return False
-        if not isinstance(o, InputEvent):
-            raise ValueError(f"Invalid type {type(o)} for InputEvent")
-        return self.input_type == o.input_type and self.n == o.n
+class InputEvent(Enum):
+    def __new__(cls, string_name):
+        obj = object.__new__(cls)
+        obj.string_name = string_name
+        return obj
     
     
 class Input:
@@ -53,11 +47,11 @@ class Input:
         input_type = "keys"
         controller_class_name = "ControllerKey"
 
-        class Events():
-            UP = InputEvent("keys", 0)
-            DOWN = InputEvent("keys", 1)
-            HOLD_START = InputEvent("keys", 2)
-            HOLD_STOP = InputEvent("keys", 3)
+        class Events(InputEvent):
+            UP = "Key Up"
+            DOWN = "Key Down"
+            HOLD_START = "Key Hold Start"
+            HOLD_STOP = "Key Hold Stop"
 
         def __init__(self, json_identifier: str):
             self.coords = Input.Key.Coords_From_PageCoords(json_identifier)
@@ -98,27 +92,28 @@ class Input:
         input_type = "dials"
         controller_class_name = "ControllerDial"
 
-        class Events():
-            UP = InputEvent("dials", 0)
-            DOWN = InputEvent("dials", 1)
-            HOLD_START = InputEvent("dials", 2)
-            HOLD_STOP = InputEvent("dials", 3)
-            TURN_CW = InputEvent("dials", 5)
-            TURN_CCW = InputEvent("dials", 4)
+        class Events(InputEvent):
+            UP = "Dial Up"
+            DOWN = "Dial Down"
+            HOLD_START = "Dial Hold Start"
+            HOLD_STOP = "Dial Hold Stop"
+            TURN_CW = "Dial Turn CW"
+            TURN_CCW = "Dial Turn CCW"
   
         def __init__(self, json_identifier: str):
-            self.index = str(json_identifier)
+            self.index = int(json_identifier)
             super().__init__(self.input_type, json_identifier, self.controller_class_name)
+
 
     class Touchscreen(InputIdentifier):
         input_type = "touchscreens"
         controller_class_name = "ControllerTouchScreen"
 
-        class Events():
-            SHORT_PRESS = InputEvent("touchscreens", 0)
-            LONG_PRESS = InputEvent("touchscreens", 1)
-            DRAG_LEFT = InputEvent("touchscreens", 2)
-            DRAG_RIGHT = InputEvent("touchscreens", 3)
+        class Events(InputEvent):
+            SHORT_PRESS = "Touchscreen Short Press"
+            LONG_PRESS = "Touchscreen Long Press"
+            DRAG_LEFT = "Touchscreen Drag Left"
+            DRAG_RIGHT = "Touchscreen Drag Right"
 
         def __init__(self, json_identifier: str):
             self.index = str(json_identifier)
@@ -137,3 +132,29 @@ class Input:
         if input_type in input_map:
             return input_map[input_type](json_identifier)
         raise ValueError(f"Unknown input type {input_type}")
+    
+    @staticmethod
+    def AllEvents() -> list[InputEvent]:
+        events: list[InputEvent] = []
+
+        for t in Input.All:
+            events.extend(list(t.Events))
+
+
+
+        return events
+        for attr in dir(Input):
+            nested_class = getattr(Input, attr, None)
+            if isinstance(nested_class, type):
+                for sub_attr in dir(nested_class):
+                    sub_nested_class = getattr(nested_class, sub_attr, None)
+                    if isinstance(sub_nested_class, type) and issubclass(sub_nested_class, Enum):
+                        events.extend(list(sub_nested_class))
+        return events
+    
+    @staticmethod
+    def EventFromStringName(string_name: str) -> InputEvent:
+        for event in Input.AllEvents():
+            if event.string_name == string_name:
+                return event
+        raise ValueError(f"Unknown string name {string_name}")

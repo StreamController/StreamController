@@ -15,6 +15,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.DeckManagement.DeckController import ControllerKey
 from src.backend.DeckManagement.InputIdentifier import Input
 
 
@@ -253,7 +256,7 @@ class KeyButton(Gtk.Frame):
         # Update icon selector if current key is selected
         active_identifier = gl.app.main_win.sidebar.active_identifier
         if active_identifier == f"{self.coords[0]}x{self.coords[1]}":
-            gl.app.main_win.sidebar.key_editor.icon_selector.load_for_key((self.coords[0], self.coords[1]))
+            gl.app.main_win.sidebar.key_editor.icon_selector.load_for_identifier((self.coords[0], self.coords[1]))
 
         
     def on_drag_begin(self, drag_source, data):
@@ -303,7 +306,7 @@ class KeyButton(Gtk.Frame):
         if child.deck_controller != self.key_grid.deck_controller:
             return
         # Update icon selector on the top of the right are
-        GLib.idle_add(sidebar.key_editor.icon_selector.image.set_from_pixbuf, pixbuf, priority=GLib.PRIORITY_HIGH)
+        GLib.idle_add(sidebar.key_editor.icon_selector.image.set_pixbuf, pixbuf, priority=GLib.PRIORITY_HIGH)
         # Update icon selector in margin editor
         # GLib.idle_add(sidebar.key_editor.image_editor.image_group.expander.margin_row.icon_selector.image.set_from_pixbuf, pixbuf)
 
@@ -438,24 +441,16 @@ class KeyButton(Gtk.Frame):
         # Reload ui
         gl.app.main_win.sidebar.load_for_key((x, y))
 
-    def remove_media(self):
-        active_page = self.key_grid.deck_controller.active_page
-        if active_page is None:
-            return
-        x, y = self.coords
+    def get_key(self) -> "ControllerKey":
+        controller = self.key_grid.deck_controller
 
-        if f"{x}x{y}" not in active_page.dict["keys"]:
-            return
-        
-        if self.state not in active_page.dict["keys"][f"{x}x{y}"]["states"]:
-            return
-        
-        active_page.dict["keys"][f"{x}x{y}"]["states"][str(self.state)]["media"]["path"] = None
-        active_page.save()
+        return controller.get_input(self.identifier)
 
-        active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
+    def remove_media(self) -> None:
+        key = self.get_key()
+        state = key.get_active_state()
 
-        # Reload ui
+        state.remove_media()
 
     def _set_visible(self, visible: bool):
         self.set_visible(visible)

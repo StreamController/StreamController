@@ -45,11 +45,8 @@ class DialEditor(Gtk.ScrolledWindow):
 
         self.image_editor.image_group.expander.set_expanded(True)
 
-        self.action_group = Adw.PreferencesGroup(title="Actions")
-        self.main_box.append(self.action_group)
-
-        self.action_manager = ActionManager(self.sidebar)
-        self.action_group.add(self.action_manager)
+        self.action_manager = ActionManager(self.sidebar, margin_top=25) 
+        self.main_box.append(self.action_manager)
 
         self.remove_state_button = Gtk.Button(label="Remove State", css_classes=["destructive-action"], margin_top=15, margin_bottom=15, margin_start=15, margin_end=15)
         self.remove_state_button.connect("clicked", self.on_remove_state)

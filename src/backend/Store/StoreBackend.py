@@ -91,7 +91,7 @@ class StoreBackend:
     async def get_official_store_branch(self) -> str:
         if self.official_store_branch_cache is not None:
             return self.official_store_branch_cache
-        versions_file = await self.get_remote_file(self.STORE_REPO_URL, "versions.json", branch_name="versions")
+        versions_file = await self.get_remote_file(self.STORE_REPO_URL, "versions.json", branch_name="versions", force_refetch=True)
         if isinstance(versions_file, NoConnectionError):
             return versions_file
         versions = json.loads(versions_file)
@@ -194,7 +194,7 @@ class StoreBackend:
         return commits[0].get("sha")
     
     async def get_official_authors(self) -> list:
-        authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH)
+        authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH, force_refetch=True)
         if isinstance(authors_json, NoConnectionError):
             return authors_json
         authors_json = json.loads(authors_json)
@@ -863,7 +863,3 @@ class StoreBackend:
 
 class NoCompatibleVersion:
     pass
-            
-
-        
-b = StoreBackend()

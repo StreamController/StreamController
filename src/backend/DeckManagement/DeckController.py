@@ -1337,7 +1337,8 @@ class LayoutManager:
             return background
         layout = self.get_composed_layout()
 
-        image_size = (int(image.width * layout.size), int(image.height * layout.size))
+        width, height = background.size
+        image_size = (int(width * layout.size), int(height * layout.size))
 
         if layout.fill_mode == "stretch":
             image_resized = image.resize(image_size, Image.Resampling.HAMMING)
@@ -1349,12 +1350,11 @@ class LayoutManager:
         halign = layout.halign
         valign = layout.valign
 
-        left_margin = int((background.width - image_size[0]) * (halign + 1) / 2)
-        top_margin = int((background.height - image_size[1]) * (valign + 1) / 2)
+        left_margin = int((background.width - image_resized.width) * (halign + 1) / 2)
+        top_margin = int((background.height - image_resized.height) * (valign + 1) / 2)
 
-        # Create a new image for the result
-        final_image = Image.new("RGBA", background.size, (0, 0, 0, 0))
-        final_image.paste(background, (0, 0))
+        # Create an image copy for the result
+        final_image = background.copy()
 
         # Paste the resized foreground onto the composite image at the calculated position
         if image_resized.has_transparency_data:

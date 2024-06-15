@@ -1145,7 +1145,7 @@ class LabelManager:
             self.update_label(position)
 
     def update_label_editor(self):
-        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+        if not recursive_hasattr(gl, "app.main_win.sidebar.active_identifier"):
             return
         
         if gl.app.main_win.sidebar.active_identifier != self.controller_input.identifier:

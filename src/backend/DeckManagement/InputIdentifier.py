@@ -102,6 +102,8 @@ class Input:
             HOLD_STOP = "Dial Hold Stop"
             TURN_CW = "Dial Turn CW"
             TURN_CCW = "Dial Turn CCW"
+            SHORT_TOUCH_PRESS = "Dial Touchscreen Short Press"
+            LONG_TOUCH_PRESS = "Dial Touchscreen Long Press"
   
         def __init__(self, json_identifier: str):
             self.index = int(json_identifier)
@@ -113,8 +115,6 @@ class Input:
         controller_class_name = "ControllerTouchScreen"
 
         class Events(InputEvent):
-            SHORT_PRESS = "Touchscreen Short Press"
-            LONG_PRESS = "Touchscreen Long Press"
             DRAG_LEFT = "Touchscreen Drag Left"
             DRAG_RIGHT = "Touchscreen Drag Right"
 

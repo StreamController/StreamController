@@ -2129,9 +2129,9 @@ class ControllerTouchScreen(ControllerInput):
                 dial_active_state = dial.get_active_state()
                 if dial_active_state is not None:
 
-                    event = Input.Touchscreen.Events.SHORT_PRESS
+                    event = Input.Dial.Events.SHORT_TOUCH_PRESS
                     if event_type == TouchscreenEventType.LONG:
-                        event = Input.Touchscreen.Events.LONG_PRESS
+                        event = Input.Dial.Events.LONG_TOUCH_PRESS
 
                     dial_active_state.own_actions_event_callback_threaded(
                         event,

@@ -213,6 +213,12 @@ class AutoChangeGroup(Adw.PreferencesGroup):
         self.matching_windows_expander = MatchingWindowsExpander(auto_change_group=self)
         self.add(self.matching_windows_expander)
 
+        self.device_selector = MultiDeckSelectorRow(source_window=self.page_editor.page_manager,
+                                                    title="Decks",
+                                                    subtitle="Decks on which the page should be loaded",
+                                                    callback=self.on_selected_devices_changed)
+        self.add(self.device_selector)
+        
         self.connect_signals()
 
         self.load_config_settings()
@@ -240,6 +246,23 @@ class AutoChangeGroup(Adw.PreferencesGroup):
         }
         gl.page_manager.set_auto_change_info_for_page(page_path=self.page_editor.active_page_path,
                                                       info=auto_change)
+        
+    def on_selected_devices_changed(self, serial_number, state):
+        # gl.page_manager.update_auto_change_info()
+        info = gl.page_manager.get_auto_change_info_for_page(page_path=self.page_editor.active_page_path)
+        decks = info.get("decks", [])
+        if state:
+            if serial_number in decks:
+                return
+            decks.append(serial_number)
+
+        else:
+            if serial_number not in decks:
+                return
+            decks.remove(serial_number)
+
+        info["decks"] = decks
+        gl.page_manager.set_auto_change_info_for_page(page_path=self.page_editor.active_page_path, info=info)
 
     def load_config_settings(self):
 
@@ -254,6 +277,7 @@ class AutoChangeGroup(Adw.PreferencesGroup):
         self.stay_on_page.set_active(auto_change.get("stay_on_page", True))
         self.wm_class_entry.set_text(auto_change.get("wm_class", ""))
         self.title_entry.set_text(auto_change.get("title", ""))
+        self.device_selector.set_selected_deck_serials(auto_change.get("decks", []).copy())
 
         self.connect_signals()
 
@@ -295,7 +319,7 @@ class DefaultPageGroup(Adw.PreferencesGroup):
         matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
         self.row = MultiDeckSelectorRow(source_window=self.page_editor.page_manager, title=gl.lm.get("page-manager.page-editor.default-page.row.title"),
                                         subtitle=gl.lm.get("page-manager.page-editor.default-page.row.subtitle"),
-                                        callback=self.on_changed, selected_deck_serials=matches)
+                                        callback=self.on_changed, selected_deck_serials=matches.copy())
         self.add(self.row)
 
     def on_changed(self, serial_number: str, state: bool):

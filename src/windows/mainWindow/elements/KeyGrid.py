@@ -406,11 +406,11 @@ class KeyButton(Gtk.Frame):
         x, y = self.coords
         active_page.dict.setdefault("keys", {})
         active_page.dict["keys"].setdefault(f"{x}x{y}", {})
-        active_page.dict["keys"][f"{x}x{y}"][str(self.state)] = gl.app.main_win.key_dict
+        active_page.dict["keys"][f"{x}x{y}"] = gl.app.main_win.key_dict
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
         # Reload ui
-        gl.app.main_win.sidebar.load_for_key((x, y))
+        gl.app.main_win.sidebar.load_for_identifier(self.identifier)
 
     def on_paste_finished(self, result, data, user_data):
         print(f"result: {result}, data: {data} user_data: {user_data}")
@@ -425,7 +425,7 @@ class KeyButton(Gtk.Frame):
         
         if f"{x}x{y}" not in active_page.dict.get("keys", {}):
             return
-        if str(self.state) not in active_page.dict["keys"][f"{x}x{y}"]:
+        if str(self.state) not in active_page.dict["keys"][f"{x}x{y}"].get("states", {}):
             return
         del active_page.dict["keys"][f"{x}x{y}"]["states"][str(self.state)]
         active_page.save()
@@ -434,12 +434,12 @@ class KeyButton(Gtk.Frame):
 
         # Remove media from key
         key_index = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
-        self.key_grid.deck_controller.keys[key_index].set_key_image(None)
+        self.key_grid.deck_controller.keys[key_index].get_active_state().set_key_image(None)
 
         active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
 
         # Reload ui
-        gl.app.main_win.sidebar.load_for_key((x, y))
+        gl.app.main_win.sidebar.load_for_identifier(self.identifier)
 
     def get_key(self) -> "ControllerKey":
         controller = self.key_grid.deck_controller

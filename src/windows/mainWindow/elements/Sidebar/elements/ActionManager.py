@@ -235,6 +235,8 @@ class ActionExpanderRow(BetterExpander):
 
             label_control_actions = controller.active_page.dict[self.active_type][self.active_identifier]["states"][str(self.active_state)]["label-control-actions"]
             for i, label_control_action in enumerate(label_control_actions):
+                if label_control_action is None:
+                    continue
                 label_control_actions[i] = reordered.index(actions[label_control_action])
         # controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_actions])
 
@@ -677,23 +679,6 @@ class AddActionButtonRow(Adw.PreferencesRow):
 
         # Reload ui
         self.expander.load_for_identifier(self.expander.active_identifier, self.expander.active_state)
-
-        # # Reload key
-        # controller = active_page.deck_controller
-        # if controller is None:
-        #     return
-        # key_index = controller.coords_to_index(self.expander.active_coords)
-
-        # reload_key = False
-
-        # if state_dict.get("label-control-action") == len(state_dict["actions"]) - 1:
-        #     reload_key = True
-
-        # if state_dict.get("image-control-action") == len(state_dict["actions"]) - 1:
-        #     reload_key = True
-
-        # if reload_key:
-        #     controller.load_key(key_index, page=controller.active_page)
 
         # Open action editor if new action has configuration - qol
         rows = self.expander.get_rows()

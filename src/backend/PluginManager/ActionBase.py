@@ -28,6 +28,7 @@ from locales.LegacyLocaleManager import LegacyLocaleManager
 
 # Import typing
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
     from src.backend.DeckManagement.DeckController import DeckController, ControllerKey, ControllerKeyState
@@ -114,39 +115,9 @@ class ActionBase(rpyc.Service):
     def on_update(self):
         self.on_ready() # backward compatibility
 
-    def on_touch_swipe_left(self):
-        # Fallback to normal on_key_down
-        self.on_key_down()
-
-    def on_touch_swipe_right(self):
-        # Fallback to normal on_key_down
-        self.on_key_down()
-
-    def on_touch_down(self):
-        # Fallback to normal on_key_down
-        self.on_key_down()
-
-    def on_touch_up(self):
-        # Fallback to normal on_key_up
-        self.on_key_up()
-
-    def on_dial_cw(self):
-        # Fallback to normal on_key_down
-        self.on_key_down()
-
-    def on_dial_ccw(self):
-        # Fallback to normal on_key_down
-        self.on_key_down()
-
-    def on_dial_down(self):
-        # Fallback to normal on_key_down
-        self.on_key_down()
-
-    def on_dial_up(self):
-        # Fallback to normal on_key_up
-        self.on_key_up()
-
     def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):
+        self.raise_error_if_not_ready()
+
         if type(self.input_ident) not in [Input.Key, Input.Dial]:
             return
 
@@ -192,8 +163,10 @@ class ActionBase(rpyc.Service):
             self.get_input().update()
 
     def set_background_color(self, color: list[int] = [255, 255, 255, 255], update: bool = True):
+        self.raise_error_if_not_ready()
         if not self.on_ready_called:
             update = False
+
         if self.key_index >= self.deck_controller.deck.key_count():
             return
         
@@ -208,6 +181,8 @@ class ActionBase(rpyc.Service):
             self.get_input().update()
 
     def show_error(self, duration: int = -1) -> None:
+        self.raise_error_if_not_ready()
+
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
         try:
@@ -216,6 +191,8 @@ class ActionBase(rpyc.Service):
             pass
 
     def hide_error(self) -> None:
+        self.raise_error_if_not_ready()
+
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
         try:
@@ -225,6 +202,8 @@ class ActionBase(rpyc.Service):
 
     def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
                       font_family: str = None, font_size = None, update: bool = True):
+        self.raise_error_if_not_ready()
+
         if type(self.input_ident) not in [Input.Key, Input.Dial]:
             return
         
@@ -295,8 +274,13 @@ class ActionBase(rpyc.Service):
     def connect(self, signal:Signal = None, callback: callable = None) -> None:
         # Connect
         gl.signal_manager.connect_signal(signal = signal, callback = callback)
+
+    def get_own_key(self) -> "ControllerKey":
+        return self.deck_controller.keys[self.key_index]
     
     def get_is_multi_action(self) -> bool:
+        self.raise_error_if_not_ready()
+
         if not self.get_is_present(): return
         actions = self.page.action_objects.get(self.input_ident.input_type, {}).get(self.input_ident.json_identifier, [])
         return len(actions) > 1
@@ -334,16 +318,6 @@ class ActionBase(rpyc.Service):
         if self not in actions:
             return
         return actions.index(self)
-    
-    def set_dial_touch_image(self, image: Image.Image = None, image_path: str = None) -> None:
-        if not isinstance(self.input_ident, Input.Dial):
-            return
-
-        if image_path is not None:
-            image = Image.open(image_path)
-        touch_screen = self.deck_controller.get_input(Input.Touchscreen("sd-plus"))
-        state = touch_screen.get_active_state()
-        state.set_dial_image(self.input_ident, image)
 
     def get_page_event_assignments(self) -> dict[InputEvent, InputEvent]:
         assignment = {}
@@ -385,6 +359,11 @@ class ActionBase(rpyc.Service):
         self.page.set_action_event_assignments(action_object=self, event_assignments=assignments_strings)
 
     
+    def raise_error_if_not_ready(self):
+        if self.on_ready_called:
+            return
+        raise Warning("Seems like you're calling this method before the action is ready")
+    
     # ---------- #
     # Rpyc stuff #
     # ---------- #
@@ -406,6 +385,13 @@ class ActionBase(rpyc.Service):
     def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
         self.start_server()
         port = self.server.port
+
+        if venv_path is not None:
+            if not os.path.exists(venv_path):
+                raise ValueError(f"Venv path does not exist: {venv_path}")
+        if backend_path is None:
+            if  not os.path.exists(backend_path):
+                raise ValueError(f"Backend path does not exist: {backend_path}")
 
         ## Launch
         if open_in_terminal:
@@ -445,4 +431,9 @@ class ActionBase(rpyc.Service):
         return True
     
     def on_removed_from_cache(self) -> None:
+        #TODO: Fully implement
+        pass
+
+    def on_remove(self) -> None:
+        #TODO: Fully implement
         pass

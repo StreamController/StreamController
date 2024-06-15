@@ -43,7 +43,7 @@ from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
-from src.windows.Store.StoreBackend import StoreBackend, NoConnectionError
+from src.backend.Store.StoreBackend import StoreBackend, NoConnectionError
 from autostart import setup_autostart
 from src.Signals.SignalManager import SignalManager
 from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
@@ -133,6 +133,10 @@ def create_global_objects():
 def update_assets():
     settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
     auto_update = settings.get("store", {}).get("auto-update", True)
+
+    if gl.argparser.parse_args().devel:
+        auto_update = False
+
     if not auto_update:
         log.info("Skipping store asset update")
         return

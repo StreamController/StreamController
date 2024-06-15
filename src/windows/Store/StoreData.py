@@ -31,6 +31,8 @@ class StoreData:
     """If the asset has a compatible version"""
     is_compatible: [bool, None] = None
 
+    branch: str = None
+
 
 @dataclass
 class ImageData:

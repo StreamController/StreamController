@@ -458,6 +458,7 @@ class DeckController:
         ident = Input.Touchscreen("touchscreen")
         self.event_callback(ident, *args, **kwargs)
 
+
     ### Helper methods
     def generate_alpha_key(self) -> Image.Image:
         return Image.new("RGBA", self.get_key_image_size(), (0, 0, 0, 0))
@@ -1435,6 +1436,8 @@ class ControllerInputState:
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):
                 continue
+            if not action.on_ready_called:
+                continue
             action.on_tick()
 
     @log.catch
@@ -1512,6 +1515,21 @@ class ControllerInput:
 
     def event_callback(self) -> None:
         pass
+
+    def start_hold_timer(self):
+        self.stop_hold_timer()
+
+        self.hold_start_timer = threading.Timer(self.HOLD_TIME, self.on_hold_timer_end)
+        self.hold_start_timer.setDaemon(True)
+        self.hold_start_timer.setName("HoldTimer")
+        self.hold_start_timer.start()
+
+    def stop_hold_timer(self):
+        if self.hold_start_timer is None:
+            return
+        
+        self.hold_start_timer.cancel()
+        self.hold_start_timer = None
 
     def create_n_states(self, n: int):
         if not self.enable_states:
@@ -1711,19 +1729,6 @@ class ControllerKey(ControllerInput):
         self.HOLD_TIME = 0.5
         self.hold_timer: Timer = None
 
-    def start_hold_timer(self):
-        self.stop_hold_timer()
-
-        self.hold_timer = Timer(self.HOLD_TIME, self.on_hold_timer_end)
-        self.hold_timer.setDaemon(True)
-        self.hold_timer.setName("HoldTimer")
-        self.hold_timer.start()
-
-    def stop_hold_timer(self):
-        if self.hold_timer is not None:
-            self.hold_timer.cancel()
-            self.hold_timer = None
-
     def on_hold_timer_end(self):
         state = self.get_active_state()
         state.own_actions_event_callback_threaded(
@@ -1866,11 +1871,6 @@ class ControllerKey(ControllerInput):
         del draw
         return image
     
-    def paste_foreground(self, background: Image.Image, foreground: Image.Image) -> Image.Image:
-        img_size = self.deck_controller.get_key_image_size()
-        img_size = (int(img_size[0] * self.size), int(img_size[1] * self.size)) # Calculate scaled size of the image
-        if self.fill_mode == "stretch":
-            foreground_resized = foreground.resize(img_size, Image.Resampling.HAMMING)
 
     def is_pressed(self) -> bool:
         return self.press_state
@@ -2156,20 +2156,6 @@ class ControllerDial(ControllerInput):
         self.down_start_time: float = None
 
         self.HOLD_TIME = 0.5
-        self.hold_timer: Timer = None
-
-    def start_hold_timer(self):
-        self.stop_hold_timer()
-
-        self.hold_timer = Timer(self.HOLD_TIME, self.on_hold_timer_end)
-        self.hold_timer.setDaemon(True)
-        self.hold_timer.setName("HoldTimer")
-        self.hold_timer.start()
-
-    def stop_hold_timer(self):
-        if self.hold_timer is not None:
-            self.hold_timer.cancel()
-            self.hold_timer = None
 
     def on_hold_timer_end(self):
         state = self.get_active_state()

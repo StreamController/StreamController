@@ -1,82 +1,86 @@
 key;de_DE;en_US;fr_FR
 icon-selector-click-hint;Klicken zum ändern;Click to change;Cliquez pour changer
-label-editor-header;Text;Labels;Titres
+label-editor-header;Text;Labels;Étiquettes
 label-editor-warning-controlled-by-action;Gesteuert von Aktion;Controlled by action;Contrôlé par l'action
 label-editor-top-name;Oben;Top;Haut
 label-editor-center-name;Mitte;Center;Centre
 label-editor-bottom-name;Unten;Bottom;Bas
-label-editor-font-chooser-label;Schriftart:;Font:;Police:
-label-editor-font-weight-label;Schriftdicke:;Font weight:;Epaisseur de la police:
-label-editor-placeholder-text;Text;Label;Titre
-label-editor-expander-subtitle;Texte für diese Taste;Labels for this key;Titres de ce bouton
+label-editor-font-chooser-label;Schriftart:;Font:;Police :
+label-editor-font-weight-label;Schriftdicke:;Font weight:;Taille de la police:
+label-editor-placeholder-text;Text;Label;Étiquette
+label-editor-expander-subtitle;Texte für diese Taste;Labels for this key;Étiquettes de ce bouton
 action-editor-header;Aktions;Actions;Actions
 action-editor-expander-subtitle;Aktions für diese Taste;Actions for this key;Actions pour ce bouton
 action-editor-add-new-action;Aktion hinzufügen;Add Action;Ajouter une action
 go-back;Zurück;Back;Retour
 action-configurator-header;Aktion einstellen;Configure Action;Configurer l'action
 action-configurator-remove-action;Aktion entfernen;Remove Action;Supprimer l'action
-header-page-selector-page-label;Seite:;Page:;Page:
-header-page-selector-drop-down-hint;Seite für aktives Deck auswählen;Select page for active deck;Sélectionnez la page pour le deck actif
+header-page-selector-page-label;Seite:;Page:;Page :
+header-page-selector-drop-down-hint;Seite für aktives Deck auswählen;Select page for active deck;Sélectionnez la page pour le Deck actif
 header-page-selector-page-manager-hint;Seiten verwalten;Open Page Manager;Ouvrir le gestionnaire de page
 main-page-page-settings;Einstellungen der Seite;Page Settings;Paramétrage de la page
 main-page-page-grid;Tasten der Seite;Page Key Grid;Paramétrage des boutons
 toggle-config-to-page;Seite einstellen;Configure page;Configurer la page
-toggle-config-to-deck;Deck einstellen;Configure deck;Configurer le deck
-open-store;Store öffnen;Open Store;Ouvrir le store
-page-settings-deck-heading;Einstellungen zum Deck;Deck Settings;Paramétrage du deck
-page-settings-overwrite-brightness;Helligkeit des Decks überschreiben;Overwrite default deck brightness;Ignorer la luminosité par défaut du deck
-page-settings-overwrite-screensaver;Bildschirmschoner des Decks überschreiben;Overwrite default deck screensaver;Ignorer les paramètres par défaut de l'écran de veille
+toggle-config-to-deck;Deck einstellen;Configure deck;Configurer le Deck
+open-store;Store öffnen;Open Store;Ouvrir le magasin
+page-settings-deck-heading;Einstellungen zum Deck;Deck Settings;Paramétrage du Deck
+page-settings-overwrite-brightness;Helligkeit des Decks überschreiben;Overwrite default deck brightness;Remplacer la luminosité par défaut du Deck
+page-settings-overwrite-screensaver;Bildschirmschoner des Decks überschreiben;Overwrite default deck screensaver;Remplacer l'écran de veille par défaut du Deck
 enable;Aktivieren;Enable;Activer
-screensaver-delay;Einschalten nach;Screensaver delay (min);Activer après (min.)
-media-to-show;Zu zeigendes Medium;Media to show;Media à afficher
+screensaver-delay;Einschalten nach;Screensaver delay (min);Délai de l'écran de veille (min.)
+media-to-show;Zu zeigendes Medium;Media to show;Média à afficher
 media-loop;Wiederholen;Loop;Boucle
-fps;FPS;FPS;FPS
+fps;FPS;FPS;IPS
 brightness;Helligkeit;Brightness;Luminosité
 background;Hintergrund;Background;Arrière-plan
 page-settings-only-current-page-hint;Bezieht sich nur auf die aktuelle Seite;Only applies to current page;S'applique uniquement à la page actuelle
-page-settings-deck-overwrite-background;Hintergrund des Decks überschreiben;Overwrite default deck background;Ignorer l'arrière-plan par défaut
+page-settings-deck-overwrite-background;Hintergrund des Decks überschreiben;Overwrite default deck background;Remplacer l'arrière-plan par défaut
 page-settings-deck-show-background;Hintergrund zeigen;Show background;Afficher l'arrière-plan
 error;Fehler;Error;Erreur
 select;Auswählen;Select;Sélectionner
-page-manager.title;Seitenverwaltung;Page Manager;
-page-manager.page-editor.title;Seite bearbeiten;Page Editor;
-page-manager.page-editor.no-page-selected;Keine Seite ausgewählen;No page selected;
-page-manager.page-editor.delete-page;Seite löschen;Delete Page;
-page-manager.page-editor.delete-page-confirm.title;Seite löschen;Delete Page;
-page-manager.page-editor.delete-page-confirm.cancel;Abbrechen;Cancel;
-page-manager.page-editor.delete-page-confirm.delete;Löschen;Delete;
-page-manager.page-editor.delete-page-confirm.body;"Sind Sie sicher; dass Sie folgende Seite löschen wollen: ";Are you sure you want to delete the page: ;
-page-manager.page-editor.name-group.title;Name;Name;
-page-manager.page-editor.name-group.name;Name;Name;
-page-manager.page-editor.change-group.title;Automatisch wechseln;Auto change Page;
-page-manager.page-editor.change-group.enable;Aktivieren;Enable;
-page-manager.page-editor.change-group.wm-class-regex;WM Klasse Regex;WM Class Regex;
-page-manager.page-editor.change-group.title-regex;Titel Regex;Title Regex;
-page-manager.page-editor.matching-windows.title;Übereinstimmende Fenster;Matching Windows;
-page-manager.page-editor.matching-windows.subtitle;"Fenster; die ihren Filtern entsprechen";Windows matching your regex;
-page-manager.page-selector.title;Seitenauswahl;Page Selector;
-page-manager.page-selector.search-hint;Suchen;Search;
-page-manager.page-selector.add-new;Neue Seite;Add New;
-page-manager.page-selector.add-dialog.title;Neue Seite;Add Page;
-page-manager.page-selector.add-dialog.placeholder;Seitenname;Page Name;
-page-manager.page-selector.add-dialog.confirm;Hinzufügen;Add;
-page-manager.page-selector.add-dialog.already-exists-warning;Seite existiert bereits;Page already exists;
-page-manager.page-selector.add-dialog.empty-warning;Seitenname kann nicht leer sein;Page name cannot be empty;
-page-manager.page-selector.add-dialog.cancel;Abbrechen;Cancel;
+page-manager.title;Seitenverwaltung;Page Manager;Gestionnaire de pages
+page-manager.page-editor.title;Seite bearbeiten;Page Editor;Éditeur de pages
+page-manager.page-editor.no-page-selected;Keine Seite ausgewählen;No page selected;Aucune page sélectionnée
+page-manager.page-editor.delete-page;Seite löschen;Delete Page;Supprimer la page
+page-manager.page-editor.delete-page-confirm.title;Seite löschen;Delete Page;Supprimer la page
+page-manager.page-editor.delete-page-confirm.cancel;Abbrechen;Cancel;Annuler
+page-manager.page-editor.delete-page-confirm.delete;Löschen;Delete;Supprimer
+page-manager.page-editor.delete-page-confirm.body;"Sind Sie sicher; dass Sie folgende Seite löschen wollen: ";Are you sure you want to delete the page: ;Êtes-vous sûr de vouloir supprimer la page :
+page-manager.page-editor.name-group.title;Name;Name;Nom
+page-manager.page-editor.name-group.name;Name;Name;Nom
+page-manager.page-editor.change-group.title;Automatisch wechseln;Auto change Page;Changement automatique de page
+page-manager.page-editor.change-group.enable;Aktivieren;Enable;Activer
+page-manager.page-editor.change-group.wm-class-regex;WM Klasse Regex;WM Class Regex;Regex de la classe WM
+page-manager.page-editor.change-group.title-regex;Titel Regex;Title Regex;Regex du titre
+page-manager.page-editor.matching-windows.title;Übereinstimmende Fenster;Matching Windows;Fenêtres correspondantes
+page-manager.page-editor.matching-windows.subtitle;"Fenster; die ihren Filtern entsprechen";Windows matching your regex;Fenêtres correspondant à votre Regex
+page-manager.page-selector.title;Seitenauswahl;Page Selector;Sélecteur de page
+page-manager.page-selector.search-hint;Suchen;Search;Rechercher
+page-manager.page-selector.add-new;Neue Seite;Add New;Ajouter nouveau
+page-manager.page-selector.add-dialog.title;Neue Seite;Add Page;Ajouter une page
+page-manager.page-selector.add-dialog.placeholder;Seitenname;Page Name;Nom de la page
+page-manager.page-selector.add-dialog.confirm;Hinzufügen;Add;Ajouter 
+page-manager.page-selector.add-dialog.already-exists-warning;Seite existiert bereits;Page already exists;La page existe déjà
+page-manager.page-selector.add-dialog.empty-warning;Seitenname kann nicht leer sein;Page name cannot be empty;Le nom de la page ne peut pas être vide
+page-manager.page-selector.add-dialog.cancel;Abbrechen;Cancel;Annuler
 right-area-no-page-selected-error;Keine Seite ausgewählt;No page selected;Aucune page sélectionnée
-right-area-no-deck-selected-error;Kein Deck ausgewählt;No deck selected;Aucun deck sélectionnée
+right-area-no-deck-selected-error;Kein Deck ausgewählt;No deck selected;Aucun Deck sélectionnée
 deck-switcher-no-decks;Keine Decks Erkannt;No Decks Detected;Aucun Deck Détecté
 open-settings;Einstellungen öffnen;Open Settings;Ouvrir les paramètres
-settings-emulate-at-double-click;Bei Doppelklick klick auf Gerät simulieren;Emulate button press on double click;
-settings-dev-settings-title;Entwickler;Developer;
-settings-fake-decks-header;Fake Decks;Fake Decks;
-settings-number-of-fake-decks;Anzahl der Fake Decks;Number of fake decks;
-settings-number-of-fake-decks-hint;Für Testzwecke (App muss mölicherweise neugestartet werden);For testing purposes (might require restart of the app);
-settings-store-settings-title;Store;Store;
-settings-store-settings-header;Store;Store;
-settings-store-settings-auto-update;Automatische Aktualisierung der Assets;Auto-update assets;
-settings-ui-settings-title;UI;UI;
-settings-ui-settings-key-grid-header;Tastenraster;Key Grid;
+settings-emulate-at-double-click;Bei Doppelklick klick auf Gerät simulieren;Emulate button press on double click;Simuler une pression de bouton par double-clic
+settings-dev-settings-title;Entwickler;Developer;Développeur
+settings-fake-decks-header;Fake Decks;Fake Decks;Faux Decks
+settings-number-of-fake-decks;Anzahl der Fake Decks;Number of fake decks;Nombre de Faux Decks
+settings-number-of-fake-decks-hint;Für Testzwecke (App muss mölicherweise neugestartet werden);For testing purposes (might require restart of the app);À des fins de test (peut nécessiter un redémarrage de l'application)
+settings-store-settings-title;Store;Store;Magasin
+settings-store-settings-header;Store;Store;Magasin
+settings-store-settings-auto-update;Automatische Aktualisierung der Assets;Auto-update assets;Mise à jour automatique des ressources
+settings-store-settings-custom-stores;Benutzerdefinierte Stores;Use Custom Stores;Utiliser des magasins personnalisés
+settings-store-settings-custom-plugins;Benutzerdefinierte Plugins;Use Custom Plugins;Utiliser des plugins personnalisés
+settings-store-custom-stores-header;Benutzerdefinierte Stores;Custom Stores;Magasins personnalisés
+settings-store-custom-plugins-header;Benutzerdefinierte Plugins;Custom Plugins;Plugins personnalisés
+settings-ui-settings-title;UI;UI;IU
+settings-ui-settings-key-grid-header;Tastenraster;Key Grid;Grille de touches
 open-about;Über;About;A propos
 store.plugins.section;Plugins;Plugins;Plugins
 store.icons.section;Icons;Icons;Icônes
@@ -88,26 +92,26 @@ store.plugins.search-placeholder;Nach Plugins suchen;Search for plugins;Recherch
 store.icons.search-placeholder;Nach Icons suchen;Search for icons;Rechercher des icônes
 store.wallpapers.search-placeholder;Nach Hintergründen suchen;Search for wallpapers;Rechercher des fonds d'écran
 onboarding.welcome.header;Willkommen bei StreamController!;Welcome To StreamController!;Bienvenue chez StreamController !
-onboarding.welcome.details;Die Linux App für das Elgato Stream Deck;The Linux app for the Elgato Stream Deck;L'application Linux pour le Elgato Stream Deck
-onboarding.store.header;Asset Store;Asset Store;Asset Store
-onboarding.store.details;"Plugins; Icons und Hintergründe herunterladen";"Download plugins; icons and wallpapers";"Télécharger des plugins; des icônes et des fonds d'écran"
-onboarding.productive.header;Produktiver;Be More Productive;Être plus productif
+onboarding.welcome.details;Die Linux App für das Elgato Stream Deck;The Linux app for the Elgato Stream Deck;L'application Linux pour l’Elgato Stream Deck
+onboarding.store.header;Asset Store;Asset Store;Magasin de ressources
+onboarding.store.details;"Plugins; Icons und Hintergründe herunterladen";"Download plugins; icons and wallpapers";"Télécharger des plugins ; des icônes et des fonds d'écran"
+onboarding.productive.header;Produktiver;Be More Productive;Soyez plus productif
 onboarding.productive.details;Mit eigenen Makros & Routinen;With your personal shortcuts;Avec vos raccourcis personnels
 onboarding.multiple.header;Multi Deck Support;Multi Deck Support;Support Multi Deck
 onboarding.multiple.details;Support für mehrere Elgato Stream Decks;Support for multiple Elgato Stream Decks at once;Prise en charge de plusieurs Elgato Stream Decks à la fois
-onboarding.ready.header;Bereit?;Ready?;Préparé ?
-onboarding.ready.button;Start;Start;Commencer
-deck.deck-group.title;Deck Einstellungen;Deck Settings;Paramètres du deck
-deck.deck-group.description;"Betreffen das ganze Deck; sofern nicht überschrieben";Applies to the whole deck unless overwritten;S'applique à l'ensemble au deck à moins qu'elle ne soit écrasée
+onboarding.ready.header;Bereit?;Ready?;Prêt ?
+onboarding.ready.button;Start;Start;Démarrer
+deck.deck-group.title;Deck Einstellungen;Deck Settings;Paramètres du Deck
+deck.deck-group.description;"Betreffen das ganze Deck; sofern nicht überschrieben";Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire
 deck.deck-group.brightness;Helligkeit;Brightness;Luminosité
 deck.deck-group.enable-screensaver;Bildschirmschoner;Enable Screensaver;Activer l'économiseur d'écran
 deck.deck-group.screensaver-delay;Einschalten nach (min);Enable after (min);Activation après (min)
-deck.deck-group.media-to-show;Zu zeigendes Medium;Media to show;Médias à montrer
+deck.deck-group.media-to-show;Zu zeigendes Medium;Media to show;Média à afficher
 deck.deck-group.media-select-label;Auswählen;Select;Sélectionner
 deck.deck-group.media-loop;Wiederholen;Loop;Boucle
-deck.deck-group.media-fps;FPS;FPS;FPS
+deck.deck-group.media-fps;FPS;FPS;IPS
 deck.background-group.title;Hintergrund;Background;Fonds d'écran
-deck.background-group.description;"Betreffen das ganze Deck; sofern nicht überschrieben";Applies to the whole deck unless overwritten;S'applique à l'ensemble de la platine sauf en cas d'écrasement
+deck.background-group.description;"Betreffen das ganze Deck; sofern nicht überschrieben";Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire
 deck.background-group.enable;Hintergrund aktivieren;Enable Background;Activer l'arrière-plan
 deck.background-group-media-select-label;Auswählen;;Sélectionner
 background.processing;Verarbeiten...;Processing...;Traitement...
@@ -115,86 +119,88 @@ asset-chooser.custom.browse-files;Durchsuchen;Browse Files;Parcourir les fichier
 asset-chooser.custom.browse-files.dialog.title;Dateien auswählen;Select Files;Sélectionner les fichiers
 asset-chooser.custom.browse-files.dialog.select-button;Auswählen;Select;Sélectionner
 background-editor.header;Hintergrund;Background;L'arrière-plan
-asset-chooser.add-more-button.label;Mehr hinzufügen;Add More;
+asset-chooser.add-more-button.label;Mehr hinzufügen;Add More;Ajouter plus
 background-editor-expander.subtitle;Hintergrund für diese Taste;Background for this key;L'arrière-plan pour cette touche
 background-editor.color.label;Farbe;Color;Couleur
-background-editor.color.dialog.title;Hintergrundfarbe auswählen;Select Background Color;Sélectionner une couleur
+background-editor.color.dialog.title;Hintergrundfarbe auswählen;Select Background Color;Sélectionner la couleur de fond
 background-editor.color.reset;Farbe zurücksetzen;Reset color;Réinitialiser la couleur
-right-area.image-editor.layout.header;Layout;Layout;Layout
-right-area.image-editor.layout.subtitle;Layout für diese Taste (nur bei benutzerdefinierten Medien);Layout for this key (only affecting custom media);Layout pour cette touche (les médias utilisés par défaut ne sont pas modifiables)
+right-area.image-editor.layout.header;Layout;Layout;Disposition
+right-area.image-editor.layout.subtitle;Layout für diese Taste (nur bei benutzerdefinierten Medien);Layout for this key (only affecting custom media);Disposition pour cette touche (affecte uniquement les médias personnalisés)
 right-area.image-editor.layout.size.label;Größe (%);Size (%);Taille (%)
-right-area.image-editor.layout.valign.label;VAlign;VAlign;VAlign
-right-area.image-editor.layout.halign.label;HAlign;HAlign;HAlign
-deck.fake-deck-group.title;Fake Deck;Fake Deck;Fake Deck
-deck.fake-deck-group.description;Konfiguration des Fake Decks;Configure fake deck settings;Configuration du Fake Deck
+right-area.image-editor.layout.valign.label;VAlign;VAlign;Alignement vertical
+right-area.image-editor.layout.halign.label;HAlign;HAlign;Alignement horizontal
+deck.fake-deck-group.title;Fake Deck;Fake Deck;Faux Decks
+deck.fake-deck-group.description;Konfiguration des Fake Decks;Configure fake deck settings;Configurer les paramètres du Faux Deck
 deck.fake-deck-group.layout.columns.label;Spalten;Columns;Colonnes
-deck.fake-deck-group.layout.rows.label;Zeilen;Rows;Rangees
-warning.low-fps;Niedrige FPS erkannt. Dies kann durch Hintergrundvideos verursacht werden. Nach dem Caching kann diese Warnung verschwinden.;Low FPS detected. This might be caused by your background video. This may dissapear after the caching is finished.;Faible FPS détecté. Peut-être dû à votre vidéo d'arrière-plan. Le problème pourrait disparaître après mise en cache.
+deck.fake-deck-group.layout.rows.label;Zeilen;Rows;Rangées
+warning.low-fps;Niedrige FPS erkannt. Dies kann durch Hintergrundvideos verursacht werden. Nach dem Caching kann diese Warnung verschwinden.;Low FPS detected. This might be caused by your background video. This may dissapear after the caching is finished.;Faible IPS détecté. Cela peut-être causé par votre vidéo de fond. Cela peut disparaître après la mise en cache terminée.
 warning.low-fps.fix;Deaktivieren;Deactivate;Désactiver
-warning.dismiss;Verwerfen;Dismiss;Décrisser
-settings.enable-fps-warnings;FPS Warnungen aktivieren;Enable FPS warnings;Activer les avertissements FPS
+warning.dismiss;Verwerfen;Dismiss;Ignorer
+settings.enable-fps-warnings;FPS Warnungen aktivieren;Enable FPS warnings;Activer les avertissements IPS
 settings.performance.title;Performance;Performance;Performance
-settings.performance.header;"Performance &amp; Optimierungen";"Performance &amp; Optimizations";"Performance &amp; Optimisations"
+settings.performance.header;"Performance &amp; Optimierungen";"Performance &amp; Optimizations";Performances et optimisations
 settings.performance.n-cached-pages.title;Anzahl der zu cachenden Seiten;Number of cached pages;Nombre de pages en cache
 settings.performance.n-cached-pages.subtitle;"Anzahl der Seiten; die im Caching gespeichert werden sollen";Number of pages to keep in cache;Nombre de pages à garder en cache
-settings.performance.n-cached-pages.tooltip;Eine höhere Zahl bedeutet mehr Speicherverbrauch aber schnellere Seitenladezeit.;A higher number means more memory usage but faster page loading;Un nombre plus élevé signifie une utilisation de mémoire plus importante mais un chargement de page plus rapide.
-errors.no-page.header;Keine Seiten Verfügbar;No Pages Available;
-errors.no-page.create-new;Neue Erstellen;Create New;
-errors.no-page.create-dialog.title;Neue Seite Erstellen;Create New Page;
-errors.no-page.create-dialog.entry.label;Seitenname;Page Name;
-errors.no-deck.header;Keine Decks Erkannt;No Decks Available;
-errors.no-deck.add-fake;Ein Fake Deck Hinzufügen;Add A Fake Deck;
-action-chooser.go-back.label;Zurück;Go Back;
-action-chooser.search-entry.placeholder;Nach Aktionen und Plugins suchen;Search for actions and plugins;
-action-chooser.header;Aktion Auswählen;Choose An Action;
-store.page.loading-spinner.label;Lädt;Loading;
-settings.performance.cache-videos.title;Videos cachen;Cache Videos;
-settings.performance.cache-videos.subtitle;Wird nach einem Neustart angewandt;Only applies to new videos or after a restart;
-settings.performance.cache-videos.tooltip;Aktivieren um Videos auf dem Computer zu cachen. Dies kann zu großem Arbeitsspeicherverbrauch führen;Enabling this will cache videos on your computer. This might cause high memory usage.;
-permissions-window.title;Berechtigungen;Permissions;
-permissions-window.mark-solved;Als gelöst markieren;Mark As Solved;
-permissions-window.close;Schließen;Close;
-permissions-window.flatpak-detected;Flatpak erkannt;Flatpak detected;
-permissions-window.description;"Manche Berechtigungen werden von Flathub aus Sichenheitsgründen eingeschräntk. Um eine reibungslose Erfahrung mit den Plugins zu gewährliesten; ist es empfolhen die dbus Berechtigungen mit folgendem Befehlt anzupassen:";"Certain default permissions are restricted by Flathub for security reasons. To enhance your experience with plugins; consider adjusting the dbus permissions by running the following command in your terminal:";
-permissions-window.copy-tooltip;Kopieren;Copy;
-permissions-window.info-beginning;"Für mehr Informationen zu Berechtigungen von Flatpaks; besuche die ";"For more information on Flatpak permissions; visit the ";
-permissions-window.flatpak-docs;Flatpak Dokmentation;Flatpak documentation;
-settings-allow-white-mode;White mode erlauben;Allow white mode;
-settings-allow-white-mode-subtitle;White mode für die UI erlauben - Experimentell;Allow white mode for the ui - Experimental;
-page-manager.page-editor.default-page.title;Standartseite;Default Page;
-page-manager.page-editor.default-page.row.title;Standartseite;Default page;
-page-manager.page-editor.default-page.row.subtitle;Auswählen auf welchen Decks diese Seite beim Start geladen werden soll;Select for which decks this page should be opened by default;
-multi-deck-selector.title;Decks auswählen;Select Decks;
-multi-deck-selector.selected;auswählen;selected;
-permissions.request.default-description;Ein Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:;A plugin requested permissions. Consider running the following command to grant the needed permission;
-permissions.request.plugin-blueprint;Das {name} Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:;The {name} plugin requested a new permission. Consider running the following command to ensure the plugin works correctly:;
-onboarding.extension.button.install;Installieren;Install;
-onboarding.extension.button.installed;Installiert;Installed;
-onboarding.extension.button.failed;Fehlgeschlagen;Failed;
-onboarding.extension.detail;"Installiere die offizielle Gnome Erweiterung; um automatische Seitenwechsel zu ermöglichen";Install the official Gnome extension to allow automatic page switching;
-onboarding.extension.header;Gnome Erweiterungen;Gnome Extension;
-onboarding.extension.hint;Erfordert Gnome Erweiterungen & Gnome Shell 45 oder neuer;Requires Gnome Extensions & Gnome Shell 45 or later;
-store.preview.no-description;Keine Beschreibung;No description;
-deck.background-group.media-select-label;;Select;
-asset-manager.custom-assets.remove-confirmation-dialog.title;;Remove Asset;
-asset-manager.custom-assets.remove-confirmation-dialog.cancel;;Cancel;
-asset-manager.custom-assets.remove-confirmation-dialog.remove;;Remove;
-asset-manager.custom-assets.remove-confirmation-dialog.body;;Are you sure you want to remove the asset ;
-errors.no-page.import;;Import;
+settings.performance.n-cached-pages.tooltip;Eine höhere Zahl bedeutet mehr Speicherverbrauch aber schnellere Seitenladezeit.;A higher number means more memory usage but faster page loading;Un nombre plus élevé signifie une utilisation de mémoire plus importante mais un chargement des pages plus rapide
+errors.no-page.header;Keine Seiten Verfügbar;No Pages Available;Aucune page disponible
+errors.no-page.create-new;Neue Erstellen;Create New;Créer nouveau
+errors.no-page.create-dialog.title;Neue Seite Erstellen;Create New Page;Créer une nouvelle page
+errors.no-page.create-dialog.entry.label;Seitenname;Page Name;Nom de la page
+errors.no-deck.header;Keine Decks Erkannt;No Decks Available;Aucun Deck disponible
+errors.no-deck.add-fake;Ein Fake Deck Hinzufügen;Add A Fake Deck;Ajouter un Faux Deck
+action-chooser.go-back.label;Zurück;Go Back;Retour
+action-chooser.search-entry.placeholder;Nach Aktionen und Plugins suchen;Search for actions and plugins;Rechercher des actions et des plugins
+action-chooser.header;Aktion Auswählen;Choose An Action;Choisir une action
+store.page.loading-spinner.label;Lädt;Loading;Chargement
+settings.performance.cache-videos.title;Videos cachen;Cache Videos;Vidéos en cache
+settings.performance.cache-videos.subtitle;Wird nach einem Neustart angewandt;Only applies to new videos or after a restart;S'applique uniquement aux nouvelles vidéos ou après un redémarrage
+settings.performance.cache-videos.tooltip;Aktivieren um Videos auf dem Computer zu cachen. Dies kann zu großem Arbeitsspeicherverbrauch führen;Enabling this will cache videos on your computer. This might cause high memory usage.;Activer cela mettra en cache les vidéos sur votre ordinateur. Cela peut entraîner une utilisation élevée de la mémoire.
+permissions-window.title;Berechtigungen;Permissions;Autorisations
+permissions-window.mark-solved;Als gelöst markieren;Mark As Solved;Marquer comme résolu
+permissions-window.close;Schließen;Close;Fermer
+permissions-window.flatpak-detected;Flatpak erkannt;Flatpak detected;Flatpak détecté
+permissions-window.description;"Manche Berechtigungen werden von Flathub aus Sichenheitsgründen eingeschräntk. Um eine reibungslose Erfahrung mit den Plugins zu gewährliesten; ist es empfolhen die dbus Berechtigungen mit folgendem Befehlt anzupassen:";"Certain default permissions are restricted by Flathub for security reasons. To enhance your experience with plugins; consider adjusting the dbus permissions by running the following command in your terminal:";"Certaines permissions par défaut sont restreintes par Flathub pour des raisons de sécurité. Pour améliorer votre expérience avec les plugins ; envisagez d'ajuster les permissions dbus en exécutant la commande suivante dans votre terminal :"
+permissions-window.copy-tooltip;Kopieren;Copy;Copier
+permissions-window.info-beginning;"Für mehr Informationen zu Berechtigungen von Flatpaks; besuche die ";"For more information on Flatpak permissions; visit the ";"Pour plus d'informations sur les permissions Flatpak ; visitez la"
+permissions-window.flatpak-docs;Flatpak Dokmentation;Flatpak documentation;documentation Flatpak
+settings-allow-white-mode;White mode erlauben;Allow white mode;Autoriser le mode clair
+settings-allow-white-mode-subtitle;White mode für die UI erlauben - Experimentell;Allow white mode for the ui - Experimental;Autoriser le mode clair pour l'interface utilisateur – Expérimental
+page-manager.page-editor.default-page.title;Standartseite;Default Page;Page par défaut
+page-manager.page-editor.default-page.row.title;Standartseite;Default page;Page par défaut
+page-manager.page-editor.default-page.row.subtitle;Auswählen auf welchen Decks diese Seite beim Start geladen werden soll;Select for which decks this page should be opened by default;Sélectionner pour quels Decks cette page doit être ouverte par défaut
+multi-deck-selector.title;Decks auswählen;Select Decks;Sélectionner des Decks
+multi-deck-selector.selected;auswählen;selected;sélectionné
+permissions.request.default-description;Ein Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:;A plugin requested permissions. Consider running the following command to grant the needed permission;Un plugin a demandé des permissions. Envisagez d'exécuter la commande suivante pour accorder la permission nécessaire
+permissions.request.plugin-blueprint;Das {name} Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:;The {name} plugin requested a new permission. Consider running the following command to ensure the plugin works correctly:;Le plugin {nom} a demandé une nouvelle permission. Envisagez d'exécuter la commande suivante pour garantir le bon fonctionnement du plugin :
+onboarding.extension.button.install;Installieren;Install;Installer
+onboarding.extension.button.installed;Installiert;Installed;Installé
+onboarding.extension.button.failed;Fehlgeschlagen;Failed;Échec
+onboarding.extension.detail;"Installiere die offizielle Gnome Erweiterung; um automatische Seitenwechsel zu ermöglichen";Install the official Gnome extension to allow automatic page switching;Installer l'extension officielle Gnome pour permettre le changement automatique de page
+onboarding.extension.header;Gnome Erweiterungen;Gnome Extension;Extension Gnome
+onboarding.extension.hint;Erfordert Gnome Erweiterungen & Gnome Shell 45 oder neuer;Requires Gnome Extensions & Gnome Shell 45 or later;Nécessite les extensions Gnome et Gnome Shell 45 ou ultérieur
+store.preview.no-description;Keine Beschreibung;No description;Aucune description
+deck.background-group.media-select-label;;Select;Sélectionner
+asset-manager.custom-assets.remove-confirmation-dialog.title;;Remove Asset;Supprimer la ressource
+asset-manager.custom-assets.remove-confirmation-dialog.cancel;;Cancel;Annuler
+asset-manager.custom-assets.remove-confirmation-dialog.remove;;Remove;Supprimer
+asset-manager.custom-assets.remove-confirmation-dialog.body;;Are you sure you want to remove the asset ;Êtes-vous sûr de vouloir supprimer la ressource ?
+errors.no-page.import;;Import;Importer
 page-manager-search-hint;;;Rechercher
 page-manager-add-page;;;Ajouter une page
 page-manager-rename;;;Renommer
 page-manager-remove;;;Supprimer
-page-manager.duplicate;Duplizieren;Duplicate;
-page-manager.export-page;Exportieren;Export;
-page-manager.import;Importieren;Import;
-page-manager.import.page;Seite;Page;
-settings-show-notifications;Benachrichtigungen anzeigen;Show notifications;
-settings-show-notifications-subtitle;Benachrichtigungen bei veralteten Assets anzeigen;Show notifications for outdated assets;
-settings-system-settings-title;System;System;
-settings-system-settings-header;Systemeinstellungen; System settings;
-settings-system-settings-autostart;Autostart;Autostart;
-settings-system-settings-autostart-subtitle;App beim Systemstart automatisch starten;Start app on system boot;
-onboarding.udev.header;udev Regeln;udev rules;
-onboarding.udev.detail;Es ist eine alte udev version installiert. Klicken Sie auf den Button um zu sehen was sie tun müssen; Old udev version detected. Please click on the button to see how to avoid problems;
-onboarding.udev.button;Website öffnen; Open web;
+page-manager.duplicate;Duplizieren;Duplicate;Dupliquer
+page-manager.export-page;Exportieren;Export;Exporter
+page-manager.import;Importieren;Import;Importer
+page-manager.import.page;Seite;Page;Page 
+settings-show-notifications;Benachrichtigungen anzeigen;Show notifications;Afficher les notifications
+settings-show-notifications-subtitle;Benachrichtigungen bei veralteten Assets anzeigen;Show notifications for outdated assets;Afficher les notifications pour les ressources obsolètes
+settings-system-settings-title;System;System;Système
+settings-system-settings-header;Systemeinstellungen; System settings;Paramètres du système
+settings-system-settings-autostart;Autostart;Autostart;Démarrage automatique
+settings-system-settings-autostart-subtitle;App beim Systemstart automatisch starten;Start app on system boot;Démarrer l'application au démarrage du système
+onboarding.udev.header;udev Regeln;udev rules;Règles udev
+onboarding.udev.detail;Es ist eine alte udev version installiert. Klicken Sie auf den Button um zu sehen was sie tun müssen; Old udev version detected. Please click on the button to see how to avoid problems;Ancienne version udev détectée. Veuillez cliquer sur le bouton pour voir comment éviter les problèmes
+onboarding.udev.button;Website öffnen; Open web;Ouvrir le site web
+settings-store-custom-stores-subtitle;Weitere Storerepos hinzufügen;Add custom store repos;Ajouter des dépôts de magasins personnalisés
+settings-store-custom-plugins-subtitle;Weitere Pluginrepos hinzufügen;Add custom plugin repos;Ajouter des dépôts de plugins personnalisés

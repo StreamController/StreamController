@@ -77,9 +77,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.set_popover(self.popover)
 
     def on_open_store(self, action, parameter):
-        if gl.store is None:
-            gl.store = Store(application=gl.app, main_window=gl.app.main_win)
-        gl.store.present()
+        gl.app.open_store()
 
     def on_open_settings(self, action, parameter):
         self.settings = Settings()
@@ -93,7 +91,11 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutWindow(transient_for=self.main_window)
         self.about.set_application_name("StreamController")
-        self.about.set_version(gl.app_version)
+
+        app_version = gl.app_version
+        if gl.argparser.parse_args().devel:
+            app_version += " devel"
+        self.about.set_version(app_version)
         self.about.set_developers(["Core447"])
         self.about.set_developer_name("Core447")
         self.about.set_license_type(Gtk.License.GPL_3_0)
@@ -113,12 +115,12 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
             license=None,
         )
 
-        # self.about.add_legal_section(
-        #     "Icons",
-        #     "StreamController uses Papirus icons",
-        #     Gtk.License.GPL_3_0,
-        #     license=None
-        # )
+        self.about.add_legal_section(
+            "Icons",
+            "StreamController uses and ships Adwaita icons",
+            license_type=Gtk.License.CUSTOM,
+            license=None
+        )
 
         self.about.set_debug_info("".join(gl.logs))
         self.about.set_debug_info_filename(os.path.join(gl.DATA_PATH, "StreamController.log"))

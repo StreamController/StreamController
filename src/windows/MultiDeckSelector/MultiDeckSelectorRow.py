@@ -68,8 +68,14 @@ class MultiDeckSelectorRow(Adw.ActionRow):
         self.suffix_label.set_label(f"{n_selected_decks} {gl.lm.get('multi-deck-selector.selected')}")
 
     def change_callback(self, serial_number: str, state: bool):
-        n_selected_decks = self.multi_deck_selector.get_n_selected_decks()
-        self.set_label(n_selected_decks)
+        if state:
+            if serial_number not in self.selected_deck_serials:
+                self.selected_deck_serials.append(serial_number)
+        else:
+            if serial_number in self.selected_deck_serials:
+                self.selected_deck_serials.remove(serial_number)
+
+        self.set_label(len(self.selected_deck_serials))
 
         if callable(self.callback):
             self.callback(serial_number, state)
@@ -79,3 +85,4 @@ class MultiDeckSelectorRow(Adw.ActionRow):
             self.multi_deck_selector.close()
 
         self.selected_deck_serials = selected_deck_serials
+        self.set_label(len(self.selected_deck_serials))

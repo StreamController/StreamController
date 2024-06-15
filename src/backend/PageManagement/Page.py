@@ -51,6 +51,8 @@ class Page:
 
         self.ready_to_clear = True
 
+        self.file_access_semaphore = threading.Semaphore()
+
         self.load(load_from_file=True)
 
     def get_name(self) -> str:
@@ -74,6 +76,7 @@ class Page:
         log.debug(f"Loaded page {self.get_name()} in {end - start:.2f} seconds")
 
     def save(self):
+        self.file_access_semaphore.acquire()
         # Make backup in case something goes wrong
         self.make_backup()
 
@@ -83,6 +86,7 @@ class Page:
             self.move_key_to_end(without_objects, type)
         with open(self.json_path, "w") as f:
             json.dump(without_objects, f, indent=4)
+        self.file_access_semaphore.release()
 
     def make_backup(self):
         os.makedirs(os.path.join(gl.DATA_PATH, "pages","backups"), exist_ok=True)
@@ -522,8 +526,8 @@ class Page:
         for action in self.get_all_actions():
             if hasattr(action, "on_ready"):
                 if not action.on_ready_called:
-                    action.on_ready()
                     action.on_ready_called = True
+                    action.on_ready()
 
     def clear_action_objects(self):
         for type in self.action_objects:

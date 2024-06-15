@@ -20,9 +20,9 @@ class PluginManager:
 
     def load_plugins(self, show_notification: bool = False):
         # get all folders in plugins folder
-        if not os.path.exists(os.path.join(gl.DATA_PATH, "plugins")):
-            os.mkdir(os.path.join(gl.DATA_PATH, "plugins"))
-        folders = os.listdir(os.path.join(gl.DATA_PATH, "plugins"))
+        if not os.path.exists(gl.PLUGIN_DIR):
+            os.mkdir(gl.PLUGIN_DIR)
+        folders = os.listdir(gl.PLUGIN_DIR)
         for folder in folders:
             # Import main module
             import_string = f"plugins.{folder}.main"

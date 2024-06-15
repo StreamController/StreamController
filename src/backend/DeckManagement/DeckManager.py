@@ -238,6 +238,9 @@ class DeckManager:
         if n_removed > 0:
             self.connect_new_decks()
 
+    def get_connected_serials(self) -> list[str]:
+        return [controller.serial_number() for controller in self.deck_controller]
+
 class DetectResumeThread(threading.Thread):
     def __init__(self, deck_manager: DeckManager):
         super().__init__()

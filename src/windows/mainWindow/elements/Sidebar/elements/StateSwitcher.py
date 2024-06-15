@@ -119,7 +119,6 @@ class StateSwitcher(Gtk.ScrolledWindow):
         self.add_new_callbacks.append(callback)
 
     def on_state_switch(self, *args):
-        print("on_state_switch called")
         for callback in self.switch_callbacks:
             if callable(callback):
                 callback()

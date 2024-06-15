@@ -6,7 +6,7 @@ import sys
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
-argparser.add_argument("--devel", help="Developer mode", action="store_true")
+argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
 argparser.add_argument("--close-running", help="Close running", action="store_true")
 argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
@@ -15,6 +15,14 @@ argparser.add_argument("app_args", nargs="*")
 DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
 if argparser.parse_args().data:
     DATA_PATH = argparser.parse_args().data
+
+PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")
+
+# Used for nix packaging
+if os.getenv("PLUGIN_DIR") is not None:
+    PLUGIN_DIR = os.getenv("PLUGIN_DIR")
+    top_level_folder = os.path.dirname(PLUGIN_DIR)
+    sys.path.append(top_level_folder)
 
 # Add data path to sys.path
 sys.path.append(DATA_PATH)
@@ -31,7 +39,7 @@ if TYPE_CHECKING:
     from src.backend.PluginManager.PluginManager import PluginManager
     from src.backend.IconPackManagement.IconPackManager import IconPackManager
     from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
-    from src.windows.Store.StoreBackend import StoreBackend
+    from src.backend.Store.StoreBackend import StoreBackend
     from src.Signals.SignalManager import SignalManager
     from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
     from src.backend.GnomeExtensions import GnomeExtensions

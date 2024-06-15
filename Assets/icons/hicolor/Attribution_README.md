@@ -1,0 +1,3 @@
+These icons are from [adwaita-icon-theme](https://gitlab.gnome.org/GNOME/adwaita-icon-theme). You can find the maintainers, authors and the original copyright [here](https://gitlab.gnome.org/GNOME/adwaita-icon-theme). Only a few selected icons from the pack are in this folder to save space. Also some icons have been moved into different category folders to follow the freedesktop icon naming specification.
+
+The icons are licensed under Creative Commons Attribution Share Alike 3.0 Unported NOT the license of the StreamController app repo (currently GPLv3).

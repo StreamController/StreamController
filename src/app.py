@@ -13,12 +13,16 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+from ast import main
+from email.mime import application
 import multiprocessing
 import signal
 import sys
 import threading
 import asyncio
 import gi
+
+from src.windows.Store.ResponsibleNotesDialog import ResponsibleNotesDialog
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Xdp", "1.0")
@@ -54,6 +58,9 @@ class App(Adw.Application):
         css_provider.load_from_path(os.path.join(gl.top_level_dir, "style.css"))
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
+        icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+        icon_theme.add_search_path(os.path.join(gl.top_level_dir, "Assets", "icons"))
+        
         allow_white_mode = gl.settings_manager.get_app_settings().get("ui", {}).get("allow-white-mode", False)
 
         self.style_manager = self.get_style_manager()
@@ -280,3 +287,16 @@ class App(Adw.Application):
             f"The plugin {plugin_id} is missing. Please install it.",
             button=("Install", "app.install-plugin", GLib.Variant.new_string(plugin_id))
         )
+    def open_store(self, callback_agreed: bool = None) -> None:
+        app_settings = gl.settings_manager.get_app_settings()
+        agreed = app_settings.get("store", {}).get("responsibility-notes-agreed", False)
+
+        if not agreed:
+            if callback_agreed is None:
+                resp_dialog = ResponsibleNotesDialog(self.get_active_window(), self.open_store)
+                resp_dialog.present()
+            return
+        
+        if gl.store is None:
+            gl.store = Store(application=self, main_window=self.main_win)
+        gl.store.present()

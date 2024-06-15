@@ -274,6 +274,8 @@ class RemoveButton(Gtk.Button):
             page.reload_similar_pages(identifier=self.action.input_ident)
 
         # Destroy the actual action
+        if hasattr(self.action, "on_remove"):
+            self.action.on_remove()
         del self.action
 
 

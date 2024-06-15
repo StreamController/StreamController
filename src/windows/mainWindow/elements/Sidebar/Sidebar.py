@@ -162,14 +162,14 @@ class Sidebar(Adw.NavigationPage):
 
         self.hide_error()
 
-        self.key_editor.load_for_key(identifier, state)
+        self.key_editor.load_for_identifier(identifier, state)
 
     def load_for_dial(self, identifier: Input.Dial, state: int):
         self.active_identifier = identifier
         self.active_state = state
         self.main_stack.set_visible_child(self.configurator_stack)
-        self.configurator_stack.set_visible_child(self.dial_editor)
-        self.dial_editor.load_for_dial(identifier, state)
+        self.configurator_stack.set_visible_child(self.key_editor)
+        self.key_editor.load_for_identifier(identifier, state)
 
     def load_for_touchscreen(self, identifier: Input.Touchscreen, state: int):
         self.active_identifier = identifier
@@ -260,9 +260,8 @@ class KeyEditor(Gtk.Box):
         if controller is None:
             return
         
-        # key = controller.keys[controller.coords_to_index(self.sidebar.active_identifier)]
-        key = controller.get_key_by_index(self.sidebar.active_identifier)
-        key.add_new_state()
+        c_input = controller.get_input(self.sidebar.active_identifier)
+        c_input.add_new_state()
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
@@ -276,27 +275,24 @@ class KeyEditor(Gtk.Box):
         
         active_state = self.state_switcher.get_selected_state()
         
-        controller_input = controller.get_input(self.sidebar.active_identifier)
-        controller_input.remove_state(active_state)
+        c_input = controller.get_input(self.sidebar.active_identifier)
+        c_input.remove_state(active_state)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
-    def load_for_key(self, identifier: Input.Key, state: int):
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
         self.sidebar.active_identifier = identifier
 
         controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
         
-        key = controller.inputs[Input.Key][identifier.get_index(controller)]
+        c_input = controller.get_input(identifier)
 
-        # self.state_switcher.set_n_states(len(key.states.keys()))
-        # self.state_switcher.select_state(state)
         self.state_switcher.load_for_identifier(identifier, state)
-        key.set_state(state)
+        c_input.set_state(state)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
-
 
         self.icon_selector.load_for_identifier(identifier, state)
         self.image_editor.load_for_identifier(identifier, state)

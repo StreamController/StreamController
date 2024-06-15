@@ -1294,7 +1294,10 @@ class LayoutManager:
         if layout.halign is None:
             layout.halign = 0
         if layout.fill_mode is None:
-            layout.fill_mode = "cover"
+            if isinstance(self.controller_input.identifier, Input.Key):
+                layout.fill_mode = "cover"
+            else:
+                layout.fill_mode = "contain"
         if layout.size is None:
             layout.size = 1
 

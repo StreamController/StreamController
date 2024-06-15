@@ -1440,11 +1440,6 @@ class ControllerInputState:
     @log.catch
     def own_actions_event_callback(self, event: InputEvent, data: dict = None, show_notifications: bool = False) -> None:
         for action in self.get_own_actions():
-            event = action.get_event_assignments().get(event)
-            if event is None:
-                raise ValueError("Shouldn't happen :(")
-
-
             if isinstance(action, ActionOutdated):
                 if show_notifications:
                     plugin_id = gl.plugin_manager.get_plugin_id_from_action_id(action.id)

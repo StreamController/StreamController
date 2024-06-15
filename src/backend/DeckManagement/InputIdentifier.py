@@ -41,6 +41,9 @@ class InputEvent(Enum):
         obj.string_name = string_name
         return obj
     
+    def __str__(self) -> str:
+        return self.string_name
+    
     
 class Input:
     class Key(InputIdentifier):
@@ -154,6 +157,8 @@ class Input:
     
     @staticmethod
     def EventFromStringName(string_name: str) -> InputEvent:
+        if string_name in [None, str(None)]:
+            return
         for event in Input.AllEvents():
             if event.string_name == string_name:
                 return event

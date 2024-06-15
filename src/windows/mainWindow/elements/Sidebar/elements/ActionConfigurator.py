@@ -289,16 +289,24 @@ class EventAssigner(Adw.PreferencesGroup):
         self.build()
 
     def build(self):
-        self.expander = Adw.ExpanderRow(title="Event Assigner", subtitle="Configure event assignments",
-                                        expanded=True)
+        self.expander = Adw.ExpanderRow(title="Event Assigner", subtitle="Configure event assignments")
         self.add(self.expander)
 
+        self.button_box = Gtk.Box(css_classes=["linked"])
+        self.expander.add_suffix(self.button_box)
+
         self.reset_button = Gtk.Button(icon_name="edit-undo-symbolic", tooltip_text="Reset to default",
-                                       valign=Gtk.Align.CENTER, css_classes=["flat"])
+                                       valign=Gtk.Align.CENTER)
         self.reset_button.connect("clicked", self.on_reset)
-        self.expander.add_suffix(self.reset_button)
+        self.button_box.append(self.reset_button)
+
+        self.clear_all_button = Gtk.Button(icon_name="edit-clear-all-symbolic", tooltip_text="Clear all",
+                                           valign=Gtk.Align.CENTER)
+        self.clear_all_button.connect("clicked", self.on_clear_all)
+        self.button_box.append(self.clear_all_button)
 
         all_events = Input.AllEvents()
+        all_events.append(None)
 
         self.rows: list[EventAssignerRow] = []
 
@@ -338,6 +346,16 @@ class EventAssigner(Adw.PreferencesGroup):
         self.reset_assignments()
         self.load_for_action(self.action)
 
+    def on_clear_all(self, button):
+        assignments: dict[InputEvent, InputEvent] = {}
+        for row in self.rows:
+            if not row.get_visible():
+                continue
+
+            assignments[row.event] = None
+
+        self.action.set_event_assignments(assignments)
+        self.load_for_action(self.action)
 
 class EventAssignerRow(Adw.ComboRow):
     def __init__(self, event_assigner: EventAssigner, event: InputEvent, available_events: list[InputEvent]):
@@ -359,11 +377,11 @@ class EventAssignerRow(Adw.ComboRow):
             pass
 
     def build(self):
-        self.set_title(self.event.string_name)
+        self.set_title(str(self.event))
 
         self.str_list = Gtk.StringList()
         for event in self.available_events:
-            self.str_list.append(event.string_name)
+            self.str_list.append(str(event))
 
         self.set_model(self.str_list)
 
@@ -371,12 +389,9 @@ class EventAssignerRow(Adw.ComboRow):
 
     def select_event(self, event: InputEvent):
         self._disconnect_signal()
-        string_name = None
-        if isinstance(event, InputEvent):
-            string_name = event.string_name
 
         for i, e in enumerate(self.str_list):
-            if e.get_string() == string_name:
+            if e.get_string() == str(event):
                 self.set_selected(i)
                 self._connect_signal()
                 return

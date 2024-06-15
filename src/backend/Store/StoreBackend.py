@@ -55,19 +55,22 @@ class StoreBackend:
     STORE_REPO_URL = "https://github.com/StreamController/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
-    STORE_BRANCH = "1.5.0" #FIXME: Make the cache branch specific. For now you'll have to manually delete `data/Store/cache`
+    STORE_BRANCH = "1.5.0"
 
 
     def __init__(self):
         self.store_cache = StoreCache()
 
+        self.official_store_branch_cache: str = None
+
         self.official_authors = asyncio.run(self.get_official_authors())
 
-    def get_stores(self) -> list[tuple[str, str]]:
+    async def get_stores(self) -> list[tuple[str, str]]:
         settings = gl.settings_manager.get_app_settings()
 
         stores = []
-        stores.append((self.STORE_REPO_URL, self.STORE_BRANCH))
+        branch = await self.get_official_store_branch()
+        stores.append((self.STORE_REPO_URL, branch))
 
         if settings.get("store", {}).get("enable-custom-stores", False):
             for store in settings.get("store", {}).get("custom-stores", {}):
@@ -84,6 +87,17 @@ class StoreBackend:
                 plugins.append((plugin.get("url"), plugin.get("branch")))
 
         return plugins
+    
+    async def get_official_store_branch(self) -> str:
+        if self.official_store_branch_cache is not None:
+            return self.official_store_branch_cache
+        versions_file = await self.get_remote_file(self.STORE_REPO_URL, "versions.json", branch_name="versions")
+        if isinstance(versions_file, NoConnectionError):
+            return versions_file
+        versions = json.loads(versions_file)
+        v = versions.get(gl.app_version, "main")
+        self.official_store_branch_cache = v
+        return v
 
     async def request_from_url(self, url: str) -> requests.Response:
         try:
@@ -203,7 +217,7 @@ class StoreBackend:
         n_stores_with_errors = 0
         data_list = []
 
-        stores = self.get_stores()
+        stores = await self.get_stores()
 
         for url, branch in stores:
             store_file_json, n_stores_with_errors = await self.fetch_and_parse_json(url, filename, branch, n_stores_with_errors)

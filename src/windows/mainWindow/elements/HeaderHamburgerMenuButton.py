@@ -103,7 +103,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.set_website("https://github.com/StreamController/StreamController")
         self.about.set_issue_url("https://github.com/StreamController/StreamController/issues")
         # self.about.set_support_url("https://discord.com/invite/MSyHM8TN3u")
-        self.about.add_credit_section("Contributors", ["Core447 https://github.com/Core447  ", "coolapso https://github.com/coolapso", "G4PLS https://github.com/G4PLS", "yakushabb https://github.com/yakushabb"])
+        self.about.add_credit_section("Contributors", ["Core447 https://github.com/Core447  ", "coolapso https://github.com/coolapso", "G4PLS https://github.com/G4PLS", "Sorunome https://github.com/Sorunome", "yakushabb https://github.com/yakushabb"])
         self.about.set_copyright("Copyright (C) 2024 Core447")
         self.about.set_application_icon("com.core447.StreamController")
         self.about.set_visible(True)

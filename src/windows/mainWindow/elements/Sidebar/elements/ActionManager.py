@@ -211,37 +211,37 @@ class ActionExpanderRow(BetterExpander):
 
 
     def reorder_actions(self, move_index, after_index):
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
         page_coords = f"{self.active_coords[0]}x{self.active_coords[1]}"
 
         actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["actions"]
-
-
         reordered = self.reorder_index_after(copy(actions), move_index, after_index)
-        controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["actions"] = reordered
 
-        image_control_action = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["image-control-action"]
-        controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["image-control-action"] = reordered.index(actions[image_control_action])
+        action_objects = controller.active_page.action_objects[page_coords][self.active_state]
+        reordered_action_objects = self.reorder_action_objects(action_objects, move_index, after_index)
 
-        label_control_actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["label-control-actions"]
+        action_order_map: dict[int, int] = {}
+
+        for i, action in enumerate(action_objects.values()):
+            action_order_map[i] = list(reordered_action_objects.values()).index(action)
+
+
+        image_control_action_index = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)].get("image-control-action")
+        controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["image-control-action"] = action_order_map.get(image_control_action_index, None)
+
+        label_control_actions = controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)].get("label-control-actions")
         for i, label_control_action in enumerate(label_control_actions):
-            if label_control_action is None:
-                continue
-            label_control_actions[i] = reordered.index(actions[label_control_action])
-        # controller.active_page.dict["keys"][page_coords]["label-control-action"] = reordered.index(actions[label_control_actions])
-
+            label_control_actions[i] = action_order_map.get(label_control_action)
+        controller.active_page.dict["keys"][page_coords]["states"][str(self.active_state)]["label-control-actions"] = label_control_actions
+        
         controller.active_page.save()
 
         action_objects = controller.active_page.action_objects[page_coords][self.active_state]
 
         reordered = self.reorder_action_objects(action_objects, move_index, after_index)
         controller.active_page.action_objects[page_coords][self.active_state] = reordered
-
 
         controller.load_page(controller.active_page)
  

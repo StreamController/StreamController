@@ -136,7 +136,7 @@ class Dial(Gtk.Frame):
             gl.app.main_win.sidebar.load_for_dial(self.identifier, state)
 
             dial_image = dial.get_active_state().get_rendered_touch_image()
-            gl.app.main_win.sidebar.dial_editor.icon_selector.set_image(dial_image)
+            gl.app.main_win.sidebar.key_editor.icon_selector.set_image(dial_image)
 
         elif gesture.get_current_button() == 1 and n_press == 2:
             # Double left click

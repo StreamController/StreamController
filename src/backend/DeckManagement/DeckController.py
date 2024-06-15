@@ -2288,6 +2288,11 @@ class ControllerDial(ControllerInput):
             )
             state.layout_manager.set_page_layout(layout, update=False)
 
+            state.background_color = state_dict.get("background", {}).get("color", [0, 0, 0, 0])
+            # Ensure the background color has an alpha channel
+            if len(state.background_color) == 3:
+                state.background_color.append(255)
+
         if update:
             self.set_state(old_state_index)
             self.update()
@@ -2368,6 +2373,8 @@ class ControllerDialState(ControllerInputState):
         self.image: InputImage = None
         self.video: InputVideo = None
 
+        self.background_color: list[int, int, int, int] = None
+
         self.label_manager = LabelManager(self.dial)
         self.layout_manager = LayoutManager(self.dial)
 
@@ -2390,13 +2397,26 @@ class ControllerDialState(ControllerInputState):
 
         self.video = video
 
-    def on_event_threaded(self, event_type, value) -> None:
-        threading.Thread(target=self.on_event, name="on_event", args=(event_type, value)).start()
 
     def get_rendered_touch_image(self) -> Image.Image:
         touch_screen = self.dial.get_touch_screen()
 
-        background = touch_screen.get_empty_dial_image()
+        if self.background_color is None:
+            self.background_color = [0, 0, 0, 0]
+
+        background: Image.Image = None
+
+        if self.background_color[-1] < 255:
+            background = touch_screen.get_empty_dial_image()
+        if self.background_color[-1] > 0:
+            background_color_img = Image.new("RGBA", self.dial.get_image_size(), color=tuple(self.background_color))
+
+            if background is None:
+                # Use the color as the only background - happens if background color alpha is 255
+                background = background_color_img
+            else:
+                background.paste(background_color_img, (0, 0), background_color_img)
+        
 
         image = None
         if self.video is not None:

@@ -51,7 +51,7 @@ class ActionHolder:
                      Input.Dial: ActionInputSupport.UNTESTED,
                      Input.Touchscreen: ActionInputSupport.UNTESTED
                  },
-                 ):
+                 *args, **kwargs):
         
         ## Verify variables
         if action_id in ["", None]:

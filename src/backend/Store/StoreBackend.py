@@ -200,7 +200,7 @@ class StoreBackend:
         authors_json = json.loads(authors_json)
         return authors_json
     
-    async def fetch_and_parse_json(self, url: str, filename: str, branch: str, n_stores_with_errors: int = 0):
+    async def fetch_and_parse_store_json(self, url: str, filename: str, branch: str, n_stores_with_errors: int = 0):
         try:
             store_file_json = await self.get_remote_file(url, filename, branch, force_refetch=True)
             if isinstance(store_file_json, NoConnectionError):
@@ -213,14 +213,14 @@ class StoreBackend:
             log.error(e)
             return None, n_stores_with_errors
 
-    async def process_store_data(self, filename: str, process_func: callable, data_class, include_images=True):
+    async def process_store_data(self, filename: str, process_func: callable, get_custom_func: callable, data_class, include_images=True):
         n_stores_with_errors = 0
         data_list = []
 
         stores = await self.get_stores()
 
         for url, branch in stores:
-            store_file_json, n_stores_with_errors = await self.fetch_and_parse_json(url, filename, branch, n_stores_with_errors)
+            store_file_json, n_stores_with_errors = await self.fetch_and_parse_store_json(url, filename, branch, n_stores_with_errors)
             if store_file_json is not None:
                 data_list.extend(store_file_json)
 
@@ -228,19 +228,28 @@ class StoreBackend:
             return NoConnectionError()
 
         prepare_tasks = [process_func(data, include_images) for data in data_list]
+
+        if get_custom_func is not None:
+            for url, branch in get_custom_func():
+                asset = {
+                    "url": url,
+                    "branch": branch
+                }
+                prepare_tasks.append(process_func(asset, include_images))
+
         results = await asyncio.gather(*prepare_tasks)
         results = [result for result in results if isinstance(result, data_class)]
 
         return results
 
     async def get_all_plugins_async(self, include_images: bool = True) -> int:
-        return await self.process_store_data("Plugins.json", self.prepare_plugin, PluginData, include_images)
+        return await self.process_store_data("Plugins.json", self.prepare_plugin, self.get_custom_plugins, PluginData, include_images)
 
     async def get_all_icons(self) -> int:
-        return await self.process_store_data("Icons.json", self.prepare_icon, IconData)
+        return await self.process_store_data("Icons.json", self.prepare_icon, None, IconData)
 
     async def get_all_wallpapers(self) -> int:
-        return await self.process_store_data("Wallpapers.json", self.prepare_wallpaper, WallpaperData)
+        return await self.process_store_data("Wallpapers.json", self.prepare_wallpaper, None, WallpaperData)
     
     async def get_manifest(self, url:str, commit:str) -> dict:
         # url = self.build_url(url, "manifest.json", commit)

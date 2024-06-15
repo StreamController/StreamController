@@ -314,6 +314,8 @@ class EventAssigner(Adw.PreferencesGroup):
 
     def load_for_action(self, action: ActionBase):
         self.action = action
+        
+        self.set_sensitive(action.allow_event_configuration)
 
         assignments = action.get_event_assignments()
 

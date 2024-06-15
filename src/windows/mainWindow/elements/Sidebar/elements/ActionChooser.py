@@ -79,7 +79,7 @@ class ActionChooser(Gtk.Box):
         self.plugin_group = PluginGroup(self, margin_top=40)
         self.main_box.append(self.plugin_group)
 
-        self.open_store_button = OpenStoreButton(margin_top=40)
+        self.open_store_button = OpenStoreButton(margin_top=40, margin_bottom=40)
         self.main_box.append(self.open_store_button)
 
     def show(self, callback_function, current_stack_page, identifier: InputIdentifier, callback_args, callback_kwargs):

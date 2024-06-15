@@ -38,7 +38,6 @@ class ActionBase(rpyc.Service):
     def __init__(self, action_id: str, action_name: str,
                  deck_controller: "DeckController", page: "Page", plugin_base: "PluginBase", state: int,
                  input_ident: "InputIdentifier"):
-        #TODO: Add state arg to all init methods
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
@@ -53,21 +52,11 @@ class ActionBase(rpyc.Service):
 
         self.on_ready_called = False
 
-        self.CONTROLS_KEY_IMAGE: bool = False
-        self.KEY_IMAGE_CAN_BE_OVERWRITTEN: bool = True
-        self.LABELS_CAN_BE_OVERWRITTEN: list[bool] = [True, True, True]
         self.has_configuration = False
         self.allow_event_configuration: bool = True
 
         self.labels = {}
-#        self.current_key = {
-#            "key": self.key_index,
-#            "image": None,
-#        }
         
-        self.default_image = None
-        self.default_labels = {}
-
         self.locale_manager: LegacyLocaleManager = None
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
@@ -93,6 +82,7 @@ class ActionBase(rpyc.Service):
         return i.states.get(self.state)
     
     def event_callback(self, event: InputEvent, data: dict = None):
+        log.info(str(event))
         ## backward compatibility
         if event == Input.Key.Events.DOWN:
             self.on_key_down()
@@ -102,6 +92,8 @@ class ActionBase(rpyc.Service):
             self.on_key_down()
         elif event == Input.Dial.Events.UP:
             self.on_key_up()
+        elif event == Input.Dial.Events.SHORT_TOUCH_PRESS:
+            self.on_key_down()
 
     def on_key_down(self):
         pass
@@ -154,37 +146,13 @@ class ActionBase(rpyc.Service):
         # Fallback to normal on_key_up
         self.on_key_up()
 
-    def set_default_image(self, image: Image.Image):
-        self.default_image = image
-
-    def set_default_label(self, text: str, position: str = "bottom", color: list[int] = [255, 255, 255], stroke_width: int = 0, 
-                          font_family: str = "", font_size = 18):
-        log.warning("set_default_label is not yet supported, please use fixed or no lables for now")
-        """
-        Not yet implemented, changes made through this function will be ignored
-        """
-        if position not in ["top", "center", "bottom"]:
-            raise ValueError("Position must be 'top', 'center' or 'bottom'")
-        
-        if text == None:
-            if position in self.default_labels:
-                del self.default_labels[position]
-        else:
-            self.default_labels[position] = {
-                "text": text,
-                "color": color,
-                "stroke-width": stroke_width,
-                "font-family": font_family,
-                "font-size": font_size
-            }
-
     def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):
         if type(self.input_ident) not in [Input.Key, Input.Dial]:
             return
 
         if not self.get_is_present(): return
         if self.has_custom_user_asset(): return
-        # if not self.has_image_control(): return #TODO
+        if not self.has_image_control(): return #TODO
         
         input_state = self.get_state()
 
@@ -228,9 +196,14 @@ class ActionBase(rpyc.Service):
             update = False
         if self.key_index >= self.deck_controller.deck.key_count():
             return
-        if self.get_state() is None or self.get_state().state != self.state: return
+        
+        state = self.get_state()
+        if state is None or state.state != self.state: return
 
-        self.get_state().background_color = color
+        if not hasattr(state, "background_color"):
+            return
+
+        self.state.background_color = color
         if update:
             self.get_input().update()
 
@@ -339,7 +312,7 @@ class ActionBase(rpyc.Service):
         if key_dict.get("image-control-action") is None:
             return False
         
-        if not self.get_is_multi_action():
+        if ("image-control-action" not in key_dict) and (not self.get_is_multi_action()):
             return True
 
         return self.get_own_action_index() == key_dict.get("image-control-action")
@@ -394,7 +367,7 @@ class ActionBase(rpyc.Service):
         all_events = Input.AllEvents()
         for event in all_events:
             if event.string_name in page_assignment_dict:
-                assignments[event] = Input.EventFromStringName(page_assignment_dict[event.string_name])
+                assignments[event] = Input.EventFromStringName(page_assignment_dict[str(event)])
             else:
                 assignments[event] = event
 
@@ -407,7 +380,7 @@ class ActionBase(rpyc.Service):
             if key == value:
                 continue
 
-            assignments_strings[key.string_name] = value.string_name
+            assignments_strings[str(key)] = str(value)
 
         self.page.set_action_event_assignments(action_object=self, event_assignments=assignments_strings)
 

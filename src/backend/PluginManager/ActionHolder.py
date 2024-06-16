@@ -43,9 +43,11 @@ class ActionHolder:
     """
     def __init__(self, plugin_base: "PluginBase",
                  action_base: ActionBase,
-                 action_id: str, action_name: str,
+                 action_name: str,
                  icon: Gtk.Widget = None,
                  min_app_version: str = None,
+                 action_id: str = None,
+                 action_id_suffix: str = None,
                  action_support = {
                      Input.Key: ActionInputSupport.UNTESTED,
                      Input.Dial: ActionInputSupport.UNTESTED,
@@ -58,13 +60,16 @@ class ActionHolder:
             raise ValueError("Please specify an action id")
         if action_name in ["", None]:
             raise ValueError("Please specify an action name")
+        if action_id in ["", None] and action_id_suffix in ["", None]:
+            raise ValueError("Please specify an action id or an action id name")
         
         if icon is None:
             icon = Gtk.Image(icon_name="insert-image-symbolic")
 
         self.plugin_base = plugin_base
         self.action_base = action_base
-        self.action_id = action_id
+        self.action_id_suffix = action_id_suffix
+        self.action_id = action_id or f"{plugin_base.get_plugin_id()}::{action_id_suffix}"
         self.action_name = action_name
         self.icon = icon
         self.min_app_version = min_app_version

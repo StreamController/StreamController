@@ -1,3 +1,4 @@
+from functools import lru_cache
 import importlib
 import os
 import inspect
@@ -53,6 +54,11 @@ class PluginBase(rpyc.Service):
         self.plugin_name: str = None
 
         self.registered_pages: list[str] = []
+
+    @lru_cache(maxsize=1)
+    def get_plugin_id(self) -> str:
+        manifest = self.get_manifest()
+        manifest.get("id") or self.get_plugin_id_from_folder_name()
 
     def register(self, plugin_name: str = None, github_repo: str = None, plugin_version: str = None,
                  app_version: str = None):

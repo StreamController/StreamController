@@ -19,7 +19,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gio, Adw
+from gi.repository import Gtk, Gio, Adw, GLib
 
 # Import globals
 import globals as gl
@@ -85,8 +85,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.settings = None
         
     def on_quit(self, action, parameter):
-        gl.app.on_quit()
-        return
+        GLib.idle_add(gl.app.on_quit)
 
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutWindow(transient_for=self.main_window)

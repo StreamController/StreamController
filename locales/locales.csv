@@ -199,6 +199,8 @@ settings-system-settings-title;System;System;Système
 settings-system-settings-header;Systemeinstellungen; System settings;Paramètres du système
 settings-system-settings-autostart;Autostart;Autostart;Démarrage automatique
 settings-system-settings-autostart-subtitle;App beim Systemstart automatisch starten;Start app on system boot;Démarrer l'application au démarrage du système
+settings-system-settings-keep-running;Die App weiterlaufen lassen;Keep running
+settings-system-settings-keep-running-subtitle;Die App nach Schließen des Hauptfensters im Hintergrund aktiv lassen;Keep the app running after closing the main window;
 onboarding.udev.header;udev Regeln;udev rules;Règles udev
 onboarding.udev.detail;Es ist eine alte udev version installiert. Klicken Sie auf den Button um zu sehen was sie tun müssen; Old udev version detected. Please click on the button to see how to avoid problems;Ancienne version udev détectée. Veuillez cliquer sur le bouton pour voir comment éviter les problèmes
 onboarding.udev.button;Website öffnen; Open web;Ouvrir le site web

@@ -113,8 +113,7 @@ class CommentGroup(Adw.PreferencesGroup):
         self.set_comment(entry.get_text())
 
         # Update ActionManager - A full reload is not efficient but ensures correct behavior if the ActionConfigurator is triggered from a plugin action
-        if self.action.input_ident.input_type == "keys":
-            gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.action.input_ident.coords, self.action.state)
+        gl.app.main_win.sidebar.key_editor.action_editor.load_for_identifier(self.action.input_ident, self.action.state)
 
     def connect_signals(self):
         self.comment_row.connect("changed", self.on_comment_changed)

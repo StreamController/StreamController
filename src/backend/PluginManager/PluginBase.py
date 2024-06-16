@@ -78,7 +78,7 @@ class PluginBase(rpyc.Service):
         self.plugin_version = plugin_version or manifest.get("version") or None
         self.min_app_version = manifest.get("minimum-app-version")
         self.app_version = app_version or manifest.get("app-version")
-        self.plugin_id = manifest.get("id") or self.get_plugin_id_from_folder_name()
+        self.plugin_id = self.get_plugin_id()
 
         # Verify variables
         if self.plugin_name in ["", None]:

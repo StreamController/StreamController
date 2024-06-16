@@ -41,19 +41,20 @@ class ActionHolder:
     """
     Holder for ActionBase containing important information that can be used as long as the ActionBase is not initialized
     """
-    def __init__(self, plugin_base: "PluginBase",
-                 action_base: ActionBase,
-                 action_name: str,
-                 icon: Gtk.Widget = None,
-                 min_app_version: str = None,
-                 action_id: str = None,
-                 action_id_suffix: str = None,
-                 action_support = {
-                     Input.Key: ActionInputSupport.UNTESTED,
-                     Input.Dial: ActionInputSupport.UNTESTED,
-                     Input.Touchscreen: ActionInputSupport.UNTESTED
-                 },
-                 *args, **kwargs):
+    def __init__(self,
+        plugin_base: "PluginBase",
+        action_base: ActionBase,
+        action_name: str,
+        icon: Gtk.Widget = None,
+        min_app_version: str = None,
+        action_id: str = None,
+        action_id_suffix: str = None,
+        action_support = {
+            Input.Key: ActionInputSupport.UNTESTED,
+            Input.Dial: ActionInputSupport.UNTESTED,
+            Input.Touchscreen: ActionInputSupport.UNTESTED
+        },
+        *args, **kwargs):
         
         ## Verify variables
         if action_name in ["", None]:

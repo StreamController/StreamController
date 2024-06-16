@@ -1,4 +1,3 @@
-from turtle import update
 from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING

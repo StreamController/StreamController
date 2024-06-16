@@ -1493,6 +1493,7 @@ class ControllerInput:
         self.deck_controller = deck_controller
         self.state = 0
         self.hide_error_timer: Timer = None
+        self.hold_start_timer: Timer = None
         self.ControllerStateClass = state_class
         self.identifier: InputIdentifier = identifier
 

@@ -10,7 +10,7 @@ class ActionInputSupportStatus:
 
 
 class ActionInputSupport(enum.Enum):
-    NO = ActionInputSupportStatus(0)
+    UNSUPPORTED = ActionInputSupportStatus(0)
     UNTESTED = ActionInputSupportStatus(1)
     SUPPORTED = ActionInputSupportStatus(2)
 

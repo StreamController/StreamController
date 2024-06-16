@@ -97,4 +97,4 @@ class ActionHolder:
         )
     
     def get_input_compatibility(self, identifier: InputIdentifier) -> ActionInputSupport:
-        return self.action_support.get(type(identifier), ActionInputSupport.NO)
+        return self.action_support.get(type(identifier), ActionInputSupport.UNSUPPORTED)

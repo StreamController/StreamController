@@ -347,7 +347,7 @@ class ActionRow(Adw.ActionRow):
     def set_identifier(self, identifier: InputIdentifier):
         action_input_compatibility = self.action_holder.get_input_compatibility(identifier)
 
-        if action_input_compatibility <= ActionInputSupport.NO:
+        if action_input_compatibility <= ActionInputSupport.UNSUPPORTED:
             self.warning_icon.set_from_icon_name("dialog-error-symbolic")
             self.set_tooltip_text(f"action is not compatible with {identifier.input_type}")
             self.show_warning(True)

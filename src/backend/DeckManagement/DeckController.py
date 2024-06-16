@@ -338,6 +338,8 @@ class DeckController:
             del self
             return
         
+        self.hold_time: float = gl.settings_manager.get_app_settings().get("general", {}).get("hold-time", 0.5)
+        
         self.own_deck_stack_child: "DeckStackChild" = None
         self.own_key_grid: "KeyGridChild" = None
 
@@ -1520,7 +1522,7 @@ class ControllerInput:
     def start_hold_timer(self):
         self.stop_hold_timer()
 
-        self.hold_start_timer = threading.Timer(self.HOLD_TIME, self.on_hold_timer_end)
+        self.hold_start_timer = threading.Timer(self.deck_controller.hold_time, self.on_hold_timer_end)
         self.hold_start_timer.setDaemon(True)
         self.hold_start_timer.setName("HoldTimer")
         self.hold_start_timer.start()
@@ -1726,9 +1728,6 @@ class ControllerKey(ControllerInput):
         self.press_state: bool = self.deck_controller.deck.key_states()[self.index]
 
         self.down_start_time: float = None
-
-        self.HOLD_TIME = 0.5
-        self.hold_timer: Timer = None
 
     def on_hold_timer_end(self):
         state = self.get_active_state()
@@ -2159,8 +2158,6 @@ class ControllerDial(ControllerInput):
         super().__init__(deck_controller, ControllerDialState, ident)
 
         self.down_start_time: float = None
-
-        self.HOLD_TIME = 0.5
 
     def on_hold_timer_end(self):
         state = self.get_active_state()

@@ -30,7 +30,7 @@ import os
 class Settings(Adw.PreferencesWindow):
     def __init__(self):
         super().__init__(title="Settings")
-        self.set_default_size(800, 600)
+        self.set_default_size(1000, 700)
 
         # Center settings win over main_win (depends on DE)
         self.set_transient_for(gl.app.main_win)
@@ -40,17 +40,19 @@ class Settings(Adw.PreferencesWindow):
         self.settings_json:dict = None
         self.load_json()
 
+        self.general_page = GeneralPage(settings=self)
         self.ui_page = UIPage(settings=self)
         self.store_page = StorePage(settings=self)
         self.performance_page = PerformancePage(settings=self)
         self.dev_page = DevPage(settings=self)
         self.system_page = SystemPage(settings=self)
 
+        self.add(self.general_page)
         self.add(self.ui_page)
         self.add(self.store_page)
-        self.add(self.dev_page)
         self.add(self.performance_page)
         self.add(self.system_page)
+        self.add(self.dev_page)
 
     def load_json(self):
         # Load settings from file
@@ -177,6 +179,49 @@ class DevPageGroup(Adw.PreferencesGroup):
 
         # Reload decks
         gl.deck_manager.load_fake_decks()
+
+
+class GeneralPage(Adw.PreferencesPage):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__()
+        self.set_title("General")
+        self.set_icon_name("open-menu-symbolic")
+
+        self.add(GeneralPageGroup(settings=settings))
+
+class GeneralPageGroup(Adw.PreferencesGroup):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__(title=gl.lm.get("General app settings"))
+
+        self.hold_time_row = Adw.SpinRow.new_with_range(min=0.1, max=3, step=0.1)
+        self.hold_time_row.set_title("Minimum hold duration (s)")
+        self.hold_time_row.set_subtitle("Minimum hold duration for keys and dials")
+        self.hold_time_row.set_range(0.1, 3)
+        self.add(self.hold_time_row)
+
+        self.load_defaults()
+
+        # Connect signals
+        self.hold_time_row.connect("changed", self.on_n_fake_decks_row_changed)
+
+    def load_defaults(self):
+        self.hold_time_row.set_value(self.settings.settings_json.get("general", {}).get("hold-time", 0.5))
+
+    def on_n_fake_decks_row_changed(self, *args):
+        self.settings.settings_json.setdefault("general", {})
+        self.settings.settings_json["general"]["hold-time"] = self.hold_time_row.get_value()
+
+        for controller in gl.deck_manager.deck_controller:
+            controller.hold_time = self.hold_time_row.get_value()
+
+        # Save
+        self.settings.save_json()
+
+        # Reload decks
+        gl.deck_manager.load_fake_decks()
+
 
 class StorePage(Adw.PreferencesPage):
     def __init__(self, settings: Settings):

@@ -59,7 +59,7 @@ class ActionHolder:
         if action_name in ["", None]:
             raise ValueError("Please specify an action name")
         if action_id in ["", None] and action_id_suffix in ["", None]:
-            raise ValueError("Please specify an action id or an action id name")
+            raise ValueError("Please specify an action id or an action id suffix")
         
         if icon is None:
             icon = Gtk.Image(icon_name="insert-image-symbolic")

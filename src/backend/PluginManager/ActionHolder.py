@@ -56,8 +56,6 @@ class ActionHolder:
                  *args, **kwargs):
         
         ## Verify variables
-        if action_id in ["", None]:
-            raise ValueError("Please specify an action id")
         if action_name in ["", None]:
             raise ValueError("Please specify an action name")
         if action_id in ["", None] and action_id_suffix in ["", None]:

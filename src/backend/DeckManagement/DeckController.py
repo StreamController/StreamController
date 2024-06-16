@@ -1794,6 +1794,10 @@ class ControllerKey(ControllerInput):
                 active_state.own_actions_event_callback_threaded(
                     event=Input.Key.Events.HOLD_STOP
                 )
+            else:
+                active_state.own_actions_event_callback_threaded(
+                    event=Input.Key.Events.SHORT_UP
+                )
             self.down_start_time = None
             self.stop_hold_timer()
             active_state.own_actions_event_callback_threaded(
@@ -2186,6 +2190,10 @@ class ControllerDial(ControllerInput):
                 if time.time() >= self.down_start_time + self.HOLD_TIME:
                     active_state.own_actions_event_callback_threaded(
                         event=Input.Dial.Events.HOLD_STOP
+                    )
+                else:
+                    active_state.own_actions_event_callback_threaded(
+                        event=Input.Dial.Events.SHORT_UP
                     )
                 self.down_start_time = None
                 active_state.own_actions_event_callback_threaded(

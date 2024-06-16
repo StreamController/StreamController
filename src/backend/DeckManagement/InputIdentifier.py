@@ -49,8 +49,9 @@ class Input:
         controller_class_name = "ControllerKey"
 
         class Events(InputEvent):
-            UP = "Key Up"
             DOWN = "Key Down"
+            UP = "Key Up"
+            SHORT_UP = "Key Short Up"
             HOLD_START = "Key Hold Start"
             HOLD_STOP = "Key Hold Stop"
 
@@ -94,8 +95,9 @@ class Input:
         controller_class_name = "ControllerDial"
 
         class Events(InputEvent):
-            UP = "Dial Up"
             DOWN = "Dial Down"
+            UP = "Dial Up"
+            SHORT_UP = "Dial Short Up"
             HOLD_START = "Dial Hold Start"
             HOLD_STOP = "Dial Hold Stop"
             TURN_CW = "Dial Turn CW"

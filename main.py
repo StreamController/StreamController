@@ -55,6 +55,7 @@ from src.tray import TrayIcon
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
 from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
+from src.backend.Migration.Migrators.Migrator_1_5_1 import Migrator_1_5_1
 
 # Import globals
 import globals as gl
@@ -246,6 +247,7 @@ def main():
     migration_manager = MigrationManager()
     # Add migrators
     migration_manager.add_migrator(Migrator_1_5_0())
+    migration_manager.add_migrator(Migrator_1_5_1())
     # Run migrators
     migration_manager.run_migrators()
 

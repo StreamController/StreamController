@@ -27,6 +27,7 @@ GLib.threads_init()
 from loguru import logger as log
 
 # Import own modules
+from src.windows.mainWindow.elements.KeepRunningDialog import KeepRunningDialog
 from src.windows.mainWindow.elements.leftArea import LeftArea
 from src.windows.mainWindow.elements.Sidebar.Sidebar import Sidebar
 from src.windows.mainWindow.headerBar import HeaderBar
@@ -68,7 +69,22 @@ class MainWindow(Adw.ApplicationWindow):
             self.add_css_class("devel")
 
     def on_close(self, *args, **kwargs):
+        keep_running = gl.settings_manager.get_app_settings().get("system", {}).get("keep-running")
+        if keep_running is None:
+            dialog = KeepRunningDialog(self, self.on_close)
+            dialog.present()
+        else:
+            # self._on_close(keep_running)
+            self.hide()
+            if not keep_running:
+                GLib.idle_add(gl.app.on_quit)
+
+        return True
+
+    def _on_close(self, keep_running: bool) -> None:
         self.hide()
+        if not keep_running:
+            gl.app.on_quit()
         return True
 
     @log.catch

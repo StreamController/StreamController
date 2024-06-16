@@ -55,19 +55,22 @@ class StoreBackend:
     STORE_REPO_URL = "https://github.com/StreamController/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
-    STORE_BRANCH = "1.5.0" #FIXME: Make the cache branch specific. For now you'll have to manually delete `data/Store/cache`
+    STORE_BRANCH = "1.5.0"
 
 
     def __init__(self):
         self.store_cache = StoreCache()
 
+        self.official_store_branch_cache: str = None
+
         self.official_authors = asyncio.run(self.get_official_authors())
 
-    def get_stores(self) -> list[tuple[str, str]]:
+    async def get_stores(self) -> list[tuple[str, str]]:
         settings = gl.settings_manager.get_app_settings()
 
         stores = []
-        stores.append((self.STORE_REPO_URL, self.STORE_BRANCH))
+        branch = await self.get_official_store_branch()
+        stores.append((self.STORE_REPO_URL, branch))
 
         if settings.get("store", {}).get("enable-custom-stores", False):
             for store in settings.get("store", {}).get("custom-stores", {}):
@@ -84,6 +87,17 @@ class StoreBackend:
                 plugins.append((plugin.get("url"), plugin.get("branch")))
 
         return plugins
+    
+    async def get_official_store_branch(self) -> str:
+        if self.official_store_branch_cache is not None:
+            return self.official_store_branch_cache
+        versions_file = await self.get_remote_file(self.STORE_REPO_URL, "versions.json", branch_name="versions", force_refetch=True)
+        if isinstance(versions_file, NoConnectionError):
+            return versions_file
+        versions = json.loads(versions_file)
+        v = versions.get(gl.app_version, "main")
+        self.official_store_branch_cache = v
+        return v
 
     async def request_from_url(self, url: str) -> requests.Response:
         try:
@@ -180,13 +194,13 @@ class StoreBackend:
         return commits[0].get("sha")
     
     async def get_official_authors(self) -> list:
-        authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH)
+        authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH, force_refetch=True)
         if isinstance(authors_json, NoConnectionError):
             return authors_json
         authors_json = json.loads(authors_json)
         return authors_json
     
-    async def fetch_and_parse_json(self, url: str, filename: str, branch: str, n_stores_with_errors: int = 0):
+    async def fetch_and_parse_store_json(self, url: str, filename: str, branch: str, n_stores_with_errors: int = 0):
         try:
             store_file_json = await self.get_remote_file(url, filename, branch, force_refetch=True)
             if isinstance(store_file_json, NoConnectionError):
@@ -199,14 +213,14 @@ class StoreBackend:
             log.error(e)
             return None, n_stores_with_errors
 
-    async def process_store_data(self, filename: str, process_func: callable, data_class, include_images=True):
+    async def process_store_data(self, filename: str, process_func: callable, get_custom_func: callable, data_class, include_images=True):
         n_stores_with_errors = 0
         data_list = []
 
-        stores = self.get_stores()
+        stores = await self.get_stores()
 
         for url, branch in stores:
-            store_file_json, n_stores_with_errors = await self.fetch_and_parse_json(url, filename, branch, n_stores_with_errors)
+            store_file_json, n_stores_with_errors = await self.fetch_and_parse_store_json(url, filename, branch, n_stores_with_errors)
             if store_file_json is not None:
                 data_list.extend(store_file_json)
 
@@ -214,19 +228,28 @@ class StoreBackend:
             return NoConnectionError()
 
         prepare_tasks = [process_func(data, include_images) for data in data_list]
+
+        if get_custom_func is not None:
+            for url, branch in get_custom_func():
+                asset = {
+                    "url": url,
+                    "branch": branch
+                }
+                prepare_tasks.append(process_func(asset, include_images))
+
         results = await asyncio.gather(*prepare_tasks)
         results = [result for result in results if isinstance(result, data_class)]
 
         return results
 
     async def get_all_plugins_async(self, include_images: bool = True) -> int:
-        return await self.process_store_data("Plugins.json", self.prepare_plugin, PluginData, include_images)
+        return await self.process_store_data("Plugins.json", self.prepare_plugin, self.get_custom_plugins, PluginData, include_images)
 
     async def get_all_icons(self) -> int:
-        return await self.process_store_data("Icons.json", self.prepare_icon, IconData)
+        return await self.process_store_data("Icons.json", self.prepare_icon, None, IconData)
 
     async def get_all_wallpapers(self) -> int:
-        return await self.process_store_data("Wallpapers.json", self.prepare_wallpaper, WallpaperData)
+        return await self.process_store_data("Wallpapers.json", self.prepare_wallpaper, None, WallpaperData)
     
     async def get_manifest(self, url:str, commit:str) -> dict:
         # url = self.build_url(url, "manifest.json", commit)
@@ -851,7 +874,3 @@ class StoreBackend:
 
 class NoCompatibleVersion:
     pass
-            
-
-        
-b = StoreBackend()

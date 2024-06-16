@@ -24,10 +24,10 @@ from gi.repository import Gtk, Adw, Gdk, GLib, Pango
 import globals as gl
 
 class OutdatedActionRow(MissingRow):
-    def __init__(self, action_id:str, page_coords:str, index:int, state:int):
+    def __init__(self, action_id:str, index:int, state:int, coords:str = None, dial: int = None, touch: bool = None):
         super().__init__(
             action_id=action_id,
-            page_coords=page_coords,
+            coords=coords,
             index=index,
             state=state,
             install_label="Update outdated plugin",

@@ -682,22 +682,24 @@ class StoreBackend:
         gl.signal_manager.trigger_signal(Signals.PluginInstall, plugin_data.plugin_id)
 
         log.success(f"Plugin {plugin_data.plugin_id} installed successfully under: {local_path} with sha: {plugin_data.commit_sha}")
+        
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False, remove_files:bool = True) -> bool:
         ## 1. Remove all action objects in all pages
         for deck_controller in gl.deck_manager.deck_controller:
             # Track all keys controlled by this plugin
             if deck_controller.active_page is None:
                 continue
-            keys = deck_controller.active_page.get_keys_with_plugin(plugin_id=plugin_id)
+            #keys = deck_controller.active_page.get_keys_with_plugin(plugin_id=plugin_id)
 
             deck_controller.active_page.remove_plugin_action_objects(plugin_id=plugin_id)
             if remove_from_pages:
                 deck_controller.active_page.remove_plugin_actions_from_json(plugin_id=plugin_id)
 
+            #TODO: figure out
             # Clear all keys in this page which were controlled by this plugin
-            for key in keys:
-                key_index = deck_controller.coords_to_index(key.split("x"))
-                deck_controller.load_key(key_index, deck_controller.active_page)
+            #for key in keys:
+            #    key_index = deck_controller.coords_to_index(key.split("x"))
+            #    deck_controller.load_key(key_index, deck_controller.active_page)
 
         ## 2. Inform plugin base
         plugins = gl.plugin_manager.get_plugins()

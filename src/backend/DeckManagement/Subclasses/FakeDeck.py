@@ -25,6 +25,10 @@ class FakeDeck:
         self.is_fake = True
 
         self._key_layout = gl.settings_manager.get_deck_settings(self.serial_number).get("key-layout", [3, 5])
+        self._key_layout = [2, 4]
+
+        self._is_touch = True
+        self._dial_count = 4
 
     def deck_type(self):
         return self._deck_type
@@ -39,6 +43,10 @@ class FakeDeck:
     def key_count(self):
         return self.key_layout()[0] * self.key_layout()[1]
     def set_key_callback(self, *args, **kwargs):
+        return
+    def set_dial_callback(self, *args, **kwargs):
+        return
+    def set_touchscreen_callback(self, *args, **kwargs):
         return
     def set_brightness(self, *args, **kwargs):
         return
@@ -75,3 +83,20 @@ class FakeDeck:
     
     def is_visual(self) -> bool:
         return True
+    
+    def is_touch(self) -> bool:
+        return self.is_touch
+    
+    def dial_count(self) -> int:
+        return self._dial_count
+    
+    def touchscreen_image_format(self) -> dict:
+        return{
+            "size": (800, 100),
+            "format": "JPEG",
+            "flip": (False, False),
+            "rotation": 0
+        }
+    
+    def set_touchscreen_image(self, *args, **kwargs):
+        return

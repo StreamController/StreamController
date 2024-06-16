@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
@@ -22,7 +23,7 @@ from gi.repository import Gtk, Adw
 from loguru import logger as log
 
 # Import own modules
-from src.windows.mainWindow.elements.KeyGrid import KeyGrid
+from src.windows.mainWindow.elements.DeckConfig import DeckConfig
 from src.windows.mainWindow.elements.PageSettings.PageSettings import PageSettings
 
 # Import globals
@@ -64,9 +65,8 @@ class PageSettingsPage(Gtk.Overlay):
         self.switcher_box.append(self.switcher)
         
         ## Add stack pages
-        # Add key grid
-        self.grid_page = KeyGrid(self.deck_controller, self)
-        self.stack.add_titled(self.grid_page, "keys", gl.lm.get("main-page-page-grid"))
+        self.deck_config = DeckConfig(self)
+        self.stack.add_titled(self.deck_config, "deck-config", gl.lm.get("main-page-deck-config"))
 
         # Add settings
         self.settings_page = PageSettings(self)

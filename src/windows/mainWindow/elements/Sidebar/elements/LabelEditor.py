@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, Pango, GLib
@@ -25,7 +27,7 @@ from loguru import logger as log
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import add_default_keys, font_path_from_name, font_name_from_path
 from src.backend.PageManagement.Page import NoActionHolderFound, Page
-from src.backend.DeckManagement.DeckController import ControllerKey, KeyLabel
+from src.backend.DeckManagement.DeckController import ControllerInput, ControllerKey, KeyLabel
 from GtkHelper.GtkHelper import RevertButton
 
 # Import globals
@@ -47,8 +49,8 @@ class LabelEditor(Gtk.Box):
         self.label_group = LabelGroup(self.sidebar)
         self.main_box.append(self.label_group)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.label_group.load_for_coords(coords, state)
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.label_group.load_for_identifier(identifier, state)
 
 
 class LabelGroup(Adw.PreferencesGroup):
@@ -64,14 +66,14 @@ class LabelGroup(Adw.PreferencesGroup):
 
         return
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.expander.load_for_coords(coords, state)
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.expander.load_for_identifier(identifier, state)
 
 class LabelExpanderRow(Adw.ExpanderRow):
     def __init__(self, label_group):
         super().__init__(title=gl.lm.get("label-editor-header"), subtitle=gl.lm.get("label-editor-expander-subtitle"))
         self.label_group = label_group
-        self.active_coords = None
+        self.active_identifier: InputIdentifier = None
         self.build()
 
     def build(self):
@@ -83,19 +85,21 @@ class LabelExpanderRow(Adw.ExpanderRow):
         self.add_row(self.center_row)
         self.add_row(self.bottom_row)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.active_coords = coords
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        if not isinstance(identifier, InputIdentifier):
+            raise TypeError
+        self.active_identifier = identifier
 
-        self.top_row.load_for_coords(coords, state)
-        self.center_row.load_for_coords(coords, state)
-        self.bottom_row.load_for_coords(coords, state)
+        self.top_row.load_for_identifier(identifier, state)
+        self.center_row.load_for_identifier(identifier, state)
+        self.bottom_row.load_for_identifier(identifier, state)
 
 class LabelRow(Adw.PreferencesRow):
     def __init__(self, label_text, label_index: int, sidebar, key_name: str, **kwargs):
         super().__init__(**kwargs)
         self.label_text = label_text
         self.sidebar = sidebar
-        self.active_coords = None
+        self.active_identifier: InputIdentifier = None
         self.state: int = 0
         self.label_index = label_index
         self.key_name = key_name
@@ -161,36 +165,23 @@ class LabelRow(Adw.PreferencesRow):
         except Exception as e:
             log.error(f"Failed to disconnect signals. Error: {e}")
 
-    def get_controller_key(self) -> ControllerKey:
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
-        if controller is None:
-            return
-        x, y = self.active_coords
-
-        return controller.keys[controller.coords_to_index((x, y))]
-
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.active_coords = coords
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        if not isinstance(identifier, InputIdentifier):
+            raise ValueError
+        self.active_identifier = identifier
         self.state = state
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
+
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
         page = controller.active_page
-
 
         if page == None:
             #TODO: Show error
             return
         
-        controller_key = self.get_controller_key()
-
-        use_page_label_properties = controller_key.get_active_state().label_manager.get_use_page_label_properties(position=self.key_name)
+        controller_input = controller.get_input(identifier)
+        use_page_label_properties = controller_input.get_active_state().label_manager.get_use_page_label_properties(position=self.key_name)
 
         ## Set visibility of revert buttons
         self.text_entry.revert_button.set_visible(use_page_label_properties.get("text", False))
@@ -199,15 +190,16 @@ class LabelRow(Adw.PreferencesRow):
         font_combined = use_page_label_properties.get("font-family", False) and use_page_label_properties.get("font-size", False)
         self.font_chooser_button.revert_button.set_visible(font_combined)
 
-        ## Set properties
+        # Set properties
         self.update_values()
 
 
     def update_values(self, composed_label: KeyLabel = None):
         self.disconnect_signals()
         if composed_label is None:
-            controller_key = self.get_controller_key()
-            composed_label = controller_key.get_active_state().label_manager.get_composed_label(position=self.key_name)
+            cotnroller = gl.app.main_win.get_active_controller()
+            controller_input = cotnroller.get_input(self.active_identifier)
+            composed_label = controller_input.get_active_state().label_manager.get_composed_label(position=self.key_name)
 
         if self.text_entry.entry.get_text() != composed_label.text:
             pos = self.text_entry.entry.get_position()
@@ -242,8 +234,9 @@ class LabelRow(Adw.PreferencesRow):
         alpha = round(color.alpha * 255)
 
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_label_font_color(coords=self.active_coords, state=self.state, label_position=self.key_name, font_color=[red, green, blue, alpha])
+        active_page.set_label_font_color(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_color=[red, green, blue, alpha])
 
+        self.color_chooser_button.revert_button.set_visible(True)
 
     def on_change_font(self, button):
         font = self.font_chooser_button.button.get_font()
@@ -254,28 +247,29 @@ class LabelRow(Adw.PreferencesRow):
         font_size = pango_font.get_size()
 
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_label_font_family(coords=self.active_coords, state=self.state, label_position=self.key_name, font_family=pango_font.get_family(), update=False)
-        active_page.set_label_font_size(coords=self.active_coords, state=self.state, label_position=self.key_name, font_size=font_size/Pango.SCALE, update=True)
+        active_page.set_label_font_family(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_family=pango_font.get_family(), update=False)
+        active_page.set_label_font_size(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_size=font_size/Pango.SCALE, update=True)
 
         self.font_chooser_button.revert_button.set_visible(True)
 
     def on_reset_font(self, button):
         #FIXME: gets called multiple times
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_label(coords=self.active_coords, state=self.state, label_position=self.key_name, font_family=None, update=False)
-        active_page.set_label_font_size(coords=self.active_coords, state=self.state, label_position=self.key_name, font_size=None, update=True)
+        #TODO
+        active_page.set_label_text(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_family=None, update=False)
+        active_page.set_label_font_size(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_size=None, update=True)
 
         self.font_chooser_button.revert_button.set_visible(False)
 
     def on_reset_text(self, button):
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_label_text(coords=self.active_coords, state=self.state, label_position=self.key_name, text=None)
+        active_page.set_label_text(identifier=self.active_identifier, state=self.state, label_position=self.key_name, text=None)
 
         self.update_values()
 
     def on_reset_color(self, button):
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_label_font_color(coords=self.active_coords, state=self.state, label_position=self.key_name, font_color=None)
+        active_page.set_label_font_color(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_color=None)
 
         self.color_chooser_button.revert_button.set_visible(False)
 
@@ -283,38 +277,12 @@ class LabelRow(Adw.PreferencesRow):
         text = entry.get_text()
 
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_label_text(coords=self.active_coords, state=self.state, label_position=self.key_name, text=text)
+        active_page.set_label_text(identifier=self.active_identifier, state=self.state, label_position=self.key_name, text=text)
 
         self.text_entry.revert_button.set_visible(True)
 
-    def add_new_label_if_needed(self):
-        #TODO: Use this method to update everything on change
-        raise NotImplementedError #TODO: No longer needed
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        current_deck_controller = visible_child.deck_controller
-        if current_deck_controller is None:
-            return
-        for deck_controller in gl.deck_manager.deck_controller:
-            if current_deck_controller.active_page.json_path != deck_controller.active_page.json_path:
-                continue
-
-            key_index = deck_controller.coords_to_index(self.active_coords)
-            if key_index >= len(deck_controller.keys):
-                continue
-            controller_key = deck_controller.keys[key_index]
-
-            if self.key_name in controller_key.labels:
-                continue
-
-            # Add new KeyLabel
-            label = KeyLabel(
-                text=self.text_entry.get_text(),
-                controller_key=controller_key
-            )
-            controller_key.add_label(label, self.key_name, update=False)
-
+        hide_details = text.strip() == ""
+        self.font_chooser_box.set_visible(not hide_details)
 
 class TextEntry(Gtk.Box):
     def __init__(self, **kwargs):

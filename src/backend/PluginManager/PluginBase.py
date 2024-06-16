@@ -172,7 +172,6 @@ class PluginBase(rpyc.Service):
     def is_app_version_matching(self) -> bool:
         return self.are_major_versions_matching() and self.is_minimum_version_ok()
 
-
     def add_action_holder(self, action_holder: ActionHolder):
         if not isinstance(action_holder, ActionHolder):
             raise ValueError("Please pass an ActionHolder")

@@ -16,6 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from re import I
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
+from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
@@ -31,7 +34,7 @@ from src.windows.Store.Store import Store
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
 # Import typing
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.Sidebar import Sidebar
 
@@ -46,6 +49,7 @@ class ActionChooser(Gtk.Box):
         self.callback_function = None
         self.callback_args = None
         self.callback_kwargs = None
+        self.identifier: InputIdentifier = None
 
         self.build()
 
@@ -76,10 +80,10 @@ class ActionChooser(Gtk.Box):
         self.plugin_group = PluginGroup(self, margin_top=40)
         self.main_box.append(self.plugin_group)
 
-        self.open_store_button = OpenStoreButton(margin_top=40)
+        self.open_store_button = OpenStoreButton(margin_top=40, margin_bottom=40)
         self.main_box.append(self.open_store_button)
 
-    def show(self, callback_function, current_stack_page, callback_args, callback_kwargs):
+    def show(self, callback_function, current_stack_page, identifier: InputIdentifier, callback_args, callback_kwargs):
         # The current-stack_page is usefull in case the let_user_select_action is called by an plugin action in the action_configurator
 
         # Validate the callback function
@@ -89,17 +93,20 @@ class ActionChooser(Gtk.Box):
             self.callback_args = None
             self.callback_kwargs = None
             self.current_stack_page = None
+            self.identifier = None
             return
         
         self.callback_function = callback_function
         self.current_stack_page = current_stack_page
         self.callback_args = callback_args
         self.callback_kwargs = callback_kwargs
+        self.identifier = identifier
+        self.plugin_group.set_identifier(identifier)
 
         self.sidebar.main_stack.set_visible_child(self)
 
     def on_back_button_click(self, button):
-        self.sidebar.main_stack.set_visible_child_name("key_editor")
+        self.sidebar.main_stack.set_visible_child_name("configurator_stack")
 
     def on_search_changed(self, search_entry):
         self.plugin_group.search()
@@ -187,6 +194,11 @@ class PluginGroup(BetterPreferencesGroup):
         if title_fuzzy >= MIN_TITLE_FUZZY_SCORE:
             return True
         return False
+    
+    def set_identifier(self, identifier: InputIdentifier):
+        for expander in self.expander:
+            expander.set_identifier(identifier)
+            expander.invalidate_filter()
 
 
 class PluginExpander(BetterExpander):
@@ -195,6 +207,8 @@ class PluginExpander(BetterExpander):
         self.plugin_group = plugin_group
         self.plugin_name = plugin_name
         self.plugin_dir = plugin_dir
+
+        self.input_type: InputIdentifier = None
 
         # Texts
         self.set_title(plugin_name)
@@ -248,15 +262,18 @@ class PluginExpander(BetterExpander):
             return 1
         return 0
     
-    def filter_func(self, row, user_data):
+    def filter_func(self, row: "ActionRow", user_data):
         search_string = self.plugin_group.action_chooser.search_entry.get_text()
+
+        # if row.action_holder.get_input_compatibility(self.plugin_group.action_chooser.identifier) <= ActionInputSupport.NONE:
+            # return False
 
         if search_string == "":
             # Collapse all
             self.set_expanded(False)
             # Show all
             return True
-
+        
         fuzz_score = fuzz.ratio(search_string.lower(), row.label.get_label().lower())
 
         MIN_FUZZY_SCORE = 20
@@ -265,9 +282,15 @@ class PluginExpander(BetterExpander):
             self.set_expanded(True)
             return True
         return False
+    
+    def set_identifier(self, input_type: InputIdentifier):
+        self.input_type = input_type
+        for row in self.get_rows():
+            row.set_identifier(input_type)
+        self.invalidate_filter()
 
 
-class ActionRow(Adw.PreferencesRow):
+class ActionRow(Adw.ActionRow):
     def __init__(self, expander, action_holder: ActionHolder, **kwargs):
         super().__init__(**kwargs)
         self.expander = expander
@@ -291,6 +314,10 @@ class ActionRow(Adw.PreferencesRow):
         self.label = Gtk.Label(label=self.action_holder.action_name, margin_start=10, css_classes=["bold", "large-text"])
         self.main_box.append(self.label)
 
+        self.warning_icon = Gtk.Image(icon_name="dialog-warning-symbolic",
+                                      hexpand=True, halign=Gtk.Align.END, margin_end=3, visible=False)
+        self.main_box.append(self.warning_icon)
+
     def on_click(self, button):
         if self.action_holder.action_base == None:
             return
@@ -310,3 +337,30 @@ class ActionRow(Adw.PreferencesRow):
 
         
         callback(self.action_holder, *args, **kwargs)
+
+    def show_warning(self, show: bool, tooltip: str = None):
+        self.warning_icon.set_visible(show)
+
+        if show and tooltip is not None:
+            self.warning_icon.set_tooltip_text(tooltip)
+
+    def set_identifier(self, identifier: InputIdentifier):
+        action_input_compatibility = self.action_holder.get_input_compatibility(identifier)
+
+        if action_input_compatibility <= ActionInputSupport.NO:
+            self.warning_icon.set_from_icon_name("dialog-error-symbolic")
+            self.set_tooltip_text(f"action is not compatible with {identifier.input_type}")
+            self.show_warning(True)
+            self.set_sensitive(False)
+            
+        elif action_input_compatibility == ActionInputSupport.UNTESTED:
+            self.warning_icon.set_from_icon_name("dialog-warning-symbolic")
+            self.warning_icon.set_tooltip_text(f"action might not be compatible with {identifier.input_type}")
+            self.set_tooltip_text("")
+            self.show_warning(True)
+            self.set_sensitive(True)
+
+        elif action_input_compatibility >= ActionInputSupport.SUPPORTED:
+            self.set_tooltip_text("")
+            self.show_warning(False)
+            self.set_sensitive(True)

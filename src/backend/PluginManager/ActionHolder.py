@@ -14,12 +14,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 # Import own modules
+from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 from src.backend.PluginManager.ActionBase import ActionBase
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.DeckController import DeckController
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 
 # Import typing
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
 
@@ -32,11 +35,23 @@ from packaging import version
 
 import globals as gl
 
+import traceback
+
 class ActionHolder:
     """
     Holder for ActionBase containing important information that can be used as long as the ActionBase is not initialized
     """
-    def __init__(self, plugin_base: "PluginBase", action_base: ActionBase, action_id: str, action_name: str, icon: Gtk.Widget = None, min_app_version: str = None):
+    def __init__(self, plugin_base: "PluginBase",
+                 action_base: ActionBase,
+                 action_id: str, action_name: str,
+                 icon: Gtk.Widget = None,
+                 min_app_version: str = None,
+                 action_support = {
+                     Input.Key: ActionInputSupport.UNTESTED,
+                     Input.Dial: ActionInputSupport.UNTESTED,
+                     Input.Touchscreen: ActionInputSupport.UNTESTED
+                 },
+                 *args, **kwargs):
         
         ## Verify variables
         if action_id in ["", None]:
@@ -53,7 +68,8 @@ class ActionHolder:
         self.action_name = action_name
         self.icon = icon
         self.min_app_version = min_app_version
-
+        self.action_support = action_support
+        
     def get_is_compatible(self) -> bool:
         if self.min_app_version is not None:
             if version.parse(gl.app_version) < version.parse(self.min_app_version):
@@ -61,16 +77,19 @@ class ActionHolder:
             
         return True
 
-    def init_and_get_action(self, deck_controller: DeckController, page: Page, coords: str, state: int) -> ActionBase:
+    def init_and_get_action(self, deck_controller: DeckController, page: Page, state: int, input_ident: InputIdentifier) -> ActionBase:
         if not self.get_is_compatible():
             return
 
         return self.action_base(
-            action_id = self.action_id,
-            action_name = self.action_name,
-            deck_controller = deck_controller,
-            page = page,
-            coords = coords,
-            plugin_base = self.plugin_base,
-            state = state
+            action_id=self.action_id,
+            action_name=self.action_name,
+            deck_controller=deck_controller,
+            page=page,
+            input_ident=input_ident,
+            plugin_base=self.plugin_base,
+            state=state
         )
+    
+    def get_input_compatibility(self, identifier: InputIdentifier) -> ActionInputSupport:
+        return self.action_support.get(type(identifier), ActionInputSupport.NO)

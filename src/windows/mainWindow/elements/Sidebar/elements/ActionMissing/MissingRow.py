@@ -25,13 +25,16 @@ import globals as gl
 from loguru import logger as log
 
 class MissingRow(Adw.PreferencesRow):
-    def __init__(self, action_id:str, page_coords:str, index:int, state:int,
+    def __init__(self, action_id:str, index:int, state:int,
                  install_label: str,
                  install_failed_label: str,
-                 installing_label: str):
+                 installing_label: str,
+                 coords:str = None, dial: int = None, touch: bool = None):
         super().__init__(css_classes=["no-padding"])
         self.action_id = action_id
-        self.page_coords = page_coords
+        self.coords = coords
+        self.dial = dial
+        self.touch = touch
         self.state = state
         self.index = index
         self.install_label = install_label
@@ -120,11 +123,11 @@ class MissingRow(Adw.PreferencesRow):
         page = controller.active_page
 
         # Remove from action objects
-        del page.action_objects[self.page_coords][self.index]
+        del page.action_objects[self.coords][self.index]
 
         # Remove from page json
-        page.dict["keys"][self.page_coords][str(self.state)]["actions"].pop(self.index)
+        page.dict["keys"][self.coords][str(self.state)]["actions"].pop(self.index)
         page.save()
 
         # Reload configurator ui
-        gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.page_coords.split("x"), self.state)
+        gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.coords.split("x"), self.state)

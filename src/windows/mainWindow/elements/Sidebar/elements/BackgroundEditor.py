@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import InputIdentifier
 from src.backend.DeckManagement.HelperMethods import add_default_keys
 
 gi.require_version("Gtk", "4.0")
@@ -43,8 +44,8 @@ class BackgroundEditor(Gtk.Box):
         self.label_group = BackgroundGroup(self.sidebar)
         self.main_box.append(self.label_group)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.label_group.load_for_coords(coords, state)
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.label_group.load_for_identifier(identifier, state)
 
 
 class BackgroundGroup(Adw.PreferencesGroup):
@@ -60,14 +61,14 @@ class BackgroundGroup(Adw.PreferencesGroup):
 
         return
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.expander.load_for_coords(coords, state)
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.expander.load_for_identifier(identifier, state)
 
 class BackgroundExpanderRow(Adw.ExpanderRow):
     def __init__(self, label_group):
         super().__init__(title=gl.lm.get("background-editor.header"), subtitle=gl.lm.get("background-editor-expander.subtitle"))
         self.label_group = label_group
-        self.active_coords = None
+        self.active_identifier: InputIdentifier = None
         self.active_state = None
         self.build()
 
@@ -78,11 +79,11 @@ class BackgroundExpanderRow(Adw.ExpanderRow):
         self.reset_color_button = ResetColorButton(color_row=self.color_row)
         self.add_row(self.reset_color_button)
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
-        self.active_coords = coords
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.active_identifier = identifier
         self.active_state = state
 
-        self.color_row.load_for_coords(coords, state)
+        self.color_row.load_for_identifier(identifier, state)
         self.reset_color_button.update()
 
 class ColorRow(Adw.PreferencesRow):
@@ -90,7 +91,7 @@ class ColorRow(Adw.PreferencesRow):
         super().__init__(**kwargs)
         self.sidebar = sidebar
         self.expander = expander
-        self.active_coords = None
+        self.active_identifier: InputIdentifier = None
         self.active_state = None
         self.build()
 
@@ -134,18 +135,18 @@ class ColorRow(Adw.PreferencesRow):
         alpha = round(color.alpha * 255)
 
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_background_color(coords=self.active_coords, state=self.active_state, color=[red, green, blue, alpha])
+        active_page.set_background_color(identifier=self.active_identifier, state=self.active_state, color=[red, green, blue, alpha])
 
         self.expander.reset_color_button.update()
 
-    def load_for_coords(self, coords: tuple[int, int], state: int):
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
         self.disconnect_signals()
 
-        self.active_coords = coords
+        self.active_identifier = identifier
         self.active_state = state
 
         active_page = gl.app.main_win.get_active_page()
-        color = active_page.get_background_color(coords=self.active_coords, state=self.active_state)
+        color = active_page.get_background_color(identifier=identifier, state=self.active_state)
         if color is None:
             color = [0, 0, 0, 0]
 

@@ -1,8 +1,6 @@
 from typing import TYPE_CHECKING
 from enum import Enum
 
-from attr import dataclass
-
 if TYPE_CHECKING:
     from src.backend.PageManagement.Page import Page
     from src.backend.DeckManagement.DeckController import DeckController, ControllerInput

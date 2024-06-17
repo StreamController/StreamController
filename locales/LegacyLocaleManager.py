@@ -35,7 +35,7 @@ class LegacyLocaleManager:
 
     def set_to_os_default(self):
         os_locale = locale.getlocale()[0]
-        self.set_language(os_locale)
+        self.set_language(self.FALLBACK_LOCALE if os_locale is None else os_locale)
 
     def set_language(self, language: str) -> str:
         language = self.get_best_match(language)

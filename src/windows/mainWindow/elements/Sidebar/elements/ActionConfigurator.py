@@ -307,15 +307,13 @@ class EventAssigner(Adw.PreferencesGroup):
         self.button_box.append(self.clear_all_button)
 
         all_events = Input.AllEvents()
-        all_events.append(None)
-
         self.rows: list[EventAssignerRow] = []
 
         for event in all_events:
             row = EventAssignerRow(
                 event_assigner=self,
                 event=event,
-                available_events=all_events
+                available_events=all_events + [None]
             )
 
             self.rows.append(row)

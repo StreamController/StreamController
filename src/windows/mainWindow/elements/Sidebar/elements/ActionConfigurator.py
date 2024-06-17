@@ -333,7 +333,8 @@ class EventAssigner(Adw.PreferencesGroup):
             row.select_event(new_assignment)
 
             action_input_type = type(action.input_ident)
-            row.set_visible(row.event in action_input_type.Events)
+            if row.event is not None:
+                row.set_visible(row.event in action_input_type.Events)
 
     def change_assignment_for_event(self, event: InputEvent, new_assignment: InputEvent):
         assignments = self.action.get_event_assignments()

@@ -92,7 +92,7 @@ class PluginPreview(StorePreview):
         self.set_url(plugin_data.github)
 
         self.set_official(plugin_data.official)
-        self.set_verified(plugin_data.commit_sha is not None)
+        self.set_verified(plugin_data.verified)
 
         # Set install button state
         if plugin_data.local_sha is None:

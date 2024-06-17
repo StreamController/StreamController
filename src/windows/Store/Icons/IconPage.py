@@ -84,7 +84,7 @@ class IconPreview(StorePreview):
         self.set_url(icon_data.github)
 
         self.set_official(icon_data.official)
-        self.set_verified(icon_data.commit_sha is not None)
+        self.set_verified(icon_data.verified)
 
         if not self.check_required_version(icon_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")

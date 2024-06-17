@@ -227,7 +227,7 @@ class StoreBackend:
         if n_stores_with_errors >= len(stores):
             return NoConnectionError()
 
-        prepare_tasks = [process_func(data, include_images) for data in data_list]
+        prepare_tasks = [process_func(data, include_images, True) for data in data_list]
 
         if get_custom_func is not None:
             for url, branch in get_custom_func():
@@ -235,7 +235,7 @@ class StoreBackend:
                     "url": url,
                     "branch": branch
                 }
-                prepare_tasks.append(process_func(asset, include_images))
+                prepare_tasks.append(process_func(asset, include_images, False))
 
         results = await asyncio.gather(*prepare_tasks)
         results = [result for result in results if isinstance(result, data_class)]
@@ -284,7 +284,7 @@ class StoreBackend:
                     os.remove(self.attribution_cache[cached_url])
                 del self.attribution_cache[cached_url]
 
-    async def prepare_plugin(self, plugin, include_image: bool = True):
+    async def prepare_plugin(self, plugin, include_image: bool = True, verified: bool = False):
         url = plugin["url"]
 
         # Check if suitable version is available
@@ -355,7 +355,8 @@ class StoreBackend:
             plugin_version=manifest.get("version") or None,
             plugin_id=manifest.get("id") or None,
 
-            is_compatible=compatible
+            is_compatible=compatible,
+            verified=verified
         )
 
 
@@ -370,7 +371,7 @@ class StoreBackend:
             return
         return sha
     
-    async def prepare_icon(self, icon, include_image: bool = True):
+    async def prepare_icon(self, icon, include_image: bool = True, verified: bool = False):
         if not include_image:
             raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in icon:
@@ -438,11 +439,12 @@ class StoreBackend:
             icon_version=manifest.get("icon") or None,
             icon_id=manifest.get("id") or None,
 
-            is_compatible=compatible
+            is_compatible=compatible,
+            verified=verified
         )
 
     
-    async def prepare_wallpaper(self, wallpaper, include_image: bool = True):
+    async def prepare_wallpaper(self, wallpaper, include_image: bool = True, verified: bool = False):
         if not include_image:
             raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in wallpaper:
@@ -506,7 +508,8 @@ class StoreBackend:
             wallpaper_version=manifest.get("version") or None,
             wallpaper_id=manifest.get("id") or None,
 
-            is_compatible=compatible
+            is_compatible=compatible,
+            verified=verified
         )
 
     async def get_web_image(self, url: str, path: str, branch: str = "main") -> Image:

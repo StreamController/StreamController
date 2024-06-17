@@ -432,7 +432,7 @@ class Page:
         
         for state in self.dict.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get("states", {}):
             for i, action_dict in enumerate(self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state].get("actions", [])):
-                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {})[i] is action_object:
+                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {}).get(i) is action_object:
                     return action_dict
                 
         return {}

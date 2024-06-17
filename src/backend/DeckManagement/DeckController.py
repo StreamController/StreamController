@@ -1789,7 +1789,7 @@ class ControllerKey(ControllerInput):
             )
 
         elif self.down_start_time is not None: # Key up
-            if time.time() - self.down_start_time >= self.HOLD_TIME:
+            if time.time() - self.down_start_time >= self.deck_controller.hold_time:
                 active_state.own_actions_event_callback_threaded(
                     event=Input.Key.Events.HOLD_STOP
                 )
@@ -2184,7 +2184,7 @@ class ControllerDial(ControllerInput):
                 )
             elif self.down_start_time is not None:
                 self.stop_hold_timer()
-                if time.time() >= self.down_start_time + self.HOLD_TIME:
+                if time.time() >= self.down_start_time + self.deck_controller.hold_time:
                     active_state.own_actions_event_callback_threaded(
                         event=Input.Dial.Events.HOLD_STOP
                     )

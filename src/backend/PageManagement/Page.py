@@ -25,6 +25,7 @@ import shutil
 from numpy import isin
 
 # Import globals
+from src.backend.DeckManagement.HelperMethods import sha256
 from src.backend.DeckManagement.ImageHelpers import crop_key_image_from_deck_sized_image
 import globals as gl
 
@@ -54,6 +55,9 @@ class Page:
         self.file_access_semaphore = threading.Semaphore()
 
         self.load(load_from_file=True)
+
+    def get_hash(self) -> str:
+        return sha256(self.json_path)
 
     def get_name(self) -> str:
         return os.path.splitext(os.path.basename(self.json_path))[0]
@@ -613,6 +617,7 @@ class Page:
                 d = d.setdefault(key, {})
 
         self.save()
+        self.deck_controller.update_prediction()
         gl.page_manager.update_dict_of_pages_with_path(self.json_path)
 
     def update_key_image(self, coords: str | tuple[int, int], state: int) -> None:

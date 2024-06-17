@@ -50,6 +50,7 @@ from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
 from src.backend.GnomeExtensions import GnomeExtensions
 from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
 from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
+from src.backend.Predictions.PredictionManager import PredictionManager
 from src.tray import TrayIcon
 
 # Migration
@@ -103,6 +104,8 @@ def create_global_objects():
     gl.lm.set_fallback_language("en_US")
 
     gl.flatpak_permission_manager = FlatpakPermissionManager()
+
+    gl.prediction_manager = PredictionManager()
 
     gl.gnome_extensions = GnomeExtensions()
 

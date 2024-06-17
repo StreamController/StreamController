@@ -52,6 +52,7 @@ if TYPE_CHECKING:
     from src.windows.PageManager.PageManager import PageManager
     from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
     from src.tray import TrayIcon
+    from src.backend.Predictions.PredictionManager import PredictionManager
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -82,6 +83,7 @@ threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 tray_icon: "TrayIcon" = None
+prediction_manager: "PredictionManager" = None
 
 app_version: str = "1.5.1-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False

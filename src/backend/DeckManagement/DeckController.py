@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from functools import lru_cache
+import itertools
 import os
 from queue import Queue
 import random
@@ -386,6 +387,20 @@ class DeckController:
 
         self.load_default_page()
 
+    def hide_all_borders(self):
+        for c_input in self.get_all_inputs():
+            if hasattr(c_input, "set_show_border"):
+                c_input.set_show_border(False, False)
+
+    def update_prediction(self) -> None:
+        identifier = gl.prediction_manager.get_prediction(self, self.active_page)
+        if identifier is None:
+            self.hide_all_borders()
+        else:
+            c_input = self.get_input(identifier)
+            c_input.set_show_border(True, True) 
+            c_input.update()
+
     def init_inputs(self):
         for i in Input.All:
             self.inputs[i] = []
@@ -399,6 +414,9 @@ class DeckController:
         if input_type not in self.inputs:
             raise ValueError(f"Unknown input type: {input_type}")
         return self.inputs[input_type]
+    
+    def get_all_inputs(self) -> list["ControllerInput"]:
+        return list(itertools.chain.from_iterable(self.inputs.values()))
 
     def get_input(self, identifier: InputIdentifier):
         for i in self.get_inputs(identifier):
@@ -695,6 +713,8 @@ class DeckController:
 
         # Notify plugin actions
         gl.signal_manager.trigger_signal(Signals.ChangePage, self, old_path, self.active_page.json_path)
+
+        self.update_prediction()
 
         log.info(f"Loaded page {page.get_name()} on deck {self.deck.get_serial_number()}")
         gc.collect()
@@ -1729,6 +1749,19 @@ class ControllerKey(ControllerInput):
 
         self.down_start_time: float = None
 
+        self.show_border = False
+
+    def set_show_border(self, show_border: bool, hide_other_borders: bool = True):
+        if hide_other_borders:
+            for c_input in self.deck_controller.get_all_inputs():
+                update = c_input.show_border
+                c_input.show_border = False
+                if update:
+                    c_input.update()
+        
+        self.show_border = show_border
+        self.update()
+
     def on_hold_timer_end(self):
         state = self.get_active_state()
         state.own_actions_event_callback_threaded(
@@ -1771,6 +1804,8 @@ class ControllerKey(ControllerInput):
         if press_state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
             self.deck_controller.screen_saver.on_key_change()
+            gl.prediction_manager.add_entry(self.deck_controller, self.deck_controller.active_page, self.identifier)
+            self.deck_controller.update_prediction()
         if screensaver_was_showing:
             return
         
@@ -1858,6 +1893,9 @@ class ControllerKey(ControllerInput):
             background.close()
         
         image.close()
+
+        if self.show_border:
+            labeled_image = self.add_border(labeled_image)
 
         return labeled_image
     

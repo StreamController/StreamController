@@ -143,6 +143,8 @@ class DeckManager:
     def remove_controller(self, deck_controller: DeckController) -> None:
         self.deck_controller.remove(deck_controller)
         gl.app.main_win.leftArea.deck_stack.remove_page(deck_controller)
+        if deck_controller.serial_number() in gl.prediction_manager.history:
+            del gl.prediction_manager.history[deck_controller.serial_number()]
         deck_controller.delete()
         del deck_controller
 

@@ -267,6 +267,8 @@ class LabelRow(Adw.PreferencesRow):
 
         self.update_values()
 
+        self.text_entry.revert_button.set_visible(False)
+
     def on_reset_color(self, button):
         active_page = gl.app.main_win.get_active_page()
         active_page.set_label_font_color(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_color=None)

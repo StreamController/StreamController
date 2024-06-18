@@ -33,7 +33,7 @@ class InputImage(SingleKeyAsset):
             halign (float, optional): The horizontal alignment of the image. Defaults to 0. Ranges from -1 to 1.
         """
         super().__init__(controller_input)
-        self.image = image
+        self.image = image.convert("RGBA")
 
         if self.image is None:
             self.image = self.controller_input.get_empty_background()

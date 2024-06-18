@@ -792,7 +792,7 @@ class StoreBackend:
         await self.download_repo(repo_url=icon_data.github, directory=icon_path, commit_sha=icon_data.commit_sha)
 
     async def uninstall_icon(self, icon_data:IconData):
-        folder_name = f"{icon_data.author}::{icon_data.icon_name}"
+        folder_name = icon_data.icon_id
         if os.path.exists(os.path.join(gl.DATA_PATH, "icons", folder_name)):
             shutil.rmtree(os.path.join(gl.DATA_PATH, "icons", folder_name))
 
@@ -804,7 +804,7 @@ class StoreBackend:
         await self.download_repo(repo_url=wallpaper_data.github, directory=wallpaper_path, commit_sha=wallpaper_data.commit_sha)
 
     async def uninstall_wallpaper(self, wallpaper_data:WallpaperData):
-        folder_name = f"{wallpaper_data.author}::{wallpaper_data.wallpaper_name}"
+        folder_name = wallpaper_data.wallpaper_id
         if os.path.exists(os.path.join(gl.DATA_PATH, "wallpapers", folder_name)):
             shutil.rmtree(os.path.join(gl.DATA_PATH, "wallpapers", folder_name))
 

@@ -30,6 +30,7 @@ import uuid
 import shutil
 from install import install
 from packaging import version
+import urllib.request
 
 # Import GLib
 import gi
@@ -364,12 +365,20 @@ class StoreBackend:
     async def get_local_sha(self, git_dir: str):
         if not os.path.exists(git_dir):
             return
-        try:
-            sha = subprocess.check_output(f'cd "{git_dir}" && git rev-parse HEAD', shell=True).decode("utf-8").strip()
-        except subprocess.CalledProcessError as e:
-            log.error(e)
+        
+        if os.path.exists(os.path.join(git_dir, ".git")):
+            try:
+                sha = subprocess.check_output(f'cd "{git_dir}" && git rev-parse HEAD', shell=True).decode("utf-8").strip()
+                return sha
+            except subprocess.CalledProcessError as e:
+                log.error(e)
+
+        version_file_path = os.path.join(git_dir, "VERSION")
+        if not os.path.exists(version_file_path):
             return
-        return sha
+        
+        with open(version_file_path, "r") as f:
+            return f.read().strip()
     
     async def prepare_icon(self, icon, include_image: bool = True, verified: bool = False):
         if not include_image:
@@ -608,6 +617,48 @@ class StoreBackend:
     async def os_sys(self, args):
         return os.system(args)
     
+    async def download_repo(self, repo_url:str, directory:str, commit_sha:str = None, branch_name:str = None):
+        username = self.get_user_name(repo_url)
+        projectname = self.get_repo_name(repo_url)
+        sha = commit_sha
+        if commit_sha is None and branch_name is not None:
+            # Used to write the version
+            sha = self.get_last_commit(repo_url, branch_name)
+        zip_url = f"https://github.com/{username}/{projectname}/archive/{sha}.zip"
+        
+        # Download
+        try:
+            # Create cache dir
+            os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
+            urllib.request.urlretrieve(zip_url, os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
+            print()
+        except TypeError as e:
+            log.error(e)
+            return NoConnectionError()
+        
+        ## Extract
+        if os.path.exists(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}")):
+            shutil.rmtree(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}"))
+        shutil.unpack_archive(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"), os.path.join(gl.DATA_PATH, "cache"))
+
+        os.makedirs(directory, exist_ok=True)
+
+        for name in os.listdir(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}")):
+            shutil.move(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}", name), directory)
+        # print()
+
+        # shutil.move(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}", "*"), local_path)
+
+        os.remove(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
+        shutil.rmtree(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}"))
+        
+        ## Write version
+        path = os.path.join(directory, "VERSION")
+        with open(path, "w") as f:
+            f.write(sha)
+        
+        return 200
+    
     async def clone_repo(self, repo_url:str, local_path:str, commit_sha:str = None, branch_name:str = None):
         # if branch_name == None and commit_sha == None:
             # Set branch_name to main branch's name
@@ -647,7 +698,7 @@ class StoreBackend:
 
         local_path = os.path.join(gl.PLUGIN_DIR, plugin_data.plugin_id)
 
-        response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_data.commit_sha, branch_name=plugin_data.branch)
+        response = await self.download_repo(repo_url=url, directory=local_path, commit_sha=plugin_data.commit_sha, branch_name=plugin_data.branch)
 
         # Run install script if present
         if os.path.isfile(os.path.join(local_path, "__install__.py")):
@@ -735,15 +786,10 @@ class StoreBackend:
 
     async def install_icon(self, icon_data:IconData):
         icon_path = os.path.join(gl.DATA_PATH, "icons", icon_data.icon_id)
-        os.makedirs(icon_path, exist_ok=True)
 
         await self.uninstall_icon(icon_data)
 
-        await self.clone_repo(
-            repo_url=icon_data.github,
-            local_path=icon_path,
-            commit_sha=icon_data.commit_sha
-        )
+        await self.download_repo(repo_url=icon_data.github, directory=icon_path, commit_sha=icon_data.commit_sha)
 
     async def uninstall_icon(self, icon_data:IconData):
         folder_name = f"{icon_data.author}::{icon_data.icon_name}"
@@ -752,15 +798,10 @@ class StoreBackend:
 
     async def install_wallpaper(self, wallpaper_data:WallpaperData):
         wallpaper_path = os.path.join(gl.DATA_PATH, "wallpapers", wallpaper_data.wallpaper_id)
-        os.makedirs(wallpaper_path, exist_ok=True)
 
         await self.uninstall_wallpaper(wallpaper_data)
 
-        await self.clone_repo(
-            repo_url=wallpaper_data.github,
-            local_path=wallpaper_path,
-            commit_sha=wallpaper_data.commit_sha
-        )
+        await self.download_repo(repo_url=wallpaper_data.github, directory=wallpaper_path, commit_sha=wallpaper_data.commit_sha)
 
     async def uninstall_wallpaper(self, wallpaper_data:WallpaperData):
         folder_name = f"{wallpaper_data.author}::{wallpaper_data.wallpaper_name}"

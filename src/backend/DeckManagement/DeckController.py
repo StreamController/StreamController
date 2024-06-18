@@ -1953,6 +1953,7 @@ class ControllerKey(ControllerInput):
                     if is_image(path):
                         with Image.open(path) as image:
                             state.set_image(InputImage(
+                                controller_input=self,
                                 image=image.copy()
                             ), update=False)
                             

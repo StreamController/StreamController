@@ -50,6 +50,8 @@ class App(Adw.Application):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
 
+        self.loaded: bool = False
+
         self.register_sigint_handler()
 
         self.connect("activate", self.on_activate)
@@ -100,6 +102,7 @@ class App(Adw.Application):
         change_page_action.connect("activate", self.on_change_page)
         self.add_action(change_page_action)
 
+        self.loaded = True
         log.success("Finished loading app")
 
     def on_reopen(self, *args, **kwargs):
@@ -123,8 +126,7 @@ class App(Adw.Application):
             f.write("")
 
     def show_permissions(self):
-        portal = Xdp.Portal.new()
-        if not portal.running_under_flatpak():
+        if not gl.portal.running_under_flatpak():
             return
         if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-permissions")):
             return

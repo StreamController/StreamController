@@ -38,9 +38,7 @@ class X11(Integration):
     def __init__(self, window_grabber: "WindowGrabber"):
         super().__init__(window_grabber=window_grabber)
 
-        portal = Xdp.Portal.new()
-
-        self.flatpak = portal.running_under_flatpak()
+        self.flatpak = gl.portal.running_under_flatpak()
 
         self.start_active_window_change_thread()
 

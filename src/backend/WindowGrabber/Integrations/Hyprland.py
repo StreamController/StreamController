@@ -38,9 +38,8 @@ class Hyprland(Integration):
     def __init__(self, window_grabber: "WindowGrabber"):
         super().__init__(window_grabber=window_grabber)
 
-        portal = Xdp.Portal.new()
         self.command_prefix = ""
-        if portal.running_under_flatpak():
+        if gl.portal.running_under_flatpak():
             self.command_prefix = "flatpak-spawn --host "
 
         self.start_active_window_change_thread()

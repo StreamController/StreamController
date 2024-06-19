@@ -30,11 +30,10 @@ from src.windows.Permissions.FlatpakPermissionRequest import FlatpakPermissionRe
 
 class FlatpakPermissionManager:
     def __init__(self):
-        self.portal = Xdp.Portal.new()
         self.app_id = "com.core447.StreamController"
 
     def get_is_flatpak(self):
-        return self.portal.running_under_flatpak()
+        return gl.portal.running_under_flatpak()
     
     def add_spawn_prefix_if_needed(self, command: str) -> str:
         if self.get_is_flatpak() and not command.startswith("flatpak-spawn"):

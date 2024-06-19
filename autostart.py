@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import os
 import shutil
 
+import globals as gl
+
 import gi
 gi.require_version("Xdp", "1.0")
 from gi.repository import Xdp
@@ -58,13 +60,11 @@ def setup_autostart_flatpak(enable: bool = True):
         if not success:
             setup_autostart_desktop_entry()
 
-    xdp = Xdp.Portal.new()
-
     try:
         flag = Xdp.BackgroundFlags.AUTOSTART if enable else Xdp.BackgroundFlags.ACTIVATABLE
 
         # Request Autostart
-        xdp.request_background(
+        gl.portal.request_background(
             None,  # parent
             "Autostart StreamController",  # reason
             ["/app/bin/launch.sh", "-b"],  # commandline

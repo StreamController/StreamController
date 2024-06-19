@@ -5,6 +5,10 @@ import argparse
 import sys
 from loguru import logger as log
 
+import gi
+gi.require_version("Xdp", "1.0")
+from gi.repository import Xdp
+
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
 argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
@@ -52,8 +56,9 @@ if TYPE_CHECKING:
     from src.windows.PageManager.PageManager import PageManager
     from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
     from src.tray import TrayIcon
+    from src.backend.UpdateManager import UpdateManager
 
-
+portal: Xdp.Portal = None
 top_level_dir:str = os.path.dirname(__file__)
 lm:"LocaleManager" = None
 media_manager:"MediaManager" = None #MediaManager
@@ -82,6 +87,7 @@ threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 tray_icon: "TrayIcon" = None
+update_manager: "UpdateManager" = None
 
 app_version: str = "1.5.1-beta" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False

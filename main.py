@@ -51,11 +51,16 @@ from src.backend.GnomeExtensions import GnomeExtensions
 from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
 from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
 from src.tray import TrayIcon
+from src.backend.UpdateManager import UpdateManager
 
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
 from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
 from src.backend.Migration.Migrators.Migrator_1_5_1 import Migrator_1_5_1
+
+import gi
+gi.require_version("Xdp", "1.0")
+from gi.repository import Xdp
 
 # Import globals
 import globals as gl
@@ -77,8 +82,12 @@ class Main:
         self.app = App(application_id=application_id, deck_manager=deck_manager)
 
         gl.app = self.app
+        
+        ## Init global objects that require gl.app
+        gl.update_manager = UpdateManager()
 
         self.app.run(gl.argparser.parse_args().app_args)
+
 
 @log.catch
 def load():
@@ -97,6 +106,8 @@ def create_global_objects():
     # Setup locales
     gl.tray_icon = TrayIcon()
     # gl.tray_icon.run_detached()
+
+    gl.portal = Xdp.Portal.new()
 
     gl.lm = LocaleManager(csv_path=os.path.join("locales", "locales.csv"))
     gl.lm.set_to_os_default()

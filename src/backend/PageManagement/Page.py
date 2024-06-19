@@ -556,7 +556,7 @@ class Page:
                 pages.append(controller.active_page)
         return pages
     
-    def reload_similar_pages(self, identifier: InputIdentifier, reload_self: bool = False,
+    def reload_similar_pages(self, identifier: InputIdentifier = None, reload_self: bool = False,
                              load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
                              load_dials: bool = True, load_touchscreens: bool = True):
         
@@ -564,7 +564,10 @@ class Page:
         for page in self.get_pages_with_same_json(get_self=reload_self):
             page.load(load_from_file=True)
             # page.deck_controller.update_input(identifier)
-            page.deck_controller.load_input_from_identifier(identifier, page)
+            if identifier is not None:
+                page.deck_controller.load_input_from_identifier(identifier, page)
+            else:
+                page.deck_controller.load_page(self)
 
     def get_action_comment(self, index: int, state: int, identifier: InputIdentifier) -> str:
         try:

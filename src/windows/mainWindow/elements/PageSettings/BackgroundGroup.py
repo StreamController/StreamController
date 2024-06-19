@@ -241,11 +241,16 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
     def set_deck_background(self, file_path: str) -> None:
         self.set_thumbnail(file_path)
-        self.set_background_to_page(file_path)
+
+        show = self.show_switch.get_active() and self.overwrite_switch.get_active()
+        if show:
+            self.set_background_to_page(file_path)
 
     def set_background_to_page(self, file_path):
         deck_controller = self.settings_page.deck_page.deck_controller
         deck_controller.active_page.set_background(file_path)
-        deck_controller.load_background(page=deck_controller.active_page)
 
-        deck_controller.active_page.reload_similar_pages()
+        show = self.show_switch.get_active() and self.overwrite_switch.get_active()
+        if show:
+            deck_controller.load_background(page=deck_controller.active_page)
+            deck_controller.active_page.reload_similar_pages()

@@ -71,8 +71,8 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.overlay.set_child(self.carousel)
 
         self.carousel.append(ImageOnboardingScreen("Assets/Onboarding/icon.png", gl.lm.get("onboarding.welcome.header"), gl.lm.get("onboarding.welcome.details")))
-        self.carousel.append(IconOnboardingScreen("go-home", gl.lm.get("onboarding.store.header"), gl.lm.get("onboarding.store.details")))
-        self.carousel.append(IconOnboardingScreen("view-paged", gl.lm.get("onboarding.multiple.header"), gl.lm.get("onboarding.multiple.details")))
+        self.carousel.append(IconOnboardingScreen("go-home-symbolic", gl.lm.get("onboarding.store.header"), gl.lm.get("onboarding.store.details")))
+        self.carousel.append(IconOnboardingScreen("view-paged-symbolic", gl.lm.get("onboarding.multiple.header"), gl.lm.get("onboarding.multiple.details")))
         self.carousel.append(IconOnboardingScreen("preferences-desktop-remote-desktop-symbolic", gl.lm.get("onboarding.productive.header"), gl.lm.get("onboarding.productive.details")))
         if os.getenv("XDG_CURRENT_DESKTOP").lower() == "gnome":
             self.carousel.append(ExtensionOnboardingScreen())

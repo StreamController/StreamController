@@ -73,10 +73,10 @@ class PluginManager:
             self.initialized_plugin_classes.append(subclass)
 
     def generate_action_index(self):
+        self.action_index.clear()
         plugins = self.get_plugins()
         for plugin in plugins.values():
             plugin_base = plugin["object"]
-            holders = plugin_base.action_holders
             self.action_index.update(plugin_base.action_holders)
 
         return

@@ -769,8 +769,10 @@ class StoreBackend:
             
             ## 3. Remove plugin folder
             if os.path.islink(plugin.PATH):
-                log.error(f"Plugin {plugin.plugin_name} is inside a Symlink! Cant be removed")
-                return
+                symlink_target = os.readlink(plugin.PATH)
+                log.warning(f"Plugin {plugin.plugin_name} is inside a Symlink!")
+                plugin.PATH = symlink_target
+
             shutil.rmtree(plugin.PATH)
 
         ## 4. Delete plugin base object

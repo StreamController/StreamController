@@ -641,13 +641,19 @@ class StoreBackend:
             shutil.rmtree(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}"))
         shutil.unpack_archive(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"), os.path.join(gl.DATA_PATH, "cache"))
 
+
+        # Remove destination folder
+        if os.path.isdir(directory):
+            shutil.rmtree(directory)
+        if os.path.isfile(directory): # No idea how this could happen - but just in case
+            os.remove(directory)
+
+        # Create empty destination folder
         os.makedirs(directory, exist_ok=True)
 
         for name in os.listdir(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}")):
             shutil.move(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}", name), directory)
-        # print()
 
-        # shutil.move(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}", "*"), local_path)
 
         os.remove(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
         shutil.rmtree(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}"))

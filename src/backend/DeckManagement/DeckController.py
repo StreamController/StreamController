@@ -1851,7 +1851,7 @@ class ControllerKey(ControllerInput):
         if self.is_pressed():
             labeled_image = self.shrink_image(labeled_image)
 
-        if self.has_unavailable_action():
+        if self.has_unavailable_action() and not self.deck_controller.screen_saver.showing:
             labeled_image = self.add_warning_point(labeled_image)
 
         if background is not None:

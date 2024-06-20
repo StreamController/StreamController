@@ -49,7 +49,6 @@ class ScreenEditor(Gtk.ScrolledWindow):
 
 
     def on_state_switch(self, *args):
-        print("on_state_switch")
         state = self.state_switcher.get_selected_state()
         # self.sidebar.active_state = self.state_switcher.get_selected_state()
 
@@ -61,24 +60,17 @@ class ScreenEditor(Gtk.ScrolledWindow):
             return
         
         for t in controller.touchscreens:
-            print(t.identifier, self.sidebar.active_identifier)
             if t.identifier == self.sidebar.active_identifier:
                 t.set_state(state, update_sidebar=True)
                 break
 
-        print(state)
-        print("on_state_switch end")
-
     def on_add_new_state(self, state):
         controller = gl.app.main_win.get_active_controller()
 
-        print("::::::::::::::::::::::::::::::")
-        print(controller)
         if controller is None:
             return
         
         for t in controller.touchscreens:
-            print(t.identifier, self.sidebar.active_identifier)
             if t.identifier == self.sidebar.active_identifier:
                 t.add_new_state()
                 self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)

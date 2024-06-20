@@ -118,7 +118,6 @@ class Page:
         new_action_objects = {}
 
         for input_type in Input.KeyTypes:
-            print()
             for key in self.dict.get(input_type, {}):
                 for state in self.dict[input_type][key].get("states", {}):
                     try:
@@ -128,13 +127,10 @@ class Page:
                     for i, action in enumerate(self.dict[input_type][key]["states"][str(state)].get("actions", [])):
                         if action.get("id") is None:
                             continue
-                        print()
 
                         input_ident = Input.FromTypeIdentifier(input_type, key)
                         # input_action_objects = input_ident.get_dict(new_action_objects)
                         # input_action_objects.setdefault(state, {})
-                        if state != 0:
-                            print()
 
                         action_object = self.get_new_action_object(
                             # loaded_action_objects=self.action_objects,

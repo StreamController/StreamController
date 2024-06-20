@@ -98,7 +98,6 @@ class ScreenBar(Gtk.Frame):
             gl.app.main_win.sidebar.load_for_identifier(self.identifier, state)
             
         elif gesture.get_current_button() == 1 and n_press == 2:
-            print("Double click")
             pass
             # Double left click
             # Simulate key press
@@ -211,7 +210,6 @@ class ScreenBarImage(Gtk.Picture):
         identifier = gl.app.main_win.sidebar.active_identifier
         if isinstance(identifier, Input.Dial):
             dial_image_area = self.get_controller_touch_screen().get_dial_image_area(identifier)
-            print(dial_image_area)
 
             dial_image = image.crop(dial_image_area)
 

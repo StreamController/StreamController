@@ -258,7 +258,7 @@ class StoreBackend:
         if isinstance(manifest, NoConnectionError):
             return manifest
         if manifest is None:
-            print()
+            return
         return json.loads(manifest)
     
     def remove_old_manifest_cache(self, url:str, commit_sha:str):
@@ -631,7 +631,6 @@ class StoreBackend:
             # Create cache dir
             os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
             urllib.request.urlretrieve(zip_url, os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
-            print()
         except TypeError as e:
             log.error(e)
             return NoConnectionError()

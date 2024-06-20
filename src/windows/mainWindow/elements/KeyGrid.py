@@ -413,9 +413,7 @@ class KeyButton(Gtk.Frame):
         gl.app.main_win.sidebar.load_for_identifier(self.identifier)
 
     def on_paste_finished(self, result, data, user_data):
-        print(f"result: {result}, data: {data} user_data: {user_data}")
         value = gl.app.main_win.key_clipboard.read_value_finish(result=data)
-        print()
 
     def on_remove(self, *args):
         active_page = self.key_grid.deck_controller.active_page

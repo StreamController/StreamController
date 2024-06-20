@@ -81,7 +81,6 @@ class Dial(Gtk.Frame):
         self.scroll_ctrl = Gtk.EventControllerScroll()
         self.scroll_ctrl.set_flags(Gtk.EventControllerScrollFlags.VERTICAL)
 
-        print(self.scroll_ctrl.get_unit())
         unit = self.scroll_ctrl.get_unit()
         self.scroll_ctrl.connect("scroll", self.on_scroll)
         self.image.add_controller(self.scroll_ctrl)
@@ -101,7 +100,7 @@ class Dial(Gtk.Frame):
         self.last_scroll = None
 
     def on_key(self, controller, keyval, keycode, state):
-        print(f"Key: {keyval}, {keycode}, {state}")
+        return
 
     def on_scroll(self, gesture, dx, dy):
         if self.last_scroll:
@@ -149,7 +148,7 @@ class Dial(Gtk.Frame):
             pass
 
         else:
-            print(f"Other click: {gesture.get_current_button()}, {n_press}")
+            pass
 
     def on_focus_in(self, *args):
         self.set_border_active(True)

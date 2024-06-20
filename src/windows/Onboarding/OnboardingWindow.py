@@ -224,7 +224,6 @@ class ExtensionOnboardingScreen(Gtk.Box):
 
     def update_button_status(self) -> None:
         installed_extensions = gl.gnome_extensions.get_installed_extensions()
-        print(installed_extensions)
         installed = "streamcontroller@core447.com" in installed_extensions
         if installed:
             self.set_button_status("installed")

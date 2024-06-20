@@ -129,7 +129,6 @@ class ActionExpanderRow(BetterExpander):
         for i, action in enumerate(actions):
             if isinstance(action, ActionBase):
                 # Get action comment
-                print()
                 comment = action.page.get_action_comment(index=i,
                                                          state=action.state,
                                                          identifier=action.input_ident)

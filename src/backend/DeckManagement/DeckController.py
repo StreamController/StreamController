@@ -360,8 +360,6 @@ class DeckController:
         self.set_brightness(self.brightness)
 
         self.inputs = {}
-        print(Input.All)
-        print(type(Input.All))
         for i in Input.All:
             self.inputs[i] = []
         self.init_inputs()
@@ -1571,8 +1569,7 @@ class ControllerInput:
         self.update_state_switcher()
 
         if switch:
-            print(f"{self.identifier} is on state: {self.state}")
-            print(f"Switching to state: {len(self.states)-1}")
+            log.info(f"Switching to state: {len(self.states)-1}")
             self.set_state(len(self.states)-1)
 
     def remove_state(self, state: int):
@@ -1620,7 +1617,6 @@ class ControllerInput:
         if state == self.state:
             sort = sorted(list(self.states.keys()))
             sort.reverse()
-            print()
             for s in sort:
                 if s <= state:
                     self.set_state(s, allow_reload=True)
@@ -1652,27 +1648,18 @@ class ControllerInput:
             self.reload_sidebar()
 
     def reload_sidebar(self) -> None:
-        print()
-        print("reload sidebar")
-            
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
-            print("no visible child")
             return
         controller = visible_child.deck_controller
         if controller is None:
-            print("no controller")
             return
         
         if controller is not self.deck_controller:
-            print("controller is not self.deck_controller")
             return
         if self.identifier != gl.app.main_win.sidebar.active_identifier:
-            print("input_ident is not equal")
             return
         
-        print("reload")
-        print(f"active_state: {gl.app.main_win.sidebar.active_state}, state: {self.state}")
         gl.app.main_win.sidebar.active_state = self.state
         GLib.idle_add(gl.app.main_win.sidebar.update)
 
@@ -2068,7 +2055,6 @@ class ControllerTouchScreen(ControllerInput):
         self.deck_controller.media_player.add_touchscreen_task(native_image)
 
         del rgb_image
-        print("update touchscreen")
         self.set_ui_image(image)
 
     def generate_empty_image(self) -> Image.Image:
@@ -2116,12 +2102,10 @@ class ControllerTouchScreen(ControllerInput):
         if event_type == TouchscreenEventType.DRAG:
             # Check if from left to right or the other way
             if value['x'] > value['x_out']:
-                print("Drag to the left")
                 active_state.own_actions_event_callback_threaded(
                     Input.Touchscreen.Events.DRAG_LEFT
                 )
             else:
-                print("Drag to the right")
                 active_state.own_actions_event_callback_threaded(
                     Input.Touchscreen.Events.DRAG_RIGHT
                 )

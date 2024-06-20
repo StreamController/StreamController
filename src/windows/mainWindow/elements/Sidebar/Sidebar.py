@@ -116,7 +116,6 @@ class Sidebar(Adw.NavigationPage):
         Returns:
             None
         """
-        print()
         self.action_chooser.show(callback_function=callback_function,
                                  current_stack_page=self.main_stack.get_visible_child(),
                                  identifier=identifier,

@@ -30,7 +30,7 @@ class StoreCache:
         with self.write_lock:
             os.makedirs(os.path.dirname(self.files_json), exist_ok=True)
             with open(self.files_json, "w") as f:
-                json.dump(files, f, indent=4)
+                json.dump(files.copy(), f, indent=4)
 
     def remove_old_cache_files(self):
         DAYS_TO_KEEP = 3

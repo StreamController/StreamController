@@ -773,16 +773,19 @@ class StoreBackend:
         # plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
         gl.plugin_manager.remove_plugin_from_list(plugin)
 
+        gl.plugin_manager.generate_action_index()
+
+
         del plugin
 
         GLib.idle_add(gl.app.main_win.sidebar.action_chooser.plugin_group.update)
-
         GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
 
-        # Remove from sys.modules
-        module_name = f"plugins.{plugin_id}.main"
-        if module_name in sys.modules:
-            del sys.modules[module_name]
+
+        base_module = f"plugins.{plugin_id}"
+        for module in sys.modules.copy():
+            if module.startswith(base_module):
+                del sys.modules[module]
 
     async def install_icon(self, icon_data:IconData):
         icon_path = os.path.join(gl.DATA_PATH, "icons", icon_data.icon_id)

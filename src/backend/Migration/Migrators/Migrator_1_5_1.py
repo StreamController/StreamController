@@ -45,6 +45,7 @@ class Migrator_1_5_1(Migrator):
                     continue
 
                 key_dict = page["keys"][key].copy()
+                page["keys"][key].clear()
 
                 page["keys"][key]["states"] = {}
                 page["keys"][key]["states"]["0"] = key_dict

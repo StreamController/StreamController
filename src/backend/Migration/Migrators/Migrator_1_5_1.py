@@ -50,6 +50,9 @@ class Migrator_1_5_1(Migrator):
                 page["keys"][key]["states"] = {}
                 page["keys"][key]["states"]["0"] = key_dict
 
+                page["keys"][key]["states"]["0"].setdefault("image-control-action", 0)
+                page["keys"][key]["states"]["0"].setdefault("label-control-actions", [0, 0, 0])
+
             with open(page_path, "w") as f:
                 json.dump(page, f, indent=4)
 
@@ -67,7 +70,8 @@ class Migrator_1_5_1(Migrator):
                 continue
 
             settings_path = os.path.join(gl.DATA_PATH, "settings", "plugins", plugin_dir_name, "settings.json")
-            with open(settings_path, "w") as f:
-                json.dump(settings, f, indent=4)
+            if os.path.exists(settings_path):
+                with open(settings_path, "w") as f:
+                    json.dump(settings, f, indent=4)
             
             

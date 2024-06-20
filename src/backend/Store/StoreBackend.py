@@ -733,9 +733,7 @@ class StoreBackend:
             if hasattr(controller, "active_page"):
                 if controller.active_page is not None:
                     # Load action objects
-                    controller.active_page.action_objects = {}
                     controller.active_page.load_action_objects()
-                    # Reload page to send new on_ready events
                     controller.load_page(controller.active_page)
 
         # Notify plugin actions

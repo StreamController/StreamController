@@ -35,7 +35,7 @@ from packaging import version
 
 import globals as gl
 
-import traceback
+from loguru import logger as log
 
 class ActionHolder:
     """
@@ -81,6 +81,7 @@ class ActionHolder:
             
         return True
 
+    @log.catch
     def init_and_get_action(self, deck_controller: DeckController, page: Page, state: int, input_ident: InputIdentifier) -> ActionBase:
         if not self.get_is_compatible():
             return

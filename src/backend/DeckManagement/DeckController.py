@@ -2010,7 +2010,6 @@ class ControllerKey(ControllerInput):
         if state == old_state and not allow_reload:
             return
         super().set_state(state, False, allow_reload)
-        self.get_own_ui_key().state = state
         if update_sidebar:
             self.reload_sidebar()
 

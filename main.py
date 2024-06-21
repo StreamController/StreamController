@@ -12,6 +12,15 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+print(r""" _____ _                            _____             _             _ _           
+/  ___| |                          /  __ \           | |           | | |          
+\ `--.| |_ _ __ ___  __ _ _ __ ___ | /  \/ ___  _ __ | |_ _ __ ___ | | | ___ _ __ 
+ `--. \ __| '__/ _ \/ _` | '_ ` _ \| |    / _ \| '_ \| __| '__/ _ \| | |/ _ \ '__|
+/\__/ / |_| | |  __/ (_| | | | | | | \__/\ (_) | | | | |_| | | (_) | | |  __/ |   
+\____/ \__|_|  \___|\__,_|_| |_| |_|\____/\___/|_| |_|\__|_|  \___/|_|_|\___|_|   
+""")
+
+
 # Import Python modules
 import setproctitle
 

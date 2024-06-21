@@ -105,6 +105,9 @@ class LabelRow(Adw.PreferencesRow):
         self.key_name = key_name
         self.build()
 
+        # Connect set signals
+        self.connect_signals()
+
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
                                 margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
@@ -149,8 +152,6 @@ class LabelRow(Adw.PreferencesRow):
         self.color_chooser_button.revert_button.connect("clicked", self.on_reset_color)
         self.font_chooser_button.revert_button.connect("clicked", self.on_reset_font)
 
-        ## Connect set signals
-        self.connect_signals()
 
     def connect_signals(self):
         self.text_entry.entry.connect("changed", self.on_change_text)

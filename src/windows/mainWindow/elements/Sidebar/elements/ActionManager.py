@@ -226,6 +226,15 @@ class ActionExpanderRow(BetterExpander):
         action_objects = controller.active_page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state]
         reordered_action_objects = self.reorder_action_objects(action_objects, move_index, after_index)
 
+
+        # Reorder in page dict
+        controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)]["actions"] = reordered
+
+        # Reorder in action objects
+        controller.active_page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state] = reordered_action_objects
+
+
+        ## Update control indices
         action_order_map: dict[int, int] = {}
 
         for i, action in enumerate(action_objects.values()):
@@ -241,11 +250,6 @@ class ActionExpanderRow(BetterExpander):
         controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)]["label-control-actions"] = label_control_actions
         
         controller.active_page.save()
-
-        action_objects = controller.active_page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state]
-
-        reordered = self.reorder_action_objects(action_objects, move_index, after_index)
-        controller.active_page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state] = reordered
 
         controller.load_page(controller.active_page)
  

@@ -30,7 +30,7 @@ import os
 class Settings(Adw.PreferencesWindow):
     def __init__(self):
         super().__init__(title="Settings")
-        self.set_default_size(800, 600)
+        self.set_default_size(1000, 700)
 
         # Center settings win over main_win (depends on DE)
         self.set_transient_for(gl.app.main_win)
@@ -40,17 +40,19 @@ class Settings(Adw.PreferencesWindow):
         self.settings_json:dict = None
         self.load_json()
 
+        self.general_page = GeneralPage(settings=self)
         self.ui_page = UIPage(settings=self)
         self.store_page = StorePage(settings=self)
         self.performance_page = PerformancePage(settings=self)
         self.dev_page = DevPage(settings=self)
         self.system_page = SystemPage(settings=self)
 
+        self.add(self.general_page)
         self.add(self.ui_page)
         self.add(self.store_page)
-        self.add(self.dev_page)
         self.add(self.performance_page)
         self.add(self.system_page)
+        self.add(self.dev_page)
 
     def load_json(self):
         # Load settings from file
@@ -87,6 +89,9 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.show_notifications = Adw.SwitchRow(title=gl.lm.get("settings-show-notifications"), subtitle=gl.lm.get("settings-show-notifications-subtitle"), active=True)
         self.add(self.show_notifications)
 
+        self.auto_config_row = Adw.SwitchRow(title=gl.lm.get("settings-auto-open-action-config"), subtitle=gl.lm.get("settings-auto-open-action-config-subtitle"), active=True)
+        self.add(self.auto_config_row)
+
         self.load_defaults()
 
         # Connect signals
@@ -94,12 +99,14 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.enable_fps_warnings_row.connect("notify::active", self.on_enable_fps_warnings_row_toggled)
         self.allow_white_mode.connect("notify::active", self.on_allow_white_mode_toggled)
         self.show_notifications.connect("notify::active", self.on_show_notifications_toggled)
+        self.auto_config_row.connect("notify::active", self.on_auto_config_row_toggled)
 
     def load_defaults(self):
         self.emulate_row.set_active(self.settings.settings_json.get("key-grid", {}).get("emulate-at-double-click", True))
         self.enable_fps_warnings_row.set_active(self.settings.settings_json.get("warnings", {}).get("enable-fps-warnings", True))
         self.allow_white_mode.set_active(self.settings.settings_json.get("ui", {}).get("allow-white-mode", False))
         self.show_notifications.set_active(self.settings.settings_json.get("ui", {}).get("show-notifications", True))
+        self.auto_config_row.set_active(self.settings.settings_json.get("ui", {}).get("auto-open-action-config", True))
 
     def on_emulate_row_toggled(self, *args):
         self.settings.settings_json.setdefault("key-grid", {})
@@ -134,6 +141,13 @@ class UIPageGroup(Adw.PreferencesGroup):
     def on_show_notifications_toggled(self, *args):
         self.settings.settings_json.setdefault("ui", {})
         self.settings.settings_json["ui"]["show-notifications"] = self.show_notifications.get_active()
+
+        # Save
+        self.settings.save_json()
+
+    def on_auto_config_row_toggled(self, *args):
+        self.settings.settings_json.setdefault("ui", {})
+        self.settings.settings_json["ui"]["auto-open-action-config"] = self.auto_config_row.get_active()
 
         # Save
         self.settings.save_json()
@@ -177,6 +191,49 @@ class DevPageGroup(Adw.PreferencesGroup):
 
         # Reload decks
         gl.deck_manager.load_fake_decks()
+
+
+class GeneralPage(Adw.PreferencesPage):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__()
+        self.set_title("General")
+        self.set_icon_name("open-menu-symbolic")
+
+        self.add(GeneralPageGroup(settings=settings))
+
+class GeneralPageGroup(Adw.PreferencesGroup):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__(title=gl.lm.get("General app settings"))
+
+        self.hold_time_row = Adw.SpinRow.new_with_range(min=0.1, max=3, step=0.1)
+        self.hold_time_row.set_title("Minimum hold duration (s)")
+        self.hold_time_row.set_subtitle("Minimum hold duration for keys and dials")
+        self.hold_time_row.set_range(0.1, 3)
+        self.add(self.hold_time_row)
+
+        self.load_defaults()
+
+        # Connect signals
+        self.hold_time_row.connect("changed", self.on_n_fake_decks_row_changed)
+
+    def load_defaults(self):
+        self.hold_time_row.set_value(self.settings.settings_json.get("general", {}).get("hold-time", 0.5))
+
+    def on_n_fake_decks_row_changed(self, *args):
+        self.settings.settings_json.setdefault("general", {})
+        self.settings.settings_json["general"]["hold-time"] = self.hold_time_row.get_value()
+
+        for controller in gl.deck_manager.deck_controller:
+            controller.hold_time = self.hold_time_row.get_value()
+
+        # Save
+        self.settings.save_json()
+
+        # Reload decks
+        gl.deck_manager.load_fake_decks()
+
 
 class StorePage(Adw.PreferencesPage):
     def __init__(self, settings: Settings):
@@ -396,6 +453,9 @@ class SystemGroup(Adw.PreferencesGroup):
         self.settings = settings
         super().__init__(title=gl.lm.get("settings-system-settings-header"))
 
+        self.keep_running = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-keep-running"), subtitle=gl.lm.get("settings-system-settings-keep-running-subtitle"), active=False)
+        self.add(self.keep_running)
+
         self.autostart = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-autostart"), subtitle=gl.lm.get("settings-system-settings-autostart-subtitle"), active=True)
         self.add(self.autostart)
 
@@ -405,12 +465,21 @@ class SystemGroup(Adw.PreferencesGroup):
         self.load_defaults()
 
         # Connect signals
+        self.keep_running.connect("notify::active", self.on_keep_running_toggled)
         self.autostart.connect("notify::active", self.on_autostart_toggled)
         self.lock_on_lock_screen.connect("notify::active", self.on_lock_on_lock_screen_toggled)
 
     def load_defaults(self):
+        self.keep_running.set_active(self.settings.settings_json.get("system", {}).get("keep-running", False) == True)
         self.autostart.set_active(self.settings.settings_json.get("system", {}).get("autostart", True))
         self.lock_on_lock_screen.set_active(self.settings.settings_json.get("system", {}).get("lock-on-lock-screen", True))
+
+    def on_keep_running_toggled(self, *args):
+        self.settings.settings_json.setdefault("system", {})
+        self.settings.settings_json["system"]["keep-running"] = self.keep_running.get_active()
+
+        # Save
+        self.settings.save_json()
 
     def on_autostart_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})

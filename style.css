@@ -25,23 +25,27 @@
 .icon-selector{
   border-radius: 10px;
   margin: 10px;
-  min-width:175px;	
-	min-height:175px;
 }
-.icon-selector-image-normal {
+
+.icon-selector-image-base {
   border-radius: 10px;
-  min-width:175px;
-  min-height:175px;
   opacity: 1;
   transition: opacity 0.2s;
 }
 .icon-selector-image-hover {
-  border-radius: 10px;
-  min-width:175px;
-  min-height:175px;
   opacity: 0.25;
   transition: opacity 0.2s;
 }
+.icon-selector-image-key {
+  min-height: 175px;
+  min-width: 175px;
+}
+.icon-selector-image-dial {
+  min-height: calc(175px /2);
+  min-width: 175px;
+}
+
+
 .icon-selector-hint-label-visible {
   font-size: 16px;
   opacity: 1;
@@ -350,6 +354,46 @@
   border-bottom-left-radius: 6px;
   background-color: rgba(255, 255, 255, 0.1);
   padding: 10px 10px;
+}
+.plus-screenbar{
+  border-radius: 10px;
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  background-color: #363636;
+  min-height: 50px;
+  min-width: 800px;
+}
+.plus-screenbar-image {
+  border-radius: 10px;
+  background-color: #363636;
+}
+.dial {
+  min-width:75px;	
+  min-height:75px;
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  background-color: #363636;
+  border-radius: 50px;
+}
+.dial-frame {
+  border-radius:99999px;
+  border-width: 3px;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  margin: 6px;
+}
+.dial-frame-visible {
+  border-color: #78AEED;
+}
+
+.dial-frame-hidden {
+  border-color: #00000000;
 }
 
 .action-row-toggle:toggled {

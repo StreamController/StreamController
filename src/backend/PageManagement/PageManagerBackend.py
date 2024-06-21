@@ -408,8 +408,6 @@ class PageManagerBackend:
         
         # Not a full path
         for page in self.get_pages():
-            if "app" in page and "app" in name:
-                print()
             if os.path.basename(page) == name:
                 return page
             if os.path.splitext(os.path.basename(page))[0] == name:

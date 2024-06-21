@@ -18,21 +18,20 @@ from PIL import Image
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.backend.DeckManagement.DeckController import ControllerKey
+    from src.backend.DeckManagement.DeckController import ControllerInput
 
-class KeyVideo(SingleKeyAsset):
-    def __init__(self, controller_key: "ControllerKey", video_path: str, fps: int = 30, loop: bool = True):
+class InputVideo(SingleKeyAsset):
+    def __init__(self, controller_input: "ControllerInput", video_path: str, fps: int = 30, loop: bool = True):
         super().__init__(
-            controller_key=controller_key,
+            controller_input=controller_input,
         )
         self.video_path = video_path
         self.fps = fps
         self.loop = loop
 
-        self.video_cache = VideoFrameCache(video_path)
+        self.video_cache = VideoFrameCache(video_path, size=self.controller_input.get_image_size())
 
         self.active_frame: int = -1
-
 
     def get_next_frame(self) -> Image:
         self.active_frame += 1
@@ -41,7 +40,7 @@ class KeyVideo(SingleKeyAsset):
             if self.loop:
                 self.active_frame = 0
         
-        return self.video_cache.get_frame(self.active_frame).resize(self.controller_key.deck_controller.get_key_image_size(), Image.Resampling.LANCZOS)
+        return self.video_cache.get_frame(self.active_frame)
     
     def get_raw_image(self) -> Image.Image:
         return self.get_next_frame()

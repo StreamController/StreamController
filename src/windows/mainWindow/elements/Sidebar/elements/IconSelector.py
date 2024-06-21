@@ -15,6 +15,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from PIL import Image
+
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 from src.backend.DeckManagement.HelperMethods import add_default_keys
 
 gi.require_version("Gtk", "4.0")
@@ -34,28 +37,32 @@ class IconSelector(Gtk.Box):
     def __init__(self, sidebar, **kwargs):
         super().__init__(**kwargs)
         self.sidebar = sidebar
+        self.active_identifier: InputIdentifier = None
+        self.active_state: int = None
         self.build()
 
     def build(self):
         self.overlay = Gtk.Overlay()
         self.append(self.overlay)
 
-        self.button = Gtk.Button(label="Select", css_classes=["icon-selector", "key-image", "no-padding"], overflow=Gtk.Overflow.HIDDEN)
+        self.button = Gtk.Button(label="Select", css_classes=["icon-selector" "key-image", "no-padding"], overflow=Gtk.Overflow.HIDDEN)
         self.button.connect("clicked", self.on_click)
         # self.append(self.button)
         self.overlay.set_child(self.button)
 
-        self.button_fixed = Gtk.Fixed()
+        self.button_fixed = Gtk.Overlay()
         self.button.set_child(self.button_fixed)
 
-        self.image = Gtk.Image(overflow=Gtk.Overflow.HIDDEN, css_classes=["key-image", "icon-selector-image-normal"])
+        self.image = Gtk.Picture(overflow=Gtk.Overflow.HIDDEN, css_classes=["key-image", "icon-selector-image-base", "icon-selector-image-key"])
         # self.button.set_child(self.image)
-        self.button_fixed.put(self.image, 0, 0)
+        self.button_fixed.set_child(self.image)
 
-        self.label = Gtk.Label(label=gl.lm.get("icon-selector-click-hint"), css_classes=["icon-selector-hint-label-hidden"])
-        label_size = self.label.get_preferred_size()[1] # 1 for natural size
-        label_width, label_height = label_size.width, label_size.height
-        self.button_fixed.put(self.label, (175-label_width)/2, (175-label_height)/2) # 175 for the size of the image
+        self.label = Gtk.Label(label=gl.lm.get("icon-selector-click-hint"), css_classes=["icon-selector-hint-label-hidden"],
+                               halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+        # label_size = self.label.get_preferred_size()[1] # 1 for natural size
+        # label_width, label_height = label_size.width, label_size.height
+        # self.button_fixed.put(self.label, (175-label_width)/2, (175-label_height)/2) # 175 for the size of the image
+        self.button_fixed.add_overlay(self.label)
 
         # Hover controller - css doesn't work because a :hover on the image would leave if focus switches to label
         motion_controller = Gtk.EventControllerMotion()
@@ -76,96 +83,68 @@ class IconSelector(Gtk.Box):
 
     def set_image(self, image):
         pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
-        GLib.idle_add(self.image.new_from_pixbuf, pixbuf)
+        GLib.idle_add(self.image.set_pixbuf, pixbuf, priority=GLib.PRIORITY_HIGH)
 
     def on_hover_enter(self, *args):
         self.label.set_css_classes(["icon-selector-hint-label-visible"])
-        self.image.remove_css_class("icon-selector-image-normal")
         self.image.add_css_class("icon-selector-image-hover")
 
     def on_hover_leave(self, *args):
         self.label.set_css_classes(["icon-selector-hint-label-hidden"])
         self.image.remove_css_class("icon-selector-image-hover")
-        self.image.add_css_class("icon-selector-image-normal")
 
     def on_click(self, button):
         media_path = self.get_media_path()
         GLib.idle_add(gl.app.let_user_select_asset, media_path, self.set_media_callback)
 
     def get_media_path(self):
-        controller = gl.app.main_win.get_active_controller()
-        if controller is None:
-            return None
-        if controller.active_page is None:
-            return None
-        active_page_dict = controller.active_page.dict
-        active_coords:tuple = self.sidebar.active_coords
-        if active_coords is None:
+        page = gl.app.main_win.get_active_page()
+        if page is None:
             return
-        page_coords = f"{active_coords[0]}x{active_coords[1]}"
         
         active_state = self.sidebar.active_state
 
-        return active_page_dict.get("keys", {}).get(page_coords, {}).get("states", {}).get(str(active_state), {}).get("media", {}).get("path")
+        return page.get_media_path(identifier=self.active_identifier, state=active_state)
     
     def set_media_path(self, path):
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
+        page = gl.app.main_win.get_active_page()
+        if page is None:
             return
-        controller = visible_child.deck_controller
-        if controller is None:
-            return None
-        active_page = controller.active_page
-        if active_page is None:
-            return
-        active_coords:tuple = self.sidebar.active_coords
-        page_coords = f"{active_coords[0]}x{active_coords[1]}"
 
-        add_default_keys(active_page.dict, ["keys", page_coords, "states", str(self.get_selected_state())])
-        active_page.dict["keys"][page_coords]["states"][str(self.get_selected_state())].setdefault("media", {
-            "path": None,
-            "loop": True,
-            "fps": 30
-        })
-        active_page.dict["keys"][page_coords]["states"][str(self.get_selected_state())]["media"]["path"] = path
-
-        # Save page
-        active_page.save()
+        page.set_media_path(identifier=self.active_identifier, state=self.active_state, path=path)
+        page.save()
 
         # Update remove button visibility
-        if path not in [None, ""]:
-            self.remove_button.set_visible(True)
+        self.remove_button.set_visible(path not in [None, ""])
 
     def set_media_callback(self, path):
         self.set_media_path(path)
         # Reload key
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
-        key_index = controller.coords_to_index(self.sidebar.active_coords)
-        controller.load_key(key_index, page=controller.active_page)
+
+        c_input = controller.get_input(self.sidebar.active_identifier)
+        c_input.load_from_page(controller.active_page)
 
     def remove_media(self, *args):
-        # Get keygrid of active controller
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
-        if controller is None:
-            return
-        grid = controller.get_own_key_grid()
-        # Call keys remove method
-        grid.selected_key.remove_media()
-        # Hide remove button
-        self.remove_button.set_visible(False)
+        self.set_media_callback(None)
 
     def has_image_to_remove(self):
         return self.get_media_path() is not None
     
-    def load_for_coords(self, coords: tuple[int, int], state: int):
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.active_identifier = identifier
+        self.active_state = state
+
+        ## Set aspect ratio
+        if isinstance(identifier, Input.Dial):
+            self.image.remove_css_class("icon-selector-image-key")
+            self.image.add_css_class("icon-selector-image-dial")
+        else:
+            self.image.remove_css_class("icon-selector-image-dial")
+            self.image.add_css_class("icon-selector-image-key")
+
         self.remove_button.set_visible(self.has_image_to_remove())
 
     def get_selected_state(self) -> int:

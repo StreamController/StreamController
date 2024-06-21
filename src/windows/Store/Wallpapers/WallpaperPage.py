@@ -82,7 +82,7 @@ class WallpaperPreview(StorePreview):
         self.set_url(wallpaper_data.github)
 
         self.set_official(wallpaper_data.official)
-        self.set_verified(wallpaper_data.commit_sha is not None)
+        self.set_verified(wallpaper_data.verified)
 
         if not self.check_required_version(wallpaper_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")

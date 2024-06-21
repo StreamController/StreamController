@@ -12,6 +12,15 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+print(r""" _____ _                            _____             _             _ _           
+/  ___| |                          /  __ \           | |           | | |          
+\ `--.| |_ _ __ ___  __ _ _ __ ___ | /  \/ ___  _ __ | |_ _ __ ___ | | | ___ _ __ 
+ `--. \ __| '__/ _ \/ _` | '_ ` _ \| |    / _ \| '_ \| __| '__/ _ \| | |/ _ \ '__|
+/\__/ / |_| | |  __/ (_| | | | | | | \__/\ (_) | | | | |_| | | (_) | | |  __/ |   
+\____/ \__|_|  \___|\__,_|_| |_| |_|\____/\___/|_| |_|\__|_|  \___/|_|_|\___|_|   
+""")
+
+
 # Import Python modules
 import setproctitle
 
@@ -55,6 +64,7 @@ from src.tray import TrayIcon
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
 from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
+from src.backend.Migration.Migrators.Migrator_1_5_1 import Migrator_1_5_1
 
 # Import globals
 import globals as gl
@@ -133,6 +143,10 @@ def create_global_objects():
 def update_assets():
     settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
     auto_update = settings.get("store", {}).get("auto-update", True)
+
+    if gl.argparser.parse_args().devel:
+        auto_update = False
+
     if not auto_update:
         log.info("Skipping store asset update")
         return
@@ -196,8 +210,9 @@ def quit_running():
             try:
                 action_interface.Activate("quit", [], [])
             except dbus.exceptions.DBusException as e:
-                log.error("Could not close running instance: " + str(e))
-                sys.exit(0)
+                if "org.freedesktop.DBus.Error.NoReply" in str(e):
+                    log.error("Could not close running instance: " + str(e))
+                    sys.exit(0)
             time.sleep(5)
 
         else:
@@ -241,6 +256,7 @@ def main():
     migration_manager = MigrationManager()
     # Add migrators
     migration_manager.add_migrator(Migrator_1_5_0())
+    migration_manager.add_migrator(Migrator_1_5_1())
     # Run migrators
     migration_manager.run_migrators()
 

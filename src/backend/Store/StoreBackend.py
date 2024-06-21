@@ -30,6 +30,7 @@ import uuid
 import shutil
 from install import install
 from packaging import version
+import urllib.request
 
 # Import GLib
 import gi
@@ -55,19 +56,22 @@ class StoreBackend:
     STORE_REPO_URL = "https://github.com/StreamController/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
-    STORE_BRANCH = "1.5.0" #FIXME: Make the cache branch specific. For now you'll have to manually delete `data/Store/cache`
+    STORE_BRANCH = "1.5.0"
 
 
     def __init__(self):
         self.store_cache = StoreCache()
 
+        self.official_store_branch_cache: str = None
+
         self.official_authors = asyncio.run(self.get_official_authors())
 
-    def get_stores(self) -> list[tuple[str, str]]:
+    async def get_stores(self) -> list[tuple[str, str]]:
         settings = gl.settings_manager.get_app_settings()
 
         stores = []
-        stores.append((self.STORE_REPO_URL, self.STORE_BRANCH))
+        branch = await self.get_official_store_branch()
+        stores.append((self.STORE_REPO_URL, branch))
 
         if settings.get("store", {}).get("enable-custom-stores", False):
             for store in settings.get("store", {}).get("custom-stores", {}):
@@ -84,6 +88,17 @@ class StoreBackend:
                 plugins.append((plugin.get("url"), plugin.get("branch")))
 
         return plugins
+    
+    async def get_official_store_branch(self) -> str:
+        if self.official_store_branch_cache is not None:
+            return self.official_store_branch_cache
+        versions_file = await self.get_remote_file(self.STORE_REPO_URL, "versions.json", branch_name="versions", force_refetch=True)
+        if isinstance(versions_file, NoConnectionError):
+            return versions_file
+        versions = json.loads(versions_file)
+        v = versions.get(gl.app_version, "main")
+        self.official_store_branch_cache = v
+        return v
 
     async def request_from_url(self, url: str) -> requests.Response:
         try:
@@ -180,97 +195,62 @@ class StoreBackend:
         return commits[0].get("sha")
     
     async def get_official_authors(self) -> list:
-        authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH)
+        authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH, force_refetch=True)
         if isinstance(authors_json, NoConnectionError):
             return authors_json
         authors_json = json.loads(authors_json)
         return authors_json
     
+    async def fetch_and_parse_store_json(self, url: str, filename: str, branch: str, n_stores_with_errors: int = 0):
+        try:
+            store_file_json = await self.get_remote_file(url, filename, branch, force_refetch=True)
+            if isinstance(store_file_json, NoConnectionError):
+                n_stores_with_errors += 1
+                return None, n_stores_with_errors
+            store_file_json = json.loads(store_file_json)
+            return store_file_json, n_stores_with_errors
+        except (json.decoder.JSONDecodeError, TypeError) as e:
+            n_stores_with_errors += 1
+            log.error(e)
+            return None, n_stores_with_errors
+
+    async def process_store_data(self, filename: str, process_func: callable, get_custom_func: callable, data_class, include_images=True):
+        n_stores_with_errors = 0
+        data_list = []
+
+        stores = await self.get_stores()
+
+        for url, branch in stores:
+            store_file_json, n_stores_with_errors = await self.fetch_and_parse_store_json(url, filename, branch, n_stores_with_errors)
+            if store_file_json is not None:
+                data_list.extend(store_file_json)
+
+        if n_stores_with_errors >= len(stores):
+            return NoConnectionError()
+
+        prepare_tasks = [process_func(data, include_images, True) for data in data_list]
+
+        if get_custom_func is not None:
+            for url, branch in get_custom_func():
+                asset = {
+                    "url": url,
+                    "branch": branch
+                }
+                prepare_tasks.append(process_func(asset, include_images, False))
+
+        results = await asyncio.gather(*prepare_tasks)
+        results = [result for result in results if isinstance(result, data_class)]
+
+        return results
+
     async def get_all_plugins_async(self, include_images: bool = True) -> int:
-        """
-        Returns the number of assets that are new old for the current app version.
-        """
-        plugins_list: list[dict] = []
-        for url, branch in self.get_stores():
-            store_plugins_json = await self.get_remote_file(url, "Plugins.json", branch, force_refetch=True)
-            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
-                return plugins_list
-            
-            try:
-                store_plugins_json = json.loads(store_plugins_json)
-            except (json.decoder.JSONDecodeError, TypeError) as e:
-                log.error(e)
-                return NoConnectionError() #TODO - make store specific
-            
-            if store_plugins_json is None:
-                continue
-            plugins_list.extend(store_plugins_json)
+        return await self.process_store_data("Plugins.json", self.prepare_plugin, self.get_custom_plugins, PluginData, include_images)
 
-        for url, branch in self.get_custom_plugins():
-            if None in (url, branch):
-                continue
-
-            plugins_list.append({
-                "url": url,
-                "branch": branch
-            })
-
-        prepare_tasks = [self.prepare_plugin(plugin, include_images) for plugin in plugins_list]
-        plugins = await asyncio.gather(*prepare_tasks)
-        plugins = [plugin for plugin in plugins if isinstance(plugin, PluginData)]
-
-        return plugins
-        
     async def get_all_icons(self) -> int:
-        """
-        returns the number of assets that are too new for the current app version
-        """
-        icons_list: list[dict] = []
-        for url, branch in self.get_stores():
-            store_plugins_json = await self.get_remote_file(url, "Icons.json", branch, force_refetch=True)
-            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
-                return store_plugins_json
-            
-            try:
-                store_plugins_json = json.loads(store_plugins_json)
-            except (json.decoder.JSONDecodeError, TypeError) as e:
-                log.error(e)
+        return await self.process_store_data("Icons.json", self.prepare_icon, None, IconData)
 
-            if store_plugins_json is None:
-                continue
-
-            icons_list.extend(store_plugins_json)
-
-        prepare_tasks = [self.prepare_icon(plugin) for plugin in icons_list]
-        icons = await asyncio.gather(*prepare_tasks)
-        icons = [icon for icon in icons if isinstance(icon, IconData)]
-
-        return icons
-    
     async def get_all_wallpapers(self) -> int:
-        """
-        returns the number of assets that are too new for the current app version
-        """
-        wallpapers_list: list[dict] = []
-        for url, branch in self.get_stores():
-            store_plugins_json = await self.get_remote_file(url, "Wallpapers.json", branch, force_refetch=True)
-            if isinstance(store_plugins_json, NoConnectionError): #TODO - make store specific
-                return store_plugins_json
-            
-            try:
-                store_plugins_json = json.loads(store_plugins_json)
-            except (json.decoder.JSONDecodeError, TypeError) as e:
-                log.error(e)
-
-            if store_plugins_json is None:
-                continue
-            wallpapers_list.extend(store_plugins_json)
-
-        prepare_tasks = [self.prepare_wallpaper(plugin) for plugin in wallpapers_list]
-        wallpapers = await asyncio.gather(*prepare_tasks)
-        wallpapers = [wallpaper for wallpaper in wallpapers if isinstance(wallpaper, WallpaperData)]
-
-        return wallpapers
+        return await self.process_store_data("Wallpapers.json", self.prepare_wallpaper, None, WallpaperData)
     
     async def get_manifest(self, url:str, commit:str) -> dict:
         # url = self.build_url(url, "manifest.json", commit)
@@ -278,7 +258,7 @@ class StoreBackend:
         if isinstance(manifest, NoConnectionError):
             return manifest
         if manifest is None:
-            print()
+            return
         return json.loads(manifest)
     
     def remove_old_manifest_cache(self, url:str, commit_sha:str):
@@ -305,7 +285,7 @@ class StoreBackend:
                     os.remove(self.attribution_cache[cached_url])
                 del self.attribution_cache[cached_url]
 
-    async def prepare_plugin(self, plugin, include_image: bool = True):
+    async def prepare_plugin(self, plugin, include_image: bool = True, verified: bool = False):
         url = plugin["url"]
 
         # Check if suitable version is available
@@ -358,7 +338,7 @@ class StoreBackend:
             official=author in self.official_authors or False,
             commit_sha=commit,
             branch=branch,
-            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "plugins", manifest.get("id"))),
+            local_sha=await self.get_local_sha(os.path.join(gl.PLUGIN_DIR, manifest.get("id"))),
             minimum_app_version=manifest.get("minimum-app-version") or None,
             app_version=manifest.get("app-version") or None,
             repository_name=self.get_repo_name(url),
@@ -376,7 +356,8 @@ class StoreBackend:
             plugin_version=manifest.get("version") or None,
             plugin_id=manifest.get("id") or None,
 
-            is_compatible=compatible
+            is_compatible=compatible,
+            verified=verified
         )
 
 
@@ -384,14 +365,24 @@ class StoreBackend:
     async def get_local_sha(self, git_dir: str):
         if not os.path.exists(git_dir):
             return
-        try:
-            sha = subprocess.check_output(f'cd "{git_dir}" && git rev-parse HEAD', shell=True).decode("utf-8").strip()
-        except subprocess.CalledProcessError as e:
-            log.error(e)
+        
+        if os.path.exists(os.path.join(git_dir, ".git")):
+            try:
+                sha = subprocess.check_output(f'cd "{git_dir}" && git rev-parse HEAD', shell=True).decode("utf-8").strip()
+                return sha
+            except subprocess.CalledProcessError as e:
+                log.error(e)
+
+        version_file_path = os.path.join(git_dir, "VERSION")
+        if not os.path.exists(version_file_path):
             return
-        return sha
+        
+        with open(version_file_path, "r") as f:
+            return f.read().strip()
     
-    async def prepare_icon(self, icon):
+    async def prepare_icon(self, icon, include_image: bool = True, verified: bool = False):
+        if not include_image:
+            raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in icon:
             return None
 
@@ -457,11 +448,14 @@ class StoreBackend:
             icon_version=manifest.get("icon") or None,
             icon_id=manifest.get("id") or None,
 
-            is_compatible=compatible
+            is_compatible=compatible,
+            verified=verified
         )
 
     
-    async def prepare_wallpaper(self, wallpaper):
+    async def prepare_wallpaper(self, wallpaper, include_image: bool = True, verified: bool = False):
+        if not include_image:
+            raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in wallpaper:
             return None
 
@@ -523,22 +517,21 @@ class StoreBackend:
             wallpaper_version=manifest.get("version") or None,
             wallpaper_id=manifest.get("id") or None,
 
-            is_compatible=compatible
+            is_compatible=compatible,
+            verified=verified
         )
 
     async def get_web_image(self, url: str, path: str, branch: str = "main") -> Image:
         try:
             result = await self.get_remote_file(url, path, branch, data_type="content")
         except:
-            pass
+            return
         if isinstance(result, NoConnectionError):
             return result
-        if result is None:
+        try:
+            return Image.open(BytesIO(result))
+        except:
             return
-        img = Image.open(BytesIO(result))
-
-        return img
-
     
     async def get_stargazers(self, repo_url: str) -> int:
         "Deactivated for now because of rate limits"
@@ -624,6 +617,53 @@ class StoreBackend:
     async def os_sys(self, args):
         return os.system(args)
     
+    async def download_repo(self, repo_url:str, directory:str, commit_sha:str = None, branch_name:str = None):
+        username = self.get_user_name(repo_url)
+        projectname = self.get_repo_name(repo_url)
+        sha = commit_sha
+        if commit_sha is None and branch_name is not None:
+            # Used to write the version
+            sha = self.get_last_commit(repo_url, branch_name)
+        zip_url = f"https://github.com/{username}/{projectname}/archive/{sha}.zip"
+        
+        # Download
+        try:
+            # Create cache dir
+            os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
+            urllib.request.urlretrieve(zip_url, os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
+        except TypeError as e:
+            log.error(e)
+            return NoConnectionError()
+        
+        ## Extract
+        if os.path.exists(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}")):
+            shutil.rmtree(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}"))
+        shutil.unpack_archive(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"), os.path.join(gl.DATA_PATH, "cache"))
+
+
+        # Remove destination folder
+        if os.path.isdir(directory):
+            shutil.rmtree(directory)
+        if os.path.isfile(directory): # No idea how this could happen - but just in case
+            os.remove(directory)
+
+        # Create empty destination folder
+        os.makedirs(directory, exist_ok=True)
+
+        for name in os.listdir(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}")):
+            shutil.move(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}", name), directory)
+
+
+        os.remove(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
+        shutil.rmtree(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}"))
+        
+        ## Write version
+        path = os.path.join(directory, "VERSION")
+        with open(path, "w") as f:
+            f.write(sha)
+        
+        return 200
+    
     async def clone_repo(self, repo_url:str, local_path:str, commit_sha:str = None, branch_name:str = None):
         # if branch_name == None and commit_sha == None:
             # Set branch_name to main branch's name
@@ -661,10 +701,9 @@ class StoreBackend:
     async def install_plugin(self, plugin_data:PluginData, auto_update: bool = False):
         url = plugin_data.github
 
-        PLUGINS_FOLDER = "plugins"
-        local_path = os.path.join(gl.DATA_PATH, PLUGINS_FOLDER, plugin_data.plugin_id)
+        local_path = os.path.join(gl.PLUGIN_DIR, plugin_data.plugin_id)
 
-        response = await self.clone_repo(repo_url=url, local_path=local_path, commit_sha=plugin_data.commit_sha, branch_name=plugin_data.branch)
+        response = await self.download_repo(repo_url=url, directory=local_path, commit_sha=plugin_data.commit_sha, branch_name=plugin_data.branch)
 
         # Run install script if present
         if os.path.isfile(os.path.join(local_path, "__install__.py")):
@@ -693,31 +732,31 @@ class StoreBackend:
             if hasattr(controller, "active_page"):
                 if controller.active_page is not None:
                     # Load action objects
-                    controller.active_page.action_objects = {}
                     controller.active_page.load_action_objects()
-                    # Reload page to send new on_ready events
                     controller.load_page(controller.active_page)
 
         # Notify plugin actions
         gl.signal_manager.trigger_signal(Signals.PluginInstall, plugin_data.plugin_id)
 
         log.success(f"Plugin {plugin_data.plugin_id} installed successfully under: {local_path} with sha: {plugin_data.commit_sha}")
+        
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False, remove_files:bool = True) -> bool:
         ## 1. Remove all action objects in all pages
         for deck_controller in gl.deck_manager.deck_controller:
             # Track all keys controlled by this plugin
             if deck_controller.active_page is None:
                 continue
-            keys = deck_controller.active_page.get_keys_with_plugin(plugin_id=plugin_id)
+            #keys = deck_controller.active_page.get_keys_with_plugin(plugin_id=plugin_id)
 
             deck_controller.active_page.remove_plugin_action_objects(plugin_id=plugin_id)
             if remove_from_pages:
                 deck_controller.active_page.remove_plugin_actions_from_json(plugin_id=plugin_id)
 
+            #TODO: figure out
             # Clear all keys in this page which were controlled by this plugin
-            for key in keys:
-                key_index = deck_controller.coords_to_index(key.split("x"))
-                deck_controller.load_key(key_index, deck_controller.active_page)
+            #for key in keys:
+            #    key_index = deck_controller.coords_to_index(key.split("x"))
+            #    deck_controller.load_key(key_index, deck_controller.active_page)
 
         ## 2. Inform plugin base
         plugins = gl.plugin_manager.get_plugins()
@@ -729,56 +768,51 @@ class StoreBackend:
             
             ## 3. Remove plugin folder
             if os.path.islink(plugin.PATH):
-                log.error(f"Plugin {plugin.plugin_name} is inside a Symlink! Cant be removed")
-                return
+                symlink_target = os.readlink(plugin.PATH)
+                log.warning(f"Plugin {plugin.plugin_name} is inside a Symlink!")
+                plugin.PATH = symlink_target
+
             shutil.rmtree(plugin.PATH)
 
         ## 4. Delete plugin base object
         # plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
         gl.plugin_manager.remove_plugin_from_list(plugin)
 
+        gl.plugin_manager.generate_action_index()
+
+
         del plugin
 
         GLib.idle_add(gl.app.main_win.sidebar.action_chooser.plugin_group.update)
-
         GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
 
-        # Remove from sys.modules
-        module_name = f"plugins.{plugin_id}.main"
-        if module_name in sys.modules:
-            del sys.modules[module_name]
+
+        base_module = f"plugins.{plugin_id}"
+        for module in sys.modules.copy():
+            if module.startswith(base_module):
+                del sys.modules[module]
 
     async def install_icon(self, icon_data:IconData):
         icon_path = os.path.join(gl.DATA_PATH, "icons", icon_data.icon_id)
-        os.makedirs(icon_path, exist_ok=True)
 
         await self.uninstall_icon(icon_data)
 
-        await self.clone_repo(
-            repo_url=icon_data.github,
-            local_path=icon_path,
-            commit_sha=icon_data.commit_sha
-        )
+        await self.download_repo(repo_url=icon_data.github, directory=icon_path, commit_sha=icon_data.commit_sha)
 
     async def uninstall_icon(self, icon_data:IconData):
-        folder_name = f"{icon_data.author}::{icon_data.icon_name}"
+        folder_name = icon_data.icon_id
         if os.path.exists(os.path.join(gl.DATA_PATH, "icons", folder_name)):
             shutil.rmtree(os.path.join(gl.DATA_PATH, "icons", folder_name))
 
     async def install_wallpaper(self, wallpaper_data:WallpaperData):
         wallpaper_path = os.path.join(gl.DATA_PATH, "wallpapers", wallpaper_data.wallpaper_id)
-        os.makedirs(wallpaper_path, exist_ok=True)
 
         await self.uninstall_wallpaper(wallpaper_data)
 
-        await self.clone_repo(
-            repo_url=wallpaper_data.github,
-            local_path=wallpaper_path,
-            commit_sha=wallpaper_data.commit_sha
-        )
+        await self.download_repo(repo_url=wallpaper_data.github, directory=wallpaper_path, commit_sha=wallpaper_data.commit_sha)
 
     async def uninstall_wallpaper(self, wallpaper_data:WallpaperData):
-        folder_name = f"{wallpaper_data.author}::{wallpaper_data.wallpaper_name}"
+        folder_name = wallpaper_data.wallpaper_id
         if os.path.exists(os.path.join(gl.DATA_PATH, "wallpapers", folder_name)):
             shutil.rmtree(os.path.join(gl.DATA_PATH, "wallpapers", folder_name))
 
@@ -892,7 +926,3 @@ class StoreBackend:
 
 class NoCompatibleVersion:
     pass
-            
-
-        
-b = StoreBackend()

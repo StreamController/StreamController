@@ -58,6 +58,9 @@ class App(Adw.Application):
         css_provider.load_from_path(os.path.join(gl.top_level_dir, "style.css"))
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
+        icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+        icon_theme.add_search_path(os.path.join(gl.top_level_dir, "Assets", "icons"))
+        
         allow_white_mode = gl.settings_manager.get_app_settings().get("ui", {}).get("allow-white-mode", False)
 
         self.style_manager = self.get_style_manager()
@@ -270,6 +273,20 @@ class App(Adw.Application):
 
                 controller.load_page(page)
 
+    def send_outdated_plugin_notification(self, plugin_id: str) -> None:
+        self.send_notification(
+            "software-update-available-symbolic",
+            "Plugin out of date",
+            f"The plugin {plugin_id} is out of date and needs to be updated"
+        )
+
+    def send_missing_plugin_notification(self, plugin_id: str) -> None:
+        self.send_notification(
+            "dialog-information-symbolic",
+            "Plugin missing",
+            f"The plugin {plugin_id} is missing. Please install it.",
+            button=("Install", "app.install-plugin", GLib.Variant.new_string(plugin_id))
+        )
     def open_store(self, callback_agreed: bool = None) -> None:
         app_settings = gl.settings_manager.get_app_settings()
         agreed = app_settings.get("store", {}).get("responsibility-notes-agreed", False)

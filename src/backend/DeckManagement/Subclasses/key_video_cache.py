@@ -24,26 +24,26 @@ import cv2
 from loguru import logger as log
 import globals as gl
 
-VID_CACHE = "vid_cache"
+VID_CACHE = os.path.join(gl.DATA_PATH, "cache", "videos")
 
 class VideoFrameCache:
-    def __init__(self, video_path):
+    def __init__(self, video_path, size: tuple[int, int]):
         self.lock = threading.Lock()
 
         self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)
         self.n_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.cache = {}
+        self.size = size
         self.last_decoded_frame = None
         self.last_frame_index = -1
 
         self.video_md5 = self.get_video_hash()
 
-        self.frame_width: int = 72
-
         self.load_cache()
 
         self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
+        self.do_caching = True
 
 
         if self.is_cache_complete():
@@ -86,14 +86,14 @@ class VideoFrameCache:
             pil_image = Image.fromarray(frame_rgb)
 
             # Fill a 72x72 square completely with the image, keeping the aspect ratio
-            pil_image = ImageOps.fit(pil_image, (self.frame_width, self.frame_width), Image.Resampling.LANCZOS)
+            pil_image = ImageOps.fit(pil_image, self.size, Image.Resampling.LANCZOS)
 
             self.last_decoded_frame = pil_image
             if self.do_caching:
                 self.cache[self.last_frame_index] = pil_image
 
-            # Write the frame to the cache
-            self.write_cache(pil_image, self.last_frame_index)
+                # Write the frame to the cache
+                self.write_cache(pil_image, self.last_frame_index)
 
         # Return the last decoded frame if the nth frame is not available
         return self.cache.get(n, self.last_decoded_frame)
@@ -118,9 +118,9 @@ class VideoFrameCache:
         """
         with self.lock:
             if key_index is None:
-                path = os.path.join(VID_CACHE, "single_key", self.video_md5, f"{frame_index}.jpg")
+                path = os.path.join(VID_CACHE, "single_key", self.video_md5, f"{self.size[0]}x{self.size[1]}", f"{frame_index}.jpg")
             else:
-                path = os.path.join(VID_CACHE, f"key: {key_index}", self.video_md5, f"{key_index}", f"{frame_index}.jpg")
+                path = os.path.join(VID_CACHE, f"key: {key_index}", self.video_md5, f"{self.size[0]}x{self.size[1]}", f"{key_index}", f"{frame_index}.jpg")
 
             if os.path.isfile(path):
                 return
@@ -133,7 +133,7 @@ class VideoFrameCache:
         with self.lock:
             start = time.time()
             if key_index is None:
-                path = os.path.join(VID_CACHE, "single_key", self.video_md5)
+                path = os.path.join(VID_CACHE, "single_key", self.video_md5, f"{self.size[0]}x{self.size[1]}")
                 if not os.path.exists(path):
                     return
                 for file in os.listdir(path):
@@ -143,7 +143,7 @@ class VideoFrameCache:
                         self.cache[int(file.split(".")[0])] = img.copy()
 
             else:
-                path = os.path.join(VID_CACHE, f"key: {key_index}", self.video_md5)
+                path = os.path.join(VID_CACHE, f"key: {key_index}", self.video_md5, f"{self.size[0]}x{self.size[1]}", f"{key_index}")
                 if not os.path.exists(path):
                     return
                 for file in os.listdir(path):

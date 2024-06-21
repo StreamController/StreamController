@@ -16,11 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from typing import Type
 from gi.repository import Gtk
 
+from src.backend.DeckManagement.DeckController import ControllerInput
+from src.backend.DeckManagement.InputIdentifier import InputIdentifier
 import globals as gl
 
 class StateSwitcher(Gtk.ScrolledWindow):
-    def __init__(self, **kwargs):
+    def __init__(self, type, **kwargs):
         super().__init__(**kwargs)
+        self.type = type
 
         self.switch_callbacks: list[callable] = []
         self.add_new_callbacks: list[callable] = []
@@ -63,16 +66,24 @@ class StateSwitcher(Gtk.ScrolledWindow):
 
     def on_add_click(self, button):
         controller = gl.app.main_win.get_active_controller()
+        c_input = controller.get_input(gl.app.main_win.sidebar.active_identifier)
 
-        coords = gl.app.main_win.sidebar.active_coords
-        key_index = controller.coords_to_index(coords)
-
-        if key_index >= len(controller.keys):
+        if c_input is None:
             return
-        key = controller.keys[key_index]
-
-        key.add_new_state()
+        
+        c_input.add_new_state()
         return
+
+
+        input_element_dict = {
+            "keys": controller.keys,
+            "dials": controller.dials,
+            "touchscreens": controller.touchscreens,
+        }[self.type]
+        for d in input_element_dict:
+            if d.identifier == gl.app.main_win.sidebar.active_identifier:
+                d.add_new_state()
+                return
 
         n_states = self.get_n_states()
         self.stack.add_titled(Gtk.Box(), str(n_states + 1), f"State {n_states + 1}")
@@ -111,3 +122,14 @@ class StateSwitcher(Gtk.ScrolledWindow):
         for callback in self.switch_callbacks:
             if callable(callback):
                 callback()
+
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        c_input = gl.app.main_win.get_active_controller().get_input(identifier)
+
+        self.load_for_input(c_input, state)
+
+    def load_for_input(self, c_input: ControllerInput, state: int = None) -> None:
+        self.set_n_states(len(c_input.states.keys()))
+        self.select_state(state or c_input.state)
+
+        self.set_visible(c_input.enable_states)

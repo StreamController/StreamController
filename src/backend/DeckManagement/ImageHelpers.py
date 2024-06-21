@@ -96,7 +96,7 @@ def shrink_image(image):
         bg.paste(image, (11, 11))
         return bg
 
-def is_transparent(img):
+def is_transparent(img: Image.Image):
     """
     Determines if an image has transparency.
 
@@ -106,6 +106,8 @@ def is_transparent(img):
     Returns:
         bool: True if the image has transparency, False otherwise.
     """
+    return img.has_transparency_data
+
     if img.info.get("transparency", None) is not None:
         return True
     if img.mode == "P":

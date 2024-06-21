@@ -20,9 +20,9 @@ class PluginManager:
 
     def load_plugins(self, show_notification: bool = False):
         # get all folders in plugins folder
-        if not os.path.exists(os.path.join(gl.DATA_PATH, "plugins")):
-            os.mkdir(os.path.join(gl.DATA_PATH, "plugins"))
-        folders = os.listdir(os.path.join(gl.DATA_PATH, "plugins"))
+        if not os.path.exists(gl.PLUGIN_DIR):
+            os.mkdir(gl.PLUGIN_DIR)
+        folders = os.listdir(gl.PLUGIN_DIR)
         for folder in folders:
             # Import main module
             import_string = f"plugins.{folder}.main"
@@ -38,7 +38,6 @@ class PluginManager:
 
         if show_notification:
             self.show_n_disabled_plugins_notification()
-
 
     def show_n_disabled_plugins_notification(self):
         n_deactivated_plugins = len(PluginBase.disabled_plugins)
@@ -59,7 +58,6 @@ class PluginManager:
             gl.app_loading_finished_tasks.append(call)
         else:
             call()
-        
 
     def init_plugins(self):
         subclasses = PluginBase.__subclasses__()
@@ -75,10 +73,10 @@ class PluginManager:
             self.initialized_plugin_classes.append(subclass)
 
     def generate_action_index(self):
+        self.action_index.clear()
         plugins = self.get_plugins()
         for plugin in plugins.values():
             plugin_base = plugin["object"]
-            holders = plugin_base.action_holders
             self.action_index.update(plugin_base.action_holders)
 
         return

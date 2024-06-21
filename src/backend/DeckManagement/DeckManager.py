@@ -54,7 +54,8 @@ class DeckManager:
         self.usb_monitor.start_monitoring(on_connect=self.on_connect, on_disconnect=self.on_disconnect)
 
         resume_thread = DetectResumeThread(self)
-        resume_thread.start()
+        return
+        resume_thread.start() #TODO
 
     def load_decks(self):
         import types
@@ -114,13 +115,11 @@ class DeckManager:
         if hasattr(gl.app, "main_win"):
             gl.app.main_win.check_for_errors()
 
-
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device
         if device_info["ID_VENDOR"] != "Elgato":
             return
-        
         
         self.connect_new_decks()
 
@@ -229,9 +228,11 @@ class DeckManager:
             if new_device:
                 log.info(f"Replacing deck")
                 deck_controller.deck = new_device
-                deck_controller.update_all_keys()
+                deck_controller.update_all_inputs()
 
-                deck_controller.deck.set_key_callback(deck_controller.key_change_callback)
+                deck_controller.deck.set_key_callback(deck_controller.key_event_callback)
+                deck_controller.deck.set_dial_callback(deck_controller.dial_event_callback)
+                deck_controller.deck.set_touchscreen_callback(deck_controller.touchscreen_event_callback)
 
                 # deck_controller.deck._setup_reader(deck_controller.deck._read)
 

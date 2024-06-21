@@ -3,10 +3,11 @@ import os
 from typing import TYPE_CHECKING
 import argparse
 import sys
+from loguru import logger as log
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
-argparser.add_argument("--devel", help="Developer mode", action="store_true")
+argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
 argparser.add_argument("--close-running", help="Close running", action="store_true")
 argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
@@ -15,6 +16,17 @@ argparser.add_argument("app_args", nargs="*")
 DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
 if argparser.parse_args().data:
     DATA_PATH = argparser.parse_args().data
+
+PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")
+
+# Used for nix packaging
+if os.getenv("PLUGIN_DIR") is not None:
+    PLUGIN_DIR = os.getenv("PLUGIN_DIR")
+    top_level_folder = os.path.dirname(PLUGIN_DIR)
+    sys.path.append(top_level_folder)
+
+    if os.path.exists(os.path.join(DATA_PATH, "plugins")):
+        log.warning(f"You're using a plugin dir path outside of your data dir, but also have a plugin dir in the data dir. This may cause problems.")
 
 # Add data path to sys.path
 sys.path.append(DATA_PATH)

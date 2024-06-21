@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -25,6 +27,7 @@ GLib.threads_init()
 from loguru import logger as log
 
 # Import own modules
+from src.windows.mainWindow.elements.KeepRunningDialog import KeepRunningDialog
 from src.windows.mainWindow.elements.leftArea import LeftArea
 from src.windows.mainWindow.elements.Sidebar.Sidebar import Sidebar
 from src.windows.mainWindow.headerBar import HeaderBar
@@ -66,7 +69,22 @@ class MainWindow(Adw.ApplicationWindow):
             self.add_css_class("devel")
 
     def on_close(self, *args, **kwargs):
+        keep_running = gl.settings_manager.get_app_settings().get("system", {}).get("keep-running")
+        if keep_running is None:
+            dialog = KeepRunningDialog(self, self.on_close)
+            dialog.present()
+        else:
+            # self._on_close(keep_running)
+            self.hide()
+            if not keep_running:
+                GLib.idle_add(gl.app.on_quit)
+
+        return True
+
+    def _on_close(self, keep_running: bool) -> None:
         self.hide()
+        if not keep_running:
+            gl.app.on_quit()
         return True
 
     @log.catch
@@ -245,7 +263,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.add_on_finished(self.reload_sidebar)
             return
         
-        self.sidebar.load_for_coords(self.sidebar.active_coords, self.sidebar.active_state)
+        self.sidebar.update()
 
     def do_after_build_tasks(self):
         for task in self.on_finished:
@@ -289,6 +307,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.toast_overlay.add_toast(toast)
 
     def get_active_controller(self) -> DeckController:
+        if not recursive_hasattr(self, "leftArea.deck_stack"): return
         visible_child = self.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
             return

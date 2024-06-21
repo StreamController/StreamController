@@ -13,9 +13,11 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+from cv2 import exp
 import gi
 
 from GtkHelper.GtkHelper import BackButton
+from src.backend.DeckManagement.InputIdentifier import Input, InputEvent
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -57,7 +59,12 @@ class ActionConfigurator(Gtk.Box):
         self.comment_group = CommentGroup(self, margin_top=20)
         self.main_box.append(self.comment_group)
 
-        self.config_group = ConfigGroup(self, margin_top=40)
+        self.event_assigner = EventAssigner(self, margin_top=20)
+        self.main_box.append(self.event_assigner)
+
+        self.main_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL, margin_top=20, margin_bottom=20))
+
+        self.config_group = ConfigGroup(self)
         self.main_box.append(self.config_group)
 
         self.custom_configs = CustomConfigs(self, margin_top=6)
@@ -72,9 +79,10 @@ class ActionConfigurator(Gtk.Box):
         self.custom_configs.load_for_action(action)
         self.remove_button.load_for_action(action, index)
         self.comment_group.load_for_action(action, index)
+        self.event_assigner.load_for_action(action)
 
     def on_back_button_click(self, button):
-        self.sidebar.main_stack.set_visible_child_name("key_editor")
+        self.sidebar.main_stack.set_visible_child_name("configurator_stack")
 
 class CommentGroup(Adw.PreferencesGroup):
     def __init__(self, parent, **kwargs):
@@ -105,7 +113,7 @@ class CommentGroup(Adw.PreferencesGroup):
         self.set_comment(entry.get_text())
 
         # Update ActionManager - A full reload is not efficient but ensures correct behavior if the ActionConfigurator is triggered from a plugin action
-        gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.action.page_coords.split("x"), self.action.state)
+        gl.app.main_win.sidebar.key_editor.action_editor.load_for_identifier(self.action.input_ident, self.action.state)
 
     def connect_signals(self):
         self.comment_row.connect("changed", self.on_comment_changed)
@@ -124,7 +132,7 @@ class CommentGroup(Adw.PreferencesGroup):
         page = controller.active_page
         if page is None:
             return
-        return page.get_action_comment(self.action.page_coords, self.index, self.action.state)
+        return page.get_action_comment(self.index, self.action.state, self.action.input_ident)
     
     def set_comment(self, comment: str) -> None:
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
@@ -134,7 +142,7 @@ class CommentGroup(Adw.PreferencesGroup):
         if controller is None:
             return
         page = controller.active_page
-        page.set_action_comment(self.action.page_coords, self.index, comment, self.action.state)
+        page.set_action_comment(self.index, comment, self.action.state, self.action.input_ident)
     
 
 
@@ -233,43 +241,170 @@ class RemoveButton(Gtk.Button):
         page = controller.active_page
 
         # Swtich to main editor page
-        self.configurator.sidebar.main_stack.set_visible_child_name("key_editor")
+        self.configurator.sidebar.main_stack.set_visible_child_name("configurator_stack")
 
         # Remove from action_objects
         try:
-            del page.action_objects[self.action.page_coords][int(self.action.state)][self.index]
-        except:
+            del page.action_objects[self.action.input_ident.input_type][self.action.input_ident.json_identifier][int(self.action.state)][self.index]
+        except KeyError:
             #FIXME
-            print()
-        page.fix_action_objects_order(self.action.page_coords)
+            pass
+        page.fix_action_objects_order(self.action.input_ident)
 
         # Remove from page json
-        page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["actions"].pop(self.index)
+        page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)]["actions"].pop(self.index)
 
-        if page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["image-control-action"] == self.index:
-            if len(page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["actions"]) > 0:
-                page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["image-control-action"] = 0
+        #TODO: Also update if action before this one has the access
+        if self.action.input_ident.input_type == "keys" and page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)].get("image-control-action") == self.index:
+            if len(page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)]["actions"]) > 0:
+                page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)]["image-control-action"] = 0
             else:
-                page.dict["keys"][self.action.page_coords]["states"][str(self.action.state)]["image-control-action"] = None
+                page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)]["image-control-action"] = None
 
         page.save()
 
         # Reload configurator
-        self.configurator.sidebar.load_for_coords(self.action.page_coords.split("x"), self.action.state)
+        self.configurator.sidebar.update()
 
         # Check whether we have to reload the key
-        load = not page.has_key_an_image_controlling_action(self.action, self.action.state)
+        load = not page.has_key_an_image_controlling_action(self.action.input_ident, self.action.state)
         load = True # TODO
         if load:
-            key_index = page.deck_controller.coords_to_index(self.action.page_coords.split("x"))
-            controller.load_key(key_index, page=page)
-            # Reload key on similar pages
-            page.reload_similar_pages(page_coords=self.action.page_coords)
+            page.reload_similar_pages(identifier=self.action.input_ident)
 
         # Destroy the actual action
+        if hasattr(self.action, "on_remove"):
+            self.action.on_remove()
         del self.action
 
 
     def load_for_action(self, action, index):
         self.action = action
         self.index = index
+
+class EventAssigner(Adw.PreferencesGroup):
+    def __init__(self, action_configurator: ActionConfigurator, **kwargs):
+        super().__init__(**kwargs)
+        self.action_configurator = action_configurator
+        self.action: ActionBase = None
+        self.build()
+
+    def build(self):
+        self.expander = Adw.ExpanderRow(title="Event Assigner", subtitle="Configure event assignments")
+        self.add(self.expander)
+
+        self.button_box = Gtk.Box(css_classes=["linked"])
+        self.expander.add_suffix(self.button_box)
+
+        self.reset_button = Gtk.Button(icon_name="edit-undo-symbolic", tooltip_text="Reset to default",
+                                       valign=Gtk.Align.CENTER)
+        self.reset_button.connect("clicked", self.on_reset)
+        self.button_box.append(self.reset_button)
+
+        self.clear_all_button = Gtk.Button(icon_name="edit-clear-all-symbolic", tooltip_text="Clear all",
+                                           valign=Gtk.Align.CENTER)
+        self.clear_all_button.connect("clicked", self.on_clear_all)
+        self.button_box.append(self.clear_all_button)
+
+        all_events = Input.AllEvents()
+        self.rows: list[EventAssignerRow] = []
+
+        for event in all_events:
+            row = EventAssignerRow(
+                event_assigner=self,
+                event=event,
+                available_events=all_events + [None]
+            )
+
+            self.rows.append(row)
+            self.expander.add_row(row)
+
+    def load_for_action(self, action: ActionBase):
+        self.action = action
+        
+        self.set_sensitive(action.allow_event_configuration)
+
+        assignments = action.get_event_assignments()
+
+        for row in self.rows:
+            new_assignment = assignments.get(row.event)
+            row.select_event(new_assignment)
+
+            action_input_type = type(action.input_ident)
+            row.set_visible(row.event in action_input_type.Events)
+
+    def change_assignment_for_event(self, event: InputEvent, new_assignment: InputEvent):
+        assignments = self.action.get_event_assignments()
+        assignments[event] = new_assignment
+        self.action.set_event_assignments(assignments)
+
+    def reset_assignments(self):
+        self.action.set_event_assignments({})
+
+    def on_reset(self, button):
+        self.reset_assignments()
+        self.load_for_action(self.action)
+
+    def on_clear_all(self, button):
+        assignments: dict[InputEvent, InputEvent] = {}
+        for row in self.rows:
+            if not row.get_visible():
+                continue
+
+            assignments[row.event] = None
+
+        self.action.set_event_assignments(assignments)
+        self.load_for_action(self.action)
+
+class EventAssignerRow(Adw.ComboRow):
+    def __init__(self, event_assigner: EventAssigner, event: InputEvent, available_events: list[InputEvent]):
+        super().__init__()
+
+        self.event_assigner = event_assigner
+        self.event = event
+        self.available_events = available_events
+
+        self.build()
+
+    def _connect_signal(self):
+        self.connect("notify::selected", self.on_changed)
+
+    def _disconnect_signal(self):
+        try:
+            self.disconnect_by_func(self.on_changed)
+        except TypeError:
+            pass
+
+    def build(self):
+        self.set_title(str(self.event))
+
+        self.str_list = Gtk.StringList()
+        for event in self.available_events:
+            self.str_list.append(str(event))
+
+        self.set_model(self.str_list)
+
+        self.select_event(None)
+
+    def select_event(self, event: InputEvent):
+        self._disconnect_signal()
+
+        for i, e in enumerate(self.str_list):
+            if e.get_string() == str(event):
+                self.set_selected(i)
+                self._connect_signal()
+                return
+            
+        self.set_selected(Gtk.INVALID_LIST_POSITION)
+        self._connect_signal()
+
+    def on_changed(self, *args):
+        selected = self.get_selected()
+
+        if selected == Gtk.INVALID_LIST_POSITION:
+            event = None
+        else:
+            string_name = self.str_list[selected].get_string()
+            event = Input.EventFromStringName(string_name)
+
+        self.event_assigner.change_assignment_for_event(self.event, event)

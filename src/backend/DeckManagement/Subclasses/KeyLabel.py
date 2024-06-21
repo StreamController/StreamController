@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class KeyLabel:
-    controller_key: "ControllerKey"
+    controller_input: "ControllerKey"
     text: str = None
     font_size: int = None
     font_name: str = None

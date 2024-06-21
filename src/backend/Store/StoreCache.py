@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 import time
 
 import globals as gl
@@ -11,6 +12,8 @@ class StoreCache:
         self.files_json = os.path.join(self.CACHE_PATH, "files.json")
         self.files_dir = os.path.join(self.CACHE_PATH, "files")
 
+        self.write_lock = threading.Lock()
+
         self.files = self.get_files()
         self.remove_old_cache_files()
 
@@ -18,15 +21,16 @@ class StoreCache:
         self.create_cache_files()
 
     def get_files(self) -> dict:
-        if not os.path.exists(os.path.basename(self.files_json)):
+        if not os.path.exists(self.files_json):
             return {}
         with open(self.files_json, "r") as f:
             return json.load(f)
         
     def set_files(self, files: dict):
-        os.makedirs(os.path.dirname(self.files_json), exist_ok=True)
-        with open(self.files_json, "w") as f:
-            json.dump(files, f, indent=4)
+        with self.write_lock:
+            os.makedirs(os.path.dirname(self.files_json), exist_ok=True)
+            with open(self.files_json, "w") as f:
+                json.dump(files.copy(), f, indent=4)
 
     def remove_old_cache_files(self):
         DAYS_TO_KEEP = 3
@@ -106,7 +110,13 @@ class StoreCache:
         return os.path.exists(self.files[cache_string].get("path"))
 
     def open_cache_file(self, url: str, path: str, branch: str = "main", data_type: str = "text", mode: str = "r") -> str:
-        path = self.get_cache_path(url, path, branch, data_type)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        cache_path = self.get_cache_path(url, path, branch, data_type)
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+
+        self.files[self.generate_cache_string(url, path, branch, data_type)] = {
+            "path": cache_path,
+            "date": time.time()
+        }
+        self.set_files(self.files)
         
-        return open(path, mode)
+        return open(cache_path, mode)

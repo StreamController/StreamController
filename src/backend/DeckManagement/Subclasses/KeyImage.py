@@ -17,10 +17,10 @@ from PIL import Image
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.backend.DeckManagement.DeckController import ControllerKey
+    from src.backend.DeckManagement.DeckController import ControllerInput
 
-class KeyImage(SingleKeyAsset):
-    def __init__(self, controller_key: "ControllerKey", image: Image.Image):
+class InputImage(SingleKeyAsset):
+    def __init__(self, controller_input: "ControllerInput", image: Image.Image):
         """
         Initialize the class with the given controller key, image, fill mode, size, vertical alignment, and horizontal alignment.
 
@@ -32,11 +32,11 @@ class KeyImage(SingleKeyAsset):
             valign (float, optional): The vertical alignment of the image. Defaults to 0. Ranges from -1 to 1.
             halign (float, optional): The horizontal alignment of the image. Defaults to 0. Ranges from -1 to 1.
         """
-        super().__init__(controller_key)
-        self.image = image
+        super().__init__(controller_input)
+        self.image = image.convert("RGBA")
 
         if self.image is None:
-            self.image = self.controller_key.deck_controller.generate_alpha_key()
+            self.image = self.controller_input.get_empty_background()
 
     def get_raw_image(self) -> Image.Image:
         if not hasattr(self, "image"):

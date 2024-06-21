@@ -19,7 +19,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gio, Adw
+from gi.repository import Gtk, Gio, Adw, GLib
 
 # Import globals
 import globals as gl
@@ -85,8 +85,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.settings = None
         
     def on_quit(self, action, parameter):
-        gl.app.on_quit()
-        return
+        GLib.idle_add(gl.app.on_quit)
 
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutWindow(transient_for=self.main_window)
@@ -103,7 +102,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.set_website("https://github.com/StreamController/StreamController")
         self.about.set_issue_url("https://github.com/StreamController/StreamController/issues")
         # self.about.set_support_url("https://discord.com/invite/MSyHM8TN3u")
-        self.about.add_credit_section("Contributors", ["Core447 https://github.com/Core447  ", "coolapso https://github.com/coolapso", "G4PLS https://github.com/G4PLS", "yakushabb https://github.com/yakushabb"])
+        self.about.add_credit_section("Contributors", ["Core447 https://github.com/Core447  ", "coolapso https://github.com/coolapso", "G4PLS https://github.com/G4PLS", "Sorunome https://github.com/Sorunome", "yakushabb https://github.com/yakushabb"])
         self.about.set_copyright("Copyright (C) 2024 Core447")
         self.about.set_application_icon("com.core447.StreamController")
         self.about.set_visible(True)
@@ -115,12 +114,12 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
             license=None,
         )
 
-        # self.about.add_legal_section(
-        #     "Icons",
-        #     "StreamController uses Papirus icons",
-        #     Gtk.License.GPL_3_0,
-        #     license=None
-        # )
+        self.about.add_legal_section(
+            "Icons",
+            "StreamController uses and ships Adwaita icons",
+            license_type=Gtk.License.CUSTOM,
+            license=None
+        )
 
         self.about.set_debug_info("".join(gl.logs))
         self.about.set_debug_info_filename(os.path.join(gl.DATA_PATH, "StreamController.log"))

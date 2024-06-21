@@ -45,7 +45,7 @@ class LocaleManager:
 
     def set_to_os_default(self):
         os_locale = locale.getlocale()[0]
-        self.set_language(os_locale)
+        self.set_language(self.FALLBACK_LOCALE if os_locale is None else os_locale)
 
     def get_best_match(self, preferred_language: str) -> str:
         # Get all available locales

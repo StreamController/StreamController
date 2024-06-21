@@ -32,6 +32,7 @@ class StoreData:
     is_compatible: [bool, None] = None
 
     branch: str = None
+    verified: bool = False
 
 
 @dataclass

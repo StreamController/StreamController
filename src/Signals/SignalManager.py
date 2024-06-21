@@ -39,7 +39,6 @@ class SignalManager:
             raise TypeError("signal must be of type Signal")
         
         for callback in self.connected_signals.get(signal, []):
-            print(f"callback: {callback}")
             if signal == AppQuit:
                 callback(*args, **kwargs)
             else:

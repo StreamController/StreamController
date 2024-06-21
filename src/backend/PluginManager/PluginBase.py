@@ -1,3 +1,4 @@
+from functools import lru_cache
 import importlib
 import os
 import inspect
@@ -30,16 +31,20 @@ from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.EventHolder import EventHolder
 
 class PluginBase(rpyc.Service):
+    """
+    The base class for all plugins.
+    """
+
     plugins = {}
     disabled_plugins = {}
-    
+
     def __init__(self):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
-        self.settings_path: str = None
+        self.settings_path: str = os.path.join(gl.DATA_PATH, "settings", "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well
 
         self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, "locales"))
         self.locale_manager.set_to_os_default()
@@ -54,10 +59,29 @@ class PluginBase(rpyc.Service):
 
         self.registered_pages: list[str] = []
 
+    @lru_cache(maxsize=1)
+    def get_plugin_id(self) -> str:
+        """
+        Retrieves the plugin ID from the manifest. If the ID is not found, it falls back to getting the plugin ID from the folder name.
+        
+        The function uses the `lru_cache` decorator to cache the result of the function. The cache size is set to 1, meaning that only the most recent result is stored.
+        
+        Returns:
+            str: The plugin ID.
+        """
+        manifest = self.get_manifest()
+        return manifest.get("id") or self.get_plugin_id_from_folder_name()
+
     def register(self, plugin_name: str = None, github_repo: str = None, plugin_version: str = None,
                  app_version: str = None):
         """
         Registers a plugin with the given information.
+
+        Args:
+            plugin_name (str, optional): The name of the plugin. Defaults to None.
+            github_repo (str, optional): The GitHub repository of the plugin. Defaults to None.
+            plugin_version (str, optional): The version of the plugin. Defaults to None.
+            app_version (str, optional): The version of StreamController. Defaults to None.
 
         Raises:
             ValueError: If the plugin name is not specified or if the plugin already exists.
@@ -70,12 +94,16 @@ class PluginBase(rpyc.Service):
         self.plugin_name = plugin_name or manifest.get("name") or None
         self.github_repo = github_repo or manifest.get("github") or None
         self.plugin_version = plugin_version or manifest.get("version") or None
-        self.min_app_version = manifest.get("minimum-app-version") or "0.0.0" #TODO: IMPLEMENT BETTER WAY OF VERSION ERROR HANDLING
-        self.app_version = app_version or manifest.get("app-version") or "0.0.0"
+        self.min_app_version = manifest.get("minimum-app-version")
+        self.app_version = app_version or manifest.get("app-version")
+        self.plugin_id = self.get_plugin_id()
 
         # Verify variables
         if self.plugin_name in ["", None]:
             log.error("Plugin: Please specify a plugin name")
+            return
+        if self.plugin_id in ["", None]:
+            log.error(f"Plugin: {self.plugin_name}: Please specify a plugin id")
             return
         if self.github_repo in ["", None]:
             log.error(f"Plugin: {self.plugin_name}: Please specify a github repo")
@@ -87,9 +115,6 @@ class PluginBase(rpyc.Service):
             log.error(f"Plugin: {self.plugin_name}: Please specify a app version")
             return
 
-        self.plugin_id = manifest.get("id") or self.get_plugin_id_from_folder_name()
-
-        self.settings_path = os.path.join(gl.DATA_PATH, "settings", "plugins", self.plugin_id, "settings.json")
 
         for plugin_id in PluginBase.plugins.keys():
             plugin = PluginBase.plugins[plugin_id]["object"]
@@ -141,21 +166,55 @@ class PluginBase(rpyc.Service):
             }
 
     def _get_parsed_base_version(self, version_str: str) -> version.Version:
+        """
+        Parses a version string and returns the base version.
+
+        Args:
+            version_str (str): The version string to parse.
+
+        Returns:
+            version.Version: The parsed base version.
+
+        Raises:
+            None.
+        """
+        if version_str is None:
+            return
         base_version = version.parse(version_str).base_version
         return version.parse(base_version)
 
     def get_plugin_id_from_folder_name(self) -> str:
+        """
+        Retrieves the plugin ID from the folder name of the subclass file.
+        Returns:
+            str: The plugin ID extracted from the folder name.
+        """
         module = importlib.import_module(self.__module__)
         subclass_file = module.__file__
         return os.path.basename(os.path.dirname(os.path.abspath(subclass_file)))
     
     def is_minimum_version_ok(self) -> bool:
+        """
+        Check if the minimum required version of the application is met.
+
+        Returns:
+            bool: True if the minimum version is met, False otherwise.
+        """
+        if self.min_app_version is None:
+            return True
+        
         app_version = self._get_parsed_base_version(gl.app_version)
         min_app_version = self._get_parsed_base_version(self.min_app_version)
 
         return app_version >= min_app_version
 
     def are_major_versions_matching(self) -> bool:
+        """
+        Check if the major versions of the application and the plugin are matching.
+
+        Returns:
+            bool: True if the major versions are matching, False otherwise.
+        """
         app_version = version.parse(gl.app_version)
         # Should use the current app version the plugin uses instead of the minimum app version
         current_app_version = version.parse(self.app_version)
@@ -164,10 +223,27 @@ class PluginBase(rpyc.Service):
 
     #TODO: BETTER ERROR HANDLING FOR are_major_versions_matching and is_minimum_version_ok
     def is_app_version_matching(self) -> bool:
+        """
+        Check if the application version matches the minimum required version for this plugin.
+
+        Returns:
+            bool: True if the application version is compatible with the plugin, False otherwise.
+        """
         return self.are_major_versions_matching() and self.is_minimum_version_ok()
 
-
     def add_action_holder(self, action_holder: ActionHolder):
+        """
+        Adds an action holder to the plugin.
+
+        Args:
+            action_holder (ActionHolder): The action holder to be added.
+
+        Raises:
+            ValueError: If action_holder is not an instance of ActionHolder.
+
+        Returns:
+            None
+        """
         if not isinstance(action_holder, ActionHolder):
             raise ValueError("Please pass an ActionHolder")
         
@@ -263,23 +339,53 @@ class PluginBase(rpyc.Service):
             self.disconnect_from_event(event_id, callback)
 
     def get_settings(self):
+        """
+        Retrieves the settings from the settings file.
+
+        Returns:
+            dict: The settings stored in the settings file. If the settings file does not exist, an empty dictionary is returned.
+        """
         if not os.path.exists(self.settings_path):
             return {}
         with open(self.settings_path, "r") as f:
             return json.load(f)
 
     def get_manifest(self):
+        """
+        Retrieves the content of the manifest file from the plugin's directory if it exists.
+
+        Returns:
+            dict: The contents of the manifest file as a dictionary, or an empty dictionary if the file does not exist.
+        """
         if os.path.exists(os.path.join(self.PATH, "manifest.json")):
             with open(os.path.join(self.PATH, "manifest.json"), "r") as f:
                 return json.load(f)
         return {}
     
     def set_settings(self, settings):
+        """
+        Saves the provided settings to the settings file.
+
+        Args:
+            settings (dict): The settings to be saved.
+
+        Returns:
+            None
+        """
         os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
         with open(self.settings_path, "w") as f:
             json.dump(settings, f, indent=4)
 
     def add_css_stylesheet(self, path):
+        """
+        Adds a CSS stylesheet to the application's style context.
+
+        Args:
+            path (str): The path to the CSS file.
+
+        Returns:
+            None
+        """
         css_provider = Gtk.CssProvider()
         css_provider.load_from_path(path)
         Gtk.StyleContext.add_provider_for_display(
@@ -289,13 +395,38 @@ class PluginBase(rpyc.Service):
         )
 
     def register_page(self, path: str) -> None:
+        """
+        Registers a page for this plugin that will be shown in the ui.
+
+        Args:
+            path (str): The path of the page to be registered.
+
+        Returns:
+            None
+        """
         gl.page_manager.register_page(path)
         self.registered_pages.append(path)
 
     def get_selector_icon(self) -> Gtk.Widget:
+        """
+        Returns a Gtk.Image widget with the icon "view-paged".
+
+        Returns:
+            Gtk.Widget: A Gtk.Image widget.
+        """
+
         return Gtk.Image(icon_name="view-paged")
     
     def on_uninstall(self) -> None:
+        """
+        Unregisters the plugin pages and stops the backend connection if running.
+
+        This method is called when the plugin is being uninstalled. It ensures that any pages registered
+        by the plugin are unregistered and the backend connection is stopped properly.
+        
+        Returns:
+            None
+        """ 
         for page in self.registered_pages:
             gl.page_manager.unregister_page(page)
         try:
@@ -306,32 +437,74 @@ class PluginBase(rpyc.Service):
             log.error(e)
 
     def get_plugin(self, plugin_id: str) -> "PluginBase":
+        """
+        Retrieves a plugin by its ID.
+
+        Args:
+            plugin_id (str): The ID of the plugin to retrieve.
+
+        Returns:
+            PluginBase: The plugin object if found, otherwise None.
+        """
         return gl.plugin_manager.get_plugin_by_id(plugin_id) or None
 
     # ---------- #
     # Rpyc stuff #
     # ---------- #
 
-    def start_server(self):
+    def start_server(self) -> None:
+        """
+        Starts the RPyC server for the plugin.
+
+        This method initializes and starts a ThreadedServer to allow remote procedure calls (RPC)
+        for the plugin. If the server is already running, it logs a warning and skips starting a new server.
+
+        Returns:
+            None
+        """
         if self.server is not None:
             log.warning("Server already running, skipping...")
             return
         self.server = ThreadedServer(self, hostname="localhost", port=0, protocol_config={"allow_public_attrs": True})
-        # self.server.start()
         threading.Thread(target=self.server.start, name="server_start", daemon=True).start()
 
-    def on_disconnect(self, conn):
+    def on_disconnect(self, conn: Connection) -> None:
+        """
+        Handles the disconnection of the RPyC server.
+
+        This method closes the RPyC server and the backend connection if they are running.
+
+        Args:
+            conn (Connection): The connection object to be disconnected.
+
+        Returns:
+            None
+        """
         if self.server is not None:
             self.server.close()
         if self.backend_connection is not None:
             self.backend_connection.close()
         self.backend_connection = None
 
-    def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
+    def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False) -> None:
+        """
+        Launches the backend process for the plugin.
+
+        This method starts the RPyC server, constructs the command to launch the backend script,
+        and runs it in a new subprocess. Optionally, the backend can be launched in a new terminal window.
+
+        Args:
+            backend_path (str): The path to the backend script to be executed.
+            venv_path (str, optional): The path to the virtual environment to activate. Defaults to None.
+            open_in_terminal (bool, optional): Whether to open the backend in a new terminal window. Defaults to False.
+
+        Returns:
+            None
+        """
         self.start_server()
         port = self.server.port
 
-        ## Launch
+        # Construct the command to launch the backend
         if open_in_terminal:
             command = "gnome-terminal -- bash -c '"
             if venv_path is not None:
@@ -348,31 +521,69 @@ class PluginBase(rpyc.Service):
 
         self.wait_for_backend()
 
-    def wait_for_backend(self, tries: int = 3):
+    def wait_for_backend(self, tries: int = 3) -> None:
+        """
+        Waits for the backend to establish a connection.
+
+        This method repeatedly checks if the backend connection is established within the given number of tries.
+
+        Args:
+            tries (int, optional): The number of attempts to wait for the backend connection. Defaults to 3.
+
+        Returns:
+            None
+        """
         while tries > 0 and self.backend_connection is None:
             time.sleep(0.1)
             tries -= 1
 
-    def register_backend(self, port: int):
+    def register_backend(self, port: int) -> None:
         """
-        Internal method, do not call manually
+        Registers the backend connection for the plugin.
+
+        This is an internal method and should not be called manually. It connects to the backend using
+        the specified port and adds the backend connection to the global plugin manager.
+
+        Args:
+            port (int): The port number to connect to the backend.
+
+        Returns:
+            None
         """
         self.backend_connection = rpyc.connect("localhost", port)
         self.backend = self.backend_connection.root
         gl.plugin_manager.backends.append(self.backend_connection)
 
     def ping(self) -> bool:
-        return True
-    
-    def request_dbus_permission(self, name: str, bus: str="session", description: str = None) -> None:
         """
-        name: The name of the bus
-        bus: The bus type session or system
-        description: Describe why you need the permission - automatically added if not provided
+        A simple method to check the availability of the plugin.
+
+        Returns:
+            bool: Always returns True.
+        """
+        return True
+
+    def request_dbus_permission(self, name: str, bus: str = "session", description: str = None) -> None:
+        """
+        Requests DBus permission for the plugin.
+
+        This method shows a dialog requesting DBus permission for the specified bus with the given name
+        and description. If no description is provided, a default description is used.
+
+        Args:
+            name (str): The name of the bus.
+            bus (str, optional): The type of bus, either "session" or "system". Defaults to "session".
+            description (str, optional): The description of why the permission is needed. Defaults to None.
+
+        Raises:
+            ValueError: If the plugin is not registered before requesting permissions.
+
+        Returns:
+            None
         """
         if description is None:
             description = gl.lm.get("permissions.request.plugin-blueprint")
             if self.plugin_name is None:
-                raise ("Register the plugin before requesting permissions")
+                raise ValueError("Register the plugin before requesting permissions")
             description = description.replace("{name}", self.plugin_name)
         gl.flatpak_permission_manager.show_dbus_permission_request_dialog(name, bus, description)

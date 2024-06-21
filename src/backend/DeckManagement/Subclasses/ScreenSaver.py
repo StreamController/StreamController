@@ -20,6 +20,8 @@ from copy import copy
 
 # Import typing
 from typing import TYPE_CHECKING
+
+from src.backend.DeckManagement.InputIdentifier import Input
 if TYPE_CHECKING:
     from backend.DeckManagement.DeckController import DeckController, ControllerKey, Background
 
@@ -28,7 +30,7 @@ class ScreenSaver:
         self.deck_controller: "DeckController" = deck_controller
 
         # Init vars
-        self.original_keys: list["ControllerKey"] = []
+        self.original_inputs = []
         self.original_background: "Background" = None
         self.original_brightness: int = 0
 
@@ -94,18 +96,14 @@ class ScreenSaver:
         # Set showing = True - in case this method is called manually
         self.showing = True
 
-        # Store original keys and background
-        self.original_keys = self.deck_controller.keys
-        self.deck_controller.init_keys()
-        self.original_background = copy(self.deck_controller.background)
+        self.original_inputs = self.deck_controller.inputs
+        self.deck_controller.inputs = {}
+        self.deck_controller.init_inputs()
+
+        self.original_background = self.deck_controller.background
         self.original_brightness = self.deck_controller.brightness
 
-        self.deck_controller.set_brightness(self.brightness)
-
-        # Clear all keys
-        for key in self.deck_controller.keys:
-            key.clear(update=False)
-
+        self.deck_controller.clear()
         self.deck_controller.clear_media_player_tasks()
 
         # Set background
@@ -115,8 +113,14 @@ class ScreenSaver:
             self.deck_controller.background.video.fps = self.fps
             self.deck_controller.background.video.loop = self.loop
 
+        # Release keys
+        for key in self.deck_controller.inputs[Input.Key]:
+            key.down_start_time = None
+            key.press_state = False
+
     def hide(self):
         log.info("Hiding screen saver")
+        self.original_inputs.clear()
         self.deck_controller.clear() # Ensures that the first image visable is from the page not the screensaver if the brightness on the saver is 0
         self.showing = False
         self.deck_controller.load_page(self.deck_controller.active_page, allow_reload=True)

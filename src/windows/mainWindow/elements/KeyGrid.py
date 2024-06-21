@@ -126,7 +126,6 @@ class KeyButton(Gtk.Frame):
         super().__init__(**kwargs)
         self.set_css_classes(["key-button-frame-hidden"])
         self.coords = coords
-        self.state = 0
         self.identifier = Input.Key(f"{coords[0]}x{coords[1]}")
 
         self.key_grid = key_grid
@@ -162,6 +161,10 @@ class KeyButton(Gtk.Frame):
 
         self.init_shortcuts()
 
+    @property
+    def state(self) -> int:
+        return self.get_key().state
+
     def init_dnd(self) -> None:
         self.drag_source = Gtk.DragSource()
         self.drag_source.connect("prepare", self.on_drag_prepare)
@@ -195,27 +198,34 @@ class KeyButton(Gtk.Frame):
             return
         
         ## Fetch own key_dict
-        target_x, target_y = self.coords
-        target_key_dict = active_page.dict.get("keys", {}).get("states", {}).get(str(self.state), {}).get(f"{target_x}x{target_y}", {})
+        target_key_dict = active_page.dict.get(self.identifier.input_type, {}).get(self.identifier.json_identifier, {})
 
         ## Fetch dropped key_dict
         dropped_button = drop.get_value()
-        dropped_y, dropped_x = dropped_button.coords
-        dropped_state = str(dropped_button.state)
-        dropped_key_dict = active_page.dict.get("keys", {}).get(f"{dropped_x}x{dropped_y}", {}).get("states", {}).get(dropped_state, {})
+        dropped_identifier = dropped_button.identifier
+        dropped_key_dict = active_page.dict.get(dropped_identifier.input_type, {}).get(dropped_identifier.json_identifier, {})
 
-        # Swap keys in the page dict
-        active_page.dict.setdefault("keys", {})
-        active_page.dict["keys"].setdefault(f"{target_x}x{target_y}", {})
-        active_page.dict["keys"][f"{target_x}x{target_y}"].setdefault("states", {})
-        active_page.dict["keys"][f"{target_x}x{target_y}"]["states"][str(self.state)] = dropped_key_dict
-        active_page.dict["keys"][f"{dropped_x}x{dropped_y}"]["states"][dropped_state] = target_key_dict
+        ## Swap keys in the page dict
+        # Set own dict
+        active_page.dict.setdefault(self.identifier.input_type, {})
+        active_page.dict[self.identifier.input_type][self.identifier.json_identifier] = dropped_key_dict
+
+        # Set dropped dict
+        active_page.dict.setdefault(dropped_identifier.input_type, {})
+        active_page.dict[dropped_identifier.input_type][dropped_identifier.json_identifier] = target_key_dict
+
         active_page.save()
 
-        active_page.switch_actions_of_keys("keys", f"{target_x}x{target_y}", f"{dropped_x}x{dropped_y}")
+        active_page.deck_controller.load_page(active_page, allow_reload=True)
 
-        active_page.reload_similar_pages(page_coords=f"{target_x}x{target_y}", reload_self=True)
-        active_page.reload_similar_pages(page_coords=f"{dropped_x}x{dropped_y}", reload_self=True)
+        active_page.switch_actions_of_inputs(self.identifier, dropped_identifier)
+
+        active_page.reload_similar_pages(self.identifier, reload_self=True)
+        active_page.reload_similar_pages(dropped_identifier, reload_self=True)
+
+        page_id = id(active_page)
+
+        active_page.save()
 
         # Reload sidebar
         gl.app.main_win.sidebar.update()
@@ -255,8 +265,8 @@ class KeyButton(Gtk.Frame):
 
         # Update icon selector if current key is selected
         active_identifier = gl.app.main_win.sidebar.active_identifier
-        if active_identifier == f"{self.coords[0]}x{self.coords[1]}":
-            gl.app.main_win.sidebar.key_editor.icon_selector.load_for_identifier((self.coords[0], self.coords[1]))
+        if active_identifier == self.identifier:
+            gl.app.main_win.sidebar.key_editor.icon_selector.load_for_identifier(self.identifier, self.get_key().state)
 
         
     def on_drag_begin(self, drag_source, data):
@@ -374,15 +384,14 @@ class KeyButton(Gtk.Frame):
             if not self.get_mapped():
                 return
             
-        sidebar.load_for_key(self.identifier, self.state)
+        sidebar.load_for_identifier(self.identifier, self.state)
 
     # Modifier
     def on_copy(self, *args):
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
-        x, y = self.coords
-        key_dict = active_page.dict.get("keys", {}).get(f"{x}x{y}", {}).get(str(self.state), {})
+        key_dict = active_page.dict.get(self.identifier.input_type, {}).get(self.identifier.json_identifier, {})
         gl.app.main_win.key_dict = key_dict
         content = Gdk.ContentProvider.new_for_value(key_dict)
         gl.app.main_win.key_clipboard.set_content(content)
@@ -403,14 +412,13 @@ class KeyButton(Gtk.Frame):
         active_page = self.key_grid.deck_controller.active_page
         if active_page is None:
             return
-        x, y = self.coords
-        active_page.dict.setdefault("keys", {})
-        active_page.dict["keys"].setdefault(f"{x}x{y}", {})
-        active_page.dict["keys"][f"{x}x{y}"] = gl.app.main_win.key_dict
-        active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
+        active_page.dict.setdefault(self.identifier.input_type, {})
+        active_page.dict[self.identifier.input_type].setdefault(self.identifier.json_identifier, {})
+        active_page.dict[self.identifier.input_type][self.identifier.json_identifier] = gl.app.main_win.key_dict
+        active_page.reload_similar_pages(self.identifier, reload_self=True)
 
         # Reload ui
-        gl.app.main_win.sidebar.load_for_identifier(self.identifier)
+        gl.app.main_win.sidebar.load_for_identifier(self.identifier, self.get_key().state)
 
     def on_paste_finished(self, result, data, user_data):
         value = gl.app.main_win.key_clipboard.read_value_finish(result=data)
@@ -431,13 +439,13 @@ class KeyButton(Gtk.Frame):
 
 
         # Remove media from key
-        key_index = self.key_grid.deck_controller.coords_to_index(reversed(self.coords))
-        self.key_grid.deck_controller.keys[key_index].get_active_state().set_key_image(None)
+        c_input = self.key_grid.deck_controller.get_input(self.identifier)
+        c_input.get_active_state().set_image(None)
 
-        active_page.reload_similar_pages(page_coords=f"{x}x{y}", reload_self=True)
+        active_page.reload_similar_pages(self.identifier, reload_self=True)
 
         # Reload ui
-        gl.app.main_win.sidebar.load_for_identifier(self.identifier)
+        gl.app.main_win.sidebar.load_for_identifier(self.identifier, self.get_key().state)
 
     def get_key(self) -> "ControllerKey":
         controller = self.key_grid.deck_controller

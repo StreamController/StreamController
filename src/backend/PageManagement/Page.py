@@ -278,23 +278,21 @@ class Page:
                 action.key_index = self.deck_controller.coords_to_index(to_key.split("x"))
             action.identifier = to_key
 
-    def switch_actions_of_keys(self, type: str, key_1: str, key_2: str):
-        key_1_states = self.action_objects.get(type, {}).get(key_1, {})
-        key_2_states = self.action_objects.get(type, {}).get(key_2, {})
+    def switch_actions_of_inputs(self, input_1: InputIdentifier, input_2: InputIdentifier):
+        input_1_dict = self.action_objects.get(input_1.input_type, {}).get(input_1.json_identifier, {})
+        input_2_dict = self.action_objects.get(input_2.input_type, {}).get(input_2.json_identifier, {})
 
-        for state in key_1_states:
-            for action in key_1_states[state].values():
-                action.identifier = key_2
+        for state in input_1_dict:
+            for action in input_1_dict[state].values():
+                action.input_ident = input_2
 
-        for state in key_2_states:
-            for action in key_2_states[state].values():
-                action.identifier = key_1
+        for state in input_2_dict:
+            for action in input_2_dict[state].values():
+                action.input_ident = input_1
 
-        if not key_1_states and not key_2_states:
-            return
         # Change in action_objects
-        self.action_objects[type][key_1] = key_2_states
-        self.action_objects[type][key_2] = key_1_states
+        self.action_objects[input_1.input_type][input_1.json_identifier] = input_2_dict
+        self.action_objects[input_2.input_type][input_2.json_identifier] = input_1_dict
 
 
     @log.catch

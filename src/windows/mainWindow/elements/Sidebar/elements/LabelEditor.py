@@ -198,8 +198,8 @@ class LabelRow(Adw.PreferencesRow):
     def update_values(self, composed_label: KeyLabel = None):
         self.disconnect_signals()
         if composed_label is None:
-            cotnroller = gl.app.main_win.get_active_controller()
-            controller_input = cotnroller.get_input(self.active_identifier)
+            controller = gl.app.main_win.get_active_controller()
+            controller_input = controller.get_input(self.active_identifier)
             composed_label = controller_input.get_active_state().label_manager.get_composed_label(position=self.key_name)
 
         if self.text_entry.entry.get_text() != composed_label.text:

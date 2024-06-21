@@ -683,11 +683,13 @@ class AddActionButtonRow(Adw.PreferencesRow):
         # Reload ui
         self.expander.load_for_identifier(self.expander.active_identifier, self.expander.active_state)
 
-        # Open action editor if new action has configuration - qol
-        rows = self.expander.get_rows()
-        if len(rows) < 2:
-            return
-        last_row = rows[-2] # -1 is the add button
-        if last_row.action_object.has_configuration:
-            gl.app.main_win.sidebar.action_configurator.load_for_action(last_row.action_object, last_row.index)
-            gl.app.main_win.sidebar.show_action_configurator()
+        settings = gl.settings_manager.get_app_settings()
+        if settings.get("ui", {}).get("auto-open-action-config", True):
+            # Open action editor if new action has configuration - qol
+            rows = self.expander.get_rows()
+            if len(rows) < 2:
+                return
+            last_row = rows[-2] # -1 is the add button
+            if last_row.action_object.has_configuration:
+                gl.app.main_win.sidebar.action_configurator.load_for_action(last_row.action_object, last_row.index)
+                gl.app.main_win.sidebar.show_action_configurator()

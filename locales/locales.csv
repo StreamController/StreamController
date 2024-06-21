@@ -206,3 +206,5 @@ onboarding.udev.detail;Es ist eine alte udev version installiert. Klicken Sie au
 onboarding.udev.button;Website öffnen; Open web;Ouvrir le site web
 settings-store-custom-stores-subtitle;Weitere Storerepos hinzufügen;Add custom store repos;Ajouter des dépôts de magasins personnalisés
 settings-store-custom-plugins-subtitle;Weitere Pluginrepos hinzufügen;Add custom plugin repos;Ajouter des dépôts de plugins personnalisés
+settings-auto-open-action-config;Konfigurationsoptionen automatisch öffnen;Automatically open config options;
+settings-auto-open-action-config-subtitle;Konfigurationsoptionen von neuen Aktionen automatisch öffnen;Automatically open config options for new actions;

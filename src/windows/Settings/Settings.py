@@ -89,6 +89,9 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.show_notifications = Adw.SwitchRow(title=gl.lm.get("settings-show-notifications"), subtitle=gl.lm.get("settings-show-notifications-subtitle"), active=True)
         self.add(self.show_notifications)
 
+        self.auto_config_row = Adw.SwitchRow(title=gl.lm.get("settings-auto-open-action-config"), subtitle=gl.lm.get("settings-auto-open-action-config-subtitle"), active=True)
+        self.add(self.auto_config_row)
+
         self.load_defaults()
 
         # Connect signals
@@ -96,12 +99,14 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.enable_fps_warnings_row.connect("notify::active", self.on_enable_fps_warnings_row_toggled)
         self.allow_white_mode.connect("notify::active", self.on_allow_white_mode_toggled)
         self.show_notifications.connect("notify::active", self.on_show_notifications_toggled)
+        self.auto_config_row.connect("notify::active", self.on_auto_config_row_toggled)
 
     def load_defaults(self):
         self.emulate_row.set_active(self.settings.settings_json.get("key-grid", {}).get("emulate-at-double-click", True))
         self.enable_fps_warnings_row.set_active(self.settings.settings_json.get("warnings", {}).get("enable-fps-warnings", True))
         self.allow_white_mode.set_active(self.settings.settings_json.get("ui", {}).get("allow-white-mode", False))
         self.show_notifications.set_active(self.settings.settings_json.get("ui", {}).get("show-notifications", True))
+        self.auto_config_row.set_active(self.settings.settings_json.get("ui", {}).get("auto-open-action-config", True))
 
     def on_emulate_row_toggled(self, *args):
         self.settings.settings_json.setdefault("key-grid", {})
@@ -136,6 +141,13 @@ class UIPageGroup(Adw.PreferencesGroup):
     def on_show_notifications_toggled(self, *args):
         self.settings.settings_json.setdefault("ui", {})
         self.settings.settings_json["ui"]["show-notifications"] = self.show_notifications.get_active()
+
+        # Save
+        self.settings.save_json()
+
+    def on_auto_config_row_toggled(self, *args):
+        self.settings.settings_json.setdefault("ui", {})
+        self.settings.settings_json["ui"]["auto-open-action-config"] = self.auto_config_row.get_active()
 
         # Save
         self.settings.save_json()

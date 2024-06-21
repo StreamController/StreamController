@@ -83,7 +83,6 @@ class ActionBase(rpyc.Service):
         return i.states.get(self.state)
     
     def event_callback(self, event: InputEvent, data: dict = None):
-        log.info(str(event))
         ## backward compatibility
         if event == Input.Key.Events.DOWN:
             self.on_key_down()

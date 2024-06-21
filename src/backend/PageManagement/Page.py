@@ -628,8 +628,12 @@ class Page:
             if key.state == state:
                 key.update()
 
-    def update_input(self, identifier: InputIdentifier, state: int) -> None:
+    def update_input(self, identifier: InputIdentifier, state: int, wake: bool = True) -> None:
         for controller in gl.deck_manager.deck_controller:
+            if wake:
+                if controller.screen_saver.showing:
+                    controller.screen_saver.hide()
+
             if controller.active_page.json_path != self.json_path:
                 continue
             c_input = controller.get_input(identifier)

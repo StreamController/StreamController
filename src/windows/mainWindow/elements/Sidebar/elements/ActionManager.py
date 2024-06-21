@@ -454,10 +454,7 @@ class ActionRow(Adw.ActionRow):
             child.set_image_toggled(False)
 
 
-        visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
-        if visible_child is None:
-            return
-        controller = visible_child.deck_controller
+        controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
         page = controller.active_page

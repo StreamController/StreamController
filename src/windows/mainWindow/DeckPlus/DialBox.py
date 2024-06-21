@@ -99,6 +99,26 @@ class Dial(Gtk.Frame):
 
         self.last_scroll = None
 
+
+        ## Actions
+        self.action_group = Gio.SimpleActionGroup()
+        self.insert_action_group("dial", self.action_group)
+
+        self.remove_action = Gio.SimpleAction.new("remove", None)
+        self.remove_action.connect("activate", self.on_remove)
+        self.action_group.add_action(self.remove_action)
+
+        ## Shortcuts
+        self.shortcut_controller = Gtk.ShortcutController()
+        self.add_controller(self.shortcut_controller)
+
+        remove_shortcut_action = Gtk.CallbackAction.new(self.on_remove)
+
+        self.remove_shortcut = Gtk.Shortcut.new(Gtk.ShortcutTrigger.parse_string("Delete"), remove_shortcut_action)
+        self.shortcut_controller.add_shortcut(self.remove_shortcut)
+
+
+
     def on_key(self, controller, keyval, keycode, state):
         return
 
@@ -162,3 +182,26 @@ class Dial(Gtk.Frame):
         else:
             self.set_css_classes(["dial-frame", "dial-frame-hidden"])
             self.dial_box.page_settings_page.deck_config.active_widget = None
+
+    def on_remove(self, *args) -> None:
+        controller = gl.app.main_win.get_active_controller()
+        if controller is None:
+            return
+        
+        active_page = controller.active_page
+        if active_page is None:
+            return
+
+        dial = controller.get_input(self.identifier)
+        
+        if str(dial.state) not in active_page.dict.get(self.identifier.input_type, {}).get(self.identifier.json_identifier, {}).get("states", {}):
+            return
+        
+        del active_page.dict[self.identifier.input_type][self.identifier.json_identifier]["states"][str(dial.state)]
+        active_page.save()
+        active_page.load()
+
+        active_page.reload_similar_pages(identifier=self.identifier, reload_self=True)
+
+        # Reload ui
+        gl.app.main_win.sidebar.load_for_identifier(self.identifier, dial.state)

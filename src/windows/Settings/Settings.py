@@ -462,17 +462,22 @@ class SystemGroup(Adw.PreferencesGroup):
         self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Only works on Gnome", active=True)
         self.add(self.lock_on_lock_screen)
 
+        self.beta_resume_mode = Adw.SwitchRow(title="Use new resume mode (beta)", subtitle="Use new way to resume after suspends - requires restart", active=False)
+        self.add(self.beta_resume_mode)
+
         self.load_defaults()
 
         # Connect signals
         self.keep_running.connect("notify::active", self.on_keep_running_toggled)
         self.autostart.connect("notify::active", self.on_autostart_toggled)
         self.lock_on_lock_screen.connect("notify::active", self.on_lock_on_lock_screen_toggled)
+        self.beta_resume_mode.connect("notify::active", self.on_beta_resume_mode_toggled)
 
     def load_defaults(self):
         self.keep_running.set_active(self.settings.settings_json.get("system", {}).get("keep-running", False) == True)
         self.autostart.set_active(self.settings.settings_json.get("system", {}).get("autostart", True))
         self.lock_on_lock_screen.set_active(self.settings.settings_json.get("system", {}).get("lock-on-lock-screen", True))
+        self.beta_resume_mode.set_active(self.settings.settings_json.get("system", {}).get("beta-resume-mode", True))
 
     def on_keep_running_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})
@@ -493,6 +498,13 @@ class SystemGroup(Adw.PreferencesGroup):
     def on_lock_on_lock_screen_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})
         self.settings.settings_json["system"]["lock-on-lock-screen"] = self.lock_on_lock_screen.get_active()
+
+        # Save
+        self.settings.save_json()
+
+    def on_beta_resume_mode_toggled(self, *args):
+        self.settings.settings_json.setdefault("system", {})
+        self.settings.settings_json["system"]["beta-resume-mode"] = self.beta_resume_mode.get_active()
 
         # Save
         self.settings.save_json()

@@ -23,6 +23,8 @@ from usbmonitor import USBMonitor
 import usb.core
 import usb.util
 import os
+import types
+
 
 # Import own modules
 from src.backend.DeckManagement.DeckController import DeckController
@@ -30,6 +32,8 @@ from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
+
+from src.backend.DeckManagement.beta_resume import _read as beta_read
 
 import gi
 from gi.repository import GLib
@@ -50,14 +54,20 @@ class DeckManager:
         self.usb_monitor = USBMonitor()
         self.usb_monitor.start_monitoring(on_connect=self.on_connect, on_disconnect=self.on_disconnect)
 
+        self.beta_resume_mode = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
+        log.info(f"Beta resume mode: {self.beta_resume_mode}")
+
         resume_thread = DetectResumeThread(self)
-        return
-        resume_thread.start() #TODO
+        if not self.beta_resume_mode:
+            resume_thread.start()
 
     def load_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:
             try:
+                if self.beta_resume_mode:
+                    deck.reconnect_after_suspend = True
+                    deck._read = types.MethodType(beta_read, deck)
                 if not deck.is_open():
                     deck.open()
             except:
@@ -240,6 +250,8 @@ class DeckManager:
     def get_connected_serials(self) -> list[str]:
         return [controller.serial_number() for controller in self.deck_controller]
 
+    
+
 class DetectResumeThread(threading.Thread):
     def __init__(self, deck_manager: DeckManager):
         super().__init__()
@@ -249,6 +261,7 @@ class DetectResumeThread(threading.Thread):
         self.last_2 = time.time()
 
     def run(self):
+        return
         while gl.threads_running:
             self.last_1 = time.time()
             if time.time() - self.last_1 >= 5 or time.time() - self.last_2 >= 5:

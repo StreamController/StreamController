@@ -3,7 +3,7 @@ import time
 from StreamDeck.Devices.StreamDeck import ControlType, DialEventType
 from StreamDeck.Transport.Transport import TransportError
 
-def _read(parent, self):
+def _read(self):
     """
     Read handler for the underlying transport, listening for button state
     changes on the underlying device, caching the new states and firing off
@@ -45,4 +45,17 @@ def _read(parent, self):
             if self.reconnect_after_suspend:
                 if self.connected() and not self.is_open():
                     # This is the case when resuming from suspend
-                    self.open()
+                    TIMEOUT = 10
+                    start_time = time.time()
+                    while True:
+                        try:
+                            self.open()
+                            break
+                        except TransportError:
+                            time.sleep(0.1)
+
+                        if not self.connected():
+                            break
+
+                        if time.time() - start_time > TIMEOUT:
+                            break

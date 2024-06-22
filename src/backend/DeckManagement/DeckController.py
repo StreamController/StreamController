@@ -2001,9 +2001,9 @@ class ControllerKey(ControllerInput):
                 if len(state.background_color) == 3:
                     state.background_color.append(255)
 
-            if update:
-                self.set_state(old_state_index)
-                self.update()
+        if update:
+            self.set_state(old_state_index)
+            self.update()
 
     def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False) -> None:
         old_state = self.state

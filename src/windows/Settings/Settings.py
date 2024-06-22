@@ -477,7 +477,7 @@ class SystemGroup(Adw.PreferencesGroup):
         self.keep_running.set_active(self.settings.settings_json.get("system", {}).get("keep-running", False) == True)
         self.autostart.set_active(self.settings.settings_json.get("system", {}).get("autostart", True))
         self.lock_on_lock_screen.set_active(self.settings.settings_json.get("system", {}).get("lock-on-lock-screen", True))
-        self.beta_resume_mode.set_active(self.settings.settings_json.get("system", {}).get("beta-resume-mode", False))
+        self.beta_resume_mode.set_active(self.settings.settings_json.get("system", {}).get("beta-resume-mode", True))
 
     def on_keep_running_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})

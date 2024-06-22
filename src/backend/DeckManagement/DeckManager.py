@@ -54,7 +54,7 @@ class DeckManager:
         self.usb_monitor = USBMonitor()
         self.usb_monitor.start_monitoring(on_connect=self.on_connect, on_disconnect=self.on_disconnect)
 
-        self.beta_resume_mode = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", False)
+        self.beta_resume_mode = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
 
         resume_thread = DetectResumeThread(self)
         if not self.beta_resume_mode:

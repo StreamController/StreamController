@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import Python modules
+import datetime
 import gc
 import os
 import shutil
@@ -65,7 +66,7 @@ class PageManagerBackend:
         for page in self.pages.values():
             page.save()
 
-    def get_pages(self, add_custom_pages: bool = True, sort: bool = True) -> list:
+    def get_pages(self, add_custom_pages: bool = True, sort: bool = True) -> list[str]:
         pages = []
         # Create pages dir if it doesn't exist
         os.makedirs(os.path.join(gl.DATA_PATH, "pages"), exist_ok=True)
@@ -414,3 +415,14 @@ class PageManagerBackend:
                 return page
             
         return
+    
+    def backup_pages(self) -> None:
+        time_stamp = datetime.datetime.now().isoformat()
+        folder = os.path.join(gl.DATA_PATH, "pages", "backups", time_stamp)
+        if os.path.exists(folder):
+            return
+        os.makedirs(folder)
+
+        for page in self.get_pages():
+            backup_path = os.path.join(folder, os.path.basename(page))
+            shutil.copy(page, backup_path)

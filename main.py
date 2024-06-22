@@ -122,6 +122,7 @@ def create_global_objects():
     gl.media_manager = MediaManager()
     gl.asset_manager_backend = AssetManagerBackend()
     gl.page_manager = PageManagerBackend(gl.settings_manager)
+    gl.page_manager.backup_pages()
     gl.icon_pack_manager = IconPackManager()
     gl.wallpaper_pack_manager = WallpaperPackManager()
 

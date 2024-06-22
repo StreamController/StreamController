@@ -216,8 +216,6 @@ class KeyButton(Gtk.Frame):
 
         active_page.save()
 
-        active_page.deck_controller.load_page(active_page, allow_reload=True)
-
         active_page.switch_actions_of_inputs(self.identifier, dropped_identifier)
 
         active_page.reload_similar_pages(self.identifier, reload_self=True)

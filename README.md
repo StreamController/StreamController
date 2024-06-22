@@ -36,6 +36,11 @@ To install StreamController, click the button below or follow the [installation 
 
 <a href='https://flathub.org/apps/details/com.core447.StreamController'><img width='200px' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
+To install the head of main as a Flatpak just run the following command:
+```sh
+bash -c "$(wget -O - https://raw.githubusercontent.com/StreamController/StreamController/main/flatpak/install.sh)"
+```
+
 ## Warning
 StreamController is currently in beta. While core features like actions and pages are stable, high memory usage can still be an issue. We are actively working to resolve this and bring the app to a stable release soon. Please report any issues you encounter.
 

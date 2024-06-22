@@ -131,7 +131,11 @@ class MediaPlayerSetImageTask:
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] = 0
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck key image. Error: {e}")
-            return
+
+            beta_resume = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
+            if beta_resume:
+                return
+
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
             if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
                 log.debug(f"Failed to set key_image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")

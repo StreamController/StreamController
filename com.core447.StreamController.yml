@@ -18,19 +18,11 @@ finish-args:
   - --talk-name=org.kde.kdeconnect            # Access to KDEConnect
   - --talk-name=org.gnome.Shell               # Interact with Gnome - used to open the "Install extension" dialog
   - --talk-name=org.gnome.Shell.Extensions.StreamController
+  - --talk-name=org.gnome.ScreenSaver
   - --system-talk-name=org.freedesktop.UPower # Access to power management - used to get battery status
 
 modules:
   - pypi-requirements.yaml
-
-  - name: git
-    make-install-args:
-      - NO_INSTALL_HARDLINKS=1
-    sources:
-      - type: archive
-        url: https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.43.1.tar.gz
-        sha256: 4977349ad66f3a6a4f4b0471af702ff412b6e407e0918eb92788e4f829605360
-
   - shared-modules/libusb/libusb.json
 
   - name: hidapi-libusb
@@ -49,7 +41,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/hughsie/libgusb.git
-        tag: 0.4.8
+        tag: 0.4.9
 
   - name: libpeas
     buildsystem: meson
@@ -94,8 +86,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/StreamController/StreamController.git
-        # tag: 1.4.11-beta
-        branch: ship-icons
+        branch: main
 
 # Install via: flatpak-builder --repo=repo --force-clean --install --user build-dir com.core447.StreamController.yml
 # Use git submodule update --init if the shared-modules folder is empty

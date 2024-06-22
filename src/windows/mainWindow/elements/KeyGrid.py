@@ -84,19 +84,20 @@ class KeyGrid(Gtk.Grid):
 
     def load_from_changes(self):
         # Applt changes made before creation of self
-        if not hasattr(self.deck_controller, "ui_grid_buttons_changes_while_hidden"):
+        if not hasattr(self.deck_controller, "ui_image_changes_while_hidden"):
             return
-        tasks = self.deck_controller.ui_grid_buttons_changes_while_hidden
-        for coords, image in list(tasks.items()):
+        tasks = self.deck_controller.ui_image_changes_while_hidden
+        for identifier, image in list(tasks.items()):
+            if not isinstance(identifier, Input.Key):
+                continue
+            x, y = identifier.coords
+            self.buttons[x][y].set_image(image)
+
             try:
-                self.buttons[coords[0]][coords[1]].set_image(image)
-            except IndexError:
-                # This happens if the fake deck layout got changed while the app was running
+                tasks.pop(identifier)
+            except KeyError:
                 pass
         
-        # Clear tasks
-        self.deck_controller.ui_grid_buttons_changes_while_hidden.clear()
-
     def select_key(self, x: int, y: int):
         self.buttons[x][y].on_focus_in()
         self.buttons[x][y].image.grab_focus()

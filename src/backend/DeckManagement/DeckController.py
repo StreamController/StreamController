@@ -351,7 +351,7 @@ class DeckController:
         # Tasks
         self.media_player_tasks: Queue[MediaPlayerTask] = Queue()
 
-        self.ui_grid_buttons_changes_while_hidden: dict = {}
+        self.ui_image_changes_while_hidden: dict = {}
 
         self.active_page: Page = None
 
@@ -2022,7 +2022,7 @@ class ControllerKey(ControllerInput):
 
         if self.deck_controller.get_own_key_grid() is None or not gl.app.main_win.get_mapped():
             # Save to use later
-            self.deck_controller.ui_grid_buttons_changes_while_hidden[(x, y)] = image # The ui key coords are in reverse order
+            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image # The ui key coords are in reverse order
         else:
             self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
         
@@ -2087,10 +2087,11 @@ class ControllerTouchScreen(ControllerInput):
         return Image.new("RGBA", (screen_width // n_dials, screen_height), (0, 0, 0, 0))
 
     def set_ui_image(self, image: Image.Image) -> None:
-        if not recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image"):
-            return
-        screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
-        screenbar.image.set_image(image)
+        if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
+            screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
+            screenbar.image.set_image(image)
+        else:
+            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
 
     def get_current_image(self) -> Image.Image:
         active_state = self.get_active_state()

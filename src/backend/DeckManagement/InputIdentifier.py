@@ -32,6 +32,9 @@ class InputIdentifier:
 
     def __str__(self):
         return f"Input({self.input_type}, {self.json_identifier})"
+    
+    def __hash__(self) -> int:
+        return hash((self.input_type, self.json_identifier))
 
 class InputEvent(Enum):
     def __new__(cls, string_name):

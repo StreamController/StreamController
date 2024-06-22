@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 class ScreenBar(Gtk.Frame):
     def __init__(self, page_settings_page: "PageSettingsPage", identifier: Input.Touchscreen, **kwargs):
         self.page_settings_page = page_settings_page
+        self.deck_controller = page_settings_page.deck_controller
         self.identifier = identifier
 
         super().__init__(**kwargs)
@@ -97,6 +98,23 @@ class ScreenBar(Gtk.Frame):
 
         self.remove_shortcut = Gtk.Shortcut.new(Gtk.ShortcutTrigger.parse_string("Delete"), remove_shortcut_action)
         self.shortcut_controller.add_shortcut(self.remove_shortcut)
+
+        self.connect("map", self.on_map)
+
+        self.load_from_changes()
+
+    def on_map(self, widget):
+        self.load_from_changes()
+
+    def load_from_changes(self) -> None:
+        # Applt changes made before creation of self
+        if not hasattr(self.deck_controller, "ui_image_changes_while_hidden"):
+            return
+        tasks = self.deck_controller.ui_image_changes_while_hidden
+
+        if self.identifier in tasks:
+            self.image.set_image(tasks[self.identifier])
+            tasks.pop(self.identifier)
 
     def on_click(self, gesture, n_press, x, y):
         # print(f"Click: {self.parse_xy(x, y)}")

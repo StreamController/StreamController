@@ -18,9 +18,9 @@ import os
 
 import globals as gl
 
-class Migrator_1_5_1(Migrator):
+class Migrator_1_5_0_beta_5(Migrator):
     def __init__(self):
-        super().__init__("1.5.1")
+        super().__init__("1.5.0-beta.5")
         
     def migrate(self):
         self.migrate_pages()

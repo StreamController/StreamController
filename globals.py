@@ -83,7 +83,7 @@ app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 tray_icon: "TrayIcon" = None
 
-app_version: str = "1.5.1-beta" # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.5" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 

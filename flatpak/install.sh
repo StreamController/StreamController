@@ -102,3 +102,4 @@ flatpak install runtime/org.gnome.Platform//46 --system -y
 
 # Build and install StreamController
 flatpak-builder --repo=repo --force-clean --install --user build-dir com.core447.StreamController.yml
+fi

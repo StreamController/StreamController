@@ -48,8 +48,8 @@ mkdir -p StreamController
 cd StreamController
 
 # Download necessary files
-wget https://raw.githubusercontent.com/StreamController/StreamController/dev/com.core447.StreamController.yml
-wget https://raw.githubusercontent.com/StreamController/StreamController/dev/pypi-requirements.yaml
+wget https://raw.githubusercontent.com/StreamController/StreamController/main/com.core447.StreamController.yml
+wget https://raw.githubusercontent.com/StreamController/StreamController/main/pypi-requirements.yaml
 
 # Install necessary Flatpak runtimes
 flatpak install runtime/org.gnome.Sdk//46 --system -y

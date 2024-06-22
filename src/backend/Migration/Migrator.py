@@ -26,9 +26,9 @@ class Migrator:
         self.parsed_app_version = version.parse(app_version)
 
     def get_need_migration(self) -> bool:
-        app_base_version = version.parse(version.parse(gl.app_version).base_version)
-        migrator_base_version = version.parse(self.parsed_app_version.base_version)
-        if app_base_version < migrator_base_version:
+        app_version = version.parse(gl.app_version)
+        migrator_version = self.parsed_app_version
+        if app_version < migrator_version:
             return False
 
         settings = self.get_settings()

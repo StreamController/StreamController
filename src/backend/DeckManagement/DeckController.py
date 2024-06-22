@@ -605,7 +605,7 @@ class DeckController:
                 future.result()
         log.info(f"Loading all inputs took {time.time() - start} seconds")
 
-    def load_input_from_identifier(self, identifier: str, page: Page, update: bool = True, d = False):
+    def load_input_from_identifier(self, identifier: str, page: Page, update: bool = True):
         controller_input = self.get_input(identifier)
         if controller_input is not None:
             self.load_input(controller_input, page, update)

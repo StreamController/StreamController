@@ -359,8 +359,25 @@ class StoreBackend:
             is_compatible=compatible,
             verified=verified
         )
-
-
+    
+    def get_current_git_commit_hash_without_git(self, repo_path: str) -> str:
+        try:
+            # Construct the path to the FETCH_HEAD file
+            fetch_head_path = os.path.join(repo_path, '.git', 'FETCH_HEAD')
+            
+            # Read the contents of the FETCH_HEAD file
+            with open(fetch_head_path, 'r') as file:
+                lines = file.readlines()
+                
+                # The first line contains the latest commit hash
+                if lines:
+                    latest_commit_hash = lines[0].split()[0]
+                    return latest_commit_hash
+                else:
+                    raise ValueError("FETCH_HEAD file is empty")
+                    
+        except Exception as e:
+            raise RuntimeError(f"Unable to retrieve git commit hash: {e}")
     
     async def get_local_sha(self, git_dir: str):
         if not os.path.exists(git_dir):
@@ -368,9 +385,10 @@ class StoreBackend:
         
         if os.path.exists(os.path.join(git_dir, ".git")):
             try:
-                sha = subprocess.check_output(f'cd "{git_dir}" && git rev-parse HEAD', shell=True).decode("utf-8").strip()
-                return sha
-            except subprocess.CalledProcessError as e:
+                sha = self.get_current_git_commit_hash_without_git(git_dir)
+                if sha is not None:
+                    return sha
+            except (ValueError, RuntimeError) as e:
                 log.error(e)
 
         version_file_path = os.path.join(git_dir, "VERSION")

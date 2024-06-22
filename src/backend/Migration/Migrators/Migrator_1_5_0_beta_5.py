@@ -60,18 +60,20 @@ class Migrator_1_5_0_beta_5(Migrator):
         if not os.path.exists(gl.PLUGIN_DIR):
             return
         for plugin_dir_name in os.listdir(gl.PLUGIN_DIR):
-            settings_path = os.path.join(gl.PLUGIN_DIR, plugin_dir_name, "settings.json")
-            if not os.path.exists(settings_path):
+            old_settings_path = os.path.join(gl.PLUGIN_DIR, plugin_dir_name, "settings.json")
+            if not os.path.exists(old_settings_path):
                 continue
             try:
-                with open(settings_path, "r") as f:
+                with open(old_settings_path, "r") as f:
                     settings = json.load(f)
             except Exception as e:
                 continue
 
-            settings_path = os.path.join(gl.DATA_PATH, "settings", "plugins", plugin_dir_name, "settings.json")
-            if os.path.exists(settings_path):
-                with open(settings_path, "w") as f:
+            new_settings_path = os.path.join(gl.DATA_PATH, "settings", "plugins", plugin_dir_name, "settings.json")
+            if os.path.exists(new_settings_path):
+                with open(new_settings_path, "w") as f:
                     json.dump(settings, f, indent=4)
             
+            # Remove old settings
+            os.remove(old_settings_path)
             

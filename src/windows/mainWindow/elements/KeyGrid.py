@@ -429,17 +429,11 @@ class KeyButton(Gtk.Frame):
         
         if f"{x}x{y}" not in active_page.dict.get("keys", {}):
             return
-        if str(self.state) not in active_page.dict["keys"][f"{x}x{y}"].get("states", {}):
-            return
-        del active_page.dict["keys"][f"{x}x{y}"]["states"][str(self.state)]
+        del active_page.dict["keys"][f"{x}x{y}"]
         active_page.save()
         active_page.load()
 
-
         # Remove media from key
-        c_input = self.key_grid.deck_controller.get_input(self.identifier)
-        c_input.get_active_state().set_image(None)
-
         active_page.reload_similar_pages(self.identifier, reload_self=True)
 
         # Reload ui

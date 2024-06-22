@@ -66,8 +66,7 @@ class DeckManager:
             try:
                 if self.beta_resume_mode:
                     deck.reconnect_after_suspend = True
-                    deck._read = beta_read
-                    deck._read = types.MethodType(self._read, deck)
+                    deck._read = types.MethodType(beta_read, deck)
                 if not deck.is_open():
                     deck.open()
             except:

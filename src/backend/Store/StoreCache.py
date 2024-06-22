@@ -2,6 +2,7 @@ import json
 import os
 import threading
 import time
+from loguru import logger as log
 
 import globals as gl
 
@@ -23,8 +24,12 @@ class StoreCache:
     def get_files(self) -> dict:
         if not os.path.exists(self.files_json):
             return {}
-        with open(self.files_json, "r") as f:
-            return json.load(f)
+        try:
+            with open(self.files_json, "r") as f:
+                return json.load(f)
+        except json.decoder.JSONDecodeError as e:
+            log.error(e)
+            return {}
         
     def set_files(self, files: dict):
         with self.write_lock:

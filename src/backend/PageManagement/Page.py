@@ -33,6 +33,7 @@ from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 # Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from src.backend.DeckManagement.DeckController import LabelManager
     from src.backend.PluginManager.ActionHolder import ActionHolder
     from src.backend.DeckManagement.DeckController import ControllerKeyState, ControllerKey
 
@@ -675,6 +676,17 @@ class Page:
     
     # Get/set methods
 
+    def get_label_manager(self, identifier: InputIdentifier, state: int) -> "LabelManager":
+        c_input = self.deck_controller.get_input(identifier)
+        if c_input is None:
+            return
+        state = c_input.states.get(state)
+        if state is None:
+            return
+        
+        return state.label_manager
+        
+
     def get_label_text(self, identifier: InputIdentifier, state: int, label_position: str) -> str:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "text"])
 
@@ -683,6 +695,10 @@ class Page:
             input_state.label_manager.page_labels[label_position].text = text
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "text"], text)
+
+        label_manager = self.get_label_manager(identifier, state)
+        if label_manager is not None:
+            label_manager.page_labels[label_position].text = text
 
         if update:
             self.update_input(identifier, state)
@@ -696,6 +712,11 @@ class Page:
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-family"], font_family)
 
+        label_manager = self.get_label_manager(identifier, state)
+        if label_manager is not None:
+            label_manager.page_labels[label_position].font_name = font_family
+            label_manager.update_label_editor()
+
         if update:
             self.update_input(identifier, state)
 
@@ -708,6 +729,11 @@ class Page:
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-size"], font_size)
 
+        label_manager = self.get_label_manager(identifier, state)
+        if label_manager is not None:
+            label_manager.page_labels[label_position].font_size = font_size
+            label_manager.update_label_editor()
+
         if update:
             self.update_input(identifier, state)
 
@@ -719,6 +745,11 @@ class Page:
             key_state.label_manager.page_labels[label_position].color = font_color
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "color"], font_color)
+
+        label_manager = self.get_label_manager(identifier, state)
+        if label_manager is not None:
+            label_manager.page_labels[label_position].color = font_color
+            label_manager.update_label_editor()
 
         if update:
             self.update_input(identifier, state)

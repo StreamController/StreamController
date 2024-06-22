@@ -710,7 +710,7 @@ class DeckController:
             if not self.screen_saver.showing and True:
                 for t in self.inputs:
                     for i in self.inputs[t]:
-                        i.get_active_state().own_actions_tick()
+                        i.get_active_state().own_actions_tick_threaded()
             else:
                 for t in self.inputs:
                     for i in self.inputs[t]:

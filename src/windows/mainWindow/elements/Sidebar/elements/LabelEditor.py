@@ -257,7 +257,7 @@ class LabelRow(Adw.PreferencesRow):
         #FIXME: gets called multiple times
         active_page = gl.app.main_win.get_active_page()
         #TODO
-        active_page.set_label_text(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_family=None, update=False)
+        active_page.set_label_font_family(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_family=None, update=False)
         active_page.set_label_font_size(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_size=None, update=True)
 
         self.font_chooser_button.revert_button.set_visible(False)

@@ -254,7 +254,7 @@ class DeckManager:
 
 class DetectResumeThread(threading.Thread):
     def __init__(self, deck_manager: DeckManager):
-        super().__init__()
+        super().__init__(name="DetectResumeThread")
         self.deck_manager = deck_manager
 
         self.last_1 = time.time()

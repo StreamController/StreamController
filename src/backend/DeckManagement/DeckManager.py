@@ -261,7 +261,6 @@ class DetectResumeThread(threading.Thread):
         self.last_2 = time.time()
 
     def run(self):
-        return
         while gl.threads_running:
             self.last_1 = time.time()
             if time.time() - self.last_1 >= 5 or time.time() - self.last_2 >= 5:

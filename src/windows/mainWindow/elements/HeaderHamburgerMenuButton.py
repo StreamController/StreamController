@@ -111,8 +111,6 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
                                                        "ulrikstrid https://github.com/ulrikstrid",
                                                        "yakushabb https://github.com/yakushabb"]))
         
-        self.about.set_translator_credits("mrintrepide https://github.com/mrintrepide Core447 https://github.com/Core447")
-
         self.about.set_copyright("Copyright (C) 2024 Core447")
         self.about.set_application_icon("com.core447.StreamController")
         self.about.set_visible(True)

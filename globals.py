@@ -18,6 +18,7 @@ if argparser.parse_args().data:
     DATA_PATH = argparser.parse_args().data
 
 PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")
+os.makedirs(PLUGIN_DIR, exist_ok=True)
 
 # Used for nix packaging
 if os.getenv("PLUGIN_DIR") is not None:

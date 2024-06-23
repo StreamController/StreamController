@@ -465,6 +465,9 @@ class LoadingScreen(Gtk.Box):
         self.loading_label = Gtk.Label(label="Loading")
         self.append(self.loading_label)
 
+        self.progress_bar = Gtk.ProgressBar(margin_top=20, show_text=True, text="", visible=False)
+        self.append(self.progress_bar)
+
     def set_spinning(self, loading: bool):
         if loading:
             GLib.idle_add(self.spinner.start)

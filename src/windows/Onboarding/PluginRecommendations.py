@@ -68,8 +68,8 @@ class PluginRecommendations(Gtk.Box):
 
         self.set_loading(False)
 
-    def get_selected_ids(self) -> list[str]:
-        return [row.plugin.plugin_id for row in self.group.get_rows() if row.check.get_active()]
+    def get_selected_plugins(self) -> list[str]:
+        return [row.plugin for row in self.group.get_rows() if row.check.get_active()]
     
     def sort_func(self, row1, row2):
         title1 = row1.plugin.plugin_name or ""

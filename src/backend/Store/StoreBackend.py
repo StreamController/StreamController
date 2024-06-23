@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
  
 import sys
+import zipfile
 import requests
 from async_lru import alru_cache
 import json
@@ -634,9 +635,33 @@ class StoreBackend:
     async def os_sys(self, args):
         return os.system(args)
     
+    def get_main_folder_of_zip(self, zip_path: str) -> str:
+        extracted_folder_name = None
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_contents = zip_ref.namelist()
+            print()
+            for item in zip_contents:
+                if not item.endswith("/"): # Directories end with /
+                    continue
+                if item.count("/") > 1:
+                    continue
+                
+                if extracted_folder_name is not None:
+                    log.error("Multiple folders in zip")
+                    return 400
+                extracted_folder_name = item.split("/")[0]
+                print()
+
+
+        if extracted_folder_name is None:
+            log.error("Could not find extracted folder name")
+            return 400
+        
+        return extracted_folder_name
+    
     async def download_repo(self, repo_url:str, directory:str, commit_sha:str = None, branch_name:str = None):
         username = self.get_user_name(repo_url)
-        projectname = self.get_repo_name(repo_url)
+        projectname = self.get_repo_name(repo_url).lower()
         sha = commit_sha
         if commit_sha is None and branch_name is not None:
             # Used to write the version
@@ -658,6 +683,11 @@ class StoreBackend:
         shutil.unpack_archive(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"), os.path.join(gl.DATA_PATH, "cache"))
 
 
+        ## Why - because github is not case sensitive for the urls, so the casing of the zip file might be different than the one of the contained folder
+        extracted_folder_name = self.get_main_folder_of_zip(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
+        
+        extracted_folder = os.path.join(gl.DATA_PATH, "cache", extracted_folder_name)
+
         # Remove destination folder
         if os.path.isdir(directory):
             shutil.rmtree(directory)
@@ -667,12 +697,12 @@ class StoreBackend:
         # Create empty destination folder
         os.makedirs(directory, exist_ok=True)
 
-        for name in os.listdir(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}")):
-            shutil.move(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}", name), directory)
+        for name in os.listdir(extracted_folder):
+            shutil.move(os.path.join(extracted_folder, name), directory)
 
 
         os.remove(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
-        shutil.rmtree(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}"))
+        shutil.rmtree(extracted_folder)
         
         ## Write version
         path = os.path.join(directory, "VERSION")

@@ -130,17 +130,14 @@ class DeckStack(Gtk.Stack):
         # Reload righ area
         self.main_window.reload_sidebar()
             
+        pages = self.get_pages()
         # Show message if no decks are connected
-        if len(self.get_pages()) == 0:
+        if len(pages) == 0:
             self.main_window.change_ui_to_no_connected_deck()
             return
 
-
-        new_index = i - 1
-        if new_index < 0:
-            new_index = i + 1
-
-        self.set_visible_child(self.get_pages()[new_index].get_child())
+        print(pages)
+        self.set_visible_child(pages[0].get_child())
 
     def focus_controller(self, deck_controller) -> None:
         for page in self.get_pages():

@@ -19,6 +19,7 @@ finish-args:
   - --talk-name=org.gnome.Shell               # Interact with Gnome - used to open the "Install extension" dialog
   - --talk-name=org.gnome.Shell.Extensions.StreamController
   - --talk-name=org.gnome.ScreenSaver
+  - --talk-name=org.freedesktop.ScreenSaver
   - --system-talk-name=org.freedesktop.UPower # Access to power management - used to get battery status
 
 modules:

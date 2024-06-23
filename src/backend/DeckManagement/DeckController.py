@@ -702,6 +702,7 @@ class DeckController:
         gc.collect()
 
     def set_brightness(self, value):
+        value = min(100, max(0, value))
         if not self.get_alive(): return
         self.deck.set_brightness(int(value))
         self.brightness = value

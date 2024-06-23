@@ -96,7 +96,7 @@ class MediaPlayerSetTouchscreenImageTask:
     def run(self):
         try:
             touchscreen_size = self.deck_controller.get_touchscreen_image_size()
-            self.deck.set_touchscreen_image(native_image, x_pos=0, y_pos=0, width=touchscreen_size[0], height=touchscreen_size[1])
+            self.deck.set_touchscreen_image(self.native_image, x_pos=0, y_pos=0, width=touchscreen_size[0], height=touchscreen_size[1]) # Maybe avoid to always merge the dial images before applying it
             self.native_image = None
             del self.native_image
             MediaPlayerSetTouchscreenImageTask.n_failed_in_row = 0

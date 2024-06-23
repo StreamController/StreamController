@@ -102,7 +102,6 @@ class MediaPlayerSetTouchscreenImageTask:
             MediaPlayerSetTouchscreenImageTask.n_failed_in_row = 0
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck touchscreen image. Error: {e}")
-            return
             MediaPlayerSetTouchscreenImageTask.n_failed_in_row += 1
             if MediaPlayerSetTouchscreenImageTask.n_failed_in_row > 5:
                 log.debug(f"Failed to set touchscreen image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")

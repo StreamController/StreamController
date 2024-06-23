@@ -1972,13 +1972,6 @@ class ControllerKey(ControllerInput):
                                 fps = state_dict.get("media", {}).get("fps", 30),
                             )) # Videos always update
 
-            elif len(self.get_own_actions()) > 1:
-                with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
-                    self.set_key_image(InputImage(
-                        controller_input=self,
-                        image=image.copy(),
-                    ), update=False)
-
                 layout = ImageLayout(
                     fill_mode=state_dict.get("media", {}).get("fill-mode"),
                     size=state_dict.get("media", {}).get("size"),
@@ -1986,6 +1979,7 @@ class ControllerKey(ControllerInput):
                     halign=state_dict.get("media", {}).get("halign"),
                 )
                 state.layout_manager.set_page_layout(layout, update=False)
+
             elif len(state.get_own_actions()) > 1 and False: # Disabled for now - we might reuse it later
                 if state_dict.get("image-control-action") is None:
                     with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:

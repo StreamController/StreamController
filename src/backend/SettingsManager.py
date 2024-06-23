@@ -83,3 +83,12 @@ class SettingsManager:
     def save_app_settings(self, settings: dict) -> None:
         path = os.path.join(gl.DATA_PATH, "settings", "settings.json")
         self.save_settings_to_file(path, settings)
+
+    def get_static_settings(self) -> dict:
+        """
+        Returns always the same settings, no matter what the data path is set to
+        """
+        return self.load_settings_from_file(gl.STATIC_SETTINGS_FILE_PATH)
+    
+    def save_static_settings(self, settings: dict) -> None:
+        self.save_settings_to_file(gl.STATIC_SETTINGS_FILE_PATH, settings)

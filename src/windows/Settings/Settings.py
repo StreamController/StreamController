@@ -173,13 +173,20 @@ class DevPageGroup(Adw.PreferencesGroup):
         self.n_fake_decks_row.set_range(0, 3)
         self.add(self.n_fake_decks_row)
 
+        self.data_path = Adw.EntryRow(title="Data path (requires restart)")
+        self.add(self.data_path)
+
         self.load_defaults()
 
         # Connect signals
         self.n_fake_decks_row.connect("changed", self.on_n_fake_decks_row_changed)
+        self.data_path.connect("notify::text", self.on_data_path_changed)
 
     def load_defaults(self):
         self.n_fake_decks_row.set_value(self.settings.settings_json.get("dev", {}).get("n-fake-decks", 0))
+
+        static_settings = gl.settings_manager.get_static_settings()
+        self.data_path.set_text(static_settings.get("data-path", gl.DATA_PATH))
 
     def on_n_fake_decks_row_changed(self, *args):
         #FIXME: For some reason this gets called twice
@@ -191,6 +198,11 @@ class DevPageGroup(Adw.PreferencesGroup):
 
         # Reload decks
         gl.deck_manager.load_fake_decks()
+
+    def on_data_path_changed(self, *args):
+        static_settings = gl.settings_manager.get_static_settings()
+        static_settings["data-path"] = self.data_path.get_text()
+        gl.settings_manager.save_static_settings(static_settings)
 
 
 class GeneralPage(Adw.PreferencesPage):

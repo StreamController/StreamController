@@ -1,3 +1,4 @@
+import json
 import Pyro5.api
 import os
 from typing import TYPE_CHECKING
@@ -14,13 +15,29 @@ argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
 argparser.add_argument("app_args", nargs="*")
 
-DATA_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController", "data") # Maybe use XDG_DATA_HOME instead
+VAR_APP_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")
+STATIC_SETTINGS_FILE_PATH = os.path.join(VAR_APP_PATH, "static", "settings.json")
+
+DATA_PATH = os.path.join(VAR_APP_PATH, "data") # Maybe use XDG_DATA_HOME instead
 if argparser.parse_args().data:
     DATA_PATH = argparser.parse_args().data
+elif not argparser.parse_args().devel:
+    # Check static settings
+    if os.path.exists(STATIC_SETTINGS_FILE_PATH):
+        try:
+            with open(STATIC_SETTINGS_FILE_PATH) as f:
+                settings = json.load(f)
+                if "data-path" in settings:
+                    DATA_PATH = settings["data-path"]
+                    print()
+            log.info(f"Using data path from static settings: {DATA_PATH}")
+        except Exception as e:
+            log.error(f"Failed to set data path from static settings: {e}")
+
+if not os.path.exists(DATA_PATH):
+    os.makedirs(DATA_PATH)
 
 PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")
-os.makedirs(PLUGIN_DIR, exist_ok=True)
-
 # Used for nix packaging
 if os.getenv("PLUGIN_DIR") is not None:
     PLUGIN_DIR = os.getenv("PLUGIN_DIR")
@@ -29,6 +46,8 @@ if os.getenv("PLUGIN_DIR") is not None:
 
     if os.path.exists(os.path.join(DATA_PATH, "plugins")):
         log.warning(f"You're using a plugin dir path outside of your data dir, but also have a plugin dir in the data dir. This may cause problems.")
+
+os.makedirs(PLUGIN_DIR, exist_ok=True)
 
 # Add data path to sys.path
 sys.path.append(DATA_PATH)

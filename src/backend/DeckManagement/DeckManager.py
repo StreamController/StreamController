@@ -36,7 +36,8 @@ from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
 from src.backend.DeckManagement.beta_resume import _read as beta_read
 
 import gi
-from gi.repository import GLib
+gi.require_version("Xdp", "1.0")
+from gi.repository import GLib, Xdp
 
 # Import globals
 import globals as gl
@@ -53,6 +54,14 @@ class DeckManager:
         # USB monitor to detect connections and disconnections
         self.usb_monitor = USBMonitor()
         self.usb_monitor.start_monitoring(on_connect=self.on_connect, on_disconnect=self.on_disconnect)
+
+        self.flatpak_disconnect_thread = FlatpakDeckDisconnectThread(self)
+
+        portal = Xdp.Portal.new()
+        self.flatpak = portal.running_under_flatpak() # on_disconnect is not working under Flatpak - we use a separate thread #TODO: Find a better solution
+        if self.flatpak:
+            log.info("Running under Flatpak. Using separate thread to disconnect device disconnection.")
+            self.flatpak_disconnect_thread.start()
 
         self.beta_resume_mode = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
         log.info(f"Beta resume mode: {self.beta_resume_mode}")
@@ -156,6 +165,11 @@ class DeckManager:
         deck_controller.delete()
         del deck_controller
 
+    def get_controller_for_deck(self, deck: StreamDeck) -> DeckController | None:
+        for controller in self.deck_controller:
+            if controller.deck is deck:
+                return controller
+
     def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):
         deck_controller = DeckController(self, deck)
 
@@ -250,7 +264,19 @@ class DeckManager:
     def get_connected_serials(self) -> list[str]:
         return [controller.serial_number() for controller in self.deck_controller]
 
-    
+
+class FlatpakDeckDisconnectThread(threading.Thread):
+    def __init__(self, deck_manager: DeckManager):
+        super().__init__(name="FlatpakDeckDisconnectThread")
+        self.deck_manager = deck_manager
+
+    def run(self):
+        while gl.threads_running:
+            time.sleep(2)
+            for controller in self.deck_manager.deck_controller:
+                if not controller.deck.connected():
+                    self.deck_manager.remove_controller(controller)
+                    gl.app.main_win.check_for_errors()
 
 class DetectResumeThread(threading.Thread):
     def __init__(self, deck_manager: DeckManager):

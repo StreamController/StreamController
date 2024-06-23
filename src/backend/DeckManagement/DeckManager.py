@@ -71,6 +71,12 @@ class DeckManager:
             resume_thread.start()
 
     def load_decks(self):
+        if not gl.argparser.parse_args().skip_load_hardware_decks:
+            self.load_hardware_decks()
+
+        self.load_fake_decks()
+
+    def load_hardware_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:
             try:
@@ -84,9 +90,6 @@ class DeckManager:
                 continue
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)
-
-        # Load fake decks
-        self.load_fake_decks()
 
     def load_fake_decks(self):
         old_n_fake_decks = len(self.fake_deck_controller)

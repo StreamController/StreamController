@@ -318,11 +318,11 @@ class OnboardingScreen5(Gtk.Box):
 
         for i, plugin_data in enumerate(plugins):
             GLib.idle_add(self.onboarding_window.loading_box.progress_bar.set_text, f"Installing {plugin_data.plugin_name}")
+            GLib.idle_add(self.onboarding_window.loading_box.progress_bar.set_fraction, i / len(plugins))
             plugin = asyncio.run(gl.store_backend.get_plugin_for_id(plugin_data.plugin_id))
             if plugin is None:
                 continue
             asyncio.run(gl.store_backend.install_plugin(plugin))
-            GLib.idle_add(self.onboarding_window.loading_box.progress_bar.set_fraction, i / len(plugins))
 
         GLib.idle_add(self.onboarding_window.loading_box.set_spinning, False)
         GLib.idle_add(self.onboarding_window.close)

@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import threading
 import gi
 
 from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
@@ -105,6 +106,10 @@ class LabelRow(Adw.PreferencesRow):
         self.key_name = key_name
         self.build()
 
+        self.lock = threading.Lock()
+
+        self.block = False
+
         # Connect set signals
         self.connect_signals()
 
@@ -161,7 +166,15 @@ class LabelRow(Adw.PreferencesRow):
     def disconnect_signals(self):
         try:
             self.text_entry.entry.disconnect_by_func(self.on_change_text)
+        except Exception as e:
+            log.error(f"Failed to disconnect signals. Error: {e}")
+
+        try:
             self.color_chooser_button.button.disconnect_by_func(self.on_change_color)
+        except Exception as e:
+            log.error(f"Failed to disconnect signals. Error: {e}")
+
+        try:
             self.font_chooser_button.button.disconnect_by_func(self.on_change_font)
         except Exception as e:
             log.error(f"Failed to disconnect signals. Error: {e}")
@@ -196,6 +209,7 @@ class LabelRow(Adw.PreferencesRow):
 
 
     def update_values(self, composed_label: KeyLabel = None):
+        self.lock.acquire()
         self.disconnect_signals()
         if composed_label is None:
             controller = gl.app.main_win.get_active_controller()
@@ -218,6 +232,8 @@ class LabelRow(Adw.PreferencesRow):
         self.font_chooser_button.button.set_font(composed_label.font_name + " " + str(composed_label.font_size) + "px")
 
         self.connect_signals()
+
+        self.lock.release()
 
 
     def set_color(self, color_values: list):

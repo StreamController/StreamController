@@ -138,7 +138,7 @@ class ActionBase(rpyc.Service):
         if is_svg(media_path) and image is None:
             image = gl.media_manager.generate_svg_thumbnail(media_path)
 
-        if image is not None or media_path is None:
+        if image is not None:
             input_state.set_image(InputImage(
                 controller_input=self.get_state().controller_input,
                 image=image,
@@ -151,6 +151,9 @@ class ActionBase(rpyc.Service):
                 fps=fps,
                 loop=loop
             ))
+
+        else:
+            input_state.set_image(None, update=False)
 
         self.get_state().layout_manager.set_action_layout(ImageLayout(
             valign=valign,

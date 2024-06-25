@@ -45,7 +45,7 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.set_title("Onboarding")
         self.set_transient_for(main_win)
         self.set_modal(True)
-        self.set_default_size(700, 700)
+        self.set_default_size(800, 800)
 
         self.connect("close-request", self.on_close)
         
@@ -74,6 +74,7 @@ class OnboardingWindow(Gtk.ApplicationWindow):
         self.carousel.append(IconOnboardingScreen("go-home-symbolic", gl.lm.get("onboarding.store.header"), gl.lm.get("onboarding.store.details")))
         self.carousel.append(IconOnboardingScreen("view-paged-symbolic", gl.lm.get("onboarding.multiple.header"), gl.lm.get("onboarding.multiple.details")))
         self.carousel.append(IconOnboardingScreen("preferences-desktop-remote-desktop-symbolic", gl.lm.get("onboarding.productive.header"), gl.lm.get("onboarding.productive.details")))
+        #TODO: Add discord screen
         if os.getenv("XDG_CURRENT_DESKTOP").lower() == "gnome":
             self.carousel.append(ExtensionOnboardingScreen())
 

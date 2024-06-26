@@ -525,17 +525,18 @@ class Page:
                     action.on_ready()
 
     def clear_action_objects(self):
-        for type in self.action_objects:
-            for key in self.action_objects[type]:
-                for i, action in enumerate(list(self.action_objects[type][key])):
-                    self.action_objects[type][key][i].page = None
-                    self.action_objects[type][key][i] = None
-                    if isinstance(self.action_objects[type][key][i], ActionBase):
-                        if hasattr(self.action_objects[type][key][i], "on_removed_from_cache"):
-                            self.action_objects[type][key][i].on_removed_from_cache()
-                    self.action_objects[type][key][i] = None
-                    del self.action_objects[type][key][i]
-            self.action_objects[type] = {}
+        for input_type in self.action_objects:
+            for input_identifier in self.action_objects[input_type]:
+                for state in self.action_objects[input_type][input_identifier]:
+                    for i, action in enumerate(list(self.action_objects[input_type][input_identifier][state].values())):
+                        self.action_objects[input_type][input_identifier][state][i].page = None
+                        self.action_objects[input_type][input_identifier][state][i] = None
+                        if isinstance(self.action_objects[input_type][input_identifier][state][i], ActionBase):
+                            if hasattr(self.action_objects[input_type][input_identifier][state][i], "on_removed_from_cache"):
+                                self.action_objects[input_type][input_identifier][state][i].on_removed_from_cache()
+                        self.action_objects[input_type][input_identifier][state][i] = None
+                        del self.action_objects[input_type][input_identifier][state][i]
+            self.action_objects[input_type] = {}
 
     def get_name(self):
         return os.path.splitext(os.path.basename(self.json_path))[0]

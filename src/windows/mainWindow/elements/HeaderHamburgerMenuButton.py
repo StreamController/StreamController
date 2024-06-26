@@ -105,7 +105,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.add_credit_section("Contributors", ["Core447 https://github.com/Core447"] + 
                                                        sorted(["coolapso https://github.com/coolapso",
                                                        "G4PLS https://github.com/G4PLS",
-                                                       "gensyn https://github.com/gensyn"
+                                                       "gensyn https://github.com/gensyn",
                                                        "GsakuL https://github.com/GsakuL",
                                                        "mrintrepide https://github.com/mrintrepide"
                                                        "Sorunome https://github.com/Sorunome",

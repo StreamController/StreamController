@@ -172,14 +172,15 @@ class ImageOnboardingScreen(Gtk.Box):
         self.build()
 
     def build(self):
-        self.image = Gtk.Image(file=self.image_path, css_classes=["onboarding-image"], margin_top=120)
+        self.image = Gtk.Image(file=self.image_path, css_classes=["onboarding-image"], margin_top=70)
         self.append(self.image)
 
         self.label = Gtk.Label(label=self.label, css_classes=["onboarding-welcome-label"],
-                               margin_top=50)
+                               margin_top=20)
         self.append(self.label)
 
-        self.detail = Gtk.Label(label=self.detail, css_classes=["onboarding-welcome-detail-label"],)
+        self.detail = Gtk.Label(label=self.detail, css_classes=["onboarding-welcome-detail-label"],
+                                margin_top=8)
         self.append(self.detail)
 
 class IconOnboardingScreen(Gtk.Box):
@@ -192,14 +193,15 @@ class IconOnboardingScreen(Gtk.Box):
         self.build()
 
     def build(self):
-        self.image = Gtk.Image(icon_name=self.icon_name, pixel_size=350, margin_top=120)
+        self.image = Gtk.Image(icon_name=self.icon_name, pixel_size=350, margin_top=20)
         self.append(self.image)
 
         self.label = Gtk.Label(label=self.label, css_classes=["onboarding-welcome-label"],
-                               margin_top=50)
+                               margin_top=0)
         self.append(self.label)
 
-        self.detail = Gtk.Label(label=self.detail, css_classes=["onboarding-welcome-detail-label"],)
+        self.detail = Gtk.Label(label=self.detail, css_classes=["onboarding-welcome-detail-label"],
+                                margin_top=8)
         self.append(self.detail)
 
 

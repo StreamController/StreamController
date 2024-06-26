@@ -39,24 +39,29 @@ if TYPE_CHECKING:
     from windows.mainWindow.mainWindow import MainWindow
 
 
-class OnboardingWindow(Gtk.ApplicationWindow):
+class OnboardingWindow(Adw.Dialog):
     def __init__(self, application, main_win: "MainWindow"):
-        super().__init__(application=application)
+        super().__init__()
         self.set_title("Onboarding")
-        self.set_transient_for(main_win)
-        self.set_modal(True)
-        self.set_default_size(800, 800)
+        self.set_presentation_mode(Adw.DialogPresentationMode.FLOATING)
+        self.set_can_close(True)
+        self.set_content_height(600)
+        self.set_content_width(600)
+        self.set_follows_content_size(False)
 
-        self.connect("close-request", self.on_close)
+        self.connect("close-attempt", self.on_close)
         
         self.build()
 
     def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
+        self.set_child(self.main_box)
+
         self.header = Adw.HeaderBar(css_classes=["flat"])
-        self.set_titlebar(self.header)
+        self.main_box.append(self.header)
 
         self.stack = Gtk.Stack(hexpand=True, vexpand=True)
-        self.set_child(self.stack)
+        self.main_box.append(self.stack)
 
         self.overlay = Gtk.Overlay()
         self.stack.add_named(self.overlay, "main")

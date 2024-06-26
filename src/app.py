@@ -112,11 +112,13 @@ class App(Adw.Application):
         self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)
 
     def show_onboarding(self):
+        if gl.argparser.parse_args().b:
+            return
         if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-onboarding")):
             return
 
         self.onboarding = OnboardingWindow(application=self, main_win=self.main_win)
-        self.onboarding.show()
+        self.onboarding.present(self.main_win)
 
         # Disable onboarding for future sessions
         with open(os.path.join(gl.DATA_PATH, ".skip-onboarding"), "w") as f:

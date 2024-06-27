@@ -139,12 +139,12 @@ class ActionExpanderRow(BetterExpander):
                 self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, controls_image=controls_image, controls_labels=controls_labels, comment=comment, index=i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
                 action: NoActionHolderFound
-                missing_button_row = MissingActionButtonRow(action.id, action.type, action.identifier, self.active_state)
+                missing_button_row = MissingActionButtonRow(action.id, action.identifier, self.active_state, i)
                 self.add_row(missing_button_row)
             elif isinstance(action, ActionOutdated):
                 # No plugin installed for this action
                 action: ActionOutdated
-                missing_button_row = OutdatedActionRow(action.id, action.type, action.identifier, self.active_state)
+                missing_button_row = OutdatedActionRow(action.id, action.identifier, self.active_state, i)
                 self.add_row(missing_button_row)
 
         # Place add button at the end

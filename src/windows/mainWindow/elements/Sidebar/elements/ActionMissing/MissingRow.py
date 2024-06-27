@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import InputIdentifier
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, GLib, Pango
@@ -29,12 +31,10 @@ class MissingRow(Adw.PreferencesRow):
                  install_label: str,
                  install_failed_label: str,
                  installing_label: str,
-                 coords:str = None, dial: int = None, touch: bool = None):
+                 identifier: InputIdentifier):
         super().__init__(css_classes=["no-padding"])
         self.action_id = action_id
-        self.coords = coords
-        self.dial = dial
-        self.touch = touch
+        self.identifier = identifier
         self.state = state
         self.index = index
         self.install_label = install_label
@@ -123,11 +123,16 @@ class MissingRow(Adw.PreferencesRow):
         page = controller.active_page
 
         # Remove from action objects
-        del page.action_objects[self.coords][self.index]
+        del page.action_objects[self.identifier.input_type][self.identifier.json_identifier]
 
         # Remove from page json
-        page.dict["keys"][self.coords][str(self.state)]["actions"].pop(self.index)
+        page.dict[self.identifier.input_type][self.identifier.json_identifier]["states"][str(self.state)]["actions"].pop(self.index)
         page.save()
 
         # Reload configurator ui
-        gl.app.main_win.sidebar.key_editor.action_editor.load_for_coords(self.coords.split("x"), self.state)
+        gl.app.main_win.sidebar.key_editor.action_editor.load_for_identifier(self.identifier, self.state)
+
+        # Update input - to remove warning dot if present
+        c_input = controller.get_input(self.identifier)
+        if c_input is not None:
+            c_input.update()

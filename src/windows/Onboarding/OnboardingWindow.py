@@ -337,7 +337,6 @@ class OnboardingScreen5(Gtk.Box):
 
         GLib.idle_add(self.onboarding_window.loading_box.set_spinning, False)
         GLib.idle_add(self.onboarding_window.close)
-        GLib.idle_add(self.onboarding_window.destroy)
         GLib.idle_add(self.onboarding_window.on_close)
         GLib.idle_add(gl.app.main_win.show)
 

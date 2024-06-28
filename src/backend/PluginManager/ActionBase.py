@@ -209,12 +209,15 @@ class ActionBase(rpyc.Service):
         if type(self.input_ident) not in [Input.Key, Input.Dial]:
             return
         
+        if self.get_state() is None:
+            log.error(f"Could not find state, action: {self.action_id}, state: {self.state}")
+            return
+        
         if not self.get_is_present():
             return
         if not self.on_ready_called:
             update = False
             update = True #FIXME
-        if self.get_state() is None or self.get_state().state != self.state: return
 
         label_index = 0 if position == "top" else 1 if position == "center" else 2
 
@@ -290,7 +293,8 @@ class ActionBase(rpyc.Service):
     def has_label_control(self) -> list[bool]:
         key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
 
-        return [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
+        r = [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
+        return r
 
     def has_image_control(self):
         key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})

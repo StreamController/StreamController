@@ -91,6 +91,9 @@ class OnboardingWindow(Adw.Dialog):
         self.recommendations = PluginRecommendations()
         self.carousel.append(self.recommendations)
 
+        self.discord_page = DiscordOnboardingScreen(self)
+        self.carousel.append(self.discord_page)
+
         self.carousel.append(OnboardingScreen5(self))
 
         self.carousel_indicator_dots = Adw.CarouselIndicatorDots(carousel=self.carousel)
@@ -305,7 +308,7 @@ class OnboardingScreen5(Gtk.Box):
 
     def build(self):
         self.label = Gtk.Label(label=gl.lm.get("onboarding.ready.header"), css_classes=["onboarding-welcome-label"],
-                               margin_top=50)
+                               margin_top=0)
         self.append(self.label)
 
         self.start_button = Gtk.Button(label=gl.lm.get("onboarding.ready.button"), css_classes=["pill", "suggested-action"], margin_top=20)
@@ -337,3 +340,29 @@ class OnboardingScreen5(Gtk.Box):
         GLib.idle_add(self.onboarding_window.destroy)
         GLib.idle_add(self.onboarding_window.on_close)
         GLib.idle_add(gl.app.main_win.show)
+
+
+class DiscordOnboardingScreen(Gtk.Box):
+    def __init__(self, onboarding_window: OnboardingWindow):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
+                            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+                            margin_start=50, margin_end=50, margin_top=50, margin_bottom=50)
+        self.onboarding_window = onboarding_window
+
+        self.build()
+
+    def build(self):
+        self.label = Gtk.Label(label="Join our Discord", css_classes=["onboarding-welcome-label"],
+                                margin_top=20)
+        self.append(self.label)
+
+        self.detail = Gtk.Label(label="Join our discord to ask questions, get help and request new features!", css_classes=["onboarding-welcome-detail-label"],
+                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Gtk.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
+        self.append(self.detail)
+
+        self.join_button = Gtk.Button(label="Join", css_classes=["pill", "suggested-action"], margin_top=20, hexpand=False, halign=Gtk.Align.CENTER)
+        self.join_button.connect("clicked", self.on_join_button_clicked)
+        self.append(self.join_button)
+
+    def on_join_button_clicked(self, button):
+        web.open_new("https://discord.gg/MSyHM8TN3u")

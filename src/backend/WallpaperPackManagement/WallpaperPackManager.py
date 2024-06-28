@@ -29,7 +29,6 @@ class WallpaperPackManager:
     def __init__(self):
         self.packs = {}
 
-    @lru_cache
     def get_wallpaper_packs(self) -> dir:
         packs = {}
         os.makedirs(os.path.join(gl.DATA_PATH, "wallpapers"), exist_ok=True)
@@ -37,7 +36,6 @@ class WallpaperPackManager:
             packs[pack] = WallpaperPack(os.path.join(gl.DATA_PATH, "wallpapers", pack))
         return packs
 
-    @lru_cache
     def get_pack_wallpapers(self, wallpaper_pack: dict):
         path = wallpaper_pack.get("path")
         wallpaper_path = os.path.join(path, "wallpapers")

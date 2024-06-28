@@ -110,23 +110,25 @@ logs: list[str] = []
 
 release_notes: str = """
 <ul>
-    <li>Allow image sizes above 100%</li>
-    <li>Add remove button to custom asset chooser</li>
-    <li>Add notifications for asset updates</li>
-    <li>New label overwrite system</li>
-    <li>Add autostart toggle to the settings</li>
-    <li>Add automatic page switching for X11</li>
-    <li>Plugin events by G4PLS</li>
-    <li>Improve import from streamdeck-ui</li>
-    <li>Add import/export options for pages</li>
-    <li>Sort pages naturally in the page selector</li>
-    <li>Reduce page switching time in large libraries</li>
-    <li>Improve the onboarding dialog</li>
-    <li>New store backend by G4PLS</li>
-    <li>Add basic API for page changes</li>
-    <li>Fix: Deck numbers not going higher than 2</li>
-    <li>Fix: Icons not showing in UI for Pedals</li>
-    <li>Fix: Not restoring after suspend</li>
+    <li>Add option to add custom stores and plugins</li>
+    <li>Add options to control which action should control labels and the image</li>
+    <li>Add state management</li>
+    <li>Add support for the Stream Deck Plus</li>
+    <li>Add key hold event</li>
+    <li>Add EventAssigner</li>
+    <li>Add auto lock support for KDE</li>
+    <li>Download plugins as zip instead of git</li>
+    <li>Create page backups before each launch</li>
+    <li>Add discord link to the onboarding dialog</li>
+    <li>Improve store caching</li>
+    <li>Improve restore from suspend (beta)</li>
+    <li>Ship icons</li>
+    <li>Improve deck detection after reconnection</li>
+    <li>Show progress bar when installing plugins from the onboarding dialog</li>
+    <li>Fix: Plugin wide settings get reset on each update</li>
+    <li>Fix: Potential data loss when saving pages</li>
+    <li>Allow change of data path in the settings</li>
+    <li>Fix: Error for non RGB(A) images</li>
     <li>Fix: misc bugs</li>
 </ul>
 """

@@ -30,7 +30,6 @@ class IconPackManager:
     def __init__(self):
         self.packs = {}
 
-    @lru_cache
     def get_icon_packs(self) -> dir:
         packs = {}
         os.makedirs(os.path.join(gl.DATA_PATH, "icons"), exist_ok=True)
@@ -38,7 +37,6 @@ class IconPackManager:
             packs[pack] = IconPack(os.path.join(gl.DATA_PATH, "icons", pack))
         return packs
 
-    @lru_cache
     def get_pack_icons(self, icon_pack: dict):
         path = icon_pack.get("path")
         icons_path = os.path.join(path, "icons")

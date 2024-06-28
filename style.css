@@ -430,3 +430,16 @@
 .destructive-action-on-hover:hover{
   background-color: @destructive_bg_color;
 }
+
+.text-view {
+  border-radius: 6px;
+  margin-right: 5px;
+  padding: 7px 10px;
+
+  background-color: #484848;
+  color: #FFFFFF;
+}
+
+GtkTextView text {
+  margin: 5px 10px;
+}

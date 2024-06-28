@@ -128,9 +128,9 @@ class LabelRow(Adw.PreferencesRow):
         self.text_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.main_box.append(self.text_box)
 
-        self.text_entry = TextEntry()
-        # self.text_entry.entry.connect("changed", self.on_change_text)
-        self.text_box.append(self.text_entry)
+        self.text_view = TextView()
+        # self.text_view.entry.connect("changed", self.on_change_text)
+        self.text_box.append(self.text_view)
 
         self.color_chooser_button = ColorChooserButton()
         # self.color_chooser_button.button.connect("color-set", self.on_change_color)
@@ -153,19 +153,19 @@ class LabelRow(Adw.PreferencesRow):
         # self.stroke_width_box.append(self.stroke_width_label)
 
         ## Connect reset buttons
-        self.text_entry.revert_button.connect("clicked", self.on_reset_text)
+        self.text_view.revert_button.connect("clicked", self.on_reset_text)
         self.color_chooser_button.revert_button.connect("clicked", self.on_reset_color)
         self.font_chooser_button.revert_button.connect("clicked", self.on_reset_font)
 
 
     def connect_signals(self):
-        self.text_entry.entry.connect("changed", self.on_change_text)
+        self.text_view.entry.get_buffer().connect("changed", self.on_change_text)
         self.color_chooser_button.button.connect("color-set", self.on_change_color)
         self.font_chooser_button.button.connect("font-set", self.on_change_font)
 
     def disconnect_signals(self):
         try:
-            self.text_entry.entry.disconnect_by_func(self.on_change_text)
+            self.text_view.entry.get_buffer().disconnect_by_func(self.on_change_text)
         except Exception as e:
             log.error(f"Failed to disconnect signals. Error: {e}")
 
@@ -198,7 +198,7 @@ class LabelRow(Adw.PreferencesRow):
         use_page_label_properties = controller_input.get_active_state().label_manager.get_use_page_label_properties(position=self.key_name)
 
         ## Set visibility of revert buttons
-        self.text_entry.revert_button.set_visible(use_page_label_properties.get("text", False))
+        self.text_view.revert_button.set_visible(use_page_label_properties.get("text", False))
         self.color_chooser_button.revert_button.set_visible(use_page_label_properties.get("color", False))
 
         font_combined = use_page_label_properties.get("font-family", False) and use_page_label_properties.get("font-size", False)
@@ -216,13 +216,19 @@ class LabelRow(Adw.PreferencesRow):
             controller_input = controller.get_input(self.active_identifier)
             composed_label = controller_input.get_active_state().label_manager.get_composed_label(position=self.key_name)
 
-        if self.text_entry.entry.get_text() != composed_label.text:
-            pos = self.text_entry.entry.get_position()
+        buffer = self.text_view.entry.get_buffer()
+        start, end = buffer.get_bounds()
+
+        if buffer.get_text(start, end, False) != composed_label.text:
+            cursor_iter = buffer.get_iter_at_mark(buffer.get_insert())
+            pos = cursor_iter.get_offset()
             
-            self.text_entry.entry.set_text(composed_label.text)
+            self.text_view.entry.get_buffer().set_text(composed_label.text)
 
             pos = min(pos, len(composed_label.text))
-            self.text_entry.entry.set_position(pos)
+
+            iter = buffer.get_iter_at_offset(pos)
+            buffer.place_cursor(iter)
 
         hide_details = composed_label.text.strip() == ""
         self.font_chooser_box.set_visible(not hide_details)
@@ -284,7 +290,7 @@ class LabelRow(Adw.PreferencesRow):
 
         self.update_values()
 
-        self.text_entry.revert_button.set_visible(False)
+        self.text_view.revert_button.set_visible(False)
 
     def on_reset_color(self, button):
         active_page = gl.app.main_win.get_active_page()
@@ -292,23 +298,26 @@ class LabelRow(Adw.PreferencesRow):
 
         self.color_chooser_button.revert_button.set_visible(False)
 
-    def on_change_text(self, entry):
-        text = entry.get_text()
+    def on_change_text(self, buffer):
+        start, end = buffer.get_bounds()
+        text = buffer.get_text(start, end, False)
 
         active_page = gl.app.main_win.get_active_page()
         active_page.set_label_text(identifier=self.active_identifier, state=self.state, label_position=self.key_name, text=text)
 
-        self.text_entry.revert_button.set_visible(True)
+        self.text_view.revert_button.set_visible(True)
 
         hide_details = text.strip() == ""
         self.font_chooser_box.set_visible(not hide_details)
 
-class TextEntry(Gtk.Box):
+class TextView(Gtk.Box):
     def __init__(self, **kwargs):
-        super().__init__(css_classes=["linked"], margin_end=5,  **kwargs)
+        super().__init__(margin_end=5,  **kwargs)
 
-        self.entry = Gtk.Entry(hexpand=True,placeholder_text=gl.lm.get("label-editor-placeholder-text"))
+        self.entry = Gtk.TextView(hexpand=True)
         self.revert_button = RevertButton()
+
+        self.entry.get_style_context().add_class("text-view")
 
         self.append(self.entry)
         self.append(self.revert_button)

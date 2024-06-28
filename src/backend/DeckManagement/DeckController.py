@@ -2420,11 +2420,9 @@ class ControllerKeyState(ControllerInputState):
         if self.key_image is not None:
             self.key_image.close()
             self.key_image = None
-            del self.key_image
         if self.key_video is not None:
             self.key_video.close()
             self.key_video = None
-            del self.key_video
     
     def set_image(self, key_image: "InputImage", update: bool = True) -> None:
         if self.key_image is not None:

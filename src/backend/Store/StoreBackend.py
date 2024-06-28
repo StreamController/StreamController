@@ -393,7 +393,7 @@ class StoreBackend:
 
         version_file_path = os.path.join(git_dir, "VERSION")
         if not os.path.exists(version_file_path):
-            return
+            return ""
         
         with open(version_file_path, "r") as f:
             return f.read().strip()

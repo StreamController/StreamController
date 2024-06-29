@@ -17,6 +17,7 @@ StreamController supports the following Elgato Stream Deck models:
 - Stream Deck Mini
 - Stream Deck XL
 - Stream Deck Pedal
+- Stream Deck Plus
 
 ## Features
 ### Plugins

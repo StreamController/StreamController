@@ -166,19 +166,19 @@ class ActionBase(rpyc.Service):
 
     def set_background_color(self, color: list[int] = [255, 255, 255, 255], update: bool = True):
         self.raise_error_if_not_ready()
+
+        if not self.get_is_present(): return
+
         if not self.on_ready_called:
             update = False
 
-        if self.key_index >= self.deck_controller.deck.key_count():
-            return
-        
         state = self.get_state()
         if state is None or state.state != self.state: return
 
         if not hasattr(state, "background_color"):
             return
 
-        self.state.background_color = color
+        state.background_color = color
         if update:
             self.get_input().update()
 

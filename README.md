@@ -48,6 +48,8 @@ StreamController is currently in beta. While core features like actions and page
 ## Contributing
 We welcome contributions! Feel free to open pull requests to improve StreamController.
 
+If you're interested in helping with the development of this app, you can contact me on our [Discord server](https://discord.gg/MSyHM8TN3u) to request write access to our [Dev planning board](https://github.com/orgs/StreamController/projects/2). For mor information see [Dev-Planning-Board](Dev-Planning-Board.md).
+
 ### Contributors
 Thank you to all our contributors for your hard work and support!
 

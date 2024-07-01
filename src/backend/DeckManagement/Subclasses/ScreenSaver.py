@@ -103,6 +103,8 @@ class ScreenSaver:
         self.original_background = self.deck_controller.background
         self.original_brightness = self.deck_controller.brightness
 
+        self.deck_controller.set_brightness(self.brightness)
+
         self.deck_controller.clear()
         self.deck_controller.clear_media_player_tasks()
 

@@ -24,6 +24,7 @@ class LegacyLocaleManager:
         self.fallback_json: dict = {}
         self.locales: str = None
         self.FALLBACK_LOCALE: str = "en_US"
+        self.set_fallback_language(self.FALLBACK_LOCALE)
 
     def load_fallback_language(self):
         path = os.path.join(self.locales_path, f"{self.FALLBACK_LOCALE}.json")

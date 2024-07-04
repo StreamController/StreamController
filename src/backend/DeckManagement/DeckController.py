@@ -1194,7 +1194,8 @@ class LabelManager:
             if use_page_label_properties["font-size"]:
                 label.font_size = page_label.font_size
 
-        return self.inject_defaults(label)
+        injected = self.inject_defaults(label)
+        return self.fix_invalid(injected)
     
     def get_composed_labels(self) -> dict:
         composed_labels = {}
@@ -1214,7 +1215,12 @@ class LabelManager:
             label.font_size = 15
 
         return label
+    
+    def fix_invalid(self, label: "KeyLabel"):
+        if not isinstance(label.text, str):
+            label.text = str(label.text)
 
+        return label
 
     def update_label(self, position: str):
         self.controller_input.update()

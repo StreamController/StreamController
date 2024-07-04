@@ -241,6 +241,8 @@ class ActionBase(rpyc.Service):
         if text is None:
             text = ""
 
+        text = str(text)
+
         self.labels[position] = {
             "text": text,
             "color": color,

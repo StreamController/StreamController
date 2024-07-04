@@ -431,9 +431,8 @@
   background-color: @destructive_bg_color;
 }
 
-.text-view {
-  border-radius: 6px;
-  margin-right: 5px;
+.label-text-view {
+  /* border-radius: 6px; */
   padding: 7px 10px;
 
   background-color: #484848;

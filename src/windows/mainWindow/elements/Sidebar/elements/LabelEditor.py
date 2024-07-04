@@ -129,6 +129,7 @@ class LabelRow(Adw.PreferencesRow):
         self.main_box.append(self.text_box)
 
         self.text_view = TextView()
+        self.text_view.set_margin_end(5)
         # self.text_view.entry.connect("changed", self.on_change_text)
         self.text_box.append(self.text_view)
 
@@ -198,7 +199,7 @@ class LabelRow(Adw.PreferencesRow):
         use_page_label_properties = controller_input.get_active_state().label_manager.get_use_page_label_properties(position=self.key_name)
 
         ## Set visibility of revert buttons
-        self.text_view.revert_button.set_visible(use_page_label_properties.get("text", False))
+        self.text_view.set_revert_visible(use_page_label_properties.get("text", False))
         self.color_chooser_button.revert_button.set_visible(use_page_label_properties.get("color", False))
 
         font_combined = use_page_label_properties.get("font-family", False) and use_page_label_properties.get("font-size", False)
@@ -290,7 +291,7 @@ class LabelRow(Adw.PreferencesRow):
 
         self.update_values()
 
-        self.text_view.revert_button.set_visible(False)
+        self.text_view.set_revert_visible(False)
 
     def on_reset_color(self, button):
         active_page = gl.app.main_win.get_active_page()
@@ -305,22 +306,30 @@ class LabelRow(Adw.PreferencesRow):
         active_page = gl.app.main_win.get_active_page()
         active_page.set_label_text(identifier=self.active_identifier, state=self.state, label_position=self.key_name, text=text)
 
-        self.text_view.revert_button.set_visible(True)
+        self.text_view.set_revert_visible(True)
 
         hide_details = text.strip() == ""
         self.font_chooser_box.set_visible(not hide_details)
 
 class TextView(Gtk.Box):
     def __init__(self, **kwargs):
-        super().__init__(margin_end=5,  **kwargs)
+        super().__init__(css_classes=["linked"], **kwargs)
 
         self.entry = Gtk.TextView(hexpand=True)
         self.revert_button = RevertButton()
 
-        self.entry.get_style_context().add_class("text-view")
+        # self.entry.get_style_context().add_class("text-view")
+        self.entry.set_css_classes(["label-text-view", "round-left"])
 
         self.append(self.entry)
         self.append(self.revert_button)
+
+    def set_revert_visible(self, visible: bool):
+        self.revert_button.set_visible(visible)
+        if visible:
+            self.entry.remove_css_class("round-right")
+        else:
+            self.entry.add_css_class("round-right")
 
 class ColorChooserButton(Gtk.Box):
     def __init__(self, **kwargs):

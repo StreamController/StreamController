@@ -88,9 +88,13 @@ class ItemListComboRow(Adw.ComboRow):
         Call when loading user-settings, to pre-select the correkt ListItem
         """
         index_ = next((i for i, t in enumerate(self.__items) if t.key == key), default)
-        if index_ < 0:
-            self.set_selected(Gtk.INVALID_LIST_POSITION)
-        elif index_ is None:
+        if index_ is None:
             log.warning("key '{0}' was not found amongst item list, and no default was given", key)
-        else:
-            self.set_selected(index_)
+            
+        if isinstance(index_, int):
+            if index_ is not None:
+                if index_ >= 0 and index_ < len(self.__items):
+                    self.set_selected(index_)
+                    return
+        
+        self.set_selected(Gtk.INVALID_LIST_POSITION)

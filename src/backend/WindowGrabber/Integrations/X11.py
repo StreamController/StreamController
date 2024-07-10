@@ -95,7 +95,7 @@ class X11(Integration):
             if root is None:
                 return
             stdout, stderr = root.communicate()
-            split = stdout.strip().split()
+            split = stdout.decode().strip().split()
             if len(split) == 0:
                 return
             window_id = split[-1]

@@ -33,7 +33,7 @@ Set up a custom screen saver to display a picture or video when your Stream Deck
 Available for GNOME, Hyprland and all X11 desktops, this feature allows you to automatically change your active page based on the active window. For example, you can switch to your favorite music albums when you open Spotify, your projects when you open VSCode, or your favorite websites in Firefox.
 
 ## Auto-Lock
-Lock your Stream deck when your system is locked, preventing unwanted use from third parties.
+Lock your Stream deck when your system is locked, preventing unwanted use from third parties (available on KDE and GNOME).
 
 ## Installation
 To install StreamController, click the button below or follow the [installation instructions](https://streamcontroller.github.io/docs/latest/installation/):

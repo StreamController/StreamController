@@ -419,7 +419,7 @@ class ActionBase(rpyc.Service):
         if open_in_terminal:
             command = "gnome-terminal -- bash -c '"
             if venv_path is not None:
-                command += "source {venv_path}/bin/activate && "
+                command += f"source {venv_path}/bin/activate && "
             command += f"python3 {backend_path} --port={port}; exec $SHELL'"
         else:
             command = ""

@@ -1350,6 +1350,9 @@ class LayoutManager:
         width, height = background.size
         image_size = (int(width * layout.size), int(height * layout.size))
 
+        if 0 in image_size:
+            return background.copy()
+
         if layout.fill_mode == "stretch":
             image_resized = image.resize(image_size, Image.Resampling.HAMMING)
         elif layout.fill_mode == "cover":

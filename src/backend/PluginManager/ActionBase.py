@@ -202,8 +202,9 @@ class ActionBase(rpyc.Service):
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
         try:
-            self.get_input_state().show_error(duration=duration)
-        except AttributeError:
+            self.get_state().show_error(duration=duration)
+        except AttributeError as e:
+            log.error(e)
             pass
 
     def hide_error(self) -> None:
@@ -212,7 +213,7 @@ class ActionBase(rpyc.Service):
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
         try:
-            self.get_input_state().hide_error()
+            self.get_state().hide_error()
         except AttributeError:
             pass
 

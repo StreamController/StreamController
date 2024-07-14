@@ -457,7 +457,7 @@ class DeckController:
         self.event_callback(ident, *args, **kwargs)
 
     def touchscreen_event_callback(self, deck, *args, **kwargs):
-        ident = Input.Touchscreen("touchscreen")
+        ident = Input.Touchscreen("sd-plus")
         self.event_callback(ident, *args, **kwargs)
 
 

@@ -327,6 +327,7 @@ class ActionBase(rpyc.Service):
     def get_is_present(self):
         if self.page is None: return False
         if self.page.deck_controller.active_page is not self.page: return False
+        if self.page.deck_controller.screen_saver.showing: return False
         # if self.state != self.get_state().state: return False #TODO: Check for touchscreen and dial states
         return self in self.page.get_all_actions()
     

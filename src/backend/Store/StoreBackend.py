@@ -852,6 +852,15 @@ class StoreBackend:
             if module.startswith(base_module):
                 del sys.modules[module]
 
+        ## Update page
+        for controller in gl.deck_manager.deck_controller:
+            ## Checks required to prevent errors after auto-update
+            if hasattr(controller, "active_page"):
+                if controller.active_page is not None:
+                    # Load action objects
+                    controller.active_page.load_action_objects()
+                    controller.load_page(controller.active_page)
+
     async def install_icon(self, icon_data:IconData):
         icon_path = os.path.join(gl.DATA_PATH, "icons", icon_data.icon_id)
 

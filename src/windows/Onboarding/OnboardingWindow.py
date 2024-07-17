@@ -80,8 +80,10 @@ class OnboardingWindow(Adw.Dialog):
         self.carousel.append(IconOnboardingScreen("view-paged-symbolic", gl.lm.get("onboarding.multiple.header"), gl.lm.get("onboarding.multiple.details")))
         self.carousel.append(IconOnboardingScreen("preferences-desktop-remote-desktop-symbolic", gl.lm.get("onboarding.productive.header"), gl.lm.get("onboarding.productive.details")))
         #TODO: Add discord screen
-        if os.getenv("XDG_CURRENT_DESKTOP").lower() == "gnome":
-            self.carousel.append(ExtensionOnboardingScreen())
+        desktop = os.getenv("XDG_CURRENT_DESKTOP")
+        if desktop is not None:
+            if desktop.lower() == "gnome":
+                self.carousel.append(ExtensionOnboardingScreen())
 
         udev_version = self.get_udev_version()
         if udev_version is not None:

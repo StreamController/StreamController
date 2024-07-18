@@ -6,6 +6,8 @@ import argparse
 import sys
 from loguru import logger as log
 
+from src.backend.DeckManagement.HelperMethods import find_fallback_font
+
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
 argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
@@ -103,6 +105,7 @@ threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 tray_icon: "TrayIcon" = None
+fallback_font: str = find_fallback_font()
 
 app_version: str = "1.5.0-beta.6" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False

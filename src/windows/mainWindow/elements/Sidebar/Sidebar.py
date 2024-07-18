@@ -224,10 +224,10 @@ class KeyEditor(Gtk.Box):
         self.state_switcher.set_n_states(0)
         self.main_box.append(self.state_switcher)
 
-        self.icon_selector = IconSelector(sidebar, halign=Gtk.Align.CENTER, margin_top=40)
+        self.icon_selector = IconSelector(sidebar, halign=Gtk.Align.CENTER, margin_top=30)
         self.main_box.append(self.icon_selector)
 
-        self.image_editor = ImageEditor(sidebar, margin_top=100)
+        self.image_editor = ImageEditor(sidebar, margin_top=90)
         self.main_box.append(self.image_editor)
 
         self.background_editor = BackgroundEditor(sidebar, margin_top=25)

@@ -45,7 +45,8 @@ class IconSelector(Gtk.Box):
         self.overlay = Gtk.Overlay()
         self.append(self.overlay)
 
-        self.button = Gtk.Button(label="Select", css_classes=["icon-selector" "key-image", "no-padding"], overflow=Gtk.Overflow.HIDDEN)
+        self.button = Gtk.Button(label="Select", css_classes=["icon-selector" "key-image", "no-padding"], overflow=Gtk.Overflow.HIDDEN,
+                                 margin_start=10, margin_end=10, margin_top=10, margin_bottom=10)
         self.button.connect("clicked", self.on_click)
         # self.append(self.button)
         self.overlay.set_child(self.button)

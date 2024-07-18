@@ -738,9 +738,6 @@ class Page:
         if update:
             self.update_input(identifier, state)
 
-    def get_label_font_color(self, identifier: InputIdentifier, state: int, label_position: str) -> list[int]:
-        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "color"])
-
     def set_label_font_color(self, identifier: InputIdentifier, state: int, label_position: str, font_color: list[int], update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
             key_state.label_manager.page_labels[label_position].color = font_color
@@ -750,6 +747,34 @@ class Page:
         label_manager = self.get_label_manager(identifier, state)
         if label_manager is not None:
             label_manager.page_labels[label_position].color = font_color
+            label_manager.update_label_editor()
+
+        if update:
+            self.update_input(identifier, state)
+
+    def set_label_outline_width(self, identifier: InputIdentifier, state: int, label_position: str, outline_width: list[int], update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
+            key_state.label_manager.page_labels[label_position].outline_width = outline_width
+
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "outline_width"], outline_width)
+
+        label_manager = self.get_label_manager(identifier, state)
+        if label_manager is not None:
+            label_manager.page_labels[label_position].outline_width = outline_width
+            label_manager.update_label_editor()
+
+        if update:
+            self.update_input(identifier, state)
+
+    def set_label_outline_color(self, identifier: InputIdentifier, state: int, label_position: str, outline_color: list[int], update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
+            key_state.label_manager.page_labels[label_position].outline_color = outline_color
+
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "outline_color"], outline_color)
+
+        label_manager = self.get_label_manager(identifier, state)
+        if label_manager is not None:
+            label_manager.page_labels[label_position].outline_color = outline_color
             label_manager.update_label_editor()
 
         if update:

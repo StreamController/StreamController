@@ -1218,7 +1218,7 @@ class LabelManager:
         if label.color is None:
             label.color = [255, 255, 255, 255]
         if label.font_name is None:
-            label.font_name = "DejaVu Sans"
+            label.font_name = ""
         if label.font_size is None:
             label.font_size = 15
         if label.outline_width is None:

@@ -917,7 +917,7 @@ class StoreBackend:
             return plugins_to_update
         for plugin in plugins_to_update:
             try:
-                await self.uninstall_plugin(plugin.plugin_id, remove_from_pages=False, remove_files=False)
+                self.uninstall_plugin(plugin.plugin_id, remove_from_pages=False, remove_files=False)
             except Exception as e:
                 log.error(e)
             await self.install_plugin(plugin)

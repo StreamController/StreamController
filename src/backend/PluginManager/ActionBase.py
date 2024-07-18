@@ -260,6 +260,8 @@ class ActionBase(rpyc.Service):
             font_size=font_size,
             font_name=font_family,
             color=color,
+            outline_width=outline_width,
+            outline_color=outline_color
         )
         self.get_state().label_manager.set_action_label(label=key_label, position=position, update=update)
 

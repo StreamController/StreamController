@@ -300,6 +300,19 @@ class LabelRow(Adw.PreferencesRow):
 
         self.color_chooser_button.revert_button.set_visible(True)
 
+    def parse_font_description(self, description: str) -> tuple[str, int]:
+        # Split the description by spaces
+        parts = description.split(' ')
+        # Find the part that contains 'px', which indicates the size
+        size_part = next((part for part in parts if 'px' in part), None)
+        # Extract the size (assuming it's always at the end)
+        if size_part:
+            size = size_part.replace('px', '')
+            # Reconstruct the font name by joining parts excluding the size part
+            name = ' '.join(parts[:parts.index(size_part)])
+            return name, int(size)
+        return None, None
+
     def on_change_outline_width(self, _):
         width = int(self.outline_width.get_value())
 
@@ -320,14 +333,11 @@ class LabelRow(Adw.PreferencesRow):
 
     def on_change_font(self, button):
         font = self.font_chooser_button.button.get_font()
-
-        pango_font = Pango.font_description_from_string(font)
-
-        font_size = pango_font.get_size()
+        name, size = self.parse_font_description(font)
 
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_label_font_family(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_family=pango_font.get_family(), update=False)
-        active_page.set_label_font_size(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_size=font_size/Pango.SCALE, update=True)
+        active_page.set_label_font_family(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_family=name, update=False)
+        active_page.set_label_font_size(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_size=size, update=True)
 
         self.font_chooser_button.revert_button.set_visible(True)
 

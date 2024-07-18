@@ -28,6 +28,8 @@ class KeyLabel:
     font_size: int = None
     font_name: str = None
     color: list[int] = None
+    outline_width: int = None
+    outline_color: list[int] = None
 
     def get_font_path(self) -> str:
         return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=self.font_name))

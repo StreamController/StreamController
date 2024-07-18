@@ -217,8 +217,9 @@ class ActionBase(rpyc.Service):
         except AttributeError:
             pass
 
-    def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
-                      font_family: str = None, font_size = None, update: bool = True):
+    def set_label(self, text: str, position: str = "bottom", color: list[int]=None,
+                  font_family: str=None, font_size=None, outline_width: int = None, outline_color: list[int] = None,
+                  update: bool=True):
         self.raise_error_if_not_ready()
 
         if type(self.input_ident) not in [Input.Key, Input.Dial]:
@@ -248,7 +249,9 @@ class ActionBase(rpyc.Service):
             "text": text,
             "color": color,
             "font-family": font_family,
-            "font-size": font_size
+            "font-size": font_size,
+            "outline_width": outline_width,
+            "outline_color": outline_color,
         }
         
         key_label = KeyLabel(
@@ -257,20 +260,25 @@ class ActionBase(rpyc.Service):
             font_size=font_size,
             font_name=font_family,
             color=color,
+            outline_width=outline_width,
+            outline_color=outline_color
         )
         self.get_state().label_manager.set_action_label(label=key_label, position=position, update=update)
 
     def set_top_label(self, text: str, color: list[int] = None,
-                      font_family: str = None, font_size = None, update: bool = True):
-        self.set_label(text, "top", color, font_family, font_size, update)
+                      font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
+                      update: bool = True):
+        self.set_label(text, "top", color, font_family, font_size, outline_width, outline_color, update)
 
     def set_center_label(self, text: str, color: list[int] = None,
-                      font_family: str = None, font_size = None, update: bool = True):
-        self.set_label(text, "center", color, font_family, font_size, update)
+                      font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
+                      update: bool = True):
+        self.set_label(text, "center", color, font_family, font_size, outline_width, outline_color, update)
 
     def set_bottom_label(self, text: str, color: list[int] = None,
-                      font_family: str = None, font_size = None, update: bool = True):
-        self.set_label(text, "bottom", color, font_family, font_size, update)
+                      font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
+                      update: bool = True):
+        self.set_label(text, "bottom", color, font_family, font_size, outline_width, outline_color, update)
 
     def on_labels_changed_in_ui(self):
         # TODO

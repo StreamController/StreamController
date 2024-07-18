@@ -218,7 +218,7 @@ class ActionBase(rpyc.Service):
             pass
 
     def set_label(self, text: str, position: str = "bottom", color: list[int]=None,
-                  font_family: str=None, font_size=None, outline_width=None, outline_color=None,
+                  font_family: str=None, font_size=None, outline_width: int = None, outline_color: list[int] = None,
                   update: bool=True):
         self.raise_error_if_not_ready()
 

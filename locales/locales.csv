@@ -8,6 +8,7 @@ label-editor-bottom-name;Unten;Bottom;Bas
 label-editor-font-chooser-label;Schriftart:;Font:;Police :
 label-editor-font-weight-label;Schriftdicke:;Font weight:;Taille de la police:
 label-editor-expander-subtitle;Texte für diese Taste;Labels for this key;Étiquettes de ce bouton
+label-editor-placeholder-text;Text;Label;Étiquette;Etiqueta
 action-editor-header;Aktions;Actions;Actions
 action-editor-expander-subtitle;Aktions für diese Taste;Actions for this key;Actions pour ce bouton
 action-editor-add-new-action;Aktion hinzufügen;Add Action;Ajouter une action

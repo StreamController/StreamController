@@ -217,8 +217,9 @@ class ActionBase(rpyc.Service):
         except AttributeError:
             pass
 
-    def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
-                      font_family: str = None, font_size = None, update: bool = True):
+    def set_label(self, text: str, position: str = "bottom", color: list[int]=None,
+                  font_family: str=None, font_size=None, outline_width=None, outline_color=None,
+                  update: bool=True):
         self.raise_error_if_not_ready()
 
         if type(self.input_ident) not in [Input.Key, Input.Dial]:
@@ -248,7 +249,9 @@ class ActionBase(rpyc.Service):
             "text": text,
             "color": color,
             "font-family": font_family,
-            "font-size": font_size
+            "font-size": font_size,
+            "outline_width": outline_width,
+            "outline_color": outline_color,
         }
         
         key_label = KeyLabel(

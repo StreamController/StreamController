@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import threading
 import gi
 
-from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
+from src.backend.DeckManagement.InputIdentifier import InputIdentifier
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -26,9 +26,7 @@ from gi.repository import Gtk, Adw, Gdk, Pango, GLib
 from loguru import logger as log
 
 # Import own modules
-from src.backend.DeckManagement.HelperMethods import add_default_keys, font_path_from_name, font_name_from_path
-from src.backend.PageManagement.Page import NoActionHolderFound, Page
-from src.backend.DeckManagement.DeckController import ControllerInput, ControllerKey, KeyLabel
+from src.backend.DeckManagement.DeckController import KeyLabel
 from GtkHelper.GtkHelper import RevertButton
 
 # Import globals
@@ -151,16 +149,8 @@ class LabelRow(Adw.PreferencesRow):
         self.outline_width_label.set_margin_end(5)
         self.outline_box.append(self.outline_width_label)
 
-        self.outline_width = Gtk.SpinButton()
+        self.outline_width = SpinButton(0, 10, 1)
         self.outline_width.set_hexpand(False)
-        adjustment = Gtk.Adjustment()
-        adjustment.set_lower(0)
-        adjustment.set_upper(10)
-        adjustment.set_step_increment(1)
-        adjustment.set_page_increment(10)
-        adjustment.set_page_size(0)
-        adjustment.set_value(1)
-        self.outline_width.set_adjustment(adjustment)
         self.outline_box.append(self.outline_width)
 
         self.outline_color_label = Gtk.Label(label=gl.lm.get("label-editor-outline-color-label"), xalign=0, hexpand=True, margin_start=2)
@@ -177,13 +167,14 @@ class LabelRow(Adw.PreferencesRow):
         self.text_entry.revert_button.connect("clicked", self.on_reset_text)
         self.color_chooser_button.revert_button.connect("clicked", self.on_reset_color)
         self.font_chooser_button.revert_button.connect("clicked", self.on_reset_font)
+        self.outline_width.revert_button.connect("clicked", self.on_reset_outline_width)
         self.outline_color_chooser_button.revert_button.connect("clicked", self.on_reset_outline_color)
 
     def connect_signals(self):
         self.text_entry.entry.connect("changed", self.on_change_text)
         self.color_chooser_button.button.connect("color-set", self.on_change_color)
         self.font_chooser_button.button.connect("font-set", self.on_change_font)
-        self.outline_width.connect("changed", self.on_change_outline_width)
+        self.outline_width.button.connect("value-changed", self.on_change_outline_width)
         self.outline_color_chooser_button.button.connect("color-set", self.on_change_outline_color)
 
     def disconnect_signals(self):
@@ -203,7 +194,7 @@ class LabelRow(Adw.PreferencesRow):
             log.error(f"Failed to disconnect signals. Error: {e}")
 
         try:
-            self.outline_width.disconnect_by_func(self.on_change_outline_width)
+            self.outline_width.button.disconnect_by_func(self.on_change_outline_width)
         except Exception as e:
             log.error(f"Failed to disconnect signals. Error: {e}")
 
@@ -233,6 +224,7 @@ class LabelRow(Adw.PreferencesRow):
         ## Set visibility of revert buttons
         self.text_entry.revert_button.set_visible(use_page_label_properties.get("text", False))
         self.color_chooser_button.revert_button.set_visible(use_page_label_properties.get("color", False))
+        self.outline_width.revert_button.set_visible(use_page_label_properties.get("outline_width", False))
         self.outline_color_chooser_button.revert_button.set_visible(use_page_label_properties.get("outline_color", False))
 
         font_combined = use_page_label_properties.get("font-family", False) and use_page_label_properties.get("font-size", False)
@@ -279,7 +271,7 @@ class LabelRow(Adw.PreferencesRow):
         self.color_chooser_button.button.set_rgba(color)
 
     def set_outline_width(self, outline_width: int):
-        self.outline_width.set_value(outline_width)
+        self.outline_width.button.set_value(outline_width)
 
     def set_outline_color(self, color_values: list):
         if len(color_values) == 3:
@@ -314,10 +306,12 @@ class LabelRow(Adw.PreferencesRow):
         return None, None
 
     def on_change_outline_width(self, _):
-        width = int(self.outline_width.get_value())
+        width = int(self.outline_width.button.get_value())
 
         active_page = gl.app.main_win.get_active_page()
         active_page.set_label_outline_width(identifier=self.active_identifier, state=self.state, label_position=self.key_name, outline_width=width)
+
+        self.outline_width.revert_button.set_visible(True)
 
     def on_change_outline_color(self, _):
         color = self.outline_color_chooser_button.button.get_rgba()
@@ -361,6 +355,12 @@ class LabelRow(Adw.PreferencesRow):
     def on_reset_color(self, button):
         active_page = gl.app.main_win.get_active_page()
         active_page.set_label_font_color(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_color=None)
+
+        button.set_visible(False)
+
+    def on_reset_outline_width(self, button):
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_label_outline_width(identifier=self.active_identifier, state=self.state, label_position=self.key_name, outline_width=None)
 
         button.set_visible(False)
 
@@ -408,6 +408,17 @@ class FontChooserButton(Gtk.Box):
         super().__init__(css_classes=["linked"], **kwargs)
 
         self.button = Gtk.FontButton()
+        self.revert_button = RevertButton()
+
+        self.append(self.button)
+        self.append(self.revert_button)
+
+
+class SpinButton(Gtk.Box):
+    def __init__(self, start: float, end: float, step: float, **kwargs):
+        super().__init__(css_classes=["linked"], **kwargs)
+
+        self.button = Gtk.SpinButton.new_with_range(start, end, step)
         self.revert_button = RevertButton()
 
         self.append(self.button)

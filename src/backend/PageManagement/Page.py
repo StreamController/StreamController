@@ -326,6 +326,23 @@ class Page:
 
         return True
     
+    def update_inputs_with_actions_from_plugin(self, plugin_id: str):
+        # plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
+        for input_type in list(self.action_objects.keys()):
+            for json_identifier in list(self.action_objects[input_type].keys()):
+                for state in list(self.action_objects[input_type][json_identifier].keys()):
+                    for index in list(self.action_objects[input_type][json_identifier][state].keys()):
+                        action_base = self.action_objects[input_type][json_identifier][state][index]
+                        action_id = action_base.action_id
+                        print()
+
+                        if gl.plugin_manager.get_plugin_id_from_action_id(action_id) == plugin_id:
+                            identifier = Input.FromTypeIdentifier(input_type, json_identifier)
+
+                            c_input = self.deck_controller.get_input(identifier)
+                            if c_input.state == int(state):
+                                c_input.update()
+    
 #    def get_keys_with_plugin(self, plugin_id: str):
 #        plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
 #        if plugin_obj is None:
@@ -818,6 +835,7 @@ class Page:
 class NoActionHolderFound:
     def __init__(self, id: str, state: int, identifier: InputIdentifier = None):
         self.id = id
+        self.action_id = id
         self.type = type
         self.identifier = identifier
         self.state = state
@@ -826,6 +844,7 @@ class NoActionHolderFound:
 class ActionOutdated:
     def __init__(self, id: str, state: int, identifier: InputIdentifier = None):
         self.id = id
+        self.action_id = id
         self.type = type
         self.identifier = identifier
         self.state = state

@@ -852,6 +852,9 @@ class StoreBackend:
             if module.startswith(base_module):
                 del sys.modules[module]
 
+        # for controller in gl.deck_manager.deck_controller:
+            # controller.active_page.update_inputs_with_actions_from_plugin(plugin_id)
+
         ## Update page
         for controller in gl.deck_manager.deck_controller:
             ## Checks required to prevent errors after auto-update

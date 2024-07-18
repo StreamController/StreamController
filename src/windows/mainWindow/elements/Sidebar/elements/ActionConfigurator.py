@@ -270,7 +270,7 @@ class RemoveButton(Gtk.Button):
         load = not page.has_key_an_image_controlling_action(self.action.input_ident, self.action.state)
         load = True # TODO
         if load:
-            page.reload_similar_pages(identifier=self.action.input_ident)
+            page.reload_similar_pages(identifier=self.action.input_ident, reload_self=True)
 
         # Destroy the actual action
         if hasattr(self.action, "on_remove"):

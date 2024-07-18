@@ -121,15 +121,18 @@ class DescriptionRow(Adw.PreferencesRow):
                                            margin_start=15, margin_top=15, margin_end=15)
         self.main_box.append(self.description_label)
 
-    def set_description(self, description:dict):
+    def set_description(self, description:str):
         if description in [None, ""]:
             self.description_label.set_text("N/A")
         else:
-            locale = gl.lm.language
-            if not locale in description:
-                locale = gl.lm.FALLBACK_LOCALE
+            if isinstance(description, dict):
+                locale = gl.lm.language
+                if not locale in description:
+                    locale = gl.lm.FALLBACK_LOCALE
 
-            self.description_label.set_text(description[locale])
+                self.description_label.set_text(description[locale])
+            else:
+                self.description_label.set_text(description)
 
     def set_title(self, title:str):
         if title in [None, ""]:

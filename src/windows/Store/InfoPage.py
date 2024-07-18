@@ -28,6 +28,9 @@ if TYPE_CHECKING:
 
 from GtkHelper.GtkHelper import AttributeRow, OriginalURL
 
+# Import globals
+import globals as gl
+
 class InfoPage(Gtk.Box):
     def __init__(self, store_page:"StorePage"):
         super().__init__(orientation=Gtk.Orientation.VERTICAL,
@@ -118,10 +121,15 @@ class DescriptionRow(Adw.PreferencesRow):
                                            margin_start=15, margin_top=15, margin_end=15)
         self.main_box.append(self.description_label)
 
-    def set_description(self, description:str):
+    def set_description(self, description:dict):
         if description in [None, ""]:
-            description = "N/A"
-        self.description_label.set_text(description)
+            self.description_label.set_text("N/A")
+        else:
+            locale = gl.lm.language
+            if not locale in description:
+                locale = gl.lm.FALLBACK_LOCALE
+
+            self.description_label.set_text(description[locale])
 
     def set_title(self, title:str):
         if title in [None, ""]:

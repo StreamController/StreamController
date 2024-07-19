@@ -457,7 +457,7 @@ class DeckController:
         self.event_callback(ident, *args, **kwargs)
 
     def touchscreen_event_callback(self, deck, *args, **kwargs):
-        ident = Input.Touchscreen("touchscreen")
+        ident = Input.Touchscreen("sd-plus")
         self.event_callback(ident, *args, **kwargs)
 
 
@@ -1168,15 +1168,19 @@ class LabelManager:
                 "text": False,
                 "color": False,
                 "font-family": False,
-                "font-size": False
+                "font-size": False,
+                "outline_width": False,
+                "outline_color": False,
             }
         return {
             "text": self.page_labels[position].text is not None,
             "color": self.page_labels[position].color is not None,
             "font-family": self.page_labels[position].font_name is not None,
-            "font-size": self.page_labels[position].font_size is not None
+            "font-size": self.page_labels[position].font_size is not None,
+            "outline_width": self.page_labels[position].outline_width is not None,
+            "outline_color": self.page_labels[position].outline_color is not None,
         }
-    
+
     def get_composed_label(self, position: str) -> str:
         use_page_label_properties = self.get_use_page_label_properties(position)
         
@@ -1193,8 +1197,13 @@ class LabelManager:
                 label.font_name = page_label.font_name
             if use_page_label_properties["font-size"]:
                 label.font_size = page_label.font_size
+            if use_page_label_properties["outline_width"]:
+                label.outline_width = page_label.outline_width
+            if use_page_label_properties["outline_color"]:
+                label.outline_color = page_label.outline_color
 
-        return self.inject_defaults(label)
+        injected = self.inject_defaults(label)
+        return self.fix_invalid(injected)
     
     def get_composed_labels(self) -> dict:
         composed_labels = {}
@@ -1209,12 +1218,21 @@ class LabelManager:
         if label.color is None:
             label.color = [255, 255, 255, 255]
         if label.font_name is None:
-            label.font_name = ""
+            label.font_name = gl.fallback_font
         if label.font_size is None:
             label.font_size = 15
+        if label.outline_width is None:
+            label.outline_width = 2
+        if label.outline_color is None:
+            label.outline_color = [0, 0, 0, 255]
 
         return label
+    
+    def fix_invalid(self, label: "KeyLabel"):
+        if not isinstance(label.text, str):
+            label.text = str(label.text)
 
+        return label
 
     def update_label(self, position: str):
         self.controller_input.update()
@@ -1232,24 +1250,23 @@ class LabelManager:
             color = tuple(labels[label].color)
             font_size = labels[label].font_size
             font = ImageFont.truetype(font_path, font_size)
+            outline_width = labels[label].outline_width
+            outline_color = tuple(labels[label].outline_color)
 
             _, _, w, h = draw.textbbox((0, 0), text, font=font)
 
             if label == "top":
                 position = (image.width / 2, h/2 + 3)
-
-            if label == "center":
+            elif label == "bottom":
+                position = (image.width / 2, image.height - h/2 - 3)
+            else:
                 position = ((image.width - 0) / 2, (image.height - 0) / 2)
 
-            if label == "bottom":
-                position = (image.width / 2, image.height - h/2 - 3)
-
             draw.text(position,
-                        text=text, font=font, anchor="mm", align="center",
-                        fill=color, stroke_width=2,
-                        stroke_fill="black")
-            
-        draw = None
+                      text=text, font=font, anchor="mm", align="center",
+                      fill=color, stroke_width=outline_width,
+                      stroke_fill=outline_color)
+
         del draw
 
         return image.copy()
@@ -1343,6 +1360,9 @@ class LayoutManager:
 
         width, height = background.size
         image_size = (int(width * layout.size), int(height * layout.size))
+
+        if 0 in image_size:
+            return background.copy()
 
         if layout.fill_mode == "stretch":
             image_resized = image.resize(image_size, Image.Resampling.HAMMING)
@@ -1931,7 +1951,9 @@ class ControllerKey(ControllerInput):
                         text=state_dict["labels"][label].get("text"),
                         font_size=state_dict["labels"][label].get("font-size"),
                         font_name=state_dict["labels"][label].get("font-family"),
-                        color=state_dict["labels"][label].get("color")
+                        color=state_dict["labels"][label].get("color"),
+                        outline_width=state_dict["labels"][label].get("outline_width"),
+                        outline_color=state_dict["labels"][label].get("outline_color")
                     )
                     # self.add_label(key_label, position=label, update=False)
                     state.label_manager.set_page_label(label, key_label, update=False)

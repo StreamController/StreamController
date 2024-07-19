@@ -41,6 +41,17 @@
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
+
+    <release version="1.5.0-beta.6" date="2024-07-02">
+      <description translatable="no">
+        <p>Fixes:</p>
+          <ul>
+            <li>Fix: Ignoring choosen brightness for screensaver</li>
+            <li>Fix: Actions cannot change background color</li>
+          </ul>
+      </description>
+  </release>
+    
     <release version="1.5.0-beta.5" date="2024-06-28">
       <description translatable="no">
         <p>Features:</p>
@@ -386,6 +397,7 @@
       <li>Set background images &amp; videos</li>
       <li>Set custom icons</li>
       <li>Automatic page switching (Gnome &amp; Hyprland)</li>
+      <li>Multiple states per key</li>
     </ul>
     <p>
       Official Plugin Features:
@@ -411,6 +423,7 @@
       <li>Stream Deck Mini</li>
       <li>Stream Deck XL</li>
       <li>Stream Deck Pedal</li>
+      <li>Stream Deck Plus</li>
     </ul>
   </description>
 

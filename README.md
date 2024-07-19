@@ -17,6 +17,7 @@ StreamController supports the following Elgato Stream Deck models:
 - Stream Deck Mini
 - Stream Deck XL
 - Stream Deck Pedal
+- Stream Deck Plus
 
 ## Features
 ### Plugins
@@ -30,6 +31,9 @@ Set up a custom screen saver to display a picture or video when your Stream Deck
 
 ### Automatic Page Switching
 Available for GNOME, Hyprland and all X11 desktops, this feature allows you to automatically change your active page based on the active window. For example, you can switch to your favorite music albums when you open Spotify, your projects when you open VSCode, or your favorite websites in Firefox.
+
+## Auto-Lock
+Lock your Stream deck when your system is locked, preventing unwanted use from third parties (available on KDE and GNOME).
 
 ## Installation
 To install StreamController, click the button below or follow the [installation instructions](https://streamcontroller.github.io/docs/latest/installation/):
@@ -46,6 +50,8 @@ StreamController is currently in beta. While core features like actions and page
 
 ## Contributing
 We welcome contributions! Feel free to open pull requests to improve StreamController.
+
+If you're interested in helping with the development of this app, you can contact me on our [Discord server](https://discord.gg/MSyHM8TN3u) to request write access to our [Dev planning board](https://github.com/orgs/StreamController/projects/2). For mor information see [Dev-Planning-Board](Dev-Planning-Board.md).
 
 ### Contributors
 Thank you to all our contributors for your hard work and support!

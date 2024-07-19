@@ -12,6 +12,7 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+from functools import lru_cache
 import hashlib
 import os
 import matplotlib.font_manager
@@ -231,3 +232,31 @@ def add_default_keys(d: dict, keys: list):
         if key not in current_level:
             current_level[key] = {}
         current_level = current_level[key]
+
+@lru_cache()
+def find_fallback_font(fallback="DejaVu Sans"):
+    """
+    TODO: Improve speed
+    """
+    # Find system fonts
+    font_paths = matplotlib.font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
+
+    # Extract font names
+    font_names = []
+    for font in font_paths:
+        try:
+            font_name = matplotlib.font_manager.FontProperties(fname=font).get_name()
+            font_names.append(font_name)
+            if font_name == fallback:
+                break
+        except:
+            pass
+
+    # Check for fallback font
+    if fallback in font_names:
+        return fallback
+    else:
+        if len(font_names) > 0:
+            return font_names[0]
+        else:
+            return

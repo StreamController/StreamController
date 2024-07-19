@@ -37,6 +37,7 @@ import gi
 from gi.repository import GLib
 
 # Import own modules
+from autostart import is_flatpak
 from src.backend.Store.StoreCache import StoreCache
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
@@ -660,6 +661,11 @@ class StoreBackend:
         return extracted_folder_name
     
     async def download_repo(self, repo_url:str, directory:str, commit_sha:str = None, branch_name:str = None):
+        if not is_flatpak() and gl.argparser.parse_args().devel:
+            await self.clone_repo(repo_url, directory, commit_sha, branch_name)
+            return
+
+
         username = self.get_user_name(repo_url)
         projectname = self.get_repo_name(repo_url).lower()
         sha = commit_sha
@@ -736,6 +742,12 @@ class StoreBackend:
         # FIXME: Check if not already added
         await self.subp_call(["git", "config", "--global", "--add", "safe.directory", os.path.abspath(local_path)])
 
+
+        ## Write version
+        path = os.path.join(local_path, "VERSION")
+        with open(path, "w") as f:
+            f.write(commit_sha or branch_name)
+
         # Set repository to the given commit_sha
         if commit_sha is not None:
             await self.os_sys(f"cd '{local_path}' && git reset --hard {commit_sha}")
@@ -744,6 +756,7 @@ class StoreBackend:
         if branch_name is not None:
             await self.os_sys(f"cd '{local_path}' && git switch {branch_name}")
             return
+        
         
     async def install_plugin(self, plugin_data:PluginData, auto_update: bool = False):
         url = plugin_data.github
@@ -839,6 +852,18 @@ class StoreBackend:
             if module.startswith(base_module):
                 del sys.modules[module]
 
+        # for controller in gl.deck_manager.deck_controller:
+            # controller.active_page.update_inputs_with_actions_from_plugin(plugin_id)
+
+        ## Update page
+        for controller in gl.deck_manager.deck_controller:
+            ## Checks required to prevent errors after auto-update
+            if hasattr(controller, "active_page"):
+                if controller.active_page is not None:
+                    # Load action objects
+                    controller.active_page.load_action_objects()
+                    controller.load_page(controller.active_page)
+
     async def install_icon(self, icon_data:IconData):
         icon_path = os.path.join(gl.DATA_PATH, "icons", icon_data.icon_id)
 
@@ -895,7 +920,7 @@ class StoreBackend:
             return plugins_to_update
         for plugin in plugins_to_update:
             try:
-                await self.uninstall_plugin(plugin.plugin_id, remove_from_pages=False, remove_files=False)
+                self.uninstall_plugin(plugin.plugin_id, remove_from_pages=False, remove_files=False)
             except Exception as e:
                 log.error(e)
             await self.install_plugin(plugin)

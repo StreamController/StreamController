@@ -84,7 +84,7 @@ class StreamDeckUIImporter:
                     page["keys"][coords] = {}
 
                     # Choose first state
-                    states = self.export["state"][deck]["buttons"][page_name][button]["states"]
+                    states = self.export["state"][deck]["buttons"][page_name][button].get("states", {})
                     state_map = self.get_state_map(available_states=list(states.keys()))
                     for page_state, export_state in state_map.items():
                         page["keys"][coords].setdefault("states", {})

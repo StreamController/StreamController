@@ -6,6 +6,8 @@ import argparse
 import sys
 from loguru import logger as log
 
+from src.backend.DeckManagement.HelperMethods import find_fallback_font
+
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
 argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
@@ -103,32 +105,15 @@ threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 tray_icon: "TrayIcon" = None
+fallback_font: str = find_fallback_font()
 
-app_version: str = "1.5.0-beta.5" # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.6" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
 <ul>
-    <li>Add option to add custom stores and plugins</li>
-    <li>Add options to control which action should control labels and the image</li>
-    <li>Add state management</li>
-    <li>Add support for the Stream Deck Plus</li>
-    <li>Add key hold event</li>
-    <li>Add EventAssigner</li>
-    <li>Add auto lock support for KDE</li>
-    <li>Download plugins as zip instead of git</li>
-    <li>Create page backups before each launch</li>
-    <li>Add discord link to the onboarding dialog</li>
-    <li>Improve store caching</li>
-    <li>Improve restore from suspend (beta)</li>
-    <li>Ship icons</li>
-    <li>Improve deck detection after reconnection</li>
-    <li>Show progress bar when installing plugins from the onboarding dialog</li>
-    <li>Fix: Plugin wide settings get reset on each update</li>
-    <li>Fix: Potential data loss when saving pages</li>
-    <li>Allow change of data path in the settings</li>
-    <li>Fix: Error for non RGB(A) images</li>
-    <li>Fix: misc bugs</li>
+    <li>Fix: Ignoring choosen brightness for screensaver</li>
+    <li>Fix: Actions cannot change background color</li>
 </ul>
 """

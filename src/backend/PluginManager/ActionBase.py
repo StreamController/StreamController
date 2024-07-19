@@ -1,3 +1,17 @@
+"""
+Author: Core447
+Year: 2024
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+any later version.
+
+This programm comes with ABSOLUTELY NO WARRANTY!
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+"""
 import threading
 import time
 from loguru import logger as log
@@ -166,19 +180,19 @@ class ActionBase(rpyc.Service):
 
     def set_background_color(self, color: list[int] = [255, 255, 255, 255], update: bool = True):
         self.raise_error_if_not_ready()
+
+        if not self.get_is_present(): return
+
         if not self.on_ready_called:
             update = False
 
-        if self.key_index >= self.deck_controller.deck.key_count():
-            return
-        
         state = self.get_state()
         if state is None or state.state != self.state: return
 
         if not hasattr(state, "background_color"):
             return
 
-        self.state.background_color = color
+        state.background_color = color
         if update:
             self.get_input().update()
 
@@ -188,8 +202,9 @@ class ActionBase(rpyc.Service):
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
         try:
-            self.get_input_state().show_error(duration=duration)
-        except AttributeError:
+            self.get_state().show_error(duration=duration)
+        except AttributeError as e:
+            log.error(e)
             pass
 
     def hide_error(self) -> None:
@@ -198,12 +213,13 @@ class ActionBase(rpyc.Service):
         if not self.get_is_present(): return
         if self.get_is_multi_action(): return
         try:
-            self.get_input_state().hide_error()
+            self.get_state().hide_error()
         except AttributeError:
             pass
 
-    def set_label(self, text: str, position: str = "bottom", color: list[int] = None,
-                      font_family: str = None, font_size = None, update: bool = True):
+    def set_label(self, text: str, position: str = "bottom", color: list[int]=None,
+                  font_family: str=None, font_size=None, outline_width: int = None, outline_color: list[int] = None,
+                  update: bool=True):
         self.raise_error_if_not_ready()
 
         if type(self.input_ident) not in [Input.Key, Input.Dial]:
@@ -227,11 +243,15 @@ class ActionBase(rpyc.Service):
         if text is None:
             text = ""
 
+        text = str(text)
+
         self.labels[position] = {
             "text": text,
             "color": color,
             "font-family": font_family,
-            "font-size": font_size
+            "font-size": font_size,
+            "outline_width": outline_width,
+            "outline_color": outline_color,
         }
         
         key_label = KeyLabel(
@@ -240,20 +260,25 @@ class ActionBase(rpyc.Service):
             font_size=font_size,
             font_name=font_family,
             color=color,
+            outline_width=outline_width,
+            outline_color=outline_color
         )
         self.get_state().label_manager.set_action_label(label=key_label, position=position, update=update)
 
     def set_top_label(self, text: str, color: list[int] = None,
-                      font_family: str = None, font_size = None, update: bool = True):
-        self.set_label(text, "top", color, font_family, font_size, update)
+                      font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
+                      update: bool = True):
+        self.set_label(text, "top", color, font_family, font_size, outline_width, outline_color, update)
 
     def set_center_label(self, text: str, color: list[int] = None,
-                      font_family: str = None, font_size = None, update: bool = True):
-        self.set_label(text, "center", color, font_family, font_size, update)
+                      font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
+                      update: bool = True):
+        self.set_label(text, "center", color, font_family, font_size, outline_width, outline_color, update)
 
     def set_bottom_label(self, text: str, color: list[int] = None,
-                      font_family: str = None, font_size = None, update: bool = True):
-        self.set_label(text, "bottom", color, font_family, font_size, update)
+                      font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
+                      update: bool = True):
+        self.set_label(text, "bottom", color, font_family, font_size, outline_width, outline_color, update)
 
     def on_labels_changed_in_ui(self):
         # TODO
@@ -310,6 +335,7 @@ class ActionBase(rpyc.Service):
     def get_is_present(self):
         if self.page is None: return False
         if self.page.deck_controller.active_page is not self.page: return False
+        if self.page.deck_controller.screen_saver.showing: return False
         # if self.state != self.get_state().state: return False #TODO: Check for touchscreen and dial states
         return self in self.page.get_all_actions()
     
@@ -403,7 +429,7 @@ class ActionBase(rpyc.Service):
         if open_in_terminal:
             command = "gnome-terminal -- bash -c '"
             if venv_path is not None:
-                command += "source {venv_path}/bin/activate && "
+                command += f"source {venv_path}/bin/activate && "
             command += f"python3 {backend_path} --port={port}; exec $SHELL'"
         else:
             command = ""

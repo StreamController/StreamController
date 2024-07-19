@@ -53,6 +53,10 @@ class NoDecksError(Gtk.Box):
         self.add_button.connect("clicked", self.on_add_click)
         self.append(self.add_button)
 
+        self.no_decks_link = Gtk.Label(label='<a href="https://core447.com/streamcontroller/docs/latest/common_problems/#1-no-decks-found">Checkout Common Problems</a>',
+                                  use_markup=True, margin_top=12)
+        self.append(self.no_decks_link)
+
     def on_add_click(self, button):
         self.settings = Settings()
         self.settings.set_visible_page(self.settings.dev_page)

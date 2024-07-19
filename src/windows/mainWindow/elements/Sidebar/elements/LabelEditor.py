@@ -125,17 +125,19 @@ class LabelRow(Adw.PreferencesRow):
                                                     margin_bottom=3, visible=False)
         self.main_box.append(self.controlled_by_action_label)
 
-        self.text_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.main_box.append(self.text_box)
-
         self.text_view = TextView(placeholder=gl.lm.get("label-editor-placeholder-text"))
-        self.text_view.set_margin_end(5)
         # self.text_view.entry.connect("changed", self.on_change_text)
-        self.text_box.append(self.text_view)
+        self.main_box.append(self.text_view)
+
+        self.color_chooser_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
+        self.main_box.append(self.color_chooser_box)
+
+        self.color_chooser_label = Gtk.Label(label=gl.lm.get("label-editor-color-chooser-label"), xalign=0, hexpand=True, margin_start=2)
+        self.color_chooser_box.append(self.color_chooser_label)
 
         self.color_chooser_button = ColorChooserButton()
         # self.color_chooser_button.button.connect("color-set", self.on_change_color)
-        self.text_box.append(self.color_chooser_button)
+        self.color_chooser_box.append(self.color_chooser_button)
 
         self.font_chooser_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
         self.main_box.append(self.font_chooser_box)
@@ -231,8 +233,7 @@ class LabelRow(Adw.PreferencesRow):
             iter = buffer.get_iter_at_offset(pos)
             buffer.place_cursor(iter)
 
-        hide_details = composed_label.text.strip() == ""
-        self.font_chooser_box.set_visible(not hide_details)
+        self.update_details_visibility(text=composed_label.text)
 
         self.set_color(composed_label.color)
 
@@ -308,8 +309,12 @@ class LabelRow(Adw.PreferencesRow):
 
         self.text_view.set_revert_visible(True)
 
+        self.update_details_visibility(text=text)
+
+    def update_details_visibility(self, text: str = ""):
         hide_details = text.strip() == ""
         self.font_chooser_box.set_visible(not hide_details)
+        self.color_chooser_box.set_visible(not hide_details)
 
 class PlaceholderTextView(Gtk.Overlay):
     def __init__(self, placeholder: str = "", hexpand: bool = True):

@@ -125,7 +125,7 @@ class PluginPreview(StorePreview):
 
         # Update info page
         self.plugin_page.info_page.set_name(self.plugin_data.plugin_name)
-        self.plugin_page.info_page.set_description(gl.lm.get_custom_translation(self.plugin_data.descriptions))
+        self.plugin_page.info_page.set_description(self.plugin_data.description)
         self.plugin_page.info_page.set_author(self.plugin_data.author)
         self.plugin_page.info_page.set_version(self.plugin_data.plugin_version)
 

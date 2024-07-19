@@ -123,7 +123,7 @@ class IconPreview(StorePreview):
 
         # Update info page
         self.icon_page.info_page.set_name(self.icon_data.icon_name)
-        self.icon_page.info_page.set_description(self.icon_data.descriptions)
+        self.icon_page.info_page.set_description(self.icon_data.description)
         self.icon_page.info_page.set_author(self.icon_data.author)
         self.icon_page.info_page.set_version(self.icon_data.icon_version)
 

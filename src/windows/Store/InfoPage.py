@@ -28,6 +28,9 @@ if TYPE_CHECKING:
 
 from GtkHelper.GtkHelper import AttributeRow, OriginalURL
 
+# Import globals
+import globals as gl
+
 class InfoPage(Gtk.Box):
     def __init__(self, store_page:"StorePage"):
         super().__init__(orientation=Gtk.Orientation.VERTICAL,

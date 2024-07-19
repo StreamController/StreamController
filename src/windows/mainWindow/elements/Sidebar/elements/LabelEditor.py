@@ -146,27 +146,23 @@ class LabelRow(Adw.PreferencesRow):
         self.font_chooser_button = FontChooserButton()
         self.font_chooser_box.append(self.font_chooser_button)
 
-        self.outline_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
-        self.main_box.append(self.outline_box)
+        self.outline_width_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
+        self.main_box.append(self.outline_width_box)
 
         self.outline_width_label = Gtk.Label(label=gl.lm.get("label-editor-outline-width-label"), xalign=0, hexpand=True, margin_start=2)
-        self.outline_width_label.set_hexpand(False)
-        self.outline_width_label.set_margin_end(5)
-        self.outline_box.append(self.outline_width_label)
+        self.outline_width_box.append(self.outline_width_label)
 
         self.outline_width = SpinButton(0, 10, 1)
-        self.outline_width.set_hexpand(False)
-        self.outline_box.append(self.outline_width)
+        self.outline_width_box.append(self.outline_width)
+
+        self.outline_color_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
+        self.main_box.append(self.outline_color_box)
 
         self.outline_color_label = Gtk.Label(label=gl.lm.get("label-editor-outline-color-label"), xalign=0, hexpand=True, margin_start=2)
-        self.outline_color_label.set_hexpand(True)
-        self.outline_color_label.set_margin_end(5)
-        self.outline_color_label.set_halign(Gtk.Align.END)
-        self.outline_box.append(self.outline_color_label)
+        self.outline_color_box.append(self.outline_color_label)
 
         self.outline_color_chooser_button = ColorChooserButton()
-        self.outline_color_chooser_button.set_hexpand(False)
-        self.outline_box.append(self.outline_color_chooser_button)
+        self.outline_color_box.append(self.outline_color_chooser_button)
 
         ## Connect reset buttons
         self.text_view.revert_button.connect("clicked", self.on_reset_text)
@@ -397,7 +393,8 @@ class LabelRow(Adw.PreferencesRow):
         hide_details = text.strip() == ""
         self.color_chooser_box.set_visible(not hide_details)
         self.font_chooser_box.set_visible(not hide_details)
-        self.outline_box.set_visible(not hide_details)
+        self.outline_width_box.set_visible(not hide_details)
+        self.outline_color_box.set_visible(not hide_details)
 
 class PlaceholderTextView(Gtk.Overlay):
     def __init__(self, placeholder: str = "", hexpand: bool = True):

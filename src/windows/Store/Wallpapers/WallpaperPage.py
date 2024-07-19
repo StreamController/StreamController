@@ -117,7 +117,7 @@ class WallpaperPreview(StorePreview):
 
         # Update info page
         self.wallpaper_page.info_page.set_name(self.wallpaper_data.get("wallpaper_name"))
-        self.wallpaper_page.info_page.set_description(self.wallpaper_data.get("description"))
+        self.wallpaper_page.info_page.set_description(self.wallpaper_data.description)
         self.wallpaper_page.info_page.set_author(self.wallpaper_data.get("user_name"))
         self.wallpaper_page.info_page.set_version(self.wallpaper_data.get("wallpaper_version"))
 

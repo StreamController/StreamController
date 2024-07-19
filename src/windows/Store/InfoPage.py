@@ -123,16 +123,8 @@ class DescriptionRow(Adw.PreferencesRow):
 
     def set_description(self, description:str):
         if description in [None, ""]:
-            self.description_label.set_text("N/A")
-        else:
-            if isinstance(description, dict):
-                locale = gl.lm.language
-                if not locale in description:
-                    locale = gl.lm.FALLBACK_LOCALE
-
-                self.description_label.set_text(description[locale])
-            else:
-                self.description_label.set_text(description)
+            description = "N/A"
+        self.description_label.set_text(description)
 
     def set_title(self, title:str):
         if title in [None, ""]:

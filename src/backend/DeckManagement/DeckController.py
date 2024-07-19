@@ -2117,6 +2117,12 @@ class ControllerTouchScreen(ControllerInput):
         return active_state.get_current_image()
 
     def event_callback(self, event_type, value):
+        screensaver_was_showing = self.deck_controller.screen_saver.showing
+        if event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG, TouchscreenEventType.DRAG):
+            self.deck_controller.screen_saver.on_key_change()
+        if screensaver_was_showing:
+            return
+        
         active_state = self.get_active_state()
         if event_type == TouchscreenEventType.DRAG:
             # Check if from left to right or the other way
@@ -2177,6 +2183,15 @@ class ControllerDial(ControllerInput):
         return map(str, range(deck.dial_count()))
 
     def event_callback(self, event_type, value):
+        screensaver_was_showing = self.deck_controller.screen_saver.showing
+        if event_type == DialEventType.TURN:
+            self.deck_controller.screen_saver.on_key_change()
+        if event_type == DialEventType.PUSH and value:
+            # Only on push, not on hold to allow actions to enable the screensaver without directly causing it to wake up again
+            self.deck_controller.screen_saver.on_key_change()
+        if screensaver_was_showing:
+            return
+        
         active_state = self.get_active_state()
         if event_type == DialEventType.PUSH:
             if value:

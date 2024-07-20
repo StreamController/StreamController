@@ -552,10 +552,10 @@ class DeckController:
         def set_from_page(self: "DeckController"):
             self.set_brightness(page.dict.get("brightness", {}).get("value", 75))
 
-        if "brightness" in deck_settings:
-            set_from_deck_settings(self)
-        else:
+        if page.dict.get("brightness", {}).get("overwrite", False):
             set_from_page(self)
+        else:
+            set_from_deck_settings(self)
 
     @log.catch
     def load_screensaver(self, page: Page):

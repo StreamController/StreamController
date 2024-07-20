@@ -9,7 +9,7 @@ build-commands:
   --prefix=${FLATPAK_DEST} --no-build-isolation annotated-types async-lru cairocffi
   CairoSVG certifi cffi charset-normalizer click colorama contourpy cssselect2 cycler
   dbus-python decorator defusedxml distlib dnspython evdev filelock fonttools fuzzywuzzy
-  get-video-properties gitdb idna imageio imageio-ffmpeg indexed-bzip2 install Jinja2
+  get-video-properties gitdb idna imageio imageio-ffmpeg indexed-bzip2 Jinja2
   joblib kiwisolver Levenshtein linkify-it-py loguru markdown-it-py MarkupSafe matplotlib
   mdit-py-plugins mdurl memray natsort nltk numpy opencv-python
   packaging pillow pip-review pipenv platformdirs plumbum proglog psutil
@@ -183,9 +183,6 @@ sources:
   sha256: ed432e053af992afe7bab2efcc0700d67ff4df00c99163f0987940c7f7328151
   only-arches:
   - x86_64
-- type: file
-  url: https://files.pythonhosted.org/packages/4d/c8/8cbca135f9e167810756ea2bc34b028501936675fcbd7dadccf752fa4622/install-1.3.5-py3-none-any.whl
-  sha256: 0d3fadf4aa62c95efe8d34757c8507eb46177f86c016c21c6551eafc6a53d5a9
 - type: file
   url: https://files.pythonhosted.org/packages/10/40/d551139c85db202f1f384ba8bcf96aca2f329440a844f924c8a0040b6d02/joblib-1.3.2-py3-none-any.whl
   sha256: ef4331c65f239985f3f2220ecc87db222f08fd22097a3dd5698f693875f8cbb9

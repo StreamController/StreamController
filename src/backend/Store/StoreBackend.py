@@ -28,7 +28,6 @@ import time
 import os
 import uuid
 import shutil
-from install import install
 from packaging import version
 import urllib.request
 

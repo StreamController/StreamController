@@ -134,7 +134,7 @@ class Brightness(Adw.PreferencesRow):
         # Save
         deck_controller.active_page.save()
         # Reload
-        deck_controller.load_page(deck_controller.active_page, load_screensaver=False, load_background=False, load_keys=False)
+        deck_controller.load_page(deck_controller.active_page, load_screensaver=False, load_background=False, load_inputs=False, allow_reload=True)
 
     def load_defaults_from_page(self):
         if not self.get_mapped():

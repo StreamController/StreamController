@@ -570,7 +570,7 @@ class Page:
         return pages
     
     def reload_similar_pages(self, identifier: InputIdentifier = None, reload_self: bool = False,
-                             load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_keys: bool = True,
+                             load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_inputs: bool = True,
                              load_dials: bool = True, load_touchscreens: bool = True):
         
         self.save()

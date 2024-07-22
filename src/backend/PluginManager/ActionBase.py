@@ -269,7 +269,7 @@ class ActionBase(rpyc.Service):
             outline_width=outline_width,
             outline_color=outline_color,
             font_weight=font_weight,
-            style=font_style
+            font_style=font_style
         )
         self.get_state().label_manager.set_action_label(label=key_label, position=position, update=update)
 
@@ -277,19 +277,19 @@ class ActionBase(rpyc.Service):
                       font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
                       font_weight: int = None, font_style: str = None,
                       update: bool = True):
-        self.set_label(text, "top", color, font_family, font_size, outline_width, outline_color, update)
+        self.set_label(text, "top", color, font_family, font_size, outline_width, outline_color, font_weight, font_style, update)
 
     def set_center_label(self, text: str, color: list[int] = None,
                       font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
                       font_weight: int = None, font_style: str = None,
                       update: bool = True):
-        self.set_label(text, "center", color, font_family, font_size, outline_width, outline_color, update)
+        self.set_label(text, "center", color, font_family, font_size, outline_width, outline_color, font_weight, font_style, update)
 
     def set_bottom_label(self, text: str, color: list[int] = None,
                       font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
                       font_weight: int = None, font_style: str = None,
                       update: bool = True):
-        self.set_label(text, "bottom", color, font_family, font_size, outline_width, outline_color, update)
+        self.set_label(text, "bottom", color, font_family, font_size, outline_width, outline_color, font_weight, font_style, update)
 
     def on_labels_changed_in_ui(self):
         # TODO

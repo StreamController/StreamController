@@ -740,6 +740,12 @@ class Page:
 
     def get_label_font_size(self, identifier: InputIdentifier, state: int, label_position: str) -> int:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-size"])
+    
+    def get_label_font_style(self, identifier: InputIdentifier, state: int, label_position: str) -> int:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-style"])
+    
+    def get_label_font_weight(self, identifier: InputIdentifier, state: int, label_position: str) -> int:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-weight"])
 
     def set_label_font_size(self, identifier: InputIdentifier, state: int, label_position: str, font_size: int, update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
@@ -750,6 +756,20 @@ class Page:
         label_manager = self.get_label_manager(identifier, state)
         if label_manager is not None:
             label_manager.page_labels[label_position].font_size = font_size
+            label_manager.update_label_editor()
+
+        if update:
+            self.update_input(identifier, state)
+
+    def set_label_font_weight(self, identifier: InputIdentifier, state: int, label_position: str, font_weight: int, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
+            key_state.label_manager.page_labels[label_position].font_weight = font_weight
+
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-weight"], font_weight)
+
+        label_manager = self.get_label_manager(identifier, state)
+        if label_manager is not None:
+            label_manager.page_labels[label_position].font_weight = font_weight
             label_manager.update_label_editor()
 
         if update:
@@ -792,6 +812,20 @@ class Page:
         label_manager = self.get_label_manager(identifier, state)
         if label_manager is not None:
             label_manager.page_labels[label_position].outline_color = outline_color
+            label_manager.update_label_editor()
+
+        if update:
+            self.update_input(identifier, state)
+
+    def set_label_font_style(self, identifier: InputIdentifier, state: int, label_position: str, font_style: str, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
+            key_state.label_manager.page_labels[label_position].style = font_style
+
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "style"], font_style)
+
+        label_manager = self.get_label_manager(identifier, state)
+        if label_manager is not None:
+            label_manager.page_labels[label_position].style = font_style
             label_manager.update_label_editor()
 
         if update:

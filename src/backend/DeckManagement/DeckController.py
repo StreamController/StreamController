@@ -1124,10 +1124,7 @@ class LabelManager:
     def set_page_label(self, position: str, label: "KeyLabel", update: bool = True):
         if label is None:
             label = self.page_labels[position]
-            label.text = None
-            label.color = None
-            label.font_name = None
-            label.font_size = None
+            label.clear_values()
         else:
             self.page_labels[position] = label
         
@@ -1137,10 +1134,8 @@ class LabelManager:
     def set_action_label(self, position: str, label: "KeyLabel", update: bool = True):
         if label is None:
             label = self.action_labels[position]
-            label.text = None
-            label.color = None
-            label.font_name = None
-            label.font_size = None
+            label.clear_values()
+
         else:
             self.action_labels[position] = label
 
@@ -1169,6 +1164,8 @@ class LabelManager:
                 "color": False,
                 "font-family": False,
                 "font-size": False,
+                "font-weight": False,
+                "font-style": False,
                 "outline_width": False,
                 "outline_color": False,
             }
@@ -1177,6 +1174,8 @@ class LabelManager:
             "color": self.page_labels[position].color is not None,
             "font-family": self.page_labels[position].font_name is not None,
             "font-size": self.page_labels[position].font_size is not None,
+            "font-weight": self.page_labels[position].font_weight is not None,
+            "font-style": self.page_labels[position].style is not None,
             "outline_width": self.page_labels[position].outline_width is not None,
             "outline_color": self.page_labels[position].outline_color is not None,
         }
@@ -1197,6 +1196,10 @@ class LabelManager:
                 label.font_name = page_label.font_name
             if use_page_label_properties["font-size"]:
                 label.font_size = page_label.font_size
+            if use_page_label_properties["font-weight"]:
+                label.font_weight = page_label.font_weight
+            if use_page_label_properties["font-style"]:
+                label.style = page_label.style
             if use_page_label_properties["outline_width"]:
                 label.outline_width = page_label.outline_width
             if use_page_label_properties["outline_color"]:
@@ -1221,6 +1224,10 @@ class LabelManager:
             label.font_name = gl.fallback_font
         if label.font_size is None:
             label.font_size = 15
+        if label.font_weight is None:
+            label.font_weight = 400
+        if label.style is None:
+            label.style = "normal"
         if label.outline_width is None:
             label.outline_width = 2
         if label.outline_color is None:

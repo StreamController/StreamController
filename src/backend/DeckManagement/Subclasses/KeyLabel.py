@@ -17,6 +17,8 @@ from PIL import Image
 from dataclasses import dataclass
 import matplotlib.font_manager
 
+import globals as gl
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.DeckManagement.DeckController import ControllerKey
@@ -27,9 +29,33 @@ class KeyLabel:
     text: str = None
     font_size: int = None
     font_name: str = None
+    font_weight: int = None
+    style: str = None # normal, oblique, italic
     color: list[int] = None
     outline_width: int = None
     outline_color: list[int] = None
 
     def get_font_path(self) -> str:
-        return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=self.font_name))
+        font_name = self.font_name
+        if self.font_name in ["", None]:
+            font_name = gl.fallback_font
+
+        return matplotlib.font_manager.findfont(
+            matplotlib.font_manager.FontProperties(
+                family=font_name,
+                weight=self.font_weight,
+                size=self.font_size
+            )
+        )
+
+
+        # return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=font_name))
+
+    def clear_values(self):
+        self.text = None
+        self.font_size = None
+        self.font_name = None
+        self.font_weight = None
+        self.color = None
+        self.outline_width = None
+        self.outline_color = None

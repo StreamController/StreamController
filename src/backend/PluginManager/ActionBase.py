@@ -219,6 +219,7 @@ class ActionBase(rpyc.Service):
 
     def set_label(self, text: str, position: str = "bottom", color: list[int]=None,
                   font_family: str=None, font_size=None, outline_width: int = None, outline_color: list[int] = None,
+                  font_weight: int = None, font_style: str = None,
                   update: bool=True):
         self.raise_error_if_not_ready()
 
@@ -234,6 +235,9 @@ class ActionBase(rpyc.Service):
         if not self.on_ready_called:
             update = False
             update = True #FIXME
+
+        if font_style not in ["normal", "italic", "oblique", None]:
+            raise ValueError("font_style must be one of ['normal', 'italic', 'oblique', None]")
 
         label_index = 0 if position == "top" else 1 if position == "center" else 2
 
@@ -252,6 +256,8 @@ class ActionBase(rpyc.Service):
             "font-size": font_size,
             "outline_width": outline_width,
             "outline_color": outline_color,
+            "font-weight": font_weight,
+            "font-style": font_style
         }
         
         key_label = KeyLabel(
@@ -261,22 +267,27 @@ class ActionBase(rpyc.Service):
             font_name=font_family,
             color=color,
             outline_width=outline_width,
-            outline_color=outline_color
+            outline_color=outline_color,
+            font_weight=font_weight,
+            font_style=font_style
         )
         self.get_state().label_manager.set_action_label(label=key_label, position=position, update=update)
 
     def set_top_label(self, text: str, color: list[int] = None,
                       font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
+                      font_weight: int = None, font_style: str = None,
                       update: bool = True):
         self.set_label(text, "top", color, font_family, font_size, outline_width, outline_color, update)
 
     def set_center_label(self, text: str, color: list[int] = None,
                       font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
+                      font_weight: int = None, font_style: str = None,
                       update: bool = True):
         self.set_label(text, "center", color, font_family, font_size, outline_width, outline_color, update)
 
     def set_bottom_label(self, text: str, color: list[int] = None,
                       font_family: str = None, font_size = None, outline_width: int = None, outline_color: list[int] = None,
+                      font_weight: int = None, font_style: str = None,
                       update: bool = True):
         self.set_label(text, "bottom", color, font_family, font_size, outline_width, outline_color, update)
 

@@ -257,7 +257,7 @@ class LabelRow(Adw.PreferencesRow):
         self.set_outline_width(composed_label.outline_width)
         self.set_outline_color(composed_label.outline_color)
 
-        self.font_chooser_button.button.set_font(composed_label.font_name + " " + str(composed_label.font_size) + "px")
+        self.font_chooser_button.button.set_font(f"{composed_label.font_name} {composed_label.style} {composed_label.font_size}px")
 
         self.connect_signals()
 
@@ -326,12 +326,28 @@ class LabelRow(Adw.PreferencesRow):
         self.outline_color_chooser_button.revert_button.set_visible(True)
 
     def on_change_font(self, button):
-        font = self.font_chooser_button.button.get_font()
-        name, size = self.parse_font_description(font)
+        # font = self.font_chooser_button.button.get_font()
+        # name, size = self.parse_font_description(font)
+
+        font_desc = self.font_chooser_button.button.get_font_desc()
+        name = font_desc.get_family()
+        size = font_desc.get_size() / Pango.SCALE
+        weight = int(font_desc.get_weight())
+        style = font_desc.get_style()
+
+        if style == Pango.Style.ITALIC:
+            style = "italic"
+        elif style == Pango.Style.OBLIQUE:
+            style = "oblique"
+        else:
+            style = "normal"
+
 
         active_page = gl.app.main_win.get_active_page()
         active_page.set_label_font_family(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_family=name, update=False)
-        active_page.set_label_font_size(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_size=size, update=True)
+        active_page.set_label_font_style(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_style=style, update=False)
+        active_page.set_label_font_size(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_size=size, update=False)
+        active_page.set_label_font_weight(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_weight=weight, update=True)
 
         self.font_chooser_button.revert_button.set_visible(True)
 

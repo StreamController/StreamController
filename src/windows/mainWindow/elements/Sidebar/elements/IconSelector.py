@@ -39,6 +39,8 @@ class IconSelector(Gtk.Box):
         self.sidebar = sidebar
         self.active_identifier: InputIdentifier = None
         self.active_state: int = None
+
+        self.latest_task_id: int = None
         self.build()
 
     def build(self):
@@ -81,10 +83,25 @@ class IconSelector(Gtk.Box):
         self.overlay.set_clip_overlay(self.remove_button, True)
 
 
+    def get_new_task_id(self):
+        if self.latest_task_id is None:
+            return 0
+
+        return self.latest_task_id + 1
 
     def set_image(self, image):
         pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
-        GLib.idle_add(self.image.set_pixbuf, pixbuf, priority=GLib.PRIORITY_HIGH)
+        self.latest_task_id = self.get_new_task_id()
+        GLib.idle_add(self.set_pixbuf_and_del, pixbuf, self.latest_task_id, priority=GLib.PRIORITY_HIGH)
+
+    def set_pixbuf_and_del(self, pixbuf, task_id: int = None):
+        if task_id is not None:
+            if task_id != self.latest_task_id:
+                log.debug("IconSelector: Abort task")
+                return
+        self.image.set_pixbuf(pixbuf)
+        pixbuf = None
+        del pixbuf
 
     def on_hover_enter(self, *args):
         self.label.set_css_classes(["icon-selector-hint-label-visible"])

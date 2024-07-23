@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import threading
 import time
 import gi
+from loguru import logger as log
 
 from PIL import Image
 
@@ -229,6 +230,8 @@ class ScreenBarImage(Gtk.Picture):
         self.on_map_tasks: list[callable] = []
         self.connect("map", self.on_map)
 
+        self.latest_task_id: int = None
+
 
         # screen_image = self.get_controller_touch_screen().get_current_image()
         # self.set_image(screen_image)
@@ -245,6 +248,12 @@ class ScreenBarImage(Gtk.Picture):
     def get_controller_dial(self, identifier: InputIdentifier) -> "ControllerDial":
         controller = gl.app.main_win.get_active_controller()
         return controller.get_input(identifier)
+    
+    def get_new_task_id(self):
+        if self.latest_task_id is None:
+            return 0
+
+        return self.latest_task_id + 1
         
     def set_image(self, image: Image.Image):
         if not self.get_mapped():
@@ -256,7 +265,8 @@ class ScreenBarImage(Gtk.Picture):
         thumbnail.thumbnail((width, width/8))
 
         pixbuf = image2pixbuf(thumbnail.convert("RGBA"), force_transparency=True)
-        GLib.idle_add(self.set_pixbuf_and_del, pixbuf, priority=GLib.PRIORITY_HIGH)
+        self.latest_task_id = self.get_new_task_id()
+        GLib.idle_add(self.set_pixbuf_and_del, pixbuf, self.latest_task_id, priority=GLib.PRIORITY_HIGH)
 
         thumbnail.close()
         del thumbnail
@@ -271,8 +281,12 @@ class ScreenBarImage(Gtk.Picture):
 
             dial_image = image.crop(dial_image_area)
 
-            gl.app.main_win.sidebar.dial_editor.icon_selector.set_image(dial_image)
+            gl.app.main_win.sidebar.key_editor.icon_selector.set_image(dial_image)
 
-    def set_pixbuf_and_del(self, pixbuf):
+    def set_pixbuf_and_del(self, pixbuf, task_id: int = None):
+        if task_id is not None:
+            if task_id != self.latest_task_id:
+                log.debug("Screenbar: Abort task")
+                return
         self.set_pixbuf(pixbuf)
         del pixbuf

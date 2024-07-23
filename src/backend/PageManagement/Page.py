@@ -118,7 +118,10 @@ class Page:
     def load_action_objects(self):
         new_action_objects = {}
 
-        for input_type in Input.KeyTypes:
+        for input_type in Input.All:
+            if len(self.deck_controller.inputs[input_type]) == 0:
+                continue
+            input_type = input_type.input_type
             for key in self.dict.get(input_type, {}):
                 for state in self.dict[input_type][key].get("states", {}):
                     try:

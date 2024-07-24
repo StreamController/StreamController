@@ -44,7 +44,8 @@ class KeyLabel:
             matplotlib.font_manager.FontProperties(
                 family=font_name,
                 weight=self.font_weight,
-                size=self.font_size
+                size=self.font_size,
+                style=self.style
             )
         )
 

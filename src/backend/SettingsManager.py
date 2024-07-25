@@ -20,6 +20,10 @@ from loguru import logger as log
 import globals as gl
 
 class SettingsManager:
+    def __init__(self):
+        self.font_defaults: dict = {} # Used by the LabelManager to get the default font settings
+        self.load_font_defaults()
+
     def load_settings_from_file(self, file_path: str) -> dict:
         if not os.path.exists(file_path):
             return {}
@@ -92,3 +96,14 @@ class SettingsManager:
     
     def save_static_settings(self, settings: dict) -> None:
         self.save_settings_to_file(gl.STATIC_SETTINGS_FILE_PATH, settings)
+
+    def load_font_defaults(self) -> None:
+        app_settings = self.get_app_settings()
+
+        self.font_defaults = app_settings.get("general", {}).get("default-font", {})
+
+    def save_font_defaults(self) -> None:
+        app_settings = self.get_app_settings()
+        app_settings["general"] = {}
+        app_settings["general"]["default-font"] = self.font_defaults
+        self.save_app_settings(app_settings)

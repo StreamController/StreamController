@@ -25,6 +25,9 @@ import re
 from urllib.parse import urlparse
 from PIL import Image
 
+import gi
+from gi.repository import Gdk, Pango
+
 # Import globals
 import globals as gl
 
@@ -260,3 +263,51 @@ def find_fallback_font(fallback="DejaVu Sans"):
             return font_names[0]
         else:
             return
+        
+def color_values_to_gdk(color_values: tuple[int, int, int, int]) -> Gdk.RGBA:
+    if len(color_values) == 3:
+            color_values.append(255)
+    color = Gdk.RGBA()
+    color.parse(f"rgba({color_values[0]}, {color_values[1]}, {color_values[2]}, {color_values[3]})")
+
+    return color
+
+def gdk_color_to_values(color: Gdk.RGBA) -> tuple[int, int, int, int]:
+    green = round(color.green * 255)
+    blue = round(color.blue * 255)
+    red = round(color.red * 255)
+    alpha = round(color.alpha * 255)
+
+    return red, green, blue, alpha
+
+
+def get_pango_font_description(font_family: str, font_size: int, font_weight: int, font_style: str) -> Pango.FontDescription:
+    if font_style == "italic":
+        font_style = Pango.Style.ITALIC
+    elif font_style == "oblique":
+        font_style = Pango.Style.OBLIQUE
+    else:
+        font_style = Pango.Style.NORMAL
+
+    desc = Pango.FontDescription()
+    desc.set_family(font_family)
+    desc.set_absolute_size(font_size * Pango.SCALE)
+    desc.set_weight(font_weight)
+    desc.set_style(font_style)
+
+    return desc
+
+def get_values_from_pango_font_description(desc: Pango.FontDescription) -> tuple[str, int, int, str]:
+    font_family = desc.get_family()
+    font_size = desc.get_size() / Pango.SCALE
+    font_weight = desc.get_weight()
+    font_style = desc.get_style()
+
+    if font_style == Pango.Style.ITALIC:
+        font_style = "italic"
+    elif font_style == Pango.Style.OBLIQUE:
+        font_style = "oblique"
+    else:
+        font_style = "normal"
+
+    return font_family, font_size, font_weight, font_style

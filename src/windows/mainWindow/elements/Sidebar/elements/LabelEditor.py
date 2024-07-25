@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import threading
 import gi
 
+from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
 from src.backend.DeckManagement.InputIdentifier import InputIdentifier
 
 gi.require_version("Gtk", "4.0")
@@ -257,53 +258,38 @@ class LabelRow(Adw.PreferencesRow):
         self.set_outline_width(composed_label.outline_width)
         self.set_outline_color(composed_label.outline_color)
 
-        self.font_chooser_button.button.set_font(f"{composed_label.font_name} {composed_label.style} {composed_label.font_size}px")
+        # self.font_chooser_button.button.set_font_desc(Pango.FontDescription.from_string(f"{composed_label.font_name} {composed_label.style} {composed_label.font_size}px"))
+        desc = get_pango_font_description(
+            font_family=composed_label.font_name,
+            font_size=composed_label.font_size,
+            font_style=composed_label.style,
+            font_weight=composed_label.font_weight
+        )
+        self.font_chooser_button.button.set_font_desc(desc)
 
         self.connect_signals()
 
         self.lock.release()
 
     def set_color(self, color_values: list):
-        if len(color_values) == 3:
-            color_values.append(255)
-        color = Gdk.RGBA()
-        color.parse(f"rgba({color_values[0]}, {color_values[1]}, {color_values[2]}, {color_values[3]})")
+        color = color_values_to_gdk(color_values)
         self.color_chooser_button.button.set_rgba(color)
 
     def set_outline_width(self, outline_width: int):
         self.outline_width.button.set_value(outline_width)
 
     def set_outline_color(self, color_values: list):
-        if len(color_values) == 3:
-            color_values.append(255)
-        color = Gdk.RGBA()
-        color.parse(f"rgba({color_values[0]}, {color_values[1]}, {color_values[2]}, {color_values[3]})")
+        color = color_values_to_gdk(color_values)
         self.outline_color_chooser_button.button.set_rgba(color)
 
     def on_change_color(self, _):
         color = self.color_chooser_button.button.get_rgba()
-        green = round(color.green * 255)
-        blue = round(color.blue * 255)
-        red = round(color.red * 255)
-        alpha = round(color.alpha * 255)
+        color = gdk_color_to_values(color)
 
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_label_font_color(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_color=[red, green, blue, alpha])
+        active_page.set_label_font_color(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_color=color)
 
         self.color_chooser_button.revert_button.set_visible(True)
-
-    def parse_font_description(self, description: str) -> tuple[str, int]:
-        # Split the description by spaces
-        parts = description.split(' ')
-        # Find the part that contains 'px', which indicates the size
-        size_part = next((part for part in parts if 'px' in part), None)
-        # Extract the size (assuming it's always at the end)
-        if size_part:
-            size = size_part.replace('px', '')
-            # Reconstruct the font name by joining parts excluding the size part
-            name = ' '.join(parts[:parts.index(size_part)])
-            return name, int(size)
-        return None, None
 
     def on_change_outline_width(self, _):
         width = int(self.outline_width.button.get_value())
@@ -315,13 +301,10 @@ class LabelRow(Adw.PreferencesRow):
 
     def on_change_outline_color(self, _):
         color = self.outline_color_chooser_button.button.get_rgba()
-        green = round(color.green * 255)
-        blue = round(color.blue * 255)
-        red = round(color.red * 255)
-        alpha = round(color.alpha * 255)
+        color = gdk_color_to_values(color)
 
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_label_outline_color(identifier=self.active_identifier, state=self.state, label_position=self.key_name, outline_color=[red, green, blue, alpha])
+        active_page.set_label_outline_color(identifier=self.active_identifier, state=self.state, label_position=self.key_name, outline_color=color)
 
         self.outline_color_chooser_button.revert_button.set_visible(True)
 
@@ -330,18 +313,7 @@ class LabelRow(Adw.PreferencesRow):
         # name, size = self.parse_font_description(font)
 
         font_desc = self.font_chooser_button.button.get_font_desc()
-        name = font_desc.get_family()
-        size = font_desc.get_size() / Pango.SCALE
-        weight = int(font_desc.get_weight())
-        style = font_desc.get_style()
-
-        if style == Pango.Style.ITALIC:
-            style = "italic"
-        elif style == Pango.Style.OBLIQUE:
-            style = "oblique"
-        else:
-            style = "normal"
-
+        name, size, weight, style = get_values_from_pango_font_description(font_desc)
 
         active_page = gl.app.main_win.get_active_page()
         active_page.set_label_font_family(identifier=self.active_identifier, state=self.state, label_position=self.key_name, font_family=name, update=False)

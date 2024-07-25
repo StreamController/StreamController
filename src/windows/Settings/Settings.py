@@ -13,14 +13,17 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import threading
 import gi
 
 from GtkHelper.GtkHelper import BetterPreferencesGroup
 from autostart import setup_autostart
+from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
+from data.plugins.com_core447_OBSPlugin.backend import val
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio
+from gi.repository import Gtk, Adw, Gio, Pango
 
 # Import globals
 import globals as gl
@@ -213,6 +216,7 @@ class GeneralPage(Adw.PreferencesPage):
         self.set_icon_name("open-menu-symbolic")
 
         self.add(GeneralPageGroup(settings=settings))
+        self.add(FontPageGroup(settings=settings))
 
 class GeneralPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):
@@ -245,6 +249,145 @@ class GeneralPageGroup(Adw.PreferencesGroup):
 
         # Reload decks
         gl.deck_manager.load_fake_decks()
+
+class FontPageGroup(Adw.PreferencesGroup):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__(title=gl.lm.get("settings-font-settings-header"))
+
+        self.font_row = FontRow(self)
+        self.add(self.font_row)
+
+        self.font_color_row = FontColorRow(self)
+        self.add(self.font_color_row)
+
+        self.font_outline_width_row = FontOutlineWidthRow(self)
+        self.add(self.font_outline_width_row.row)
+
+        self.font_outline_color_row = FontOutlineColorRow(self)
+        self.add(self.font_outline_color_row)
+
+
+class FontRow(Adw.ActionRow):
+    def __init__(self, font_page_group: FontPageGroup):
+        super().__init__(title=gl.lm.get("settings-font-settings-header"),
+                         subtitle=gl.lm.get("settings-font-settings-subtitle"))
+        
+        self.font_page_group = font_page_group
+        
+        self.font_chooser_button = Gtk.FontButton(valign=Gtk.Align.CENTER)
+        self.add_suffix(self.font_chooser_button)
+
+        default_font = self.font_page_group.settings.settings_json.get("general", {}).get("default-font", {})
+
+        font_family = default_font.get("font-family") or gl.fallback_font
+        font_size = default_font.get("font-size") or 15
+        font_weight = default_font.get("font-weight") or 400
+        font_style = default_font.get("font-style") or "normal"
+
+        desc = get_pango_font_description(font_family, font_size, font_weight, font_style)
+        self.font_chooser_button.set_font_desc(desc)
+
+        self.font_chooser_button.connect("font-set", self.on_set)
+
+    def on_set(self, widget):
+        font_desc = widget.get_font_desc()
+        family, size, weight, style = get_values_from_pango_font_description(font_desc)
+
+        gl.settings_manager.font_defaults["font-family"] = family
+        gl.settings_manager.font_defaults["font-size"] = size
+        gl.settings_manager.font_defaults["font-weight"] = weight
+        gl.settings_manager.font_defaults["font-style"] = style
+
+        self.font_page_group.settings.settings_json.setdefault("general", {})
+        self.font_page_group.settings.settings_json["general"]["default-font"] = gl.settings_manager.font_defaults
+        gl.settings_manager.save_font_defaults()
+
+        self.font_page_group.settings.save_json()
+
+        threading.Thread(target=gl.page_manager.reload_all_pages, daemon=True, name="reload-all-pages").start()
+
+class FontColorRow(Adw.ActionRow):
+    def __init__(self, font_page_group: FontPageGroup):
+        super().__init__(title=gl.lm.get("settings-font-color-settings-header"),
+                         subtitle=gl.lm.get("settings-font-color-settings-subtitle"))
+        
+        self.font_page_group = font_page_group
+        
+        self.font_color_chooser_button = Gtk.ColorButton(valign=Gtk.Align.CENTER)
+        self.add_suffix(self.font_color_chooser_button)
+
+        default_font = self.font_page_group.settings.settings_json.get("general", {}).get("default-font", {})
+
+        font_color = default_font.get("font-color") or (255, 255, 255, 255)
+        self.font_color_chooser_button.set_rgba(color_values_to_gdk(font_color))
+
+        self.font_color_chooser_button.connect("color-set", self.on_set)
+
+    def on_set(self, widget):
+        font_color = widget.get_rgba()
+
+        gl.settings_manager.font_defaults["font-color"] = gdk_color_to_values(font_color)
+        self.font_page_group.settings.settings_json.setdefault("general", {})
+        self.font_page_group.settings.settings_json["general"]["default-font"] = gl.settings_manager.font_defaults
+        gl.settings_manager.save_font_defaults()
+
+        threading.Thread(target=gl.page_manager.reload_all_pages, daemon=True, name="reload-all-pages").start()
+
+class FontOutlineColorRow(Adw.ActionRow):
+    def __init__(self, font_page_group: FontPageGroup):
+        super().__init__(title=gl.lm.get("settings-font-outline-color-settings-header"),
+                         subtitle=gl.lm.get("settings-font-outline-color-settings-subtitle"))
+        
+        self.font_page_group = font_page_group
+
+        self.outline_color_chooser_button = Gtk.ColorButton(valign=Gtk.Align.CENTER)
+        self.add_suffix(self.outline_color_chooser_button)
+
+        default_font = self.font_page_group.settings.settings_json.get("general", {}).get("default-font", {})
+
+        outline_color = default_font.get("outline-color") or (0, 0, 0, 1)
+        self.outline_color_chooser_button.set_rgba(color_values_to_gdk(outline_color))
+
+        self.outline_color_chooser_button.connect("color-set", self.on_set)
+
+    def on_set(self, widget):
+        outline_color = widget.get_rgba()
+
+        gl.settings_manager.font_defaults["outline-color"] = gdk_color_to_values(outline_color)
+        self.font_page_group.settings.settings_json.setdefault("general", {})
+        self.font_page_group.settings.settings_json["general"]["default-font"] = gl.settings_manager.font_defaults
+        gl.settings_manager.save_font_defaults()
+
+        threading.Thread(target=gl.page_manager.reload_all_pages, daemon=True, name="reload-all-pages").start()
+
+class FontOutlineWidthRow:
+    """
+    Can't inherit from Adw.SpinRow
+    """
+    def __init__(self, font_page_group: FontPageGroup):
+        self.font_page_group = font_page_group
+
+        self.row = Adw.SpinRow.new_with_range(min=0, max=10, step=1)
+        self.row.set_title(gl.lm.get("settings-font-outline-width-settings-header"))
+        self.row.set_subtitle(gl.lm.get("settings-font-outline-width-settings-subtitle"))
+
+        default_font = self.font_page_group.settings.settings_json.get("general", {}).get("default-font", {})
+
+        outline_width = default_font.get("outline-width") or 2
+        self.row.set_value(round(outline_width))
+
+        self.row.connect("changed", self.on_set)
+
+    def on_set(self, widget):
+        outline_width = widget.get_value()
+
+        gl.settings_manager.font_defaults["outline-width"] = outline_width
+        self.font_page_group.settings.settings_json.setdefault("general", {})
+        self.font_page_group.settings.settings_json["general"]["default-font"] = gl.settings_manager.font_defaults
+        gl.settings_manager.save_font_defaults()
+
+        threading.Thread(target=gl.page_manager.reload_all_pages, daemon=True, name="reload-all-pages").start()
 
 
 class StorePage(Adw.PreferencesPage):

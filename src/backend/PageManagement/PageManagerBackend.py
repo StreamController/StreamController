@@ -310,6 +310,10 @@ class PageManagerBackend:
             if page.deck_controller.active_page == page:
                 page.deck_controller.load_page(page, allow_reload=True)
 
+    def reload_all_pages(self) -> None:
+        for controller in gl.deck_manager.deck_controller:
+            controller.load_page(controller.active_page, allow_reload=True)
+
     def update_dict_of_pages_with_path(self, page_path: str) -> None:
         pages = self.get_pages_with_path(page_path)
         for page in pages:

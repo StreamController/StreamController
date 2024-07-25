@@ -209,3 +209,11 @@ settings-store-custom-stores-subtitle;Weitere Storerepos hinzufügen;Add custom 
 settings-store-custom-plugins-subtitle;Weitere Pluginrepos hinzufügen;Add custom plugin repos;Ajouter des dépôts de plugins personnalisés;Añadir repos de plugins personalizados
 settings-auto-open-action-config;Konfigurationsoptionen automatisch öffnen;Automatically open config options;;Abrir automáticamente las opciones de configuración
 settings-auto-open-action-config-subtitle;Konfigurationsoptionen von neuen Aktionen automatisch öffnen;Automatically open config options for new actions;;Abrir automáticamente las opciones de configuración para nuevas acciones
+settings-font-settings-header;Standard-Schift;Default font
+settings-font-settings-subtitle;Standard-Schrift für Beschriftungen; Default font for labels
+settings-font-color-settings-header;Schriftfarbe; Font color;
+settings-font-color-settings-subtitle;Standardschriftfarbe;Default font color
+settings-font-outline-color-settings-header;Farbe der Schriftumrandung;Outline color
+settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung; Default color for the label outline;
+settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;
+settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline

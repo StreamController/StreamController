@@ -19,7 +19,6 @@ import gi
 from GtkHelper.GtkHelper import BetterPreferencesGroup
 from autostart import setup_autostart
 from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
-from data.plugins.com_core447_OBSPlugin.backend import val
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")

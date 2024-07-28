@@ -11,6 +11,9 @@
 ![Main Screen](https://core447.com/assets/screenshots/main_screen.png)  
 *Background image by [kvacm](https://kvacm.artstation.com)*
 
+## In Action
+<iframe width="560" height="315" src="https://www.youtube.com/embed/kIJOj_6Jimk?si=IqsE3XzjxP_k7Nzf" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 ## Supported Devices
 StreamController supports the following Elgato Stream Deck models:
 - Stream Deck Original (2)

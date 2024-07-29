@@ -23,7 +23,7 @@ class IpEntryRow(Adw.PreferencesRow):
         self.build()
 
     def build(self):
-        self.label = Gtk.Label(label="Ip Address:", margin_start=10)
+        self.label = Gtk.Label(label="Ip Address", margin_start=10)
         self.main_box.append(self.label)
 
         self.ip_numbers_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10, margin_top=5, margin_bottom=5,
@@ -102,17 +102,16 @@ class HostnameEntryRow(Adw.PreferencesRow):
         self.build()
 
     def build(self):
-        self.label = Gtk.Label(label="Hostname")
+        self.label = Gtk.Label(label="Hostname", margin_start=10)
         self.main_box.append(self.label)
 
-        self.hostname_entry = Gtk.Entry()
+        self.hostname_entry = Gtk.Entry(margin_start=10, margin_end=10, margin_top=5, margin_bottom=5, hexpand=True)
         self.main_box.append(self.hostname_entry)
 
         self.connect_events()
 
     def connect_events(self):
         self.hostname_entry.connect("activate", self.hostname_changed)
-        #self.hostname_entry.connect("focus-in-event", lambda *args: print(args))
 
     def disconnect_events(self):
         try:

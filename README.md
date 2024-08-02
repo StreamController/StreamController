@@ -11,6 +11,12 @@
 ![Main Screen](https://core447.com/assets/screenshots/main_screen.png)  
 *Background image by [kvacm](https://kvacm.artstation.com)*
 
+## In Action
+[![YouTube](http://i.ytimg.com/vi/kIJOj_6Jimk/hqdefault.jpg)](https://www.youtube.com/watch?v=kIJOj_6Jimk)  
+(click on the image to play)
+
+@danie10 created this amazing video going over all the details and features of StreamController. You can use the available timestamps to jump to specific parts of the video.
+
 ## Supported Devices
 StreamController supports the following Elgato Stream Deck models:
 - Stream Deck Original (2)

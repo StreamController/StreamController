@@ -16,7 +16,7 @@ class IpEntryRow(Adw.PreferencesRow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.ip_boxes: dict[int, Gtk.Entry] = {}
+        self.ip_boxes: dict[int, (Gtk.Entry, Gtk.EventControllerFocus)] = {}
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.set_child(self.main_box)
@@ -35,9 +35,11 @@ class IpEntryRow(Adw.PreferencesRow):
 
         for i in range(4):
             entry = Gtk.Entry(max_length=4, input_purpose=Gtk.InputPurpose.NUMBER, name=f"ip-box-{i}")
-            entry.add_controller(self.focus_controller)
+            controller = Gtk.EventControllerFocus(name=f"ip-box-controller-{i}")
 
-            self.ip_boxes[i] = entry
+            entry.add_controller(controller)
+
+            self.ip_boxes[i] = (entry, controller)
             self.ip_numbers_box.append(entry)
 
             if i < 3:
@@ -46,18 +48,31 @@ class IpEntryRow(Adw.PreferencesRow):
         self.connect_events()
 
     def connect_events(self):
-        for _, ip_box in self.ip_boxes.items():
-            ip_box.connect("activate", self.ip_box_focus_forward)
-            self.focus_controller.connect("leave", self.ip_changed)
+        for _, (ip_box, controller) in self.ip_boxes.items():
+            ip_box.connect("activate", self.ip_box_enter_pressed)
             ip_box.connect("changed", self.ip_text_changed)
+            controller.connect("leave", self.ip_changed)
+
 
     def disconnect_events(self):
         try:
-            for _, ip_box in self.ip_boxes.items():
-                ip_box.disconnect_by_func(self.ip_changed)
-                self.focus_controller.disconnect_by_func(self.ip_changed)
+            for _, (ip_box, controller) in self.ip_boxes.items():
+                ip_box.disconnect_by_func(self.ip_box_enter_pressed)
+                ip_box.disconnect_by_func(self.ip_text_changed)
+                controller.disconnect_by_func(self.ip_changed)
         except:
             pass
+
+    def ip_box_enter_pressed(self, entry: Gtk.Entry):
+        for key, (ip_box, _) in self.ip_boxes.items():
+            if ip_box.get_name() != entry.get_name():
+                continue
+
+            new_key = key + 1
+            if new_key < len(self.ip_boxes):
+                self.ip_boxes.get(new_key)[0].grab_focus()
+                break
+        self.ip_changed()
 
     def ip_text_changed(self, entry: Gtk.Entry):
         ip_text = entry.get_text()
@@ -70,28 +85,17 @@ class IpEntryRow(Adw.PreferencesRow):
 
         ip_text = ip_text.replace(".", "")
 
-        for key, value in self.ip_boxes.items():
-            if value.get_name() != entry.get_name():
+        for key, (ip_box, _) in self.ip_boxes.items():
+            if ip_box.get_name() != entry.get_name():
                 continue
 
             new_key = key + 1
             if new_key < len(self.ip_boxes):
-                self.ip_boxes.get(new_key).grab_focus()
+                self.ip_boxes.get(new_key)[0].grab_focus()
                 break
 
-        self.connect_events()
         entry.set_text(ip_text)
-
-    def ip_box_focus_forward(self, entry: Gtk.Entry):
-        for key, value in self.ip_boxes.items():
-            if value.get_name() != entry.get_name():
-                continue
-
-            new_key = key + 1
-            if new_key < len(self.ip_boxes):
-                self.ip_boxes.get(new_key).grab_focus()
-                break
-
+        self.connect_events()
         self.ip_changed()
 
     def ip_changed(self, *args):
@@ -99,8 +103,8 @@ class IpEntryRow(Adw.PreferencesRow):
 
     def get_ip(self) -> str:
         out = ""
-        for key, value in self.ip_boxes.items():
-            out += value.get_text()
+        for key, (ip_box, _) in self.ip_boxes.items():
+            out += ip_box.get_text()
 
             if key < 3:
                 out += "."
@@ -115,9 +119,9 @@ class IpEntryRow(Adw.PreferencesRow):
 
         for i in range(1, 5):
             if match:
-                self.ip_boxes[i - 1].set_text(match.group(i))
+                self.ip_boxes[i - 1][0].set_text(match.group(i))
             else:
-                self.ip_boxes[i - 1].set_text("0")
+                self.ip_boxes[i - 1][0].set_text("0")
 
         self.connect_events()
         self.emit('ip-changed', self.get_ip())

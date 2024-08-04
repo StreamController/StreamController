@@ -300,7 +300,7 @@ class MatchingWindowsExpander(BetterExpander):
     def load_windows(self, windows: list[Window]):
         self.clear()
         for window in windows:
-            self.add_row(Adw.ActionRow(title=window.title, subtitle=window.wm_class))
+            self.add_row(Adw.ActionRow(title=window.title, subtitle=window.wm_class, use_markup=False))
     
     def update_matching_windows(self, *args):
         class_regex = self.auto_change_group.wm_class_entry.get_text()

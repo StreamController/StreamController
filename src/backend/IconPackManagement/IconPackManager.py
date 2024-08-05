@@ -19,6 +19,7 @@ import json
 import os
 import shutil
 from sys import maxsize
+from loguru import logger as log
 
 # Import own modules
 from src.backend.IconPackManagement.IconPack import IconPack
@@ -37,6 +38,8 @@ class IconPackManager:
             icon_pack = IconPack(os.path.join(gl.DATA_PATH, "icons", pack))
             if icon_pack.is_valid:
                 packs[pack] = icon_pack
+            else:
+                log.warning(f"Icon pack {pack} is not valid.")
         return packs
 
     def get_pack_icons(self, icon_pack: dict):

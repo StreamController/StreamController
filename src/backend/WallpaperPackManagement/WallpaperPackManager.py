@@ -18,6 +18,7 @@ from functools import lru_cache
 import json
 import os
 import shutil
+from loguru import logger as log
 
 # Import globals
 import globals as gl
@@ -36,6 +37,8 @@ class WallpaperPackManager:
             wallpaper_pack = WallpaperPack(os.path.join(gl.DATA_PATH, "wallpapers", pack))
             if wallpaper_pack.is_valid:
                 packs[pack] =  wallpaper_pack
+            else:
+                log.warning(f"Wallpaper pack {pack} is not valid.")
         return packs
 
     def get_pack_wallpapers(self, wallpaper_pack: dict):

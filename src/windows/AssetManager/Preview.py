@@ -64,6 +64,8 @@ class Preview(Gtk.FlowBoxChild):
         self.overlay.add_overlay(self.remove_button)
 
     def set_image(self, path:str):
+        path = str(path)
+
         if path is None:
             self.pixbuf = GdkPixbuf.Pixbuf.new(width=250, height=180)
             return

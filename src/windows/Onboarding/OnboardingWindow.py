@@ -96,6 +96,9 @@ class OnboardingWindow(Adw.Dialog):
         self.discord_page = DiscordOnboardingScreen(self)
         self.carousel.append(self.discord_page)
 
+        self.support_app_page = SupportAppOnboardingScreen(self)
+        self.carousel.append(self.support_app_page)
+
         self.carousel.append(OnboardingScreen5(self))
 
         self.carousel_indicator_dots = Adw.CarouselIndicatorDots(carousel=self.carousel)
@@ -367,3 +370,29 @@ class DiscordOnboardingScreen(Gtk.Box):
 
     def on_join_button_clicked(self, button):
         web.open_new("https://discord.gg/MSyHM8TN3u")
+
+
+class SupportAppOnboardingScreen(Gtk.Box):
+    def __init__(self, onboarding_window: OnboardingWindow):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
+                         halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+                         margin_start=50, margin_end=50, margin_top=50, margin_bottom=50)
+        self.onboarding_window = onboarding_window
+
+        self.build()
+
+    def build(self):
+        self.label = Gtk.Label(label="Support the app development", css_classes=["onboarding-welcome-label"],
+                               margin_top=20)
+        self.append(self.label)
+
+        self.detail = Gtk.Label(label="Support the development of this app by donating. You can also request custom plugins and page creation for your needs", css_classes=["onboarding-welcome-detail-label"],
+                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Gtk.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
+        self.append(self.detail)
+
+        self.support_button = Gtk.Button(label="Donate", css_classes=["pill", "suggested-action"], margin_top=20, hexpand=False, halign=Gtk.Align.CENTER)
+        self.support_button.connect("clicked", self.on_support_button_clicked)
+        self.append(self.support_button)
+
+    def on_support_button_clicked(self, button):
+        web.open_new("https://ko-fi.com/core447")

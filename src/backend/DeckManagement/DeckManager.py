@@ -42,7 +42,7 @@ from gi.repository import GLib, Xdp
 # Import globals
 import globals as gl
 
-VALID_VENDORS = ["Elgato", "Elgato_Systems"]
+ELGATO_VENDOR_ID = "0fd9"
 
 
 class DeckManager:
@@ -134,7 +134,7 @@ class DeckManager:
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device
-        if device_info["ID_VENDOR"] not in VALID_VENDORS:
+        if device_info["ID_VENDOR_ID"] != ELGATO_VENDOR_ID:
             return
 
         self.connect_new_decks()
@@ -156,7 +156,7 @@ class DeckManager:
 
     def on_disconnect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} disconnected")
-        if device_info["ID_VENDOR"] not in VALID_VENDORS:
+        if device_info["ID_VENDOR_ID"] != ELGATO_VENDOR_ID:
             return
 
         for controller in self.deck_controller:

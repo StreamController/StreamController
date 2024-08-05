@@ -33,7 +33,9 @@ class WallpaperPackManager:
         packs = {}
         os.makedirs(os.path.join(gl.DATA_PATH, "wallpapers"), exist_ok=True)
         for pack in os.listdir(os.path.join(gl.DATA_PATH, "wallpapers")):
-            packs[pack] = WallpaperPack(os.path.join(gl.DATA_PATH, "wallpapers", pack))
+            wallpaper_pack = WallpaperPack(os.path.join(gl.DATA_PATH, "wallpapers", pack))
+            if wallpaper_pack.is_valid:
+                packs[pack] =  wallpaper_pack
         return packs
 
     def get_pack_wallpapers(self, wallpaper_pack: dict):

@@ -34,7 +34,9 @@ class IconPackManager:
         packs = {}
         os.makedirs(os.path.join(gl.DATA_PATH, "icons"), exist_ok=True)
         for pack in os.listdir(os.path.join(gl.DATA_PATH, "icons")):
-            packs[pack] = IconPack(os.path.join(gl.DATA_PATH, "icons", pack))
+            icon_pack = IconPack(os.path.join(gl.DATA_PATH, "icons", pack))
+            if icon_pack.is_valid:
+                packs[pack] = icon_pack
         return packs
 
     def get_pack_icons(self, icon_pack: dict):

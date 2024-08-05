@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import os
 import json
 from functools import lru_cache
+from pathlib import Path
 
 # Import own modules
 from src.backend.IconPackManagement.Icon import Icon
@@ -23,6 +24,7 @@ from src.backend.IconPackManagement.Icon import Icon
 class IconPack:
     def __init__(self, path: str):
         self.path = path
+        self.is_valid = True
         self.name = self.get_manifest().get("name") or os.path.basename(path)
         self.pack_structure: dict[str, list[Icon]] = {}
 
@@ -30,13 +32,19 @@ class IconPack:
 
     @lru_cache(maxsize=None)
     def get_manifest(self):
-        manifest_path = os.path.join(self.path, "manifest.json")
-        return self.get_json(manifest_path)
+        path = Path(os.path.join(self.path, "manifest.json"))
+
+        if not path.exists(follow_symlinks=True):
+            self.is_valid = False
+            return {}
+
+        return self.get_json(path)
         
     @lru_cache(maxsize=None)
     def get_attribution_json(self):
-        attribution_path = os.path.join(self.path, "attribution.json")
-        return self.get_json(attribution_path)
+        path = Path(os.path.join(self.path, "attribution.json"))
+
+        return self.get_json(path)
     
     @lru_cache(maxsize=None)
     def get_pack_attribution(self):
@@ -44,8 +52,8 @@ class IconPack:
         return attribution.get("default", attribution.get("general", attribution.get("generic", {})))
         
     @lru_cache(maxsize=None)
-    def get_json(self, json_path: str):
-        if not os.path.exists(json_path):
+    def get_json(self, json_path: Path):
+        if not json_path.exists(follow_symlinks=True):
             return {}
         
         with open(json_path) as f:
@@ -54,9 +62,10 @@ class IconPack:
     @lru_cache(maxsize=None)
     def get_thumbnail_path(self):
         manifest = self.get_manifest()
-        path = os.path.join(self.path, manifest.get("thumbnail"))
-        if os.path.exists(path):
+        path = Path(os.path.join(self.path, manifest.get("thumbnail")))
+        if path.exists(follow_symlinks=True):
             return path
+        self.is_valid = False
         return None
     
     def get_icons(self) -> list[Icon]:
@@ -73,10 +82,16 @@ class IconPack:
 
     def generate_folder_structure(self, asset_path: str):
         manifest = self.get_manifest()
-        asset_path = manifest.get(asset_path)
-        pack_path = os.path.join(self.path, asset_path)
 
-        if not os.path.exists(pack_path):
+        if self.is_valid is False:
+            return
+
+        asset_path = manifest.get(asset_path)
+
+        pack_path = Path(os.path.join(self.path, asset_path))
+
+        if not pack_path.exists(follow_symlinks=True):
+            self.is_valid = False
             return
 
         # Load Content From Base Directory

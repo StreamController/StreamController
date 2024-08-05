@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import sys
 import threading
 import gi
+import webbrowser as web
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -55,6 +56,10 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.open_settings_action = Gio.SimpleAction.new("open-settings", None)
         self.open_settings_action.connect("activate", self.on_open_settings)
         self.main_window.add_action(self.open_settings_action)
+        # Support app
+        self.support_action = Gio.SimpleAction.new("support", None)
+        self.support_action.connect("activate", self.on_support)
+        self.main_window.add_action(self.support_action)
         # Quit App
         self.quit_action = Gio.SimpleAction.new("quit", None)
         self.quit_action.connect("activate", self.on_quit)
@@ -70,6 +75,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.menu.append(gl.lm.get("open-settings"), "win.open-settings")
         self.menu.append(gl.lm.get("quit"), "win.quit")
         self.menu.append(gl.lm.get("open-about"), "win.open-about")
+        self.menu.append(gl.lm.get("support"), "win.support")
 
         # Popover
         self.popover = Gtk.PopoverMenu()
@@ -86,6 +92,9 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         
     def on_quit(self, action, parameter):
         GLib.idle_add(gl.app.on_quit)
+
+    def on_support(self, action, parameter):
+        web.open("https://ko-fi.com/core447", new=1, autoraise=True)
 
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutWindow(transient_for=self.main_window)

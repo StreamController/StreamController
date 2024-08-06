@@ -188,6 +188,9 @@ class NameGroup(Adw.PreferencesGroup):
         original_path = self.page_editor.active_page_path
         new_path = os.path.join(os.path.dirname(original_path), f"{entry.get_text()}.json")
 
+        if original_path == new_path:
+            return
+
         self.page_editor.page_manager.rename_page_by_path(original_path, new_path)
 
 class AutoChangeGroup(Adw.PreferencesGroup):

@@ -132,6 +132,9 @@ def image2pixbuf(img, force_transparency=False):
     Returns:
         GdkPixbuf.Pixbuf: The converted GdkPixbuf.Pixbuf object.
     """
+    img.convert("RGBA")
+    force_transparency = True
+
     data = img.tobytes()
     w, h = img.size
     data = GLib.Bytes.new(data)

@@ -28,7 +28,7 @@ from src.Signals import Signals
 # Import own modules
 from src.backend.PageManagement.Page import Page
 from src.backend.PageManagement.DummyPage import DummyPage
-from src.backend.DeckManagement.HelperMethods import natural_sort, natural_sort_by_filenames, recursive_hasattr
+from src.backend.DeckManagement.HelperMethods import get_sub_folders, natural_sort, natural_sort_by_filenames, recursive_hasattr, sort_times
 
 # Import globals
 import globals as gl
@@ -430,3 +430,19 @@ class PageManagerBackend:
         for page in self.get_pages():
             backup_path = os.path.join(folder, os.path.basename(page))
             shutil.copy(page, backup_path)
+
+
+    def remove_old_backups(self) -> None:
+        n_backups_to_keep = 5
+
+        backup_dir = os.path.join(gl.DATA_PATH, "pages", "backups")
+
+        unsorted_backups = get_sub_folders(backup_dir)
+        sorted_backups = sort_times(unsorted_backups)
+
+        if len(sorted_backups) <= n_backups_to_keep:
+            return
+        
+        for backup in sorted_backups[:-n_backups_to_keep]:
+            shutil.rmtree(os.path.join(backup_dir, backup))
+            log.info(f"Removed old page backups: {backup}")

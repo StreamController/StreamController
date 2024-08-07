@@ -894,6 +894,7 @@ class Page:
         if update:
             self.update_input(identifier, state)
 
+
 class NoActionHolderFound:
     def __init__(self, id: str, state: int, identifier: InputIdentifier = None):
         self.id = id

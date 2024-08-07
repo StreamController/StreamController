@@ -18,8 +18,6 @@ import os
 import json
 import threading
 import time
-from datetime import datetime, timedelta
-
 from loguru import logger as log
 from copy import copy
 import shutil
@@ -33,8 +31,7 @@ import globals as gl
 from src.backend.PluginManager.ActionBase import ActionBase
 from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 # Import typing
-from typing import TYPE_CHECKING, List
-
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.DeckManagement.DeckController import LabelManager
     from src.backend.PluginManager.ActionHolder import ActionHolder
@@ -47,7 +44,7 @@ class Page:
 
         self.dict = {}
 
-        self.json_path: str = json_path
+        self.json_path = json_path
         self.deck_controller = deck_controller
 
         # Dir that contains all actions this allows us to keep them at reload
@@ -93,11 +90,10 @@ class Page:
         self.file_access_semaphore.release()
 
     def make_backup(self):
-        backups_dir = os.path.join(gl.DATA_PATH, "pages", "backups")
-        os.makedirs(backups_dir, exist_ok=True)
+        os.makedirs(os.path.join(gl.DATA_PATH, "pages","backups"), exist_ok=True)
 
         src_path = self.json_path
-        dst_path = os.path.join(backups_dir, os.path.basename(src_path))
+        dst_path = os.path.join(gl.DATA_PATH, "pages","backups", os.path.basename(src_path))
 
         # Check if json in src is valid
         with open(src_path) as f:
@@ -108,23 +104,6 @@ class Page:
                 return
 
         shutil.copy2(src_path, dst_path)
-
-        # Delete old backups
-        backups_list = sorted(get_sub_folders(backups_dir))
-
-        for folder in backups_list:
-            # Keep at least 3 backups
-            # new calculation on each iteration because a folder might have been deleted
-            current_backup_count = len(get_sub_folders(backups_dir))
-            if current_backup_count <= 3:
-                break
-
-            folder_path = os.path.join(backups_dir, folder)
-            folder_mtime = datetime.fromtimestamp(os.path.getmtime(folder_path))
-
-            if datetime.now() - folder_mtime > timedelta(weeks=1):
-                shutil.rmtree(folder_path)
-                log.debug(f"Deleted page backup: {folder_path}")
 
     def move_key_to_end(self, dictionary, key):
         if key in self.dict:

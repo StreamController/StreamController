@@ -442,7 +442,7 @@ class PageManagerBackend:
 
         if len(sorted_backups) <= n_backups_to_keep:
             return
-
-        for backup in sorted_backups[n_backups_to_keep:]:
+        
+        for backup in sorted_backups[:-n_backups_to_keep]:
             shutil.rmtree(os.path.join(backup_dir, backup))
             log.info(f"Removed old page backups: {backup}")

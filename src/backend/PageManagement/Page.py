@@ -895,10 +895,6 @@ class Page:
             self.update_input(identifier, state)
 
 
-def get_sub_folders(parent: str) -> List[str]:
-    return [folder for folder in os.listdir(parent) if os.path.isdir(os.path.join(parent, folder))]
-
-
 class NoActionHolderFound:
     def __init__(self, id: str, state: int, identifier: InputIdentifier = None):
         self.id = id

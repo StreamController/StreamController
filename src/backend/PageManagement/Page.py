@@ -896,9 +896,6 @@ class Page:
 
 
 def get_sub_folders(parent: str) -> List[str]:
-    if not os.path.isdir(parent):
-        return []
-
     return [folder for folder in os.listdir(parent) if os.path.isdir(os.path.join(parent, folder))]
 
 

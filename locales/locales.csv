@@ -126,7 +126,7 @@ background-editor.color.label;Farbe;Color;Couleur;Color
 background-editor.color.dialog.title;Hintergrundfarbe auswählen;Select Background Color;Sélectionner la couleur de fond;Seleccionar color de fondo
 background-editor.color.reset;Farbe zurücksetzen;Reset color;Réinitialiser la couleur;Restablecer color
 right-area.image-editor.layout.header;Layout;Layout;Disposition;Diseño
-right-area.image-editor.layout.subtitle;Layout für diese Taste (nur bei benutzerdefinierten Medien);Layout for this key (only affecting custom media);Disposition pour cette touche (affecte uniquement les médias personnalisés);Diseño para esta tecla (sólo afecta a los medios personalizados)
+right-area.image-editor.layout.subtitle;Layout für diese Taste;Layout for this key;Disposition pour cette touche;Diseño para esta tecla
 right-area.image-editor.layout.size.label;Größe (%);Size (%);Taille (%);Tamaño (%)
 right-area.image-editor.layout.valign.label;VAlign;VAlign;Alignement vertical;VAlinear
 right-area.image-editor.layout.halign.label;HAlign;HAlign;Alignement horizontal;HAlign
@@ -217,3 +217,4 @@ settings-font-outline-color-settings-header;Farbe der Schriftumrandung;Outline c
 settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung; Default color for the label outline;
 settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;
 settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline
+support;Unterstützen;Donate

@@ -239,7 +239,7 @@ def add_default_keys(d: dict, keys: list):
 @lru_cache()
 def find_fallback_font(fallback="DejaVu Sans"):
     """
-    TODO: Improve speed
+    TODO: Improve speed - maybe be writing the last one into a file and just checking if it still exists
     """
     # Find system fonts
     font_paths = matplotlib.font_manager.findSystemFonts(fontpaths=None, fontext='ttf')

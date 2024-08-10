@@ -31,8 +31,8 @@ class ResponsibleNotesDialog(Adw.MessageDialog):
         self.set_title("Content Responsibility Notes")
         self.set_heading("Content Responsibility Notes")
         self.set_body(("Core447 and other contributors of StreamController are "
-                      "not responsible for content in the Store that is not released by Core447."
-                      "This also applies to plugins that are from other persons but marked as official."
+                      "not responsible for content in the Store that is not released by Core447. "
+                      "This also applies to plugins that are from other persons but marked as official. "
                       "The official badge only indicates a collaboration, "
                       "it does not mean that the plugin is created by Core447."))
         

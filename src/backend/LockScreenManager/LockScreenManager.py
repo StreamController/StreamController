@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import os
 from src.backend.LockScreenManager.Detectors.Gnome import GnomeLockScreenDetector
+from src.backend.LockScreenManager.Detectors.Cinnamon import CinnamonLockScreenDetector
 from src.backend.LockScreenManager.Detectors.KDE import KDELockScreenDetector
 from src.backend.LockScreenManager.LockScreenDetector import LockScreenDetector
 from loguru import logger as log
@@ -31,6 +32,8 @@ class LockScreenManager:
         env = self.get_active_environment()
         if env == "gnome":
             self.detector = GnomeLockScreenDetector(self)
+        elif env == "x-cinnamon":
+            self.detector = CinnamonLockScreenDetector(self)
         elif env == "kde":
             self.detector = KDELockScreenDetector(self)
 

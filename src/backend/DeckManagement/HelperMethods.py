@@ -12,6 +12,7 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+from datetime import datetime
 from functools import lru_cache
 import hashlib
 import os
@@ -311,3 +312,21 @@ def get_values_from_pango_font_description(desc: Pango.FontDescription) -> tuple
         font_style = "normal"
 
     return font_family, font_size, font_weight, font_style
+
+def get_sub_folders(parent: str) -> list[str]:
+    if not os.path.isdir(parent):
+        return []
+
+    return [folder for folder in os.listdir(parent) if os.path.isdir(os.path.join(parent, folder))]
+
+def sort_times(time_list):
+    """
+    Sort a list of datetime strings in ascending order.
+
+    Parameters:
+    time_list (list of str): List of datetime strings to be sorted.
+
+    Returns:
+    list of str: Sorted list of datetime strings.
+    """
+    return sorted(time_list, key=lambda x: datetime.fromisoformat(x))

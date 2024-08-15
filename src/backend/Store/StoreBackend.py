@@ -639,7 +639,6 @@ class StoreBackend:
         extracted_folder_name = None
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_contents = zip_ref.namelist()
-            print()
             for item in zip_contents:
                 if not item.endswith("/"): # Directories end with /
                     continue
@@ -650,7 +649,6 @@ class StoreBackend:
                     log.error("Multiple folders in zip")
                     return 400
                 extracted_folder_name = item.split("/")[0]
-                print()
 
 
         if extracted_folder_name is None:

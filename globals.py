@@ -31,7 +31,6 @@ elif not argparser.parse_args().devel:
                 settings = json.load(f)
                 if "data-path" in settings:
                     DATA_PATH = settings["data-path"]
-                    print()
             log.info(f"Using data path from static settings: {DATA_PATH}")
         except Exception as e:
             log.error(f"Failed to set data path from static settings: {e}")

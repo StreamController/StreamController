@@ -337,7 +337,6 @@ class Page:
                     for index in list(self.action_objects[input_type][json_identifier][state].keys()):
                         action_base = self.action_objects[input_type][json_identifier][state][index]
                         action_id = action_base.action_id
-                        print()
 
                         if gl.plugin_manager.get_plugin_id_from_action_id(action_id) == plugin_id:
                             identifier = Input.FromTypeIdentifier(input_type, json_identifier)

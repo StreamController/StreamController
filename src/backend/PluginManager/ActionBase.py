@@ -32,6 +32,7 @@ from src.backend.DeckManagement.Subclasses.KeyImage import InputImage
 from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
 from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
 from src.backend.DeckManagement.Subclasses.KeyLayout import ImageLayout
+from src.backend.DeckManagement.Subclasses.ImageLayer import ImageLayer
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
 
 # Import globals
@@ -166,6 +167,49 @@ class ActionBase(rpyc.Service):
                 loop=loop
             ))
 
+        else:
+            input_state.set_image(None, update=False)
+
+        self.get_state().layout_manager.set_action_layout(ImageLayout(
+            valign=valign,
+            halign=halign,
+            size=size
+        ), update=False)
+
+        if update:
+            self.get_input().update()
+
+    def set_multiple_media(self, image_layers: list[ImageLayer] = None, size: float = None, valign: float = None, halign: float = None, update: bool = True):
+        """
+        Layers the Images on top of each other before displaying them
+        """
+        self.raise_error_if_not_ready()
+
+        if type(self.input_ident) not in [Input.Key, Input.Dial]:
+            return
+
+        if not self.get_is_present(): return
+        if self.has_custom_user_asset(): return
+        if not self.has_image_control(): return  # TODO
+
+        input_state = self.get_state()
+
+        if input_state is None:
+            return
+        if self.get_state().state != self.state:
+            return
+
+        if image_layers and len(image_layers) > 0:
+            base_image = Image.new('RGBA', image_layers[0].image.size)
+
+            for layer in image_layers:
+                image, position = layer.transform(base_image.size)
+                base_image.paste(image, position, image)
+
+            input_state.set_image(InputImage(
+                controller_input=self.get_state().controller_input,
+                image=base_image,
+            ), update=False)
         else:
             input_state.set_image(None, update=False)
 

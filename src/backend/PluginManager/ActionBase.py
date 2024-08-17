@@ -179,9 +179,10 @@ class ActionBase(rpyc.Service):
         if update:
             self.get_input().update()
 
-    def set_multiple_media(self, image_layers: list[ImageLayer] = None, size: float = None, valign: float = None, halign: float = None, update: bool = True):
+    def set_layered_images(self, image_layers: list[ImageLayer] = None, update: bool = True):
         """
-        Layers the Images on top of each other before displaying them
+        Layers the Images on top of each other.
+        The layering will go from [0] very bottom [-1] very top
         """
         self.raise_error_if_not_ready()
 
@@ -213,11 +214,7 @@ class ActionBase(rpyc.Service):
         else:
             input_state.set_image(None, update=False)
 
-        self.get_state().layout_manager.set_action_layout(ImageLayout(
-            valign=valign,
-            halign=halign,
-            size=size
-        ), update=False)
+        self.get_state().layout_manager.set_action_layout(ImageLayout(), update=False)
 
         if update:
             self.get_input().update()

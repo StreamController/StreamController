@@ -14,7 +14,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
 from ast import main
-from email.mime import application
 import multiprocessing
 import signal
 import sys

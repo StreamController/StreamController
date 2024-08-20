@@ -24,7 +24,7 @@ import cv2
 from loguru import logger as log
 import globals as gl
 
-VID_CACHE = os.path.join(gl.DATA_PATH, "cache", "videos")
+VID_CACHE = os.path.join(gl.CACHE_PATH, "videos")
 
 class VideoFrameCache:
     def __init__(self, video_path, size: tuple[int, int]):

@@ -204,7 +204,7 @@ def download_file(url: str, path: str = "", file_name: str = None) -> str:
 
 def load_svg_as_pil(file_path):
     hash = sha256(file_path)
-    tmp = os.path.join(gl.DATA_PATH, "cache", "svg_to_png", f"{hash}.png")
+    tmp = os.path.join(gl.CACHE_PATH, "svg_to_png", f"{hash}.png")
 
     if not os.path.exists(tmp):
         os.makedirs(os.path.dirname(tmp), exist_ok=True)

@@ -44,7 +44,7 @@ class PluginBase(rpyc.Service):
         self.server: ThreadedServer = None
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
-        self.settings_path: str = os.path.join(gl.DATA_PATH, "settings", "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well
+        self.settings_path: str = os.path.join(gl.CONFIG_PATH, "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well
 
         self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, "locales"))
         self.locale_manager.set_to_os_default()

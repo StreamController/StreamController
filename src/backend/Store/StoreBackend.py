@@ -54,8 +54,7 @@ class NoConnectionError:
 
 class StoreBackend:
     STORE_REPO_URL = "https://github.com/StreamController/StreamController-Store" #"https://github.com/StreamController/StreamController-Store"
-    STORE_CACHE_PATH = "Store/cache"
-    # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
+    STORE_CACHE_PATH = os.path.join(gl.CACHE_PATH, "store")
     STORE_BRANCH = "1.5.0"
 
 
@@ -570,7 +569,7 @@ class StoreBackend:
             self.api_cache[api_call_url] = {}
             self.api_cache[api_call_url]["answer"] = resp.json()
             self.api_cache[api_call_url]["time-code"] = datetime.now().strftime("%d-%m-%y-%H-%M")
-            with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json"), "w") as f:
+            with open(os.path.join(self.STORE_CACHE_PATH, "api.json"), "w") as f:
                 json.dump(self.api_cache, f, indent=4)
             return resp.json()
 
@@ -676,22 +675,22 @@ class StoreBackend:
         # Download
         try:
             # Create cache dir
-            os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
-            urllib.request.urlretrieve(zip_url, os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
+            os.makedirs(gl.CACHE_PATH, exist_ok=True)
+            urllib.request.urlretrieve(zip_url, os.path.join(gl.CACHE_PATH, f"{projectname}-{sha}.zip"))
         except TypeError as e:
             log.error(e)
             return NoConnectionError()
         
         ## Extract
-        if os.path.exists(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}")):
-            shutil.rmtree(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}"))
-        shutil.unpack_archive(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"), os.path.join(gl.DATA_PATH, "cache"))
+        if os.path.exists(os.path.join(gl.CACHE_PATH, f"{projectname}-{sha}")):
+            shutil.rmtree(os.path.join(gl.CACHE_PATH, f"{projectname}-{sha}"))
+        shutil.unpack_archive(os.path.join(gl.CACHE_PATH, f"{projectname}-{sha}.zip"), gl.CACHE_PATH)
 
 
         ## Why - because github is not case sensitive for the urls, so the casing of the zip file might be different than the one of the contained folder
-        extracted_folder_name = self.get_main_folder_of_zip(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
+        extracted_folder_name = self.get_main_folder_of_zip(os.path.join(gl.CACHE_PATH, f"{projectname}-{sha}.zip"))
         
-        extracted_folder = os.path.join(gl.DATA_PATH, "cache", extracted_folder_name)
+        extracted_folder = os.path.join(gl.CACHE_PATH, extracted_folder_name)
 
         # Remove destination folder
         if os.path.isdir(directory):
@@ -706,7 +705,7 @@ class StoreBackend:
             shutil.move(os.path.join(extracted_folder, name), directory)
 
 
-        os.remove(os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
+        os.remove(os.path.join(gl.CACHE_PATH, f"{projectname}-{sha}.zip"))
         shutil.rmtree(extracted_folder)
         
         ## Write version

@@ -96,23 +96,23 @@ class CustomAssetChooser(ChooserPage):
         self.asset_chooser.show_for_path(path)
 
     def on_video_toggled(self, button):
-        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"))
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.CONFIG_PATH, "ui", "AssetManager.json"))
         settings["video-toggle"] = button.get_active()
-        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"), settings)
+        gl.settings_manager.save_settings_to_file(os.path.join(gl.CONFIG_PATH, "ui", "AssetManager.json"), settings)
 
         # Update ui
         self.asset_chooser.flow_box.invalidate_filter()
 
     def on_image_toggled(self, button):
-        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"))
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.CONFIG_PATH, "ui", "AssetManager.json"))
         settings["image-toggle"] = button.get_active()
-        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"), settings)
+        gl.settings_manager.save_settings_to_file(os.path.join(gl.CONFIG_PATH,  "ui", "AssetManager.json"), settings)
 
         # Update ui
         self.asset_chooser.flow_box.invalidate_filter()
 
     def load_defaults(self):
-        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "ui", "AssetManager.json"))
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.CONFIG_PATH, "ui", "AssetManager.json"))
         self.video_button.set_active(settings.get("video-toggle", True))
         self.image_button.set_active(settings.get("image-toggle", True))
 

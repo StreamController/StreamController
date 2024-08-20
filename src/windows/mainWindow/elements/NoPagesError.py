@@ -75,7 +75,7 @@ class NoPagesError(Gtk.Box):
         dial.show(self.add_page_callback)
 
     def add_page_callback(self, name:str):
-        path = os.path.join(gl.DATA_PATH, "pages", f"{name}.json")
+        path = os.path.join(gl.CONFIG_PATH, "pages", f"{name}.json")
         gl.page_manager.add_page(name)
 
         # Notify plugin actions

@@ -321,7 +321,7 @@ class PagesGroup(BetterPreferencesGroup):
     def load_pages(self):
         pages = gl.page_manager.get_pages()
         for page_path in pages:
-            if os.path.dirname(page_path) != os.path.join(gl.DATA_PATH, "pages"):
+            if os.path.dirname(page_path) != os.path.join(gl.CONFIG_PATH, "pages"):
                 continue
             page_row = AdwPageRow(pages_group=self, page_path=page_path)
             self.add(page_row)

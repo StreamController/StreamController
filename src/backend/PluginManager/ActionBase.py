@@ -366,6 +366,20 @@ class ActionBase(rpyc.Service):
         if not self.get_is_present(): return
         actions = self.page.action_objects.get(self.input_ident.input_type, {}).get(self.input_ident.json_identifier, [])
         return len(actions) > 1
+
+    def get_asset_path(self, asset_name: str, subdir: str = None, asset_folder: str = "assets") -> str:
+        """
+        Returns the full path of an asset
+
+        @param asset_name: Name of the Asset File
+        @param subdir: Subdirectories
+        @param asset_folder: Name of the folder where assets are stored
+        @return: The full path to the asset
+        """
+        if subdir:
+            return os.path.join(self.plugin_base.PATH, asset_folder, subdir, asset_name)
+        else:
+            return os.path.join(self.plugin_base.PATH, asset_folder, asset_name)
     
     def has_label_control(self) -> list[bool]:
         key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})

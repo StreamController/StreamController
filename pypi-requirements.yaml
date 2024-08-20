@@ -429,8 +429,8 @@ sources:
   url: https://files.pythonhosted.org/packages/9f/39/65259b7054368b370d3183762484fa2c779ddc41633894d895f9d1720f45/speedtest_cli-2.1.3-py2.py3-none-any.whl
   sha256: 75ff32c91af9ac1ce2b905476d6e92bd9eb2c0783f9e7d1939d74605c7d0b9ea
 - type: file
-  url: https://files.pythonhosted.org/packages/88/7f/45a698578bd2a4c0db40e2b950b52f01b4d4af018497f5cd5ab2fb58f9bb/streamcontroller_plugin_tools-2.0.0-py3-none-any.whl
-  sha256: b2068a0bd2d9b366846b37a8e259a17448d42108edb002609d244e558e56f684
+  url: https://files.pythonhosted.org/packages/04/27/de888609a67e046bc6b1ae60cc3806ea6831f935f7bca970cd72cdbf2075/streamcontroller_plugin_tools-2.0.1-py3-none-any.whl
+  sha256: 5f48c1f170548630c0a8b274d2a1a3f813b167b5dc3e03bb7e69c911cb491160
 - type: file
   url: https://files.pythonhosted.org/packages/5b/6c/0f059e39447eed4235e5b97b1f7ffe831a89e98a44d3d1f62a4bd8acdaf8/streamdeck-0.9.5-py3-none-any.whl
   sha256: c5c590bd9f56d1a79ff2135772b8c95de39efc1da517bff690a6d96fed1f23fb

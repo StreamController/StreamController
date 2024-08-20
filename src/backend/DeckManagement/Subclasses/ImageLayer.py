@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union, List
 
 from PIL import Image
 
@@ -41,3 +41,15 @@ class ImageLayer:
             halign=halign,
             valign=valign
         )
+
+    @staticmethod
+    def to_layer_list(*args: Union["ImageLayer", List["ImageLayer"]]) -> List["ImageLayer"]:
+        result = []
+
+        for arg in args:
+            if isinstance(arg, list):
+                result.extend(arg)
+            else:
+                result.append(arg)
+
+        return result

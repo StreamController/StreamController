@@ -45,8 +45,8 @@ page-manager.page-editor.no-page-selected;Keine Seite ausgewählen;No page selec
 page-manager.page-editor.delete-page;Seite löschen;Delete Page;Supprimer la page;Borrar página
 page-manager.page-editor.delete-page-confirm.title;Seite löschen;Delete Page;Supprimer la page;Borrar página
 page-manager.page-editor.delete-page-confirm.cancel;Abbrechen;Cancel;Annuler;Cancelar
-page-manager.page-editor.delete-page-confirm.delete;Löschen;Delete;Supprimer;Borrar 
-page-manager.page-editor.delete-page-confirm.body;"Sind Sie sicher; dass Sie folgende Seite löschen wollen: ";Are you sure you want to delete the page: ;Êtes-vous sûr de vouloir supprimer la page :;¿Estás seguro de eliminar la página: 
+page-manager.page-editor.delete-page-confirm.delete;Löschen;Delete;Supprimer;"Borrar "
+page-manager.page-editor.delete-page-confirm.body;"Sind Sie sicher; dass Sie folgende Seite löschen wollen: ";"Are you sure you want to delete the page: ";Êtes-vous sûr de vouloir supprimer la page :;"¿Estás seguro de eliminar la página: "
 page-manager.page-editor.name-group.title;Name;Name;Nom;Nombre
 page-manager.page-editor.name-group.name;Name;Name;Nom;Nombre
 page-manager.page-editor.change-group.title;Automatisch wechseln;Auto change Page;Changement automatique de page;Cambiar automáticamente la página
@@ -60,7 +60,7 @@ page-manager.page-selector.search-hint;Suchen;Search;Rechercher;Búscar
 page-manager.page-selector.add-new;Neue Seite;Add New;Ajouter nouveau;Añadir nueva
 page-manager.page-selector.add-dialog.title;Neue Seite;Add Page;Ajouter une page;Añadir página
 page-manager.page-selector.add-dialog.placeholder;Seitenname;Page Name;Nom de la page;Nombre de la página
-page-manager.page-selector.add-dialog.confirm;Hinzufügen;Add;Ajouter ;Añadir 
+page-manager.page-selector.add-dialog.confirm;Hinzufügen;Add;"Ajouter ";"Añadir "
 page-manager.page-selector.add-dialog.already-exists-warning;Seite existiert bereits;Page already exists;La page existe déjà;La página ya existe
 page-manager.page-selector.add-dialog.empty-warning;Seitenname kann nicht leer sein;Page name cannot be empty;Le nom de la page ne peut pas être vide;El nombre de la página no puede estar vacío
 page-manager.page-selector.add-dialog.cancel;Abbrechen;Cancel;Annuler;Cancelar
@@ -95,7 +95,7 @@ store.wallpapers.search-placeholder;Nach Hintergründen suchen;Search for wallpa
 onboarding.welcome.header;Willkommen bei StreamController!;Welcome To StreamController!;Bienvenue chez StreamController !;Bienvenido a StreamController
 onboarding.welcome.details;Die Linux App für das Elgato Stream Deck;The Linux app for the Elgato Stream Deck;L'application Linux pour l’Elgato Stream Deck;La aplicación Linux para Elgato Stream Deck
 onboarding.store.header;Asset Store;Asset Store;Magasin de ressources;Tienda
-onboarding.store.details;Plugins; Icons und Hintergründe herunterladen;Download plugins;Búsqueda de iconos y fondos de pantalla
+onboarding.store.details;Plugins;" Icons und Hintergründe herunterladen";Download plugins;Búsqueda de iconos y fondos de pantalla
 onboarding.productive.header;Produktiver;Be More Productive;Soyez plus productif;Sea más productivo
 onboarding.productive.details;Mit eigenen Makros & Routinen;With your personal shortcuts;Avec vos raccourcis personnels;Con tus atajos personales
 onboarding.multiple.header;Multi Deck Support;Multi Deck Support;Support Multi Deck;Soporte Multi Deck
@@ -180,41 +180,41 @@ onboarding.extension.detail;"Installiere die offizielle Gnome Erweiterung; um au
 onboarding.extension.header;Gnome Erweiterungen;Gnome Extension;Extension Gnome;Extensión Gnome
 onboarding.extension.hint;Erfordert Gnome Erweiterungen & Gnome Shell 45 oder neuer;Requires Gnome Extensions & Gnome Shell 45 or later;Nécessite les extensions Gnome et Gnome Shell 45 ou ultérieur;Requiere Gnome Extensions & Gnome Shell 45 o posterior
 store.preview.no-description;Keine Beschreibung;No description;Aucune description;Sin descripción
-deck.background-group.media-select-label;;Select;Sélectionner;Seleccione
-asset-manager.custom-assets.remove-confirmation-dialog.title;;Remove Asset;Supprimer la ressource;Eliminar activo
-asset-manager.custom-assets.remove-confirmation-dialog.cancel;;Cancel;Annuler;Cancelar
-asset-manager.custom-assets.remove-confirmation-dialog.remove;;Remove;Supprimer;Eliminar
-asset-manager.custom-assets.remove-confirmation-dialog.body;;Are you sure you want to remove the asset ;Êtes-vous sûr de vouloir supprimer la ressource ?;¿Está seguro de que desea eliminar el activo? 
-errors.no-page.import;;Import;Importer;Importar
-page-manager-search-hint;;;Rechercher;Recargar
-page-manager-add-page;;;Ajouter une page;Añadir 
-page-manager-rename;;;Renommer;Renombrar
-page-manager-remove;;;Supprimer;Eliminar
+deck.background-group.media-select-label;Auswählen;Select;Sélectionner;Seleccione
+asset-manager.custom-assets.remove-confirmation-dialog.title;Asset entfernen;Remove Asset;Supprimer la ressource;Eliminar activo
+asset-manager.custom-assets.remove-confirmation-dialog.cancel;Abbrechen;Cancel;Annuler;Cancelar
+asset-manager.custom-assets.remove-confirmation-dialog.remove;Entfernen;Remove;Supprimer;Eliminar
+asset-manager.custom-assets.remove-confirmation-dialog.body;Wollen Sie dieses Asset wirklich löschen?;"Are you sure you want to remove the asset ";Êtes-vous sûr de vouloir supprimer la ressource ?;"¿Está seguro de que desea eliminar el activo? "
+errors.no-page.import;Importieren;Import;Importer;Importar
+page-manager-search-hint;Suchen;Search;Rechercher;Recargar
+page-manager-add-page;Neue Seite;New page;Ajouter une page;"Añadir "
+page-manager-rename;Umbenennen;Rename;Renommer;Renombrar
+page-manager-remove;Löschen;Remove;Supprimer;Eliminar
 page-manager.duplicate;Duplizieren;Duplicate;Dupliquer;Duplicar
 page-manager.export-page;Exportieren;Export;Exporter;Exportar
 page-manager.import;Importieren;Import;Importer;Importar
-page-manager.import.page;Seite;Page;Page ;Página
+page-manager.import.page;Seite;Page;"Page ";Página
 settings-show-notifications;Benachrichtigungen anzeigen;Show notifications;Afficher les notifications;Mostrar notificaciones
 settings-show-notifications-subtitle;Benachrichtigungen bei veralteten Assets anzeigen;Show notifications for outdated assets;Afficher les notifications pour les ressources obsolètes;Mostrar notificaciones de activos obsoletos
 settings-system-settings-title;System;System;Système;Sistema
-settings-system-settings-header;Systemeinstellungen; System settings;Paramètres du système;Configuración del sistema
+settings-system-settings-header;Systemeinstellungen;" System settings";Paramètres du système;Configuración del sistema
 settings-system-settings-autostart;Autostart;Autostart;Démarrage automatique;Inicio automático
 settings-system-settings-autostart-subtitle;App beim Systemstart automatisch starten;Start app on system boot;Démarrer l'application au démarrage du système;Iniciar la aplicación al arrancar el sistema
 settings-system-settings-keep-running;Die App weiterlaufen lassen;Keep running;;Mantener en funcionamiento
 settings-system-settings-keep-running-subtitle;Die App nach Schließen des Hauptfensters im Hintergrund aktiv lassen;Keep the app running after closing the main window;;Mantener la aplicación en ejecución después de cerrar la ventana principal
 onboarding.udev.header;udev Regeln;udev rules;Règles udev;Reglas udev
-onboarding.udev.detail;Es ist eine alte udev version installiert. Klicken Sie auf den Button um zu sehen was sie tun müssen; Old udev version detected. Please click on the button to see how to avoid problems;Ancienne version udev détectée. Veuillez cliquer sur le bouton pour voir comment éviter les problèmes;Se ha detectado una versión antigua de udev. Haga clic en el botón para ver cómo evitar problemas
-onboarding.udev.button;Website öffnen; Open web;Ouvrir le site web;Abrir web
+onboarding.udev.detail;Es ist eine alte udev version installiert. Klicken Sie auf den Button um zu sehen was sie tun müssen;" Old udev version detected. Please click on the button to see how to avoid problems";Ancienne version udev détectée. Veuillez cliquer sur le bouton pour voir comment éviter les problèmes;Se ha detectado una versión antigua de udev. Haga clic en el botón para ver cómo evitar problemas
+onboarding.udev.button;Website öffnen;" Open web";Ouvrir le site web;Abrir web
 settings-store-custom-stores-subtitle;Weitere Storerepos hinzufügen;Add custom store repos;Ajouter des dépôts de magasins personnalisés;Añadir repos de tienda personalizados
 settings-store-custom-plugins-subtitle;Weitere Pluginrepos hinzufügen;Add custom plugin repos;Ajouter des dépôts de plugins personnalisés;Añadir repos de plugins personalizados
 settings-auto-open-action-config;Konfigurationsoptionen automatisch öffnen;Automatically open config options;;Abrir automáticamente las opciones de configuración
 settings-auto-open-action-config-subtitle;Konfigurationsoptionen von neuen Aktionen automatisch öffnen;Automatically open config options for new actions;;Abrir automáticamente las opciones de configuración para nuevas acciones
-settings-font-settings-header;Standard-Schift;Default font
-settings-font-settings-subtitle;Standard-Schrift für Beschriftungen; Default font for labels
-settings-font-color-settings-header;Schriftfarbe; Font color;
-settings-font-color-settings-subtitle;Standardschriftfarbe;Default font color
-settings-font-outline-color-settings-header;Farbe der Schriftumrandung;Outline color
-settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung; Default color for the label outline;
-settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;
-settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline
-support;Unterstützen;Donate
+settings-font-settings-header;Standard-Schift;Default font;;
+settings-font-settings-subtitle;Standard-Schrift für Beschriftungen;" Default font for labels";;
+settings-font-color-settings-header;Schriftfarbe;" Font color";;
+settings-font-color-settings-subtitle;Standardschriftfarbe;Default font color;;
+settings-font-outline-color-settings-header;Farbe der Schriftumrandung;Outline color;;
+settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung;" Default color for the label outline";;
+settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;;
+settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline;;
+support;Unterstützen;Donate;;

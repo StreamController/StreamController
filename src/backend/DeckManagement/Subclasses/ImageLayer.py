@@ -47,6 +47,7 @@ class ImageLayer:
     def transform(self, base_size: Tuple[int, int]) -> Tuple[Image, Tuple[int, int]]:
         """
         Transforms the current image in relation to the Image it will be pasted on
+
         @param base_size: Size of the image it will be pasted on
         @return: Returns the scaled image and the position on the X and Y Axis
         """
@@ -65,22 +66,24 @@ class ImageLayer:
 
     def layer_on_top(self, *args: Union["ImageLayer", List["ImageLayer"]]) -> Image:
         """
-        Creates a complete Gtk.Image but pastes the other Layers on top of it. The current Image will be at the very bottom
+        Creates a complete Gtk.Image and puts this Layers on top of the others. Current Image will be at the very top
+
         @param args: Layers that will be pasted on top of the current one
         @return: A finished Image with all Layers pasted onto each other
         """
 
-        layers = ImageLayer.to_layer_list(self, *args)
+        layers = ImageLayer.to_layer_list(*args, self)
         return ImageLayer.to_layered_image(layers)
 
     def layer_below(self, *args: Union["ImageLayer", List["ImageLayer"]]) -> Image:
         """
-        Creates a complete Gtk.Image but pastes the other Layers on top of it. The current Image will be at the very top
+        Creates a complete Gtk.Image but puts this layer underneath the others. The current Image will be at the very bottom
+
         @param args: Layers that will be pasted below of the current one
         @return: A finished Image with all Layers pasted onto each other
         """
 
-        layers = ImageLayer.to_layer_list(*args, self)
+        layers = ImageLayer.to_layer_list(self, *args)
         return ImageLayer.to_layered_image(layers)
 
     @staticmethod
@@ -100,6 +103,7 @@ class ImageLayer:
     def to_layered_image(layers: List["ImageLayer"]) -> Image:
         """
         Will Create a complete Gtk.Image from the Layers where [0] will be on the very bottom and [-1] on the very Top
+
         @return: A finished Image with all Layers pasted onto each other
         """
 

@@ -257,7 +257,7 @@ class ScreenBarImage(Gtk.Picture):
         
     def set_image(self, image: Image.Image):
         if not self.get_mapped():
-            self.on_map_tasks.append(lambda: self.set_image(image))
+            self.on_map_tasks = [lambda: self.set_image(image)]
             return
 
         width = 385 #TODO: Find a better way to do this

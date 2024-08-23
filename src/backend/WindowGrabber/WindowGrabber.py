@@ -116,15 +116,15 @@ class WindowGrabber:
                 if self.get_is_window_matching(window, wm_regex, title_regex):
                     if not deck_controller.deck.is_open():
                         return
-                    if deck_controller.active_page.json_path == page_path:
-                        continue
                     if deck_controller.serial_number() not in decks:
                         continue
-                    log.debug(f"Auto changing page: {page_path} on deck {deck_controller.deck.get_serial_number()}")
-                    page = gl.page_manager.get_page(page_path, deck_controller)
-                    if not deck_controller.page_auto_loaded:
-                        deck_controller.last_manual_loaded_page_path = deck_controller.active_page.json_path
-                    deck_controller.load_page(page)
+
+                    if deck_controller.active_page.json_path != page_path:
+                        log.debug(f"Auto changing page: {page_path} on deck {deck_controller.deck.get_serial_number()}")
+                        page = gl.page_manager.get_page(page_path, deck_controller)
+                        if not deck_controller.page_auto_loaded:
+                            deck_controller.last_manual_loaded_page_path = deck_controller.active_page.json_path
+                        deck_controller.load_page(page)
                     deck_controller.page_auto_loaded = True
                     found_page = True
                     break

@@ -4,6 +4,7 @@ from PIL import Image
 
 from src.backend.DeckManagement.HelperMethods import is_image, is_svg
 import globals as gl
+from loguru import logger as log
 
 class ImageLayer:
     def __init__(self, image: Image, size: float = 1.0, halign: float = 0.0, valign: float = 0.0):
@@ -33,6 +34,7 @@ class ImageLayer:
         elif is_svg(media_path):
             image = gl.media_manager.generate_svg_thumbnail(media_path)
         else:
+            log.error(f"{media_path} is not an Image!")
             return None
 
         return cls(
@@ -104,6 +106,9 @@ class ImageLayer:
         base_image = Image.new('RGBA', layers[0].image.size)
 
         for layer in layers:
+            if not layer:
+                log.error("A layer is not defined!")
+                continue
             image, position = layer.transform(base_image.size)
             base_image.paste(image, position, image)
 

@@ -200,15 +200,16 @@ class CustomConfigs(Gtk.Box):
             self.hide()
             return
         
-        if action.get_custom_config_area() is None:
+        # Append custom config area
+        custom_config_area = action.get_custom_config_area()
+        
+        if custom_config_area is None:
             self.hide()
             return
         
         # Clear
         self.clear()
 
-        # Append custom config area
-        custom_config_area = action.get_custom_config_area()
         if custom_config_area is not None:
             self.main_box.append(custom_config_area)
 

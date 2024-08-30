@@ -739,6 +739,9 @@ class StoreBackend:
         # FIXME: Check if not already added
         await self.subp_call(["git", "config", "--global", "--add", "safe.directory", os.path.abspath(local_path)])
 
+        # Run git pull to create .git/FETCH_HEAD. This allows us to check for available updates
+        await self.os_sys(f"cd '{local_path}' && git pull")
+
 
         ## Write version
         path = os.path.join(local_path, "VERSION")

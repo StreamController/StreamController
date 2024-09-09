@@ -80,7 +80,14 @@ class DeckManager:
         self.load_fake_decks()
 
     def load_hardware_decks(self):
-        decks=DeviceManager().enumerate()
+        decks: list[StreamDeck.StreamDeck]=DeviceManager().enumerate()
+        if gl.argparser.parse_args().list:
+            for deck in decks:
+                print(deck.device.path(), deck.deck_type(), deck.product_id())
+            exit(0)
+        paths = gl.argparser.parse_args().paths
+        if paths:
+            decks = [d for d in decks if d.device.path() in paths]
         for deck in decks:
             try:
                 if self.beta_resume_mode:

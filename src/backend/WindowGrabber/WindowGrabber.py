@@ -27,11 +27,12 @@ from src.backend.WindowGrabber.Window import Window
 from src.backend.WindowGrabber.Integration import Integration
 from src.backend.WindowGrabber.Integrations.Hyprland import Hyprland
 from src.backend.WindowGrabber.Integrations.Gnome import Gnome
+from src.backend.WindowGrabber.Integrations.Sway import Sway
 from src.backend.WindowGrabber.Integrations.X11 import X11
 
 class WindowGrabber:
     def __init__(self):
-        self.SUPPORTED_ENVS = ["hyprland", "gnome", "x11"]
+        self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "x11"]
 
         self.integration: Integration = None
         self.init_integration()
@@ -64,6 +65,8 @@ class WindowGrabber:
             self.integration = Hyprland(self)
         elif self.environment == "gnome":
             self.integration = Gnome(self)
+        elif self.environment == "sway":
+            self.integration = Sway(self)
         elif self.server == "x11":
             self.integration = X11(self)
 

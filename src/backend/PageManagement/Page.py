@@ -316,7 +316,7 @@ class Page:
         for type in list(self.action_objects.keys()):
             for key in list(self.action_objects[type].keys()):
                 for state in list(self.action_objects[type][key].keys()):
-                    for index in list(self.action_objects[type][key].keys()):
+                    for index in list(self.action_objects[type][key][state].keys()):
                         if not isinstance(self.action_objects[type][key][state][index], ActionBase):
                             continue
                         if self.action_objects[type][key][state][index].plugin_base == plugin_obj:

@@ -47,7 +47,7 @@ Available for GNOME, Hyprland and all X11 desktops, this feature allows you to a
 
 ## Auto-Lock
 
-Lock your Stream deck when your system is locked, preventing unwanted use from third parties (available on KDE and GNOME).
+Lock your Stream deck when your system is locked, preventing unwanted use from third parties (available on KDE and GNOME, and Cinnamon).
 
 ## Installation
 

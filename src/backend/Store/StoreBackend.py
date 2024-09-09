@@ -765,14 +765,14 @@ class StoreBackend:
 
         response = await self.download_repo(repo_url=url, directory=local_path, commit_sha=plugin_data.commit_sha, branch_name=plugin_data.branch)
 
-        # Run install script if present
+        # Run install script if present. Make sure to use python binary used to run this process to not break venv dependency installations
         if os.path.isfile(os.path.join(local_path, "__install__.py")):
-            subprocess.run(f"python3 {os.path.join(local_path, '__install__.py')}", shell=True, start_new_session=True)
+            subprocess.run(f"{sys.executable} {os.path.join(local_path, '__install__.py')}", shell=True, start_new_session=True)
 
         # Install requirements from requirements.txt
         if os.path.isfile(os.path.join(local_path, "requirements.txt")):
-            subprocess.run(f"pip install -r {os.path.join(local_path, 'requirements.txt')}", shell=True, start_new_session=True)
-            
+            subprocess.run(f"{sys.executable} -m pip install -r {os.path.join(local_path, 'requirements.txt')}", shell=True, start_new_session=True)
+
         if response == 404:
             return 404
         

@@ -15,6 +15,8 @@ argparser.add_argument("--skip-load-hardware-decks", help="Skips initilization/u
 argparser.add_argument("--close-running", help="Close running", action="store_true")
 argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
+argparser.add_argument("--list", default=False, action="store_true", help="List all the detected Stream Decks and exit")
+argparser.add_argument("--paths", default=[], nargs='+', help="Open only the Stream Decks with the given paths (see paths using --list)")
 argparser.add_argument("app_args", nargs="*")
 
 VAR_APP_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")

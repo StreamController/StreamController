@@ -43,7 +43,7 @@ Set up a custom screen saver to display a picture or video when your Stream Deck
 
 ### Automatic Page Switching
 
-Available for GNOME, Hyprland and all X11 desktops, this feature allows you to automatically change your active page based on the active window. For example, you can switch to your favorite music albums when you open Spotify, your projects when you open VSCode, or your favorite websites in Firefox.
+Available for GNOME, Hyprland, Sway and all X11 desktops, this feature allows you to automatically change your active page based on the active window. For example, you can switch to your favorite music albums when you open Spotify, your projects when you open VSCode, or your favorite websites in Firefox.
 
 ## Auto-Lock
 

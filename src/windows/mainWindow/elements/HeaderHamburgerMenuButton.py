@@ -116,10 +116,19 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
                                                        "G4PLS https://github.com/G4PLS",
                                                        "gensyn https://github.com/gensyn",
                                                        "GsakuL https://github.com/GsakuL",
-                                                       "mrintrepide https://github.com/mrintrepide"
+                                                       "mrintrepide https://github.com/mrintrepide",
                                                        "Sorunome https://github.com/Sorunome",
                                                        "ulrikstrid https://github.com/ulrikstrid",
-                                                       "yakushabb https://github.com/yakushabb"]))
+                                                       "yakushabb https://github.com/yakushabb",
+                                                       "3urobeat https://github.com/3urobeat",
+                                                       "NeoMorfeo https://github.com/NeoMorfeo",
+                                                       "ImDevinC https://github.com/ImDevinC",
+                                                       "axolotlmaid https://github.com/axolotlmaid",
+                                                       "nosduco https://github.com/nosduco",
+                                                       "pniedzielski https://github.com/pniedzielski",
+                                                       "Qalthos https://github.com/Qalthos",
+                                                       "jfbauer432 https://github.com/jfbauer432"],
+                                                       key=str.casefold))
         
         self.about.set_copyright("Copyright (C) 2024 Core447")
         self.about.set_application_icon("com.core447.StreamController")

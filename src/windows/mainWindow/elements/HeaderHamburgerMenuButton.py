@@ -97,7 +97,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         web.open("https://ko-fi.com/core447", new=1, autoraise=True)
 
     def on_open_about(self, action, parameter):
-        self.about = Adw.AboutWindow(transient_for=self.main_window)
+        self.about = Adw.AboutDialog()
         self.about.set_application_name("StreamController")
 
         app_version = gl.app_version
@@ -153,6 +153,8 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
 
         self.about.set_release_notes(gl.release_notes)  
         self.about.set_release_notes_version(gl.app_version)
+        
+        self.about.present(gl.app.get_active_window())
 
     def set_optional_actions_state(self, state: bool) -> None:
         self.open_store_action.set_enabled(state)

@@ -295,6 +295,8 @@ class Page:
                 action.input_ident = input_1
 
         # Change in action_objects
+        self.action_objects.setdefault(input_1.input_type, {})
+        self.action_objects.setdefault(input_2.input_type, {})
         self.action_objects[input_1.input_type][input_1.json_identifier] = input_2_dict
         self.action_objects[input_2.input_type][input_2.json_identifier] = input_1_dict
 

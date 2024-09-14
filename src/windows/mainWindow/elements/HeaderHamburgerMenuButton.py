@@ -148,6 +148,11 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
             license=None
         )
 
+        self.about.add_acknowledgement_section(
+            "Ko-fi Supporters",
+            ["bäcky https://ko-fi.com/core447"]
+        )
+
         self.about.set_debug_info("".join(gl.logs))
         self.about.set_debug_info_filename(os.path.join(gl.DATA_PATH, "StreamController.log"))
 

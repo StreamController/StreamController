@@ -96,6 +96,8 @@ class X11(Integration):
                 return
             stdout, stderr = root.communicate()
             window_ids = stdout.decode().strip().split("#")[1].strip().split(", ")
+            if len(window_ids) == 0:
+                return
             for window_id in window_ids:
                 if window_id == "0x0":
                     continue

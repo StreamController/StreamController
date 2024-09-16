@@ -126,6 +126,9 @@ class ActionBase(rpyc.Service):
         pass
 
     def on_update(self):
+        """
+        This method gets called when the app wants the action to redraw itself (image, labels, etc.).
+        """
         self.on_ready() # backward compatibility
 
     def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):

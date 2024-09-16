@@ -396,7 +396,7 @@
       <li>Multi-deck support</li>
       <li>Set background images &amp; videos</li>
       <li>Set custom icons</li>
-      <li>Automatic page switching (Gnome &amp; Hyprland)</li>
+      <li>Automatic page switching (Gnome, Hyprland, Sway &amp; X11)</li>
       <li>Multiple states per key</li>
     </ul>
     <p>
@@ -404,8 +404,8 @@
     </p>
     <ul>
       <li>Execute commands</li>
-      <li>Press hotkeys (X and Wayland)</li>
-      <li>Move mouse (X and Wayland)</li>
+      <li>Press hotkeys (X11 and Wayland)</li>
+      <li>Move mouse (X11 and Wayland)</li>
       <li>Control OBS Studio</li>
       <li>Control your music</li>
       <li>Mix the volume of different apps</li>

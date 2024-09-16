@@ -97,7 +97,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         web.open("https://ko-fi.com/core447", new=1, autoraise=True)
 
     def on_open_about(self, action, parameter):
-        self.about = Adw.AboutWindow(transient_for=self.main_window)
+        self.about = Adw.AboutDialog()
         self.about.set_application_name("StreamController")
 
         app_version = gl.app_version
@@ -116,10 +116,19 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
                                                        "G4PLS https://github.com/G4PLS",
                                                        "gensyn https://github.com/gensyn",
                                                        "GsakuL https://github.com/GsakuL",
-                                                       "mrintrepide https://github.com/mrintrepide"
+                                                       "mrintrepide https://github.com/mrintrepide",
                                                        "Sorunome https://github.com/Sorunome",
                                                        "ulrikstrid https://github.com/ulrikstrid",
-                                                       "yakushabb https://github.com/yakushabb"]))
+                                                       "yakushabb https://github.com/yakushabb",
+                                                       "3urobeat https://github.com/3urobeat",
+                                                       "NeoMorfeo https://github.com/NeoMorfeo",
+                                                       "ImDevinC https://github.com/ImDevinC",
+                                                       "axolotlmaid https://github.com/axolotlmaid",
+                                                       "nosduco https://github.com/nosduco",
+                                                       "pniedzielski https://github.com/pniedzielski",
+                                                       "Qalthos https://github.com/Qalthos",
+                                                       "jfbauer432 https://github.com/jfbauer432"],
+                                                       key=str.casefold))
         
         self.about.set_copyright("Copyright (C) 2024 Core447")
         self.about.set_application_icon("com.core447.StreamController")
@@ -139,11 +148,18 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
             license=None
         )
 
+        self.about.add_acknowledgement_section(
+            "Ko-fi Supporters",
+            ["bäcky https://ko-fi.com/core447"]
+        )
+
         self.about.set_debug_info("".join(gl.logs))
         self.about.set_debug_info_filename(os.path.join(gl.DATA_PATH, "StreamController.log"))
 
         self.about.set_release_notes(gl.release_notes)  
         self.about.set_release_notes_version(gl.app_version)
+        
+        self.about.present(gl.app.get_active_window())
 
     def set_optional_actions_state(self, state: bool) -> None:
         self.open_store_action.set_enabled(state)

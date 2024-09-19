@@ -95,21 +95,23 @@ class X11(Integration):
             if root is None:
                 return
             stdout, stderr = root.communicate()
-            split = stdout.decode().strip().split()
-            if len(split) == 0:
+            window_ids = stdout.decode().strip().split("#")[1].strip().split(", ")
+            if len(window_ids) == 0:
                 return
-            window_id = split[-1]
+            for window_id in window_ids:
+                if window_id == "0x0":
+                    continue
+                title = self.get_title(window_id)
+                class_name = self.get_class(window_id)
+
+                if None in [title, class_name]:
+                    return
+
+                return Window(class_name, title)
+
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running xprop: {e}")
             return
-
-        title = self.get_title(window_id)
-        class_name = self.get_class(window_id)
-
-        if None in [title, class_name]:
-            return
-
-        return Window(class_name, title)
 
     @log.catch
     def get_title(self, window_id: str) -> str:

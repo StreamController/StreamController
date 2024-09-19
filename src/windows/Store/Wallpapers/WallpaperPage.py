@@ -116,12 +116,12 @@ class WallpaperPreview(StorePreview):
         self.wallpaper_page.set_info_visible(True)
 
         # Update info page
-        self.wallpaper_page.info_page.set_name(self.wallpaper_data.get("wallpaper_name"))
+        self.wallpaper_page.info_page.set_name(self.wallpaper_data.wallpaper_name)
         self.wallpaper_page.info_page.set_description(self.wallpaper_data.description)
-        self.wallpaper_page.info_page.set_author(self.wallpaper_data.get("user_name"))
-        self.wallpaper_page.info_page.set_version(self.wallpaper_data.get("wallpaper_version"))
+        self.wallpaper_page.info_page.set_author(self.wallpaper_data.author)
+        self.wallpaper_page.info_page.set_version(self.wallpaper_data.wallpaper_version)
 
-        self.wallpaper_page.info_page.set_license(self.wallpaper_data.get("license"))
-        self.wallpaper_page.info_page.set_copyright(self.wallpaper_data.get("copyright"))
-        self.wallpaper_page.info_page.set_original_url(self.wallpaper_data.get("original_url"))
-        self.wallpaper_page.info_page.set_license_description(self.wallpaper_data.get("license_description"))
+        self.wallpaper_page.info_page.set_license(self.wallpaper_data.license)
+        self.wallpaper_page.info_page.set_copyright(self.wallpaper_data.copyright)
+        self.wallpaper_page.info_page.set_original_url(self.wallpaper_data.original_url)
+        self.wallpaper_page.info_page.set_license_description(self.wallpaper_data.license_descriptions)

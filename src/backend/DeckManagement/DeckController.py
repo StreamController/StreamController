@@ -304,6 +304,7 @@ class MediaPlayerThread(threading.Thread):
             self.touchscreen_task.run()
             del self.touchscreen_task
             self.touchscreen_task = None
+
     def check_connection(self):
         try:
             self.deck_controller.deck.get_firmware_version()

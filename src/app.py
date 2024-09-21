@@ -147,7 +147,7 @@ class App(Adw.Application):
         # Force quit if normal quit is not possible
         timer = threading.Timer(6, self.force_quit)
         timer.name = "force_quit_timer"
-        timer.setDaemon(True)
+        timer.daemon = True
         timer.start()
 
         for ctrl in gl.deck_manager.deck_controller:

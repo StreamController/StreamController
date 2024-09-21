@@ -6,8 +6,10 @@ from StreamDeck.Devices.StreamDeckXL import StreamDeckXL
 from StreamDeck.Devices.StreamDeckPedal import StreamDeckPedal
 from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
 from .StreamDeckNeo import StreamDeckNeo
+from loguru import logger as log
 
 def enumerate(self):
+    log.info("Using patched new_enumerate")
     """
     Detect attached StreamDeck devices.
 

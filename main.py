@@ -25,7 +25,6 @@ import asyncio
 import threading
 import dbus
 import dbus.service
-import argparse
 import usb.core
 import usb.util
 from StreamDeck.DeviceManager import DeviceManager
@@ -40,7 +39,6 @@ from src.backend.AssetManagerBackend import AssetManagerBackend
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
-from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
 from src.backend.Store.StoreBackend import StoreBackend, NoConnectionError

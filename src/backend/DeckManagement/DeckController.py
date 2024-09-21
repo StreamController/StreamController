@@ -110,7 +110,7 @@ class MediaPlayerSetTouchscreenImageTask:
                 
                 
                 self.deck_controller.deck.close()
-                self.deck_controller.media_player.running = False # Set stop flag - otherwise remove_controller will wait until this task is done, which it never will because it waits
+                self.deck_controller.media_player.stop()
                 gl.deck_manager.remove_controller(self.deck_controller)
 
                 gl.deck_manager.connect_new_decks()
@@ -143,7 +143,7 @@ class MediaPlayerSetImageTask:
                 
                 
                 self.deck_controller.deck.close()
-                self.deck_controller.media_player.running = False # Set stop flag - otherwise remove_controller will wait until this task is done, which it never will because it waits
+                self.deck_controller.media_player.stop()
                 gl.deck_manager.remove_controller(self.deck_controller)
 
                 gl.deck_manager.connect_new_decks()
@@ -155,11 +155,10 @@ class MediaPlayerThread(threading.Thread):
         self.deck_controller: DeckController = deck_controller
         self.FPS = 30 # Max refresh rate of the internal displays
 
-        self.running = False
         self.media_ticks = 0
 
         self.pause = False
-        self._stop = False
+        self._stop_running = False
 
         self.tasks: list[MediaPlayerTask] = []
         self.image_tasks = {}
@@ -172,8 +171,6 @@ class MediaPlayerThread(threading.Thread):
 
     # @log.catch
     def run(self):
-        self.running = True
-
         while True:
             start = time.time()
 
@@ -219,10 +216,8 @@ class MediaPlayerThread(threading.Thread):
             wait = max(0, 1/self.FPS - (end - start))
             time.sleep(wait)
 
-            if self._stop:
+            if self._stop_running:
                 break
-
-        self.running = False
 
     def append_fps(self, fps: float) -> None:
         self.fps.append(fps)
@@ -261,9 +256,8 @@ class MediaPlayerThread(threading.Thread):
 
 
     def stop(self) -> None:
-        self._stop = True
-        while self.running:
-            time.sleep(0.1)
+        self._stop_running = True
+        self.join()
 
     def add_task(self, method: callable, *args, **kwargs):
         self.tasks.append(MediaPlayerTask(
@@ -320,7 +314,7 @@ class MediaPlayerThread(threading.Thread):
                 log.debug(f"Failed to contact the deck 5 times in a row: {self.deck_controller.serial_number()}. Removing controller")
                 
                 self.deck_controller.deck.close()
-                self.deck_controller.media_player.running = False # Set stop flat - otherwise remove_controller will wait until this task is done, which it never will because it waiuts
+                self.deck_controller.media_player.stop()
                 gl.deck_manager.remove_controller(self.deck_controller)
 
                 gl.deck_manager.connect_new_decks()

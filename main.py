@@ -60,6 +60,8 @@ from src.backend.Migration.Migrators.Migrator_1_5_0_beta_5 import Migrator_1_5_0
 # Import globals
 import globals as gl
 
+main_path = os.path.abspath(os.path.dirname(__file__))
+
 def write_logs(record):
     gl.logs.append(record)
 
@@ -98,7 +100,7 @@ def create_global_objects():
     gl.tray_icon = TrayIcon()
     # gl.tray_icon.run_detached()
 
-    gl.lm = LocaleManager(csv_path=os.path.join("locales", "locales.csv"))
+    gl.lm = LocaleManager(csv_path=os.path.join(main_path, "locales", "locales.csv"))
     gl.lm.set_to_os_default()
     gl.lm.set_fallback_language("en_US")
 

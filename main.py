@@ -256,7 +256,6 @@ def main():
     create_global_objects()
 
     app_settings = gl.settings_manager.get_app_settings()
-    app_settings = gl.settings_manager.get_app_settings()
     auto_start = app_settings.get("system", {}).get("autostart", True)
     setup_autostart(auto_start)
     

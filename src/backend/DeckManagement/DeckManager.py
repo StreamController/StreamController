@@ -167,7 +167,8 @@ class DeckManager:
 
     def remove_controller(self, deck_controller: DeckController) -> None:
         self.deck_controller.remove(deck_controller)
-        gl.app.main_win.leftArea.deck_stack.remove_page(deck_controller)
+        if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            gl.app.main_win.leftArea.deck_stack.remove_page(deck_controller)
         deck_controller.delete()
         del deck_controller
 

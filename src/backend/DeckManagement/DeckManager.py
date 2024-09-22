@@ -63,7 +63,7 @@ class DeckManager:
         portal = Xdp.Portal.new()
         self.flatpak = portal.running_under_flatpak() # on_disconnect is not working under Flatpak - we use a separate thread #TODO: Find a better solution
         if self.flatpak:
-            log.info("Running under Flatpak. Using separate thread to disconnect device disconnection.")
+            log.info("Running under Flatpak. Using separate thread to detect device disconnection.")
             self.flatpak_disconnect_thread.start()
 
         self.beta_resume_mode = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)

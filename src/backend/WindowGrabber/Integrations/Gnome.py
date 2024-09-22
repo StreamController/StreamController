@@ -100,3 +100,6 @@ class Gnome(Integration):
     
     def get_is_connected(self) -> bool:
         return None not in (self.bus, self.proxy, self.interface)
+    
+    def close(self):
+        return

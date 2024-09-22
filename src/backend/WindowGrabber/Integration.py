@@ -29,3 +29,6 @@ class Integration:
     
     def get_active_window(self) -> Window:
         return None
+    
+    def close(self) -> None:
+        return None

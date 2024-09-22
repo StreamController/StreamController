@@ -107,6 +107,10 @@ class KDE(Integration):
     def get_is_connected(self) -> bool:
         return None not in (self.bus, self.proxy, self.interface)
 
+    def close(self) -> None:
+        if self.interface:
+            self.interface.stop()
+
     @staticmethod
     def script_name_to_window(s: str) -> Window:
         """converts a name from the KDE script into a Window class"""

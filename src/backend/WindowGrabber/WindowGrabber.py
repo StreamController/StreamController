@@ -72,6 +72,10 @@ class WindowGrabber:
             self.integration = KDE(self)
         elif self.server == "x11":
             self.integration = X11(self)
+    
+    def close_all(self) -> None:
+        log.info(f"Closing window grabber")
+        self.integration.close()
 
     @log.catch
     def get_all_windows(self) -> list[Window]:

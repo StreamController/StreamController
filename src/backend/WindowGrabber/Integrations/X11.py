@@ -87,6 +87,9 @@ class X11(Integration):
             windows.append(Window(class_name, title))
 
         return windows
+    
+    def close(self) -> None:
+        return
 
     @log.catch
     def get_active_window(self) -> Window:

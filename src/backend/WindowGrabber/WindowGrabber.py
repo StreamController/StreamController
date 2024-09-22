@@ -29,10 +29,11 @@ from src.backend.WindowGrabber.Integrations.Hyprland import Hyprland
 from src.backend.WindowGrabber.Integrations.Gnome import Gnome
 from src.backend.WindowGrabber.Integrations.Sway import Sway
 from src.backend.WindowGrabber.Integrations.X11 import X11
+from src.backend.WindowGrabber.Integrations.KDE import KDE
 
 class WindowGrabber:
     def __init__(self):
-        self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "x11"]
+        self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "x11", "kde", "wayland"]
 
         self.integration: Integration = None
         self.init_integration()
@@ -67,6 +68,8 @@ class WindowGrabber:
             self.integration = Gnome(self)
         elif self.environment == "sway":
             self.integration = Sway(self)
+        elif self.environment == 'kde':
+            self.integration = KDE(self)
         elif self.server == "x11":
             self.integration = X11(self)
 
@@ -139,7 +142,6 @@ class WindowGrabber:
                     return
                 if not deck_controller.deck.is_open():
                     return
-                
 
                 if deck_controller.page_auto_loaded:
                     active_page_change_info = gl.page_manager.auto_change_info.get(os.path.abspath(deck_controller.active_page.json_path))

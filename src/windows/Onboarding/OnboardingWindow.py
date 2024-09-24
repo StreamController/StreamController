@@ -155,7 +155,6 @@ class OnboardingWindow(Adw.Dialog):
             self.forward_button.set_visible(False)
 
     def on_close(self, *args, **kwargs):
-        self.destroy()
         if hasattr(gl.app, "permissions"):
             gl.app.permissions.present()
 
@@ -227,7 +226,7 @@ class ExtensionOnboardingScreen(Gtk.Box):
         self.append(self.label)
 
         self.detail = Gtk.Label(label=gl.lm.get("onboarding.extension.detail"), css_classes=["onboarding-welcome-detail-label"],
-                                width_request=600, halign=Gtk.Align.CENTER, wrap_mode=Gtk.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
+                                width_request=600, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
         self.append(self.detail)
 
         self.install_button = Gtk.Button(label=gl.lm.get("onboarding.extension.install-button"), margin_top=20, halign=Gtk.Align.CENTER)
@@ -293,7 +292,7 @@ class UdevOnboardingScreen(Gtk.Box):
         self.append(self.label)
 
         self.detail = Gtk.Label(label=gl.lm.get("onboarding.udev.detail"), css_classes=["onboarding-welcome-detail-label"],
-                                width_request=600, halign=Gtk.Align.CENTER, wrap_mode=Gtk.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
+                                width_request=600, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
         self.append(self.detail)
 
         self.open_wiki_button = Gtk.Button(label=gl.lm.get("onboarding.udev.button"), margin_top=20, halign=Gtk.Align.CENTER, css_classes=["pill", "suggested-action"])
@@ -361,7 +360,7 @@ class DiscordOnboardingScreen(Gtk.Box):
         self.append(self.label)
 
         self.detail = Gtk.Label(label="Join our discord to ask questions, get help and request new features!", css_classes=["onboarding-welcome-detail-label"],
-                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Gtk.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
+                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
         self.append(self.detail)
 
         self.join_button = Gtk.Button(label="Join", css_classes=["pill", "suggested-action"], margin_top=20, hexpand=False, halign=Gtk.Align.CENTER)
@@ -387,7 +386,7 @@ class SupportAppOnboardingScreen(Gtk.Box):
         self.append(self.label)
 
         self.detail = Gtk.Label(label="Support the development of this app by donating. You can also request custom plugins and page creation for your needs", css_classes=["onboarding-welcome-detail-label"],
-                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Gtk.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
+                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
         self.append(self.detail)
 
         self.support_button = Gtk.Button(label="Donate", css_classes=["pill", "suggested-action"], margin_top=20, hexpand=False, halign=Gtk.Align.CENTER)

@@ -11,6 +11,15 @@ class Media:
         self.halign = halign
         self.valign = valign
 
+    @classmethod
+    def from_media_path(cls, media_path: str, size: float = 1.0, halign: float = 0.0, valign: float = 0.0):
+        """
+        Creates a new media, adding the media path directly as a new layer
+        @return: A new Media Object with the added Image
+        """
+        layer = ImageLayer.from_media_path(media_path)
+        return cls(size=size, halign=halign, valign=valign, layers=[layer])
+
     def add_layer(self, layers: Union[ImageLayer, List[ImageLayer]]):
         for layer in layers:
             if isinstance(layer, list):
@@ -41,7 +50,7 @@ class Media:
 
     def get_final_media(self) -> Image:
         """
-        Transforms the layers list into a final image. The result of this image should be used sparingly because it takes some processing power
+        Transforms the layers list into a final image. The result of this image should be used sparingly because it takes some processing power and could be slow
         @return: Gives the final image that can be displayed by using set_media
         """
         if not self.layers and len(self.layers) <= 0:

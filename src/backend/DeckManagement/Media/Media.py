@@ -5,7 +5,7 @@ from PIL import Image
 from loguru import logger as log
 
 class Media:
-    def __init__(self, size: float = 1.0, halign: float = 0.0, valign: float = 0.0, layers: List[Layer] = None):
+    def __init__(self, size: float = 1.0, halign: float = 0.0, valign: float = 0.0, layers: List[ImageLayer] = None):
         self.layers: List[ImageLayer] = layers or []
         self.size = size
         self.halign = halign
@@ -56,8 +56,12 @@ class Media:
             image, position = layer.transform(pre_image.size)
             pre_image.paste(image, position, image)
 
-        post_image_layer = ImageLayer(pre_image, size=self.size, halign=self.halign, valign=self.valign)
+        post_image_layer = ImageLayer(image=pre_image, size=self.size, halign=self.halign, valign=self.valign)
+
         base_image = Image.new('RGBA', post_image_layer.image.size)
-        base_image.paste(post_image_layer.transform(base_image.size))
+
+        image, position = post_image_layer.transform(base_image.size)
+
+        base_image.paste(image, position, image)
 
         return base_image

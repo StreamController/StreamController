@@ -22,6 +22,7 @@ class Media:
 
     def add_layer(self, layers: Union[ImageLayer, List[ImageLayer]]):
         if not layers:
+            log.error(f"Error while adding layer! Layer is: {layers}")
             return
 
         for layer in layers:
@@ -33,6 +34,7 @@ class Media:
     def add_layer_below(self, *args: Union[ImageLayer, List[ImageLayer]]):
         """Adds the layers below the current existing ones"""
         if not args:
+            log.error(f"Error while adding layer below! Layer is: {args}")
             return
 
         for arg in args:
@@ -44,6 +46,7 @@ class Media:
     def add_layer_on_top(self, *args: Union[ImageLayer, List[ImageLayer]]):
         """Adds the layers ontop of the current existing ones"""
         if not args:
+            log.error(f"Error while adding layer on top! Layer is: {args}")
             return
 
         result = []

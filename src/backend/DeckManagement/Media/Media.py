@@ -21,6 +21,9 @@ class Media:
         return cls(size=size, halign=halign, valign=valign, layers=[layer])
 
     def add_layer(self, layers: Union[ImageLayer, List[ImageLayer]]):
+        if not layers:
+            return
+
         for layer in layers:
             if isinstance(layer, list):
                 self.layers.extend(layer)
@@ -29,6 +32,9 @@ class Media:
 
     def add_layer_below(self, *args: Union[ImageLayer, List[ImageLayer]]):
         """Adds the layers below the current existing ones"""
+        if not args:
+            return
+
         for arg in args:
             if isinstance(arg, list):
                 self.layers.extend(arg)
@@ -37,6 +43,9 @@ class Media:
 
     def add_layer_on_top(self, *args: Union[ImageLayer, List[ImageLayer]]):
         """Adds the layers ontop of the current existing ones"""
+        if not args:
+            return
+
         result = []
 
         for arg in args:

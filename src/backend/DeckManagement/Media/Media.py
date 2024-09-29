@@ -20,16 +20,15 @@ class Media:
         layer = ImageLayer.from_media_path(media_path)
         return cls(size=size, halign=halign, valign=valign, layers=[layer])
 
-    def add_layer(self, layers: Union[ImageLayer, List[ImageLayer]]):
-        if not layers:
-            log.error(f"Error while adding layer! Layer is: {layers}")
+    def add_layer(self, layer: Union[ImageLayer, List[ImageLayer]]):
+        if not layer:
+            log.error(f"Error while adding layer! Layer is: {layer}")
             return
 
-        for layer in layers:
-            if isinstance(layer, list):
-                self.layers.extend(layer)
-            if isinstance(layer, ImageLayer):
-                self.layers.append(layer)
+        if isinstance(layer, list):
+            self.layers.extend(layer)
+        if isinstance(layer, ImageLayer):
+            self.layers.append(layer)
 
     def add_layer_below(self, *args: Union[ImageLayer, List[ImageLayer]]):
         """Adds the layers below the current existing ones"""

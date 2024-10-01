@@ -10,6 +10,8 @@ label-editor-outline-width-label;Randdicke:;Outline width:;Largeur du contour:;A
 label-editor-outline-color-label;Randfarbe:;Outline color:;Couleur du contour:;Color de contorno:
 label-editor-placeholder-text;Text;Label;Étiquette;Etiqueta
 label-editor-expander-subtitle;Texte für diese Taste;Labels for this key;Étiquettes de ce bouton;Etiquetas para esta tecla
+label-editor-color-chooser-label;Farbe:;Color:;Couleur:Color:
+label-editor-color-chooser-label;Farbe:;Color:;Couleur:
 action-editor-header;Aktions;Actions;Actions;Acciones
 action-editor-expander-subtitle;Aktions für diese Taste;Actions for this key;Actions pour ce bouton;Acciones para esta tecla
 action-editor-add-new-action;Aktion hinzufügen;Add Action;Ajouter une action;Añadir acción

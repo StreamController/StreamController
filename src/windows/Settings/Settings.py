@@ -13,16 +13,17 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import subprocess
 import threading
 import gi
 
 from GtkHelper.GtkHelper import BetterPreferencesGroup
-from autostart import setup_autostart
+from autostart import is_flatpak, setup_autostart
 from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio, Pango
+from gi.repository import Gtk, Adw, Gio, Pango, Xdp
 
 # Import globals
 import globals as gl
@@ -178,6 +179,10 @@ class DevPageGroup(Adw.PreferencesGroup):
         self.data_path = Adw.EntryRow(title="Data path (requires restart)")
         self.add(self.data_path)
 
+        self.open_data_path_button = Gtk.Button(label="Open", valign=Gtk.Align.CENTER)
+        self.open_data_path_button.connect("clicked", self.on_open_data_path_button_clicked)
+        self.data_path.add_suffix(self.open_data_path_button)
+
         self.load_defaults()
 
         # Connect signals
@@ -205,6 +210,18 @@ class DevPageGroup(Adw.PreferencesGroup):
         static_settings = gl.settings_manager.get_static_settings()
         static_settings["data-path"] = self.data_path.get_text()
         gl.settings_manager.save_static_settings(static_settings)
+
+    def on_open_data_path_button_clicked(self, *args):
+        command = ""
+        if is_flatpak():
+            command += "flatpak-spawn --host "
+
+        command += f"xdg-open {self.data_path.get_text()}"
+
+        try:
+            subprocess.check_output(command, shell=True)
+        except subprocess.CalledProcessError:
+            pass
 
 
 class GeneralPage(Adw.PreferencesPage):

@@ -229,7 +229,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             # This usually means that the provided image is a non RGB one
             dial = Gtk.AlertDialog(
                 message="The chosen image doesn't seem to have RGB color channels.",
-                detail="Please convert it an an app like GIMP.",
+                detail="Please convert it in an app like GIMP.",
                 modal=True
             )
             dial.show()

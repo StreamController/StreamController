@@ -37,13 +37,17 @@ elif not argparser.parse_args().devel:
                 settings = json.load(f)
                 if "data-path" in settings:
                     DATA_PATH = settings["data-path"]
-                    print()
             log.info(f"Using data path from static settings: {DATA_PATH}")
         except Exception as e:
             log.error(f"Failed to set data path from static settings: {e}")
 
 if not os.path.exists(DATA_PATH):
-    os.makedirs(DATA_PATH)
+    log.info(f"Creating data path: {DATA_PATH}")
+    try:
+        os.makedirs(DATA_PATH)
+    except Exception as e:
+        log.error(f"Failed to create data path: {e}\nPlease change the data path manually in the config file under {STATIC_SETTINGS_FILE_PATH}")
+        sys.exit(1)
 
 PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")
 # Used for nix packaging

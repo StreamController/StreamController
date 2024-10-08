@@ -10,6 +10,8 @@ label-editor-outline-width-label;Randdicke:;Outline width:;Largeur du contour:;A
 label-editor-outline-color-label;Randfarbe:;Outline color:;Couleur du contour:;Color de contorno:
 label-editor-placeholder-text;Text;Label;Étiquette;Etiqueta
 label-editor-expander-subtitle;Texte für diese Taste;Labels for this key;Étiquettes de ce bouton;Etiquetas para esta tecla
+label-editor-color-chooser-label;Farbe:;Color:;Couleur:Color:
+label-editor-color-chooser-label;Farbe:;Color:;Couleur:
 action-editor-header;Aktions;Actions;Actions;Acciones
 action-editor-expander-subtitle;Aktions für diese Taste;Actions for this key;Actions pour ce bouton;Acciones para esta tecla
 action-editor-add-new-action;Aktion hinzufügen;Add Action;Ajouter une action;Añadir acción
@@ -85,28 +87,28 @@ settings-ui-settings-key-grid-header;Tastenraster;Key Grid;Grille de touches;Rej
 open-about;Über;About;A propos;Acerca de
 store.plugins.section;Plugins;Plugins;Plugins;Plugins
 store.icons.section;Icons;Icons;Icônes;Iconos
-store.wallpapers.section;Hintergründe;Wallpapers;Fonds d'Écran;Fondos de pantalla
+store.wallpapers.section;Hintergründe;Wallpapers;Fonds d'écrans;Fondos de pantalla
 store.badges.official;Offiziell;Official;Officiel;Oficial
 store.badges.verified;Verifiziert;Verified;Vérifié;Verificado
 quit;Beenden;Quit;Quitter;Salir de
-store.plugins.search-placeholder;Nach Plugins suchen;Search for plugins;Rechercher des plugins;Buscar plugins
-store.icons.search-placeholder;Nach Icons suchen;Search for icons;Rechercher des icônes;Buscar iconos
-store.wallpapers.search-placeholder;Nach Hintergründen suchen;Search for wallpapers;Rechercher des fonds d'écran;Buscar fondos de pantalla
+store.plugins.search-placeholder;Nach Plugins suchen;Search for plugins;Recherchez des plugins;Buscar plugins
+store.icons.search-placeholder;Nach Icons suchen;Search for icons;Recherchez des icônes;Buscar iconos
+store.wallpapers.search-placeholder;Nach Hintergründen suchen;Search for wallpapers;Recherchez des fonds d'écran;Buscar fondos de pantalla
 onboarding.welcome.header;Willkommen bei StreamController!;Welcome To StreamController!;Bienvenue chez StreamController !;Bienvenido a StreamController
-onboarding.welcome.details;Die Linux App für das Elgato Stream Deck;The Linux app for the Elgato Stream Deck;L'application Linux pour l’Elgato Stream Deck;La aplicación Linux para Elgato Stream Deck
+onboarding.welcome.details;Die Linux App für das Elgato Stream Deck;The Linux app for the Elgato Stream Deck;L'application Linux pour le Stream Deck d’Elgato;La aplicación Linux para Elgato Stream Deck
 onboarding.store.header;Asset Store;Asset Store;Magasin de ressources;Tienda
-onboarding.store.details;Plugins; Icons und Hintergründe herunterladen;Download plugins;Búsqueda de iconos y fondos de pantalla
+onboarding.store.details;Plugins; Icons und Hintergründe herunterladen;Télécharger des plugins;Búsqueda de iconos y fondos de pantalla
 onboarding.productive.header;Produktiver;Be More Productive;Soyez plus productif;Sea más productivo
-onboarding.productive.details;Mit eigenen Makros & Routinen;With your personal shortcuts;Avec vos raccourcis personnels;Con tus atajos personales
+onboarding.productive.details;Mit eigenen Makros & Routinen;With your personal shortcuts;Avec vos raccourcis personnalisés;Con tus atajos personales
 onboarding.multiple.header;Multi Deck Support;Multi Deck Support;Support Multi Deck;Soporte Multi Deck
-onboarding.multiple.details;Support für mehrere Elgato Stream Decks;Support for multiple Elgato Stream Decks at once;Prise en charge de plusieurs Elgato Stream Decks à la fois;Soporte para múltiples Elgato Stream Decks a la vez
+onboarding.multiple.details;Support für mehrere Elgato Stream Decks;Support for multiple Elgato Stream Decks at once;Prise en charge de plusieurs Stream Decks à la fois;Soporte para múltiples Elgato Stream Decks a la vez
 onboarding.ready.header;Bereit?;Ready?;Prêt ?;¿Preparado?
-onboarding.ready.button;Start;Start;Démarrer;Iniciar
+onboarding.ready.button;Start;Start;Commencez;Iniciar
 deck.deck-group.title;Deck Einstellungen;Deck Settings;Paramètres du Deck;Configuración del deck
 deck.deck-group.description;"Betreffen das ganze Deck; sofern nicht überschrieben";Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire;Se aplica a todo el deck a menos que se sobrescriba
 deck.deck-group.brightness;Helligkeit;Brightness;Luminosité;Brillo
 deck.deck-group.enable-screensaver;Bildschirmschoner;Enable Screensaver;Activer l'économiseur d'écran;Activar salvapantallas
-deck.deck-group.screensaver-delay;Einschalten nach (min);Enable after (min);Activation après (min);Activar después (min)
+deck.deck-group.screensaver-delay;Einschalten nach (min);Enable after (min);L’activer après (min);Activar después (min)
 deck.deck-group.media-to-show;Zu zeigendes Medium;Media to show;Média à afficher;Medios a mostrar
 deck.deck-group.media-select-label;Auswählen;Select;Sélectionner;Seleccione
 deck.deck-group.media-loop;Wiederholen;Loop;Boucle;Bucle
@@ -115,15 +117,15 @@ deck.background-group.title;Hintergrund;Background;Fonds d'écran;Fondo
 deck.background-group.description;"Betreffen das ganze Deck; sofern nicht überschrieben";Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire;Se aplica a toda la cubierta a menos que se sobrescriba
 deck.background-group.enable;Hintergrund aktivieren;Enable Background;Activer l'arrière-plan;Habilitar fondo
 deck.background-group-media-select-label;Auswählen;Selecionar;Sélectionner;Seleccionar
-background.processing;Verarbeiten...;Processing...;Traitement...;Procesando…
+background.processing;Verarbeiten...;Processing...;Traitement en cours…;Procesando…
 asset-chooser.custom.browse-files;Durchsuchen;Browse Files;Parcourir les fichiers;Examinar archivos
-asset-chooser.custom.browse-files.dialog.title;Dateien auswählen;Select Files;Sélectionner les fichiers;Seleccionar archivos
+asset-chooser.custom.browse-files.dialog.title;Dateien auswählen;Select Files;Sélectionner des fichiers;Seleccionar archivos
 asset-chooser.custom.browse-files.dialog.select-button;Auswählen;Select;Sélectionner;Seleccione
 background-editor.header;Hintergrund;Background;L'arrière-plan;Fondo
 asset-chooser.add-more-button.label;Mehr hinzufügen;Add More;Ajouter plus;Añadir más
 background-editor-expander.subtitle;Hintergrund für diese Taste;Background for this key;L'arrière-plan pour cette touche;Fondo para esta llave
 background-editor.color.label;Farbe;Color;Couleur;Color
-background-editor.color.dialog.title;Hintergrundfarbe auswählen;Select Background Color;Sélectionner la couleur de fond;Seleccionar color de fondo
+background-editor.color.dialog.title;Hintergrundfarbe auswählen;Select Background Color;Sélectionner la couleur de l’arrière-plan;Seleccionar color de fondo
 background-editor.color.reset;Farbe zurücksetzen;Reset color;Réinitialiser la couleur;Restablecer color
 right-area.image-editor.layout.header;Layout;Layout;Disposition;Diseño
 right-area.image-editor.layout.subtitle;Layout für diese Taste;Layout for this key;Disposition pour cette touche;Diseño para esta tecla
@@ -134,35 +136,35 @@ deck.fake-deck-group.title;Fake Deck;Fake Deck;Faux Decks;Cubierta falsa
 deck.fake-deck-group.description;Konfiguration des Fake Decks;Configure fake deck settings;Configurer les paramètres du Faux Deck;Configure los ajustes del falso deck
 deck.fake-deck-group.layout.columns.label;Spalten;Columns;Colonnes;Columnas
 deck.fake-deck-group.layout.rows.label;Zeilen;Rows;Rangées;Filas
-warning.low-fps;Niedrige FPS erkannt. Dies kann durch Hintergrundvideos verursacht werden. Nach dem Caching kann diese Warnung verschwinden.;Low FPS detected. This might be caused by your background video. This may dissapear after the caching is finished.;Faible IPS détecté. Cela peut-être causé par votre vidéo de fond. Cela peut disparaître après la mise en cache terminée.;FPS bajos detectados. Esto puede ser causado por su video de fondo. Es posible que desaparezca una vez finalizado el almacenamiento en caché.
+warning.low-fps;Niedrige FPS erkannt. Dies kann durch Hintergrundvideos verursacht werden. Nach dem Caching kann diese Warnung verschwinden.;Low FPS detected. This might be caused by your background video. This may dissapear after the caching is finished.;Faible IPS détecté. Cela peut-être causé par votre vidéo d’arrière-plan. Cela peut disparaître une fois que la mise en cache de la vidéo à été faite.;FPS bajos detectados. Esto puede ser causado por su video de fondo. Es posible que desaparezca una vez finalizado el almacenamiento en caché.
 warning.low-fps.fix;Deaktivieren;Deactivate;Désactiver;Desactivar
 warning.dismiss;Verwerfen;Dismiss;Ignorer;Desactivar
 settings.enable-fps-warnings;FPS Warnungen aktivieren;Enable FPS warnings;Activer les avertissements IPS;Activar avisos de FPS
 settings.performance.title;Performance;Performance;Performance;Rendimiento
 settings.performance.header;"Performance &amp; Optimierungen";"Performance &amp; Optimizations";Performances et optimisations;"Rendimiento &amp; Optimizaciones"
-settings.performance.n-cached-pages.title;Anzahl der zu cachenden Seiten;Number of cached pages;Nombre de pages en cache;Número de páginas en caché
+settings.performance.n-cached-pages.title;Anzahl der zu cachenden Seiten;Number of cached pages;Nombre de pages mises en cache;Número de páginas en caché
 settings.performance.n-cached-pages.subtitle;"Anzahl der Seiten; die im Caching gespeichert werden sollen";Number of pages to keep in cache;Nombre de pages à garder en cache;Número de páginas a mantener en caché
-settings.performance.n-cached-pages.tooltip;Eine höhere Zahl bedeutet mehr Speicherverbrauch aber schnellere Seitenladezeit.;A higher number means more memory usage but faster page loading;Un nombre plus élevé signifie une utilisation de mémoire plus importante mais un chargement des pages plus rapide;Un número mayor implica un mayor uso de memoria pero una carga más rápida de las páginas
+settings.performance.n-cached-pages.tooltip;Eine höhere Zahl bedeutet mehr Speicherverbrauch aber schnellere Seitenladezeit.;A higher number means more memory usage but faster page loading;Plus le nombre est élevé, plus la mémoire est solicitée mais le chargement des pages est plus rapide.;Un número mayor implica un mayor uso de memoria pero una carga más rápida de las páginas
 errors.no-page.header;Keine Seiten Verfügbar;No Pages Available;Aucune page disponible;No hay páginas disponibles
 errors.no-page.create-new;Neue Erstellen;Create New;Créer nouveau;Crear nueva
 errors.no-page.create-dialog.title;Neue Seite Erstellen;Create New Page;Créer une nouvelle page;Crear nueva página
 errors.no-page.create-dialog.entry.label;Seitenname;Page Name;Nom de la page;Nombre de la página
 errors.no-deck.header;Keine Decks Erkannt;No Decks Available;Aucun Deck disponible;No hay mazos disponibles
-errors.no-deck.add-fake;Ein Fake Deck Hinzufügen;Add A Fake Deck;Ajouter un Faux Deck;Añadir una baraja falsa
+errors.no-deck.add-fake;Ein Fake Deck Hinzufügen;Add A Fake Deck;Ajouter un faux Deck;Añadir una baraja falsa
 action-chooser.go-back.label;Zurück;Go Back;Retour;Volver atrás
 action-chooser.search-entry.placeholder;Nach Aktionen und Plugins suchen;Search for actions and plugins;Rechercher des actions et des plugins;Buscar acciones y plugins
 action-chooser.header;Aktion Auswählen;Choose An Action;Choisir une action;Elija una acción
 store.page.loading-spinner.label;Lädt;Loading;Chargement;Cargando
-settings.performance.cache-videos.title;Videos cachen;Cache Videos;Vidéos en cache;Videos en caché
+settings.performance.cache-videos.title;Videos cachen;Cache Videos;Vidéos mises en cache;Videos en caché
 settings.performance.cache-videos.subtitle;Wird nach einem Neustart angewandt;Only applies to new videos or after a restart;S'applique uniquement aux nouvelles vidéos ou après un redémarrage;Sólo se aplica a vídeos nuevos o tras un reinicio
-settings.performance.cache-videos.tooltip;Aktivieren um Videos auf dem Computer zu cachen. Dies kann zu großem Arbeitsspeicherverbrauch führen;Enabling this will cache videos on your computer. This might cause high memory usage.;Activer cela mettra en cache les vidéos sur votre ordinateur. Cela peut entraîner une utilisation élevée de la mémoire.;Si activas esta opción, los vídeos se almacenarán en caché en tu ordenador. Esto puede causar un alto uso de memoria.
+settings.performance.cache-videos.tooltip;Aktivieren um Videos auf dem Computer zu cachen. Dies kann zu großem Arbeitsspeicherverbrauch führen;Enabling this will cache videos on your computer. This might cause high memory usage.;En activant cela, les vidéos mises en cache seront sur votre ordinateur. Cela pourrais causer une utilisation intensive de la mémoire.;Si activas esta opción, los vídeos se almacenarán en caché en tu ordenador. Esto puede causar un alto uso de memoria.
 permissions-window.title;Berechtigungen;Permissions;Autorisations;Permisos
 permissions-window.mark-solved;Als gelöst markieren;Mark As Solved;Marquer comme résolu;Marcar como solucionado
 permissions-window.close;Schließen;Close;Fermer;Cerrar
 permissions-window.flatpak-detected;Flatpak erkannt;Flatpak detected;Flatpak détecté;Flatpak detectado
-permissions-window.description;"Manche Berechtigungen werden von Flathub aus Sichenheitsgründen eingeschräntk. Um eine reibungslose Erfahrung mit den Plugins zu gewährliesten; ist es empfolhen die dbus Berechtigungen mit folgendem Befehlt anzupassen:";"Certain default permissions are restricted by Flathub for security reasons. To enhance your experience with plugins; consider adjusting the dbus permissions by running the following command in your terminal:";"Certaines permissions par défaut sont restreintes par Flathub pour des raisons de sécurité. Pour améliorer votre expérience avec les plugins ; envisagez d'ajuster les permissions dbus en exécutant la commande suivante dans votre terminal :";"Ciertos permisos por defecto están restringidos por Flathub por razones de seguridad. Para mejorar su experiencia con los plugins; considere ajustar los permisos de dbus ejecutando el siguiente comando en su terminal:"
+permissions-window.description;"Manche Berechtigungen werden von Flathub aus Sichenheitsgründen eingeschräntk. Um eine reibungslose Erfahrung mit den Plugins zu gewährliesten; ist es empfolhen die dbus Berechtigungen mit folgendem Befehlt anzupassen:";"Certain default permissions are restricted by Flathub for security reasons. To enhance your experience with plugins; consider adjusting the dbus permissions by running the following command in your terminal:";"Pour des raisons de sécurité, certaines permissions par défaut sont restreintes par Flathub. Pour améliorer votre expérience avec les plugins ; Pour profiter au maximum des plugins, veuillez ajuster les permissions de dbus en entrant la commande suivante dans votre terminal :";"Ciertos permisos por defecto están restringidos por Flathub por razones de seguridad. Para mejorar su experiencia con los plugins; considere ajustar los permisos de dbus ejecutando el siguiente comando en su terminal:"
 permissions-window.copy-tooltip;Kopieren;Copy;Copier;Copiar
-permissions-window.info-beginning;"Für mehr Informationen zu Berechtigungen von Flatpaks; besuche die ";"For more information on Flatpak permissions; visit the ";"Pour plus d'informations sur les permissions Flatpak ; visitez la";"Para más información sobre los permisos de Flatpak; visite la "
+permissions-window.info-beginning;"Für mehr Informationen zu Berechtigungen von Flatpaks; besuche die ";"For more information on Flatpak permissions; visit the ";Pour plus d'informations sur les permissions de Flatpak, merci de visitez la;"Para más información sobre los permisos de Flatpak; visite la "
 permissions-window.flatpak-docs;Flatpak Dokmentation;Flatpak documentation;documentation Flatpak;documentación de Flatpak
 settings-allow-white-mode;White mode erlauben;Allow white mode;Autoriser le mode clair;Permitir el modo blanco
 settings-allow-white-mode-subtitle;White mode für die UI erlauben - Experimentell;Allow white mode for the ui - Experimental;Autoriser le mode clair pour l'interface utilisateur – Expérimental;Permitir modo blanco para la ui - Experimental
@@ -171,25 +173,25 @@ page-manager.page-editor.default-page.row.title;Standartseite;Default page;Page 
 page-manager.page-editor.default-page.row.subtitle;Auswählen auf welchen Decks diese Seite beim Start geladen werden soll;Select for which decks this page should be opened by default;Sélectionner pour quels Decks cette page doit être ouverte par défaut;Seleccione para qué mazos debe abrirse esta página por defecto
 multi-deck-selector.title;Decks auswählen;Select Decks;Sélectionner des Decks;Seleccionar mazos
 multi-deck-selector.selected;auswählen;selected;sélectionné;seleccionado
-permissions.request.default-description;Ein Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:;A plugin requested permissions. Consider running the following command to grant the needed permission;Un plugin a demandé des permissions. Envisagez d'exécuter la commande suivante pour accorder la permission nécessaire;Un plugin ha solicitado permisos. Ejecute el siguiente comando para conceder el permiso necesario
-permissions.request.plugin-blueprint;Das {name} Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:;The {name} plugin requested a new permission. Consider running the following command to ensure the plugin works correctly:;Le plugin {nom} a demandé une nouvelle permission. Envisagez d'exécuter la commande suivante pour garantir le bon fonctionnement du plugin :;El plugin {name} ha solicitado un nuevo permiso. Ejecute el siguiente comando para asegurarse de que el complemento funciona correctamente:
+permissions.request.default-description;Ein Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:;A plugin requested permissions. Consider running the following command to grant the needed permission;Un plugin a demandé des permissions. Pour autoriser le plugin a utiliser les permissions, merci d’exécuter la commande suivante dans un terminal;Un plugin ha solicitado permisos. Ejecute el siguiente comando para conceder el permiso necesario
+permissions.request.plugin-blueprint;Das {name} Plugin hat eine neue Berechtigung angefragt. Um die Funktionsweise des Plugins zu garantieren kann diese Berechtigung mit dem foglenden Befehlt gestattet werden:;The {name} plugin requested a new permission. Consider running the following command to ensure the plugin works correctly:;Le plugin {nom} a demandé une nouvelle permission. Pour autoriser le plugin a utiliser les permissions et garentir sa fonctionnabilité, merci d’exécuter la commande suivante dans un terminal :;El plugin {name} ha solicitado un nuevo permiso. Ejecute el siguiente comando para asegurarse de que el complemento funciona correctamente:
 onboarding.extension.button.install;Installieren;Install;Installer;Instalar
 onboarding.extension.button.installed;Installiert;Installed;Installé;Instalado
 onboarding.extension.button.failed;Fehlgeschlagen;Failed;Échec;Error
-onboarding.extension.detail;"Installiere die offizielle Gnome Erweiterung; um automatische Seitenwechsel zu ermöglichen";Install the official Gnome extension to allow automatic page switching;Installer l'extension officielle Gnome pour permettre le changement automatique de page;Instala la extensión oficial de Gnome para permitir el cambio automático de página
+onboarding.extension.detail;"Installiere die offizielle Gnome Erweiterung; um automatische Seitenwechsel zu ermöglichen";Install the official Gnome extension to allow automatic page switching;Installez l'extension officielle Gnome pour permettre le changement automatique de page;Instala la extensión oficial de Gnome para permitir el cambio automático de página
 onboarding.extension.header;Gnome Erweiterungen;Gnome Extension;Extension Gnome;Extensión Gnome
 onboarding.extension.hint;Erfordert Gnome Erweiterungen & Gnome Shell 45 oder neuer;Requires Gnome Extensions & Gnome Shell 45 or later;Nécessite les extensions Gnome et Gnome Shell 45 ou ultérieur;Requiere Gnome Extensions & Gnome Shell 45 o posterior
 store.preview.no-description;Keine Beschreibung;No description;Aucune description;Sin descripción
-deck.background-group.media-select-label;;Select;Sélectionner;Seleccione
-asset-manager.custom-assets.remove-confirmation-dialog.title;;Remove Asset;Supprimer la ressource;Eliminar activo
-asset-manager.custom-assets.remove-confirmation-dialog.cancel;;Cancel;Annuler;Cancelar
-asset-manager.custom-assets.remove-confirmation-dialog.remove;;Remove;Supprimer;Eliminar
-asset-manager.custom-assets.remove-confirmation-dialog.body;;Are you sure you want to remove the asset ;Êtes-vous sûr de vouloir supprimer la ressource ?;¿Está seguro de que desea eliminar el activo? 
-errors.no-page.import;;Import;Importer;Importar
-page-manager-search-hint;;;Rechercher;Recargar
-page-manager-add-page;;;Ajouter une page;Añadir 
-page-manager-rename;;;Renommer;Renombrar
-page-manager-remove;;;Supprimer;Eliminar
+deck.background-group.media-select-label;Auswählen;Select;Sélectionner;Seleccione
+asset-manager.custom-assets.remove-confirmation-dialog.title;Asset entfernen;Remove Asset;Supprimer la ressource;Eliminar activo
+asset-manager.custom-assets.remove-confirmation-dialog.cancel;Abbrechen;Cancel;Annuler;Cancelar
+asset-manager.custom-assets.remove-confirmation-dialog.remove;Entfernen;Remove;Supprimer;Eliminar
+asset-manager.custom-assets.remove-confirmation-dialog.body;Wollen Sie dieses Asset wirklich löschen?;Are you sure you want to remove the asset ;Êtes-vous sûr de vouloir supprimer cette ressource ?;¿Está seguro de que desea eliminar el activo? 
+errors.no-page.import;Importieren;Import;Importer;Importar
+page-manager-search-hint;Suchen;Search;Rechercher;Recargar
+page-manager-add-page;Neue Seite;New page;Ajouter une page;Añadir 
+page-manager-rename;Umbenennen;Rename;Renommer;Renombrar
+page-manager-remove;Löschen;Remove;Supprimer;Eliminar
 page-manager.duplicate;Duplizieren;Duplicate;Dupliquer;Duplicar
 page-manager.export-page;Exportieren;Export;Exporter;Exportar
 page-manager.import;Importieren;Import;Importer;Importar
@@ -197,24 +199,24 @@ page-manager.import.page;Seite;Page;Page ;Página
 settings-show-notifications;Benachrichtigungen anzeigen;Show notifications;Afficher les notifications;Mostrar notificaciones
 settings-show-notifications-subtitle;Benachrichtigungen bei veralteten Assets anzeigen;Show notifications for outdated assets;Afficher les notifications pour les ressources obsolètes;Mostrar notificaciones de activos obsoletos
 settings-system-settings-title;System;System;Système;Sistema
-settings-system-settings-header;Systemeinstellungen; System settings;Paramètres du système;Configuración del sistema
+settings-system-settings-header;Systemeinstellungen; System settings;Paramètres système;Configuración del sistema
 settings-system-settings-autostart;Autostart;Autostart;Démarrage automatique;Inicio automático
-settings-system-settings-autostart-subtitle;App beim Systemstart automatisch starten;Start app on system boot;Démarrer l'application au démarrage du système;Iniciar la aplicación al arrancar el sistema
-settings-system-settings-keep-running;Die App weiterlaufen lassen;Keep running;;Mantener en funcionamiento
-settings-system-settings-keep-running-subtitle;Die App nach Schließen des Hauptfensters im Hintergrund aktiv lassen;Keep the app running after closing the main window;;Mantener la aplicación en ejecución después de cerrar la ventana principal
+settings-system-settings-autostart-subtitle;App beim Systemstart automatisch starten;Start app on system boot;Démarrer l'application lors du démarrage du système;Iniciar la aplicación al arrancar el sistema
+settings-system-settings-keep-running;Die App weiterlaufen lassen;Keep running;Garder en fonctionnement;Mantener en funcionamiento
+settings-system-settings-keep-running-subtitle;Die App nach Schließen des Hauptfensters im Hintergrund aktiv lassen;Keep the app running after closing the main window;Garder l’application d’ouvert après avoir fermé la fenêtre principale;Mantener la aplicación en ejecución después de cerrar la ventana principal
 onboarding.udev.header;udev Regeln;udev rules;Règles udev;Reglas udev
 onboarding.udev.detail;Es ist eine alte udev version installiert. Klicken Sie auf den Button um zu sehen was sie tun müssen; Old udev version detected. Please click on the button to see how to avoid problems;Ancienne version udev détectée. Veuillez cliquer sur le bouton pour voir comment éviter les problèmes;Se ha detectado una versión antigua de udev. Haga clic en el botón para ver cómo evitar problemas
 onboarding.udev.button;Website öffnen; Open web;Ouvrir le site web;Abrir web
 settings-store-custom-stores-subtitle;Weitere Storerepos hinzufügen;Add custom store repos;Ajouter des dépôts de magasins personnalisés;Añadir repos de tienda personalizados
 settings-store-custom-plugins-subtitle;Weitere Pluginrepos hinzufügen;Add custom plugin repos;Ajouter des dépôts de plugins personnalisés;Añadir repos de plugins personalizados
-settings-auto-open-action-config;Konfigurationsoptionen automatisch öffnen;Automatically open config options;;Abrir automáticamente las opciones de configuración
-settings-auto-open-action-config-subtitle;Konfigurationsoptionen von neuen Aktionen automatisch öffnen;Automatically open config options for new actions;;Abrir automáticamente las opciones de configuración para nuevas acciones
-settings-font-settings-header;Standard-Schift;Default font
-settings-font-settings-subtitle;Standard-Schrift für Beschriftungen; Default font for labels
-settings-font-color-settings-header;Schriftfarbe; Font color;
-settings-font-color-settings-subtitle;Standardschriftfarbe;Default font color
-settings-font-outline-color-settings-header;Farbe der Schriftumrandung;Outline color
-settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung; Default color for the label outline;
-settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;
-settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline
-support;Unterstützen;Donate
+settings-auto-open-action-config;Konfigurationsoptionen automatisch öffnen;Automatically open config options;Ouvrir automatiquement les options de configurations;Abrir automáticamente las opciones de configuración
+settings-auto-open-action-config-subtitle;Konfigurationsoptionen von neuen Aktionen automatisch öffnen;Automatically open config options for new actions;Ouvrir automatiquement les options de configurations pour les nouvelles actions;Abrir automáticamente las opciones de configuración para nuevas acciones
+settings-font-settings-header;Standard-Schift;Default font;Police par défaut;
+settings-font-settings-subtitle;Standard-Schrift für Beschriftungen; Default font for labels;Police par défaut pour les labels;
+settings-font-color-settings-header;Schriftfarbe; Font color;Couleur de la police;
+settings-font-color-settings-subtitle;Standardschriftfarbe;Default font color;Couleur de la police par défaut;
+settings-font-outline-color-settings-header;Farbe der Schriftumrandung;Outline color;Couleur du contour;
+settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung; Default color for the label outline;Couleur par défaut du contour;
+settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;Taille du contour;
+settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline;Taille par défaut du contour;
+support;Unterstützen;Donate;Faites un don;

@@ -12,15 +12,6 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-print(r""" _____ _                            _____             _             _ _           
-/  ___| |                          /  __ \           | |           | | |          
-\ `--.| |_ _ __ ___  __ _ _ __ ___ | /  \/ ___  _ __ | |_ _ __ ___ | | | ___ _ __ 
- `--. \ __| '__/ _ \/ _` | '_ ` _ \| |    / _ \| '_ \| __| '__/ _ \| | |/ _ \ '__|
-/\__/ / |_| | |  __/ (_| | | | | | | \__/\ (_) | | | | |_| | | (_) | | |  __/ |   
-\____/ \__|_|  \___|\__,_|_| |_| |_|\____/\___/|_| |_|\__|_|  \___/|_|_|\___|_|   
-""")
-
-
 # Import Python modules
 import setproctitle
 
@@ -34,7 +25,6 @@ import asyncio
 import threading
 import dbus
 import dbus.service
-import argparse
 import usb.core
 import usb.util
 from StreamDeck.DeviceManager import DeviceManager
@@ -49,7 +39,6 @@ from src.backend.AssetManagerBackend import AssetManagerBackend
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
-from src.backend.DeckManagement.HelperMethods import get_sys_args_without_param
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
 from src.backend.Store.StoreBackend import StoreBackend, NoConnectionError
@@ -68,6 +57,8 @@ from src.backend.Migration.Migrators.Migrator_1_5_0_beta_5 import Migrator_1_5_0
 
 # Import globals
 import globals as gl
+
+main_path = os.path.abspath(os.path.dirname(__file__))
 
 def write_logs(record):
     gl.logs.append(record)
@@ -107,7 +98,7 @@ def create_global_objects():
     gl.tray_icon = TrayIcon()
     # gl.tray_icon.run_detached()
 
-    gl.lm = LocaleManager(csv_path=os.path.join("locales", "locales.csv"))
+    gl.lm = LocaleManager(csv_path=os.path.join(main_path, "locales", "locales.csv"))
     gl.lm.set_to_os_default()
     gl.lm.set_fallback_language("en_US")
 
@@ -264,7 +255,6 @@ def main():
 
     create_global_objects()
 
-    app_settings = gl.settings_manager.get_app_settings()
     app_settings = gl.settings_manager.get_app_settings()
     auto_start = app_settings.get("system", {}).get("autostart", True)
     setup_autostart(auto_start)

@@ -97,6 +97,7 @@ class ActionBase(rpyc.Service):
         return i.states.get(self.state)
     
     def event_callback(self, event: InputEvent, data: dict = None):
+        # TODO: Rename to on_event
         ## backward compatibility
         if event == Input.Key.Events.DOWN:
             self.on_key_down()
@@ -126,6 +127,9 @@ class ActionBase(rpyc.Service):
         pass
 
     def on_update(self):
+        """
+        This method gets called when the app wants the action to redraw itself (image, labels, etc.).
+        """
         self.on_ready() # backward compatibility
 
     def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):

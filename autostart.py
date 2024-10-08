@@ -32,7 +32,7 @@ def setup_autostart(enable: bool = True):
             setup_autostart_flatpak(True)
 
         else:
-            setup_autostart_desktop_entry(True)
+            setup_autostart_desktop_entry(True, True)
 
     else:
         setup_autostart_flatpak(False)
@@ -77,7 +77,7 @@ def setup_autostart_flatpak(enable: bool = True):
         log.error(f"request_background failed")
         setup_autostart_desktop_entry(enable)
 
-def setup_autostart_desktop_entry(enable: bool = True):
+def setup_autostart_desktop_entry(enable: bool = True, native: bool = False):
     log.info("Setting up autostart using desktop entry")
 
 
@@ -88,7 +88,10 @@ def setup_autostart_desktop_entry(enable: bool = True):
     if enable:
         try:
             os.makedirs(os.path.dirname(AUTOSTART_DESKTOP_PATH), exist_ok=True)
-            shutil.copyfile(os.path.join("flatpak", "autostart.desktop"), AUTOSTART_DESKTOP_PATH)
+            if native:
+                shutil.copyfile(os.path.join("flatpak", "autostart-native.desktop"), AUTOSTART_DESKTOP_PATH)
+            else:
+                shutil.copyfile(os.path.join("flatpak", "autostart.desktop"), AUTOSTART_DESKTOP_PATH)
             log.info(f"Autostart set up at: {AUTOSTART_DESKTOP_PATH}")
         except Exception as e:
             log.error(f"Failed to set up autostart at: {AUTOSTART_DESKTOP_PATH} with error: {e}")

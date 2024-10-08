@@ -295,6 +295,8 @@ class Page:
                 action.input_ident = input_1
 
         # Change in action_objects
+        self.action_objects.setdefault(input_1.input_type, {})
+        self.action_objects.setdefault(input_2.input_type, {})
         self.action_objects[input_1.input_type][input_1.json_identifier] = input_2_dict
         self.action_objects[input_2.input_type][input_2.json_identifier] = input_1_dict
 
@@ -316,7 +318,7 @@ class Page:
         for type in list(self.action_objects.keys()):
             for key in list(self.action_objects[type].keys()):
                 for state in list(self.action_objects[type][key].keys()):
-                    for index in list(self.action_objects[type][key].keys()):
+                    for index in list(self.action_objects[type][key][state].keys()):
                         if not isinstance(self.action_objects[type][key][state][index], ActionBase):
                             continue
                         if self.action_objects[type][key][state][index].plugin_base == plugin_obj:
@@ -337,7 +339,6 @@ class Page:
                     for index in list(self.action_objects[input_type][json_identifier][state].keys()):
                         action_base = self.action_objects[input_type][json_identifier][state][index]
                         action_id = action_base.action_id
-                        print()
 
                         if gl.plugin_manager.get_plugin_id_from_action_id(action_id) == plugin_id:
                             identifier = Input.FromTypeIdentifier(input_type, json_identifier)

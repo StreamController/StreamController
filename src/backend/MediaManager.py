@@ -37,7 +37,7 @@ class MediaManager:
     def get_thumbnail(self, file_path):
         hash = sha256(file_path)
 
-        thumbnail_dir = os.path.join(gl.DATA_PATH, "cache", "thumbnails")
+        thumbnail_dir = os.path.join(gl.CACHE_PATH, "thumbnails")
         thumbnail_path = os.path.join(thumbnail_dir, f"{hash}.png")
         
         os.makedirs(thumbnail_dir, exist_ok=True)

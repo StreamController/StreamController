@@ -13,7 +13,7 @@ from loguru import logger as log
 
 import globals as gl
 
-VID_CACHE = os.path.join(gl.DATA_PATH, "cache", "videos")
+VID_CACHE = os.path.join(gl.CACHE_PATH, "videos")
 os.makedirs(VID_CACHE, exist_ok=True)
 
 # Import typing

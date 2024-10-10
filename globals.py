@@ -17,10 +17,16 @@ argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
 argparser.add_argument("app_args", nargs="*")
 
-VAR_APP_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")
-STATIC_SETTINGS_FILE_PATH = os.path.join(VAR_APP_PATH, "static", "settings.json")
+HOME = os.getenv("HOME")
+if HOME == None:
+    log.error("$HOME not set.")
+    exit(1)
+CONFIG_PATH = os.path.join(os.getenv("XDG_CONFIG_HOME", f"{HOME}/.config"), "streamcontroller")
+DATA_PATH = os.path.join(os.getenv("XDG_DATA_HOME", f"{HOME}/.local/share"), "streamcontroller")
+CACHE_PATH = os.path.join(os.getenv("XDG_CACHE_HOME", f"{HOME}/.local/share"), "streamcontroller")
 
-DATA_PATH = os.path.join(VAR_APP_PATH, "data") # Maybe use XDG_DATA_HOME instead
+STATIC_SETTINGS_FILE_PATH = os.path.join(CONFIG_PATH, "settings.json")
+
 if argparser.parse_args().data:
     DATA_PATH = argparser.parse_args().data
 elif not argparser.parse_args().devel:
@@ -54,9 +60,6 @@ if os.getenv("PLUGIN_DIR") is not None:
         log.warning(f"You're using a plugin dir path outside of your data dir, but also have a plugin dir in the data dir. This may cause problems.")
 
 os.makedirs(PLUGIN_DIR, exist_ok=True)
-
-# Add data path to sys.path
-sys.path.append(DATA_PATH)
 
 if TYPE_CHECKING:
     from src.app import App

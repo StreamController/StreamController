@@ -166,7 +166,7 @@ class NameGroup(Adw.PreferencesGroup):
         self.name_entry.set_text(os.path.splitext(os.path.basename(page_path))[0])
 
         base_path = os.path.dirname(page_path)
-        is_user_page = base_path == os.path.join(gl.DATA_PATH, "pages")
+        is_user_page = base_path == os.path.join(gl.CONFIG_PATH, "pages")
         self.set_sensitive(is_user_page)
 
     def on_name_changed(self, entry: Adw.EntryRow, *args):

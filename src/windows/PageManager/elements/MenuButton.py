@@ -146,7 +146,7 @@ class MenuButton(Gtk.MenuButton):
 
 
     def import_page_name_selected_callback(self, name):
-        page_path = os.path.join(gl.DATA_PATH, "pages", f"{name}.json")
+        page_path = os.path.join(gl.CONFIG_PATH, "pages", f"{name}.json")
         if os.path.exists(page_path):
             return
         

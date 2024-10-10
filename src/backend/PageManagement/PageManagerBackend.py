@@ -69,11 +69,11 @@ class PageManagerBackend:
     def get_pages(self, add_custom_pages: bool = True, sort: bool = True) -> list[str]:
         pages = []
         # Create pages dir if it doesn't exist
-        os.makedirs(os.path.join(gl.DATA_PATH, "pages"), exist_ok=True)
+        os.makedirs(os.path.join(gl.CONFIG_PATH, "pages"), exist_ok=True)
         # Get all pages
-        for page in os.listdir(os.path.join(gl.DATA_PATH, "pages")):
+        for page in os.listdir(os.path.join(gl.CONFIG_PATH, "pages")):
             if os.path.splitext(page)[1] == ".json":
-                pages.append(os.path.join(gl.DATA_PATH, "pages", page))
+                pages.append(os.path.join(gl.CONFIG_PATH, "pages", page))
 
         if add_custom_pages:
             pages.extend(self.custom_pages)
@@ -145,7 +145,7 @@ class PageManagerBackend:
 
 
     def get_default_page_for_deck(self, serial_number: str) -> str:
-        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.CONFIG_PATH, "pages.json"))
         page_path = page_settings.get("default-pages", {}).get(serial_number, None)
         if page_path is not None:
             if not os.path.exists(page_path):
@@ -154,14 +154,14 @@ class PageManagerBackend:
         return None
     
     def set_default_page_for_deck(self, serial_number: str, path: str):
-        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.CONFIG_PATH, "pages.json"))
         page_settings.setdefault("default-pages", {})
         page_settings["default-pages"][serial_number] = path
-        self.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), page_settings)
+        self.settings_manager.save_settings_to_file(os.path.join(gl.CONFIG_PATH, "pages.json"), page_settings)
 
     def get_all_deck_serial_numbers_with_set_default_page(self) -> list[str]:
         matches: list[str] = []
-        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.CONFIG_PATH, "pages.json"))
         for serial_number in page_settings.get("default-pages", {}):
             if page_settings["default-pages"][serial_number] not in ["", None]:
                 matches.append(serial_number)
@@ -170,7 +170,7 @@ class PageManagerBackend:
     
     def get_all_deck_serial_numbers_with_page_as_default(self, path: str) -> list[str]:
         matches: list[str] = []
-        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.CONFIG_PATH, "pages.json"))
         for serial_number in page_settings.get("default-pages", {}):
             if page_settings["default-pages"][serial_number] == path:
                 matches.append(serial_number)
@@ -191,13 +191,13 @@ class PageManagerBackend:
             page.json_path = new_path
             
             # Update default page settings
-            settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+            settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.CONFIG_PATH, "pages.json"))
             if settings.get("default-pages") is None:
                 continue
             for serial_number, path in settings.get("default-pages", {}).items():
                 if path == old_path:
                     settings["default-pages"][serial_number] = new_path
-            gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)
+            gl.settings_manager.save_settings_to_file(os.path.join(gl.CONFIG_PATH, "pages.json"), settings)
 
         # Remove old page
         os.remove(old_path)
@@ -235,11 +235,11 @@ class PageManagerBackend:
         self.remove_page_path_from_created_pages(page_path)
 
         # Remove default page entries
-        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.CONFIG_PATH, "pages.json"))
         for serial_number, path in list(settings.get("default-pages",{}).items()):
             if path == page_path:
                 del settings["default-pages"][serial_number]
-        gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)
+        gl.settings_manager.save_settings_to_file(os.path.join(gl.CONFIG_PATH, "pages.json"), settings)
 
         # Update ui
         # self.update_ui()
@@ -257,7 +257,7 @@ class PageManagerBackend:
 
 
     def add_page(self, name:str, page_dict: dict = {}):
-        with open(os.path.join(gl.DATA_PATH, "pages", f"{name}.json"), "w") as f:
+        with open(os.path.join(gl.CONFIG_PATH, "pages", f"{name}.json"), "w") as f:
             json.dump(page_dict, f)
 
         # Update ui

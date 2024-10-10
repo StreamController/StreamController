@@ -8,7 +8,7 @@ import globals as gl
 
 class StoreCache:
     def __init__(self):
-        self.CACHE_PATH = os.path.join(gl.DATA_PATH, "Store" , "cache")
+        self.CACHE_PATH = os.path.join(gl.CACHE_PATH, "store")
 
         self.files_json = os.path.join(self.CACHE_PATH, "files.json")
         self.files_dir = os.path.join(self.CACHE_PATH, "files")

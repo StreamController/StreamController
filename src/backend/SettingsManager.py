@@ -54,7 +54,7 @@ class SettingsManager:
         Returns:
             dict: The deck settings loaded from the file.
         """
-        path = os.path.join(gl.DATA_PATH, "settings", "decks", f"{deck_serial_number}.json")
+        path = os.path.join(gl.CONFIG_PATH, "decks", f"{deck_serial_number}.json")
         settings =  self.load_settings_from_file(path)
         if settings == None:
             settings = {}
@@ -73,11 +73,11 @@ class SettingsManager:
         Returns:
             None
         """
-        path = os.path.join(gl.DATA_PATH, "settings", "decks", f"{deck_serial_number}.json")
+        path = os.path.join(gl.CONFIG_PATH, "decks", f"{deck_serial_number}.json")
         self.save_settings_to_file(path, settings)
 
     def get_app_settings(self) -> dict:
-        path = os.path.join(gl.DATA_PATH, "settings", "settings.json")
+        path = os.path.join(gl.CONFIG_PATH, "settings.json")
         settings =  self.load_settings_from_file(path)
         if settings == None:
             settings = {}
@@ -85,7 +85,7 @@ class SettingsManager:
         return settings
     
     def save_app_settings(self, settings: dict) -> None:
-        path = os.path.join(gl.DATA_PATH, "settings", "settings.json")
+        path = os.path.join(gl.CONFIG_PATH, "settings.json")
         self.save_settings_to_file(path, settings)
 
     def get_static_settings(self) -> dict:

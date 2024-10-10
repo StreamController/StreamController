@@ -42,7 +42,7 @@ class StreamControllerImporter:
 
         for page_name in self.export:
             page = self.export[page_name]
-            page_path = os.path.join(gl.DATA_PATH, "pages", f"{page_name}.json")
+            page_path = os.path.join(gl.CONFIG_PATH, "pages", f"{page_name}.json")
             if ".json.json" in page_path:
                 page_path = page_path.replace(".json.json", ".json")
             

@@ -327,16 +327,21 @@ class ActionBase(rpyc.Service):
         actions = self.page.action_objects.get(self.input_ident.input_type, {}).get(self.input_ident.json_identifier, [])
         return len(actions) > 1
 
-    def get_asset_path(self, asset_name: str, subdir: str = None, asset_folder: str = "assets") -> str:
+    def get_asset_path(self, asset_name: str, subdirs: list[str] = [], asset_folder: str = "assets") -> str:
         """
-        Returns the full path of an asset
+        Helper method that returns paths to plugin assets.
 
-        @param asset_name: Name of the Asset File
-        @param subdir: Subdirectories
-        @param asset_folder: Name of the folder where assets are stored
-        @return: The full path to the asset
+        Args:
+            asset_name (str): Name of the Asset File
+            subdirs (list[str], optional): Subdirectories. Defaults to [].
+            asset_folder (str, optional): Name of the folder where assets are stored. Defaults to "assets".
+
+        Returns:
+            str: The full path to the asset
         """
-        if subdir:
+
+        subdir = os.path.join(*subdirs)
+        if subdir != "":
             return os.path.join(self.plugin_base.PATH, asset_folder, subdir, asset_name)
         else:
             return os.path.join(self.plugin_base.PATH, asset_folder, asset_name)

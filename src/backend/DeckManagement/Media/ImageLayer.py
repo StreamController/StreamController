@@ -1,33 +1,39 @@
-from typing import Tuple, Union, List
-
+from typing import Tuple
 from PIL import Image
-
 from src.backend.DeckManagement.HelperMethods import is_image, is_svg
 import globals as gl
 from loguru import logger as log
 
 class ImageLayer:
-    def __init__(self, image: Image, size: float = 1.0, halign: float = 0.0, valign: float = 0.0):
-        self.image: Image = image
-        """Direct Gtk.Image"""
+    def __init__(self, image: Image.Image, size: float = 1.0, halign: float = 0.0, valign: float = 0.0):
+        """
+        Initializes an ImageLayer instance.
+
+        Args:
+            image (PIL.Image.Image): The image to be layered.
+            size (float, optional): Size of the image as a percentage of the base size. Defaults to 1.0.
+            halign (float, optional): Horizontal alignment offset. Negative moves left, positive moves right. Defaults to 0.0.
+            valign (float, optional): Vertical alignment offset. Negative moves up, positive moves down. Defaults to 0.0.
+        """
+        self.image: Image.Image = image
         self.size = size
-        """Size in %"""
         self.halign = halign
-        """Offset on the Horizontal axis (<0 Left | >0 Right)"""
         self.valign = valign
-        """Offset on the Vertical axis (<0 Top | >0 Bottom)"""
 
     @classmethod
-    def from_media_path(cls, media_path: str, size: float = 1.0, halign: float = 0.0,
-                        valign: float = 0.0) -> "ImageLayer":
+    def from_image_path(cls, media_path: str, size: float = 1.0, halign: float = 0.0, valign: float = 0.0) -> "ImageLayer":
         """
-        Creates an ImageLayer from a media path
-        @param media_path: The full path to the Image
-        @param size: Size of the image in %
-        @param halign: Horizontal offset in which to move the Image. (<0 Left | >0 Right)
-        @param valign: Vertical offset in which to move the Image. (<0 Top | >0 Bottom)
-        """
+        Creates an ImageLayer from a media path.
 
+        Args:
+            media_path (str): The full path to the image.
+            size (float, optional): Size of the image as a percentage. Defaults to 1.0.
+            halign (float, optional): Horizontal offset for image alignment. Negative for left, positive for right. Defaults to 0.0.
+            valign (float, optional): Vertical offset for image alignment. Negative for top, positive for bottom. Defaults to 0.0.
+
+        Returns:
+            ImageLayer: An instance of the ImageLayer class with the loaded image.
+        """
         if is_image(media_path):
             with Image.open(media_path) as img:
                 image = img.copy()
@@ -44,14 +50,16 @@ class ImageLayer:
             valign=valign
         )
 
-    def transform(self, base_size: Tuple[int, int]) -> Tuple[Image, Tuple[int, int]]:
+    def transform(self, base_size: Tuple[int, int]) -> Tuple[Image.Image, Tuple[int, int]]:
         """
-        Transforms the current image in relation to the Image it will be pasted on
+        Transforms the current image relative to the base image size it will be pasted on.
 
-        @param base_size: Size of the image it will be pasted on
-        @return: Returns the scaled image and the position on the X and Y Axis
+        Args:
+            base_size (tuple[int, int]): The size of the base image (width, height).
+
+        Returns:
+            tuple[PIL.Image.Image, tuple[int, int]]: A tuple containing the resized image and its position (x, y).
         """
-
         new_width = int(base_size[0] * self.size)
         new_height = int(base_size[1] * self.size)
         scaled_image = self.image.resize((new_width, new_height), Image.Resampling.LANCZOS)

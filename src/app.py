@@ -164,6 +164,9 @@ class App(Adw.Application):
             child.terminate()
 
         gl.tray_icon.stop()
+        
+        # Close the window grabber
+        gl.window_grabber.close_all()
 
         # Close all decks
         gl.deck_manager.close_all()

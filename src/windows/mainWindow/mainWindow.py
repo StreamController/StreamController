@@ -231,9 +231,11 @@ class MainWindow(Adw.ApplicationWindow):
         
         elif error == "no-decks":
             GLib.idle_add(self.main_stack.set_visible_child, self.no_decks_error)
+            GLib.idle_add(self.deck_switcher.set_label_text, gl.lm.get("deck-switcher-no-decks"))
 
         elif error == "no-pages":
             GLib.idle_add(self.main_stack.set_visible_child, self.no_pages_error)
+            GLib.idle_add(self.deck_switcher.set_label_text, gl.lm.get("errors.no-page.header"))
 
         GLib.idle_add(self.deck_switcher.set_show_switcher, False)
         GLib.idle_add(self.sidebar_toggle_button.set_visible, False)

@@ -111,7 +111,7 @@ api_page_requests: dict[str, str] = {} # Stores api page requests made my --chan
 tray_icon: "TrayIcon" = None
 fallback_font: str = find_fallback_font()
 
-app_version: str = "1.5.0-beta.6" # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.7" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 

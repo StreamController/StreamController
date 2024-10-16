@@ -17,6 +17,11 @@ import setproctitle
 
 setproctitle.setproctitle("StreamController")
 
+# "install" patches
+from src.patcher.patcher import Patcher
+patcher = Patcher()
+patcher.patch()
+
 import sys
 from loguru import logger as log
 import os

@@ -32,6 +32,7 @@ from src.backend.DeckManagement.Subclasses.KeyImage import InputImage
 from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
 from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
 from src.backend.DeckManagement.Subclasses.KeyLayout import ImageLayout
+from src.backend.DeckManagement.Media.Media import Media
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
 
 # Import globals
@@ -329,6 +330,25 @@ class ActionBase(rpyc.Service):
         if not self.get_is_present(): return
         actions = self.page.action_objects.get(self.input_ident.input_type, {}).get(self.input_ident.json_identifier, [])
         return len(actions) > 1
+
+    def get_asset_path(self, asset_name: str, subdirs: list[str] = [], asset_folder: str = "assets") -> str:
+        """
+        Helper method that returns paths to plugin assets.
+
+        Args:
+            asset_name (str): Name of the Asset File
+            subdirs (list[str], optional): Subdirectories. Defaults to [].
+            asset_folder (str, optional): Name of the folder where assets are stored. Defaults to "assets".
+
+        Returns:
+            str: The full path to the asset
+        """
+
+        subdir = os.path.join(*subdirs)
+        if subdir != "":
+            return os.path.join(self.plugin_base.PATH, asset_folder, subdir, asset_name)
+        else:
+            return os.path.join(self.plugin_base.PATH, asset_folder, asset_name)
     
     def has_label_control(self) -> list[bool]:
         key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})

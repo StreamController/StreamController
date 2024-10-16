@@ -6,16 +6,20 @@ import argparse
 import sys
 from loguru import logger as log
 
-from src.backend.DeckManagement.HelperMethods import find_fallback_font
-
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
 argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
 argparser.add_argument("--skip-load-hardware-decks", help="Skips initilization/use of hardware decks", action="store_true")
 argparser.add_argument("--close-running", help="Close running", action="store_true")
 argparser.add_argument("--data", help="Data path", type=str)
-argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
 argparser.add_argument("app_args", nargs="*")
+## API calls
+argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
+argparser.add_argument("--change-state", action="append", nargs=4, help="Change the state of an input", metavar=("SERIAL_NUMBER", "INPUT_TYPE", "INPUT_IDENTIFIER", "STATE"))
+
+
+argparser.add_argument("--send-event", action="append", nargs=4, help="Send an event", metavar=("SERIAL_NUMBER", "INPUT_IDENTIFIER", "EVENT_NAME", "EVENT_DATA"))
+#TODO argparser.add_argument("--set-label-text", action="append", nargs=5, help="Set the text of a label", metavar=("SERIAL_NUMBER", "INPUT_TYPE", "INPUT_IDENTIFIER", "POSITION", "TEXT"))
 
 VAR_APP_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")
 STATIC_SETTINGS_FILE_PATH = os.path.join(VAR_APP_PATH, "static", "settings.json")
@@ -109,7 +113,7 @@ threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 tray_icon: "TrayIcon" = None
-fallback_font: str = find_fallback_font()
+fallback_font: str = None
 
 app_version: str = "1.5.0-beta.6" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False

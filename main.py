@@ -12,9 +12,9 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+
 # Import Python modules
 import setproctitle
-
 setproctitle.setproctitle("StreamController")
 
 # "install" patches
@@ -24,16 +24,21 @@ patcher.patch()
 
 import sys
 from loguru import logger as log
-import os
-import time
-import asyncio
-import threading
 import dbus
 import dbus.service
+from dbus.mainloop.glib import DBusGMainLoop
+from src.apicalls import make_api_calls
+import os
+import time
+if __name__ == "__main__":
+    if make_api_calls():
+        sys.exit(0)
+
+from src.backend.DeckManagement.HelperMethods import get_font_path
+import threading
 import usb.core
 import usb.util
 from StreamDeck.DeviceManager import DeviceManager
-from dbus.mainloop.glib import DBusGMainLoop
 
 # Import own modules
 from src.app import App
@@ -59,7 +64,6 @@ from src.tray import TrayIcon
 from src.backend.Migration.MigrationManager import MigrationManager
 from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
 from src.backend.Migration.Migrators.Migrator_1_5_0_beta_5 import Migrator_1_5_0_beta_5
-
 # Import globals
 import globals as gl
 
@@ -99,6 +103,7 @@ def create_cache_folder():
     os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
 
 def create_global_objects():
+    gl.fallback_font = get_font_path()
     # Setup locales
     gl.tray_icon = TrayIcon()
     # gl.tray_icon.run_detached()
@@ -218,33 +223,8 @@ def quit_running():
             log.info("Already running, exiting")
             sys.exit(0)
 
-def make_api_calls():
-    if not gl.argparser.parse_args().change_page:
-        return
-    
-    session_bus = dbus.SessionBus()
-    obj: dbus.BusObject = None
-    action_interface: dbus.Interface = None
-    try:
-        obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
-        action_interface = dbus.Interface(obj, "org.gtk.Actions")
-    except dbus.exceptions.DBusException as e:
-        obj = None
-    except ValueError as e:
-        obj = None
-
-    for serial_number, page_name in gl.argparser.parse_args().change_page:
-        if None in [obj, action_interface] or gl.argparser.parse_args().close_running:
-            gl.api_page_requests[serial_number] = page_name
-        else:
-            # Other instance is running - call dbus interfaces
-            action_interface.Activate("change_page", [[serial_number, page_name]], [])
-
-
-    
 @log.catch
 def main():
-    DBusGMainLoop(set_as_default=True)
     # Dbus
     make_api_calls()
     quit_running()

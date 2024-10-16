@@ -21,6 +21,7 @@ import threading
 import asyncio
 import gi
 
+from src.backend.DeckManagement.InputIdentifier import InputIdentifier, Input
 from src.windows.Store.ResponsibleNotesDialog import ResponsibleNotesDialog
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -98,6 +99,14 @@ class App(Adw.Application):
         change_page_action = Gio.SimpleAction.new("change_page", GLib.VariantType("as")) # as = array of strings
         change_page_action.connect("activate", self.on_change_page)
         self.add_action(change_page_action)
+
+        send_event_action = Gio.SimpleAction.new("send_event", GLib.VariantType("as")) # as = array of strings
+        send_event_action.connect("activate", self.on_send_event)
+        self.add_action(send_event_action)
+
+        change_state_action = Gio.SimpleAction.new("change_state", GLib.VariantType("as")) # as = array of strings
+        change_state_action.connect("activate", self.on_change_state)
+        self.add_action(change_state_action)
 
         log.success("Finished loading app")
 
@@ -273,6 +282,21 @@ class App(Adw.Application):
                     continue
 
                 controller.load_page(page)
+    
+    def on_send_event(self, action, data: GLib.Variant, *args):
+        serial_number, input_id, event_name, event_data = data.unpack()
+        print(serial_number, input_id, event_name, event_data)
+
+    def on_change_state(self, action, data: GLib.Variant, *args):
+        serial_number, input_type, input_id, state = data.unpack()
+        print(serial_number, input_type, input_id, state)
+
+        for controller in self.deck_manager.deck_controller:
+            if controller.serial_number() == serial_number:
+                input_identifier = Input.FromTypeIdentifier(input_type, input_id)
+                c_input = controller.get_input(input_identifier)
+                if c_input is not None:
+                    c_input.set_state(int(state)-1) # The api gets values from 1 to n, but internally we start at 0
 
     def send_outdated_plugin_notification(self, plugin_id: str) -> None:
         self.send_notification(

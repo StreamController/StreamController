@@ -177,7 +177,7 @@ class MediaPlayerThread(threading.Thread):
         while True:
             start = time.time()
 
-            # self.check_connection()
+            self.check_connection()
 
             if not self.pause:
                 if self.deck_controller.background.video is not None:
@@ -320,7 +320,10 @@ class MediaPlayerThread(threading.Thread):
                 log.debug(f"Failed to contact the deck 5 times in a row: {self.deck_controller.serial_number()}. Removing controller")
                 
                 self.deck_controller.deck.close()
-                self.deck_controller.media_player.running = False # Set stop flat - otherwise remove_controller will wait until this task is done, which it never will because it waiuts
+                # self.deck_controller.media_player.running = False # Set stop flat - otherwise remove_controller will wait until this task is done, which it never will because it waiuts
+                print("stopping")
+                self.deck_controller.media_player.stop()
+                print("stopped")
                 gl.deck_manager.remove_controller(self.deck_controller)
 
                 gl.deck_manager.connect_new_decks()

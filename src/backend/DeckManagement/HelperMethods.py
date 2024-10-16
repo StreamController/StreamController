@@ -25,6 +25,7 @@ import cairosvg
 import re
 from urllib.parse import urlparse
 from PIL import Image
+from loguru import logger as log
 
 import gi
 from gi.repository import Gdk, Pango
@@ -237,12 +238,7 @@ def add_default_keys(d: dict, keys: list):
             current_level[key] = {}
         current_level = current_level[key]
 
-@lru_cache()
-def find_fallback_font(fallback="DejaVu Sans"):
-    """
-    TODO: Improve speed - maybe be writing the last one into a file and just checking if it still exists
-    """
-    # Find system fonts
+def find_font_path(font="DejaVu Sans", allow_fallback=True) -> str:
     font_paths = matplotlib.font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
 
     # Extract font names
@@ -251,19 +247,34 @@ def find_fallback_font(fallback="DejaVu Sans"):
         try:
             font_name = matplotlib.font_manager.FontProperties(fname=font).get_name()
             font_names.append(font_name)
-            if font_name == fallback:
+            if font_name == font:
                 break
         except:
             pass
 
     # Check for fallback font
-    if fallback in font_names:
-        return fallback
-    else:
+    if font in font_names:
+        return font
+    elif allow_fallback:
         if len(font_names) > 0:
             return font_names[0]
         else:
             return
+
+def get_font_path(font="DejaVu Sans", allow_fallback=True) -> str:
+    cache_file = os.path.join(gl.DATA_PATH, "cache", "fonts.json")
+    # check if cached
+    cache_json = get_json_safe(cache_file)
+
+    if font in cache_json:
+        return cache_json[font]
+    
+    font_path = find_font_path(font, allow_fallback)
+    if allow_fallback and font_path is not None:
+        cache_json[font] = font_path
+        save_json(cache_file, cache_json)
+
+    return font_path
         
 def color_values_to_gdk(color_values: tuple[int, int, int, int]) -> Gdk.RGBA:
     if len(color_values) == 3:
@@ -330,3 +341,17 @@ def sort_times(time_list):
     list of str: Sorted list of datetime strings.
     """
     return sorted(time_list, key=lambda x: datetime.fromisoformat(x))
+
+def get_json_safe(json_path: str) -> dict:
+    if not os.path.exists(json_path):
+        return {}
+    try:
+        with open(json_path) as f:
+            return json.load(f)
+    except json.decoder.JSONDecodeError as e:
+        log.warning(f"Failed to load {json_path}, falling back to empty dict. Error: {e}")
+        return {}
+    
+def save_json(json_path: str, data: dict):
+    with open(json_path, "w") as f:
+        json.dump(data, f, indent=4)

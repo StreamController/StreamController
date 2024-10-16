@@ -71,6 +71,7 @@ class StoreBackend:
 
         stores = []
         branch = await self.get_official_store_branch()
+        log.info(f"Official store branch: {branch}")
         stores.append((self.STORE_REPO_URL, branch))
 
         if settings.get("store", {}).get("enable-custom-stores", False):

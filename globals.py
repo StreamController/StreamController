@@ -129,7 +129,7 @@ release_notes: str = """
     <li>Fix: Error when XDG_CURRENT_DESKTOP is not set</li>
     <li>Fix: Font weights not stored</li>
     <li>Fix: Removing action not updating input on active page</li>
-    <li>Fix: No always uninstalling plugins correctly</li>
+    <li>Fix: Not always uninstalling plugins correctly</li>
     <li>Fix: Crash when streamdeck-ui has no states key</li>
     <li>Feat: Add option to change the outline color of labels</li>
     <li>Feat: Add default font for labels</li>

@@ -116,37 +116,46 @@ exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
-<ul>
-    <li>Fix: Crash if label is not a string</li>
-    <li>Feat: Use git to download plugins in dev mode</li>
-    <li>Fix: Error launching action backend in terminal</li>
-    <li>Feat: Add Spanish translations</li>
-    <li>Fix: Swipes not working for Stream Deck Plus</li>
-    <li>Fix: Error when image size is 0</li>
-    <li>Fix: Error on X11 when decoding the active window</li>
-    <li>Fix: Not blocking action labels and images during screensaver</li>
-    <li>Fix: Not reloading page after plugin uninstall</li>
-    <li>Fix: Error when XDG_CURRENT_DESKTOP is not set</li>
-    <li>Fix: Font weights not stored</li>
-    <li>Fix: Removing action not updating input on active page</li>
-    <li>Fix: Not always uninstalling plugins correctly</li>
-    <li>Fix: Crash when streamdeck-ui has no states key</li>
-    <li>Feat: Add option to change the outline color of labels</li>
-    <li>Feat: Add default font for labels</li>
-    <li>Fix: Registering dial and touch event when used to wake up</li>
-    <li>Feat: Add link to wiki when no decks are being detected</li>
-    <li>Fix: Not loading screen brightness from page</li>
-    <li>Fix: Ignoring font font styles and weights</li>
-    <li>Feat: New option to configure default font</li>
-    <li>Fix: Decks not always reconnecting</li>
-    <li>Fix: Error when renaming page to the same name</li>
-    <li>Fix: Keeping old page backups indefinitely</li>
-    <li>Feat: Add auto page change for swaywm</li>
-    <li>Feat: Add support for screensaver under Cinnamon</li>
-    <li>Fix: Crash when drag and dropping buttons with actions</li>
-    <li>Feat: Add ability to use line breaks in labels</li>
-    <li>Fix: Showing "No decks available" in header when no pages are available</li>
-    <li>Feat: Add basic support for the Stream Deck Neo (limited to the normal buttons)</li>
-    <li>Update dependencies</li>
-</ul>
+    <p>Features:</p>
+    <ul>
+        <li>Add Spanish translations</li>
+        <li>Add option to change the outline color of labels</li>
+        <li>Add default font for labels</li>
+        <li>New option to configure default font</li>
+        <li>Add auto page change for swaywm</li>
+        <li>Add support for screensaver under Cinnamon</li>
+        <li>Add ability to use line breaks in labels</li>
+        <li>Add basic support for the Stream Deck Neo (limited to the normal buttons)</li>
+    </ul>
+
+    <p>Improvements:</p>
+    <ul>
+        <li>Use git to download plugins in dev mode</li>
+        <li>Add link to wiki when no decks are being detected</li>
+        <li>Update dependencies</li>
+    </ul>
+
+    <p>Fixes:</p>
+    <ul>
+        <li>Crash if label is not a string</li>
+        <li>Error launching action backend in terminal</li>
+        <li>Swipes not working for Stream Deck Plus</li>
+        <li>Error when image size is 0</li>
+        <li>Error on X11 when decoding the active window</li>
+        <li>Not blocking action labels and images during screensaver</li>
+        <li>Not reloading page after plugin uninstall</li>
+        <li>Error when XDG_CURRENT_DESKTOP is not set</li>
+        <li>Font weights not stored</li>
+        <li>Removing action not updating input on active page</li>
+        <li>Not always uninstalling plugins correctly</li>
+        <li>Crash when streamdeck-ui has no states key</li>
+        <li>Registering dial and touch event when used to wake up</li>
+        <li>Not loading screen brightness from page</li>
+        <li>Ignoring font styles and weights</li>
+        <li>Decks not always reconnecting</li>
+        <li>Error when renaming page to the same name</li>
+        <li>Keeping old page backups indefinitely</li>
+        <li>Crash when drag and dropping buttons with actions</li>
+        <li>Showing "No decks available" in header when no pages are available</li>
+    </ul>
 """

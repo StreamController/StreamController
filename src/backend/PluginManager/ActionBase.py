@@ -331,7 +331,7 @@ class ActionBase(rpyc.Service):
         actions = self.page.action_objects.get(self.input_ident.input_type, {}).get(self.input_ident.json_identifier, [])
         return len(actions) > 1
 
-    def get_asset_path(self, asset_name: str, subdirs: list[str] = [], asset_folder: str = "assets") -> str:
+    def get_asset_path(self, asset_name: str, subdirs: list[str] = None, asset_folder: str = "assets") -> str:
         """
         Helper method that returns paths to plugin assets.
 
@@ -344,11 +344,13 @@ class ActionBase(rpyc.Service):
             str: The full path to the asset
         """
 
+        if not subdirs:
+            return os.path.join(self.plugin_base.PATH, asset_folder, asset_name)
+
         subdir = os.path.join(*subdirs)
         if subdir != "":
             return os.path.join(self.plugin_base.PATH, asset_folder, subdir, asset_name)
-        else:
-            return os.path.join(self.plugin_base.PATH, asset_folder, asset_name)
+        return ""
     
     def has_label_control(self) -> list[bool]:
         key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})

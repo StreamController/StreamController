@@ -888,14 +888,11 @@ class Page:
     def get_background_color(self, identifier: InputIdentifier, state: int) -> list[int]:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "background", "color"])
 
-    def set_background_color(self, identifier: InputIdentifier, state: int, color: list[int], update: bool = True) -> None:
+    def set_background_color(self, identifier: InputIdentifier, state: int, color: list[int], update: bool = True, update_ui: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
-            key_state.background_color = color
+            key_state.background_manager.set_page_color(color, update=update, update_ui=update_ui)
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "background", "color"], color)
-
-        if update:
-            self.update_input(identifier, state)
 
 
 class NoActionHolderFound:

@@ -1397,6 +1397,62 @@ class LayoutManager:
             final_image.paste(image_resized, (left_margin, top_margin))
 
         return final_image
+    
+
+class BackgroundManager:
+    def __init__(self, controller_input: "ControllerInput"):
+        self.controller_input = controller_input
+        
+        self.action_color: list[int] = None
+        self.page_color: list[int] = None
+
+    def set_action_color(self, color: list[int], update: bool = True) -> None:
+        self.action_color = color
+        if isinstance(color, list) and len(color) == 3:
+            self.action_color.append(255)
+
+        if update:
+            self.update()
+
+    def set_page_color(self, color: list[int], update: bool = True, update_ui: bool = True) -> None:
+        self.page_color = color
+        if isinstance(color, list) and len(color) == 3:
+            self.page_color.append(255)
+
+        if update:
+            self.update(ui=update_ui)
+
+    def update(self, ui: bool = True):
+        self.controller_input.update()
+        if ui:
+            self.update_background_editor()
+
+    def update_background_editor(self):
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
+        
+        if gl.app.main_win.sidebar.active_identifier != self.controller_input.identifier:
+            return
+
+        controller = gl.app.main_win.get_active_controller()
+        if controller is not self.controller_input.deck_controller:
+            return
+
+        gl.app.main_win.sidebar.key_editor.background_editor.load_for_identifier(self.controller_input.identifier, self.controller_input.state)
+
+    def get_color_is_set(self, color: list[int]) -> bool:
+        return color not in [None, [None]*3, [None]*4]
+
+    def get_use_page_background(self) -> dict:
+        return self.get_color_is_set(self.page_color)
+    
+    def get_composed_color(self) -> list[int]:
+        if self.get_use_page_background() and self.get_color_is_set(self.page_color):
+            return self.page_color
+        elif self.get_color_is_set(self.action_color):
+            return self.action_color
+        else:
+            return [0] * 4
 
 
 class ControllerInputState:
@@ -1406,6 +1462,11 @@ class ControllerInputState:
         self.state = state
         self._show_error: bool = False
         self.hide_error_timer: Timer = None
+
+        # managers
+        self.layout_manager = LayoutManager(self.controller_input)
+        self.label_manager = LabelManager(self.controller_input)
+        self.background_manager = BackgroundManager(self.controller_input)
 
         self.action_permission_manager = ActionPermissionManager(self)
 
@@ -1830,13 +1891,15 @@ class ControllerKey(ControllerInput):
     def get_current_image(self) -> Image.Image:
         state = self.get_active_state()
 
+        background_color = self.get_active_state().background_manager.get_composed_color()
+
         background: Image.Image = None
         # Only load the background image if it's not gonna be hidden by the background color
-        if self.get_active_state().background_color[-1] < 255:
+        if background_color[-1] < 255:
             background = copy(self.deck_controller.background.tiles[self.index])
 
-        if self.get_active_state().background_color[-1] > 0:
-            background_color_img = Image.new("RGBA", self.deck_controller.get_key_image_size(), color=tuple(state.background_color))
+        if background_color[-1] > 0:
+            background_color_img = Image.new("RGBA", self.deck_controller.get_key_image_size(), color=tuple(background_color))
             
             if background is None:
                 # Use the color as the only background - happens if background color alpha is 255
@@ -2027,10 +2090,7 @@ class ControllerKey(ControllerInput):
                 # if action.has_image_control()
 
             if load_background_color:
-                state.background_color = state_dict.get("background", {}).get("color", [0, 0, 0, 0])
-                # Ensure the background color has an alpha channel
-                if len(state.background_color) == 3:
-                    state.background_color.append(255)
+                state.background_manager.set_page_color(state_dict.get("background", {}).get("color"), update=False)
 
         if update:
             self.set_state(old_state_index)
@@ -2311,10 +2371,7 @@ class ControllerDial(ControllerInput):
             )
             state.layout_manager.set_page_layout(layout, update=False)
 
-            state.background_color = state_dict.get("background", {}).get("color", [0, 0, 0, 0])
-            # Ensure the background color has an alpha channel
-            if len(state.background_color) == 3:
-                state.background_color.append(255)
+            state.background_manager.set_page_color(state_dict.get("background", {}).get("color", [0, 0, 0, 0]), update=False)
 
         if update:
             self.set_state(old_state_index)
@@ -2396,11 +2453,6 @@ class ControllerDialState(ControllerInputState):
         self.image: InputImage = None
         self.video: InputVideo = None
 
-        self.background_color: list[int, int, int, int] = None
-
-        self.label_manager = LabelManager(self.dial)
-        self.layout_manager = LayoutManager(self.dial)
-
         self.touch_image: Image.Image = None
 
         super().__init__(dial, state)
@@ -2424,15 +2476,14 @@ class ControllerDialState(ControllerInputState):
     def get_rendered_touch_image(self) -> Image.Image:
         touch_screen = self.dial.get_touch_screen()
 
-        if self.background_color is None:
-            self.background_color = [0, 0, 0, 0]
-
         background: Image.Image = None
 
-        if self.background_color[-1] < 255:
+        background_color = self.background_manager.get_composed_color()
+
+        if background_color[-1] < 255:
             background = touch_screen.get_empty_dial_image()
-        if self.background_color[-1] > 0:
-            background_color_img = Image.new("RGBA", self.dial.get_image_size(), color=tuple(self.background_color))
+        if background_color[-1] > 0:
+            background_color_img = Image.new("RGBA", self.dial.get_image_size(), color=tuple(background_color))
 
             if background is None:
                 # Use the color as the only background - happens if background color alpha is 255
@@ -2456,14 +2507,8 @@ class ControllerKeyState(ControllerInputState):
     def __init__(self, controller_key: "ControllerKey", state: int):
         super().__init__(controller_key, state)
 
-        # Variables
-        self.background_color = [0, 0, 0, 0]
-
         self.key_image: InputImage = None
         self.key_video: InputVideo = None
-
-        self.label_manager = LabelManager(controller_key)
-        self.layout_manager = LayoutManager(controller_key)
 
     def close_resources(self) -> None:
         if self.key_image is not None:
@@ -2494,4 +2539,4 @@ class ControllerKeyState(ControllerInputState):
         self.key_video = None
         self.label_manager.clear_labels()
         self.layout_manager.clear()
-        self.background_color = [0, 0, 0, 0]
+        self.background_manager.set_page_color(None)

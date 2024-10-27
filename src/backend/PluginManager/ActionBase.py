@@ -189,16 +189,15 @@ class ActionBase(rpyc.Service):
 
         if not self.get_is_present(): return
 
+        if not self.has_background_control(): return
+
         if not self.on_ready_called:
             update = False
 
         state = self.get_state()
         if state is None or state.state != self.state: return
 
-        if not hasattr(state, "background_color"):
-            return
-
-        state.background_color = color
+        state.background_manager.set_action_color(color)
         if update:
             self.get_input().update()
 
@@ -376,6 +375,11 @@ class ActionBase(rpyc.Service):
             return True
 
         return self.get_own_action_index() == key_dict.get("image-control-action")
+    
+    def has_background_control(self):
+        #TODO: Might require performance improvements
+        background_control_index = self.get_state().action_permission_manager.get_background_control_index()
+        return background_control_index == self.get_own_action_index()
     
     def get_is_present(self):
         if self.page is None: return False

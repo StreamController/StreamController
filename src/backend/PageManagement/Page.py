@@ -160,7 +160,9 @@ class Page:
 
         self.action_objects = new_action_objects
 
-        self.call_actions_ready_and_set_flag()
+        if self.deck_controller.active_page == self:
+            # if it's already loaded - this way it only triggers on newly added actions
+            self.call_actions_ready_and_set_flag()
 
     # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
 

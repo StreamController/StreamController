@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
     from src.backend.DeckManagement.DeckController import DeckController, ControllerKey, ControllerKeyState
     from src.backend.PageManagement.Page import Page
+    from src.backend.DeckManagement.DeckController import ControllerInput, ControllerInputState
 
 class ActionBase(rpyc.Service):
     # Change to match your action
@@ -91,7 +92,7 @@ class ActionBase(rpyc.Service):
 
     def get_input(self) -> "ControllerInput":
         return self.deck_controller.get_input(self.input_ident)
-
+    
     def get_state(self) -> "ControllerInputState":
         i = self.get_input()
         if i is None: return
@@ -246,7 +247,7 @@ class ActionBase(rpyc.Service):
 
         label_index = 0 if position == "top" else 1 if position == "center" else 2
 
-        if not self.has_label_control()[label_index]:
+        if not self.has_label_control(label_index):
             return
         
         if text is None:
@@ -352,13 +353,20 @@ class ActionBase(rpyc.Service):
             return os.path.join(self.plugin_base.PATH, asset_folder, subdir, asset_name)
         return ""
     
-    def has_label_control(self) -> list[bool]:
-        key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
-
-        r = [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
-        return r
+    def has_label_controls(self):
+        own_action_index = self.get_own_action_index()
+        return [own_action_index == i for i in self.get_state().action_permission_manager.get_label_control_indices()]
+    
+    def has_label_control(self, label_index) -> list[bool]:
+        #TODO: Might require performance improvements
+        return self.get_state().action_permission_manager.get_label_control_index(label_index) == self.get_own_action_index()
 
     def has_image_control(self):
+        #TODO: Might require performance improvements
+        image_control_index = self.get_state().action_permission_manager.get_image_control_index()
+        return image_control_index == self.get_own_action_index()
+
+
         key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
 
         if key_dict.get("image-control-action") is None:

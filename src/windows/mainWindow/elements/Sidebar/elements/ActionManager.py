@@ -134,7 +134,7 @@ class ActionExpanderRow(BetterExpander):
                                                          identifier=action.input_ident)
 
                 controls_image = action.has_image_control()
-                controls_labels = action.has_label_control()
+                controls_labels = action.has_label_controls()
 
                 self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, controls_image=controls_image, controls_labels=controls_labels, comment=comment, index=i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
@@ -357,7 +357,7 @@ class ActionRow(Adw.ActionRow):
         self.action_id = action_id
         self.action_category = action_category
         self.sidebar: "Sidebar" = sidebar
-        self.action_object = action_object
+        self.action_object: "ActionBase" = action_object
         self.comment = comment
         self.index = index
         self.controls_image = controls_image
@@ -459,9 +459,13 @@ class ActionRow(Adw.ActionRow):
             return
         page = controller.active_page
 
+        input_state = self.action_object.get_input().states.get(self.expander.active_state)
+        if input_state is None:
+            log.error("Input state not found")
+            return
+        
         new_value = self.index if button.get_active() else None
-        page.dict[self.action_object.input_ident.input_type][self.action_object.input_ident.json_identifier]["states"][str(self.expander.active_state)]["image-control-action"] = new_value
-        page.save()
+        input_state.action_permission_manager.set_image_control_index(new_value, True, True)
 
         page.reload_similar_pages(identifier=self.action_object.input_ident, reload_self=True)
 
@@ -479,13 +483,15 @@ class ActionRow(Adw.ActionRow):
         controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
-        page = controller.active_page
-        page.dict[self.action_object.input_ident.input_type][self.action_object.input_ident.json_identifier]["states"][str(self.expander.active_state)].setdefault("label-control-actions", [None, None, None])
-        new_value = self.index if value else None
-        page.dict[self.action_object.input_ident.input_type][self.action_object.input_ident.json_identifier]["states"][str(self.expander.active_state)]["label-control-actions"][i] = new_value
-        page.save()
-
-        threading.Thread(target=page.reload_similar_pages, kwargs={"identifier":self.action_object.input_ident, "reload_self":True}).start()
+       
+        input_state = self.action_object.get_input().states.get(self.expander.active_state)
+        if input_state is None:
+            log.error("Input state not found")
+            return
+        
+        value = self.action_object.get_own_action_index() if value else None
+        
+        input_state.action_permission_manager.set_label_control_index(i, value, True, True)
 
     def set_image_toggled(self, value: bool):
         try:

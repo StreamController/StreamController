@@ -34,6 +34,7 @@ import usb.core
 import usb.util
 from loguru import logger as log
 import asyncio
+from src.backend.DeckManagement.Subclasses.ActionPermissionManager import ActionPermissionManager
 from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
 from src.backend.DeckManagement.Subclasses.key_video_cache import VideoFrameCache
@@ -400,7 +401,7 @@ class DeckController:
             raise ValueError(f"Unknown input type: {input_type}")
         return self.inputs[input_type]
 
-    def get_input(self, identifier: InputIdentifier):
+    def get_input(self, identifier: InputIdentifier) -> "ControllerInput":
         for i in self.get_inputs(identifier):
             if i.identifier == identifier:
                 return i
@@ -689,6 +690,8 @@ class DeckController:
             self.load_screensaver(page)
         if load_inputs:
             self.media_player.add_task(self.load_all_inputs, page, update=False)
+
+        self.active_page.call_actions_ready_and_set_flag()
 
         # Load page onto deck
         self.media_player.add_task(self.update_all_inputs)
@@ -1404,6 +1407,8 @@ class ControllerInputState:
         self._show_error: bool = False
         self.hide_error_timer: Timer = None
 
+        self.action_permission_manager = ActionPermissionManager(self)
+
     def __int__(self):
         return self.state
     
@@ -1531,7 +1536,7 @@ class ControllerInput:
 
         self.enable_states: bool = True
 
-        self.states = {
+        self.states: dict[int, ControllerInputState] = {
             0: self.ControllerStateClass(self, 0),
         }
 

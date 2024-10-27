@@ -124,7 +124,7 @@ class ColorRow(Adw.PreferencesRow):
         if len(color_values) == 3:
             color_values.append(255)
         color = Gdk.RGBA()
-        color.parse(f"rgba({color_values[0]}, {color_values[1]}, {color_values[2]}, {color_values[3]})")
+        color.parse(f"rgba({color_values[0]}, {color_values[1]}, {color_values[2]}, {color_values[3]/255})")
         self.color_chooser_button.set_rgba(color)
 
     def on_change_color(self, *args):

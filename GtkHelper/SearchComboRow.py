@@ -28,7 +28,7 @@ class SearchComboRowItem(GObject.Object):
 class SearchComboRow(Adw.PreferencesRow):
     __gtype_name__ = "SearchComboRow"
     __gsignals__ = {
-        'item-changed': (GObject.SignalFlags.RUN_FIRST, None, (ComboRowSearchItem,)),
+        'item-changed': (GObject.SignalFlags.RUN_FIRST, None, (SearchComboRowItem,)),
     }
 
     def __init__(self, title: str, *args, **kwargs):
@@ -37,7 +37,7 @@ class SearchComboRow(Adw.PreferencesRow):
 
         # Setup DropDown for Widgets
         ## Create model
-        self.model_widget = Gio.ListStore(item_type=ComboRowSearchItem)
+        self.model_widget = Gio.ListStore(item_type=SearchComboRowItem)
         self.sort_model_widget  = Gtk.SortListModel(model=self.model_widget) # FIXME: Gtk.Sorter?
         self.filter_model_widget = Gtk.FilterListModel(model=self.sort_model_widget)
         self.filter_widget = Gtk.CustomFilter.new(self._do_filter_widget_view, self.filter_model_widget)
@@ -101,7 +101,7 @@ class SearchComboRow(Adw.PreferencesRow):
     def _do_filter_widget_view(self, item, filter_list_model):
         return self.search_text.upper() in item.display_label.upper()
 
-    def populate(self, list: list[ComboRowSearchItem]):
+    def populate(self, list: list[SearchComboRowItem]):
         self.model_widget.remove_all()
 
         for item in list:

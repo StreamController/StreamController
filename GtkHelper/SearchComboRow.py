@@ -14,6 +14,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GObject
 
+from loguru import logger as log
+
 class SearchComboRowItem(GObject.Object):
     __gtype_name__ = 'SearchComboRowItem'
 
@@ -28,10 +30,10 @@ class SearchComboRowItem(GObject.Object):
 class SearchComboRow(Adw.PreferencesRow):
     __gtype_name__ = "SearchComboRow"
     __gsignals__ = {
-        'item-changed': (GObject.SignalFlags.RUN_FIRST, None, (SearchComboRowItem,)),
+        'item-changed': (GObject.SignalFlags.RUN_FIRST, None, (SearchComboRowItem, int,)),
     }
 
-    def __init__(self, title: str, *args, **kwargs):
+    def __init__(self, title: str, use_single_line: bool = False, *args, **kwargs):
         super().__init__(title=title, *args, **kwargs)
         self.search_text = '' # Initial search text for widgets
 
@@ -58,7 +60,10 @@ class SearchComboRow(Adw.PreferencesRow):
         search_entry_widget.connect('search-changed', self._on_search_widget_changed)
 
         # Setup main window
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, hexpand=True, vexpand=False)
+        if not use_single_line:
+            self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, hexpand=True, vexpand=False)
+        else:
+            self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, hexpand=True, vexpand=False)
         self.main_box.props.margin_start = 12
         self.main_box.props.margin_end = 12
         self.main_box.props.margin_top = 6
@@ -90,9 +95,10 @@ class SearchComboRow(Adw.PreferencesRow):
 
     def _on_selected_widget(self, dropdown, data):
         selection = dropdown.get_selected_item()
+        index = dropdown.get_selected()
 
-        if selection:
-            self.emit("item-changed", selection)
+        if selection and index >= 0:
+            self.emit("item-changed", selection, index)
 
     def _on_search_widget_changed(self, search_entry):
         self.search_text = search_entry.get_text()
@@ -101,8 +107,19 @@ class SearchComboRow(Adw.PreferencesRow):
     def _do_filter_widget_view(self, item, filter_list_model):
         return self.search_text.upper() in item.display_label.upper()
 
-    def populate(self, list: list[SearchComboRowItem]):
+    def populate(self, list: list[SearchComboRowItem], selected_index: int = 0):
         self.model_widget.remove_all()
 
         for item in list:
             self.model_widget.append(item)
+
+        self.dropdown.set_selected(selected_index)
+
+    def set_selected_item(self, index: int):
+        if index < 0:
+            return
+
+        try:
+            self.dropdown.set_selected(index)
+        except Exception as e:
+            log.error(e)

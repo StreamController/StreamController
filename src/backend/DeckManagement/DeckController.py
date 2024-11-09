@@ -27,6 +27,7 @@ from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageSequence
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
 from StreamDeck.Devices import StreamDeck
+from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 from numpy import empty
 from regex import D
@@ -34,6 +35,7 @@ import usb.core
 import usb.util
 from loguru import logger as log
 import asyncio
+from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
 from src.backend.DeckManagement.Subclasses.ActionPermissionManager import ActionPermissionManager
 from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
@@ -349,7 +351,10 @@ class DeckController:
         self.screen_saver = ScreenSaver(deck_controller=self)
         self.allow_interaction = True
 
-        self.spacing = (36, 36)
+        self.key_spacing = (36, 36)
+
+        if isinstance(self.deck, StreamDeckPlus) or (isinstance(self.deck, FakeDeck) and self.deck.key_layout() == [2, 4]):
+            self.key_spacing = (52, 36)
 
         # Tasks
         self.media_player_tasks: Queue[MediaPlayerTask] = Queue()
@@ -915,7 +920,7 @@ class BackgroundImage:
     def create_full_deck_sized_image(self) -> Image:
         key_rows, key_cols = self.deck_controller.deck.key_layout()
         key_width, key_height = self.deck_controller.get_key_image_size()
-        spacing_x, spacing_y = 36, 36
+        spacing_x, spacing_y = self.deck_controller.key_spacing
 
         key_width *= key_cols
         key_height *= key_rows
@@ -935,13 +940,12 @@ class BackgroundImage:
         return ImageOps.fit(self.image, full_deck_image_size, Image.LANCZOS)
     
     def crop_key_image_from_deck_sized_image(self, image: Image.Image, key):
-        key_spacing = (36, 36)
         deck = self.deck_controller.deck
 
 
         key_rows, key_cols = deck.key_layout()
         key_width, key_height = deck.key_image_format()['size']
-        spacing_x, spacing_y = key_spacing
+        spacing_x, spacing_y = self.deck_controller.key_spacing
 
         # Determine which row and column the requested key is located on.
         row = key // key_cols
@@ -1024,7 +1028,7 @@ class BackgroundVideo(BackgroundVideoCache):
     def create_full_deck_sized_image(self, frame: Image.Image) -> Image.Image:
         key_rows, key_cols = self.deck_controller.deck.key_layout()
         key_width, key_height = self.deck_controller.get_key_image_size()
-        spacing_x, spacing_y = 36, 36
+        spacing_x, spacing_y = self.deck_controller.key_spacing
 
         key_width *= key_cols
         key_height *= key_rows
@@ -1044,7 +1048,7 @@ class BackgroundVideo(BackgroundVideoCache):
         return ImageOps.fit(frame, full_deck_image_size, Image.Resampling.HAMMING)
     
     def crop_key_image_from_deck_sized_image(self, image: Image.Image, key):
-        key_spacing = (36, 36)
+        key_spacing = self.deck_controller.key_spacing
         deck = self.deck_controller.deck
 
 

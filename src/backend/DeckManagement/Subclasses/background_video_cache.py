@@ -39,7 +39,7 @@ class BackgroundVideoCache:
         self.key_layout_str = f"{self.key_layout[0]}x{self.key_layout[1]}"
         self.key_count = self.deck_controller.deck.key_count()
         self.key_size = self.deck_controller.deck.key_image_format()['size']
-        self.spacing = self.deck_controller.spacing
+        self.spacing = self.deck_controller.key_spacing
 
         self.cache_stored = False
 

@@ -124,19 +124,14 @@ class LabelRow(Adw.PreferencesRow):
                                                     margin_bottom=3, visible=False)
         self.main_box.append(self.controlled_by_action_label)
 
-        self.text_view = TextView(placeholder=gl.lm.get("label-editor-placeholder-text"))
-        # self.text_view.entry.connect("changed", self.on_change_text)
-        self.main_box.append(self.text_view)
+        self.text_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+        self.main_box.append(self.text_box)
 
-        self.color_chooser_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
-        self.main_box.append(self.color_chooser_box)
-
-        self.color_chooser_label = Gtk.Label(label=gl.lm.get("label-editor-color-chooser-label"), xalign=0, hexpand=True, margin_start=2)
-        self.color_chooser_box.append(self.color_chooser_label)
+        self.text_entry = TextEntry()
+        self.text_box.append(self.text_entry)
 
         self.color_chooser_button = ColorChooserButton()
-        # self.color_chooser_button.button.connect("color-set", self.on_change_color)
-        self.color_chooser_box.append(self.color_chooser_button)
+        self.text_box.append(self.color_chooser_button)
 
         self.font_chooser_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
         self.main_box.append(self.font_chooser_box)
@@ -147,33 +142,37 @@ class LabelRow(Adw.PreferencesRow):
         self.font_chooser_button = FontChooserButton()
         self.font_chooser_box.append(self.font_chooser_button)
 
-        self.outline_width_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
-        self.main_box.append(self.outline_width_box)
+        self.outline_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
+        self.main_box.append(self.outline_box)
 
         self.outline_width_label = Gtk.Label(label=gl.lm.get("label-editor-outline-width-label"), xalign=0, hexpand=True, margin_start=2)
-        self.outline_width_box.append(self.outline_width_label)
+        self.outline_width_label.set_hexpand(False)
+        self.outline_width_label.set_margin_end(5)
+        self.outline_box.append(self.outline_width_label)
 
         self.outline_width = SpinButton(0, 10, 1)
-        self.outline_width_box.append(self.outline_width)
-
-        self.outline_color_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
-        self.main_box.append(self.outline_color_box)
+        self.outline_width.set_hexpand(False)
+        self.outline_box.append(self.outline_width)
 
         self.outline_color_label = Gtk.Label(label=gl.lm.get("label-editor-outline-color-label"), xalign=0, hexpand=True, margin_start=2)
-        self.outline_color_box.append(self.outline_color_label)
+        self.outline_color_label.set_hexpand(True)
+        self.outline_color_label.set_margin_end(5)
+        self.outline_color_label.set_halign(Gtk.Align.END)
+        self.outline_box.append(self.outline_color_label)
 
         self.outline_color_chooser_button = ColorChooserButton()
-        self.outline_color_box.append(self.outline_color_chooser_button)
+        self.outline_color_chooser_button.set_hexpand(False)
+        self.outline_box.append(self.outline_color_chooser_button)
 
         ## Connect reset buttons
-        self.text_view.revert_button.connect("clicked", self.on_reset_text)
+        self.text_entry.revert_button.connect("clicked", self.on_reset_text)
         self.color_chooser_button.revert_button.connect("clicked", self.on_reset_color)
         self.font_chooser_button.revert_button.connect("clicked", self.on_reset_font)
         self.outline_width.revert_button.connect("clicked", self.on_reset_outline_width)
         self.outline_color_chooser_button.revert_button.connect("clicked", self.on_reset_outline_color)
 
     def connect_signals(self):
-        self.text_view.entry.get_buffer().connect("changed", self.on_change_text)
+        self.text_entry.entry.connect("changed", self.on_change_text)
         self.color_chooser_button.button.connect("color-set", self.on_change_color)
         self.font_chooser_button.button.connect("font-set", self.on_change_font)
         self.outline_width.button.connect("value-changed", self.on_change_outline_width)
@@ -181,7 +180,7 @@ class LabelRow(Adw.PreferencesRow):
 
     def disconnect_signals(self):
         try:
-            self.text_view.entry.get_buffer().disconnect_by_func(self.on_change_text)
+            self.text_entry.entry.disconnect_by_func(self.on_change_text)
         except Exception as e:
             log.error(f"Failed to disconnect signals. Error: {e}")
 
@@ -224,7 +223,7 @@ class LabelRow(Adw.PreferencesRow):
         use_page_label_properties = controller_input.get_active_state().label_manager.get_use_page_label_properties(position=self.key_name)
 
         ## Set visibility of revert buttons
-        self.text_view.set_revert_visible(use_page_label_properties.get("text", False))
+        self.text_entry.revert_button.set_visible(use_page_label_properties.get("text", False))
         self.color_chooser_button.revert_button.set_visible(use_page_label_properties.get("color", False))
         self.outline_width.revert_button.set_visible(use_page_label_properties.get("outline_width", False))
         self.outline_color_chooser_button.revert_button.set_visible(use_page_label_properties.get("outline_color", False))
@@ -243,24 +242,17 @@ class LabelRow(Adw.PreferencesRow):
             controller_input = controller.get_input(self.active_identifier)
             composed_label = controller_input.get_active_state().label_manager.get_composed_label(position=self.key_name)
 
-        buffer = self.text_view.entry.get_buffer()
-        start, end = buffer.get_bounds()
-
-        if buffer.get_text(start, end, False) != composed_label.text:
-            cursor_iter = buffer.get_iter_at_mark(buffer.get_insert())
-            pos = cursor_iter.get_offset()
-
-            if composed_label.text == "":
-                self.text_view.entry.get_buffer().set_text(" ")
+        if self.text_entry.entry.get_text() != composed_label.text:
+            pos = self.text_entry.entry.get_position()
             
-            self.text_view.entry.get_buffer().set_text(composed_label.text)
+            self.text_entry.entry.set_text(composed_label.text)
 
             pos = min(pos, len(composed_label.text))
+            self.text_entry.entry.set_position(pos)
 
-            iter = buffer.get_iter_at_offset(pos)
-            buffer.place_cursor(iter)
-
-        self.update_details_visibility(text=composed_label.text)
+        hide_details = composed_label.text.strip() == ""
+        self.font_chooser_box.set_visible(not hide_details)
+        self.outline_box.set_visible(not hide_details)
 
         self.set_color(composed_label.color)
         self.set_outline_width(composed_label.outline_width)
@@ -346,7 +338,7 @@ class LabelRow(Adw.PreferencesRow):
 
         self.update_values()
 
-        self.text_view.set_revert_visible(False)
+        button.set_visible(False)
 
     def on_reset_color(self, button):
         active_page = gl.app.main_win.get_active_page()
@@ -366,64 +358,28 @@ class LabelRow(Adw.PreferencesRow):
 
         button.set_visible(False)
 
-    def on_change_text(self, buffer):
-        start, end = buffer.get_bounds()
-        text = buffer.get_text(start, end, False)
+    def on_change_text(self, entry):
+        text = entry.get_text()
 
         active_page = gl.app.main_win.get_active_page()
         active_page.set_label_text(identifier=self.active_identifier, state=self.state, label_position=self.key_name, text=text)
 
-        self.text_view.set_revert_visible(True)
+        self.text_entry.revert_button.set_visible(True)
 
-        self.update_details_visibility(text=text)
-
-    def update_details_visibility(self, text: str = ""):
         hide_details = text.strip() == ""
-        self.color_chooser_box.set_visible(not hide_details)
         self.font_chooser_box.set_visible(not hide_details)
-        self.outline_width_box.set_visible(not hide_details)
-        self.outline_color_box.set_visible(not hide_details)
+        self.outline_box.set_visible(not hide_details)
 
-class PlaceholderTextView(Gtk.Overlay):
-    def __init__(self, placeholder: str = "", hexpand: bool = True):
-        super().__init__()
 
-        self.text_view = Gtk.TextView(hexpand=hexpand, css_classes=["label-text-view"])
-        self.set_child(self.text_view)
+class TextEntry(Gtk.Box):
+    def __init__(self, **kwargs):
+        super().__init__(css_classes=["linked"], margin_end=5,  **kwargs)
 
-        self.placeholder_label = Gtk.Label(label=placeholder, css_classes=["dim-label"], halign=Gtk.Align.START, valign=Gtk.Align.CENTER,
-                                           margin_start=9)
-        self.add_overlay(self.placeholder_label)
-
-        self.get_buffer().connect("changed", self.on_change_text)
-
-    def get_buffer(self):
-        return self.text_view.get_buffer()
-    
-    def on_change_text(self, buffer):
-        start, end = buffer.get_bounds()
-        text = buffer.get_text(start, end, False)
-        self.placeholder_label.set_visible(text == "")
-
-class TextView(Gtk.Box):
-    def __init__(self, placeholder: str = "", **kwargs):
-        super().__init__(css_classes=["linked"], **kwargs)
-
-        self.entry = PlaceholderTextView(placeholder=placeholder, hexpand=True)
+        self.entry = Gtk.Entry(hexpand=True,placeholder_text=gl.lm.get("label-editor-placeholder-text"))
         self.revert_button = RevertButton()
-
-        # self.entry.get_style_context().add_class("text-view")
-        self.entry.text_view.add_css_class("round-left")
 
         self.append(self.entry)
         self.append(self.revert_button)
-
-    def set_revert_visible(self, visible: bool):
-        self.revert_button.set_visible(visible)
-        if visible:
-            self.entry.text_view.remove_css_class("round-right")
-        else:
-            self.entry.text_view.add_css_class("round-right")
 
 class ColorChooserButton(Gtk.Box):
     def __init__(self, **kwargs):

@@ -67,6 +67,14 @@ class ActionBase(rpyc.Service):
         self.action_name = action_name
         self.plugin_base = plugin_base
 
+        self.events: dict[InputEvent, callable] = {
+            Input.Key.Events.DOWN: lambda: self.on_key_down(),
+            Input.Key.Events.UP: lambda: self.on_key_up(),
+            Input.Dial.Events.DOWN: lambda: self.on_key_down(),
+            Input.Dial.Events.UP: lambda: self.on_key_up(),
+            Input.Dial.Events.SHORT_TOUCH_PRESS: lambda: self.on_key_down()
+        }
+
         self.on_ready_called = False
 
         self.has_configuration = False
@@ -101,16 +109,8 @@ class ActionBase(rpyc.Service):
     def event_callback(self, event: InputEvent, data: dict = None):
         # TODO: Rename to on_event
         ## backward compatibility
-        if event == Input.Key.Events.DOWN:
-            self.on_key_down()
-        elif event == Input.Key.Events.UP:
-            self.on_key_up()
-        elif event == Input.Dial.Events.DOWN:
-            self.on_key_down()
-        elif event == Input.Dial.Events.UP:
-            self.on_key_up()
-        elif event == Input.Dial.Events.SHORT_TOUCH_PRESS:
-            self.on_key_down()
+        if event in self.events:
+            self.events[event]()
 
     def on_key_down(self):
         pass
@@ -411,6 +411,8 @@ class ActionBase(rpyc.Service):
                 assignment[event] = Input.EventFromStringName(page_assignment_dict[event.string_name])
             else:
                 assignment[event] = event
+
+        assignment = {Input.Key.Events.DOWN: Input.Key.Events.DOWN}
 
         return assignment
     

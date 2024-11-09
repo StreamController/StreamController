@@ -40,7 +40,7 @@ class PluginBase(rpyc.Service):
     plugins = {}
     disabled_plugins = {}
 
-    def __init__(self, use_legacy_locale: bool = False, legacy_dir: str = "locales"):
+    def __init__(self, use_legacy_locale: bool = True, legacy_dir: str = "locales"):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None

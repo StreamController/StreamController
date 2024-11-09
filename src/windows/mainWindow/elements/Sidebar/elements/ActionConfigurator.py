@@ -310,6 +310,8 @@ class EventAssigner(Adw.PreferencesGroup):
         all_events = Input.AllEvents()
         self.rows: list[EventAssignerRow] = []
 
+        return
+
         for event in all_events:
             row = EventAssignerRow(
                 event_assigner=self,
@@ -326,6 +328,20 @@ class EventAssigner(Adw.PreferencesGroup):
         self.set_sensitive(action.allow_event_configuration)
 
         assignments = action.get_event_assignments()
+
+        for row in self.rows:
+            self.expander.remove(row)
+
+        self.rows: list[EventAssignerRow] = []
+
+        for event in self.action.events:
+            row = EventAssignerRow(
+                event_assigner=self,
+                event=event,
+                available_events=list(self.action.events.keys()) + [None]
+            )
+            self.rows.append(row)
+            self.expander.add_row(row)
 
         for row in self.rows:
             new_assignment = assignments.get(row.event)

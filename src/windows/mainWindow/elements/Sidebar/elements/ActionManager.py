@@ -714,6 +714,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         if len(state_dict["actions"]) == 1:
             state_dict.setdefault("image-control-action", 0)
             state_dict.setdefault("label-control-actions", [0, 0, 0])
+            state_dict.setdefault("background-control-action", 0)
 
         # Save page
         active_page.save()

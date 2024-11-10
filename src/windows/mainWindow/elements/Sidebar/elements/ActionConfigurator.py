@@ -157,10 +157,13 @@ class ConfigGroup(Adw.PreferencesGroup):
         pass
 
     def load_for_action(self, action: ActionBase):
-        if not hasattr(action, "get_config_rows"):
+        base_method = getattr(ActionBase, "get_config_rows", None)
+        action_method = getattr(action.__class__, "get_config_rows", None)
+
+        if base_method == action_method:
             self.hide()
             return
-        
+
         config_rows = action.get_config_rows()
         if config_rows is None:
             self.hide()
@@ -190,13 +193,18 @@ class CustomConfigs(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.parent = parent
 
-        self.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL, margin_bottom=6))
+        self.seperator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL, margin_bottom=6)
+
+        self.append(self.seperator)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.append(self.main_box)
 
     def load_for_action(self, action):
-        if not hasattr(action, "get_custom_config_area"):
+        base_method = getattr(ActionBase, "get_custom_config_area", None)
+        action_method = getattr(action.__class__, "get_custom_config_area", None)
+
+        if base_method == action_method:
             self.hide()
             return
         

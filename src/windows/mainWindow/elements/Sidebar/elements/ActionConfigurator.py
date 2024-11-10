@@ -81,6 +81,11 @@ class ActionConfigurator(Gtk.Box):
         self.comment_group.load_for_action(action, index)
         self.event_assigner.load_for_action(action)
 
+        if not self.config_group.is_visible():
+            self.custom_configs.seperator.hide()
+        else:
+            self.custom_configs.seperator.show()
+
     def on_back_button_click(self, button):
         self.sidebar.main_stack.set_visible_child_name("configurator_stack")
 

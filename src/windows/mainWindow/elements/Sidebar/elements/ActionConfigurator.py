@@ -162,17 +162,12 @@ class ConfigGroup(Adw.PreferencesGroup):
         pass
 
     def load_for_action(self, action: ActionBase):
-        base_method = getattr(ActionBase, "get_config_rows", None)
-        action_method = getattr(action.__class__, "get_config_rows", None)
-
-        if base_method == action_method:
-            self.hide()
-            return
-
         config_rows = action.get_config_rows()
-        if config_rows is None:
+
+        if not config_rows:
             self.hide()
             return
+
         # Load labels
         self.set_title(action.action_name)
         self.set_description(action.plugin_base.plugin_name)
@@ -206,13 +201,6 @@ class CustomConfigs(Gtk.Box):
         self.append(self.main_box)
 
     def load_for_action(self, action):
-        base_method = getattr(ActionBase, "get_custom_config_area", None)
-        action_method = getattr(action.__class__, "get_custom_config_area", None)
-
-        if base_method == action_method:
-            self.hide()
-            return
-        
         # Append custom config area
         custom_config_area = action.get_custom_config_area()
         

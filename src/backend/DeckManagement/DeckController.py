@@ -1529,6 +1529,8 @@ class ControllerInputState:
         for action in self.get_own_actions():
             if not isinstance(action, ActionBase):
                 continue
+            if not action.on_ready_called:
+                continue
             action.on_update()
 
     @log.catch

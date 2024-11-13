@@ -13,9 +13,6 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from src.patcher.patches.sd_neo.sd_neo import SDNeoPatch
-
-
 class Patcher:
     def patch(self):
         return

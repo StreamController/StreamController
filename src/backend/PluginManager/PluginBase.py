@@ -18,6 +18,8 @@ from rpyc.core import netref
 # Import gtk modules
 import gi
 
+from locales.LocaleManager import LocaleManager
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk
@@ -38,7 +40,7 @@ class PluginBase(rpyc.Service):
     plugins = {}
     disabled_plugins = {}
 
-    def __init__(self):
+    def __init__(self, use_legacy_locale: bool = True, legacy_dir: str = "locales"):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
@@ -46,7 +48,10 @@ class PluginBase(rpyc.Service):
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
         self.settings_path: str = os.path.join(gl.DATA_PATH, "settings", "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well
 
-        self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, "locales"))
+        if use_legacy_locale:
+            self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, legacy_dir))
+        else:
+            self.locale_manager = LocaleManager(os.path.join(self.PATH, "locales.csv"))
         self.locale_manager.set_to_os_default()
 
         self.action_holders: dict = {}

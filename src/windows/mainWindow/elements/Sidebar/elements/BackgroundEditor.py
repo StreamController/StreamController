@@ -165,7 +165,6 @@ class ColorRow(Adw.PreferencesRow):
         color = active_page.get_background_color(identifier=identifier, state=self.active_state)
         color = c_state.background_manager.get_composed_color()
 
-        print(color)
         self.set_color(color)
 
         self.button.revert_button.set_visible(c_state.background_manager.get_use_page_background())

@@ -136,7 +136,6 @@ class DeckStack(Gtk.Stack):
             self.main_window.change_ui_to_no_connected_deck()
             return
 
-        print(pages)
         self.set_visible_child(pages[0].get_child())
 
     def focus_controller(self, deck_controller) -> None:

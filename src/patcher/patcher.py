@@ -18,5 +18,4 @@ from src.patcher.patches.sd_neo.sd_neo import SDNeoPatch
 
 class Patcher:
     def patch(self):
-        neo = SDNeoPatch()
-        neo.patch()
+        return

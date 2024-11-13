@@ -157,5 +157,7 @@ release_notes: str = """
         <li>Keeping old page backups indefinitely</li>
         <li>Crash when drag and dropping buttons with actions</li>
         <li>Showing "No decks available" in header when no pages are available</li>
+        <li>No proper background color permission handling</li>
+        <li>Loading action objects of inputs that aren't available on deck</li>
     </ul>
 """

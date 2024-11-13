@@ -67,12 +67,14 @@ class ActionConfigurator(Gtk.Box):
         self.config_group = ConfigGroup(self)
         self.main_box.append(self.config_group)
 
+        self.config_group_and_custom_configs_separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL, margin_top=20, margin_bottom=20)
+        self.main_box.append(self.config_group_and_custom_configs_separator)
+
         self.custom_configs = CustomConfigs(self, margin_top=6)
         self.main_box.append(self.custom_configs)
 
         self.remove_button = RemoveButton(self, margin_top=12)
         self.main_box.append(self.remove_button)
-
 
     def load_for_action(self, action, index):
         self.config_group.load_for_action(action)
@@ -80,6 +82,8 @@ class ActionConfigurator(Gtk.Box):
         self.remove_button.load_for_action(action, index)
         self.comment_group.load_for_action(action, index)
         self.event_assigner.load_for_action(action)
+
+        self.config_group_and_custom_configs_separator.set_visible(self.config_group.is_visible() and self.custom_configs.is_visible())
 
     def on_back_button_click(self, button):
         self.sidebar.main_stack.set_visible_child_name("configurator_stack")
@@ -157,14 +161,12 @@ class ConfigGroup(Adw.PreferencesGroup):
         pass
 
     def load_for_action(self, action: ActionBase):
-        if not hasattr(action, "get_config_rows"):
-            self.hide()
-            return
-        
         config_rows = action.get_config_rows()
-        if config_rows is None:
+
+        if not config_rows:
             self.hide()
             return
+
         # Load labels
         self.set_title(action.action_name)
         self.set_description(action.plugin_base.plugin_name)
@@ -190,28 +192,22 @@ class CustomConfigs(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.parent = parent
 
-        self.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL, margin_bottom=6))
-
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.append(self.main_box)
 
     def load_for_action(self, action):
-        if not hasattr(action, "get_custom_config_area"):
-            self.hide()
-            return
-        
         # Append custom config area
         custom_config_area = action.get_custom_config_area()
         
         if custom_config_area is None:
             self.hide()
             return
-        
+
         # Clear
         self.clear()
 
-        if custom_config_area is not None:
-            self.main_box.append(custom_config_area)
+        # Append custom content
+        self.main_box.append(custom_config_area)
 
         # Show
         self.show()

@@ -201,6 +201,12 @@ def get_deepest_focused_widget_with_attr(start: Gtk.Widget, attr:str) -> Gtk.Wid
     for widget in reversed(get_focused_widgets(start)):
         if hasattr(widget, attr):
             return widget
+
+def better_disconnect(widget: Gtk.Widget, handler: callable):
+    try:
+        widget.disconnect_by_func(handler)
+    except Exception:
+        pass
         
 class EntryDialog(Gtk.ApplicationWindow):
     def __init__(self, parent_window, dialog_title:str, entry_heading:str = "Name:", default_text:str = None, confirm_label:str = "OK", forbid_answers:list[str] = [],

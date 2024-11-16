@@ -96,7 +96,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         GLib.idle_add(gl.app.on_quit)
 
     def on_support(self, action, parameter):
-        open_web("https://ko-fi.com/core447", new=1, autoraise=True)
+        open_web("https://ko-fi.com/core447")
 
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutDialog()

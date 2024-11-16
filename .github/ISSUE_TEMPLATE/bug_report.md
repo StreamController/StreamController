@@ -25,3 +25,5 @@ If applicable, add screenshots to help explain your problem.
 
 **Additional context**
 Add any other context about the problem here.
+
+Please only post issues to this repository that are directly related to the application itself, not a plugin.

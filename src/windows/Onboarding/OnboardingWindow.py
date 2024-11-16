@@ -24,6 +24,7 @@ import webbrowser as web
 
 from GtkHelper.GtkHelper import LoadingScreen
 from autostart import is_flatpak
+from src.backend.DeckManagement.HelperMethods import open_web, run_command
 from src.windows.Onboarding.PluginRecommendations import PluginRecommendations
 
 gi.require_version("Gtk", "4.0")
@@ -96,7 +97,7 @@ class OnboardingWindow(Adw.Dialog):
         self.discord_page = DiscordOnboardingScreen(self)
         self.carousel.append(self.discord_page)
 
-        self.support_app_page = SupportAppOnboardingScreen(self)
+        self.support_app_page = SupportAppOnboardingScreen()
         self.carousel.append(self.support_app_page)
 
         self.carousel.append(OnboardingScreen5(self))
@@ -300,7 +301,7 @@ class UdevOnboardingScreen(Gtk.Box):
         self.append(self.open_wiki_button)
 
     def on_button_click(self, button):
-        web.open("https://streamcontroller.github.io/docs/latest/installation/#udev")
+        open_web("https://streamcontroller.github.io/docs/latest/installation/#udev")
 
 class OnboardingScreen5(Gtk.Box):
     def __init__(self, onboarding_window: OnboardingWindow):
@@ -368,30 +369,41 @@ class DiscordOnboardingScreen(Gtk.Box):
         self.append(self.join_button)
 
     def on_join_button_clicked(self, button):
-        web.open_new("https://discord.gg/MSyHM8TN3u")
+        open_web("https://discord.gg/MSyHM8TN3u")
 
 
 class SupportAppOnboardingScreen(Gtk.Box):
-    def __init__(self, onboarding_window: OnboardingWindow):
+    def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
                          halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
                          margin_start=50, margin_end=50, margin_top=50, margin_bottom=50)
-        self.onboarding_window = onboarding_window
 
         self.build()
 
     def build(self):
-        self.label = Gtk.Label(label="Support the app development", css_classes=["onboarding-welcome-label"],
-                               margin_top=20)
+        self.label = Gtk.Label(label="Support the app\ndevelopment", css_classes=["onboarding-welcome-label"],
+                               margin_bottom=40, use_markup=True, justify=Gtk.Justification.CENTER)
         self.append(self.label)
 
-        self.detail = Gtk.Label(label="Support the development of this app by donating. You can also request custom plugins and page creation for your needs", css_classes=["onboarding-welcome-detail-label"],
-                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
+        self.detail = Gtk.Label(label="Creating this app was a lot of work, and your support helps me continue to further improve it. Consider donating to enable me to dedicate more time to new features and enhancements.\nYou can also request custom plugins and page creation for your needs", css_classes=["onboarding-welcome-detail-label"],
+                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER, use_markup=True)
         self.append(self.detail)
 
-        self.support_button = Gtk.Button(label="Donate", css_classes=["pill", "suggested-action"], margin_top=20, hexpand=False, halign=Gtk.Align.CENTER)
+        self.support_button = Gtk.Button(label="Donate", css_classes=["pill", "suggested-action"], margin_top=40, hexpand=False, halign=Gtk.Align.CENTER)
         self.support_button.connect("clicked", self.on_support_button_clicked)
         self.append(self.support_button)
 
     def on_support_button_clicked(self, button):
-        web.open_new("https://ko-fi.com/core447")
+        run_command("xdg-open https://ko-fi.com/core447")
+        # portal = Xdp.Portal.new()
+        # portal.open_uri(
+        #     parent=XdpGtk4.parent_new_gtk(gl.app.get_active_window()),
+        #     uri="https://ko-fi.com/core447",
+        #     flags=Xdp.OpenUriFlags.ASK,
+        #     cancellable=None,
+        #     callback=self.callback
+        # )
+
+    def callback(self, source, res):
+        print(source)
+        print(res)

@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from src.backend.DeckManagement.HelperMethods import open_web
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, GLib
@@ -376,7 +378,7 @@ class OriginalURL(Adw.ActionRow):
     def on_open_clicked(self, button:Gtk.Button):
         if self.get_subtitle() in [None, "N/A", ""]:
             return
-        web.open(self.get_subtitle())
+        open_web(self.get_subtitle())
 
 
 class EntryRowWithoutTitle(Adw.EntryRow):

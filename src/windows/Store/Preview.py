@@ -16,6 +16,7 @@ from textwrap import wrap
 import time
 import gi
 
+from src.backend.DeckManagement.HelperMethods import open_web
 import globals as gl
 
 from loguru import logger as log
@@ -186,7 +187,7 @@ class StorePreview(Gtk.FlowBoxChild):
     def on_github_clicked(self, button: Gtk.Button):
         if self.url is None:
             return
-        web.open(self.url)
+        open_web(self.url)
 
     def on_download_clicked(self, button: Gtk.Button):
         GLib.idle_add(self.show_install_spinner, True)

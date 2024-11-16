@@ -110,6 +110,7 @@ app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 tray_icon: "TrayIcon" = None
 fallback_font: str = find_fallback_font()
+showed_donate_window: bool = False
 
 app_version: str = "1.5.0-beta.7" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
@@ -159,5 +160,6 @@ release_notes: str = """
         <li>Showing "No decks available" in header when no pages are available</li>
         <li>No proper background color permission handling</li>
         <li>Loading action objects of inputs that aren't available on deck</li>
+        <li>Weblinks not opening on Flatpak</li>
     </ul>
 """

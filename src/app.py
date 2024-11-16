@@ -22,6 +22,7 @@ import asyncio
 import gi
 
 from src.windows.Store.ResponsibleNotesDialog import ResponsibleNotesDialog
+from src.windows.Donate.DonateWindow import DonateWindow
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Xdp", "1.0")
@@ -59,8 +60,15 @@ class App(Adw.Application):
 
         icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
         icon_theme.add_search_path(os.path.join(gl.top_level_dir, "Assets", "icons"))
+
+        app_settings = gl.settings_manager.get_app_settings()
         
-        allow_white_mode = gl.settings_manager.get_app_settings().get("ui", {}).get("allow-white-mode", False)
+        allow_white_mode = app_settings.get("ui", {}).get("allow-white-mode", False)
+
+        # increment app launches
+        app_settings.setdefault("general", {})
+        app_settings["general"]["app-launches"] = app_settings["general"].get("app-launches", 0) + 1
+        gl.settings_manager.save_app_settings(app_settings)
 
         self.style_manager = self.get_style_manager()
         if allow_white_mode:
@@ -75,6 +83,8 @@ class App(Adw.Application):
             self.main_win.present()
 
         self.show_onboarding()
+        # self.show_donate()
+        self.main_win.on_finished.append(self.show_donate())
         # self.show_permissions()
 
         self.shortcuts = ShortcutsWindow(app=app, application=app)
@@ -105,10 +115,26 @@ class App(Adw.Application):
         self.main_win.present()
         log.info("awake")
 
+        self.show_donate(ignore_background_launch=True)
+
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
         self.asset_manager = AssetManager(application=self, main_window=self.main_win)
         gl.asset_manager = self.asset_manager
         self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)
+
+    def show_donate(self, ignore_background_launch: bool = False):
+        if not ignore_background_launch and gl.argparser.parse_args().b:
+            return
+        if gl.showed_donate_window:
+            return
+        gl.showed_donate_window = True
+
+        app_settings = gl.settings_manager.get_app_settings()
+        if not app_settings.get("general", {}).get("show-donate-window", True) or app_settings.get("general", {}).get("app-launches", 0) < 3 or hasattr(self, "onboarding") or hasattr(self, "permissions"):
+            return
+
+        self.donate = DonateWindow()
+        self.donate.present(self.main_win)
 
     def show_onboarding(self):
         if gl.argparser.parse_args().b:

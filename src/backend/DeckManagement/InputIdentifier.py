@@ -16,9 +16,7 @@ class InputIdentifier:
         return page.dict.get(self.input_type, {}).get(self.json_identifier, {})
 
     def get_dict(self, d):
-        d.setdefault(self.input_type, {})
-        d[self.input_type].setdefault(self.json_identifier, {})
-        return d[self.input_type][self.json_identifier]
+        return d.get(self.input_type, {}).get(self.json_identifier)
     
     def get_controller_input(self, controller: "DeckController") -> "ControllerInput":
         return controller.get_input(self)

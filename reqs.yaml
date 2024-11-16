@@ -6,49 +6,62 @@ build-commands:
   --prefix=${FLATPAK_DEST} --no-build-isolation meson meson-python patchelf setuptools pip 
   
 - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
-  --prefix=${FLATPAK_DEST} --no-build-isolation annotated-types async-lru cairocffi
-  CairoSVG certifi cffi charset-normalizer click colorama contourpy cssselect2 cycler
-  dbus-python decorator defusedxml distlib dnspython evdev filelock fonttools fuzzywuzzy
-  get-video-properties gitdb idna imageio imageio-ffmpeg indexed-bzip2 Jinja2 joblib
+  --prefix=${FLATPAK_DEST} --no-build-isolation aiohappyeyeballs aiohttp aiosignal
+  annotated-types anyio async-lru attrs bcrypt blinker cairocffi CairoSVG certifi
+  cffi charset-normalizer click colorama contourpy cssselect2 cycler dbus-python decorator
+  defusedxml deprecation distlib dnspython evdev filelock Flask Flask-Cors fonttools
+  frozenlist fuzzywuzzy get-video-properties gitdb gotrue h11 h2 hpack httpcore httpx
+  hyperframe idna imageio imageio-ffmpeg indexed-bzip2 itsdangerous Jinja2 joblib
   kiwisolver Levenshtein linkify-it-py loguru markdown-it-py MarkupSafe matplotlib
-  mdit-py-plugins mdurl memray meson meson-python natsort nltk numpy opencv-python
-  packaging patchelf pillow pip-review pipenv platformdirs plumbum proglog psutil
-  pulsectl py-gcode-metadata pycairo pyclip pycparser pydantic pydantic-core pyenchant
-  Pygments PyGObject pymongo pyparsing pyperclip pyproject-metadata Pyro5 pyspellchecker
-  python-dateutil pyudev pyusb PyYAML RapidFuzz regex req2flatpak requests requirements-parser
-  rich rpyc serpent setproctitle setuptools six smmap speedtest-cli streamcontroller-plugin-tools
-  streamdeck textual tinycss2 tqdm types-setuptools typing-extensions uc-micro-py
-  urllib3 usb-monitor virtualenv webencodings websocket-client
+  mdit-py-plugins mdurl memray meson meson-python multidict natsort nltk numpy opencv-python
+  packaging patchelf pillow pip-review pipenv platformdirs plumbum postgrest proglog
+  propcache psutil pulsectl py-gcode-metadata pycairo pyclip pycparser pydantic pydantic-core
+  pyenchant Pygments PyGObject PyGObject-stubs pymongo pyparsing pyperclip pyproject-metadata
+  Pyro5 pyspellchecker python-dateutil pyudev pyusb PyYAML RapidFuzz realtime regex
+  req2flatpak requests requirements-parser rich rpyc serpent setproctitle setuptools
+  six smmap sniffio speedtest-cli storage3 streamcontroller-plugin-tools streamdeck
+  supabase supafunc textual tinycss2 tqdm types-setuptools typing-extensions uc-micro-py
+  urllib3 usb-monitor virtualenv webencodings websocket-client websockets Werkzeug
+  yarl
 sources:
 - type: file
   url: https://files.pythonhosted.org/packages/01/a5/1866b42151f50453f1a0d28fc4c39f5be5f412a2e914f33449c42daafdf1/CairoSVG-2.7.1-py3-none-any.whl
   sha256: 8a5222d4e6c3f86f1f7046b63246877a63b49923a1cd202184c3a634ef546b3b
 - type: file
+  url: https://files.pythonhosted.org/packages/af/47/93213ee66ef8fae3b93b3e29206f6b251e65c97bd91d8e1c5596ef15af0a/flask-3.1.0-py3-none-any.whl
+  sha256: d667207822eb83f1c4b50949b1623c8fc8d51f2341d65f72e1a1815397551136
+- type: file
+  url: https://files.pythonhosted.org/packages/56/07/1afa0514c876282bebc1c9aee83c6bb98fe6415cf57b88d9b06e7e29bf9c/Flask_Cors-5.0.0-py2.py3-none-any.whl
+  sha256: b9e307d082a9261c100d8fb0ba909eec6a228ed1b60a8315fd85f783d61910bc
+- type: file
   url: https://files.pythonhosted.org/packages/31/80/3a54838c3fb461f6fec263ebf3a3a41771bd05190238de3486aae8540c36/jinja2-3.1.4-py3-none-any.whl
   sha256: bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d
 - type: file
-  url: https://files.pythonhosted.org/packages/3d/1e/0ac3fe011bfa90ac6dcdb75585bcdd8e1b066e2ad828d6e4336e7d0f65e6/levenshtein-0.26.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-  sha256: a01150b33505596be83bff9f6f06f53bc1a14fd5e36e840dc134822c6ba20e00
+  url: https://files.pythonhosted.org/packages/bc/d3/44539e952df93c5d88a95a0edff34af38e4f87330a76e8335bfe2c0f31bf/levenshtein-0.26.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: f92694c9396f55d4c91087efacf81297bef152893806fc54c289fc0254b45384
   only-arches:
   - aarch64
 - type: file
-  url: https://files.pythonhosted.org/packages/6a/94/d2b05df6019edca96828ce0773e3bc1794fc63fa29e28bcde857dcde9d35/levenshtein-0.26.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  sha256: d0fa54bd453b8b347139b4ef940d717939c6a8966fdbcde2cf8d70316497e292
+  url: https://files.pythonhosted.org/packages/36/22/5f9760b135bdefb8cf8d663890756136754db03214f929b73185dfa33f05/levenshtein-0.26.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 33e2517e8d3c221de2d1183f400aed64211fcfc77077b291ed9f3bb64f141cdc
   only-arches:
   - x86_64
 - type: file
-  url: https://files.pythonhosted.org/packages/27/94/79751928bca5841416d8ca02e22198672e021d5c7120338e2a6e3771f8fc/MarkupSafe-3.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-  sha256: 5a4cb365cb49b750bdb60b846b0c0bc49ed62e59a76635095a179d440540c346
+  url: https://files.pythonhosted.org/packages/e0/25/dd5c0f6ac1311e9b40f4af06c78efde0f3b5cbf02502f8ef9501294c425b/MarkupSafe-3.0.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: 1c99d261bd2d5f6b59325c92c73df481e05e57f19837bdca8413b9eac4bd8028
   only-arches:
   - aarch64
 - type: file
-  url: https://files.pythonhosted.org/packages/10/6e/1b8070bbfc467429c7983cd5ffd4ec57e1d501763d974c7caaa0a9a79f4c/MarkupSafe-3.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  sha256: ee3941769bd2522fe39222206f6dd97ae83c442a94c90f2b7a25d847d40f4729
+  url: https://files.pythonhosted.org/packages/f3/f0/89e7aadfb3749d0f52234a0c8c7867877876e0a20b60e2188e9850794c17/MarkupSafe-3.0.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: e17c96c14e19278594aa4841ec148115f9c7615a47382ecb6b82bd8fea3ab0c8
   only-arches:
   - x86_64
 - type: file
   url: https://files.pythonhosted.org/packages/2b/58/d34e67a79631177e3c08e7d02b5165147f590171f2cae6769502af5f7f7e/pygobject-3.50.0.tar.gz
   sha256: 4500ad3dbf331773d8dedf7212544c999a76fc96b63a91b3dcac1e5925a1d103
+- type: file
+  url: https://files.pythonhosted.org/packages/99/04/e7dd3a2dc52977d54b98542742da2aa8c2fc5356e45339f37b908ff5dfc5/pygobject_stubs-2.12.0.tar.gz
+  sha256: 4dad2d876c070a16f604c249bb70e8cbc36373151a6731d826a8436c6a80b99d
 - type: file
   url: https://files.pythonhosted.org/packages/c3/93/9916574aa8c00aa06bbac729972eb1071d002b8e158bd0e83a3b9a20a1f7/PyYAML-6.0.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
   sha256: 1f71ea527786de97d1a0cc0eacd1defc0985dcf6b3f17bb77dcfc8c34bec4dc5
@@ -66,21 +79,59 @@ sources:
   url: https://files.pythonhosted.org/packages/85/32/1c7e488f82c59189e917bfedb926b1c2b87104c8d31c8323a5aa5e1fc603/Pyro5-5.15-py3-none-any.whl
   sha256: 4d85428ed75985e63f159d2486ad5680743ea76f766340fd30b65dd20f83d471
 - type: file
-  url: https://files.pythonhosted.org/packages/54/bc/27f296de09867c902aac9864bdbbe09a1cb26d57ade701683c40a5b59e88/rapidfuzz-3.10.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-  sha256: a86d5d1d75e61df060c1e56596b6b0a4422a929dff19cc3dbfd5eee762c86b61
+  url: https://files.pythonhosted.org/packages/13/07/6accf77b78772de2a5590ef7965d3b7c9997c5a92e913e525765586aa261/rapidfuzz-3.10.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: 8e06fe6a12241ec1b72c0566c6b28cda714d61965d86569595ad24793d1ab259
   only-arches:
   - aarch64
 - type: file
-  url: https://files.pythonhosted.org/packages/15/e6/28fcaedcacaf6b56e7281d67e1aba88d743c8978a12b9cebedcfcd7c31ab/rapidfuzz-3.10.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  sha256: 76a35e9e19a7c883c422ffa378e9a04bc98cb3b29648c5831596401298ee51e6
+  url: https://files.pythonhosted.org/packages/3c/05/b8dcfbdc8f4e3e84abf86ea13ec9595ebaf7e5375011e5d49642705704ad/rapidfuzz-3.10.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: c0c955e32afdbfdf6e9ee663d24afb25210152d98c26d22d399712d29a9b976b
   only-arches:
   - x86_64
+- type: file
+  url: https://files.pythonhosted.org/packages/52/24/ab44c871b0f07f491e5d2ad12c9bd7358e527510618cb1b803a88e986db1/werkzeug-3.1.3-py3-none-any.whl
+  sha256: 54b78bf3716d19a65be4fceccc0d1d7b89e608834989dfae50ea87564639213e
+- type: file
+  url: https://files.pythonhosted.org/packages/f7/d8/120cd0fe3e8530df0539e71ba9683eade12cae103dd7543e50d15f737917/aiohappyeyeballs-2.4.3-py3-none-any.whl
+  sha256: 8a7a83727b2756f394ab2895ea0765a0a8c475e3c71e98d43d76f22b4b435572
+- type: file
+  url: https://files.pythonhosted.org/packages/fe/03/ffab64af75db3a8f33c8701cba25e06e0fb1858d050f8698077ecaece256/aiohttp-3.11.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: bb2e82e515e268b965424ecabebd91834a41b36260b6ef5db015ee12ddb28ef3
+  only-arches:
+  - aarch64
+- type: file
+  url: https://files.pythonhosted.org/packages/f8/db/62ce138bd83b5905b2d368dd5f2eae93599c2c37586f2907acecd767c0e1/aiohttp-3.11.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 12071dd2cc95ba81e0f2737bebcb98b2a8656015e87772e84e8fb9e635b5da6e
+  only-arches:
+  - x86_64
+- type: file
+  url: https://files.pythonhosted.org/packages/76/ac/a7305707cb852b7e16ff80eaf5692309bde30e2b1100a1fcacdc8f731d97/aiosignal-1.3.1-py3-none-any.whl
+  sha256: f8376fb07dd1e86a584e4fcdec80b36b7f81aac666ebc724e2c090300dd83b17
 - type: file
   url: https://files.pythonhosted.org/packages/78/b6/6307fbef88d9b5ee7421e68d78a9f162e0da4900bc5f5793f6d3d0e34fb8/annotated_types-0.7.0-py3-none-any.whl
   sha256: 1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53
 - type: file
+  url: https://files.pythonhosted.org/packages/e4/f5/f2b75d2fc6f1a260f340f0e7c6a060f4dd2961cc16884ed851b0d18da06a/anyio-4.6.2.post1-py3-none-any.whl
+  sha256: 6d170c36fba3bdd840c73d3868c1e777e33676a69c3a72cf0a0d5d6d8009b61d
+- type: file
   url: https://files.pythonhosted.org/packages/fa/9f/3c3503693386c4b0f245eaf5ca6198e3b28879ca0a40bde6b0e319793453/async_lru-2.0.4-py3-none-any.whl
   sha256: ff02944ce3c288c5be660c42dbcca0742b32c3b279d6dceda655190240b99224
+- type: file
+  url: https://files.pythonhosted.org/packages/6a/21/5b6702a7f963e95456c0de2d495f67bf5fd62840ac655dc451586d23d39a/attrs-24.2.0-py3-none-any.whl
+  sha256: 81921eb96de3191c8258c199618104dd27ac608d9366f5e35d011eae1867ede2
+- type: file
+  url: https://files.pythonhosted.org/packages/cc/14/b9ff8e0218bee95e517b70e91130effb4511e8827ac1ab00b4e30943a3f6/bcrypt-4.2.0-cp39-abi3-manylinux_2_28_aarch64.whl
+  sha256: 8d7bb9c42801035e61c109c345a28ed7e84426ae4865511eb82e913df18f58c2
+  only-arches:
+  - aarch64
+- type: file
+  url: https://files.pythonhosted.org/packages/3e/d0/31938bb697600a04864246acde4918c4190a938f891fd11883eaaf41327a/bcrypt-4.2.0-cp39-abi3-manylinux_2_28_x86_64.whl
+  sha256: 3d3a6d28cb2305b43feac298774b997e372e56c7c7afd90a12b3dc49b189151c
+  only-arches:
+  - x86_64
+- type: file
+  url: https://files.pythonhosted.org/packages/10/cb/f2ad4230dc2eb1a74edf38f1a38b9b52277f75bef262d8908e60d957e13c/blinker-1.9.0-py3-none-any.whl
+  sha256: ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc
 - type: file
   url: https://files.pythonhosted.org/packages/93/d8/ba13451aa6b745c49536e87b6bf8f629b950e84bd0e8308f7dc6883b67e2/cairocffi-1.7.1-py3-none-any.whl
   sha256: 9803a0e11f6c962f3b0ae2ec8ba6ae45e957a146a004697a1ac1bbf16b073b3f
@@ -114,13 +165,13 @@ sources:
   url: https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl
   sha256: 4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6
 - type: file
-  url: https://files.pythonhosted.org/packages/51/3d/aa0fe6ae67e3ef9f178389e4caaaa68daf2f9024092aa3c6032e3d174670/contourpy-1.3.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-  sha256: 0be4d8425bfa755e0fd76ee1e019636ccc7c29f77a7c86b4328a9eb6a26d0639
+  url: https://files.pythonhosted.org/packages/7f/b3/7859efce66eaca5c14ba7619791b084ed02d868d76b928ff56890d2d059d/contourpy-1.3.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: ade08d343436a94e633db932e7e8407fe7de8083967962b46bdfc1b0ced39454
   only-arches:
   - aarch64
 - type: file
-  url: https://files.pythonhosted.org/packages/6e/be/524e377567defac0e21a46e2a529652d165fed130a0d8a863219303cee18/contourpy-1.3.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  sha256: 3634b5385c6716c258d0419c46d05c8aa7dc8cb70326c9a4fb66b69ad2b52e09
+  url: https://files.pythonhosted.org/packages/ba/99/6794142b90b853a9155316c8f470d2e4821fe6f086b03e372aca848227dd/contourpy-1.3.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: efa874e87e4a647fd2e4f514d5e91c7d493697127beb95e77d2f7561f6905bd9
   only-arches:
   - x86_64
 - type: file
@@ -138,6 +189,9 @@ sources:
 - type: file
   url: https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl
   sha256: a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61
+- type: file
+  url: https://files.pythonhosted.org/packages/02/c3/253a89ee03fc9b9682f1541728eb66db7db22148cd94f89ab22528cd1e1b/deprecation-2.1.0-py2.py3-none-any.whl
+  sha256: a10811591210e1fb0e768a8c25517cabeabcba6f0bf96564f8ff45189f90b14a
 - type: file
   url: https://files.pythonhosted.org/packages/91/a1/cf2472db20f7ce4a6be1253a81cfdf85ad9c7885ffbed7047fb72c24cf87/distlib-0.3.9-py2.py3-none-any.whl
   sha256: 47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87
@@ -161,6 +215,16 @@ sources:
   only-arches:
   - x86_64
 - type: file
+  url: https://files.pythonhosted.org/packages/e3/12/2aad87deb08a4e7ccfb33600871bbe8f0e08cb6d8224371387f3303654d7/frozenlist-1.5.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: feeb64bc9bcc6b45c6311c9e9b99406660a9c05ca8a5b30d14a78555088b0b3a
+  only-arches:
+  - aarch64
+- type: file
+  url: https://files.pythonhosted.org/packages/af/f2/64b73a9bb86f5a89fb55450e97cd5c1f84a862d4ff90d9fd1a73ab0f64a5/frozenlist-1.5.0-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 000a77d6034fbad9b6bb880f7ec073027908f1b40254b5d6f26210d2dab1240e
+  only-arches:
+  - x86_64
+- type: file
   url: https://files.pythonhosted.org/packages/43/ff/74f23998ad2f93b945c0309f825be92e04e0348e062026998b5eefef4c33/fuzzywuzzy-0.18.0-py2.py3-none-any.whl
   sha256: 928244b28db720d1e0ee7587acf660ea49d7e4c632569cad4f1cd7e68a5f0993
 - type: file
@@ -169,6 +233,27 @@ sources:
 - type: file
   url: https://files.pythonhosted.org/packages/fd/5b/8f0c4a5bb9fd491c277c21eff7ccae71b47d43c4446c9d0c6cff2fe8c2c4/gitdb-4.0.11-py3-none-any.whl
   sha256: 81a3407ddd2ee8df444cbacea00e2d038e40150acfa3001696fe0dcf1d3adfa4
+- type: file
+  url: https://files.pythonhosted.org/packages/03/06/dd3dfbb7722d0d8dfdce6b7c76695dfb4ea968dae4e46655f0d5310e27e1/gotrue-2.10.0-py3-none-any.whl
+  sha256: 768e58207488e5184ffbdc4351b7280d913daf97962f4e9f2cca05c80004b042
+- type: file
+  url: https://files.pythonhosted.org/packages/95/04/ff642e65ad6b90db43e668d70ffb6736436c7ce41fcc549f4e9472234127/h11-0.14.0-py3-none-any.whl
+  sha256: e3fe4ac4b851c468cc8363d500db52c2ead036020723024a109d37346efaa761
+- type: file
+  url: https://files.pythonhosted.org/packages/2a/e5/db6d438da759efbb488c4f3fbdab7764492ff3c3f953132efa6b9f0e9e53/h2-4.1.0-py3-none-any.whl
+  sha256: 03a46bcf682256c95b5fd9e9a99c1323584c3eec6440d379b9903d709476bc6d
+- type: file
+  url: https://files.pythonhosted.org/packages/d5/34/e8b383f35b77c402d28563d2b8f83159319b509bc5f760b15d60b0abf165/hpack-4.0.0-py3-none-any.whl
+  sha256: 84a076fad3dc9a9f8063ccb8041ef100867b1878b25ef0ee63847a5d53818a6c
+- type: file
+  url: https://files.pythonhosted.org/packages/06/89/b161908e2f51be56568184aeb4a880fd287178d176fd1c860d2217f41106/httpcore-1.0.6-py3-none-any.whl
+  sha256: 27b59625743b85577a8c0e10e55b50b5368a4f2cfe8cc7bcfa9cf00829c2682f
+- type: file
+  url: https://files.pythonhosted.org/packages/56/95/9377bcb415797e44274b51d46e3249eba641711cf3348050f76ee7b15ffc/httpx-0.27.2-py3-none-any.whl
+  sha256: 7bb2708e112d8fdd7829cd4243970f0c223274051cb35ee80c03301ee29a3df0
+- type: file
+  url: https://files.pythonhosted.org/packages/d7/de/85a784bcc4a3779d1753a7ec2dee5de90e18c7bcf402e71b51fcf150b129/hyperframe-6.0.1-py3-none-any.whl
+  sha256: 0ec6bafd80d8ad2195c4f03aacba3a8265e57bc4cff261e802bf39970ed02a15
 - type: file
   url: https://files.pythonhosted.org/packages/76/c6/c88e154df9c4e1a2a66ccf0005a88dfb2650c1dffb6f5ce603dfbd452ce3/idna-3.10-py3-none-any.whl
   sha256: 946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3
@@ -193,6 +278,9 @@ sources:
   sha256: 3694b55c42f1c76e25c7b5fd4be2b1b16e926ffeefe8a289721888a81bbcd603
   only-arches:
   - x86_64
+- type: file
+  url: https://files.pythonhosted.org/packages/04/96/92447566d16df59b2a776c0fb82dbc4d9e07cd95062562af01e408583fc4/itsdangerous-2.2.0-py3-none-any.whl
+  sha256: c6242fc49e35958c8b15141343aa660db5fc54d4f13a1db01a3f5891b98700ef
 - type: file
   url: https://files.pythonhosted.org/packages/91/29/df4b9b42f2be0b623cbd5e2140cafcaa2bef0759a00b7b70104dcfe2fb51/joblib-1.4.2-py3-none-any.whl
   sha256: 06d478d5674cbc267e7496a410ee875abd68e4340feff4490bcb7afb88060ae6
@@ -242,11 +330,21 @@ sources:
   only-arches:
   - x86_64
 - type: file
-  url: https://files.pythonhosted.org/packages/55/a6/47b9353c331318a13eb050887eacfd61eb075746285f9baf7ef7de6ae235/meson-1.5.2-py3-none-any.whl
-  sha256: 77706e2368a00d789c097632ccf4fc39251fba56d03e1e1b262559a3c7a08f5b
+  url: https://files.pythonhosted.org/packages/76/73/3dc4edc855c9988ff05ea5590f5c7bda72b6e0d138b2ddc1fab92a1f242f/meson-1.6.0-py3-none-any.whl
+  sha256: 234a45f9206c6ee33b473ec1baaef359d20c0b89a71871d58c65a6db6d98fe74
 - type: file
-  url: https://files.pythonhosted.org/packages/91/c0/104cb6244c83fe6bc3886f144cc433db0c0c78efac5dc00e409a5a08c87d/meson_python-0.16.0-py3-none-any.whl
-  sha256: 842dc9f5dc29e55fc769ff1b6fe328412fe6c870220fc321060a1d2d395e69e8
+  url: https://files.pythonhosted.org/packages/7d/ec/40c0ddd29ef4daa6689a2b9c5ced47d5b58fa54ae149b19e9a97f4979c8c/meson_python-0.17.1-py3-none-any.whl
+  sha256: 30a75c52578ef14aff8392677b09c39346e0a24d2b2c6204b8ed30583c11269c
+- type: file
+  url: https://files.pythonhosted.org/packages/47/e9/604bb05e6e5bce1e6a5cf80a474e0f072e80d8ac105f1b994a53e0b28c42/multidict-6.1.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: 50b3a2710631848991d0bf7de077502e8994c804bb805aeb2925a981de58ec2e
+  only-arches:
+  - aarch64
+- type: file
+  url: https://files.pythonhosted.org/packages/d3/c8/529101d7176fe7dfe1d99604e48d69c5dfdcadb4f06561f465c8ef12b4df/multidict-6.1.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 4b820514bfc0b98a30e3d85462084779900347e4d49267f747ff54060cc33925
+  only-arches:
+  - x86_64
 - type: file
   url: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
   sha256: 4732914fb471f56b5cce04d7bae6f164a592c7712e1c85f9ef585e197299521c
@@ -254,13 +352,13 @@ sources:
   url: https://files.pythonhosted.org/packages/4d/66/7d9e26593edda06e8cb531874633f7c2372279c3b0f46235539fe546df8b/nltk-3.9.1-py3-none-any.whl
   sha256: 4fa26829c5b00715afe3061398a8989dc643b92ce7dd93fb4585a70930d168a1
 - type: file
-  url: https://files.pythonhosted.org/packages/c4/a7/af3329fda3c3ec31d9b650e42bbcd3422fc62a765cbb1405fde4177a0996/numpy-2.1.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-  sha256: 1b8cde4f11f0a975d1fd59373b32e2f5a562ade7cde4f85b7137f3de8fbb29a0
+  url: https://files.pythonhosted.org/packages/5e/da/1a429ae58b3b6c364eeec93bf044c532f2ff7b48a52e41050896cf15d5b1/numpy-2.1.3-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: 8637dcd2caa676e475503d1f8fdb327bc495554e10838019651b76d17b98e512
   only-arches:
   - aarch64
 - type: file
-  url: https://files.pythonhosted.org/packages/9b/b4/e3c7e6fab0f77fff6194afa173d1f2342073d91b1d3b4b30b17c3fb4407a/numpy-2.1.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  sha256: 6d95f286b8244b3649b477ac066c6906fbb2905f8ac19b170e2175d3d799f4df
+  url: https://files.pythonhosted.org/packages/9e/3e/3757f304c704f2f0294a6b8340fcf2be244038be07da4cccf390fa678a9f/numpy-2.1.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 2312b2aa89e1f43ecea6da6ea9a810d06aae08321609d8dc0d0eda6d946a541b
   only-arches:
   - x86_64
 - type: file
@@ -274,8 +372,8 @@ sources:
   only-arches:
   - x86_64
 - type: file
-  url: https://files.pythonhosted.org/packages/08/aa/cc0199a5f0ad350994d660967a8efb233fe0416e4639146c089643407ce6/packaging-24.1-py3-none-any.whl
-  sha256: 5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124
+  url: https://files.pythonhosted.org/packages/88/ef/eb23f262cca3c0c4eb7ab1933c3b1f03d021f2c48f54763065b6f0e321be/packaging-24.2-py3-none-any.whl
+  sha256: 09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759
 - type: file
   url: https://files.pythonhosted.org/packages/ef/09/b7ec52d01ad2936c967e929fd076b0a2e4f94ce950c9440e38f98c67675e/patchelf-0.17.2.1-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl
   sha256: fc329da0e8f628bd836dfb8eaf523547e342351fa8f739bf2b3fe4a6db5a297c
@@ -300,8 +398,8 @@ sources:
   url: https://files.pythonhosted.org/packages/f7/e8/bcb143f21668de2c285ce3d73041ba035b2340fb44bdd95ee04b3e313d09/pip-review-1.3.0.tar.gz
   sha256: 886fc48503a6ec99851036f30a6be07ce7e4610d1491786affecb7a364eddeda
 - type: file
-  url: https://files.pythonhosted.org/packages/fd/45/9441892f5e7380ec5db371bfbd1f2f1659fed9bf2ea122f1fc20798afda7/pipenv-2024.1.0-py3-none-any.whl
-  sha256: 79536f2f5be20f5101a018ca6257d4d32720d89e015691ab77bcc80bf639f2b7
+  url: https://files.pythonhosted.org/packages/9a/f2/f4e57a5a9dd19156c69becfc69b13e389cbedc43a86563d6c01fcbdf6148/pipenv-2024.4.0-py3-none-any.whl
+  sha256: 282ac23b4a2c60cefe22bf1b747f49d55d87719d538b631e9212276920a36f68
 - type: file
   url: https://files.pythonhosted.org/packages/3c/a6/bc1012356d8ece4d66dd75c4b9fc6c1f6650ddd5991e421177d9f8f671be/platformdirs-4.3.6-py3-none-any.whl
   sha256: 73e575e1408ab8103900836b97580d5307456908a03e92031bab39e4554cc3fb
@@ -309,21 +407,34 @@ sources:
   url: https://files.pythonhosted.org/packages/4f/9d/d03542c93bb3d448406731b80f39c3d5601282f778328c22c77d270f4ed4/plumbum-1.9.0-py3-none-any.whl
   sha256: 9fd0d3b0e8d86e4b581af36edf3f3bbe9d1ae15b45b8caab28de1bcb27aaa7f5
 - type: file
+  url: https://files.pythonhosted.org/packages/89/c5/3d476b885230325269befd6d985256e8a1398e7dbea2185965e7524e0bba/postgrest-0.18.0-py3-none-any.whl
+  sha256: 200baad0d23fee986b3a0ffd3e07bfe0cdd40e09760f11e8e13a6c0c2376d5fa
+- type: file
   url: https://files.pythonhosted.org/packages/8b/f5/cab5cf6a540c31f5099043de0ae43990fd9cf66f75ecb5e9f254a4e4d4ee/proglog-0.1.10-py3-none-any.whl
   sha256: 19d5da037e8c813da480b741e3fa71fb1ac0a5b02bf21c41577c7f327485ec50
 - type: file
-  url: https://files.pythonhosted.org/packages/cd/5f/60038e277ff0a9cc8f0c9ea3d0c5eb6ee1d2470ea3f9389d776432888e47/psutil-6.0.0-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-  sha256: e2e8d0054fc88153ca0544f5c4d554d42e33df2e009c4ff42284ac9ebdef4132
+  url: https://files.pythonhosted.org/packages/65/44/626599d2854d6c1d4530b9a05e7ff2ee22b790358334b475ed7c89f7d625/propcache-0.2.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: f52a68c21363c45297aca15561812d542f8fc683c85201df0bebe209e349f793
   only-arches:
   - aarch64
 - type: file
-  url: https://files.pythonhosted.org/packages/19/74/f59e7e0d392bc1070e9a70e2f9190d652487ac115bb16e2eff6b22ad1d24/psutil-6.0.0-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  sha256: 5fd9a97c8e94059b0ef54a7d4baf13b405011176c3b6ff257c247cae0d560ecd
+  url: https://files.pythonhosted.org/packages/3c/e9/1b54b7e26f50b3e0497cd13d3483d781d284452c2c50dd2a615a92a087a3/propcache-0.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 55346705687dbd7ef0d77883ab4f6fabc48232f587925bdaf95219bae072491e
   only-arches:
   - x86_64
 - type: file
-  url: https://files.pythonhosted.org/packages/87/17/fcb5d0bd9179704689c8fa7d5656ebebe168a24187f14be3b4fa9f697fe9/pulsectl-24.8.0-py2.py3-none-any.whl
-  sha256: 050ae7e122c51a55f47c2ce0b377ebbcbc86e163514048904b5ba580ab6912c5
+  url: https://files.pythonhosted.org/packages/27/c2/d034856ac47e3b3cdfa9720d0e113902e615f4190d5d1bdb8df4b2015fb2/psutil-6.1.0-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: d905186d647b16755a800e7263d43df08b790d709d575105d419f8b6ef65423a
+  only-arches:
+  - aarch64
+- type: file
+  url: https://files.pythonhosted.org/packages/58/4d/8245e6f76a93c98aab285a43ea71ff1b171bcd90c9d238bf81f7021fb233/psutil-6.1.0-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 498c6979f9c6637ebc3a73b3f87f9eb1ec24e1ce53a7c5173b8508981614a90b
+  only-arches:
+  - x86_64
+- type: file
+  url: https://files.pythonhosted.org/packages/7f/0d/3e12ca4c2c97509597a3a082813d12b5a9c656ae04bc7c02b29ff128c809/pulsectl-24.11.0-py2.py3-none-any.whl
+  sha256: 7d49641656c88e897492092d1940276e9e83351b3f1a75ee2d02ebc45bb89228
 - type: file
   url: https://files.pythonhosted.org/packages/11/ca/cc4e2676d8c98f5ee79775e505d97a714211898cba05ba12ec8b18a2edd4/py_gcode_metadata-0.2.0-py3-none-any.whl
   sha256: f10503319d335a876ed2bc788b6095e4bae12ce6210e9434e1be37531a82fa26
@@ -369,8 +480,8 @@ sources:
   url: https://files.pythonhosted.org/packages/30/23/2f0a3efc4d6a32f3b63cdff36cd398d9701d26cda58e3ab97ac79fb5e60d/pyperclip-1.9.0.tar.gz
   sha256: b7de0142ddc81bfc5c7507eea19da920b92252b548b96186caf94a5e2527d310
 - type: file
-  url: https://files.pythonhosted.org/packages/22/81/42aaafbff27ca340eef777a4e3e8a509941e75fc0eeb9da2be5ee4159041/pyproject_metadata-0.8.1-py3-none-any.whl
-  sha256: adf593fa478b787c90cc77fcea4114f19a3a1335532bdcba2851be9459a6c39e
+  url: https://files.pythonhosted.org/packages/e8/61/9dd3e68d2b6aa40a5fc678662919be3c3a7bf22cba5a6b4437619b77e156/pyproject_metadata-0.9.0-py3-none-any.whl
+  sha256: fc862aab066a2e87734333293b0af5845fe8ac6cb69c451a41551001e923be0b
 - type: file
   url: https://files.pythonhosted.org/packages/e1/d2/c7e3b3a61a34b9320399fa731d1f9f0c73db8a1f28c6764e9e11efa68a29/pyspellchecker-0.8.1-py3-none-any.whl
   sha256: d91e9e1064793ae1ee8e71b06ca40eeb8e5923437c54291a8e041b447792b640
@@ -384,13 +495,16 @@ sources:
   url: https://files.pythonhosted.org/packages/15/a8/4982498b2ab44d1fcd5c49f07ea3795eab01601dc143b009d333fcace3b9/pyusb-1.2.1-py3-none-any.whl
   sha256: 2b4c7cb86dbadf044dfb9d3a4ff69fd217013dbe78a792177a3feb172449ea36
 - type: file
-  url: https://files.pythonhosted.org/packages/ca/fa/521eb683b916389b4975337873e66954e0f6d8f91bd5774164a57b503185/regex-2024.9.11-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-  sha256: ee439691d8c23e76f9802c42a95cfeebf9d47cf4ffd06f18489122dbb0a7ad64
+  url: https://files.pythonhosted.org/packages/7e/fc/47a6615db976d5417ad982a15983cb3750910e0672d2e7e2d620433cdb2f/realtime-2.0.6-py3-none-any.whl
+  sha256: 9aab6009c11883197386a0a9dc8c2b6939e62dddda734cfb77594727ac9ae0ce
+- type: file
+  url: https://files.pythonhosted.org/packages/94/2b/701a4b0585cb05472a4da28ee28fdfe155f3638f5e1ec92306d924e5faf0/regex-2024.11.6-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: b85c2530be953a890eaffde05485238f07029600e8f098cdf1848d414a8b45e4
   only-arches:
   - aarch64
 - type: file
-  url: https://files.pythonhosted.org/packages/29/52/84662b6636061277cb857f658518aa7db6672bc6d1a3f503ccd5aefc581e/regex-2024.9.11-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  sha256: 85ab7824093d8f10d44330fe1e6493f756f252d145323dd17ab6b48733ff6c0a
+  url: https://files.pythonhosted.org/packages/fb/13/e3b075031a738c9598c51cfbc4c7879e26729c53aa9cca59211c44235314/regex-2024.11.6-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 70b7fa6606c2881c1db9479b0eaa11ed5dfa11c8d60a474ff0e095099f39d98e
   only-arches:
   - x86_64
 - type: file
@@ -403,8 +517,8 @@ sources:
   url: https://files.pythonhosted.org/packages/88/33/190393a7d36872e237cbc99e6c44d9a078a1ba7b406462fe6eafd5a28e04/requirements_parser-0.11.0-py3-none-any.whl
   sha256: 50379eb50311834386c2568263ae5225d7b9d0867fb55cf4ecc93959de2c2684
 - type: file
-  url: https://files.pythonhosted.org/packages/67/91/5474b84e505a6ccc295b2d322d90ff6aa0746745717839ee0c5fb4fdcceb/rich-13.9.2-py3-none-any.whl
-  sha256: 8c82a3d3f8dcfe9e734771313e606b39d8247bb6b826e196f4914b333b743cf1
+  url: https://files.pythonhosted.org/packages/19/71/39c7c0d87f8d4e6c020a393182060eaefeeae6c01dab6a84ec346f2567df/rich-13.9.4-py3-none-any.whl
+  sha256: 6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90
 - type: file
   url: https://files.pythonhosted.org/packages/16/2b/610e593b4b62fb1dbd7739afbf790848be1f661c7678eab6fd6c48a81bed/rpyc-6.0.1-py3-none-any.whl
   sha256: e4124c81e65efc4e498842624394b86305eeee64d9647e0808a2862212bac803
@@ -422,8 +536,8 @@ sources:
   only-arches:
   - x86_64
 - type: file
-  url: https://files.pythonhosted.org/packages/31/2d/90165d51ecd38f9a02c6832198c13a4e48652485e2ccf863ebb942c531b6/setuptools-75.2.0-py3-none-any.whl
-  sha256: a7fcb66f68b4d9e8e66b42f9876150a3371558f98fa32222ffaa5bced76406f8
+  url: https://files.pythonhosted.org/packages/fe/df/88ccbee85aefbca071db004fdc8f8d2507d55d5a9dc27ebb93c92edb1bd8/setuptools-75.5.0-py3-none-any.whl
+  sha256: 87cb777c3b96d638ca02031192d40390e0ad97737e27b6b4fa831bea86f2f829
 - type: file
   url: https://files.pythonhosted.org/packages/d9/5a/e7c31adbe875f2abbb91bd84cf2dc52d792b5a01506781dbcf25c91daf11/six-1.16.0-py2.py3-none-any.whl
   sha256: 8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
@@ -431,26 +545,38 @@ sources:
   url: https://files.pythonhosted.org/packages/a7/a5/10f97f73544edcdef54409f1d839f6049a0d79df68adbc1ceb24d1aaca42/smmap-5.0.1-py3-none-any.whl
   sha256: e6d8668fa5f93e706934a62d7b4db19c8d9eb8cf2adbb75ef1b675aa332b69da
 - type: file
+  url: https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl
+  sha256: 2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2
+- type: file
   url: https://files.pythonhosted.org/packages/9f/39/65259b7054368b370d3183762484fa2c779ddc41633894d895f9d1720f45/speedtest_cli-2.1.3-py2.py3-none-any.whl
   sha256: 75ff32c91af9ac1ce2b905476d6e92bd9eb2c0783f9e7d1939d74605c7d0b9ea
+- type: file
+  url: https://files.pythonhosted.org/packages/61/2f/ee424eaa9939d1a6a3ae727b24da6c80ab4ef913ee1dc8c4392eebc73a3c/storage3-0.9.0-py3-none-any.whl
+  sha256: 8b2fb91f0c61583a2f4eac74a8bae67e00d41ff38095c8a6cd3f2ce5e0ab76e7
 - type: file
   url: https://files.pythonhosted.org/packages/04/27/de888609a67e046bc6b1ae60cc3806ea6831f935f7bca970cd72cdbf2075/streamcontroller_plugin_tools-2.0.1-py3-none-any.whl
   sha256: 5f48c1f170548630c0a8b274d2a1a3f813b167b5dc3e03bb7e69c911cb491160
 - type: file
-  url: https://files.pythonhosted.org/packages/5b/6c/0f059e39447eed4235e5b97b1f7ffe831a89e98a44d3d1f62a4bd8acdaf8/streamdeck-0.9.5-py3-none-any.whl
-  sha256: c5c590bd9f56d1a79ff2135772b8c95de39efc1da517bff690a6d96fed1f23fb
+  url: https://files.pythonhosted.org/packages/97/5a/99dfdd3d8d8a2c7699ebb2e9a97a2d34ae8f2cd6bc1eee1febb8166d8317/streamdeck-0.9.6-py3-none-any.whl
+  sha256: e5fdcce06d399e249cfee7f0363eb12343b90a8ed2bfc1cd8408ced021ab184b
 - type: file
-  url: https://files.pythonhosted.org/packages/18/39/6cec279ca41dcacb1c92ad6e4467c9e88db4eb4d2f02300c66218ec432de/textual-0.83.0-py3-none-any.whl
-  sha256: d6efc1e5c54086fd0a4fe274f18b5638ca24a69325c07e1b4400a7d0a1a14c55
+  url: https://files.pythonhosted.org/packages/10/8d/ec1dd5f1e17dd51e358809adfceafa0a78f32f171d33b9cbe38bb5eac8a3/supabase-2.10.0-py3-none-any.whl
+  sha256: 183fb23c04528593f8f81c24ceb8178f3a56bff40fec7ed873b6c55ebc2e420a
 - type: file
-  url: https://files.pythonhosted.org/packages/2c/4d/0db5b8a613d2a59bbc29bc5bb44a2f8070eb9ceab11c50d477502a8a0092/tinycss2-1.3.0-py3-none-any.whl
-  sha256: 54a8dbdffb334d536851be0226030e9505965bb2f30f21a4a82c55fb2a80fae7
+  url: https://files.pythonhosted.org/packages/c3/26/bc4cd6d19b6290025fe9068df1540a3aab9806daca8b1dd19c0902072a24/supafunc-0.7.0-py3-none-any.whl
+  sha256: 4160260dc02bdd906be1e2ffd7cb3ae8b74ae437c892bb475352b6a99d9ff8eb
 - type: file
-  url: https://files.pythonhosted.org/packages/48/5d/acf5905c36149bbaec41ccf7f2b68814647347b72075ac0b1fe3022fdc73/tqdm-4.66.5-py3-none-any.whl
-  sha256: 90279a3770753eafc9194a0364852159802111925aa30eb3f9d85b0e805ac7cd
+  url: https://files.pythonhosted.org/packages/e9/f0/29bd25c7cd53f2b53bc0205a936b5d3a37c88a70bb91037c939d313d8462/textual-0.85.2-py3-none-any.whl
+  sha256: 9ccdeb6b8a6a0ff72d497f714934f2e524f2eb67783b459fb08b1339ee537dc0
 - type: file
-  url: https://files.pythonhosted.org/packages/6d/09/bfd7747042812083e4305a5b20c07833e7a87e44136713df3592ac89966a/types_setuptools-75.1.0.20241014-py3-none-any.whl
-  sha256: caab58366741fb99673d0138b6e2d760717f154cfb981b74fea5e8de40f0b703
+  url: https://files.pythonhosted.org/packages/e6/34/ebdc18bae6aa14fbee1a08b63c015c72b64868ff7dae68808ab500c492e2/tinycss2-1.4.0-py3-none-any.whl
+  sha256: 3a49cf47b7675da0b15d0c6e1df8df4ebd96e9394bb905a5775adb0d884c5289
+- type: file
+  url: https://files.pythonhosted.org/packages/2b/78/57043611a16c655c8350b4c01b8d6abfb38cc2acb475238b62c2146186d7/tqdm-4.67.0-py3-none-any.whl
+  sha256: 0cd8af9d56911acab92182e88d763100d4788bdf421d251616040cc4d44863be
+- type: file
+  url: https://files.pythonhosted.org/packages/35/6a/cbe08e52046544198a69feefc998c0ec198099e96f4254dfb6581e7b482f/types_setuptools-75.3.0.20241112-py3-none-any.whl
+  sha256: 78cb5fef4a6056d2f37114d27da90f4655a306e4e38042d7034a8a880bc3f5dd
 - type: file
   url: https://files.pythonhosted.org/packages/26/9f/ad63fc0248c5379346306f8668cda6e2e2e9c95e01216d2b8ffd9ff037d0/typing_extensions-4.12.2-py3-none-any.whl
   sha256: 04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d
@@ -464,11 +590,31 @@ sources:
   url: https://files.pythonhosted.org/packages/75/aa/6b7816452c38f873e223c9f57aa5d549d07692909afbe65bdbb5d21c5af4/usb_monitor-1.21-py3-none-any.whl
   sha256: 1bd785f765f393ed49e5e2ef2107d9a687b8000e0016fdb77f2014f7586781dd
 - type: file
-  url: https://files.pythonhosted.org/packages/59/90/57b8ac0c8a231545adc7698c64c5a36fa7cd8e376c691b9bde877269f2eb/virtualenv-20.26.6-py3-none-any.whl
-  sha256: 7345cc5b25405607a624d8418154577459c3e0277f5466dd79c49d5e492995f2
+  url: https://files.pythonhosted.org/packages/ae/92/78324ff89391e00c8f4cf6b8526c41c6ef36b4ea2d2c132250b1a6fc2b8d/virtualenv-20.27.1-py3-none-any.whl
+  sha256: f11f1b8a29525562925f745563bfd48b189450f61fb34c4f9cc79dd5aa32a1f4
 - type: file
   url: https://files.pythonhosted.org/packages/f4/24/2a3e3df732393fed8b3ebf2ec078f05546de641fe1b667ee316ec1dcf3b7/webencodings-0.5.1-py2.py3-none-any.whl
   sha256: a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78
 - type: file
   url: https://files.pythonhosted.org/packages/5a/84/44687a29792a70e111c5c477230a72c4b957d88d16141199bf9acb7537a3/websocket_client-1.8.0-py3-none-any.whl
   sha256: 17b44cc997f5c498e809b22cdf2d9c7a9e71c02c8cc2b6c56e7c2d1239bfa526
+- type: file
+  url: https://files.pythonhosted.org/packages/9f/d0/8612029ea04c5c22bf7af2fd3d63876c4eaeef9b97e86c11972a43aa0e6c/websockets-13.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: a1b54689e38d1279a51d11e3467dd2f3a50f5f2e879012ce8f2d6943f00e83f0
+  only-arches:
+  - aarch64
+- type: file
+  url: https://files.pythonhosted.org/packages/38/6f/a96417a49c0ed132bb6087e8e39a37db851c70974f5c724a4b2a70066996/websockets-13.1-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 8d23b88b9388ed85c6faf0e74d8dec4f4d3baf3ecf20a65a47b836d56260d4b9
+  only-arches:
+  - x86_64
+- type: file
+  url: https://files.pythonhosted.org/packages/a1/f5/2ef86458446f85cde10582054fd5113495ef8ce8477da35aaaf26d2970ef/yarl-1.17.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+  sha256: 0bdff5e0995522706c53078f531fb586f56de9c4c81c243865dd5c66c132c3b5
+  only-arches:
+  - aarch64
+- type: file
+  url: https://files.pythonhosted.org/packages/c3/c0/cd8e94618983c1b811af082e1a7ad7764edb3a6af2bc6b468e0e686238ba/yarl-1.17.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: 7f6595c852ca544aaeeb32d357e62c9c780eac69dcd34e40cae7b55bc4fb1147
+  only-arches:
+  - x86_64

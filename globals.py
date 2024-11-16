@@ -111,13 +111,53 @@ api_page_requests: dict[str, str] = {} # Stores api page requests made my --chan
 tray_icon: "TrayIcon" = None
 fallback_font: str = find_fallback_font()
 
-app_version: str = "1.5.0-beta.6" # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.7" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
-<ul>
-    <li>Fix: Ignoring choosen brightness for screensaver</li>
-    <li>Fix: Actions cannot change background color</li>
-</ul>
+    <p>Features:</p>
+    <ul>
+        <li>Add Spanish translations</li>
+        <li>Add option to change the outline color of labels</li>
+        <li>Add default font for labels</li>
+        <li>New option to configure default font</li>
+        <li>Add auto page change for swaywm</li>
+        <li>Add support for screensaver under Cinnamon</li>
+        <li>Add ability to use line breaks in labels</li>
+        <li>Add basic support for the Stream Deck Neo (limited to the normal buttons)</li>
+    </ul>
+
+    <p>Improvements:</p>
+    <ul>
+        <li>Use git to download plugins in dev mode</li>
+        <li>Add link to wiki when no decks are being detected</li>
+        <li>Update dependencies</li>
+    </ul>
+
+    <p>Fixes:</p>
+    <ul>
+        <li>Crash if label is not a string</li>
+        <li>Error launching action backend in terminal</li>
+        <li>Swipes not working for Stream Deck Plus</li>
+        <li>Error when image size is 0</li>
+        <li>Error on X11 when decoding the active window</li>
+        <li>Not blocking action labels and images during screensaver</li>
+        <li>Not reloading page after plugin uninstall</li>
+        <li>Error when XDG_CURRENT_DESKTOP is not set</li>
+        <li>Font weights not stored</li>
+        <li>Removing action not updating input on active page</li>
+        <li>Not always uninstalling plugins correctly</li>
+        <li>Crash when streamdeck-ui has no states key</li>
+        <li>Registering dial and touch event when used to wake up</li>
+        <li>Not loading screen brightness from page</li>
+        <li>Ignoring font styles and weights</li>
+        <li>Decks not always reconnecting</li>
+        <li>Error when renaming page to the same name</li>
+        <li>Keeping old page backups indefinitely</li>
+        <li>Crash when drag and dropping buttons with actions</li>
+        <li>Showing "No decks available" in header when no pages are available</li>
+        <li>No proper background color permission handling</li>
+        <li>Loading action objects of inputs that aren't available on deck</li>
+    </ul>
 """

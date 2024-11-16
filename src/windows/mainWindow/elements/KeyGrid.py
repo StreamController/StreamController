@@ -315,7 +315,7 @@ class KeyButton(Gtk.Frame):
         if child.deck_controller != self.key_grid.deck_controller:
             return
         # Update icon selector on the top of the right are
-        GLib.idle_add(sidebar.key_editor.icon_selector.image.set_pixbuf, pixbuf, priority=GLib.PRIORITY_HIGH)
+        GLib.idle_add(sidebar.key_editor.icon_selector.set_pixbuf_and_del, pixbuf, priority=GLib.PRIORITY_HIGH)
         # Update icon selector in margin editor
         # GLib.idle_add(sidebar.key_editor.image_editor.image_group.expander.margin_row.icon_selector.image.set_from_pixbuf, pixbuf)
 

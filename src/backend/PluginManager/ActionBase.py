@@ -32,6 +32,7 @@ from src.backend.DeckManagement.Subclasses.KeyImage import InputImage
 from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
 from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
 from src.backend.DeckManagement.Subclasses.KeyLayout import ImageLayout
+from src.backend.DeckManagement.Media.Media import Media
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
 
 # Import globals
@@ -47,6 +48,7 @@ if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
     from src.backend.DeckManagement.DeckController import DeckController, ControllerKey, ControllerKeyState
     from src.backend.PageManagement.Page import Page
+    from src.backend.DeckManagement.DeckController import ControllerInput, ControllerInputState
 
 class ActionBase(rpyc.Service):
     # Change to match your action
@@ -90,7 +92,7 @@ class ActionBase(rpyc.Service):
 
     def get_input(self) -> "ControllerInput":
         return self.deck_controller.get_input(self.input_ident)
-
+    
     def get_state(self) -> "ControllerInputState":
         i = self.get_input()
         if i is None: return
@@ -187,16 +189,15 @@ class ActionBase(rpyc.Service):
 
         if not self.get_is_present(): return
 
+        if not self.has_background_control(): return
+
         if not self.on_ready_called:
             update = False
 
         state = self.get_state()
         if state is None or state.state != self.state: return
 
-        if not hasattr(state, "background_color"):
-            return
-
-        state.background_color = color
+        state.background_manager.set_action_color(color)
         if update:
             self.get_input().update()
 
@@ -245,7 +246,7 @@ class ActionBase(rpyc.Service):
 
         label_index = 0 if position == "top" else 1 if position == "center" else 2
 
-        if not self.has_label_control()[label_index]:
+        if not self.has_label_control(label_index):
             return
         
         if text is None:
@@ -329,14 +330,42 @@ class ActionBase(rpyc.Service):
         if not self.get_is_present(): return
         actions = self.page.action_objects.get(self.input_ident.input_type, {}).get(self.input_ident.json_identifier, [])
         return len(actions) > 1
-    
-    def has_label_control(self) -> list[bool]:
-        key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
 
-        r = [i == self.get_own_action_index() for i in key_dict.get("label-control-actions", [None, None, None])]
-        return r
+    def get_asset_path(self, asset_name: str, subdirs: list[str] = None, asset_folder: str = "assets") -> str:
+        """
+        Helper method that returns paths to plugin assets.
+
+        Args:
+            asset_name (str): Name of the Asset File
+            subdirs (list[str], optional): Subdirectories. Defaults to [].
+            asset_folder (str, optional): Name of the folder where assets are stored. Defaults to "assets".
+
+        Returns:
+            str: The full path to the asset
+        """
+
+        if not subdirs:
+            return os.path.join(self.plugin_base.PATH, asset_folder, asset_name)
+
+        subdir = os.path.join(*subdirs)
+        if subdir != "":
+            return os.path.join(self.plugin_base.PATH, asset_folder, subdir, asset_name)
+        return ""
+    
+    def has_label_controls(self):
+        own_action_index = self.get_own_action_index()
+        return [own_action_index == i for i in self.get_state().action_permission_manager.get_label_control_indices()]
+    
+    def has_label_control(self, label_index) -> list[bool]:
+        #TODO: Might require performance improvements
+        return self.get_state().action_permission_manager.get_label_control_index(label_index) == self.get_own_action_index()
 
     def has_image_control(self):
+        #TODO: Might require performance improvements
+        image_control_index = self.get_state().action_permission_manager.get_image_control_index()
+        return image_control_index == self.get_own_action_index()
+
+
         key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
 
         if key_dict.get("image-control-action") is None:
@@ -346,6 +375,11 @@ class ActionBase(rpyc.Service):
             return True
 
         return self.get_own_action_index() == key_dict.get("image-control-action")
+    
+    def has_background_control(self):
+        #TODO: Might require performance improvements
+        background_control_index = self.get_state().action_permission_manager.get_background_control_index()
+        return background_control_index == self.get_own_action_index()
     
     def get_is_present(self):
         if self.page is None: return False

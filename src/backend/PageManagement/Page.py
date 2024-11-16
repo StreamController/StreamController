@@ -16,6 +16,7 @@ from argparse import Action
 import gc
 import os
 import json
+import sys
 import threading
 import time
 from loguru import logger as log
@@ -54,7 +55,7 @@ class Page:
 
         self.file_access_semaphore = threading.Semaphore()
 
-        self.load(load_from_file=True)
+        self.load(load_from_file=True) #TODO: Later we want to limit the load of action objects to the available inputs
 
     def get_name(self) -> str:
         return os.path.splitext(os.path.basename(self.json_path))[0]
@@ -119,20 +120,19 @@ class Page:
         new_action_objects = {}
 
         for input_type in Input.All:
-            if len(self.deck_controller.inputs[input_type]) == 0:
-                continue
-            input_type = input_type.input_type
-            for key in self.dict.get(input_type, {}):
-                for state in self.dict[input_type][key].get("states", {}):
+            input_class = getattr(sys.modules["src.backend.DeckManagement.DeckController"], input_type.controller_class_name)
+            input_type_name = input_type.input_type
+            for key in input_class.Available_Identifiers(self.deck_controller.deck):
+                for state in self.dict.get(input_type_name, {}).get(key, {}).get("states", {}):
                     try:
                         state = int(state)
                     except ValueError:
                         continue
-                    for i, action in enumerate(self.dict[input_type][key]["states"][str(state)].get("actions", [])):
+                    for i, action in enumerate(self.dict[input_type_name][key]["states"][str(state)].get("actions", [])):
                         if action.get("id") is None:
                             continue
 
-                        input_ident = Input.FromTypeIdentifier(input_type, key)
+                        input_ident = Input.FromTypeIdentifier(input_type_name, key)
                         # input_action_objects = input_ident.get_dict(new_action_objects)
                         # input_action_objects.setdefault(state, {})
 
@@ -145,11 +145,11 @@ class Page:
                             input_ident=input_ident,
                         )
                         # input_action_objects[state][i] = action_object
-                        new_action_objects.setdefault(input_type, {})
-                        new_action_objects[input_type].setdefault(key, {})
-                        new_action_objects[input_type][key].setdefault(state, {})
+                        new_action_objects.setdefault(input_type_name, {})
+                        new_action_objects[input_type_name].setdefault(key, {})
+                        new_action_objects[input_type_name][key].setdefault(state, {})
                         # new_action_objects[input_type][key][state].setdefault(i, {})
-                        new_action_objects[input_type][key][state][i] = action_object
+                        new_action_objects[input_type_name][key][state][i] = action_object
 
         old_actions = self.get_all_actions(self.action_objects)
         new_actions = self.get_all_actions(new_action_objects)
@@ -160,7 +160,9 @@ class Page:
 
         self.action_objects = new_action_objects
 
-        self.call_actions_ready_and_set_flag()
+        if self.deck_controller.active_page == self:
+            # if it's already loaded - this way it only triggers on newly added actions
+            self.call_actions_ready_and_set_flag()
 
     # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
 
@@ -886,14 +888,11 @@ class Page:
     def get_background_color(self, identifier: InputIdentifier, state: int) -> list[int]:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "background", "color"])
 
-    def set_background_color(self, identifier: InputIdentifier, state: int, color: list[int], update: bool = True) -> None:
+    def set_background_color(self, identifier: InputIdentifier, state: int, color: list[int], update: bool = True, update_ui: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
-            key_state.background_color = color
+            key_state.background_manager.set_page_color(color, update=update, update_ui=update_ui)
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "background", "color"], color)
-
-        if update:
-            self.update_input(identifier, state)
 
 
 class NoActionHolderFound:

@@ -223,7 +223,8 @@ class DeckManager:
                     DeviceManager.USB_PID_STREAMDECK_XL,
                     DeviceManager.USB_PID_STREAMDECK_MK2,
                     DeviceManager.USB_PID_STREAMDECK_PEDAL,
-                    DeviceManager.USB_PID_STREAMDECK_PLUS
+                    DeviceManager.USB_PID_STREAMDECK_PLUS,
+                    DeviceManager.USB_PID_STREAMDECK_NEO
                 ]:
                     # Reset deck
                     usb.util.dispose_resources(device)

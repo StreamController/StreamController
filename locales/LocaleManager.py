@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import os
 import csv
 import locale
+from loguru import logger as log
 
 class LocaleManager:
     def __init__(self, csv_path: str) -> None:
@@ -29,6 +30,10 @@ class LocaleManager:
         self.load_csv()
 
     def load_csv(self) -> None:
+        if not os.path.exists(self.csv_path):
+            log.error(f"No locales found at {self.csv_path}")
+            return
+
         with open(self.csv_path, newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=';', quotechar='"', skipinitialspace=True)
             self.available_locales = next(reader)[1:]

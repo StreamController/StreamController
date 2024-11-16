@@ -103,6 +103,11 @@ class IconSelector(Gtk.Box):
         pixbuf = None
         del pixbuf
 
+        # otherwise the image won't update always - very weird - seems to have appeared with GNOME 47
+        #TODO: Find a better solution
+        self.image.set_visible(False)
+        self.image.set_visible(True)
+
     def on_hover_enter(self, *args):
         self.label.set_css_classes(["icon-selector-hint-label-visible"])
         self.image.add_css_class("icon-selector-image-hover")

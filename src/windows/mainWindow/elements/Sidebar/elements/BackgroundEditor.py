@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import gi
 
+from GtkHelper.GtkHelper import RevertButton
 from src.backend.DeckManagement.InputIdentifier import InputIdentifier
 from src.backend.DeckManagement.HelperMethods import add_default_keys
 
@@ -41,11 +42,11 @@ class BackgroundEditor(Gtk.Box):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.main_box)
 
-        self.label_group = BackgroundGroup(self.sidebar)
-        self.main_box.append(self.label_group)
+        self.background_group = BackgroundGroup(self.sidebar)
+        self.main_box.append(self.background_group)
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
-        self.label_group.load_for_identifier(identifier, state)
+        self.background_group.load_for_identifier(identifier, state)
 
 
 class BackgroundGroup(Adw.PreferencesGroup):
@@ -76,15 +77,11 @@ class BackgroundExpanderRow(Adw.ExpanderRow):
         self.color_row = ColorRow(sidebar=self.label_group.sidebar, expander=self)
         self.add_row(self.color_row)
 
-        self.reset_color_button = ResetColorButton(color_row=self.color_row)
-        self.add_row(self.reset_color_button)
-
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
         self.active_identifier = identifier
         self.active_state = state
 
         self.color_row.load_for_identifier(identifier, state)
-        self.reset_color_button.update()
 
 class ColorRow(Adw.PreferencesRow):
     def __init__(self, sidebar, expander: BackgroundExpanderRow, **kwargs):
@@ -102,21 +99,22 @@ class ColorRow(Adw.PreferencesRow):
 
         self.label = Gtk.Label(label=gl.lm.get("background-editor.color.label"), xalign=0, hexpand=True)
         self.main_box.append(self.label)
-        self.color_chooser_button = Gtk.ColorDialogButton()
-        self.main_box.append(self.color_chooser_button)
+        self.button = ColorButton(self)
+        self.main_box.append(self.button)
 
         self.color_dialog = Gtk.ColorDialog(title=gl.lm.get("background-editor.color.dialog.title"))
 
-        self.color_chooser_button.set_dialog(self.color_dialog)
+        self.button.button.set_dialog(self.color_dialog)
 
         self.connect_signals()
 
     def connect_signals(self):
-        self.color_chooser_button.connect("notify::rgba", self.on_change_color)
+        self.button.button.connect("notify::rgba", self.on_change_color)
+        self.button.revert_button.connect("clicked", self.on_revert)
 
     def disconnect_signals(self):
         try:
-            self.color_chooser_button.disconnect_by_func(self.on_change_color)
+            self.button.button.disconnect_by_func(self.on_change_color)
         except:
             pass
 
@@ -124,20 +122,27 @@ class ColorRow(Adw.PreferencesRow):
         if len(color_values) == 3:
             color_values.append(255)
         color = Gdk.RGBA()
-        color.parse(f"rgba({color_values[0]}, {color_values[1]}, {color_values[2]}, {color_values[3]})")
-        self.color_chooser_button.set_rgba(color)
+        color.parse(f"rgba({color_values[0]}, {color_values[1]}, {color_values[2]}, {color_values[3]/255})")
+        self.button.button.set_rgba(color)
 
     def on_change_color(self, *args):
-        color = self.color_chooser_button.get_rgba()
+        color = self.button.button.get_rgba()
         green = round(color.green * 255)
         blue = round(color.blue * 255)
         red = round(color.red * 255)
         alpha = round(color.alpha * 255)
 
         active_page = gl.app.main_win.get_active_page()
-        active_page.set_background_color(identifier=self.active_identifier, state=self.active_state, color=[red, green, blue, alpha])
+        active_page.set_background_color(identifier=self.active_identifier, state=self.active_state, color=[red, green, blue, alpha], update_ui=False)
 
-        self.expander.reset_color_button.update()
+        self.button.revert_button.set_visible(True)
+
+    def on_revert(self, *args):
+        self.disconnect_signals()
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_background_color(identifier=self.active_identifier, state=self.active_state, color=None, update_ui=True)
+        self.button.revert_button.set_visible(False)
+        self.connect_signals()
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
         self.disconnect_signals()
@@ -146,13 +151,35 @@ class ColorRow(Adw.PreferencesRow):
         self.active_state = state
 
         active_page = gl.app.main_win.get_active_page()
+
+        c_input = active_page.deck_controller.get_input(identifier)
+        if c_input is None:
+            log.error("Input not found")
+            return
+        
+        c_state = c_input.states.get(state)
+        if c_state is None:
+            log.error("State not found")
+            return
+
         color = active_page.get_background_color(identifier=identifier, state=self.active_state)
-        if color is None:
-            color = [0, 0, 0, 0]
+        color = c_state.background_manager.get_composed_color()
 
         self.set_color(color)
 
+        self.button.revert_button.set_visible(c_state.background_manager.get_use_page_background())
+
         self.connect_signals()
+
+class ColorButton(Gtk.Box):
+    def __init__(self, color_row: ColorRow, **kwargs):
+        super().__init__(css_classes=["linked"], **kwargs)
+        
+        self.button = Gtk.ColorDialogButton()
+        self.revert_button = RevertButton()
+
+        self.append(self.button)
+        self.append(self.revert_button)
 
 class ResetColorButton(Adw.PreferencesRow):
     def __init__(self, color_row: ColorRow, **kwargs):
@@ -167,10 +194,12 @@ class ResetColorButton(Adw.PreferencesRow):
         self.set_child(self.button)
 
     def on_click(self, button):
-        self.color_row.color_chooser_button.set_rgba(Gdk.RGBA(0, 0, 0, 0))
+        active_page = gl.app.main_win.get_active_page()
+        #TODO: Detatch signal from button
+        active_page.set_background_color(identifier=self.color_row.active_identifier, state=self.color_row.active_state, color=None, update_ui=True)
 
     def update(self):
-        color = self.color_row.color_chooser_button.get_rgba()
+        color = self.color_row.button.get_rgba()
         green = round(color.green * 255)
         blue = round(color.blue * 255)
         red = round(color.red * 255)

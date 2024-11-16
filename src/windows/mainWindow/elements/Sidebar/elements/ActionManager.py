@@ -107,8 +107,8 @@ class ActionExpanderRow(BetterExpander):
         self.add_action_button = AddActionButtonRow(self)
         self.add_row(self.add_action_button)
 
-    def add_action_row(self, action_name: str, action_id: str, action_category, action_object, comment: str, index: int, total_rows: int, controls_image: bool = False, controls_labels: list[bool] = [False, False, False]):
-        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.sidebar, comment, index, controls_image, controls_labels, total_rows, self)
+    def add_action_row(self, action_name: str, action_id: str, action_category, action_object, comment: str, index: int, total_rows: int, controls_image: bool = False, controls_labels: list[bool] = [False, False, False], controls_background: bool = False):
+        action_row = ActionRow(action_name, action_id, action_category, action_object, self.action_group.sidebar, comment, index, controls_image, controls_labels, controls_background, total_rows, self)
         self.add_row(action_row)
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
@@ -134,9 +134,10 @@ class ActionExpanderRow(BetterExpander):
                                                          identifier=action.input_ident)
 
                 controls_image = action.has_image_control()
-                controls_labels = action.has_label_control()
+                controls_background = action.has_background_control()
+                controls_labels = action.has_label_controls()
 
-                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, controls_image=controls_image, controls_labels=controls_labels, comment=comment, index=i, total_rows=number_of_actions)
+                self.add_action_row(action.action_name, action.action_id, action.plugin_base.plugin_name, action, controls_image=controls_image, controls_labels=controls_labels, controls_background=controls_background, comment=comment, index=i, total_rows=number_of_actions)
             elif isinstance(action, NoActionHolderFound):
                 action: NoActionHolderFound
                 missing_button_row = MissingActionButtonRow(action.id, action.identifier, self.active_state, i)
@@ -267,7 +268,7 @@ class ActionExpanderRow(BetterExpander):
 class ActionRowLabelToggle(Gtk.Button):
     def __init__(self, action_row: "ActionRow"):
         self.action_row = action_row
-        super().__init__()
+        super().__init__(tooltip_text="Control which labels are controlled by this action")
 
         self.build()
 
@@ -351,17 +352,18 @@ class ActionRowLabelToggle(Gtk.Button):
 
 
 class ActionRow(Adw.ActionRow):
-    def __init__(self, action_name, action_id, action_category, action_object, sidebar: "Sidebar", comment: str, index, controls_image: bool, controls_labels: list[bool], total_rows: int, expander: ActionExpanderRow, **kwargs):
+    def __init__(self, action_name, action_id, action_category, action_object, sidebar: "Sidebar", comment: str, index, controls_image: bool, controls_labels: list[bool], controls_background: bool, total_rows: int, expander: ActionExpanderRow, **kwargs):
         super().__init__(**kwargs, css_classes=["no-padding"])
         self.action_name = action_name
         self.action_id = action_id
         self.action_category = action_category
         self.sidebar: "Sidebar" = sidebar
-        self.action_object = action_object
+        self.action_object: "ActionBase" = action_object
         self.comment = comment
         self.index = index
         self.controls_image = controls_image
         self.controls_labels = controls_labels
+        self.controls_background = controls_background
         self.active_type = None
         self.active_identifier = None
         self.total_rows = total_rows
@@ -389,14 +391,20 @@ class ActionRow(Adw.ActionRow):
         self.allow_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["linked"], margin_end=15)
         self.main_box.append(self.allow_box)
 
-        self.toggle = Gtk.ToggleButton(css_classes=["blue-toggle-button"], icon_name="image-x-generic-symbolic", active=self.controls_image)
-        self.toggle.connect("toggled", self.on_allow_image_toggled)
-        self.allow_box.append(self.toggle)
+        self.allow_image_toggle = Gtk.ToggleButton(css_classes=["blue-toggle-button"], icon_name="image-x-generic-symbolic", active=self.controls_image,
+                                                   tooltip_text="Allow action to control the media")
+        self.allow_image_toggle.connect("toggled", self.on_allow_image_toggled)
+        self.allow_box.append(self.allow_image_toggle)
+
+        self.allow_background_toggle = Gtk.ToggleButton(css_classes=["blue-toggle-button"], icon_name="color-select-symbolic", active=self.controls_background,
+                                                        tooltip_text="Allow action to control the background color")
+        self.allow_background_toggle.connect("toggled", self.on_allow_background_toggled)
+        self.allow_box.append(self.allow_background_toggle)
 
         self.allow_label_toggle = ActionRowLabelToggle(self)
         self.allow_label_toggle.set_active(self.controls_labels)
         self.allow_box.append(self.allow_label_toggle)
-
+        
         self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, valign=Gtk.Align.CENTER)
         self.main_box.append(self.left_box)
 
@@ -406,11 +414,9 @@ class ActionRow(Adw.ActionRow):
         self.left_bottom_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.left_box.append(self.left_bottom_box)
 
-        self.name_label = Gtk.Label(label=self.action_name, xalign=0, css_classes=["bold"], hexpand=False, margin_end=5)
-        self.left_top_box.append(self.name_label)
-
-        self.category_label = Gtk.Label(label=f"({self.action_category})", xalign=0, sensitive=False, hexpand=False)
-        self.left_top_box.append(self.category_label)
+        self.label = Gtk.Label(label=f"<b>{self.action_name}</b> <span color=\"#979797\">({self.action_category})</span>", use_markup=True, xalign=0, hexpand=False, margin_end=5,
+                               wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True)
+        self.left_top_box.append(self.label)
 
         self.comment_label = Gtk.Label(label=self.comment, xalign=0, sensitive=False, ellipsize=Pango.EllipsizeMode.END, margin_end=60)
         self.left_bottom_box.append(self.comment_label)
@@ -459,9 +465,36 @@ class ActionRow(Adw.ActionRow):
             return
         page = controller.active_page
 
+        input_state = self.action_object.get_input().states.get(self.expander.active_state)
+        if input_state is None:
+            log.error("Input state not found")
+            return
+        
         new_value = self.index if button.get_active() else None
-        page.dict[self.action_object.input_ident.input_type][self.action_object.input_ident.json_identifier]["states"][str(self.expander.active_state)]["image-control-action"] = new_value
-        page.save()
+        input_state.action_permission_manager.set_image_control_index(new_value, True, True)
+
+        page.reload_similar_pages(identifier=self.action_object.input_ident, reload_self=True)
+
+    def on_allow_background_toggled(self, button):
+        for child in self.expander.get_rows():
+            if child is self:
+                continue
+            if not isinstance(child, ActionRow):
+                continue
+            child.set_background_toggled(False)
+
+        controller = gl.app.main_win.get_active_controller()
+        if controller is None:
+            return
+        page = controller.active_page
+
+        input_state = self.action_object.get_input().states.get(self.expander.active_state)
+        if input_state is None:
+            log.error("Input state not found")
+            return
+        
+        new_value = self.index if button.get_active() else None
+        input_state.action_permission_manager.set_background_control_index(new_value, True, True)
 
         page.reload_similar_pages(identifier=self.action_object.input_ident, reload_self=True)
 
@@ -479,23 +512,35 @@ class ActionRow(Adw.ActionRow):
         controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
-        page = controller.active_page
-        page.dict[self.action_object.input_ident.input_type][self.action_object.input_ident.json_identifier]["states"][str(self.expander.active_state)].setdefault("label-control-actions", [None, None, None])
-        new_value = self.index if value else None
-        page.dict[self.action_object.input_ident.input_type][self.action_object.input_ident.json_identifier]["states"][str(self.expander.active_state)]["label-control-actions"][i] = new_value
-        page.save()
-
-        threading.Thread(target=page.reload_similar_pages, kwargs={"identifier":self.action_object.input_ident, "reload_self":True}).start()
+       
+        input_state = self.action_object.get_input().states.get(self.expander.active_state)
+        if input_state is None:
+            log.error("Input state not found")
+            return
+        
+        value = self.action_object.get_own_action_index() if value else None
+        
+        input_state.action_permission_manager.set_label_control_index(i, value, True, True)
 
     def set_image_toggled(self, value: bool):
         try:
-            self.toggle.disconnect_by_func(self.on_allow_image_toggled)
+            self.allow_image_toggle.disconnect_by_func(self.on_allow_image_toggled)
         except:
             pass
 
-        self.toggle.set_active(value)
+        self.allow_image_toggle.set_active(value)
 
-        self.toggle.connect("toggled", self.on_allow_image_toggled)
+        self.allow_image_toggle.connect("toggled", self.on_allow_image_toggled)
+
+    def set_background_toggled(self, value: bool):
+        try:
+            self.allow_background_toggle.disconnect_by_func(self.on_allow_background_toggled)
+        except:
+            pass
+
+        self.allow_background_toggle.set_active(value)
+
+        self.allow_background_toggle.connect("toggled", self.on_allow_background_toggled)
 
     def set_label_toggled(self, value: bool):
         try:
@@ -669,6 +714,7 @@ class AddActionButtonRow(Adw.PreferencesRow):
         if len(state_dict["actions"]) == 1:
             state_dict.setdefault("image-control-action", 0)
             state_dict.setdefault("label-control-actions", [0, 0, 0])
+            state_dict.setdefault("background-control-action", 0)
 
         # Save page
         active_page.save()

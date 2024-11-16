@@ -17,6 +17,11 @@ import setproctitle
 
 setproctitle.setproctitle("StreamController")
 
+# "install" patches
+from src.patcher.patcher import Patcher
+patcher = Patcher()
+patcher.patch()
+
 import sys
 from loguru import logger as log
 import os
@@ -239,6 +244,11 @@ def make_api_calls():
     
 @log.catch
 def main():
+    gsk_render_env_var = os.environ.get("GSK_RENDERER")
+    if gsk_render_env_var != "ngl":
+        log.warning('Should you get an Error 71 (Protocol error) please add '
+                    'GSK_RENDERER=ngl to your "/etc/environment" file')
+
     DBusGMainLoop(set_as_default=True)
     # Dbus
     make_api_calls()

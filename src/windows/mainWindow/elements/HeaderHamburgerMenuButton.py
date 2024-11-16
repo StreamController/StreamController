@@ -18,6 +18,8 @@ import threading
 import gi
 import webbrowser as web
 
+from src.backend.DeckManagement.HelperMethods import open_web
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio, Adw, GLib
@@ -94,7 +96,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         GLib.idle_add(gl.app.on_quit)
 
     def on_support(self, action, parameter):
-        web.open("https://ko-fi.com/core447", new=1, autoraise=True)
+        open_web("https://ko-fi.com/core447", new=1, autoraise=True)
 
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutDialog()

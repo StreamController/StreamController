@@ -24,6 +24,7 @@ import webbrowser as web
 
 from GtkHelper.GtkHelper import LoadingScreen
 from autostart import is_flatpak
+from src.backend.DeckManagement.HelperMethods import open_web, run_command
 from src.windows.Onboarding.PluginRecommendations import PluginRecommendations
 
 gi.require_version("Gtk", "4.0")
@@ -300,7 +301,7 @@ class UdevOnboardingScreen(Gtk.Box):
         self.append(self.open_wiki_button)
 
     def on_button_click(self, button):
-        web.open("https://streamcontroller.github.io/docs/latest/installation/#udev")
+        open_web("https://streamcontroller.github.io/docs/latest/installation/#udev")
 
 class OnboardingScreen5(Gtk.Box):
     def __init__(self, onboarding_window: OnboardingWindow):
@@ -368,7 +369,7 @@ class DiscordOnboardingScreen(Gtk.Box):
         self.append(self.join_button)
 
     def on_join_button_clicked(self, button):
-        web.open_new("https://discord.gg/MSyHM8TN3u")
+        open_web("https://discord.gg/MSyHM8TN3u")
 
 
 class SupportAppOnboardingScreen(Gtk.Box):
@@ -394,4 +395,12 @@ class SupportAppOnboardingScreen(Gtk.Box):
         self.append(self.support_button)
 
     def on_support_button_clicked(self, button):
-        web.open_new("https://ko-fi.com/core447")
+        run_command("xdg-open https://ko-fi.com/core447")
+        # portal = Xdp.Portal.new()
+        # portal.open_uri(
+        #     parent=XdpGtk4.parent_new_gtk(gl.app.get_active_window()),
+        #     uri="https://ko-fi.com/core447",
+        #     flags=Xdp.OpenUriFlags.ASK,
+        #     cancellable=None,
+        #     callback=self.callback
+        # )

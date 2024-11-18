@@ -143,6 +143,13 @@
   font-size: 40px;
   font-weight: bold;
 }
+.page-header-button {
+  background-color: #00000000;
+}
+.page-header-button:hover {
+  background-color: #3A3A3A;
+  transition: background-color 0.25s;
+}
 .remove-action-button {
   background-color: #C01C28;
   min-height: 50px;

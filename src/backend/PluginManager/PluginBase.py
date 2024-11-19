@@ -592,3 +592,6 @@ class PluginBase(rpyc.Service):
                 raise ValueError("Register the plugin before requesting permissions")
             description = description.replace("{name}", self.plugin_name)
         gl.flatpak_permission_manager.show_dbus_permission_request_dialog(name, bus, description)
+
+    def get_config_rows(self) -> list[Adw.PreferencesRow]:
+        return []

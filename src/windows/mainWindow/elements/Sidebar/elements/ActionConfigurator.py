@@ -53,7 +53,7 @@ class ActionConfigurator(Gtk.Box):
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
 
-        self.header = Gtk.Label(label=gl.lm.get("action-configurator-header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
+        self.header = HeaderGroup(self)
         self.main_box.append(self.header)
 
         self.comment_group = CommentGroup(self, margin_top=20)
@@ -87,6 +87,27 @@ class ActionConfigurator(Gtk.Box):
 
     def on_back_button_click(self, button):
         self.sidebar.main_stack.set_visible_child_name("configurator_stack")
+
+class HeaderGroup(Adw.PreferencesGroup):
+    def __init__(self, parent, **kwargs):
+        super().__init__(**kwargs)
+        self.parent = parent
+        self.action: ActionBase = None
+        self.index: int = None
+        self.build()
+
+    def build(self):
+        self.header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["page-header"], margin_start=20, margin_top=30)
+
+        self.header = Gtk.Label(label=gl.lm.get("action-configurator-header"), halign=Gtk.Align.START, valign=Gtk.Align.CENTER)
+        self.header_box.append(self.header)
+
+        self.header_box.append(Gtk.Box(hexpand=True))
+
+        self.asset_manager = Gtk.Button(halign=Gtk.Align.END, icon_name="document-edit-symbolic", css_classes=["page-header-button"])
+        self.header_box.append(self.asset_manager)
+
+        self.add(self.header_box)
 
 class CommentGroup(Adw.PreferencesGroup):
     def __init__(self, parent, **kwargs):
@@ -147,8 +168,6 @@ class CommentGroup(Adw.PreferencesGroup):
             return
         page = controller.active_page
         page.set_action_comment(self.index, comment, self.action.state, self.action.input_ident)
-    
-
 
 class ConfigGroup(Adw.PreferencesGroup):
     def __init__(self, parent, **kwargs):

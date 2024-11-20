@@ -19,6 +19,7 @@ from rpyc.core import netref
 import gi
 
 from locales.LocaleManager import LocaleManager
+from src.backend.PluginManager.AssetManagment.PluginAssetManager import AssetManager
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -61,6 +62,9 @@ class PluginBase(rpyc.Service):
         self.registered: bool = False
 
         self.plugin_name: str = None
+
+        self.asset_manager: AssetManager = AssetManager(self)
+        self.asset_manager.load_assets()
 
         self.registered_pages: list[str] = []
 
@@ -353,7 +357,9 @@ class PluginBase(rpyc.Service):
         if not os.path.exists(self.settings_path):
             return {}
         with open(self.settings_path, "r") as f:
-            return json.load(f)
+            settings = json.load(f)
+            settings.get("settings", {})
+            return settings
 
     def get_manifest(self):
         """
@@ -378,8 +384,17 @@ class PluginBase(rpyc.Service):
             None
         """
         os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
-        with open(self.settings_path, "w") as f:
-            json.dump(settings, f, indent=4)
+
+        if not os.path.isfile(self.settings_path):
+            with open(self.settings_path, "w") as f:
+                json.dump({}, f)
+
+        with open(self.settings_path, "r+") as f:
+            content = json.load(f)
+            content["settings"] = settings
+            f.seek(0)
+            json.dump(content, f, indent=4)
+            f.truncate()
 
     def add_css_stylesheet(self, path):
         """

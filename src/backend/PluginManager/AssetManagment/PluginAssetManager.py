@@ -91,3 +91,4 @@ class AssetManager:
 
             f.seek(0)
             json.dump(content, f, indent=4)
+            f.truncate()

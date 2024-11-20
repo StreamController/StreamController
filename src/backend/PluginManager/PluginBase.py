@@ -468,6 +468,9 @@ class PluginBase(rpyc.Service):
         """
         return gl.plugin_manager.get_plugin_by_id(plugin_id) or None
 
+    def get_settings_area(self):
+        pass
+
     # ---------- #
     # Rpyc stuff #
     # ---------- #

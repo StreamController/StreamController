@@ -44,6 +44,8 @@ from locales.LegacyLocaleManager import LegacyLocaleManager
 # Import typing
 from typing import TYPE_CHECKING
 
+from src.backend.PluginManager.AssetManagment.PluginAssetManager import Color, Icon
+
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase
     from src.backend.DeckManagement.DeckController import DeckController, ControllerKey, ControllerKeyState
@@ -73,8 +75,6 @@ class ActionBase(rpyc.Service):
         self.allow_event_configuration: bool = True
 
         self.labels = {}
-        
-        self.locale_manager: LegacyLocaleManager = None
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
         
@@ -351,6 +351,15 @@ class ActionBase(rpyc.Service):
         if subdir != "":
             return os.path.join(self.plugin_base.PATH, asset_folder, subdir, asset_name)
         return ""
+
+    def get_icon(self, key: str, skip_override: bool = False) -> Icon | None:
+        return self.plugin_base.asset_manager.icons.get_asset(key, skip_override)
+
+    def get_color(self, key: str, skip_override: bool = False) -> Color | None:
+        return self.plugin_base.asset_manager.colors.get_asset(key, skip_override)
+
+    def get_translation(self, key: str, fallback: str = None):
+        self.plugin_base.locale_manager.get(key, fallback)
     
     def has_label_controls(self):
         own_action_index = self.get_own_action_index()

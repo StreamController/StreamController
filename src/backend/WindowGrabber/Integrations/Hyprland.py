@@ -84,6 +84,10 @@ class Hyprland(Integration):
 
         return None
     
+    def close(self):
+        return
+
+    
 class WatchForActiveWindowChange(threading.Thread):
     def __init__(self, hyprland: Hyprland):
         super().__init__(name="WatchForActiveWindowChange", daemon=True)

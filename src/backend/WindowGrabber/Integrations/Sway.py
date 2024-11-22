@@ -58,6 +58,9 @@ class Sway(Integration):
             if not client["focused"]:
                 continue
             return self._parse_window(client)
+    
+    def close(self) -> None:
+        return
 
     def _get_windows(self) -> list[dict[str, Any]]:
         windows = []

@@ -162,6 +162,9 @@ cython_debug/
 # VSCode
 .vscode/
 
+# PyCharm
+.idea/
+
 # own folders
 Assets/copyrighted/
 Assets/AssetManager/Assets/

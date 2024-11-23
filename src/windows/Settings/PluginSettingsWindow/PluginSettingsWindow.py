@@ -18,7 +18,7 @@ from gi.repository import Gtk, Adw, Gio
 
 from GtkHelper.GtkHelper import better_disconnect
 from src.backend.PluginManager.PluginBase import PluginBase
-from src.backend.PluginManager.AssetManagment.PluginAssetManager import Icon, Color
+from src.backend.PluginManager.PluginSettings.Asset import Icon,Color
 from .PluginAssetPreview import IconPreview, ColorPreview
 
 class PluginSettingsWindow(Adw.PreferencesDialog):

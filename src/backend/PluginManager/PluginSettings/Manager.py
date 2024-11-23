@@ -1,30 +1,9 @@
-"""
-Author: G4PLS
-Year: 2024
-"""
-
 import enum
 import json
 from types import MappingProxyType
 
 from .Observer import Observer
-
-class Asset:
-    def __init__(self, *args, **kwargs):
-        self.change(*args, **kwargs)
-
-    def change(self, *args, **kwargs):
-        pass
-
-    def get_values(self):
-        pass
-
-    def to_json(self):
-        pass
-
-    @classmethod
-    def from_json(cls, *args):
-        return None
+from .Asset import Asset
 
 class ManagerEvent(enum.Enum):
     ADD = "add",

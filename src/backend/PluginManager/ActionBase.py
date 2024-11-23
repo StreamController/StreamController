@@ -38,13 +38,10 @@ from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputI
 # Import globals
 import globals as gl
 
-# Import locale manager
-from locales.LegacyLocaleManager import LegacyLocaleManager
-
 # Import typing
 from typing import TYPE_CHECKING
 
-from src.backend.PluginManager.AssetManagment.PluginAssetManager import Color, Icon
+from src.backend.PluginManager.PluginSettings.Asset import Color,Icon
 
 if TYPE_CHECKING:
     from src.backend.PluginManager.PluginBase import PluginBase

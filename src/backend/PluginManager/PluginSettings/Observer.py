@@ -42,5 +42,5 @@ class Observer:
             try:
                 return await asyncio.to_thread(callback, *args, **kwargs)
             except Exception as e:
-                log.error(f"Callback {callback.__name__} in {self.event_id} could not be called")
+                log.error(f"Callback {callback.__name__} could not be called")
                 return await asyncio.sleep(0)

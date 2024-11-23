@@ -19,7 +19,7 @@ from rpyc.core import netref
 import gi
 
 from locales.LocaleManager import LocaleManager
-from src.backend.PluginManager.AssetManagment.PluginAssetManager import AssetManager
+from src.backend.PluginManager.PluginSettings.PluginAssetManager import AssetManager
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")

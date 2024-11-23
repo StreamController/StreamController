@@ -6,53 +6,9 @@ Year: 2024
 import json
 import os.path
 
-from .PluginAssetManagerBackend import Asset, Manager
-from src.backend.DeckManagement.Media.Media import Media
+from .Manager import Manager
+from .Asset import Color, Icon
 
-class Color(Asset):
-    def __init__(self, *args, **kwargs):
-        self._color: tuple[int, int, int, int] = (0,0,0,0)
-
-        super().__init__(*args, **kwargs)
-
-    def change(self, *args, **kwargs):
-        self._color = kwargs.get("color", (0,0,0,0))
-
-    def get_values(self):
-        return self._color
-
-    def to_json(self):
-        return list(self._color)
-
-    @classmethod
-    def from_json(cls, *args):
-        return cls(color=tuple(args[0]))
-
-class Icon(Asset):
-    def __init__(self, *args, **kwargs):
-        self._icon: Media = None
-        self._rendered: Media = None
-        self._path: str = None
-
-        super().__init__(*args, **kwargs)
-
-    def change(self, *args, **kwargs):
-        path = kwargs.get("path", None)
-
-        if os.path.isfile(path):
-            self._path = path
-            self._icon = Media.from_path(path)
-            self._rendered = self._icon.get_final_media()
-
-    def get_values(self):
-        return self._icon, self._rendered
-
-    def to_json(self):
-        return self._path
-
-    @classmethod
-    def from_json(cls, *args):
-        return cls(path=args[0])
 
 class AssetManager:
     def __init__(self, plugin_base: "PluginBase"):

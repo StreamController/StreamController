@@ -19,7 +19,8 @@ from src.backend.PluginManager.PluginBase import PluginBase
 from src.windows.Settings import Settings
 
 import globals as gl
-from src.windows.Settings.PluginSettingsWindow.PluginSettingsWindow import PluginSettingsWindow
+from .PluginSettingsWindow.PluginSettingsWindow import PluginSettingsWindow
+from .PluginAbout import PluginAboutFactory
 
 
 class PluginSettingsPage(Adw.PreferencesPage):
@@ -62,12 +63,26 @@ class PluginExpander(Adw.ActionRow):
         self.settings_window_button = IconTextButton(icon_name="preferences-desktop-remote-desktop-symbolic", text="Open Settings", valign=Gtk.Align.CENTER)
         self.suffix_box.append(self.settings_window_button)
 
+        self.changelog_window_button = Gtk.Button(label="Open Changelog", valign=Gtk.Align.CENTER)
+        self.suffix_box.append(self.changelog_window_button)
+
         self.settings_window_button.connect("clicked", self.on_settings_window_button_clicked)
+        self.changelog_window_button.connect("clicked", self.on_changelog_window_button_clicked)
 
     def on_settings_window_button_clicked(self, *args):
         settings = PluginSettingsWindow(self.plugin_base)
         settings.present(self.plugin_page.settings)
 
+    def on_changelog_window_button_clicked(self, *args):
+        factory = PluginAboutFactory(self.plugin_base)
+        about = factory.create_new_about()
+
+        factory.add_release_notes(about)
+        factory.add_credits(about)
+        factory.add_comments(about)
+        factory.add_author(about)
+
+        about.present()
 
 
 class ToggleRow(Adw.ActionRow):

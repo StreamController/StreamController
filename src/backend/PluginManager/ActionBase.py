@@ -181,7 +181,7 @@ class ActionBase(rpyc.Service):
         if update:
             self.get_input().update()
 
-    def set_background_color(self, color: list[int] = [255, 255, 255, 255], update: bool = True):
+    def set_background_color(self, color: list[int] = [0, 0, 0, 0], update: bool = True):
         self.raise_error_if_not_ready()
 
         if not self.get_is_present(): return

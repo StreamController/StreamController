@@ -59,6 +59,17 @@ class Sway(Integration):
                 continue
             return self._parse_window(client)
 
+    def _walk_tree(self, node, windows: list[dict[str, Any]]):
+        if "window_properties" in node or "app_id" in node:
+           # Try to only add actual windows
+           windows.append(node)
+
+        if "nodes" in node:
+           for child in node.get("nodes"):
+               self._walk_tree(child, windows)
+           for child in node.get("floating_nodes"):
+               self._walk_tree(child, windows)
+
     def _get_windows(self) -> list[dict[str, Any]]:
         windows = []
         try:
@@ -70,10 +81,7 @@ class Sway(Integration):
 
             for output in clients.get("nodes", []):
                 for workspace in output.get("nodes", []):
-                    for client in workspace.get("nodes", []):
-                        windows.append(client)
-                    for client in workspace.get("floating_nodes", []):
-                        windows.append(client)
+                    self._walk_tree(workspace, windows)
 
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running swaymsg: {e}")

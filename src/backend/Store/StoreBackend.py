@@ -464,7 +464,7 @@ class StoreBackend:
             license_descriptions=attribution.get("licence-descriptions", attribution.get("descriptions")) or None,
 
             icon_name=manifest.get("name") or None,
-            icon_version=manifest.get("icon") or None,
+            icon_version=manifest.get("version") or None,
             icon_id=manifest.get("id") or None,
 
             is_compatible=compatible,

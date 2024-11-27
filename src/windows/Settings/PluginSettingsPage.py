@@ -82,7 +82,7 @@ class PluginExpander(Adw.ActionRow):
         factory.add_comments(about)
         factory.add_author(about)
 
-        about.present()
+        about.present(self)
 
 
 class ToggleRow(Adw.ActionRow):

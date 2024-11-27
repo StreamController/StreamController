@@ -18,18 +18,16 @@ class PluginAboutFactory:
         self.manifest = self.plugin_base.get_manifest()
 
     def create_new_about(self):
-        about = Adw.AboutWindow()
+        about = Adw.AboutDialog()
 
         about.set_application_name(self.plugin_base.plugin_name)
         about.set_version(self.plugin_base.plugin_version)
         about.set_website(self.plugin_base.github_repo)
         about.set_issue_url(f"{self.plugin_base.github_repo}/issues")
 
-        about.set_modal(True)
-
         return about
 
-    def add_release_notes(self, about: Adw.AboutWindow):
+    def add_release_notes(self, about: Adw.AboutDialog):
         release_notes = self.about.get("release-notes", {})
 
         path = release_notes.get("path", "")
@@ -45,13 +43,13 @@ class PluginAboutFactory:
 
         about.set_release_notes_version(version or self.plugin_base.plugin_version)
 
-    def add_credits(self, about: Adw.AboutWindow):
+    def add_credits(self, about: Adw.AboutDialog):
         credits = self.about.get("credits", {})
 
         for section, people in credits.items():
             about.add_credit_section(section, people)
 
-    def add_comments(self, about: Adw.AboutWindow):
+    def add_comments(self, about: Adw.AboutDialog):
         comment = self.about.get("comments", None)
 
         if not comment:
@@ -63,7 +61,7 @@ class PluginAboutFactory:
         if translation:
             about.set_comments(translation)
 
-    def add_author(self, about: Adw.AboutWindow):
+    def add_author(self, about: Adw.AboutDialog):
         author = self.about.get("author", "")
 
         if author:

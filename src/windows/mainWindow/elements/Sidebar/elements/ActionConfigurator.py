@@ -307,74 +307,68 @@ class EventAssigner(Adw.PreferencesGroup):
         self.clear_all_button.connect("clicked", self.on_clear_all)
         self.button_box.append(self.clear_all_button)
 
-        all_events = Input.AllEvents()
         self.rows: list[EventAssignerRow] = []
-
-        return
-
-        for event in all_events:
-            row = EventAssignerRow(
-                event_assigner=self,
-                event=event,
-                available_events=all_events + [None]
-            )
-
-            self.rows.append(row)
-            self.expander.add_row(row)
 
     def load_for_action(self, action: ActionBase):
         self.action = action
         
         self.set_sensitive(action.allow_event_configuration)
 
-        assignments = action.get_event_assignments()
-
         for row in self.rows:
             self.expander.remove(row)
 
         self.rows: list[EventAssignerRow] = []
 
-        for event in self.action.events:
+        for event in action.get_events():
             row = EventAssignerRow(
                 event_assigner=self,
                 event=event,
-                available_events=list(self.action.events.keys()) + [None]
+                available_events=list(self.action.events.keys()) + ["None"]
             )
+
             self.rows.append(row)
             self.expander.add_row(row)
 
+        assignments = action.get_event_assignments()
+        events = action.events
+
         for row in self.rows:
             new_assignment = assignments.get(row.event)
-            row.select_event(new_assignment)
 
-            action_input_type = type(action.input_ident)
-            row.set_visible(row.event in action_input_type.Events)
+            if new_assignment:
+                row.select_event(new_assignment)
+            else:
+                row.select_event("None")
+                for event, assignment in events.items():
+                    if row.event == assignment.default_event:
+                        row.select_event(event)
 
-    def change_assignment_for_event(self, event: InputEvent, new_assignment: InputEvent):
+    def change_assignment_for_event(self, event: InputEvent, new_assignment: str):
         assignments = self.action.get_event_assignments()
         assignments[event] = new_assignment
         self.action.set_event_assignments(assignments)
 
     def reset_assignments(self):
-        self.action.set_event_assignments({})
+        events = self.action.events
+        assignments: dict[InputEvent, str] = {}
+
+        for event, assignment in events.items():
+            assignments[assignment.default_event] = event
+
+        self.action.set_event_assignments(assignments)
 
     def on_reset(self, button):
         self.reset_assignments()
         self.load_for_action(self.action)
 
     def on_clear_all(self, button):
-        assignments: dict[InputEvent, InputEvent] = {}
         for row in self.rows:
-            if not row.get_visible():
-                continue
+            row.select_event("None")
 
-            assignments[row.event] = None
-
-        self.action.set_event_assignments(assignments)
-        self.load_for_action(self.action)
+        self.action.set_event_assignments({})
 
 class EventAssignerRow(Adw.ComboRow):
-    def __init__(self, event_assigner: EventAssigner, event: InputEvent, available_events: list[InputEvent]):
+    def __init__(self, event_assigner: EventAssigner, event: InputEvent, available_events: list[str]):
         super().__init__()
 
         self.event_assigner = event_assigner
@@ -397,17 +391,17 @@ class EventAssignerRow(Adw.ComboRow):
 
         self.str_list = Gtk.StringList()
         for event in self.available_events:
-            self.str_list.append(str(event))
+            self.str_list.append(event)
 
         self.set_model(self.str_list)
 
         self.select_event(None)
 
-    def select_event(self, event: InputEvent):
+    def select_event(self, event: str):
         self._disconnect_signal()
 
         for i, e in enumerate(self.str_list):
-            if e.get_string() == str(event):
+            if e.get_string() == event:
                 self.set_selected(i)
                 self._connect_signal()
                 return
@@ -421,7 +415,6 @@ class EventAssignerRow(Adw.ComboRow):
         if selected == Gtk.INVALID_LIST_POSITION:
             event = None
         else:
-            string_name = self.str_list[selected].get_string()
-            event = Input.EventFromStringName(string_name)
+            event = self.str_list[selected].get_string()
 
         self.event_assigner.change_assignment_for_event(self.event, event)

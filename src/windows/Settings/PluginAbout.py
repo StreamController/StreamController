@@ -14,7 +14,8 @@ class PluginAboutFactory:
     def __init__(self, plugin_base: PluginBase):
         self.plugin_base = plugin_base
 
-        self.about = (plugin_base.get_manifest() or {}).get("about", {})
+        self.about = self.plugin_base.get_about()
+        self.manifest = self.plugin_base.get_manifest()
 
     def create_new_about(self):
         about = Adw.AboutWindow()
@@ -51,17 +52,19 @@ class PluginAboutFactory:
             about.add_credit_section(section, people)
 
     def add_comments(self, about: Adw.AboutWindow):
-        manifest = self.plugin_base.get_manifest()
+        comment = self.about.get("comments", None)
 
-        translation = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
+        if not comment:
+            manifest = self.plugin_base.get_manifest()
+            comment = manifest.get("descriptions", {})
+
+        translation = gl.lm.get_custom_translation(comment)
 
         if translation:
             about.set_comments(translation)
 
     def add_author(self, about: Adw.AboutWindow):
-        manifest = self.plugin_base.get_manifest()
-
-        author = manifest.get("author", "")
+        author = self.about.get("author", "")
 
         if author:
             about.set_developer_name(author)

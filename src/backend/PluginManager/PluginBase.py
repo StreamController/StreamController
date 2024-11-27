@@ -372,6 +372,19 @@ class PluginBase(rpyc.Service):
             with open(os.path.join(self.PATH, "manifest.json"), "r") as f:
                 return json.load(f)
         return {}
+
+    def get_about(self):
+        """
+        Retrieves the content from the about file from the plugin's directory if it exists.
+
+         Returns:
+            dict: The contents of the about file as a dictionary, or an empty dictionary if the file does not exist.
+        """
+
+        if os.path.exists(os.path.join(self.PATH, "about.json")):
+            with open(os.path.join(self.PATH, "about.json"), "r") as f:
+                return json.load(f)
+        return {}
     
     def set_settings(self, settings):
         """

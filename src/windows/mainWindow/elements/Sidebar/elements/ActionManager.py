@@ -722,6 +722,16 @@ class AddActionButtonRow(Adw.PreferencesRow):
         # Reload the key on all decks
         active_page.reload_similar_pages(identifier=self.expander.active_identifier, reload_self=True)
 
+        # Set event assignments for newly added action
+        actions = active_page.get_all_actions_for_type(self.expander.active_identifier)
+        action = actions[-1]
+
+        assignments = {}
+
+        for key, value in action.events.items():
+            assignments[value.default_event] = key
+        action.set_event_assignments(assignments)
+
         # Reload ui
         self.expander.load_for_identifier(self.expander.active_identifier, self.expander.active_state)
 

@@ -14,6 +14,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import threading
 import time
+from dataclasses import dataclass
+
 from loguru import logger as log
 from copy import copy
 import subprocess
@@ -50,6 +52,11 @@ if TYPE_CHECKING:
     from src.backend.PageManagement.Page import Page
     from src.backend.DeckManagement.DeckController import ControllerInput, ControllerInputState
 
+@dataclass
+class Assignment:
+    callback: callable
+    default_event: InputEvent
+
 class ActionBase(rpyc.Service):
     # Change to match your action
     def __init__(self, action_id: str, action_name: str,
@@ -67,12 +74,9 @@ class ActionBase(rpyc.Service):
         self.action_name = action_name
         self.plugin_base = plugin_base
 
-        self.events: dict[InputEvent, callable] = {
-            Input.Key.Events.DOWN: lambda: self.on_key_down(),
-            Input.Key.Events.UP: lambda: self.on_key_up(),
-            Input.Dial.Events.DOWN: lambda: self.on_key_down(),
-            Input.Dial.Events.UP: lambda: self.on_key_up(),
-            Input.Dial.Events.SHORT_TOUCH_PRESS: lambda: self.on_key_down()
+        self.events: dict[str, Assignment] = {
+            "Down Key": Assignment(lambda: self.on_key_down(), Input.Key.Events.DOWN),
+            "Up Key": Assignment(lambda: self.on_key_up(), Input.Key.Events.UP)
         }
 
         self.on_ready_called = False
@@ -106,11 +110,13 @@ class ActionBase(rpyc.Service):
         if i is None: return
         return i.states.get(self.state)
     
-    def event_callback(self, event: InputEvent, data: dict = None):
+    def event_callback(self, event: str, data: dict = None):
         # TODO: Rename to on_event
         ## backward compatibility
         if event in self.events:
-            self.events[event]()
+            assignment = self.events.get(event)
+            if assignment:
+                assignment.callback()
 
     def on_key_down(self):
         pass
@@ -416,36 +422,31 @@ class ActionBase(rpyc.Service):
 
         return assignment
     
-    def get_event_assignments(self) -> dict[InputEvent, InputEvent]:
+    def get_event_assignments(self) -> dict[InputEvent, str]:
         assignments = {}
 
         page_assignment_dict = self.page.get_action_event_assignments(action_object=self)
 
-        all_events = Input.AllEvents()
+        all_events = self.get_events()
         for event in all_events:
             if event.string_name in page_assignment_dict:
-                assignments[event] = Input.EventFromStringName(page_assignment_dict[str(event)])
-            else:
-                assignments[event] = event
+                assignments[event] = page_assignment_dict.get(str(event))
 
         return assignments
     
-    def set_event_assignments(self, assignments: dict[InputEvent, InputEvent]):
-        assignments_strings = {}
+    def set_event_assignments(self, assignments: dict[InputEvent, str]):
+        str_assignments = {str(key.value): value for key, value in assignments.items()}
 
-        for key, value in assignments.items():
-            if key == value:
-                continue
-
-            assignments_strings[str(key)] = str(value)
-
-        self.page.set_action_event_assignments(action_object=self, event_assignments=assignments_strings)
+        self.page.set_action_event_assignments(action_object=self, event_assignments=str_assignments)
 
     
     def raise_error_if_not_ready(self):
         if self.on_ready_called:
             return
         raise Warning("Seems like you're calling this method before the action is ready")
+
+    def get_events(self):
+        return self.input_ident.Events
     
     # ---------- #
     # Rpyc stuff #

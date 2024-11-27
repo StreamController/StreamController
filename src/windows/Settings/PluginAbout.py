@@ -61,8 +61,26 @@ class PluginAboutFactory:
         if translation:
             about.set_comments(translation)
 
+    def add_support(self, about: Adw.AboutDialog):
+        support = self.about.get("support", "")
+
+        if support:
+            about.set_support_url(support)
+
     def add_author(self, about: Adw.AboutDialog):
         author = self.about.get("author", "")
 
         if author:
             about.set_developer_name(author)
+
+    def add_copyright(self, about: Adw.AboutDialog):
+        copyright = self.about.get("copyright", "")
+
+        if copyright:
+            about.set_copyright(copyright)
+
+    def add_acknowledgements(self, about: Adw.AboutDialog):
+        acknowledgements = self.about.get("acknowledgements", {})
+
+        for section, people in acknowledgements.items():
+            about.add_acknowledgement_section(section, people)

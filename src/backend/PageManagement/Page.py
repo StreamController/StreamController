@@ -447,10 +447,20 @@ class Page:
 
         if action_object is None:
             raise ValueError("Could not find action object")
+
+        input_type = self.dict.get(action_object.input_ident.input_type, {})
+        json_identifier = input_type.get(action_object.input_ident.json_identifier, {})
+        states = json_identifier.get("states", {})
         
-        for state in self.dict.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get("states", {}):
-            for i, action_dict in enumerate(self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state].get("actions", [])):
-                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {}).get(i) is action_object:
+        for state in states:
+            actions = states[state].get("actions", [])
+            for i, action_dict in enumerate(actions):
+                input_type = self.action_objects.get(action_object.input_ident.input_type, {})
+                json_identifier = input_type.get(action_object.input_ident.json_identifier, {})
+                int_states = json_identifier.get(int(state), {})
+                int_state = int_states.get(i)
+
+                if int_state is action_object:
                     return action_dict
                 
         return {}
@@ -466,10 +476,20 @@ class Page:
 
         if action_object is None:
             raise ValueError("Could not find action object")
-        
-        for state in self.dict.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get("states", {}):
-            for i, action_dict in enumerate(self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state].get("actions", [])):
-                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {})[i] is action_object:
+
+        input_type = self.dict.get(action_object.input_ident.input_type, {})
+        json_identifier = input_type.get(action_object.input_ident.json_identifier, {})
+        states = json_identifier.get("states", {})
+
+        for state in states:
+            actions = states[state].get("actions", [])
+            for i, action_dict in enumerate(actions):
+                input_type = self.action_objects.get(action_object.input_ident.input_type, {})
+                json_identifier = input_type.get(action_object.input_ident.json_identifier, {})
+                int_states = json_identifier.get(int(state), {})
+                int_state = int_states.get(i)
+
+                if int_state is action_object:
                     self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state]["actions"][i] = action_dict
                     break
 

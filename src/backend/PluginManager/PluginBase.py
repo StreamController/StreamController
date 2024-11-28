@@ -66,6 +66,9 @@ class PluginBase(rpyc.Service):
         self.asset_manager: AssetManager = AssetManager(self)
         self.asset_manager.load_assets()
 
+        self.has_plugin_settings: bool = False
+        self.first_setup: bool = True
+
         self.registered_pages: list[str] = []
 
     @lru_cache(maxsize=1)
@@ -142,6 +145,9 @@ class PluginBase(rpyc.Service):
                 "file_name": os.path.basename(inspect.getfile(self.__class__))
             }
             self.registered = True
+
+            settings = self.get_settings()
+            self.first_setup = settings.get("first-setup", True)
         else:
             reason = None
 
@@ -358,7 +364,7 @@ class PluginBase(rpyc.Service):
             return {}
         with open(self.settings_path, "r") as f:
             settings = json.load(f)
-            settings.get("settings", {})
+            settings = settings.get("settings", {})
             return settings
 
     def get_manifest(self):

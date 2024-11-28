@@ -25,7 +25,18 @@ class PluginAboutFactory:
         about.set_website(self.plugin_base.github_repo)
         about.set_issue_url(f"{self.plugin_base.github_repo}/issues")
 
+        self._full_setup(about)
+
         return about
+
+    def _full_setup(self, about: Adw.AboutDialog):
+        self.add_release_notes(about)
+        self.add_copyright(about)
+        self.add_support(about)
+        self.add_credits(about)
+        self.add_acknowledgements(about)
+        self.add_author(about)
+        self.add_comments(about)
 
     def add_release_notes(self, about: Adw.AboutDialog):
         release_notes = self.about.get("release-notes", {})

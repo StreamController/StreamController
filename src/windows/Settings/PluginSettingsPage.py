@@ -77,14 +77,6 @@ class PluginExpander(Adw.ActionRow):
         factory = PluginAboutFactory(self.plugin_base)
         about = factory.create_new_about()
 
-        factory.add_release_notes(about)
-        factory.add_credits(about)
-        factory.add_comments(about)
-        factory.add_author(about)
-        factory.add_support(about)
-        factory.add_acknowledgements(about)
-        factory.add_copyright(about)
-
         about.present(self)
 
 

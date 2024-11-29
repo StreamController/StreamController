@@ -30,7 +30,7 @@ class Color(Asset):
 
     @classmethod
     def from_json(cls, *args, **kwargs):
-        return cls(color=args[1])
+        return cls(color=tuple(args[0]))
 
 class Icon(Asset):
     def __init__(self, path: str, *args, **kwargs):

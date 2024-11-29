@@ -19,6 +19,7 @@ from rpyc.core import netref
 import gi
 
 from locales.LocaleManager import LocaleManager
+from src.backend.PluginManager.PluginSettings.Asset import Icon, Color
 from src.backend.PluginManager.PluginSettings.PluginAssetManager import AssetManager
 
 gi.require_version("Gtk", "4.0")
@@ -486,6 +487,35 @@ class PluginBase(rpyc.Service):
             PluginBase: The plugin object if found, otherwise None.
         """
         return gl.plugin_manager.get_plugin_by_id(plugin_id) or None
+
+    # Asset Management
+
+    def add_icon(self, key: str, path: str):
+        self.asset_manager.icons.add_asset(key=key, asset=Icon(path=path))
+
+    def add_color(self, key: str, color: tuple[int, int, int, int]):
+        self.asset_manager.colors.add_asset(key=key, asset=Color(color=color))
+
+    def get_asset_path(self, asset_name: str, subdirs: list[str] = None, asset_folder: str = "assets") -> str:
+        """
+        Helper method that returns paths to plugin assets.
+
+        Args:
+            asset_name (str): Name of the Asset File
+            subdirs (list[str], optional): Subdirectories. Defaults to [].
+            asset_folder (str, optional): Name of the folder where assets are stored. Defaults to "assets".
+
+        Returns:
+            str: The full path to the asset
+        """
+
+        if not subdirs:
+            return os.path.join(self.PATH, asset_folder, asset_name)
+
+        subdir = os.path.join(*subdirs)
+        if subdir != "":
+            return os.path.join(self.PATH, asset_folder, subdir, asset_name)
+        return ""
 
     def get_settings_area(self):
         pass

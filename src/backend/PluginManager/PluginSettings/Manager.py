@@ -7,11 +7,9 @@ from .Asset import Asset
 
 class ManagerEvent(enum.Enum):
     ADD = "add",
-    REMOVE = "remove,"
-    CHANGE = "change",
+    REMOVE = "remove",
     OVERRIDE_ADD = "override_add",
     OVERRIDE_REMOVE = "override_remove",
-    OVERRIDE_CHANGE = "override_change"
 
 class Manager:
     def __init__(self, asset_type: type, json_key: str):
@@ -29,16 +27,13 @@ class Manager:
             self._observer.notify(ManagerEvent.ADD, key, asset)
 
     def remove_asset(self, key: str):
+        """If an asset is removed from the manager the override will get removed aswell if it exists"""
         if self._assets.__contains__(key):
             del self._assets[key]
-            self._observer.notify(ManagerEvent.REMOVE, key)
+            self._observer.notify(ManagerEvent.REMOVE, key, None)
 
-    def change_asset(self, key: str, *values):
-        if self._assets.__contains__(key):
-            asset = self.get_asset(key, skip_override=True)
-            asset.change(*values)
-            self._assets[key] = asset
-            self._observer.notify(ManagerEvent.CHANGE, key, asset, {values: values})
+        if self._asset_overrides.__contains__(key):
+            del self._asset_overrides[key]
 
     # Overrides
 
@@ -53,14 +48,7 @@ class Manager:
     def remove_override(self, key: str):
         if self._asset_overrides.__contains__(key):
             del self._asset_overrides[key]
-            self._observer.notify(ManagerEvent.OVERRIDE_REMOVE, key)
-
-    def change_override(self, key: str, *values):
-        if self._asset_overrides.__contains__(key):
-            override = self.get_asset(key)
-            override.change(*values)
-            self._asset_overrides[key] = override
-            self._observer.notify(ManagerEvent.OVERRIDE_CHANGE, key, override, {"values": values})
+            self._observer.notify(ManagerEvent.OVERRIDE_REMOVE, key, self.get_asset(key))
 
     # Getter
 

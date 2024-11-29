@@ -109,10 +109,10 @@ class ColorPreview(AssetPreview):
         self.color_button.set_rgba(self.get_rgba())
 
     def set_color_rgba(self, color: Gdk.RGBA):
-        normalized = (color.red * 255,
-                      color.green * 255,
-                      color.blue * 255,
-                      color.alpha * 255)
+        normalized = (round(color.red * 255),
+                      round(color.green * 255),
+                      round(color.blue * 255),
+                      round(color.alpha * 255))
         self.color = normalized
         self.color_button.set_rgba(color)
 

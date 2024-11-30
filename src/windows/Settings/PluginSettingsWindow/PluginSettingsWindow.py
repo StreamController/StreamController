@@ -17,6 +17,8 @@ import gi
 from gi.repository import Gtk, Adw, Gio
 
 from GtkHelper.GtkHelper import better_disconnect
+from src.backend.DeckManagement.ImageHelpers import image2pixbuf
+from src.backend.DeckManagement.Media.Media import Media
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.PluginManager.PluginSettings.Asset import Icon,Color
 from .PluginAssetPreview import IconPreview, ColorPreview
@@ -28,7 +30,7 @@ class PluginSettingsWindow(Adw.PreferencesDialog):
         self.set_size_request(500, 500)
 
         self.settings_page = SettingsPage(self, plugin_base)
-        self.assets_page = AssetsPage(self, plugin_base)
+        self.assets_page = IconPage(self, plugin_base)
         self.color_page = ColorPage(self, plugin_base)
 
         self.add(self.settings_page)
@@ -86,7 +88,87 @@ class SettingsPage(Adw.PreferencesPage):
         if area:
             self.add(area)
 
-class AssetsPage(PluginSettingsPage):
+class IconEditDialog(Adw.PreferencesDialog):
+    def __init__(self, icon: Media, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.icon = icon
+
+        page = Adw.PreferencesPage()
+        self.group = Adw.PreferencesGroup()
+
+        page.add(self.group)
+        self.add(page)
+
+        self.build()
+
+    def build(self):
+        pixbuf = image2pixbuf(self.icon.get_final_media())
+        image = Gtk.Image.new_from_pixbuf(pixbuf)
+        image.set_halign(Gtk.Align.CENTER)
+        image.set_valign(Gtk.Align.CENTER)
+        image.set_size_request(100, 100)
+
+        self.group.add(image)
+
+        h_scale_adjustment = Gtk.Adjustment(value=self.icon.halign, lower=-1.0, upper=1.0, step_increment=0.01)
+        v_scale_adjustment = Gtk.Adjustment(value=self.icon.valign, lower=-1.0, upper=1.0, step_increment=0.01)
+        s_scale_adjustment = Gtk.Adjustment(value=self.icon.size  , lower=0.1, upper=1.0, step_increment=0.01)
+
+        h_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        v_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        s_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+
+        h_label = Gtk.Label(label="Horizontal Align")
+        v_label = Gtk.Label(label="Vertical Align")
+        size_label = Gtk.Label(label="Size")
+
+        h_scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=h_scale_adjustment, draw_value=True, hexpand=True, digits=2)
+        h_scale.connect("value-changed", self.h_scale_changed, image)
+
+        v_scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=v_scale_adjustment, draw_value=True, hexpand=True, digits=2)
+        v_scale.connect("value-changed", self.v_scale_changed, image)
+
+        s_scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=s_scale_adjustment, draw_value=True, hexpand=True, digits=2)
+        s_scale.connect("value-changed", self.s_scale_changed, image)
+
+        h_box.append(h_label)
+        h_box.append(h_scale)
+
+        v_box.append(v_label)
+        v_box.append(v_scale)
+
+        s_box.append(size_label)
+        s_box.append(s_scale)
+
+        self.group.add(h_box)
+        self.group.add(v_box)
+        self.group.add(s_box)
+
+    def h_scale_changed(self, scale: Gtk.Scale, image: Gtk.Image):
+        self.icon.halign = scale.get_value()
+
+        img = self.icon.get_final_media()
+        pixbuf = image2pixbuf(img)
+        image.set_from_pixbuf(pixbuf)
+
+    def v_scale_changed(self, scale: Gtk.Scale, image: Gtk.Image):
+
+        self.icon.valign = scale.get_value()
+
+        img = self.icon.get_final_media()
+        pixbuf = image2pixbuf(img)
+        image.set_from_pixbuf(pixbuf)
+
+    def s_scale_changed(self, scale: Gtk.Scale, image: Gtk.Image):
+
+        self.icon.size = scale.get_value()
+
+        img = self.icon.get_final_media()
+        pixbuf = image2pixbuf(img)
+        image.set_from_pixbuf(pixbuf)
+
+class IconPage(PluginSettingsPage):
     def __init__(self, *args, **kwargs):
         super().__init__(title="Assets", icon_name="image-x-generic-symbolic", *args, **kwargs)
         self.display_icons()
@@ -113,9 +195,10 @@ class AssetsPage(PluginSettingsPage):
         icons = self.plugin_base.asset_manager.icons.get_assets_merged()
 
         for name, icon in icons.items():
-            _, render = icon.get_values()
+            icon, render = icon.get_values()
 
-            preview = IconPreview(window=self, name=name, image=render, size=(100, 100), vexpand=False, hexpand=False)
+            preview = IconPreview(window=self, name=name, media=icon, image=render, size=(100, 100), vexpand=False, hexpand=False)
+            preview.edit_button.connect("clicked", self.edit_button_clicked, preview)
             self.flow_box.append(preview)
 
     def reset_button_clicked(self, *args):
@@ -125,6 +208,31 @@ class AssetsPage(PluginSettingsPage):
             _, render = self.plugin_base.asset_manager.icons.get_asset(preview.name).get_values()
             preview.set_image(render)
             self.plugin_base.asset_manager.save_assets()
+
+    def edit_button_clicked(self, *args):
+        preview: IconPreview = args[1]
+
+        if not preview:
+            return
+
+        icon_asset: Icon = self.plugin_base.asset_manager.icons.get_asset(preview.name)
+
+        self.plugin_base.asset_manager.icons.add_override(preview.name, Icon(path=icon_asset._path))
+
+        icon, _ = self.plugin_base.asset_manager.icons.get_asset_values(preview.name)
+
+        dialog = IconEditDialog(icon=icon)
+        dialog.connect("closed", self.edit_dialog_closed, preview)
+        dialog.present(self)
+
+    def edit_dialog_closed(self, _, preview):
+        asset: Icon = self.plugin_base.asset_manager.icons.get_asset(preview.name)
+        render = asset._rendered = asset._icon.get_final_media()
+
+        preview.set_image(render)
+        self.plugin_base.asset_manager.save_assets()
+
+        self.plugin_base.asset_manager.icons.add_override(preview.name, asset, override=True)
 
 class ColorPage(PluginSettingsPage):
     def __init__(self, *args, **kwargs):

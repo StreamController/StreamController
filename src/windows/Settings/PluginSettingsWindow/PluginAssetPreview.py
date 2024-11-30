@@ -15,8 +15,10 @@ class AssetPreview(Gtk.FlowBoxChild):
         self.set_margin_top(5)
         self.set_margin_bottom(5)
 
+
         self.name = name
         self.size = size
+        self.window = window
 
         self.set_size_request(self.size[0], self.size[1])
         self.create_base_ui()
@@ -34,8 +36,8 @@ class AssetPreview(Gtk.FlowBoxChild):
         self.reset_button = Gtk.Button(icon_name="edit-undo-symbolic")
         self.reset_button.set_halign(Gtk.Align.END)
         self.reset_button.set_valign(Gtk.Align.START)
-        self.reset_button.set_margin_top(10)
-        self.reset_button.set_margin_end(10)
+        self.reset_button.set_margin_top(5)
+        self.reset_button.set_margin_end(5)
         self.overlay.add_overlay(self.reset_button)
 
         self.set_child(self.overlay)
@@ -46,9 +48,10 @@ class AssetPreview(Gtk.FlowBoxChild):
         pass
 
 class IconPreview(AssetPreview):
-    def __init__(self, image, *args, **kwargs):
+    def __init__(self, image, media, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.media = media
         self.image = image
         self.pixbuf = image2pixbuf(image)
         self.build()
@@ -78,6 +81,14 @@ class IconPreview(AssetPreview):
                                max_width_chars=20,
                                margin_start=20, margin_end=20)
         self.main_box.append(self.label)
+
+        self.edit_button = Gtk.Button(icon_name="document-edit-symbolic")
+        self.edit_button.set_halign(Gtk.Align.START)
+        self.edit_button.set_valign(Gtk.Align.START)
+        self.edit_button.set_margin_top(5)
+        self.edit_button.set_margin_start(5)
+
+        self.overlay.add_overlay(self.edit_button)
 
     def set_image(self, image):
         self.image = image

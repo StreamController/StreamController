@@ -33,11 +33,11 @@ class Color(Asset):
         return cls(color=tuple(args[0]))
 
 class Icon(Asset):
-    def __init__(self, path: str, *args, **kwargs):
+    def __init__(self, path: str, size=1.0, valign=0.0, halign=0.0, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if isfile(path):
             self._path = path
-            self._icon = Media.from_path(path)
+            self._icon = Media.from_path(path, size=size, valign=valign, halign=halign)
             self._rendered = self._icon.get_final_media()
         else:
             self._path: str = None
@@ -48,8 +48,21 @@ class Icon(Asset):
         return self._icon, self._rendered
 
     def to_json(self):
-        return self._path
+        save_data = {
+            "path": self._path,
+            "size": self._icon.size,
+            "halign": self._icon.halign,
+            "valign": self._icon.valign
+        }
+        return save_data
 
     @classmethod
     def from_json(cls, *args, **kwargs):
-        return cls(path=args[0])
+        save_data: dict = args[0]
+
+        path = save_data.get("path", "")
+        size = save_data.get("size", 1.0)
+        halign = save_data.get("halign", 0.00)
+        valign = save_data.get("valign", 0.00)
+
+        return cls(path, size, halign, valign)

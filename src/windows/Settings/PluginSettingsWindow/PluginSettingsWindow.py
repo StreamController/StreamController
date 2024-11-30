@@ -217,7 +217,7 @@ class IconPage(PluginSettingsPage):
 
         icon_asset: Icon = self.plugin_base.asset_manager.icons.get_asset(preview.name)
 
-        self.plugin_base.asset_manager.icons.add_override(preview.name, Icon(path=icon_asset._path))
+        self.plugin_base.asset_manager.icons.add_override(preview.name, Icon(path=icon_asset._path, size=icon_asset._icon.size, halign=icon_asset._icon.halign, valign=icon_asset._icon.valign))
 
         icon, _ = self.plugin_base.asset_manager.icons.get_asset_values(preview.name)
 

@@ -490,8 +490,8 @@ class PluginBase(rpyc.Service):
 
     # Asset Management
 
-    def add_icon(self, key: str, path: str):
-        self.asset_manager.icons.add_asset(key=key, asset=Icon(path=path))
+    def add_icon(self, key: str, path: str, size:float=1.0, halign:float=0.0, valign:float=0.0):
+        self.asset_manager.icons.add_asset(key=key, asset=Icon(path=path, size=size, halign=halign, valign=valign))
 
     def add_color(self, key: str, color: tuple[int, int, int, int]):
         self.asset_manager.colors.add_asset(key=key, asset=Color(color=color))

@@ -24,6 +24,7 @@ class EventHolder:
             self.observers.remove(callback)
 
     def trigger_event(self, *args, **kwargs):
+        # FIX: This can throw an error, if this happens apply the fix from Observer.py
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self._run_event(self.event_id, *args, **kwargs))

@@ -39,7 +39,7 @@ class Settings(Adw.PreferencesWindow):
         # Center settings win over main_win (depends on DE)
         self.set_transient_for(gl.app.main_win)
         # Allow interaction with other windows
-        self.set_modal(False)
+        self.set_modal(True)
 
         self.settings_json:dict = None
         self.load_json()

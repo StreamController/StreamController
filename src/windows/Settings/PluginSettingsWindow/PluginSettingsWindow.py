@@ -21,7 +21,9 @@ from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.Media.Media import Media
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.PluginManager.PluginSettings.Asset import Icon,Color
+import globals as gl
 from .PluginAssetPreview import IconPreview, ColorPreview
+from loguru import logger as log
 
 class PluginSettingsWindow(Adw.PreferencesDialog):
     def __init__(self, plugin_base: PluginBase):
@@ -181,15 +183,19 @@ class IconPage(PluginSettingsPage):
         icon_dialog.open(None, None, self.on_icon_dialog_response, preview)
 
     def on_icon_dialog_response(self, dialog: Gtk.FileDialog, task, preview: IconPreview):
-        file = dialog.open_finish(task)
+        try:
+            file = dialog.open_finish(task)
 
-        if file:
-            file_path = file.get_path()
-            self.plugin_base.asset_manager.icons.add_override(preview.name, Icon(path=file_path), override=True)
+            if file:
+                file_path = file.get_path()
+                self.plugin_base.asset_manager.icons.add_override(preview.name, Icon(path=file_path), override=True)
 
-            _, render = self.plugin_base.asset_manager.icons.get_asset_values(preview.name)
-            preview.set_image(render)
-            self.plugin_base.asset_manager.save_assets()
+                _, render = self.plugin_base.asset_manager.icons.get_asset_values(preview.name)
+                preview.set_image(render)
+                self.plugin_base.asset_manager.save_assets()
+        except Exception as e:
+            log.warning(e)
+
 
     def display_icons(self):
         icons = self.plugin_base.asset_manager.icons.get_assets_merged()
@@ -245,13 +251,16 @@ class ColorPage(PluginSettingsPage):
         color_dialog.set_title("Color")
 
         # Open the dialog
-        color_dialog.choose_rgba(None, preview.get_rgba(), None, self.on_color_dialog_response, preview)
+        color_dialog.choose_rgba(gl.app.get_active_window(), preview.get_rgba(), None, self.on_color_dialog_response, preview)
 
     def on_color_dialog_response(self, dialog: Gtk.ColorDialog, task: Gio.Task, preview: ColorPreview):
-        rgba = dialog.choose_rgba_finish(task)
-        preview.set_color_rgba(rgba)
-        self.plugin_base.asset_manager.colors.add_override(preview.name, Color(color=preview.color), override=True)
-        self.plugin_base.asset_manager.save_assets()
+        try:
+            rgba = dialog.choose_rgba_finish(task)
+            preview.set_color_rgba(rgba)
+            self.plugin_base.asset_manager.colors.add_override(preview.name, Color(color=preview.color), override=True)
+            self.plugin_base.asset_manager.save_assets()
+        except Exception as e:
+            log.warning(e)
 
     def display_colors(self):
         colors = self.plugin_base.asset_manager.colors.get_assets_merged()

@@ -63,7 +63,7 @@ class PluginExpander(Adw.ActionRow):
         self.settings_window_button = IconTextButton(icon_name="preferences-desktop-remote-desktop-symbolic", text="Open Settings", valign=Gtk.Align.CENTER)
         self.suffix_box.append(self.settings_window_button)
 
-        self.changelog_window_button = Gtk.Button(label="Open Changelog", valign=Gtk.Align.CENTER)
+        self.changelog_window_button = Gtk.Button(label="About", valign=Gtk.Align.CENTER)
         self.suffix_box.append(self.changelog_window_button)
 
         self.settings_window_button.connect("clicked", self.on_settings_window_button_clicked)

@@ -70,12 +70,6 @@ class ActionChooser(Gtk.Box):
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
 
-        # Spacer
-        self.nav_box.append(Gtk.Box(hexpand=True))
-
-        self.open_store_button = OpenStoreButton(icon_name="application-x-addon-symbolic")
-        self.nav_box.append(self.open_store_button)
-
         self.header = Gtk.Label(label=gl.lm.get("action-chooser.header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
         self.main_box.append(self.header)
 
@@ -87,6 +81,9 @@ class ActionChooser(Gtk.Box):
 
         self.plugin_group = PluginGroup(self, margin_top=40)
         self.main_box.append(self.plugin_group)
+
+        self.open_store_button = OpenStoreButton(margin_top=40, margin_bottom=40)
+        self.main_box.append(self.open_store_button)
 
     def show(self, callback_function, current_stack_page, identifier: InputIdentifier, callback_args, callback_kwargs):
         # The current-stack_page is usefull in case the let_user_select_action is called by an plugin action in the action_configurator
@@ -119,7 +116,8 @@ class ActionChooser(Gtk.Box):
 
 class OpenStoreButton(Gtk.Button):
     def __init__(self, *args, **kwargs):
-        super().__init__(css_classes=["open-store-button"], *args, **kwargs)
+        super().__init__(label=gl.lm.get("asset-chooser.add-more-button.label"), css_classes=["open-store-button"],
+                         *args, **kwargs)
         self.connect("clicked", self.on_click)
 
     def on_click(self, button):
@@ -251,7 +249,6 @@ class PluginExpander(BetterExpander):
         # Init sort func
         self.set_sort_func(self.sort_func, None)
         # Init filter func
-        self.set_filter_func(self.filter_func, None)
 
     def search(self):
         self.invalidate_filter()
@@ -335,6 +332,9 @@ class ActionGroupExpander(BetterExpander):
         super().__init__(**kwargs)
         self.input_type: InputIdentifier = None
         self.plugin_group = plugin_group
+
+        folder_icon = Gtk.Image.new_from_icon_name("folder-symbolic")
+        self.add_prefix(folder_icon)
 
         # Texts
         self.set_title(group_name)

@@ -430,6 +430,8 @@
 .destructive-action-on-hover:hover{
   background-color: @destructive_bg_color;
 }
+
+/*Used as Base for all action chooser items*/
 .action-chooser-item {
   background-color: #303030;
 }
@@ -437,10 +439,12 @@
   background-color: #3F3F3F;
 }
 
+/*Used for the nested Expander*/
 .action-chooser-group {
   background-color: #292929;
 }
 
+/*Used for the items in the nested Expander*/
 .action-chooser-group-item {
   background-color: #1F1F1F;
   border-radius: 0;

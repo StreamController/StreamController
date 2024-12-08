@@ -70,18 +70,23 @@ class ActionChooser(Gtk.Box):
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
 
-        self.search_entry = Gtk.SearchEntry(margin_top=10, placeholder_text=gl.lm.get("action-chooser.search-entry.placeholder"), hexpand=True)
-        self.search_entry.connect("search-changed", self.on_search_changed)
-        self.main_box.append(self.search_entry)
+        # Spacer
+        self.nav_box.append(Gtk.Box(hexpand=True))
+
+        self.open_store_button = OpenStoreButton(icon_name="application-x-addon-symbolic")
+        self.nav_box.append(self.open_store_button)
 
         self.header = Gtk.Label(label=gl.lm.get("action-chooser.header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
         self.main_box.append(self.header)
 
+        self.search_entry = Gtk.SearchEntry(margin_top=10,
+                                            placeholder_text=gl.lm.get("action-chooser.search-entry.placeholder"),
+                                            hexpand=True)
+        self.search_entry.connect("search-changed", self.on_search_changed)
+        self.main_box.append(self.search_entry)
+
         self.plugin_group = PluginGroup(self, margin_top=40)
         self.main_box.append(self.plugin_group)
-
-        self.open_store_button = OpenStoreButton(margin_top=40, margin_bottom=40)
-        self.main_box.append(self.open_store_button)
 
     def show(self, callback_function, current_stack_page, identifier: InputIdentifier, callback_args, callback_kwargs):
         # The current-stack_page is usefull in case the let_user_select_action is called by an plugin action in the action_configurator
@@ -114,8 +119,7 @@ class ActionChooser(Gtk.Box):
 
 class OpenStoreButton(Gtk.Button):
     def __init__(self, *args, **kwargs):
-        super().__init__(label=gl.lm.get("asset-chooser.add-more-button.label"), css_classes=["open-store-button"],
-                         *args, **kwargs)
+        super().__init__(css_classes=["open-store-button"], *args, **kwargs)
         self.connect("clicked", self.on_click)
 
     def on_click(self, button):

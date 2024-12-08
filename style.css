@@ -434,11 +434,17 @@
   background-color: #303030;
 }
 .action-chooser-item:hover {
-  background-color: #3A3A3A;
+  background-color: #3F3F3F;
 }
+
 .action-chooser-group {
-  background-color: #1E1E1E;
+  background-color: #292929;
 }
-.action-chooser-group:hover {
+
+.action-chooser-group-item {
+  background-color: #1F1F1F;
+  border-radius: 0;
+}
+.action-chooser-group-item:hover {
   background-color: #252525;
 }

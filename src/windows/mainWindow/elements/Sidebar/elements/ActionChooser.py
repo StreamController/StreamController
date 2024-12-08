@@ -200,7 +200,6 @@ class PluginGroup(BetterPreferencesGroup):
             expander.set_identifier(identifier)
             expander.invalidate_filter()
 
-
 class PluginExpander(BetterExpander):
     def __init__(self, plugin_group, plugin_name, plugin_dir, **kwargs):
         super().__init__(**kwargs)
@@ -221,18 +220,23 @@ class PluginExpander(BetterExpander):
 
         added_holders: list[ActionHolder] = []
 
+        # Add Groups
         for key, holder_list in action_holder_groups.items():
-            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            nested = ActionGroupExpander(plugin_group, key, holder_list, css_classes=["action-chooser-group"], margin_start=5, hexpand=True, vexpand=True)
-            box.append(nested)
-            self.add_row(box)
+            action_group = ActionGroupExpander(plugin_group, key, holder_list)
+            action_group.add_css_class("action-chooser-item")
+            action_group.add_css_class("action-chooser-group")
+
+            self.add_row(action_group)
             added_holders.extend(holder_list)
 
         added_holders_set = set(added_holders)
         not_added_holders = action_holders - added_holders_set
 
+        # Add leftovers
         for holder in not_added_holders:
-            action_row = PluginActionRow(self, holder, css_classes=["action-chooser-item"])
+            action_row = PluginActionRow(self, holder)
+            action_row.add_css_class("action-chooser-item")
+
             self.add_row(action_row)
 
         self.highest_fuzz_score = 0
@@ -317,7 +321,9 @@ class ActionGroupExpander(BetterExpander):
         self.set_title(group_name)
 
         for holder in action_holders:
-            action_row = PluginActionRow(self, holder, css_classes=[ "action-chooser-group"])
+            action_row = PluginActionRow(self, holder)
+            action_row.add_css_class("action-chooser-group-item")
+
             self.add_row(action_row)
 
         self.highest_fuzz_score = 0
@@ -388,7 +394,6 @@ class ActionGroupExpander(BetterExpander):
             if isinstance(row, PluginExpander):
                 row.set_identifier(input_type)
         self.invalidate_filter()
-
 
 class PluginActionRow(Adw.ActionRow):
     def __init__(self, expander, action_holder: ActionHolder, **kwargs):

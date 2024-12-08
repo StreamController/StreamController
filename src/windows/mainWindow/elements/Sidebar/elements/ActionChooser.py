@@ -264,8 +264,15 @@ class PluginExpander(BetterExpander):
         if type(row1) is Gtk.ListBoxRow or type(row2) is Gtk.ListBoxRow:
             return 0
 
-        action1_label = row1.label.get_label()
-        action2_label = row2.label.get_label()
+        if isinstance(row1, ActionGroupExpander):
+            action1_label = row1.get_title()
+        else:
+            action1_label = row1.label.get_label()
+
+        if isinstance(row2, ActionGroupExpander):
+            action2_label = row2.get_title()
+        else:
+            action2_label = row2.label.get_label()
 
         if search_string == "":
             self.highest_fuzz_score = 0
@@ -302,7 +309,12 @@ class PluginExpander(BetterExpander):
             # Show all
             return True
         
-        fuzz_score = fuzz.ratio(search_string.lower(), row.label.get_label().lower())
+        if isinstance(row, ActionGroupExpander):
+            label = row.get_title()
+        else:
+            label = row.label.get_label()
+        
+        fuzz_score = fuzz.ratio(search_string.lower(), label.lower())
 
         MIN_FUZZY_SCORE = 20
         if fuzz_score >= MIN_FUZZY_SCORE:

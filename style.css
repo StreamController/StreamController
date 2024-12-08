@@ -430,3 +430,15 @@
 .destructive-action-on-hover:hover{
   background-color: @destructive_bg_color;
 }
+.action-chooser-item {
+  background-color: #303030;
+}
+.action-chooser-item:hover {
+  background-color: #3A3A3A;
+}
+.action-chooser-group {
+  background-color: #1E1E1E;
+}
+.action-chooser-group:hover {
+  background-color: #252525;
+}

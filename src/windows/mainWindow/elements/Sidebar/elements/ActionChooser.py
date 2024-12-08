@@ -29,7 +29,7 @@ from fuzzywuzzy import fuzz, process
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import get_last_dir
-from GtkHelper.GtkHelper import BackButton, BetterExpander, BetterPreferencesGroup
+from GtkHelper.GtkHelper import BackButton, BetterExpander, BetterPreferencesGroup, better_disconnect
 from src.windows.Store.Store import Store
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
@@ -70,12 +70,14 @@ class ActionChooser(Gtk.Box):
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
 
-        self.search_entry = Gtk.SearchEntry(margin_top=10, placeholder_text=gl.lm.get("action-chooser.search-entry.placeholder"), hexpand=True)
-        self.search_entry.connect("search-changed", self.on_search_changed)
-        self.main_box.append(self.search_entry)
-
         self.header = Gtk.Label(label=gl.lm.get("action-chooser.header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
         self.main_box.append(self.header)
+
+        self.search_entry = Gtk.SearchEntry(margin_top=10,
+                                            placeholder_text=gl.lm.get("action-chooser.search-entry.placeholder"),
+                                            hexpand=True)
+        self.search_entry.connect("search-changed", self.on_search_changed)
+        self.main_box.append(self.search_entry)
 
         self.plugin_group = PluginGroup(self, margin_top=40)
         self.main_box.append(self.plugin_group)
@@ -200,7 +202,6 @@ class PluginGroup(BetterPreferencesGroup):
             expander.set_identifier(identifier)
             expander.invalidate_filter()
 
-
 class PluginExpander(BetterExpander):
     def __init__(self, plugin_group, plugin_name, plugin_dir, **kwargs):
         super().__init__(**kwargs)
@@ -216,9 +217,132 @@ class PluginExpander(BetterExpander):
 
         self.add_prefix(self.plugin_dir["object"].get_selector_icon())
 
-        action_holders: list[ActionHolder] = self.plugin_dir["object"].action_holders.values()
+        action_holders: set[ActionHolder] = set(self.plugin_dir["object"].action_holders.values())
+        action_holder_groups: dict[str, list[ActionHolder]] = self.plugin_dir["object"].action_holder_groups
+
+        added_holders: list[ActionHolder] = []
+
+        # Add Groups
+        for i, (key, holder_list) in enumerate(action_holder_groups.items()):
+            action_group = ActionGroupExpander(plugin_group, key, holder_list)
+            action_group.add_css_class("action-chooser-item")
+            action_group.add_css_class("action-chooser-group")
+
+            if i == len(action_holder_groups) - 1:
+                action_group.add_css_class("action-chooser-group-last")
+
+            self.add_row(action_group)
+            added_holders.extend(holder_list)
+
+        added_holders_set = set(added_holders)
+        not_added_holders = action_holders - added_holders_set
+
+        # Add leftovers
+        for holder in not_added_holders:
+            action_row = PluginActionRow(self, holder)
+            action_row.add_css_class("action-chooser-item")
+
+            self.add_row(action_row)
+
+        self.highest_fuzz_score = 0
+
+        # Init sort func
+        self.set_sort_func(self.sort_func, None)
+        # Init filter func
+
+    def search(self):
+        self.invalidate_filter()
+        self.invalidate_sort()
+
+    def sort_func(self, row1, row2, user_data):
+        # Returns -1 if row1 should be brefore row2, 0 if they are equal, and 1 otherwise
+        search_string = self.plugin_group.action_chooser.search_entry.get_text()
+
+        if type(row1) is Gtk.ListBoxRow or type(row2) is Gtk.ListBoxRow:
+            return 0
+
+        if isinstance(row1, ActionGroupExpander):
+            action1_label = row1.get_title()
+        else:
+            action1_label = row1.label.get_label()
+
+        if isinstance(row2, ActionGroupExpander):
+            action2_label = row2.get_title()
+        else:
+            action2_label = row2.label.get_label()
+
+        if search_string == "":
+            self.highest_fuzz_score = 0
+            # sort alphabetically
+            if action1_label < action2_label:
+                return -1
+            if action1_label > action2_label:
+                return 1
+            return 0
+
+        fuzz_score_1 = fuzz.ratio(search_string.lower(), action1_label.lower())
+        fuzz_score_2 = fuzz.ratio(search_string.lower(), action2_label.lower())
+
+        if fuzz_score_1 > self.highest_fuzz_score:
+            self.highest_fuzz_score = fuzz_score_1
+        if fuzz_score_2 > self.highest_fuzz_score:
+            self.highest_fuzz_score = fuzz_score_2
+
+        if fuzz_score_1 > fuzz_score_2:
+            return -1
+        if fuzz_score_1 < fuzz_score_2:
+            return 1
+        return 0
+    
+    def filter_func(self, row: "PluginActionRow", user_data):
+        search_string = self.plugin_group.action_chooser.search_entry.get_text()
+
+        # if row.action_holder.get_input_compatibility(self.plugin_group.action_chooser.identifier) <= ActionInputSupport.NONE:
+            # return False
+
+        if search_string == "":
+            # Collapse all
+            self.set_expanded(False)
+            # Show all
+            return True
+        
+        if isinstance(row, ActionGroupExpander):
+            label = row.get_title()
+        else:
+            label = row.label.get_label()
+        
+        fuzz_score = fuzz.ratio(search_string.lower(), label.lower())
+
+        MIN_FUZZY_SCORE = 20
+        if fuzz_score >= MIN_FUZZY_SCORE:
+            # Expand
+            self.set_expanded(True)
+            return True
+        return False
+    
+    def set_identifier(self, input_type: InputIdentifier):
+        self.input_type = input_type
+        for row in self.get_rows():
+            if isinstance(row, PluginExpander):
+                row.set_identifier(input_type)
+        self.invalidate_filter()
+
+class ActionGroupExpander(BetterExpander):
+    def __init__(self, plugin_group, group_name, action_holders, **kwargs):
+        super().__init__(**kwargs)
+        self.input_type: InputIdentifier = None
+        self.plugin_group = plugin_group
+
+        folder_icon = Gtk.Image.new_from_icon_name("folder-symbolic")
+        self.add_prefix(folder_icon)
+
+        # Texts
+        self.set_title(group_name)
+
         for holder in action_holders:
-            action_row = ActionRow(self, holder)
+            action_row = PluginActionRow(self, holder)
+            action_row.add_css_class("action-chooser-group-item")
+
             self.add_row(action_row)
 
         self.highest_fuzz_score = 0
@@ -227,6 +351,20 @@ class PluginExpander(BetterExpander):
         self.set_sort_func(self.sort_func, None)
         # Init filter func
         self.set_filter_func(self.filter_func, None)
+
+        # set icon to not activated
+        image = self.get_arrow_image()
+        image.set_css_classes(["expander-arrow-not-activated"])
+
+        self.connect("notify::expanded", self.on_expanded)
+
+    def on_expanded(self, *args):
+        # This expander is nested in another expander causing the icon to be stuck at the expanded state - this fixes it
+        image = self.get_arrow_image()
+        if self.get_expanded():
+            image.set_css_classes(["expander-arrow-activated"])
+        else:
+            image.set_css_classes(["expander-arrow-not-activated"])
 
     def search(self):
         self.invalidate_filter()
@@ -261,19 +399,19 @@ class PluginExpander(BetterExpander):
         if fuzz_score_1 < fuzz_score_2:
             return 1
         return 0
-    
-    def filter_func(self, row: "ActionRow", user_data):
+
+    def filter_func(self, row: "PluginActionRow", user_data):
         search_string = self.plugin_group.action_chooser.search_entry.get_text()
 
         # if row.action_holder.get_input_compatibility(self.plugin_group.action_chooser.identifier) <= ActionInputSupport.NONE:
-            # return False
+        # return False
 
         if search_string == "":
             # Collapse all
             self.set_expanded(False)
             # Show all
             return True
-        
+
         fuzz_score = fuzz.ratio(search_string.lower(), row.label.get_label().lower())
 
         MIN_FUZZY_SCORE = 20
@@ -282,15 +420,15 @@ class PluginExpander(BetterExpander):
             self.set_expanded(True)
             return True
         return False
-    
+
     def set_identifier(self, input_type: InputIdentifier):
         self.input_type = input_type
         for row in self.get_rows():
-            row.set_identifier(input_type)
+            if isinstance(row, PluginExpander):
+                row.set_identifier(input_type)
         self.invalidate_filter()
 
-
-class ActionRow(Adw.ActionRow):
+class PluginActionRow(Adw.ActionRow):
     def __init__(self, expander, action_holder: ActionHolder, **kwargs):
         super().__init__(**kwargs)
         self.expander = expander

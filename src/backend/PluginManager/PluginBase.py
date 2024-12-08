@@ -56,6 +56,8 @@ class PluginBase(rpyc.Service):
 
         self.action_holders: dict = {}
 
+        self.action_holder_groups: dict[str, list["ActionHolder"]] = {}
+
         self.event_holders: dict = {}
 
         self.registered: bool = False
@@ -274,6 +276,12 @@ class PluginBase(rpyc.Service):
             raise ValueError("Please pass an SignalHolder")
 
         self.event_holders[event_holder.event_id] = event_holder
+
+    def add_action_holder_group(self, key: str, action_holders: list["ActionHolder"]):
+        if self.action_holder_groups.__contains__(key):
+            log.error(f"Action Holder Group {key} already exists.")
+        else:
+            self.action_holder_groups[key] = action_holders
 
     def connect_to_event(self, event_id: str, callback: callable) -> None:
         """

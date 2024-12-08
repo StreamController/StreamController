@@ -340,6 +340,20 @@ class ActionGroupExpander(BetterExpander):
         # Init filter func
         self.set_filter_func(self.filter_func, None)
 
+        # set icon to not activated
+        image = self.get_arrow_image()
+        image.set_css_classes(["expander-arrow-not-activated"])
+
+        self.connect("notify::expanded", self.on_expanded)
+
+    def on_expanded(self, *args):
+        # This expander is nested in another expander causing the icon to be stuck at the expanded state - this fixes it
+        image = self.get_arrow_image()
+        if self.get_expanded():
+            image.set_css_classes(["expander-arrow-activated"])
+        else:
+            image.set_css_classes(["expander-arrow-not-activated"])
+
     def search(self):
         self.invalidate_filter()
         self.invalidate_sort()

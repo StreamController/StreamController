@@ -456,3 +456,18 @@
 .action-chooser-group-last {
   border-bottom: 3px solid black;
 }
+
+/* Usef to fix the arrows of nexted Expanders */
+.expander-arrow-activated {
+  -gtk-icon-transform: rotate(0turn);
+  opacity: 1;
+  color: var(--accent-color);
+  transition: -gtk-icon-transform 200ms ease-out;
+}
+
+.expander-arrow-not-activated {
+  -gtk-icon-transform: rotate(0.5turn);
+  opacity: 0.5;
+  color: inherit;
+  transition: -gtk-icon-transform 200ms ease-out;
+}

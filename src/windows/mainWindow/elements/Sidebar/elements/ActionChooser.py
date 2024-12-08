@@ -221,10 +221,13 @@ class PluginExpander(BetterExpander):
         added_holders: list[ActionHolder] = []
 
         # Add Groups
-        for key, holder_list in action_holder_groups.items():
+        for i, (key, holder_list) in enumerate(action_holder_groups.items()):
             action_group = ActionGroupExpander(plugin_group, key, holder_list)
             action_group.add_css_class("action-chooser-item")
             action_group.add_css_class("action-chooser-group")
+
+            if i == len(action_holder_groups) - 1:
+                action_group.add_css_class("action-chooser-group-last")
 
             self.add_row(action_group)
             added_holders.extend(holder_list)

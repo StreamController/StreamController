@@ -442,6 +442,7 @@
 /*Used for the nested Expander*/
 .action-chooser-group {
   background-color: #292929;
+  border-bottom: 1px solid black;
 }
 
 /*Used for the items in the nested Expander*/
@@ -451,4 +452,8 @@
 }
 .action-chooser-group-item:hover {
   background-color: #252525;
+}
+
+.action-chooser-group-last {
+  border-bottom: 3px solid black;
 }

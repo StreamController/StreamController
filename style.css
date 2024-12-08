@@ -454,6 +454,7 @@
   background-color: #252525;
 }
 
+/*Used for the last nested Expander*/
 .action-chooser-group-last {
   border-bottom: 3px solid black;
 }

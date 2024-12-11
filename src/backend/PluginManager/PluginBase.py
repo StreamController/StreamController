@@ -19,6 +19,7 @@ from rpyc.core import netref
 import gi
 
 from locales.LocaleManager import LocaleManager
+from src.backend.PluginManager.ActionHolderGroup import ActionHolderGroup
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -56,7 +57,7 @@ class PluginBase(rpyc.Service):
 
         self.action_holders: dict = {}
 
-        self.action_holder_groups: dict[str, list["ActionHolder"]] = {}
+        self.action_holder_groups: set[ActionHolderGroup] = set()
 
         self.event_holders: dict = {}
 
@@ -277,11 +278,8 @@ class PluginBase(rpyc.Service):
 
         self.event_holders[event_holder.event_id] = event_holder
 
-    def add_action_holder_group(self, key: str, action_holders: list["ActionHolder"]):
-        if self.action_holder_groups.__contains__(key):
-            log.error(f"Action Holder Group {key} already exists.")
-        else:
-            self.action_holder_groups[key] = action_holders
+    def add_action_holder_group(self, action_holder_group: ActionHolderGroup) -> None:
+        self.action_holder_groups.add(action_holder_group)
 
     def connect_to_event(self, event_id: str, callback: callable) -> None:
         """

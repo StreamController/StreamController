@@ -17,6 +17,7 @@ from re import I
 import gi
 
 from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
+from src.backend.PluginManager.ActionHolderGroup import ActionHolderGroup
 from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 
 gi.require_version("Gtk", "4.0")
@@ -113,7 +114,6 @@ class ActionChooser(Gtk.Box):
     def on_search_changed(self, search_entry):
         self.plugin_group.search()
 
-
 class OpenStoreButton(Gtk.Button):
     def __init__(self, *args, **kwargs):
         super().__init__(label=gl.lm.get("asset-chooser.add-more-button.label"), css_classes=["open-store-button"],
@@ -202,40 +202,102 @@ class PluginGroup(BetterPreferencesGroup):
             expander.set_identifier(identifier)
             expander.invalidate_filter()
 
-class PluginExpander(BetterExpander):
-    def __init__(self, plugin_group, plugin_name, plugin_dir, **kwargs):
-        super().__init__(**kwargs)
+class ActionChooserExpander(BetterExpander):
+    def __init__(self, plugin_group, plugin_name, plugin_dir, *args, **kwargs):
+        super().__init__()
         self.plugin_group = plugin_group
         self.plugin_name = plugin_name
         self.plugin_dir = plugin_dir
 
         self.input_type: InputIdentifier = None
 
+        self.highest_fuzz_score = 0
+
+        self.set_sort_func(self.sort_func, None)
+        self.set_filter_func(self.filter_func, None)
+
+    def build(self):
+        pass
+
+    def sort_func(self, row1, row2, user_data):
+        pass
+
+    def filter_func(self, row: "PluginActionRow", user_data):
+        pass
+
+    def calculate_fuzz_ratio_sort(self, search_string, action1_label, action2_label):
+        if search_string == "":
+            self.highest_fuzz_score = 0
+            # sort alphabetically
+            if action1_label < action2_label:
+                return -1
+            if action1_label > action2_label:
+                return 1
+            return 0
+
+        fuzz_score_1 = fuzz.ratio(search_string.lower(), action1_label.lower())
+        fuzz_score_2 = fuzz.ratio(search_string.lower(), action2_label.lower())
+
+        if fuzz_score_1 > self.highest_fuzz_score:
+            self.highest_fuzz_score = fuzz_score_1
+        if fuzz_score_2 > self.highest_fuzz_score:
+            self.highest_fuzz_score = fuzz_score_2
+
+        if fuzz_score_1 > fuzz_score_2:
+            return -1
+        if fuzz_score_1 < fuzz_score_2:
+            return 1
+        return 0
+
+    def calculate_fuzz_ratio_filter(self, search_string, label):
+        if search_string == "":
+            # Collapse all
+            self.set_expanded(False)
+            # Show all
+            return True
+
+        fuzz_score = fuzz.ratio(search_string.lower(), label.lower())
+
+        MIN_FUZZY_SCORE = 20
+        if fuzz_score >= MIN_FUZZY_SCORE:
+            # Expand
+            self.set_expanded(True)
+            return True
+        return False
+
+    def search(self):
+        self.invalidate_filter()
+        self.invalidate_sort()
+
+class PluginExpander(ActionChooserExpander):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.build()
+        self.add_action_holders(*args, **kwargs)
+
+    def build(self):
         # Texts
-        self.set_title(plugin_name)
-        self.set_subtitle(plugin_dir["object"].plugin_id)
+        self.set_title(self.plugin_name)
+        self.set_subtitle(self.plugin_dir["object"].plugin_id)
 
         self.add_prefix(self.plugin_dir["object"].get_selector_icon())
 
+    def add_action_holders(self, *args, **kwargs):
         action_holders: set[ActionHolder] = set(self.plugin_dir["object"].action_holders.values())
-        action_holder_groups: dict[str, list[ActionHolder]] = self.plugin_dir["object"].action_holder_groups
+        action_holder_groups: set[ActionHolderGroup] = self.plugin_dir["object"].action_holder_groups
 
-        added_holders: list[ActionHolder] = []
+        added_holders: set[ActionHolder] = set()
 
         # Add Groups
-        for i, (key, holder_list) in enumerate(action_holder_groups.items()):
-            action_group = ActionGroupExpander(plugin_group, key, holder_list)
+        for group in action_holder_groups:
+            action_group = ActionGroupExpander(group, *args, **kwargs)
             action_group.add_css_class("action-chooser-item")
             action_group.add_css_class("action-chooser-group")
 
-            if i == len(action_holder_groups) - 1:
-                action_group.add_css_class("action-chooser-group-last")
-
             self.add_row(action_group)
-            added_holders.extend(holder_list)
+            added_holders.update(group.get_action_holders())
 
-        added_holders_set = set(added_holders)
-        not_added_holders = action_holders - added_holders_set
+        not_added_holders = action_holders - added_holders
 
         # Add leftovers
         for holder in not_added_holders:
@@ -243,16 +305,6 @@ class PluginExpander(BetterExpander):
             action_row.add_css_class("action-chooser-item")
 
             self.add_row(action_row)
-
-        self.highest_fuzz_score = 0
-
-        # Init sort func
-        self.set_sort_func(self.sort_func, None)
-        # Init filter func
-
-    def search(self):
-        self.invalidate_filter()
-        self.invalidate_sort()
 
     def sort_func(self, row1, row2, user_data):
         # Returns -1 if row1 should be brefore row2, 0 if they are equal, and 1 otherwise
@@ -271,92 +323,65 @@ class PluginExpander(BetterExpander):
         else:
             action2_label = row2.label.get_label()
 
-        if search_string == "":
-            self.highest_fuzz_score = 0
-            # sort alphabetically
-            if action1_label < action2_label:
-                return -1
-            if action1_label > action2_label:
-                return 1
-            return 0
-
-        fuzz_score_1 = fuzz.ratio(search_string.lower(), action1_label.lower())
-        fuzz_score_2 = fuzz.ratio(search_string.lower(), action2_label.lower())
-
-        if fuzz_score_1 > self.highest_fuzz_score:
-            self.highest_fuzz_score = fuzz_score_1
-        if fuzz_score_2 > self.highest_fuzz_score:
-            self.highest_fuzz_score = fuzz_score_2
-
-        if fuzz_score_1 > fuzz_score_2:
-            return -1
-        if fuzz_score_1 < fuzz_score_2:
-            return 1
-        return 0
+        return self.calculate_fuzz_ratio_sort(search_string, action1_label, action2_label)
     
     def filter_func(self, row: "PluginActionRow", user_data):
         search_string = self.plugin_group.action_chooser.search_entry.get_text()
-
-        # if row.action_holder.get_input_compatibility(self.plugin_group.action_chooser.identifier) <= ActionInputSupport.NONE:
-            # return False
-
-        if search_string == "":
-            # Collapse all
-            self.set_expanded(False)
-            # Show all
-            return True
         
         if isinstance(row, ActionGroupExpander):
             label = row.get_title()
         else:
             label = row.label.get_label()
-        
-        fuzz_score = fuzz.ratio(search_string.lower(), label.lower())
 
-        MIN_FUZZY_SCORE = 20
-        if fuzz_score >= MIN_FUZZY_SCORE:
-            # Expand
-            self.set_expanded(True)
-            return True
-        return False
+        return self.calculate_fuzz_ratio_filter(search_string, label)
     
     def set_identifier(self, input_type: InputIdentifier):
         self.input_type = input_type
         for row in self.get_rows():
-            if isinstance(row, PluginExpander):
-                row.set_identifier(input_type)
+            if isinstance(row, ActionGroupExpander):
+                if not self.set_group_identifier(input_type, row.holder_group, row):
+                    continue
+            row.set_identifier(input_type)
         self.invalidate_filter()
 
-class ActionGroupExpander(BetterExpander):
-    def __init__(self, plugin_group, group_name, action_holders, **kwargs):
-        super().__init__(**kwargs)
-        self.input_type: InputIdentifier = None
-        self.plugin_group = plugin_group
+    def set_group_identifier(self, input_type: InputIdentifier, group: ActionHolderGroup, row):
+        group_input_compatibility = group.get_input_compatibility(input_type)
+
+        if group_input_compatibility <= ActionInputSupport.UNSUPPORTED and group.get_hide_on_group_support():
+            row.hide()
+            return False
+        return True
+
+class ActionGroupExpander(ActionChooserExpander):
+    def __init__(self, holder_group, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.holder_group: ActionHolderGroup = holder_group
+        self.build()
+        self.add_action_holders()
+
+    def build(self):
+        # Texts
+        self.set_title(self.holder_group.get_group_name())
 
         folder_icon = Gtk.Image.new_from_icon_name("folder-symbolic")
         self.add_prefix(folder_icon)
-
-        # Texts
-        self.set_title(group_name)
-
-        for holder in action_holders:
-            action_row = PluginActionRow(self, holder)
-            action_row.add_css_class("action-chooser-group-item")
-
-            self.add_row(action_row)
-
-        self.highest_fuzz_score = 0
-
-        # Init sort func
-        self.set_sort_func(self.sort_func, None)
-        # Init filter func
-        self.set_filter_func(self.filter_func, None)
 
         # set icon to not activated
         image = self.get_arrow_image()
         image.set_css_classes(["expander-arrow-not-activated"])
 
         self.connect("notify::expanded", self.on_expanded)
+
+        self.warning_icon = Gtk.Image(icon_name="dialog-warning-symbolic",
+                                      hexpand=True, halign=Gtk.Align.END, margin_end=3, visible=False)
+        self.add_suffix(self.warning_icon)
+
+    def add_action_holders(self):
+        for holder in self.holder_group.get_action_holders():
+            action_row = PluginActionRow(self, holder)
+            action_row.add_css_class("action-chooser-group-item")
+
+            self.add_row(action_row)
 
     def on_expanded(self, *args):
         # This expander is nested in another expander causing the icon to be stuck at the expanded state - this fixes it
@@ -366,10 +391,6 @@ class ActionGroupExpander(BetterExpander):
         else:
             image.set_css_classes(["expander-arrow-not-activated"])
 
-    def search(self):
-        self.invalidate_filter()
-        self.invalidate_sort()
-
     def sort_func(self, row1, row2, user_data):
         # Returns -1 if row1 should be brefore row2, 0 if they are equal, and 1 otherwise
         search_string = self.plugin_group.action_chooser.search_entry.get_text()
@@ -377,55 +398,58 @@ class ActionGroupExpander(BetterExpander):
         action1_label = row1.label.get_label()
         action2_label = row2.label.get_label()
 
-        if search_string == "":
-            self.highest_fuzz_score = 0
-            # sort alphabetically
-            if action1_label < action2_label:
-                return -1
-            if action1_label > action2_label:
-                return 1
-            return 0
-
-        fuzz_score_1 = fuzz.ratio(search_string.lower(), action1_label.lower())
-        fuzz_score_2 = fuzz.ratio(search_string.lower(), action2_label.lower())
-
-        if fuzz_score_1 > self.highest_fuzz_score:
-            self.highest_fuzz_score = fuzz_score_1
-        if fuzz_score_2 > self.highest_fuzz_score:
-            self.highest_fuzz_score = fuzz_score_2
-
-        if fuzz_score_1 > fuzz_score_2:
-            return -1
-        if fuzz_score_1 < fuzz_score_2:
-            return 1
-        return 0
+        return self.calculate_fuzz_ratio_sort(search_string, action1_label, action2_label)
 
     def filter_func(self, row: "PluginActionRow", user_data):
         search_string = self.plugin_group.action_chooser.search_entry.get_text()
 
-        # if row.action_holder.get_input_compatibility(self.plugin_group.action_chooser.identifier) <= ActionInputSupport.NONE:
-        # return False
+        label = row.label.get_label()
 
-        if search_string == "":
-            # Collapse all
-            self.set_expanded(False)
-            # Show all
-            return True
-
-        fuzz_score = fuzz.ratio(search_string.lower(), row.label.get_label().lower())
-
-        MIN_FUZZY_SCORE = 20
-        if fuzz_score >= MIN_FUZZY_SCORE:
-            # Expand
-            self.set_expanded(True)
-            return True
-        return False
+        return self.calculate_fuzz_ratio_filter(search_string, label)
 
     def set_identifier(self, input_type: InputIdentifier):
+        compatibility = self.holder_group.get_input_compatibility(input_type)
+
+        def show_compatibility(show: bool = False, tooltip: str = None, icon_name: str = None):
+            self.warning_icon.set_visible(show)
+
+            if icon_name:
+                self.warning_icon.set_from_icon_name(icon_name)
+
+            if tooltip:
+                self.set_tooltip_text(tooltip)
+                if show:
+                    self.warning_icon.set_tooltip_text(tooltip)
+
+        if compatibility <= ActionInputSupport.UNSUPPORTED and self.holder_group.get_hide_on_group_support():
+            self.hide()
+            return
+        elif compatibility <= ActionInputSupport.UNSUPPORTED and not self.holder_group.get_hide_on_group_support():
+            warning_icon = "dialog-error-symbolic"
+            tooltip_text = f"Actions in this group are not compatible with {input_type.input_type}"
+            show_warning = True
+            self.set_sensitive(False)
+        elif compatibility == ActionInputSupport.UNTESTED:
+            warning_icon = "dialog-warning-symbolic"
+            tooltip_text = f"Actions in this group might not be compatible with {input_type.input_type}"
+            show_warning = True
+            self.set_sensitive(True)
+        elif compatibility >= ActionInputSupport.SUPPORTED:
+            warning_icon = None
+            tooltip_text = ""
+            show_warning = False
+            self.set_sensitive(True)
+        else:
+            warning_icon = None
+            tooltip_text = ""
+            show_warning = False
+            self.set_sensitive(True)
+
+        show_compatibility(show=show_warning, tooltip=tooltip_text, icon_name=warning_icon)
+
         self.input_type = input_type
         for row in self.get_rows():
-            if isinstance(row, PluginExpander):
-                row.set_identifier(input_type)
+            row.set_identifier(input_type)
         self.invalidate_filter()
 
 class PluginActionRow(Adw.ActionRow):
@@ -484,16 +508,17 @@ class PluginActionRow(Adw.ActionRow):
 
     def set_identifier(self, identifier: InputIdentifier):
         action_input_compatibility = self.action_holder.get_input_compatibility(identifier)
+        print(f"{action_input_compatibility} : {identifier} : {self.action_holder.action_name}")
 
         if action_input_compatibility <= ActionInputSupport.UNSUPPORTED:
             self.warning_icon.set_from_icon_name("dialog-error-symbolic")
-            self.set_tooltip_text(f"action is not compatible with {identifier.input_type}")
+            self.set_tooltip_text(f"Action is not compatible with {identifier.input_type}")
             self.show_warning(True)
             self.set_sensitive(False)
             
         elif action_input_compatibility == ActionInputSupport.UNTESTED:
             self.warning_icon.set_from_icon_name("dialog-warning-symbolic")
-            self.warning_icon.set_tooltip_text(f"action might not be compatible with {identifier.input_type}")
+            self.warning_icon.set_tooltip_text(f"Action might not be compatible with {identifier.input_type}")
             self.set_tooltip_text("")
             self.show_warning(True)
             self.set_sensitive(True)

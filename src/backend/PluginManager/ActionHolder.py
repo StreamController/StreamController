@@ -12,6 +12,7 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+from copy import deepcopy
 
 # Import own modules
 from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
@@ -72,7 +73,7 @@ class ActionHolder:
         self.action_name = action_name
         self.icon = icon
         self.min_app_version = min_app_version
-        self.action_support = action_support
+        self.action_support = deepcopy(action_support)
         
     def get_is_compatible(self) -> bool:
         if self.min_app_version is not None:

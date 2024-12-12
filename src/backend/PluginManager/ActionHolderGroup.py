@@ -11,6 +11,13 @@ class ActionHolderGroup:
         Input.Dial: ActionInputSupport.UNTESTED,
         Input.Touchscreen: ActionInputSupport.UNTESTED,
     }):
+        """
+        Args:
+            group_name: The name of the group.
+            action_holders: All Action Holders contained in this group.
+            hide_on_group_support: Hides the Group in the Action Chooser when the Group is not Supported.
+            group_support: The Support types for the various Input Types.
+        """
         self._group_name: str = group_name
         self._action_holders: set[ActionHolder] = set(action_holders)
         self._group_support = deepcopy(group_support)

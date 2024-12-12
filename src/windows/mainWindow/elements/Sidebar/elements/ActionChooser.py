@@ -508,7 +508,6 @@ class PluginActionRow(Adw.ActionRow):
 
     def set_identifier(self, identifier: InputIdentifier):
         action_input_compatibility = self.action_holder.get_input_compatibility(identifier)
-        print(f"{action_input_compatibility} : {identifier} : {self.action_holder.action_name}")
 
         if action_input_compatibility <= ActionInputSupport.UNSUPPORTED:
             self.warning_icon.set_from_icon_name("dialog-error-symbolic")

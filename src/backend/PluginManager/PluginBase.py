@@ -260,6 +260,10 @@ class PluginBase(rpyc.Service):
         
         self.action_holders[action_holder.action_id] = action_holder
 
+    def add_action_holders(self, action_holders: list[ActionHolder]):
+        for action_holder in action_holders:
+            self.add_action_holder(action_holder)
+
     def add_event_holder(self, event_holder: EventHolder) -> None:
         """
         Adds a EventHolder to the Plugin
@@ -278,8 +282,15 @@ class PluginBase(rpyc.Service):
 
         self.event_holders[event_holder.event_id] = event_holder
 
+    def add_event_holders(self, event_holders: list[EventHolder]):
+        for event_holder in event_holders:
+            self.add_event_holder(event_holder)
+
     def add_action_holder_group(self, action_holder_group: ActionHolderGroup) -> None:
         self.action_holder_groups.add(action_holder_group)
+
+    def add_action_holder_groups(self, action_holder_groups: list[ActionHolderGroup]) -> None:
+        self.action_holder_groups.update(action_holder_groups)
 
     def connect_to_event(self, event_id: str, callback: callable) -> None:
         """

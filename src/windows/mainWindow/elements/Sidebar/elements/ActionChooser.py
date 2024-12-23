@@ -345,9 +345,11 @@ class PluginExpander(ActionChooserExpander):
         self.invalidate_filter()
 
     def set_group_identifier(self, input_type: InputIdentifier, group: ActionHolderGroup, row):
-        group_input_compatibility = group.get_input_compatibility(input_type)
+        return True
+        ## In case we want to hide groups later
+        group_input_compatibility = group.get_min_input_compatibility(input_type)
 
-        if group_input_compatibility <= ActionInputSupport.UNSUPPORTED and group.get_hide_on_group_support():
+        if group_input_compatibility <= ActionInputSupport.UNSUPPORTED:
             row.hide()
             return False
         return True
@@ -408,7 +410,7 @@ class ActionGroupExpander(ActionChooserExpander):
         return self.calculate_fuzz_ratio_filter(search_string, label)
 
     def set_identifier(self, input_type: InputIdentifier):
-        compatibility = self.holder_group.get_input_compatibility(input_type)
+        compatibility = self.holder_group.get_min_input_compatibility(input_type)
 
         def show_compatibility(show: bool = False, tooltip: str = None, icon_name: str = None):
             self.warning_icon.set_visible(show)
@@ -421,29 +423,18 @@ class ActionGroupExpander(ActionChooserExpander):
                 if show:
                     self.warning_icon.set_tooltip_text(tooltip)
 
-        if compatibility <= ActionInputSupport.UNSUPPORTED and self.holder_group.get_hide_on_group_support():
-            self.hide()
-            return
-        elif compatibility <= ActionInputSupport.UNSUPPORTED and not self.holder_group.get_hide_on_group_support():
+        if self.holder_group.get_min_input_compatibility(input_type) < ActionInputSupport.UNTESTED:
             warning_icon = "dialog-error-symbolic"
-            tooltip_text = f"Actions in this group are not compatible with {input_type.input_type}"
+            tooltip_text = f"Some actions in this group are not compatible with {input_type.input_type}"
             show_warning = True
-            self.set_sensitive(False)
-        elif compatibility == ActionInputSupport.UNTESTED:
+        elif self.holder_group.get_min_input_compatibility(input_type) == ActionInputSupport.UNTESTED:
             warning_icon = "dialog-warning-symbolic"
-            tooltip_text = f"Actions in this group might not be compatible with {input_type.input_type}"
+            tooltip_text = f"Some actions in this group might not be compatible with {input_type.input_type}"
             show_warning = True
-            self.set_sensitive(True)
-        elif compatibility >= ActionInputSupport.SUPPORTED:
-            warning_icon = None
-            tooltip_text = ""
-            show_warning = False
-            self.set_sensitive(True)
         else:
             warning_icon = None
             tooltip_text = ""
             show_warning = False
-            self.set_sensitive(True)
 
         show_compatibility(show=show_warning, tooltip=tooltip_text, icon_name=warning_icon)
 

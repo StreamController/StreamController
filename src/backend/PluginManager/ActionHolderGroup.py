@@ -6,11 +6,7 @@ from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 
 
 class ActionHolderGroup:
-    def __init__(self, group_name: str, action_holders: list[ActionHolder], hide_on_group_support: bool = False, group_support: dict[Input, ActionHolder] = {
-        Input.Key: ActionInputSupport.UNTESTED,
-        Input.Dial: ActionInputSupport.UNTESTED,
-        Input.Touchscreen: ActionInputSupport.UNTESTED,
-    }):
+    def __init__(self, group_name: str, action_holders: list[ActionHolder]):
         """
         Args:
             group_name: The name of the group.
@@ -20,8 +16,6 @@ class ActionHolderGroup:
         """
         self._group_name: str = group_name
         self._action_holders: set[ActionHolder] = set(action_holders)
-        self._group_support = deepcopy(group_support)
-        self._hide_on_group_support: bool = hide_on_group_support
 
     def add_action_holder(self, action_holder: ActionHolder):
             self._action_holders.add(action_holder)
@@ -47,5 +41,22 @@ class ActionHolderGroup:
     def get_hide_on_group_support(self):
         return self._hide_on_group_support
 
-    def get_input_compatibility(self, identifier: InputIdentifier) -> ActionInputSupport:
-        return self._group_support.get(type(identifier), ActionInputSupport.UNSUPPORTED)
+    def get_min_input_compatibility(self, action_input_support: InputIdentifier) -> ActionInputSupport:
+        for action_holder in self._action_holders:
+            if action_holder.get_input_compatibility(action_input_support) == ActionInputSupport.UNSUPPORTED:
+                return ActionInputSupport.UNSUPPORTED
+        
+        for action_holder in self._action_holders:
+            if action_holder.get_input_compatibility(action_input_support) == ActionInputSupport.UNTESTED:
+                return ActionInputSupport.UNTESTED
+            
+        return ActionInputSupport.SUPPORTED
+            
+    
+    def get_action_holders_with_min_action_input_support(self, action_input_support: ActionInputSupport) -> set[ActionHolder]:
+        action_holders = set()
+        for action_holder in self._action_holders:
+            if action_holder.get_input_compatibility(action_holder.action_id) >= action_input_support:
+                action_holders.add(action_holder)
+
+        return action_holders

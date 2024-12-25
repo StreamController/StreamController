@@ -114,6 +114,18 @@ class BetterExpander(Adw.ExpanderRow):
                 return i
         
         raise ValueError("Child not found")
+    
+    def get_arrow_image(self) -> Gtk.Image:
+        box: Gtk.Box = self.get_child()
+        list_box: Gtk.ListBox = box.get_first_child()
+
+        adw_action_row: Adw.ActionRow = list_box.get_first_child()
+        box: Gtk.Box = adw_action_row.get_child()
+
+        box: Gtk.Box = box.get_last_child()
+        image: Gtk.Image = box.get_last_child()
+
+        return image
 
 
 class BetterPreferencesGroup(Adw.PreferencesGroup):

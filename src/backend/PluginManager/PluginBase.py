@@ -365,9 +365,22 @@ class PluginBase(rpyc.Service):
             return {}
         with open(self.settings_path, "r") as f:
             settings = json.load(f)
-            settings = settings.get("settings", {})
-            return settings
 
+            if settings.get("file-version") == "2.0":
+                # Is newest version, return settings
+                return settings.get("settings", {})
+            
+            else:
+                # Is the old format, convert it
+                new_settings = {
+                    "file-version": "2.0",
+                    "settings": settings
+                }
+                with open(self.settings_path, "w") as f:
+                    json.dump(new_settings, f, indent=4)
+
+                return settings
+                
     def get_manifest(self):
         """
         Retrieves the content of the manifest file from the plugin's directory if it exists.
@@ -411,10 +424,23 @@ class PluginBase(rpyc.Service):
 
         with open(self.settings_path, "r+") as f:
             content = json.load(f)
-            content["settings"] = settings
+
+            new_content = content.copy()
+
+            if content.get("file-version") == "2.0":
+                new_content["settings"] = settings
+            
+            else:
+                new_content = {
+                    "file-version": "2.0",
+                    "settings": settings
+                }
+
             f.seek(0)
             json.dump(content, f, indent=4)
             f.truncate()
+            return
+
 
     def add_css_stylesheet(self, path):
         """

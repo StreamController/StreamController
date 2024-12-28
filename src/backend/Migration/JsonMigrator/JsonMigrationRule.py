@@ -1,17 +1,9 @@
-from src.backend.Migration.MigrationBase import MigrationBase
+from ..MigrationRule import MigrationRule, MigrationException
 from abc import ABC, abstractmethod
-from copy import deepcopy
-import json
-from typing import List, Callable
-from packaging.version import Version
 
-class MigrationException(Exception):
-    pass
-
-class MigrationRule(ABC):
+class JsonMigrationRule(MigrationRule):
     def __init__(self, source: str, destination: str = None):
-        self.source = source
-        self.destination = destination
+        super().__init__(source, destination)
 
     @abstractmethod
     def apply(self, data):
@@ -50,48 +42,15 @@ class MigrationRule(ABC):
         except Exception as e:
             raise MigrationException(f"Error while deleting nested dictionary! {e}")
 
-    @staticmethod
-    def _copy_data(data):
-        return deepcopy(data)
-
-    @staticmethod
-    def copy_data(func):
-        def wrapper(self, data, *args, **kwargs):
-            copied_data = MigrationRule._copy_data(data)
-            try:
-                func(self, copied_data, *args, **kwargs)
-                data.clear()
-                data.update(copied_data)
-            except Exception as e:
-                print(e)
-        return wrapper
-
-class MoveRule(MigrationRule):
+class MoveRule(JsonMigrationRule):
     @MigrationRule.copy_data
     def apply(self, data):
         value = MoveRule._get_nested(data, self.source)
         MoveRule._set_nested(data, self.destination, value)
         MoveRule._delete_nested(data, self.source)
 
-class DeleteRule(MigrationRule):
+class DeleteRule(JsonMigrationRule):
     @MigrationRule.copy_data
     def apply(self, data):
         # Delete the value at the source path
         DeleteRule._delete_nested(data, self.source)
-
-class JsonMigrator(MigrationBase):
-    def __init__(self, migration_file_path: str, from_version: str, to_version: str,
-                 version_conditions: List[Callable[[Version, Version], bool]] = None) -> None:
-        super().__init__(migration_file_path, from_version, to_version, version_conditions)
-
-    def migrate(self, migration_rules: list[MigrationRule]):
-        if not self.validate_version():
-            return
-
-        file = self.read_file()
-        json_data = json.loads(file)
-
-        for rule in migration_rules:
-            rule.apply(json_data)
-
-        return json_data

@@ -38,7 +38,8 @@ def version_checker(version: Version, conditions: List[Tuple[Callable[[Version, 
 
 class MigrationBase(ABC):
     def __init__(self, migration_file_path: str, from_version: str, to_version: str,
-                 version_conditions: List[Callable[[Version, Version], bool]]) -> None:
+                 version_conditions: List[Callable[[Version, Version], bool]],
+                 depends_on: "MigrationBase" = None) -> None:
         """
         The MigrationBase is used for all Migrators.
 
@@ -56,6 +57,9 @@ class MigrationBase(ABC):
         self.migration_from: Version = version.parse(from_version)
         self.migration_to: Version = version.parse(to_version)
         self.migration_version_conditions: List[Callable[[Version, Version], bool]] = [operator.lt] + version_conditions
+        self.dependant_migration: "MigrationBase" = depends_on
+
+        self.migration_ran: bool = False
 
     # Migration Methods
 
@@ -74,7 +78,10 @@ class MigrationBase(ABC):
         for migration_condition in self.migration_version_conditions:
             conditions.append((migration_condition, self.migration_to))
 
-        return version_checker(self.migration_from, conditions)
+        version_checks = version_checker(self.migration_from, conditions)
+        self.migration_ran = version_checks
+
+        return version_checks
 
     # File Writers
 

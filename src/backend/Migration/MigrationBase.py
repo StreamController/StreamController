@@ -57,20 +57,26 @@ class MigrationBase(ABC):
         self.migration_to: Version = version.parse(to_version)
         self.migration_version_conditions: List[Callable[[Version, Version], bool]] = [operator.lt] + version_conditions
 
+    # Migration Methods
+
     @abstractmethod
-    def migrate(self):
+    def migrate(self, *args, **kwargs):
         pass
 
     def validate_migration(self):
         pass
 
-    def from_version_matcher(self, version_check: str) -> bool:
+    # Version Checking
+
+    def validate_version(self) -> bool:
         conditions: List[Tuple[Callable[[Version, Version], bool], Version]] = []
 
         for migration_condition in self.migration_version_conditions:
             conditions.append((migration_condition, self.migration_to))
 
-        version_checker(self.migration_from, conditions)
+        return version_checker(self.migration_from, conditions)
+
+    # File Writers
 
     def write_file(self, data) -> bool:
         if os.path.isdir(self.migration_file_path):
@@ -83,7 +89,7 @@ class MigrationBase(ABC):
         except:
             return False
 
-    def read_file(self):
+    def read_file(self) -> str:
         if os.path.isfile(self.migration_file_path):
             with open(self.migration_file_path, "r") as file:
                 return file.read()

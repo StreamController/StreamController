@@ -14,17 +14,19 @@ class JsonAction(MigrationAction, ABC):
         def wrapper(self, data, *args, **kwargs):
             copied_data = self._copy_data(data)
             try:
-                func(self, copied_data, *args, **kwargs)
-                data.clear()
-                data.update(copied_data)
+                if func(self, copied_data, *args, **kwargs):
+                    data.clear()
+                    data.update(copied_data)
+                    return True
+                return False
             except Exception as e:
-                print(f"ERROR: {e}")
-
+                print(f"ERROR WHILE COPYING/MIGRATING DATA {data}: {e}")
+                return False
         return wrapper
 
     @copy_data
     @abstractmethod
-    def apply(self, data):
+    def apply(self, data) -> bool:
         pass
 
     def _copy_data(self, data):

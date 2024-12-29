@@ -1,106 +1,77 @@
-import os
-from abc import ABC, abstractmethod
-from typing import List, Tuple, Callable
+from abc import abstractmethod, ABC
 
-from packaging import version
-from packaging.version import Version
-import operator
-
-def version_checker(version: Version, conditions: List[Tuple[Callable[[Version, Version], bool], Version]]) -> bool:
-    """
-    Generalized function to check a version against multiple conditions.
-
-    Args:
-        version (Version): The version to check.
-        conditions (List[Tuple[Callable[[Version, Version], bool], Version]]):
-            A list of conditions. Each condition is a tuple where:
-                - The first element is a callable that takes two Versions and returns a bool.
-                - The second element is a Version instance to compare against.
-
-    Returns:
-        bool: True if all conditions are satisfied, False otherwise.
-
-    Example:
-        >>> import operator
-        >>> from packaging.version import Version
-        >>> conditions = [
-        ...     (operator.ge, Version("1.0.0")),   # Version >= 1.0.0
-        ...     (operator.lt, Version("2.0.0")),   # Version < 2.0.0
-        ...     (operator.ne, Version("1.5.0")),   # Version != 1.5.0
-        ... ]
-        >>> version_checker(Version("1.5.0.beta.7"), conditions)
-        True
-
-        >>> version_checker(Version("1.5.0"), conditions)
-        False
-    """
-    return all(comparator(version, bound) for comparator, bound in conditions)
+from src.backend.Migration.MigrationCondition import MigrationCondition
+from src.backend.Migration.MigrationAction import MigrationAction
+from loguru import logger as log
 
 class MigrationBase(ABC):
-    def __init__(self, migration_file_path: str, from_version: str, to_version: str,
-                 version_conditions: List[Callable[[Version, Version], bool]],
-                 depends_on: "MigrationBase" = None) -> None:
-        """
-        The MigrationBase is used for all Migrators.
+    def __init__(self,
+                 migration_actions: list[MigrationAction],
+                 migration_conditions: list[MigrationCondition],
+                 dependant_migrator: "MigrationBase" = None,
+                 ignore_backup_success: bool = False):
+        self.migration_actions: list[MigrationAction] = migration_actions # Actions for the migration
+        self.migration_conditions: list[MigrationCondition] = migration_conditions # Conditions when to apply migration
+        self.dependant_migrator: "MigrationBase" = dependant_migrator # Migrator that should run before this one
+        self.ignore_backup_success: bool = ignore_backup_success
 
-        Args:
-            migration_file_path (str): The path to the migration file.
-            from_version (str): The version to compare against.
-            to_version (str): The version to compare against.
-            version_conditions (List[Callable[[Version, Version], bool]]): A list of conditions. The from_version will always be compared to the to_version and it will always contain a from_version < to_version check.
+        self.migration_ran: bool = False # If the migration already ran or not
+        self.migration_success: bool = False # If the migration was successful
 
-        Example:
-            >>> import operator
-            >>> migrator = MigrationBase("~/.config/StreamController/test.json", "1.0.0.beta.5", "1.0.0", [operator.ne])
-        """
-        self.migration_file_path: str = migration_file_path
-        self.migration_from: Version = version.parse(from_version)
-        self.migration_to: Version = version.parse(to_version)
-        self.migration_version_conditions: List[Callable[[Version, Version], bool]] = [operator.lt] + version_conditions
-        self.dependant_migration: "MigrationBase" = depends_on
+    def migrate(self) -> bool:
+        """Public function that gets called for migration"""
 
-        self.migration_ran: bool = False
+        log.info(f"{self.__class__.__name__}: START RUNNING MIGRATION ROUTINE")
 
-    # Migration Methods
+        # Run dependant migrator if it exists
+        if self.dependant_migrator:
+            log.info(f"{self.__class__.__name__}: DEPENDANT MIGRATOR FOUND. MIGRATOR={self.dependant_migrator.__class__.__name__}")
+            self._run_dependant_migrator()
+
+            # Todo: Implement better way to check if next migrator should run
+            log.info(f"{self.__class__.__name__}: DEPENDANT MIGRATOR ({self.dependant_migrator.__class__.__name__}) SUCCESS=({self.dependant_migrator.migration_success})")
+            if not self.dependant_migrator.migration_success:
+                return False
+
+        # Check if backup is successful or if it can be ignored
+        log.info(f"{self.__class__.__name__}: STARTING BACKUP FOR MIGRATOR")
+        log.info(f"{self.__class__.__name__}: IGNORING BACKUP FAILURE ({self.ignore_backup_success})")
+        if not self._backup() or self.ignore_backup_success:
+            return False
+
+        log.info(f"{self.__class__.__name__}: CHECKING MIGRATION CONDITIONS")
+        # Only start migrating if conditions are met
+        if not self._check_conditions():
+            return False
+
+        # Try migration
+        log.info(f"{self.__class__.__name__}: TRYING TO MIGRATE")
+        if self._migrate():
+            self.migration_success = True
+
+
+        log.info(f"{self.__class__.__name__}: MIGRATION SUCCESS={self.migration_success}")
+
+        self.migration_ran = True
+
+    def _run_dependant_migrator(self):
+        if not self.dependant_migrator.migration_ran:
+            log.info(f"RUNNING DEPENDANT MIGRATOR: {self.__class__.__name__}")
+            self.dependant_migrator.migrate()
 
     @abstractmethod
-    def migrate(self, *args, **kwargs):
+    def _migrate(self) -> bool:
+        """Function that should be overridden for migration"""
         pass
 
-    def validate_migration(self):
+    def _check_conditions(self) -> bool:
+        return all(condition.check() for condition in self.migration_conditions)
+
+    def _write_file(self):
         pass
 
-    # Version Checking
-
-    def validate_version(self) -> bool:
-        conditions: List[Tuple[Callable[[Version, Version], bool], Version]] = []
-
-        for migration_condition in self.migration_version_conditions:
-            conditions.append((migration_condition, self.migration_to))
-
-        version_checks = version_checker(self.migration_from, conditions)
-        self.migration_ran = version_checks
-
-        return version_checks
-
-    # File Writers
-
-    def write_file(self, data) -> bool:
-        if os.path.isdir(self.migration_file_path):
-            return False
-
-        try:
-            with open(self.migration_file_path, "w") as f:
-                f.write(data)
-            return True
-        except:
-            return False
-
-    def read_file(self) -> str:
-        if os.path.isfile(self.migration_file_path):
-            with open(self.migration_file_path, "r") as file:
-                return file.read()
-        return None
-
-    def backup(self):
+    def _read_file(self):
         pass
+
+    def _backup(self) -> bool:
+        return True

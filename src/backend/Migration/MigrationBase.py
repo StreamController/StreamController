@@ -65,7 +65,13 @@ class MigrationBase(ABC):
         pass
 
     def _check_conditions(self) -> bool:
-        return all(condition.check() for condition in self.migration_conditions)
+        results = []
+        for condition in self.migration_conditions:
+            log.info(f"{self.__class__.__name__}: CHECKING CONDITIONS FOR MIGRATION")
+            result = condition.check()
+            results.append(result)
+
+        return all(results)
 
     def _write_file(self):
         pass

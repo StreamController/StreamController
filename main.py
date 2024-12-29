@@ -69,13 +69,49 @@ main_path = os.path.abspath(os.path.dirname(__file__))
 def write_logs(record):
     gl.logs.append(record)
 
+def log_filter(record, level_filter):
+    return level_filter in record["level"].name
+
 def config_logger():
     log.remove()
+
+    log.level("MIGRATION_TRACE", no=5, color="<cyan>")
+    log.level("MIGRATION_INFO", no=10, color="<white>")
+    log.level("MIGRATION_WARNING", no=20, color="<yellow>")
+    log.level("MIGRATION_DEBUG", no=30, color="<blue>")
+    log.level("MIGRATION_SUCCESS", no=25, color="<bold><green>")
+    log.level("MIGRATION_ERROR", no=40, color="<red>")
+
+    log.level("PLUGIN_TRACE", no=5, color="<cyan>")
+    log.level("PLUGIN_INFO", no=10, color="<white>")
+    log.level("PLUGIN_WARNING", no=20, color="<yellow>")
+    log.level("PLUGIN_DEBUG", no=30, color="<blue>")
+    log.level("PLUGIN_SUCCESS", no=25, color="<bold><green>")
+    log.level("PLUGIN_ERROR", no=40, color="<red>")
+
     # Create log files
     log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
+
+    log.add(sink=os.path.join(gl.DATA_PATH, "logs", "migration.log"),
+            level="MIGRATION_TRACE",
+            rotation="3 days",
+            backtrace=True,
+            diagnose=True,
+            filter=lambda record: log_filter(record, "MIGRATION"))
+
+    log.add(sink=os.path.join(gl.DATA_PATH, "logs", "plugin.log"),
+            level="PLUGIN_TRACE",
+            rotation="3 days",
+            backtrace=True,
+            diagnose=True,
+            filter=lambda record: log_filter(record, "PLUGIN"))
+
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
+
     log.add(write_logs, level="TRACE")
+
+    log.log("MIGRATION_ERROR", "TESTING")
 
 class Main:
     def __init__(self, application_id, deck_manager):
@@ -88,8 +124,6 @@ class Main:
 
 @log.catch
 def load():
-    config_logger()
-
     log.info("Loading app")
     gl.deck_manager = DeckManager()
     gl.deck_manager.load_decks()
@@ -257,14 +291,14 @@ def main():
 
     reset_all_decks()
 
+    config_logger()
+
     migration_manager = MigrationManager()
     # Add migrators
     # Todo: Implement
     print("MIGRATION")
     settings_1_5_0 = Settings_1_5_0_b8()
     migration_manager.add_base_migrator(settings_1_5_0)
-    #migration_manager.add_migrator(Migrator_1_5_0())
-    #migration_manager.add_migrator(Migrator_1_5_0_beta_5())
     # Run migrators
     migration_manager.run_migration()
 

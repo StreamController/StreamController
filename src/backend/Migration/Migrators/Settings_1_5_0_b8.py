@@ -1,27 +1,65 @@
+import operator
+import os
+from concurrent.futures import ThreadPoolExecutor
+from unittest import result
+
 from src.backend.Migration.JsonMigrator.JsonAction import JsonAction
 from src.backend.Migration.JsonMigrator.JsonMigrator import JsonMigrator
-from src.backend.Migration.MigrationActions.JsonActions import MoveAction, DeleteAction
+from src.backend.Migration.MigrationActions.JsonActions import MoveAction, AddAction, CompareAction
+from src.backend.Migration.MigrationConditions.VersionCondition import VersionCondition
 import json
+import globals as gl
+from loguru import logger as log
 
 class Settings_1_5_0_b8(JsonMigrator):
     def __init__(self,
                  dependant_migrator: "MigrationBase" = None,
                  ignore_backup_success: bool = False):
-        migration_actions: list[JsonAction] = [MoveAction(["*"], ["settings"]),
-                                               DeleteAction(["settings", "1.5.0"])]
-        migration_conditions = []
+        migration_actions: list[JsonAction] = [CompareAction(["version"], None), MoveAction(["*"], ["settings"]), AddAction(["version"], "1.0")]
+        migration_conditions = [VersionCondition(gl.app_version, "1.5.0.beta.8", operator.lt)]
 
         super().__init__(migration_actions, migration_conditions, dependant_migrator, ignore_backup_success)
 
     def _migrate(self) -> bool:
-        json_data: dict = {}
-        with open("/home/gapls/Documents/programming/python/StreamController/Envs/StreamController-main/data/settings/migrations.json", "r") as file:
-            json_data = json.load(file)
+        log.info(f"{self.__class__.__name__}: STARTED MIGRATING PLUGIN SETTINGS")
 
-        print("JSON MIGRATION")
-        for action in self.migration_actions:
-            action.apply(json_data)
+        settings_path = os.path.join(gl.DATA_PATH, "settings", "plugins")
+        setting_files: dict[str, dict] = {}
 
-        print(json_data)
+        log.info(f"{self.__class__.__name__}: RETRIEVING SETTING FILES")
+        for root, dirs, files in os.walk(settings_path):
+            if root == settings_path:
+                continue
 
-        return True
+            if "settings.json" in files:
+                path = os.path.join(root, "settings.json")
+                with open(path, "r") as file:
+                    setting_files[path] = json.load(file)
+
+        log.info(f"{self.__class__.__name__}: EXECUTING THREAD POOL TO MIGRATE SETTING FILES")
+        with ThreadPoolExecutor() as executor:
+            results = executor.map(self._migrate_settings_file, setting_files.items())
+
+        success = all(results)
+
+        log.info(f"{self.__class__.__name__}: FINISHED MIGRATING PLUGIN SETTINGS. SUCCESS: {success}")
+
+        return success
+
+    def _migrate_settings_file(self, item: tuple[str, dict]):
+        path = item[0]
+        json_data = item[1]
+
+        log.info(f"{self.__class__.__name__}: TRYING TO EXECUTE MIGRATION ACTIONS FOR {path}")
+        try:
+            for action in self.migration_actions:
+                log.info(f"{self.__class__.__name__}: EXECUTING ACTION {action.__class__.__name__} FOR {path}")
+                if not action.apply(json_data):
+                    log.warning(f"{self.__class__.__name__}: FAILED EXECUTING ACTION {action.__class__.__name__} FOR {path}. ABORTING MIGRATION")
+                    raise Exception()
+            with open(path, "w") as file:
+                file.write(json.dumps(json_data, indent=4))
+            log.info(f"{self.__class__.__name__}: MIGRATED SETTINGS FILE {path}")
+            return True
+        except Exception as e:
+            log.error(f"ERROR WHILE MIGRATING SETTINGS FILE {path}: {e}")

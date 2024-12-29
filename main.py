@@ -57,9 +57,7 @@ from src.tray import TrayIcon
 
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
-from src.backend.Migration.JsonMigrator.JsonMigrationRule import JsonMigrationRule
-from src.backend.Migration.Migrators.SettingsMigrator import SettingsMigrator
-from src.backend.Migration.JsonMigrator import JsonMigrator, JsonMigrationRule
+from src.backend.Migration.Migrators.Settings_1_5_0_b8 import Settings_1_5_0_b8
 #from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
 #from src.backend.Migration.Migrators.Migrator_1_5_0_beta_5 import Migrator_1_5_0_beta_5
 
@@ -262,7 +260,9 @@ def main():
     migration_manager = MigrationManager()
     # Add migrators
     # Todo: Implement
-    settings_1_5_0 = SettingsMigrator()
+    print("MIGRATION")
+    settings_1_5_0 = Settings_1_5_0_b8()
+    migration_manager.add_base_migrator(settings_1_5_0)
     #migration_manager.add_migrator(Migrator_1_5_0())
     #migration_manager.add_migrator(Migrator_1_5_0_beta_5())
     # Run migrators

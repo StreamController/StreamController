@@ -4,6 +4,7 @@ from typing import Callable, Dict, Any, List
 from src.backend.Migration.MigrationAction import MigrationAction
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from loguru import logger as log
 
 class JsonAction(MigrationAction, ABC):
     def __init__(self, source: list[str], destination: list[str] = None):
@@ -20,7 +21,7 @@ class JsonAction(MigrationAction, ABC):
                     return True
                 return False
             except Exception as e:
-                print(f"ERROR WHILE COPYING/MIGRATING DATA {data}: {e}")
+                log.log("MIGRATION_ERRRO", f"FAILED COPYING AND APPLYING DATA {data}: {e}")
                 return False
         return wrapper
 

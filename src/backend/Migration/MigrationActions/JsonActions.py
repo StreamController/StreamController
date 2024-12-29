@@ -8,7 +8,7 @@ class MoveAction(JsonAction):
 
     @JsonAction.copy_data
     def apply(self, data) -> bool:
-        log.info(f"MOVING {self.source} -> {self.destination}")
+        log.log("MIGRATION_INFO", f"MOVING {self.source} -> {self.destination}")
         value = self._get_nested(data, self.source)
         self.delete_nested(data, self.source)
         self.set_nested(data, self.destination, value)
@@ -21,7 +21,7 @@ class DeleteAction(JsonAction):
 
     def apply(self, data) -> bool:
         # Delete the value at the source path
-        log.info(f"DELETING {self.source}")
+        log.log("MIGRATION_INFO", f"DELETING {self.source}")
         self.delete_nested(data, self.source)
         return True
 
@@ -31,7 +31,7 @@ class AddAction(JsonAction):
         self.value = value
 
     def apply(self, data) -> bool:
-        log.info(f"ADDING {self.source} : {self.value}")
+        log.log("MIGRATION_INFO", f"ADDING {self.source} : {self.value}")
         self.set_nested(data, self.source, self.value)
         return True
 
@@ -43,5 +43,5 @@ class CompareAction(JsonAction):
 
     def apply(self, data) -> bool:
         value = self.get_nested(data, self.source)
-        log.info(f"COMPARING {self.source} ({value}) : {self.value} | RESULT: {value == self.value}")
+        log.log("MIGRATION_INFO", f"COMPARING {self.source} ({value}) : {self.value} | RESULT: {value == self.value}")
         return value == self.value

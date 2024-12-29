@@ -12,7 +12,11 @@ class VersionCondition(MigrationCondition):
         self.condition: Callable[[Version, Version], bool] = condition
 
     def check(self) -> bool:
-        log.info(f"COMPARING VERSIONS: {self.from_version} -> {self.to_version}")
+        log.log("MIGRATION_INFO", f"COMPARING VERSIONS: {self.from_version} -> {self.to_version}")
         success = self.condition(self.from_version, self.to_version)
-        log.info(f"VERSION CHECK SUCCESS: {success}")
+
+        if success:
+            log.log("MIGRATION_SUCCESS", f"VERSION CHECK SUCCESS: {success}")
+        else:
+            log.log("MIGRATION_ERROR", f"VERSION CHECK SUCCESS: {success}")
         return success

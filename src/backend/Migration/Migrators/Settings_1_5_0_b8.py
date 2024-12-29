@@ -21,12 +21,12 @@ class Settings_1_5_0_b8(JsonMigrator):
         super().__init__(migration_actions, migration_conditions, dependant_migrator, ignore_backup_success)
 
     def _migrate(self) -> bool:
-        log.info(f"{self.__class__.__name__}: STARTED MIGRATING PLUGIN SETTINGS")
+        log.log("MIGRATION_INFO", f"{self.__class__.__name__}: STARTED MIGRATING PLUGIN SETTINGS")
 
         settings_path = os.path.join(gl.DATA_PATH, "settings", "plugins")
         setting_files: dict[str, dict] = {}
 
-        log.info(f"{self.__class__.__name__}: RETRIEVING SETTING FILES")
+        log.log("MIGRATION_INFO", f"{self.__class__.__name__}: RETRIEVING SETTING FILES")
         for root, dirs, files in os.walk(settings_path):
             if root == settings_path:
                 continue
@@ -36,13 +36,16 @@ class Settings_1_5_0_b8(JsonMigrator):
                 with open(path, "r") as file:
                     setting_files[path] = json.load(file)
 
-        log.info(f"{self.__class__.__name__}: EXECUTING THREAD POOL TO MIGRATE SETTING FILES")
+        log.log("MIGRATION_INFO", f"{self.__class__.__name__}: EXECUTING THREAD POOL TO MIGRATE SETTING FILES")
         with ThreadPoolExecutor() as executor:
             results = executor.map(self._migrate_settings_file, setting_files.items())
 
         success = all(results)
 
-        log.info(f"{self.__class__.__name__}: FINISHED MIGRATING PLUGIN SETTINGS. SUCCESS: {success}")
+        if success:
+            log.log("MIGRATION_SUCCESS", f"{self.__class__.__name__}: FINISHED MIGRATING PLUGIN SETTINGS. SUCCESS: {success}")
+        else:
+            log.log("MIGRATION_ERROR", f"{self.__class__.__name__}: FINISHED MIGRATING PLUGIN SETTINGS. SUCCESS: {success}")
 
         return success
 
@@ -50,16 +53,16 @@ class Settings_1_5_0_b8(JsonMigrator):
         path = item[0]
         json_data = item[1]
 
-        log.info(f"{self.__class__.__name__}: TRYING TO EXECUTE MIGRATION ACTIONS FOR {path}")
+        log.log("MIGRATION_INFO", f"{self.__class__.__name__}: TRYING TO EXECUTE MIGRATION ACTIONS FOR {path}")
         try:
             for action in self.migration_actions:
-                log.info(f"{self.__class__.__name__}: EXECUTING ACTION {action.__class__.__name__} FOR {path}")
+                log.log("MIGRATION_INFO", f"{self.__class__.__name__}: EXECUTING ACTION {action.__class__.__name__} FOR {path}")
                 if not action.apply(json_data):
-                    log.warning(f"{self.__class__.__name__}: FAILED EXECUTING ACTION {action.__class__.__name__} FOR {path}. ABORTING MIGRATION")
+                    log.log("MIGRATION_ERROR", f"{self.__class__.__name__}: FAILED EXECUTING ACTION {action.__class__.__name__} FOR {path}. ABORTING MIGRATION")
                     raise Exception()
             with open(path, "w") as file:
                 file.write(json.dumps(json_data, indent=4))
-            log.info(f"{self.__class__.__name__}: MIGRATED SETTINGS FILE {path}")
+            log.log("MIGRATION_INFO", f"{self.__class__.__name__}: MIGRATED SETTINGS FILE {path}")
             return True
         except Exception as e:
-            log.error(f"ERROR WHILE MIGRATING SETTINGS FILE {path}: {e}")
+            log.log("MIGRATION_ERROR", f"ERROR WHILE MIGRATING SETTINGS FILE {path}: {e}")

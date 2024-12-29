@@ -14,6 +14,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 from src.backend.Migration.MigrationBase import MigrationBase
 
+from loguru import logger as log
+
 class MigrationManager:
     def __init__(self):
         self.base_migrators: list[MigrationBase] = []
@@ -22,6 +24,6 @@ class MigrationManager:
         self.base_migrators.append(migrator)
 
     def run_migration(self):
+        log.log("MIGRATION_INFO", f"{self.__class__.__name__}: RUNNING ALL MIGRATORS")
         for migrator in self.base_migrators:
-            print("MIGRATION STARTING NOW")
             migrator.migrate()

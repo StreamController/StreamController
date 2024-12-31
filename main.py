@@ -58,11 +58,12 @@ from src.tray import TrayIcon
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
 from src.backend.Migration.Migrators.Settings_1_5_0_b8 import Settings_1_5_0_b8
-#from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
-#from src.backend.Migration.Migrators.Migrator_1_5_0_beta_5 import Migrator_1_5_0_beta_5
+from src.backend.Migration.Migrators.Pages_1_5_0b0 import Pages_1_5_0_b0
 
 # Import globals
 import globals as gl
+from src.backend.Logging.Loggers.MigrationLogger import migration_logger
+from src.backend.Logging.Loggers.PluginLogger import plugin_logger
 
 main_path = os.path.abspath(os.path.dirname(__file__))
 
@@ -75,36 +76,23 @@ def log_filter(record, level_filter):
 def config_logger():
     log.remove()
 
-    log.level("MIGRATION_TRACE", no=5, color="<cyan>")
-    log.level("MIGRATION_INFO", no=10, color="<white>")
-    log.level("MIGRATION_WARNING", no=20, color="<yellow>")
-    log.level("MIGRATION_DEBUG", no=30, color="<blue>")
-    log.level("MIGRATION_SUCCESS", no=25, color="<bold><green>")
-    log.level("MIGRATION_ERROR", no=40, color="<red>")
-
-    log.level("PLUGIN_TRACE", no=5, color="<cyan>")
-    log.level("PLUGIN_INFO", no=10, color="<white>")
-    log.level("PLUGIN_WARNING", no=20, color="<yellow>")
-    log.level("PLUGIN_DEBUG", no=30, color="<blue>")
-    log.level("PLUGIN_SUCCESS", no=25, color="<bold><green>")
-    log.level("PLUGIN_ERROR", no=40, color="<red>")
-
     # Create log files
     log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
 
     log.add(sink=os.path.join(gl.DATA_PATH, "logs", "migration.log"),
-            level="MIGRATION_TRACE",
+            level=migration_logger.TRACE,
             rotation="3 days",
             backtrace=True,
             diagnose=True,
-            filter=lambda record: log_filter(record, "MIGRATION"))
+            filter=migration_logger.filter,
+            )
 
     log.add(sink=os.path.join(gl.DATA_PATH, "logs", "plugin.log"),
-            level="PLUGIN_TRACE",
+            level=plugin_logger.TRACE,
             rotation="3 days",
             backtrace=True,
             diagnose=True,
-            filter=lambda record: log_filter(record, "PLUGIN"))
+            filter=plugin_logger.filter)
 
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
@@ -296,8 +284,8 @@ def main():
     migration_manager = MigrationManager()
     # Add migrators
     # Todo: Implement
-    print("MIGRATION")
     settings_1_5_0 = Settings_1_5_0_b8()
+
     migration_manager.add_base_migrator(settings_1_5_0)
     # Run migrators
     migration_manager.run_migration()

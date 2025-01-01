@@ -205,7 +205,7 @@ class Screensaver(Adw.PreferencesRow):
         self.time_label = Gtk.Label(label=gl.lm.get("screensaver-delay"), hexpand=True, xalign=0)
         self.time_box.append(self.time_label)
 
-        self.time_spinner = Gtk.SpinButton.new_with_range(1, 60, 1)
+        self.time_spinner = Gtk.SpinButton.new_with_range(1, 24*60, 1)
         self.time_box.append(self.time_spinner)
 
         self.media_selector_label = Gtk.Label(label=gl.lm.get("media-to-show"), hexpand=True, xalign=0)

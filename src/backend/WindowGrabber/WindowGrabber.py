@@ -26,13 +26,14 @@ import globals as gl
 from src.backend.WindowGrabber.Window import Window
 from src.backend.WindowGrabber.Integration import Integration
 from src.backend.WindowGrabber.Integrations.Hyprland import Hyprland
+from src.backend.WindowGrabber.Integrations.KDE import KDE
 from src.backend.WindowGrabber.Integrations.Gnome import Gnome
 from src.backend.WindowGrabber.Integrations.Sway import Sway
 from src.backend.WindowGrabber.Integrations.X11 import X11
 
 class WindowGrabber:
     def __init__(self):
-        self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "x11"]
+        self.SUPPORTED_ENVS = ["hyprland", "kde", "gnome", "sway", "x11"]
 
         self.integration: Integration = None
         self.init_integration()
@@ -43,14 +44,14 @@ class WindowGrabber:
         if desktop is None:
             return
         return desktop.lower()
-    
+
     @log.catch
     def get_active_server(self) -> str:
         env = os.getenv("XDG_SESSION_TYPE")
         if env is None:
             return
         return env.lower()
-    
+
     @log.catch
     def init_integration(self) -> None:
         self.environment = self.get_active_environment()
@@ -59,10 +60,12 @@ class WindowGrabber:
         if self.environment not in self.SUPPORTED_ENVS and self.server not in self.SUPPORTED_ENVS:
             log.error(f"Unsupported environment: {self.environment} with server: {self.server} for window grabber.")
             return
-        
+
         log.info(f"Initializing window grabber for environment: {self.environment} under server: {self.server}")
         if self.environment == "hyprland":
             self.integration = Hyprland(self)
+        elif self.environment == "kde":
+            self.integration = KDE(self)
         elif self.environment == "gnome":
             self.integration = Gnome(self)
         elif self.environment == "sway":
@@ -79,7 +82,7 @@ class WindowGrabber:
             return []
 
         return self.integration.get_all_windows()
-    
+
     def get_all_matching_windows(self, class_regex: str, title_regex: str) -> list[Window]:
         all_windows = self.get_all_windows()
 
@@ -89,7 +92,7 @@ class WindowGrabber:
                 matching_windows.append(window)
 
         return matching_windows
-    
+
     def get_is_window_matching(self, window: Window, class_regex: str, title_regex: str) -> bool:
         if None in (window.wm_class, window.title, class_regex, title_regex):
             return False
@@ -99,7 +102,7 @@ class WindowGrabber:
         except re.error:
             return False
         return class_match and title_match
-    
+
     def on_active_window_changed(self, window: Window) -> None:
         # log.info(f"Active window changed to: {window}")
         for deck_controller in gl.deck_manager.deck_controller:
@@ -139,7 +142,7 @@ class WindowGrabber:
                     return
                 if not deck_controller.deck.is_open():
                     return
-                
+
 
                 if deck_controller.page_auto_loaded:
                     active_page_change_info = gl.page_manager.auto_change_info.get(os.path.abspath(deck_controller.active_page.json_path))

@@ -26,14 +26,14 @@ import globals as gl
 from src.backend.WindowGrabber.Window import Window
 from src.backend.WindowGrabber.Integration import Integration
 from src.backend.WindowGrabber.Integrations.Hyprland import Hyprland
-from src.backend.WindowGrabber.Integrations.KDE import KDE
 from src.backend.WindowGrabber.Integrations.Gnome import Gnome
 from src.backend.WindowGrabber.Integrations.Sway import Sway
 from src.backend.WindowGrabber.Integrations.X11 import X11
+from src.backend.WindowGrabber.Integrations.KDE import KDE
 
 class WindowGrabber:
     def __init__(self):
-        self.SUPPORTED_ENVS = ["hyprland", "kde", "gnome", "sway", "x11"]
+        self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "x11", "kde"]
 
         self.integration: Integration = None
         self.init_integration()
@@ -64,14 +64,14 @@ class WindowGrabber:
         log.info(f"Initializing window grabber for environment: {self.environment} under server: {self.server}")
         if self.environment == "hyprland":
             self.integration = Hyprland(self)
-        elif self.environment == "kde":
-            self.integration = KDE(self)
         elif self.environment == "gnome":
             self.integration = Gnome(self)
         elif self.environment == "sway":
             self.integration = Sway(self)
         elif self.server == "x11":
             self.integration = X11(self)
+        elif self.environment == "kde":
+            self.integration = KDE(self)
 
     @log.catch
     def get_all_windows(self) -> list[Window]:

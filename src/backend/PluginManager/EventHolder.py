@@ -5,12 +5,14 @@ class EventHolder:
     """
         Holder for Event Callbacks for the specified Event ID
     """
-    def __init__(self, plugin_base: "PluginBase", event_id: str):
-        if event_id in ["", None]:
-            raise ValueError("Please specify an signal id")
+    def __init__(self, plugin_base: "PluginBase",
+                 event_id: str = None,
+                 event_id_suffix: str = None):
+        if event_id in ["", None] and event_id_suffix in ["", None]:
+            raise ValueError("Please specify a signal id")
 
         self.plugin_base = plugin_base
-        self.event_id = event_id
+        self.event_id = event_id or f"{self.plugin_base.get_plugin_id()}::{event_id_suffix}"
         self.observers: list = []
 
     def add_listener(self, callback: callable):

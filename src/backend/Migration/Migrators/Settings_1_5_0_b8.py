@@ -11,6 +11,10 @@ import json
 import globals as gl
 from loguru import logger as log
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.Migration.MigrationBase import MigrationBase
+
 class Settings_1_5_0_b8(JsonMigrator):
     def __init__(self,
                  dependant_migrator: "MigrationBase" = None,

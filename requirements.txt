@@ -44,7 +44,7 @@ imageio==2.36.0
 imageio-ffmpeg==0.5.1
 indexed_bzip2==1.6.0
 itsdangerous==2.2.0
-Jinja2==3.1.4
+Jinja2==3.1.5
 joblib==1.4.2
 kiwisolver==1.4.7
 Levenshtein==0.26.1

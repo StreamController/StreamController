@@ -446,7 +446,6 @@ class PluginBase(rpyc.Service):
 
             if content.get("file-version") == "2.0":
                 new_content["settings"] = settings
-            
             else:
                 new_content = {
                     "file-version": "2.0",
@@ -454,9 +453,8 @@ class PluginBase(rpyc.Service):
                 }
 
             f.seek(0)
-            json.dump(content, f, indent=4)
+            json.dump(new_content, f, indent=4)
             f.truncate()
-            return
 
 
     def add_css_stylesheet(self, path):

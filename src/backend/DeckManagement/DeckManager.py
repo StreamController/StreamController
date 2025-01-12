@@ -42,8 +42,6 @@ from gi.repository import GLib, Xdp
 # Import globals
 import globals as gl
 
-ELGATO_VENDOR_ID = "0fd9"
-
 
 class DeckManager:
     def __init__(self):
@@ -134,7 +132,7 @@ class DeckManager:
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device
-        if device_info["ID_VENDOR_ID"] != ELGATO_VENDOR_ID:
+        if device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_Elgato and device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_MIRABOX:
             return
 
         self.connect_new_decks()
@@ -156,7 +154,7 @@ class DeckManager:
 
     def on_disconnect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} disconnected")
-        if device_info["ID_VENDOR_ID"] != ELGATO_VENDOR_ID:
+        if device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_Elgato and device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_MIRABOX:
             return
 
         for controller in self.deck_controller:
@@ -225,6 +223,8 @@ class DeckManager:
                     DeviceManager.USB_PID_STREAMDECK_PEDAL,
                     DeviceManager.USB_PID_STREAMDECK_PLUS,
                     DeviceManager.USB_PID_STREAMDECK_NEO
+                ] or device.idVendor == DeviceManager.USB_VID_MIRABOX and device.idProduct in [
+                    DeviceManager.USB_PID_MIRABOX_STREAMDOCK_293S
                 ]:
                     # Reset deck
                     usb.util.dispose_resources(device)

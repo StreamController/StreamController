@@ -181,6 +181,8 @@ def reset_all_decks():
                 DeviceManager.USB_PID_STREAMDECK_MK2,
                 DeviceManager.USB_PID_STREAMDECK_PEDAL,
                 DeviceManager.USB_PID_STREAMDECK_PLUS
+            ] or device.idVendor == DeviceManager.USB_VID_MIRABOX and device.idProduct in [
+                DeviceManager.USB_PID_MIRABOX_STREAMDOCK_293S
             ]:
                 # Reset deck
                 usb.util.dispose_resources(device)

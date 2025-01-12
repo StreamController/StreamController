@@ -303,7 +303,7 @@ class PluginBase(rpyc.Service):
     def add_action_holder_groups(self, action_holder_groups: list[ActionHolderGroup]) -> None:
         self.action_holder_groups.update(action_holder_groups)
 
-    def connect_to_event(self, event_id: str, callback: callable) -> None:
+    def connect_to_event(self, callback: callable, event_id: str = None, event_id_suffix: str = None) -> None:
         """
         Connects a Callback to the Event which gets specified by the event ID
 
@@ -314,7 +314,9 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
-        if event_id in self.event_holders:
+        full_id = event_id or f"{self.get_plugin_id()}::{event_id_suffix}"
+
+        if full_id in self.event_holders:
             self.event_holders[event_id].add_listener(callback)
         else:
             log.warning(f"{event_id} does not exist in {self.plugin_name}")

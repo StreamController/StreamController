@@ -132,7 +132,7 @@ class DeckManager:
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device
-        if device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_Elgato and device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_MIRABOX:
+        if device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_ELGATO and device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_MIRABOX:
             return
 
         self.connect_new_decks()
@@ -154,7 +154,7 @@ class DeckManager:
 
     def on_disconnect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} disconnected")
-        if device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_Elgato and device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_MIRABOX:
+        if device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_ELGATO and device_info["ID_VENDOR_ID"] != DeviceManager.USB_VID_MIRABOX:
             return
 
         for controller in self.deck_controller:

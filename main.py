@@ -57,24 +57,49 @@ from src.tray import TrayIcon
 
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
-from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
-from src.backend.Migration.Migrators.Migrator_1_5_0_beta_5 import Migrator_1_5_0_beta_5
+from src.backend.Migration.Migrators.Settings_1_5_0_b8 import Settings_1_5_0_b8
+from src.backend.Migration.Migrators.Pages_1_5_0b0 import Pages_1_5_0_b0
 
 # Import globals
 import globals as gl
+from src.backend.Logging.Loggers.MigrationLogger import migration_logger
+from src.backend.Logging.Loggers.PluginLogger import plugin_logger
 
 main_path = os.path.abspath(os.path.dirname(__file__))
 
 def write_logs(record):
     gl.logs.append(record)
 
+def log_filter(record, level_filter):
+    return level_filter in record["level"].name
+
 def config_logger():
     log.remove()
+
     # Create log files
     log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
+
+    log.add(sink=os.path.join(gl.DATA_PATH, "logs", "migration.log"),
+            level=migration_logger.TRACE,
+            rotation="3 days",
+            backtrace=True,
+            diagnose=True,
+            filter=migration_logger.filter,
+            )
+
+    log.add(sink=os.path.join(gl.DATA_PATH, "logs", "plugin.log"),
+            level=plugin_logger.TRACE,
+            rotation="3 days",
+            backtrace=True,
+            diagnose=True,
+            filter=plugin_logger.filter)
+
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
+
     log.add(write_logs, level="TRACE")
+
+    log.log("MIGRATION_ERROR", "TESTING")
 
 class Main:
     def __init__(self, application_id, deck_manager):
@@ -87,8 +112,6 @@ class Main:
 
 @log.catch
 def load():
-    config_logger()
-
     log.info("Loading app")
     gl.deck_manager = DeckManager()
     gl.deck_manager.load_decks()
@@ -256,12 +279,16 @@ def main():
 
     reset_all_decks()
 
+    config_logger()
+
     migration_manager = MigrationManager()
     # Add migrators
-    migration_manager.add_migrator(Migrator_1_5_0())
-    migration_manager.add_migrator(Migrator_1_5_0_beta_5())
+    # Todo: Implement
+    settings_1_5_0 = Settings_1_5_0_b8()
+
+    migration_manager.add_base_migrator(settings_1_5_0)
     # Run migrators
-    migration_manager.run_migrators()
+    migration_manager.run_migration()
 
     create_global_objects()
 

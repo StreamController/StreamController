@@ -94,7 +94,7 @@ class PluginManager:
                 path = get_last_dir(path)
                 self.action_index[action_id] = plugins[plugin]["object"].ACTIONS[action_id]
 
-    def get_plugins(self, include_disabled: bool = False) -> list[PluginBase]:
+    def get_plugins(self, include_disabled: bool = False) -> dict[str, dict]:
         plugins = PluginBase.plugins
 
         if include_disabled:

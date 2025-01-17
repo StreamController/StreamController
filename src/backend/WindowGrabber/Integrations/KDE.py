@@ -40,8 +40,10 @@ class KDE(Integration):
         portal = Xdp.Portal.new()
 
         self.flatpak = portal.running_under_flatpak()
+        self.is_kdotool_installed = self.get_is_kdotool_installed()
 
-        self.start_active_window_change_thread()
+        if self.is_kdotool_installed:
+            self.start_active_window_change_thread()
 
     @log.catch
     def _run_command(self, command: list[str]) -> Optional[Popen]:
@@ -52,6 +54,14 @@ class KDE(Integration):
             return Popen(command, stdout=PIPE, cwd="/")
         except CalledProcessError as e:
             log.error(f"An error occurred while running {command}: {e}")
+
+    @log.catch
+    def get_is_kdotool_installed(self) -> bool:
+        try:
+            return self._run_command(["kdotool", "--version"]) is not None
+        except CalledProcessError as e:
+            log.error(f"An error occurred while running kdotool: {e}")
+            return False
 
     @log.catch
     def start_active_window_change_thread(self):

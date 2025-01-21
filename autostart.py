@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import os
 import shutil
+import globals as gl
 
 import gi
 gi.require_version("Xdp", "1.0")
@@ -89,9 +90,9 @@ def setup_autostart_desktop_entry(enable: bool = True, native: bool = False):
         try:
             os.makedirs(os.path.dirname(AUTOSTART_DESKTOP_PATH), exist_ok=True)
             if native:
-                copy_desktop_file(os.path.join("flatpak", "autostart-native.desktop"), AUTOSTART_DESKTOP_PATH)
+                copy_desktop_file(os.path.join(gl.MAIN_PATH, "flatpak", "autostart-native.desktop"), AUTOSTART_DESKTOP_PATH)
             else:
-                copy_desktop_file(os.path.join("flatpak", "autostart.desktop"), AUTOSTART_DESKTOP_PATH)
+                copy_desktop_file(os.path.join(gl.MAIN_PATH, "flatpak", "autostart.desktop"), AUTOSTART_DESKTOP_PATH)
             log.info(f"Autostart set up at: {AUTOSTART_DESKTOP_PATH}")
         except Exception as e:
             log.error(f"Failed to set up autostart at: {AUTOSTART_DESKTOP_PATH} with error: {e}")

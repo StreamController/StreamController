@@ -17,6 +17,7 @@ argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
 argparser.add_argument("app_args", nargs="*")
 
+MAIN_PATH: str
 VAR_APP_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")
 STATIC_SETTINGS_FILE_PATH = os.path.join(VAR_APP_PATH, "static", "settings.json")
 

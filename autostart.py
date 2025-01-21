@@ -89,9 +89,9 @@ def setup_autostart_desktop_entry(enable: bool = True, native: bool = False):
         try:
             os.makedirs(os.path.dirname(AUTOSTART_DESKTOP_PATH), exist_ok=True)
             if native:
-                shutil.copyfile(os.path.join("flatpak", "autostart-native.desktop"), AUTOSTART_DESKTOP_PATH)
+                copy_desktop_file(os.path.join("flatpak", "autostart-native.desktop"), AUTOSTART_DESKTOP_PATH)
             else:
-                shutil.copyfile(os.path.join("flatpak", "autostart.desktop"), AUTOSTART_DESKTOP_PATH)
+                copy_desktop_file(os.path.join("flatpak", "autostart.desktop"), AUTOSTART_DESKTOP_PATH)
             log.info(f"Autostart set up at: {AUTOSTART_DESKTOP_PATH}")
         except Exception as e:
             log.error(f"Failed to set up autostart at: {AUTOSTART_DESKTOP_PATH} with error: {e}")
@@ -102,3 +102,19 @@ def setup_autostart_desktop_entry(enable: bool = True, native: bool = False):
                 log.info(f"Autostart removed from: {AUTOSTART_DESKTOP_PATH}")
             except Exception as e:
                 log.error(f"Failed to remove autostart from: {AUTOSTART_DESKTOP_PATH} with error: {e}")
+
+def copy_desktop_file(source: str, target: str, overwrite: bool = False):
+    if not overwrite and os.path.exists(target):
+        log.info(f"Desktop file already exists at: {target}")
+        return
+    
+    # Check that source exists
+    if not os.path.exists(source):
+        log.error(f"Desktop file does not exist at: {source}")
+        return
+    
+    try:
+        shutil.copyfile(source, target)
+        log.info(f"Desktop file copied from: {source} to: {target}")
+    except Exception as e:
+        log.error(f"Failed to copy desktop file from: {source} to: {target} with error: {e}")

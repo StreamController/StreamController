@@ -90,9 +90,9 @@ def setup_autostart_desktop_entry(enable: bool = True, native: bool = False):
         try:
             os.makedirs(os.path.dirname(AUTOSTART_DESKTOP_PATH), exist_ok=True)
             if native:
-                copy_desktop_file(os.path.join(gl.MAIN_PATH, "flatpak", "autostart-native.desktop"), AUTOSTART_DESKTOP_PATH)
+                copy_desktop_file(os.path.join(gl.MAIN_PATH, "flatpak", "autostart-native.desktop"), AUTOSTART_DESKTOP_PATH, True) # Why overwrite? In case someone is using the Flatpak and the source version
             else:
-                copy_desktop_file(os.path.join(gl.MAIN_PATH, "flatpak", "autostart.desktop"), AUTOSTART_DESKTOP_PATH)
+                copy_desktop_file(os.path.join(gl.MAIN_PATH, "flatpak", "autostart.desktop"), AUTOSTART_DESKTOP_PATH, True) # Why overwrite? In case someone is using the Flatpak and the source version
             log.info(f"Autostart set up at: {AUTOSTART_DESKTOP_PATH}")
         except Exception as e:
             log.error(f"Failed to set up autostart at: {AUTOSTART_DESKTOP_PATH} with error: {e}")

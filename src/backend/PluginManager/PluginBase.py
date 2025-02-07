@@ -555,7 +555,7 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
-        self.backend_connection = rpyc.connect("localhost", port)
+        self.backend_connection = rpyc.connect("localhost", port, config={"allow_public_attrs": True})
         self.backend = self.backend_connection.root
         gl.plugin_manager.backends.append(self.backend_connection)
 

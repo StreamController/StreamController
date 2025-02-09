@@ -111,7 +111,7 @@ smmap==5.0.1
 sniffio==1.3.1
 speedtest-cli==2.1.3
 storage3==0.9.0
-streamcontroller-plugin-tools==2.0.1
+streamcontroller-plugin-tools==2.0.2
 streamdeck==0.9.6
 supabase==2.10.0
 supafunc==0.7.0

@@ -506,7 +506,7 @@ class ActionBase(rpyc.Service):
         """
         Internal method, do not call manually
         """
-        self.backend_connection = rpyc.connect("localhost", port)
+        self.backend_connection = rpyc.connect("localhost", port, config={"allow_public_attrs": True})
         self.backend = self.backend_connection.root
         gl.plugin_manager.backends.append(self.backend_connection)
         self.on_backend_ready()

@@ -392,6 +392,11 @@ class DeckController:
 
         self.load_default_page()
 
+        # If screen is locked start the screensaver - this happens when the deck gets reconnected during the screensaver
+        if gl.screen_locked and gl.settings_manager.get_app_settings().get("system", {}).get("lock-on-lock-screen", True):
+            self.allow_interaction = False
+            self.screen_saver.show()
+
     def init_inputs(self):
         for i in Input.All:
             self.inputs[i] = []

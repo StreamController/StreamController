@@ -83,6 +83,9 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.settings = settings
         super().__init__(title=gl.lm.get("settings-ui-settings-key-grid-header"))
 
+        self.trayicon_row = Adw.SwitchRow(title=gl.lm.get("settings-show-tray-icon"), active=True)
+        self.add(self.trayicon_row)
+
         self.emulate_row = Adw.SwitchRow(title=gl.lm.get("settings-emulate-at-double-click"), active=True)
         self.add(self.emulate_row)
 
@@ -101,6 +104,7 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.load_defaults()
 
         # Connect signals
+        self.trayicon_row.connect("notify::active", self.on_trayicon_row_toggled)
         self.emulate_row.connect("notify::active", self.on_emulate_row_toggled)
         self.enable_fps_warnings_row.connect("notify::active", self.on_enable_fps_warnings_row_toggled)
         self.allow_white_mode.connect("notify::active", self.on_allow_white_mode_toggled)
@@ -108,11 +112,23 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.auto_config_row.connect("notify::active", self.on_auto_config_row_toggled)
 
     def load_defaults(self):
+        self.trayicon_row.set_active(self.settings.settings_json.get("ui",{}).get("tray-icon", True))
         self.emulate_row.set_active(self.settings.settings_json.get("key-grid", {}).get("emulate-at-double-click", True))
         self.enable_fps_warnings_row.set_active(self.settings.settings_json.get("warnings", {}).get("enable-fps-warnings", True))
         self.allow_white_mode.set_active(self.settings.settings_json.get("ui", {}).get("allow-white-mode", False))
         self.show_notifications.set_active(self.settings.settings_json.get("ui", {}).get("show-notifications", True))
         self.auto_config_row.set_active(self.settings.settings_json.get("ui", {}).get("auto-open-action-config", True))
+
+
+    def on_trayicon_row_toggled(self, *args):
+        self.settings.settings_json.setdefault("ui", {})
+        self.settings.settings_json["ui"]["tray-icon"] = self.trayicon_row.get_active()
+
+        self.settings.save_json()
+        if self.settings.settings_json["ui"]["tray-icon"]:
+            gl.tray_icon.start()
+        else:
+            gl.tray_icon.stop()
 
     def on_emulate_row_toggled(self, *args):
         self.settings.settings_json.setdefault("key-grid", {})

@@ -68,6 +68,7 @@ right-area-no-page-selected-error;Keine Seite ausgewählt;No page selected;Aucun
 right-area-no-deck-selected-error;Kein Deck ausgewählt;No deck selected;Aucun Deck sélectionnée;No hay cubierta seleccionada
 deck-switcher-no-decks;Keine Decks Erkannt;No Decks Detected;Aucun Deck Détecté;No se han detectado cubiertas
 open-settings;Einstellungen öffnen;Open Settings;Ouvrir les paramètres;Abrir configuración
+settings-show-tray-icon;Taskleistensymbol anzeigen;Show Tray Icon;Afficher l’icône de la barre d’état;Mostrar icono de bandeja
 settings-emulate-at-double-click;Bei Doppelklick klick auf Gerät simulieren;Emulate button press on double click;Simuler une pression de bouton par double-clic;Emular pulsación de botón al hacer doble clic
 settings-dev-settings-title;Entwickler;Developer;Développeur;Desarrollador
 settings-fake-decks-header;Fake Decks;Fake Decks;Faux Decks;Mazos falsos

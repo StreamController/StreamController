@@ -153,6 +153,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.do_after_build_tasks()
         self.check_for_errors()
+
+        gl.tray_icon.initialize(self)
         
 
     def on_toggle_sidebar(self, button):

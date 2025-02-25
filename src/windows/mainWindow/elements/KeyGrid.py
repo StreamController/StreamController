@@ -401,7 +401,7 @@ class KeyButton(Gtk.Frame):
 
     def on_paste(self, *args):
         # Check if clipboard is from this StreamController
-        if not gl.app.main_win.key_clipboard.is_local():
+        if not gl.app.main_win.key_clipboard.is_local() and False:  # TODO: Rely on system keyboard - Enabling this will cause copy/paste problems on KDE/Wayland
             #TODO: Use read_value_async to read it instead - This is more like a temporary hack
             return
         

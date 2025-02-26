@@ -35,7 +35,7 @@ class Logger:
         logger.level(
             name=f"{self.name}_{log_level.name}",
             no=log_level.priority,
-            color=f"<{log_level.color}>")
+            color=f"{log_level.color}")
 
         def log_method(self, message, *args, **kwargs):
             caller = inspect.stack()[1]
@@ -49,7 +49,6 @@ class Logger:
     def add_sink(self):
         def log_filter(record):
             if record["level"].name.startswith(f"{self.config.name}_"):
-                print(record)
                 return True
             return False
 

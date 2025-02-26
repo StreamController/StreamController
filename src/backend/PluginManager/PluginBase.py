@@ -48,6 +48,8 @@ class PluginBase(rpyc.Service):
         self.backend: netref = None
         self.server: ThreadedServer = None
 
+        self.logger = gl.loggers.get("plugin", None)
+
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
         self.settings_path: str = os.path.join(gl.DATA_PATH, "settings", "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well
 

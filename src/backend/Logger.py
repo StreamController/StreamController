@@ -1,6 +1,8 @@
 import inspect
+import os
 from dataclasses import dataclass
 from loguru import logger
+import globals as gl
 
 @dataclass
 class Loglevel:
@@ -42,13 +44,21 @@ class Logger:
             function_name = caller.function
             line_number = caller.lineno
 
-            logger.log(f"{self.name}_{log_level.name}", message, function=function_name, line=line_number)
+            file_path = caller.filename
+            base_path = gl.DATA_PATH
+
+            relative_path = os.path.relpath(file_path, base_path)  # Get relative path
+            relative_path = os.path.splitext(relative_path)[0]  # Remove .py extension
+            relative_path = relative_path.replace(os.sep, ".")  # Convert to dot notation
+
+            logger.log(f"{self.name}_{log_level.name}", message, file_name=relative_path, function=function_name, line=line_number)
 
         setattr(self, log_level.method_name, log_method.__get__(self))
 
     def add_sink(self):
         def log_filter(record):
             if record["level"].name.startswith(f"{self.config.name}_"):
+                print(record)
                 return True
             return False
 
@@ -60,7 +70,7 @@ class Logger:
             compression=self.config.compression,
             enqueue=True,
             filter=log_filter,
-            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {name} | {extra[function]}:{extra[line]} - {message}"
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {extra[file_name]} | {extra[function]}:{extra[line]} - {message}"
         )
 
     def _log(self, level, message, *args, **kwargs):

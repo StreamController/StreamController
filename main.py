@@ -170,11 +170,11 @@ def update_assets():
 @log.catch
 def reset_all_decks():
     # Find all USB devices
-    devices = usb.core.find(find_all=True)
+    devices = usb.core.find(find_all=True, idVendor=DeviceManager.USB_VID_ELGATO)
     for device in devices:
         try:
             # Check if it's a StreamDeck
-            if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in [
+            if device.idProduct in [
                 DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
                 DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
                 DeviceManager.USB_PID_STREAMDECK_MINI,
@@ -221,7 +221,7 @@ def quit_running():
 
 def make_api_calls():
     if not gl.argparser.parse_args().change_page:
-        return
+        return False
     
     session_bus = dbus.SessionBus()
     obj: dbus.BusObject = None
@@ -240,11 +240,17 @@ def make_api_calls():
         else:
             # Other instance is running - call dbus interfaces
             action_interface.Activate("change_page", [[serial_number, page_name]], [])
+            return True
+
+    return False
 
 
     
 @log.catch
 def main():
+    if make_api_calls():
+        return
+
     gsk_render_env_var = os.environ.get("GSK_RENDERER")
     if gsk_render_env_var != "ngl":
         log.warning('Should you get an Error 71 (Protocol error) please add '
@@ -252,7 +258,6 @@ def main():
 
     DBusGMainLoop(set_as_default=True)
     # Dbus
-    make_api_calls()
     quit_running()
 
     reset_all_decks()

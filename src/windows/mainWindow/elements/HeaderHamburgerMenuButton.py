@@ -114,7 +114,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.set_issue_url("https://github.com/StreamController/StreamController/issues")
         # self.about.set_support_url("https://discord.com/invite/MSyHM8TN3u")
         self.about.add_credit_section("Contributors", ["Core447 https://github.com/Core447"] + 
-                                                       sorted(["coolapso https://github.com/coolapso",
+                                                       sorted(set(["coolapso https://github.com/coolapso",
                                                        "G4PLS https://github.com/G4PLS",
                                                        "gensyn https://github.com/gensyn",
                                                        "GsakuL https://github.com/GsakuL",
@@ -129,7 +129,20 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
                                                        "nosduco https://github.com/nosduco",
                                                        "pniedzielski https://github.com/pniedzielski",
                                                        "Qalthos https://github.com/Qalthos",
-                                                       "jfbauer432 https://github.com/jfbauer432"],
+                                                       "jfbauer432 https://github.com/jfbauer432",
+                                                       "wanderboessenkool https://github.com/wanderboessenkool",
+                                                       "AdiHarif https://github.com/AdiHarif",
+                                                       "sifmelcara https://github.com/sifmelcara",
+                                                       "zeridon https://github.com/zeridon",
+                                                       "etiennebrateau https://github.com/etiennebrateau",
+                                                       "etienne02 https://github.com/etienne02",
+                                                       "Celestial04 https://github.com/Celestial04",
+                                                       "jgoett154 https://github.com/jgoett154",
+                                                       "dixonte https://github.com/dixonte",
+                                                       "NeoMorfeo https://github.com/NeoMorfeo",
+                                                       "fliflooo https://github.com/fliflooo",
+                                                       "eumario https://github.com/eumario",
+                                                       "SilentSwordmaiden https://github.com/SilentSwordmaiden",]),
                                                        key=str.casefold))
         
         self.about.set_copyright("Copyright (C) 2024 Core447")

@@ -169,11 +169,11 @@ def update_assets():
 @log.catch
 def reset_all_decks():
     # Find all USB devices
-    devices = usb.core.find(find_all=True)
+    devices = usb.core.find(find_all=True, idVendor=DeviceManager.USB_VID_ELGATO)
     for device in devices:
         try:
             # Check if it's a StreamDeck
-            if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in [
+            if device.idProduct in [
                 DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
                 DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
                 DeviceManager.USB_PID_STREAMDECK_MINI,

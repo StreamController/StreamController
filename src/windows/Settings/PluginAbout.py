@@ -1,5 +1,4 @@
 import os.path
-from idlelib.pyparse import trans
 
 import gi
 

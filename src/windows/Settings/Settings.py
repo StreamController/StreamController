@@ -20,6 +20,7 @@ import gi
 from GtkHelper.GtkHelper import BetterPreferencesGroup
 from autostart import is_flatpak, setup_autostart
 from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
+from src.windows.Settings.PluginSettingsPage import PluginSettingsPage
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -38,7 +39,7 @@ class Settings(Adw.PreferencesWindow):
         # Center settings win over main_win (depends on DE)
         self.set_transient_for(gl.app.main_win)
         # Allow interaction with other windows
-        self.set_modal(False)
+        self.set_modal(True)
 
         self.settings_json:dict = None
         self.load_json()
@@ -49,6 +50,7 @@ class Settings(Adw.PreferencesWindow):
         self.performance_page = PerformancePage(settings=self)
         self.dev_page = DevPage(settings=self)
         self.system_page = SystemPage(settings=self)
+        self.plugin_page = PluginSettingsPage(settings=self)
 
         self.add(self.general_page)
         self.add(self.ui_page)
@@ -56,6 +58,7 @@ class Settings(Adw.PreferencesWindow):
         self.add(self.performance_page)
         self.add(self.system_page)
         self.add(self.dev_page)
+        self.add(self.plugin_page)
 
     def load_json(self):
         # Load settings from file
@@ -80,6 +83,9 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.settings = settings
         super().__init__(title=gl.lm.get("settings-ui-settings-key-grid-header"))
 
+        self.trayicon_row = Adw.SwitchRow(title=gl.lm.get("settings-show-tray-icon"), active=True)
+        self.add(self.trayicon_row)
+
         self.emulate_row = Adw.SwitchRow(title=gl.lm.get("settings-emulate-at-double-click"), active=True)
         self.add(self.emulate_row)
 
@@ -98,6 +104,7 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.load_defaults()
 
         # Connect signals
+        self.trayicon_row.connect("notify::active", self.on_trayicon_row_toggled)
         self.emulate_row.connect("notify::active", self.on_emulate_row_toggled)
         self.enable_fps_warnings_row.connect("notify::active", self.on_enable_fps_warnings_row_toggled)
         self.allow_white_mode.connect("notify::active", self.on_allow_white_mode_toggled)
@@ -105,11 +112,23 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.auto_config_row.connect("notify::active", self.on_auto_config_row_toggled)
 
     def load_defaults(self):
+        self.trayicon_row.set_active(self.settings.settings_json.get("ui",{}).get("tray-icon", True))
         self.emulate_row.set_active(self.settings.settings_json.get("key-grid", {}).get("emulate-at-double-click", True))
         self.enable_fps_warnings_row.set_active(self.settings.settings_json.get("warnings", {}).get("enable-fps-warnings", True))
         self.allow_white_mode.set_active(self.settings.settings_json.get("ui", {}).get("allow-white-mode", False))
         self.show_notifications.set_active(self.settings.settings_json.get("ui", {}).get("show-notifications", True))
         self.auto_config_row.set_active(self.settings.settings_json.get("ui", {}).get("auto-open-action-config", True))
+
+
+    def on_trayicon_row_toggled(self, *args):
+        self.settings.settings_json.setdefault("ui", {})
+        self.settings.settings_json["ui"]["tray-icon"] = self.trayicon_row.get_active()
+
+        self.settings.save_json()
+        if self.settings.settings_json["ui"]["tray-icon"]:
+            gl.tray_icon.start()
+        else:
+            gl.tray_icon.stop()
 
     def on_emulate_row_toggled(self, *args):
         self.settings.settings_json.setdefault("key-grid", {})

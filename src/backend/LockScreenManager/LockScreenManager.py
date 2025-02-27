@@ -46,11 +46,12 @@ class LockScreenManager:
 
     @log.catch
     def lock(self, active):
+        gl.screen_locked = active
+
         if active:
             settings = gl.settings_manager.get_app_settings()
             if not settings.get("system", {}).get("lock-on-lock-screen", True):
                 return
-
 
         if active == self.locked:
             return

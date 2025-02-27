@@ -91,11 +91,8 @@ class X11(Integration):
     @log.catch
     def get_active_window(self) -> Window:
         try:
-            root = self._run_command(["xprop", "-root", "_NET_ACTIVE_WINDOW"])
-            if root is None:
-                return
-            stdout, stderr = root.communicate()
-            window_ids = stdout.decode().strip().split("#")[1].strip().split(", ")
+            window_ids = self.parse_window_ids()
+
             if len(window_ids) == 0:
                 return
             for window_id in window_ids:
@@ -112,6 +109,20 @@ class X11(Integration):
         except subprocess.CalledProcessError as e:
             log.error(f"An error occurred while running xprop: {e}")
             return
+
+    @log.catch
+    def parse_window_ids(self):
+        root = self._run_command(["xprop", "-root", "_NET_ACTIVE_WINDOW"])
+        if root is None:
+            return []
+
+        try:
+            stdout, stderr = root.communicate()
+            window_ids = stdout.decode().strip().split("#")[1].strip().split(", ")
+            return window_ids
+        except IndexError or subprocess.CalledProcessError as e:
+            log.error(f"An error occurred while running xprop: {e}")
+            return []
 
     @log.catch
     def get_title(self, window_id: str) -> str:

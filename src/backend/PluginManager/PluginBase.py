@@ -19,6 +19,9 @@ from rpyc.core import netref
 import gi
 
 from locales.LocaleManager import LocaleManager
+from src.backend.PluginManager.ActionHolderGroup import ActionHolderGroup
+from src.backend.PluginManager.PluginSettings.Asset import Icon, Color
+from src.backend.PluginManager.PluginSettings.PluginAssetManager import AssetManager
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -56,11 +59,19 @@ class PluginBase(rpyc.Service):
 
         self.action_holders: dict = {}
 
+        self.action_holder_groups: set[ActionHolderGroup] = set()
+
         self.event_holders: dict = {}
 
         self.registered: bool = False
 
         self.plugin_name: str = None
+
+        self.asset_manager: AssetManager = AssetManager(self)
+        self.asset_manager.load_assets()
+
+        self.has_plugin_settings: bool = False
+        self.first_setup: bool = True
 
         self.registered_pages: list[str] = []
 
@@ -138,6 +149,9 @@ class PluginBase(rpyc.Service):
                 "file_name": os.path.basename(inspect.getfile(self.__class__))
             }
             self.registered = True
+
+            settings = self.get_settings()
+            self.first_setup = settings.get("first-setup", True)
         else:
             reason = None
 
@@ -257,6 +271,10 @@ class PluginBase(rpyc.Service):
         
         self.action_holders[action_holder.action_id] = action_holder
 
+    def add_action_holders(self, action_holders: list[ActionHolder]):
+        for action_holder in action_holders:
+            self.add_action_holder(action_holder)
+
     def add_event_holder(self, event_holder: EventHolder) -> None:
         """
         Adds a EventHolder to the Plugin
@@ -275,7 +293,17 @@ class PluginBase(rpyc.Service):
 
         self.event_holders[event_holder.event_id] = event_holder
 
-    def connect_to_event(self, event_id: str, callback: callable) -> None:
+    def add_event_holders(self, event_holders: list[EventHolder]):
+        for event_holder in event_holders:
+            self.add_event_holder(event_holder)
+
+    def add_action_holder_group(self, action_holder_group: ActionHolderGroup) -> None:
+        self.action_holder_groups.add(action_holder_group)
+
+    def add_action_holder_groups(self, action_holder_groups: list[ActionHolderGroup]) -> None:
+        self.action_holder_groups.update(action_holder_groups)
+
+    def connect_to_event(self, callback: callable, event_id: str = None, event_id_suffix: str = None) -> None:
         """
         Connects a Callback to the Event which gets specified by the event ID
 
@@ -286,7 +314,9 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
-        if event_id in self.event_holders:
+        full_id = event_id or f"{self.get_plugin_id()}::{event_id_suffix}"
+
+        if full_id in self.event_holders:
             self.event_holders[event_id].add_listener(callback)
         else:
             log.warning(f"{event_id} does not exist in {self.plugin_name}")
@@ -353,8 +383,23 @@ class PluginBase(rpyc.Service):
         if not os.path.exists(self.settings_path):
             return {}
         with open(self.settings_path, "r") as f:
-            return json.load(f)
+            settings = json.load(f)
 
+            if settings.get("file-version") == "2.0":
+                # Is newest version, return settings
+                return settings.get("settings", {})
+            
+            else:
+                # Is the old format, convert it
+                new_settings = {
+                    "file-version": "2.0",
+                    "settings": settings
+                }
+                with open(self.settings_path, "w") as f:
+                    json.dump(new_settings, f, indent=4)
+
+                return settings
+                
     def get_manifest(self):
         """
         Retrieves the content of the manifest file from the plugin's directory if it exists.
@@ -364,6 +409,19 @@ class PluginBase(rpyc.Service):
         """
         if os.path.exists(os.path.join(self.PATH, "manifest.json")):
             with open(os.path.join(self.PATH, "manifest.json"), "r") as f:
+                return json.load(f)
+        return {}
+
+    def get_about(self):
+        """
+        Retrieves the content from the about file from the plugin's directory if it exists.
+
+         Returns:
+            dict: The contents of the about file as a dictionary, or an empty dictionary if the file does not exist.
+        """
+
+        if os.path.exists(os.path.join(self.PATH, "about.json")):
+            with open(os.path.join(self.PATH, "about.json"), "r") as f:
                 return json.load(f)
         return {}
     
@@ -378,8 +436,28 @@ class PluginBase(rpyc.Service):
             None
         """
         os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
-        with open(self.settings_path, "w") as f:
-            json.dump(settings, f, indent=4)
+
+        if not os.path.isfile(self.settings_path):
+            with open(self.settings_path, "w") as f:
+                json.dump({}, f)
+
+        with open(self.settings_path, "r+") as f:
+            content = json.load(f)
+
+            new_content = content.copy()
+
+            if content.get("file-version") == "2.0":
+                new_content["settings"] = settings
+            else:
+                new_content = {
+                    "file-version": "2.0",
+                    "settings": settings
+                }
+
+            f.seek(0)
+            json.dump(new_content, f, indent=4)
+            f.truncate()
+
 
     def add_css_stylesheet(self, path):
         """
@@ -452,6 +530,38 @@ class PluginBase(rpyc.Service):
             PluginBase: The plugin object if found, otherwise None.
         """
         return gl.plugin_manager.get_plugin_by_id(plugin_id) or None
+
+    # Asset Management
+
+    def add_icon(self, key: str, path: str, size:float=1.0, halign:float=0.0, valign:float=0.0):
+        self.asset_manager.icons.add_asset(key=key, asset=Icon(path=path, size=size, halign=halign, valign=valign))
+
+    def add_color(self, key: str, color: tuple[int, int, int, int]):
+        self.asset_manager.colors.add_asset(key=key, asset=Color(color=color))
+
+    def get_asset_path(self, asset_name: str, subdirs: list[str] = None, asset_folder: str = "assets") -> str:
+        """
+        Helper method that returns paths to plugin assets.
+
+        Args:
+            asset_name (str): Name of the Asset File
+            subdirs (list[str], optional): Subdirectories. Defaults to [].
+            asset_folder (str, optional): Name of the folder where assets are stored. Defaults to "assets".
+
+        Returns:
+            str: The full path to the asset
+        """
+
+        if not subdirs:
+            return os.path.join(self.PATH, asset_folder, asset_name)
+
+        subdir = os.path.join(*subdirs)
+        if subdir != "":
+            return os.path.join(self.PATH, asset_folder, subdir, asset_name)
+        return ""
+
+    def get_settings_area(self):
+        pass
 
     # ---------- #
     # Rpyc stuff #
@@ -555,7 +665,7 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
-        self.backend_connection = rpyc.connect("localhost", port)
+        self.backend_connection = rpyc.connect("localhost", port, config={"allow_public_attrs": True})
         self.backend = self.backend_connection.root
         gl.plugin_manager.backends.append(self.backend_connection)
 
@@ -592,3 +702,6 @@ class PluginBase(rpyc.Service):
                 raise ValueError("Register the plugin before requesting permissions")
             description = description.replace("{name}", self.plugin_name)
         gl.flatpak_permission_manager.show_dbus_permission_request_dialog(name, bus, description)
+
+    def get_config_rows(self) -> list[Adw.PreferencesRow]:
+        return []

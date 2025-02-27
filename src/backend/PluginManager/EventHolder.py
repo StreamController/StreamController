@@ -5,12 +5,14 @@ class EventHolder:
     """
         Holder for Event Callbacks for the specified Event ID
     """
-    def __init__(self, plugin_base: "PluginBase", event_id: str):
-        if event_id in ["", None]:
-            raise ValueError("Please specify an signal id")
+    def __init__(self, plugin_base: "PluginBase",
+                 event_id: str = None,
+                 event_id_suffix: str = None):
+        if event_id in ["", None] and event_id_suffix in ["", None]:
+            raise ValueError("Please specify a signal id")
 
         self.plugin_base = plugin_base
-        self.event_id = event_id
+        self.event_id = event_id or f"{self.plugin_base.get_plugin_id()}::{event_id_suffix}"
         self.observers: list = []
 
     def add_listener(self, callback: callable):
@@ -24,6 +26,7 @@ class EventHolder:
             self.observers.remove(callback)
 
     def trigger_event(self, *args, **kwargs):
+        # FIX: This can throw an error, if this happens apply the fix from Observer.py
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self._run_event(self.event_id, *args, **kwargs))

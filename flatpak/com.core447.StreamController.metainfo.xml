@@ -41,7 +41,31 @@
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
-    <release version="1.5.0-beta.7" date="2024-06-28">
+    <release version="1.5.0-beta.8" date="2025-02-27">
+      <description translatable="no">
+        <p>Features:</p>
+        <ul>
+          <li>Add Action Groups</li>
+          <li>Add auto page switching under KDE when kdotool is installed</li>
+          <li>Add tray icon</li>
+          <li>Add plugins settings page to the settings window</li>
+        </ul>
+
+        <p>Improvements:</p>
+        <ul>
+          <li>Increate max screensaver delay from 1h to 24h</li>
+        </ul>
+
+        <p>Fixes:</p>
+        <ul>
+          <li>Showing "no decks available" in header when no pages</li>
+          <li>Overwritting desktop file if already present</li>
+          <li>Deck lock during screensaver can be bypassed by reconnecting the deck</li>
+          <li>Copy/paste of buttons not working under KDE+Wayland</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.5.0-beta.7" date="2024-11-20">
       <description translatable="no">
         <p>Features:</p>
         <ul>

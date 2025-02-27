@@ -64,6 +64,7 @@ from src.backend.Migration.Migrators.Migrator_1_5_0_beta_5 import Migrator_1_5_0
 import globals as gl
 
 main_path = os.path.abspath(os.path.dirname(__file__))
+gl.MAIN_PATH = main_path
 
 def write_logs(record):
     gl.logs.append(record)

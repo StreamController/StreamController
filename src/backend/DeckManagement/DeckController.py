@@ -351,16 +351,6 @@ class DeckController:
 
         self.active_page: Page = None
 
-        deck_settings = self.get_deck_settings()
-
-        self.brightness = 75
-        brightness = deck_settings.get("brightness", {}).get("value", self.brightness)
-        self.set_brightness(brightness)
-
-        self.rotation = 0
-        rotation = deck_settings.get("rotation", {}).get("value", self.rotation)
-        self.set_rotation(rotation)
-
         self.inputs = {}
         for i in Input.All:
             self.inputs[i] = []
@@ -383,6 +373,16 @@ class DeckController:
 
         self.page_auto_loaded: bool = False
         self.last_manual_loaded_page_path: str = None
+
+        deck_settings = self.get_deck_settings()
+
+        self.brightness = 75
+        brightness = deck_settings.get("brightness", {}).get("value", self.brightness)
+        self.set_brightness(brightness)
+
+        self.rotation = 0
+        rotation = deck_settings.get("rotation", {}).get("value", self.rotation)
+        self.set_rotation(rotation)
 
         self.load_default_page()
 

@@ -38,13 +38,13 @@ class GenerativeUI[T](ABC):
         if self.on_change:
             self.on_change(new_value)
 
-    def load_value_into_ui(self):
+    def update_value_in_ui(self):
         value = self.get_value()
         self.set_ui_value(value)
 
     def reset_value(self):
-        self.set_value()
-        self.load_value_into_ui()
+        self.set_value(self._default_value)
+        self.update_value_in_ui()
 
     def set_value(self, value: T):
         """

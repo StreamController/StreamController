@@ -15,8 +15,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from copy import deepcopy
 
 # Import own modules
-from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 from src.backend.PluginManager.ActionBase import ActionBase
+from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
+from src.backend.PluginManager.ActionCore import ActionCore
 from src.backend.PageManagement.Page import Page
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
@@ -40,12 +41,13 @@ from loguru import logger as log
 
 class ActionHolder:
     """
-    Holder for ActionBase containing important information that can be used as long as the ActionBase is not initialized
+    Holder for ActionCore containing important information that can be used as long as the ActionCore is not initialized
     """
     def __init__(self,
         plugin_base: "PluginBase",
-        action_base: ActionBase,
         action_name: str,
+        action_core: ActionCore = None,
+        action_base: ActionBase = None,
         icon: Gtk.Widget = None,
         min_app_version: str = None,
         action_id: str = None,
@@ -67,7 +69,7 @@ class ActionHolder:
             icon = Gtk.Image(icon_name="insert-image-symbolic")
 
         self.plugin_base = plugin_base
-        self.action_base = action_base
+        self.action_core = action_core if action_core else action_base #backwards compatibility
         self.action_id_suffix = action_id_suffix
         self.action_id = action_id or f"{plugin_base.get_plugin_id()}::{action_id_suffix}"
         self.action_name = action_name
@@ -83,11 +85,11 @@ class ActionHolder:
         return True
 
     @log.catch
-    def init_and_get_action(self, deck_controller: DeckController, page: Page, state: int, input_ident: InputIdentifier) -> ActionBase:
+    def init_and_get_action(self, deck_controller: DeckController, page: Page, state: int, input_ident: InputIdentifier) -> ActionCore:
         if not self.get_is_compatible():
             return
 
-        return self.action_base(
+        return self.action_core(
             action_id=self.action_id,
             action_name=self.action_name,
             deck_controller=deck_controller,

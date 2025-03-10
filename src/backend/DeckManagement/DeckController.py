@@ -67,7 +67,7 @@ from src.Signals import Signals
 from typing import TYPE_CHECKING, ClassVar
 
 from src.windows.mainWindow.elements.KeyGrid import KeyButton, KeyGrid
-from src.backend.PluginManager.ActionBase import ActionBase
+from src.backend.PluginManager.ActionCore import ActionCore
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.DeckStackChild import DeckStackChild
     from src.backend.DeckManagement.DeckManager import DeckManager
@@ -1514,7 +1514,7 @@ class ControllerInputState:
     def close_resources(self) -> None:
         pass
 
-    def get_own_actions(self) -> list["ActionBase"]:
+    def get_own_actions(self) -> list["ActionCore"]:
         if not self.deck_controller.get_alive(): return []
         active_page = self.deck_controller.active_page
         active_page = self.controller_input.deck_controller.active_page
@@ -1532,7 +1532,7 @@ class ControllerInputState:
     
     def own_actions_update(self) -> None:
         for action in self.get_own_actions():
-            if not isinstance(action, ActionBase):
+            if not isinstance(action, ActionCore):
                 continue
             if not action.on_ready_called:
                 continue
@@ -1541,7 +1541,7 @@ class ControllerInputState:
     @log.catch
     def own_actions_tick(self) -> None:
         for action in self.get_own_actions():
-            if not isinstance(action, ActionBase):
+            if not isinstance(action, ActionCore):
                 continue
             if not action.on_ready_called:
                 continue
@@ -1568,7 +1568,7 @@ class ControllerInputState:
             if parsed_event is None:
                 continue
 
-            if not isinstance(action, ActionBase):
+            if not isinstance(action, ActionCore):
                 continue
 
             action.event_callback(parsed_event, data)

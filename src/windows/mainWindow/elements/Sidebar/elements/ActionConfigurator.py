@@ -27,7 +27,7 @@ from gi.repository import Gtk, Adw
 import globals as gl
 
 # Import own modules
-from src.backend.PluginManager.ActionBase import ActionBase
+from src.backend.PluginManager.ActionCore import ActionCore
 
 
 class ActionConfigurator(Gtk.Box):
@@ -92,7 +92,7 @@ class CommentGroup(Adw.PreferencesGroup):
     def __init__(self, parent, **kwargs):
         super().__init__(**kwargs)
         self.parent = parent
-        self.action: ActionBase = None
+        self.action: ActionCore = None
         self.index: int = None
         self.build()
 
@@ -160,7 +160,7 @@ class ConfigGroup(Adw.PreferencesGroup):
     def build(self):
         pass
 
-    def load_for_action(self, action: ActionBase):
+    def load_for_action(self, action: ActionCore):
         config_rows = action.get_config_rows()
 
         if not config_rows:
@@ -287,7 +287,7 @@ class EventAssigner(Adw.PreferencesGroup):
     def __init__(self, action_configurator: ActionConfigurator, **kwargs):
         super().__init__(**kwargs)
         self.action_configurator = action_configurator
-        self.action: ActionBase = None
+        self.action: ActionCore = None
         self.build()
 
     def build(self):
@@ -320,7 +320,7 @@ class EventAssigner(Adw.PreferencesGroup):
             self.rows.append(row)
             self.expander.add_row(row)
 
-    def load_for_action(self, action: ActionBase):
+    def load_for_action(self, action: ActionCore):
         self.action = action
         
         self.set_sensitive(action.allow_event_configuration)

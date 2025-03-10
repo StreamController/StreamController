@@ -472,7 +472,7 @@ class PluginActionRow(Adw.ActionRow):
         self.main_box.append(self.warning_icon)
 
     def on_click(self, button):
-        if self.action_holder.action_base == None:
+        if self.action_holder.action_core == None:
             return
         
         # Go back to old page

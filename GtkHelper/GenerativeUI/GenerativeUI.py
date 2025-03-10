@@ -6,19 +6,19 @@ from gi.repository import Gtk
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 T = TypeVar("T")
 
 class GenerativeUI(ABC, Generic[T]):
-    action_base: "ActionBase"
+    action_core: "ActionCore"
     var_name: str
     default_value: T
     on_change: callable
     widget: Gtk.Widget
 
-    def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, on_change: callable = None):
-        self.action_base = action_base
+    def __init__(self, action_core: "ActionCore", var_name: str, default_value: T, on_change: callable = None):
+        self.action_core = action_core
         self.var_name = var_name
         self.default_value = default_value
         self.on_change = on_change
@@ -45,12 +45,12 @@ class GenerativeUI(ABC, Generic[T]):
         self.set_ui_value(self.get_key(self.var_name))
 
     def set_key(self, key: str, value: T):
-        settings = self.action_base.get_settings()
+        settings = self.action_core.get_settings()
         settings[key] = value
-        self.action_base.set_settings(settings)
+        self.action_core.set_settings(settings)
 
     def get_key(self, key: str, fallback: T) -> T:
-        settings = self.action_base.get_settings()
+        settings = self.action_core.get_settings()
         return settings.get(key, fallback)
 
     def load_initial_ui_value(self):

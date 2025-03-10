@@ -107,6 +107,7 @@ deck.deck-group.title;Deck Einstellungen;Deck Settings;Paramètres du Deck;Confi
 deck.deck-group.description;"Betreffen das ganze Deck; sofern nicht überschrieben";Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire;Se aplica a todo el deck a menos que se sobrescriba
 deck.deck-group.brightness;Helligkeit;Brightness;Luminosité;Brillo
 deck.deck-group.enable-screensaver;Bildschirmschoner;Enable Screensaver;Activer l'économiseur d'écran;Activar salvapantallas
+deck.deck-group.rotation;Ausrichtung;Rotation;Rotation;Rotación
 deck.deck-group.screensaver-delay;Einschalten nach (min);Enable after (min);L’activer après (min);Activar después (min)
 deck.deck-group.media-to-show;Zu zeigendes Medium;Media to show;Média à afficher;Medios a mostrar
 deck.deck-group.media-select-label;Auswählen;Select;Sélectionner;Seleccione

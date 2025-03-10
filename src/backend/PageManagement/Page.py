@@ -546,6 +546,7 @@ class Page:
                 if not action.on_ready_called:
                     action.on_ready_called = True
                     action.on_ready()
+                    action.load_initial_generative_ui_values()
 
     def clear_action_objects(self):
         for input_type in self.action_objects:

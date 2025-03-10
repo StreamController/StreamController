@@ -69,3 +69,9 @@ class GenerativeUI[T](ABC):
     def load_initial_ui_value(self):
         value = self.get_value()
         self.set_ui_value(value)
+
+    def get_translation(self, key: str, fallback: str):
+        if key is None or fallback is None:
+            return ""
+
+        return self._action_base.get_translation(key, fallback)

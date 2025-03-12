@@ -361,7 +361,7 @@ class ActionBase(rpyc.Service):
         return self.plugin_base.asset_manager.colors.get_asset(key, skip_override)
 
     def get_translation(self, key: str, fallback: str = None):
-        self.plugin_base.locale_manager.get(key, fallback)
+        return self.plugin_base.locale_manager.get(key, fallback)
     
     def has_label_controls(self):
         own_action_index = self.get_own_action_index()

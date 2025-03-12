@@ -27,7 +27,7 @@ class EventManager:
             if event_assigner.id == id:
                 return event_assigner
 
-    def get_event_map(self) -> dict[InputEvent, EventAssigner]:
+    def get_event_map(self, ignore_overrides: bool = False) -> dict[InputEvent, EventAssigner]:
         event_map: dict[InputEvent, EventAssigner] = {}
 
         all_events = Input.AllEvents()
@@ -38,11 +38,12 @@ class EventManager:
         for event_assigner in self._event_assigners:
             event_map[event_assigner.default_event] = event_assigner
 
-        # Apply the overrides
-        for input_event_str, event_id in self._overrides.items():
-            input_event = Input.EventFromStringName(input_event_str)
-            event_assigner = self.get_event_assigner_by_id(event_id) if event_id else None
-            event_map[input_event] = event_assigner
+        if not ignore_overrides:
+            # Apply the overrides
+            for input_event_str, event_id in self._overrides.items():
+                input_event = Input.EventFromStringName(input_event_str)
+                event_assigner = self.get_event_assigner_by_id(event_id) if event_id else None
+                event_map[input_event] = event_assigner
 
         return event_map
 

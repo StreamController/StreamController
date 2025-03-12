@@ -356,7 +356,13 @@ class EventAssignerUI(BetterPreferencesGroup):
         self.action.set_event_assignments(assignments)
 
     def reset_assignments(self):
-        self.action.set_event_assignments({})
+        self.action.set_all_events_to_null()
+        # for event, assigner in self.action.event_manager.get_event_map(True).items():
+            # self.action.set_event_assignment(event, assigner.default_event)
+        
+        for assigner in self.action.event_manager.get_all_event_assigners():
+            self.action.set_event_assignment(assigner.default_event, assigner)
+
 
     def on_reset(self, button):
         self.reset_assignments()
@@ -370,7 +376,8 @@ class EventAssignerUI(BetterPreferencesGroup):
 
             assignments[row.event] = None
 
-        self.action.set_event_assignments(assignments)
+        self.action.set_all_events_to_null()
+        # self.action.set_event_assignments(assignments)
         self.load_for_action(self.action)
 
 

@@ -441,6 +441,10 @@ class ActionCore(rpyc.Service):
         )
         assignments = action_dict.get("event-assignments", {})
 
+    def set_all_events_to_null(self):
+        for input_type in self.event_manager.get_event_map().keys():
+            self.set_event_assignment(input_type, None)
+
     
     def get_event_assignments(self) -> dict[str, str]:
         return self.page.get_action_event_assignments(

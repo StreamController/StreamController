@@ -19,6 +19,38 @@ class KeyAction(InputAction, ActionCore):
                 callback=self.on_trigger
             ))
 
+class DialAction(InputAction, ActionCore):
+    def __init__(self, default_events: bool = True, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if default_events:
+            self.add_event_assigner(EventAssigner(
+                id="Dial Down",
+                ui_label="Dial Down",
+                default_event=Input.Dial.Events.DOWN,
+                callback=self.on_trigger
+            ))
+
+
+class TouchScreenAction(InputAction, ActionCore):
+    def __init__(self, default_events: bool = True, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if default_events:
+            self.add_event_assigner(EventAssigner(
+                id="Touchscreen Drag Left",
+                ui_label="Touchscreen Drag Left",
+                default_event=Input.Touchscreen.Events.DRAG_LEFT,
+                callback=self.on_trigger
+            ))
+
+            self.add_event_assigner(EventAssigner(
+                id="Touchscreen Drag Right",
+                ui_label="Touchscreen Drag Right",
+                default_event=Input.Touchscreen.Events.DRAG_RIGHT,
+                callback=self.on_trigger
+            ))
+
 
 ###### Usage example
 

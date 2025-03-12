@@ -532,7 +532,7 @@ class Page:
         return assignments
     
     
-    def set_action_event_assigment(self, event_assigner: EventAssigner | None, input_event: InputEvent, action_object: ActionCore = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
+    def set_action_event_assigment(self, event_assigner: EventAssigner | None, input_event: InputEvent | None, action_object: ActionCore = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
         action_dict.setdefault("event-assignments", {})
         action_dict["event-assignments"][str(input_event)] = event_assigner.id if event_assigner else None

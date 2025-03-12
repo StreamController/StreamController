@@ -431,16 +431,6 @@ class ActionCore(rpyc.Service):
 
         return assignment
     
-
-    def get_event_assigners_for_event(self, event: InputEvent) -> list[EventAssigner]:
-        action_dict = self.page.get_action_dict(
-            action_object=self,
-            identifier=self.input_ident,
-            state=self.state,
-            index=self.get_own_action_index(),
-        )
-        assignments = action_dict.get("event-assignments", {})
-
     def set_all_events_to_null(self):
         for input_type in self.event_manager.get_event_map().keys():
             self.set_event_assignment(input_type, None)
@@ -450,31 +440,8 @@ class ActionCore(rpyc.Service):
         return self.page.get_action_event_assignments(
             action_object=self
         )
-        assignments = {}
-
-        page_assignment_dict = self.page.get_action_event_assignments(action_object=self)
-
-        all_events = Input.AllEvents()
-        for event in all_events:
-            if event.string_name in page_assignment_dict:
-                assignments[event] = Input.EventFromStringName(page_assignment_dict[str(event)])
-            else:
-                assignments[event] = event
-
-        return assignments
     
-    def set_event_assignments(self, assignments: dict[InputEvent, InputEvent]):
-        assignments_strings = {}
-
-        for key, value in assignments.items():
-            if key == value:
-                continue
-
-            assignments_strings[str(key)] = str(value)
-
-        self.page.set_action_event_assignments(action_object=self, event_assignments=assignments_strings)
-
-    def set_event_assignment(self, input_event: InputEvent | None, event_assigner: EventAssigner):
+    def set_event_assignment(self, input_event: InputEvent | None, event_assigner: EventAssigner | None):
         self.page.set_action_event_assigment(
             event_assigner=event_assigner,
             input_event=input_event,

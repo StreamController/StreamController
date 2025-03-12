@@ -162,8 +162,9 @@ class ConfigGroup(Adw.PreferencesGroup):
 
     def load_for_action(self, action: ActionBase):
         config_rows = action.get_config_rows()
+        widgets = action.get_generative_ui_widgets()
 
-        if not config_rows:
+        if not config_rows and not widgets:
             self.hide()
             return
 
@@ -179,7 +180,7 @@ class ConfigGroup(Adw.PreferencesGroup):
             self.add(row)
             self.loaded_rows.append(row)
 
-        for gen_ui_row in action.get_generative_ui_widgets():
+        for gen_ui_row in widgets:
             self.add(gen_ui_row)
             self.loaded_rows.append(gen_ui_row)
         

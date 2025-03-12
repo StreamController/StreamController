@@ -25,7 +25,6 @@ class GenerativeUI[T](ABC):
         self.widget: Gtk.Widget = None
 
     def get_ui(self) -> Gtk.Widget:
-        self.widget.unparent()
         return self.widget
 
     @abstractmethod

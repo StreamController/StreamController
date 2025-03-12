@@ -24,9 +24,9 @@ class GenerativeUI[T](ABC):
         self.on_change = on_change
         self.widget: Gtk.Widget = None
 
-    @abstractmethod
     def get_ui(self) -> Gtk.Widget:
-        pass
+        self.widget.unparent()
+        return self.widget
 
     @abstractmethod
     def set_ui_value(self, value: T):

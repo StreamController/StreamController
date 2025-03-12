@@ -33,7 +33,7 @@ import threading
 import globals as gl
 
 # Import own modules
-from src.backend.PluginManager.ActionBase import ActionBase
+from src.backend.PluginManager.ActionCore import ActionCore
 from GtkHelper.GtkHelper import BetterExpander
 from src.backend.PageManagement.Page import NoActionHolderFound, ActionOutdated
 from src.windows.mainWindow.elements.Sidebar.elements.ActionMissing.MisingActionButtonRow import MissingActionButtonRow
@@ -125,10 +125,10 @@ class ActionExpanderRow(BetterExpander):
         actions = controller.active_page.action_objects.get(identifier.input_type, {}).get(identifier.json_identifier, {}).get(state, {})
         self.load_for_actions(actions.values())
 
-    def load_for_actions(self, actions: list[ActionBase]):
+    def load_for_actions(self, actions: list[ActionCore]):
         number_of_actions = len(actions)
         for i, action in enumerate(actions):
-            if isinstance(action, ActionBase):
+            if isinstance(action, ActionCore):
                 # Get action comment
                 comment = action.page.get_action_comment(index=i,
                                                          state=action.state,
@@ -359,7 +359,7 @@ class ActionRow(Adw.ActionRow):
         self.action_id = action_id
         self.action_category = action_category
         self.sidebar: "Sidebar" = sidebar
-        self.action_object: "ActionBase" = action_object
+        self.action_object: "ActionCore" = action_object
         self.comment = comment
         self.index = index
         self.controls_image = controls_image

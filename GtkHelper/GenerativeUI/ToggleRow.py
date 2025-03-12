@@ -5,11 +5,11 @@ from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 class ToggleRow(GenerativeUI[bool]):
-    def __init__(self, action_base: "ActionBase", var_name: str, default_value: bool, on_change: callable = None, title: str = None, subtitle: str = None):
-        super().__init__(action_base, var_name, default_value, on_change)
+    def __init__(self, action_core: "ActionCore", var_name: str, default_value: bool, on_change: callable = None, title: str = None, subtitle: str = None):
+        super().__init__(action_core, var_name, default_value, on_change)
 
         self.widget = Adw.SwitchRow(
             title=title,

@@ -293,7 +293,6 @@ class EventAssignerUI(BetterPreferencesGroup):
 
     def build(self):
         self.expander = Adw.ExpanderRow(title="Event Assigner", subtitle="Configure event assignments")
-        self.expander.set_expanded(True)
         self.add(self.expander)
 
         self.button_box = Gtk.Box(css_classes=["linked"])

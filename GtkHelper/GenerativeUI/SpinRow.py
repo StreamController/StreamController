@@ -21,19 +21,20 @@ class SpinRow(GenerativeUI[float]):
                  ):
         super().__init__(action_base, var_name, default_value, on_change)
 
-        adjustment = Gtk.Adjustment.new(self._default_value, min, max, step, 1, 0)
+        self._adjustment = Gtk.Adjustment.new(self._default_value, min, max, step, 1, 0)
 
         self.widget: Adw.SpinRow = Adw.SpinRow(
             title=self.get_translation(title, title),
             subtitle=self.get_translation(subtitle, subtitle),
             value=self._default_value,
-            adjustment=adjustment,
+            adjustment=self._adjustment,
         )
         self.widget.set_digits(digits)
 
-        adjustment.connect("value-changed", self._correct_step_amount)
+        self._adjustment.connect("value-changed", self._correct_step_amount)
+        self.widget.connect("changed", self._value_changed)
 
-    def _value_changed(self, spin: Adw.SpinRow, _):
+    def _value_changed(self, spin: Adw.SpinRow):
         self._handle_value_changed(spin.get_value())
     
     def set_ui_value(self, value: float):
@@ -44,3 +45,18 @@ class SpinRow(GenerativeUI[float]):
         step = adjustment.get_step_increment()
         rounded_value = round(value / step) * step
         adjustment.set_value(rounded_value)
+
+    def set_min(self, min: float):
+        if self._adjustment.get_upper() < min:
+            return
+
+        self._adjustment.set_lower(min)
+
+    def set_max(self, max: float):
+        if max < self._adjustment.get_lower():
+            return
+
+        self._adjustment.set_upper(max)
+
+    def set_step(self, step: float):
+        self._adjustment.set_step_increment(step)

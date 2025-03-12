@@ -22,8 +22,8 @@ class ScaleRow(Adw.ActionRow):
         self.left = Gtk.Label(label=str(min), hexpand=False, halign=Gtk.Align.END)
         self.right = Gtk.Label(label=str(max), hexpand=False, halign=Gtk.Align.START)
 
-        adjustment = Gtk.Adjustment.new(value, min, max, step, 1, 0)
-        self.scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=adjustment, hexpand=True)
+        self._adjustment = Gtk.Adjustment.new(value, min, max, step, 1, 0)
+        self.scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=self._adjustment, hexpand=True)
         self.scale.set_draw_value(draw_value)
         self.scale.set_round_digits(round_digits)
         self.scale.set_digits(digits)
@@ -32,9 +32,26 @@ class ScaleRow(Adw.ActionRow):
         box.append(self.scale)
         box.append(self.right)
 
-        adjustment.connect("value-changed", self._correct_step_amount)
+        self._adjustment.connect("value-changed", self._correct_step_amount)
 
         self.add_suffix(box)
+
+    def set_min(self, min: float):
+        if self._adjustment.get_upper() < min:
+            return
+
+        self._adjustment.set_lower(min)
+        self.left.set_label(str(min))
+
+    def set_max(self, max: float):
+        if max < self._adjustment.get_lower():
+            return
+
+        self._adjustment.set_upper(max)
+        self.right.set_label(str(max))
+
+    def set_step(self, step: float):
+        self._adjustment.set_step_increment(step)
 
     def _correct_step_amount(self, adjustment):
         value = adjustment.get_value()

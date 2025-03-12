@@ -45,3 +45,12 @@ class ScaleRow(GenerativeUI[float]):
 
     def set_ui_value(self, value: float):
         self.widget.scale.set_value(value)
+
+    def set_min(self, min: float):
+        self.widget.set_min(min)
+
+    def set_max(self, max: float):
+        self.widget.set_max(max)
+
+    def set_step(self, step: float):
+        self.widget.set_step(step)

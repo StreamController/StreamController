@@ -1,5 +1,6 @@
 from abc import ABC
 
+from src.backend.PluginManager.EventAssigner import EventAssigner
 from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 from src.backend.PluginManager.ActionCore import ActionCore
 
@@ -10,10 +11,12 @@ class KeyAction(InputAction, ActionCore):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.add_event_assigner(
-            Input.Key.Events.DOWN,
-            self.on_trigger
-        )
+        self.add_event_assigner(EventAssigner(
+            id="Key Down",
+            ui_label="Key Down",
+            default_event=Input.Key.Events.DOWN,
+            callback=self.on_trigger
+        ))
 
 
 ###### Usage example

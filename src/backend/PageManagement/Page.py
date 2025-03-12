@@ -19,6 +19,7 @@ import json
 import sys
 import threading
 import time
+from evdev import InputEvent
 from loguru import logger as log
 from copy import copy
 import shutil
@@ -26,6 +27,7 @@ import shutil
 from numpy import isin
 
 # Import globals
+from src.backend.PluginManager.EventAssigner import EventAssigner
 from src.backend.DeckManagement.ImageHelpers import crop_key_image_from_deck_sized_image
 import globals as gl
 
@@ -520,11 +522,20 @@ class Page:
 
     def get_action_event_assignments(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
-        return action_dict.get("event-assignments", {})
+
+        # backwards compat
+        assignments = action_dict.get("event-assignments", {})
+        for key, value in assignments.items():
+            if value == "None":
+                assignments[key] = None
+
+        return assignments
     
-    def set_action_event_assignments(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None, event_assignments: dict = None):
+    
+    def set_action_event_assigment(self, event_assigner: EventAssigner | None, input_event: InputEvent, action_object: ActionCore = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
-        action_dict["event-assignments"] = event_assignments
+        action_dict.setdefault("event-assignments", {})
+        action_dict["event-assignments"][str(input_event)] = event_assigner.id if event_assigner else None
         self.set_action_dict(action_object, identifier, state, index, action_dict)
 
 
@@ -545,6 +556,7 @@ class Page:
             if hasattr(action, "on_ready"):
                 if not action.on_ready_called:
                     action.on_ready_called = True
+                    action.load_event_overrides()
                     action.on_ready()
                     action.load_initial_generative_ui_values()
 

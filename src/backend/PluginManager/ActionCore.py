@@ -21,6 +21,10 @@ import os
 from PIL import Image
 import gi
 
+from data.plugins.gg_kekemui_veadosc.observer import event
+from src.backend.PluginManager.EventManager import EventManager
+from src.backend.PluginManager.EventAssigner import EventAssigner
+
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 
@@ -78,9 +82,19 @@ class ActionCore(rpyc.Service):
 
         self.labels = {}
 
-        self.event_assigners: dict[InputEvent, list[callable]] = {}
+        # self.event_assigners: dict[InputEvent, list[callable]] = {}
+        self.event_manager = EventManager()
+        # self.event_manager.add_event_assigner(EventAssigner(
+        #     "event1",
+        #     "Event 1",
+        #     Input.Key.Events.DOWN,
+        #     lambda *args: print("----TRIGGERED----")
+        # ))
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
+
+    def load_event_overrides(self):
+        self.event_manager.set_overrides(self.get_event_assignments())
         
     def set_deck_controller(self, deck_controller):
         """
@@ -102,13 +116,9 @@ class ActionCore(rpyc.Service):
         if i is None: return
         return i.states.get(self.state)
     
-    def add_event_assigner(self, event: InputEvent, assigner: callable):
-        self.event_assigners.setdefault(event, [])
-        self.event_assigners[event].append(assigner)
+    def add_event_assigner(self, event_assigner: EventAssigner):
+        self.event_manager.add_event_assigner(event_assigner)
 
-    def remove_event_assigner(self, event: InputEvent, assigner: callable):
-        self.event_assigners[event].remove(assigner)
-    
     def event_callback(self, event: InputEvent, data: dict = None):
         for assigner in self.event_assigners.get(event, []):
             assigner(data)
@@ -421,7 +431,21 @@ class ActionCore(rpyc.Service):
 
         return assignment
     
-    def get_event_assignments(self) -> dict[InputEvent, InputEvent]:
+
+    def get_event_assigners_for_event(self, event: InputEvent) -> list[EventAssigner]:
+        action_dict = self.page.get_action_dict(
+            action_object=self,
+            identifier=self.input_ident,
+            state=self.state,
+            index=self.get_own_action_index(),
+        )
+        assignments = action_dict.get("event-assignments", {})
+
+    
+    def get_event_assignments(self) -> dict[str, str]:
+        return self.page.get_action_event_assignments(
+            action_object=self
+        )
         assignments = {}
 
         page_assignment_dict = self.page.get_action_event_assignments(action_object=self)
@@ -445,6 +469,15 @@ class ActionCore(rpyc.Service):
             assignments_strings[str(key)] = str(value)
 
         self.page.set_action_event_assignments(action_object=self, event_assignments=assignments_strings)
+
+    def set_event_assignment(self, input_event: InputEvent | None, event_assigner: EventAssigner):
+        self.page.set_action_event_assigment(
+            event_assigner=event_assigner,
+            input_event=input_event,
+            action_object=self
+        )
+
+        self.load_event_overrides()
 
     
     def raise_error_if_not_ready(self):

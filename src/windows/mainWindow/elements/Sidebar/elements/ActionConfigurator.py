@@ -16,12 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from cv2 import exp
 import gi
 
-from GtkHelper.GtkHelper import BackButton
+from GtkHelper.GtkHelper import BackButton, BetterPreferencesGroup
+from src.backend.PluginManager.EventAssigner import EventAssigner
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GObject, Gio
 
 # Import globals
 import globals as gl
@@ -59,7 +60,7 @@ class ActionConfigurator(Gtk.Box):
         self.comment_group = CommentGroup(self, margin_top=20)
         self.main_box.append(self.comment_group)
 
-        self.event_assigner = EventAssigner(self, margin_top=20)
+        self.event_assigner = EventAssignerUI(self, margin_top=20)
         self.main_box.append(self.event_assigner)
 
         self.main_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL, margin_top=20, margin_bottom=20))
@@ -283,7 +284,7 @@ class RemoveButton(Gtk.Button):
         self.action = action
         self.index = index
 
-class EventAssigner(Adw.PreferencesGroup):
+class EventAssignerUI(BetterPreferencesGroup):
     def __init__(self, action_configurator: ActionConfigurator, **kwargs):
         super().__init__(**kwargs)
         self.action_configurator = action_configurator
@@ -292,6 +293,7 @@ class EventAssigner(Adw.PreferencesGroup):
 
     def build(self):
         self.expander = Adw.ExpanderRow(title="Event Assigner", subtitle="Configure event assignments")
+        self.expander.set_expanded(True)
         self.add(self.expander)
 
         self.button_box = Gtk.Box(css_classes=["linked"])
@@ -313,8 +315,7 @@ class EventAssigner(Adw.PreferencesGroup):
         for event in all_events:
             row = EventAssignerRow(
                 event_assigner=self,
-                event=event,
-                available_events=all_events + [None]
+                event=event
             )
 
             self.rows.append(row)
@@ -324,6 +325,22 @@ class EventAssigner(Adw.PreferencesGroup):
         self.action = action
         
         self.set_sensitive(action.allow_event_configuration)
+
+        # return
+        # self.clear()
+
+        all_event_assigners = action.event_manager.get_all_event_assigners()
+        event_assigner_map = action.event_manager.get_event_map()
+
+        for row in self.rows:
+            row.set_available_events(all_event_assigners)
+            row.select_event(event_assigner_map.get(row.event, None))
+
+            action_input_type = type(action.input_ident)
+            row.set_visible(row.event in action_input_type.Events)
+
+
+        return
 
         assignments = action.get_event_assignments()
 
@@ -357,15 +374,54 @@ class EventAssigner(Adw.PreferencesGroup):
         self.action.set_event_assignments(assignments)
         self.load_for_action(self.action)
 
+
+
+class EventAssignerRowItem(GObject.Object):
+    __gtype_name__ = "EventAssignerRowItem"
+
+    ui_label = GObject.Property(type=str)
+    id = GObject.Property(type=str)
+    # event_assigner = GObject.Property(type=EventAssigner)
+
+
+    def __init__(self, event_assigner: EventAssigner):
+        super().__init__()
+        if not event_assigner:
+            self.ui_label = "None"
+            self.id = None
+            return
+        
+        self.ui_label = event_assigner.ui_label
+        self.id = event_assigner.id
+
+
+
 class EventAssignerRow(Adw.ComboRow):
-    def __init__(self, event_assigner: EventAssigner, event: InputEvent, available_events: list[InputEvent]):
+    def __init__(self, event_assigner: EventAssignerUI, event: InputEvent):
         super().__init__()
 
+        self.set_title(str(event))
         self.event_assigner = event_assigner
         self.event = event
-        self.available_events = available_events
+        self.available_events: list[EventAssigner] = []
 
-        self.build()
+        # Create the item list factory
+        self.factory = Gtk.SignalListItemFactory()
+        self.set_factory(self.factory)
+
+        def f_setup(fact, item):
+            label = Gtk.Label(halign=Gtk.Align.START)
+            label.set_selectable(False)
+            item.set_child(label)
+        self.factory.connect("setup", f_setup)
+
+        def f_bind(fact, item):
+            item.get_child().set_label(item.get_item().ui_label)
+        self.factory.connect("bind", f_bind)
+
+        self.connect("notify::selected", self.on_changed)
+
+
 
     def _connect_signal(self):
         self.connect("notify::selected", self.on_changed)
@@ -376,22 +432,33 @@ class EventAssignerRow(Adw.ComboRow):
         except TypeError:
             pass
 
-    def build(self):
-        self.set_title(str(self.event))
+    def set_available_events(self, events: list[EventAssigner]):
+        self._disconnect_signal()
+        model = Gio.ListStore.new(EventAssignerRowItem)
+        self.set_model(model)
 
-        self.str_list = Gtk.StringList()
-        for event in self.available_events:
-            self.str_list.append(str(event))
+        model.append(EventAssignerRowItem(None))
 
-        self.set_model(self.str_list)
+        for event in events:
+            model.append(EventAssignerRowItem(event))
 
-        self.select_event(None)
+        self.set_selected(0)
+        self._connect_signal()
 
-    def select_event(self, event: InputEvent):
+    def select_event(self, event_assigner: EventAssigner):
         self._disconnect_signal()
 
-        for i, e in enumerate(self.str_list):
-            if e.get_string() == str(event):
+        model = self.get_model()
+
+        for i in range(model.get_n_items()):
+            e = model.get_item(i)
+            if event_assigner is None:
+                if e.id == None:
+                    self.set_selected(i)
+                    self._connect_signal()
+                    return
+                
+            if e.id == event_assigner.id:
                 self.set_selected(i)
                 self._connect_signal()
                 return
@@ -400,7 +467,16 @@ class EventAssignerRow(Adw.ComboRow):
         self._connect_signal()
 
     def on_changed(self, *args):
-        selected = self.get_selected()
+        selected = self.get_selected_item()
+
+        event_id = selected.id if selected else None
+
+
+        event_assigner = self.event_assigner.action.event_manager.get_event_assigner_by_id(event_id)
+        self.event_assigner.action.set_event_assignment(self.event, event_assigner)
+
+
+        return
 
         if selected == Gtk.INVALID_LIST_POSITION:
             event = None

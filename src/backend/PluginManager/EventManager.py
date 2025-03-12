@@ -16,6 +16,9 @@ class EventManager:
             raise ValueError(f"Event assigner with id '{event_assigner.id}' already exists on this action")
         self._event_assigners.append(event_assigner)
 
+    def clear_event_assigners(self):
+        self._event_assigners.clear()
+
     def get_all_event_assigners(self) -> list[EventAssigner]:
         return self._event_assigners
 

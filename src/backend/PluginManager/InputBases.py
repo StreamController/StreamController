@@ -8,15 +8,16 @@ class InputAction(ABC):
     pass
 
 class KeyAction(InputAction, ActionCore):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, default_events: bool = True, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.add_event_assigner(EventAssigner(
-            id="Key Down",
-            ui_label="Key Down",
-            default_event=Input.Key.Events.DOWN,
-            callback=self.on_trigger
-        ))
+        if default_events:
+            self.add_event_assigner(EventAssigner(
+                id="Key Down",
+                ui_label="Key Down",
+                default_event=Input.Key.Events.DOWN,
+                callback=self.on_trigger
+            ))
 
 
 ###### Usage example

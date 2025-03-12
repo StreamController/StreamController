@@ -6,3 +6,6 @@ class EventAssigner:
         self.ui_label = ui_label
         self.default_event = default_event
         self.callback = callback
+
+    def call(self, *args, **kwargs):
+        self.callback(*args, **kwargs)

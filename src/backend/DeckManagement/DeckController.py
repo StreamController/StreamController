@@ -1561,17 +1561,18 @@ class ControllerInputState:
                     gl.app.send_missing_plugin_notification(plugin_id)
                 continue
 
-            parsed_event = event
-            if action.allow_event_configuration:
-                parsed_event = action.event_manager.get_event_assigner_for_event(event)
+            # parsed_event = event
+            # if action.allow_event_configuration:
+                # parsed_event = action.event_manager.get_event_assigner_for_event(event)
 
-            if parsed_event is None:
+            print()
+            if event is None:
                 continue
 
             if not isinstance(action, ActionCore):
                 continue
 
-            action.event_callback(parsed_event, data)
+            action._raw_event_callback(event, data)
 
     def own_actions_ready_threaded(self) -> None:
         threading.Thread(target=self.own_actions_ready, name="own_actions_ready").start()

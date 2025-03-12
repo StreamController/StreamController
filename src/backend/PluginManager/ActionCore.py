@@ -82,16 +82,12 @@ class ActionCore(rpyc.Service):
 
         self.labels = {}
 
-        # self.event_assigners: dict[InputEvent, list[callable]] = {}
         self.event_manager = EventManager()
-        # self.event_manager.add_event_assigner(EventAssigner(
-        #     "event1",
-        #     "Event 1",
-        #     Input.Key.Events.DOWN,
-        #     lambda *args: print("----TRIGGERED----")
-        # ))
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
+
+    def clear_event_assigners(self):
+        self.event_manager.clear_event_assigners()
 
     def load_event_overrides(self):
         self.event_manager.set_overrides(self.get_event_assignments())
@@ -119,9 +115,13 @@ class ActionCore(rpyc.Service):
     def add_event_assigner(self, event_assigner: EventAssigner):
         self.event_manager.add_event_assigner(event_assigner)
 
+    def _raw_event_callback(self, event: InputEvent, data: dict = None):
+        event_assigner = self.event_manager.get_event_assigner_for_event(event)
+        if event_assigner:
+            event_assigner.call(data)
+
     def event_callback(self, event: InputEvent, data: dict = None):
-        for assigner in self.event_assigners.get(event, []):
-            assigner(data)
+        pass
 
     def on_trigger(self):
         pass

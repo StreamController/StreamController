@@ -14,10 +14,10 @@ class GenerativeUI[T](ABC):
     _action_base: "ActionBase"
     _var_name: str # name of the key in the actions settings
     _default_value: T # default value of the key
-    on_change: Callable[[T], None] # method that gets called when the value changes
+    on_change: Callable[[Gtk.Widget, T], None] # method that gets called when the value changes
     widget: Gtk.Widget # The actual widget of the UI Element
 
-    def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, on_change: Callable[[T], None] = None):
+    def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, on_change: Callable[[Gtk.Widget, T], None] = None):
         self._action_base = action_base
         self._var_name = var_name
         self._default_value = default_value
@@ -36,7 +36,7 @@ class GenerativeUI[T](ABC):
         self.set_value(new_value)
         
         if self.on_change:
-            self.on_change(new_value)
+            self.on_change(self.widget, new_value)
 
     def update_value_in_ui(self):
         value = self.get_value()

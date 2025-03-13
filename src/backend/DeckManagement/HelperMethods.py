@@ -36,22 +36,23 @@ from autostart import is_flatpak
 import globals as gl
 
 
-def sha256(file_path):
+def sha256(text: str) -> str:
     """
-    Calculates the sha256 hash of a file.
+    Calculates the sha256 hash of a file or string.
 
     Args:
-        file_path (str): The path to the file.
+        text (str): The file path or string.
 
     Returns:
-        str: The sha256 hash of the file.
+        str: The sha256 hash of the file or string.
     """
     hash_sha256 = hashlib.sha256()
-    if not os.path.exists(file_path):
-        return
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_sha256.update(chunk)
+    if os.path.exists(text):
+        with open(text, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_sha256.update(chunk)
+    else:
+        hash_sha256.update(text.encode('utf-8'))
     return hash_sha256.hexdigest()
 
 
@@ -145,7 +146,7 @@ def is_video(path: str) -> bool:
 
 def is_image(path: str) -> bool:
     if path is None:
-        return
+        return False
     if os.path.isfile(path):
         return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.image_extensions
 
@@ -154,11 +155,11 @@ def is_image(path: str) -> bool:
 
 def is_svg(path: str) -> bool:
     if path is None:
-        return
+        return False
     if os.path.isfile(path):
         return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.svg_extensions
 
-    return False
+    return path.startswith("<svg ")
 
 
 def get_image_aspect_ratio(img: Image) -> str:
@@ -222,14 +223,21 @@ def download_file(url: str, path: str = "", file_name: str = None) -> str:
     return path
 
 
-def load_svg_as_pil(file_path):
+def load_svg_as_pil(file_path: str):
     hash = sha256(file_path)
     tmp = os.path.join(gl.DATA_PATH, "cache", "svg_to_png", f"{hash}.png")
 
     if not os.path.exists(tmp):
         os.makedirs(os.path.dirname(tmp), exist_ok=True)
-        cairosvg.svg2png(url=file_path, write_to=tmp,
-                         output_width=96, output_height=96)
+
+        if os.path.exists(file_path):
+            cairosvg.svg2png(url=file_path, write_to=tmp,
+                             output_width=96, output_height=96)
+        elif file_path.startswith("<svg "):
+            cairosvg.svg2png(bytestring=file_path, write_to=tmp,
+                             output_width=96, output_height=96)
+        else:
+            raise ValueError(f"Could not create SVG from string or path: {file_path}")
 
     pil_image = Image.open(tmp)
     return pil_image

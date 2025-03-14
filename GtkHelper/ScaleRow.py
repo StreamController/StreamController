@@ -5,15 +5,15 @@ from gi.repository import Gtk, Adw, Gdk, GLib
 
 class ScaleRow(Adw.ActionRow):
     def __init__(self,
-                 title: str = ...,
-                 subtitle: str = ...,
-                 value: float = ...,
-                 min: float = ...,
-                 max: float = ...,
-                 step: float = ...,
-                 digits: int = ...,
-                 draw_value: bool = ...,
-                 round_digits: bool = ...,
+                 value: float,
+                 min: float,
+                 max: float,
+                 title: str = None,
+                 subtitle: str = None,
+                 step: float = 0.1,
+                 digits: int = 2,
+                 draw_value: bool = False,
+                 round_digits: bool = True,
                  ):
         super().__init__(title=title, subtitle=subtitle)
 

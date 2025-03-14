@@ -16,6 +16,7 @@ class ScaleRow(GenerativeUI[float]):
                  default_value: float,
                  min: float,
                  max: float,
+                 can_reset: bool = True,
                  on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
@@ -24,7 +25,7 @@ class ScaleRow(GenerativeUI[float]):
                  draw_value: bool = True,
                  round_digits: bool = True
                  ):
-        super().__init__(action_base, var_name, default_value, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, on_change)
 
         self.widget: Scale = Scale(
             title=self.get_translation(title, title),
@@ -37,6 +38,9 @@ class ScaleRow(GenerativeUI[float]):
             draw_value=draw_value,
             round_digits=round_digits
         )
+
+        if self._can_reset:
+            self.widget.add_prefix(self._create_reset_button())
 
         self.widget.scale.connect("value-changed", self._value_changed)
 

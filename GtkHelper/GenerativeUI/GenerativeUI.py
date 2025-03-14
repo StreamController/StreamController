@@ -16,12 +16,14 @@ class GenerativeUI[T](ABC):
     _default_value: T # default value of the key
     on_change: Callable[[Gtk.Widget, T], None] # method that gets called when the value changes
     widget: Gtk.Widget # The actual widget of the UI Element
+    _can_reset: bool
 
-    def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, on_change: Callable[[Gtk.Widget, T], None] = None):
+    def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, can_reset: bool = True, on_change: Callable[[Gtk.Widget, T], None] = None):
         self._action_base = action_base
         self._var_name = var_name
         self._default_value = default_value
         self.on_change = on_change
+        self._can_reset = can_reset
         self.widget: Gtk.Widget = None
 
         self._action_base.add_generative_ui_object(self)
@@ -76,3 +78,12 @@ class GenerativeUI[T](ABC):
             return ""
 
         return self._action_base.get_translation(key, fallback)
+
+    def _create_reset_button(self):
+        button = Gtk.Button(icon_name="edit-undo-symbolic")
+        button.set_margin_top(5)
+        button.set_margin_bottom(5)
+
+        button.connect("clicked", lambda _: self.reset_value())
+
+        return button

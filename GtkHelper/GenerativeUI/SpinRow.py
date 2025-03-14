@@ -13,13 +13,14 @@ class SpinRow(GenerativeUI[float]):
                  default_value: float,
                  min: float,
                  max: float,
+                 can_reset: bool = True,
                  on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
                  step: float = 0.1,
                  digits: int = 2,
                  ):
-        super().__init__(action_base, var_name, default_value, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, on_change)
 
         self._adjustment = Gtk.Adjustment.new(self._default_value, min, max, step, 1, 0)
 
@@ -30,6 +31,9 @@ class SpinRow(GenerativeUI[float]):
             adjustment=self._adjustment,
         )
         self.widget.set_digits(digits)
+
+        if self._can_reset:
+            self.widget.add_prefix(self._create_reset_button())
 
         self._adjustment.connect("value-changed", self._correct_step_amount)
         self.widget.connect("changed", self._value_changed)

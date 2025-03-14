@@ -24,7 +24,6 @@ class FileDialogRow(Adw.ActionRow):
                  ):
         super().__init__(title=title, subtitle=subtitle)
 
-
         self._dialog_title = dialog_title
         self._initial_path = initial_path
         self._block_interaction = block_interaction
@@ -89,10 +88,13 @@ class FileDialogRow(Adw.ActionRow):
         self.set_label()
 
     def set_label(self):
-        if not self.selected_file:
+        if self.selected_file is None:
+            self.file_label.set_label("")
             return
 
         if self._only_show_filename:
-            self.file_label.set_label(self.selected_file.get_basename())
+            label = self.selected_file.get_basename()
         else:
-            self.file_label.set_label(self.selected_file.get_path())
+            label = self.selected_file.get_path()
+
+        self.file_label.set_label(label or "")

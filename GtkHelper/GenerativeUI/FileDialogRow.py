@@ -17,6 +17,7 @@ class FileDialogRow(GenerativeUI[str]):
     def __init__(self, action_base: "ActionBase",
                  var_name: str,
                  default_value: str,
+                 can_reset: bool = True,
                  on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
@@ -25,7 +26,7 @@ class FileDialogRow(GenerativeUI[str]):
                  only_show_filename: bool = True,
                  filters: list[FileDialogFilter] = None
                  ):
-        super().__init__(action_base, var_name, default_value, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, on_change)
 
         self.widget: FileDialog = FileDialog(
             title=self.get_translation(title),
@@ -37,6 +38,9 @@ class FileDialogRow(GenerativeUI[str]):
             filters=filters,
             file_change_callback=self._file_changed
         )
+
+        if self._can_reset:
+            self.widget.add_prefix(self._create_reset_button())
 
     def _file_changed(self, file: Gio.File):
         self._handle_value_changed(file.get_path())

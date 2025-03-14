@@ -13,12 +13,13 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
                  var_name: str,
                  default_value: int,
                  items: list[BaseComboRowItem],
+                 can_reset: bool = True,
                  on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
                  enable_search: bool = False,
                  ):
-        super().__init__(action_base, var_name, default_value, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, on_change)
 
         self.widget: Combo = Combo(
             title=self.get_translation(title, title),
@@ -27,6 +28,9 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
             enable_search=enable_search,
             default_selection=self._default_value
         )
+
+        if self._can_reset:
+            self.widget.add_prefix(self._create_reset_button())
 
         self.widget.connect("notify::selected", self._value_changed)
 

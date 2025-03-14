@@ -88,10 +88,8 @@ class ActionBase(rpyc.Service):
         widgets = []
 
         for generative_object in self.generative_ui_objects:
-            if not generative_object.auto_add:
-                continue
-
             widget = generative_object.get_ui()
+
             if widget is None:
                 continue
 

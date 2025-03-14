@@ -1,0 +1,43 @@
+from dataclasses import dataclass
+
+from GtkHelper.GenerativeUI.GenerativeUI import GenerativeUI
+from GtkHelper.ColorButtonRow import ColorButtonRow as ColorDialog
+
+import gi
+from gi.repository import Gtk, Adw, Gio
+
+from typing import TYPE_CHECKING, Callable
+
+if TYPE_CHECKING:
+    from src.backend.PluginManager import ActionBase
+
+
+
+class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
+    def __init__(self, action_base: "ActionBase",
+                 var_name: str,
+                 default_value: tuple[int, int, int, int],
+                 can_reset: bool = True,
+                 on_change: callable = None,
+                 title: str = None,
+                 subtitle: str = None,
+                 ):
+        super().__init__(action_base, var_name, default_value, can_reset, on_change)
+
+        self.widget: ColorDialog = ColorDialog(
+            title=self.get_translation(title),
+            subtitle=self.get_translation(subtitle),
+            default_color=self._default_value
+        )
+
+        if self._can_reset:
+            self.widget.add_prefix(self._create_reset_button())
+
+        self.widget.color_button.connect("color-set", self._value_changed)
+
+    def _value_changed(self, button: Gtk.ColorButton):
+        color = self.widget.get_color()
+        self._handle_value_changed(color)
+
+    def set_ui_value(self, value: tuple[int, int, int, int]):
+        self.widget.set_color(value)

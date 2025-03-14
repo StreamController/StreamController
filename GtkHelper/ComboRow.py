@@ -27,10 +27,11 @@ class ComboRowItem(BaseComboRowItem):
 
 class ComboRow(Adw.ComboRow):
     def __init__(self,
-                 title: str = ...,
-                 subtitle: str = ...,
-                 items: list[BaseComboRowItem] = ...,
-                 enable_search: bool = ...):
+                 items: list[BaseComboRowItem],
+                 title: str = None,
+                 subtitle: str = None,
+                 enable_search: bool = True,
+                 default_selection: int = 0):
         super().__init__(title=title, subtitle=subtitle)
 
         self.model = Gio.ListStore(item_type=GObject.GObject)
@@ -46,6 +47,7 @@ class ComboRow(Adw.ComboRow):
         self.set_expression(Gtk.PropertyExpression.new(BaseComboRowItem, None, "filter_value"))
 
         self.add_items(items)
+        self.set_selected(default_selection)
 
     def add_item(self, combo_row_item: BaseComboRowItem):
         self.model.append(combo_row_item)

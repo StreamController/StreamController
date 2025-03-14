@@ -24,12 +24,11 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
             title=self.get_translation(title, title),
             subtitle=self.get_translation(subtitle, subtitle),
             items=items,
-            enable_search=enable_search
+            enable_search=enable_search,
+            default_selection=self._default_value
         )
 
         self.widget.connect("notify::selected", self._value_changed)
-
-        #self.widget.connect("changed", self._value_changed)
 
     def _value_changed(self, combo_row: Combo, _):
         item = combo_row.get_selected_item()

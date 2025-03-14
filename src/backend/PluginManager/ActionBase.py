@@ -70,6 +70,7 @@ class ActionBase(rpyc.Service):
         self.action_id = action_id
         self.action_name = action_name
         self.plugin_base = plugin_base
+        self.generative_ui_objects = []
 
         self.on_ready_called = False
 
@@ -79,7 +80,28 @@ class ActionBase(rpyc.Service):
         self.labels = {}
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
-        
+
+    def add_generative_ui_object(self, generative_ui_object: GenerativeUI):
+        self.generative_ui_objects.append(generative_ui_object)
+
+    def get_generative_ui(self):
+        widgets = []
+
+        for generative_object in self.generative_ui_objects:
+            if not generative_object.auto_add:
+                continue
+
+            widget = generative_object.get_ui()
+            if widget is None:
+                continue
+
+            widgets.append(widget)
+        return widgets
+
+    def load_initial_generative_ui_values(self):
+        for generative_object in self.generative_ui_objects:
+            generative_object.load_initial_ui_value()
+
     def set_deck_controller(self, deck_controller):
         """
         Internal function, do not call manually
@@ -449,27 +471,11 @@ class ActionBase(rpyc.Service):
             assignments_strings[str(key)] = str(value)
 
         self.page.set_action_event_assignments(action_object=self, event_assignments=assignments_strings)
-
     
     def raise_error_if_not_ready(self):
         if self.on_ready_called:
             return
         raise Warning("Seems like you're calling this method before the action is ready")
-    
-    def get_generative_ui_objects(self) -> list[GenerativeUI]:
-        objects = []
-        for attr in dir(self):
-            if isinstance(getattr(self, attr), GenerativeUI):
-                objects.append(getattr(self, attr))
-
-        return objects
-    
-    def get_generative_ui_widgets(self) -> list[Gtk.Widget]:
-        return [obj.get_ui() for obj in self.get_generative_ui_objects()]
-    
-    def load_initial_generative_ui_values(self):
-        for obj in self.get_generative_ui_objects():
-            obj.load_initial_ui_value()
     
     # ---------- #
     # Rpyc stuff #

@@ -78,7 +78,7 @@ class FileDialogRow(Adw.ActionRow):
             self.set_label()
 
             if self._callback:
-                self._callback(file)
+                self._callback(self.selected_file)
         except:
             pass
 
@@ -86,6 +86,9 @@ class FileDialogRow(Adw.ActionRow):
         self.selected_file = Gio.File.new_for_path(path)
         self.file_label.set_label(path)
         self.set_label()
+
+        if self._callback:
+            self._callback(self.selected_file)
 
     def set_label(self):
         if self.selected_file is None:

@@ -31,6 +31,7 @@ class ColorButtonRow(Adw.ActionRow):
         """Sets the color from an int tuple"""
         self.color = color
         self.color_button.set_rgba(self.get_color_rgba())
+        self.color_button.emit("color-set")
 
     def set_color_rgba(self, color: Gdk.RGBA):
         """Sets the color from an rgba object"""
@@ -40,6 +41,7 @@ class ColorButtonRow(Adw.ActionRow):
                       round(color.alpha * 255))
         self.color = normalized
         self.color_button.set_rgba(color)
+        self.color_button.emit("color-set")
 
     def get_color_rgba(self) -> Gdk.RGBA:
         """Returns the current color in the rgba format"""

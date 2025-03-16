@@ -16,7 +16,7 @@ class ScaleRow(GenerativeUI[float]):
                  default_value: float,
                  min: float,
                  max: float,
-                 add_text_entry: bool,
+                 add_text_entry: bool = False,
                  can_reset: bool = True,
                  on_change: callable = None,
                  title: str = None,

@@ -33,7 +33,7 @@ class ScaleRow(Adw.ActionRow):
                  value: float,
                  min: float,
                  max: float,
-                 add_text_entry: bool,
+                 add_text_entry: bool = False,
                  title: str = None,
                  subtitle: str = None,
                  step: float = 0.1,

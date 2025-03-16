@@ -56,7 +56,7 @@
   opacity: 0;
   transition: opacity 0.2s;
 }
-.no-padding{
+.no-padding {
   padding-left: 0px;
   padding-right: 0px;
   padding-top: 0px;
@@ -470,4 +470,16 @@
   opacity: 0.5;
   color: inherit;
   transition: -gtk-icon-transform 200ms ease-out;
+}
+
+.gen-ui-row {
+  padding-right: 0px;
+  padding-bottom: 0px;
+  padding-top: 0px;
+}
+
+.gen-ui-box {
+  margin-right: 0px;
+  margin-bottom: 0px;
+  margin-top: 0px;
 }

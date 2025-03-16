@@ -30,8 +30,7 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
             default_color=self._default_value
         )
 
-        if self._can_reset:
-            self.widget.add_prefix(self._create_reset_button())
+        self._handle_reset_button_creation()
 
         self.widget.color_button.connect("color-set", self._value_changed)
 

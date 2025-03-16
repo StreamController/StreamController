@@ -32,8 +32,7 @@ class SpinRow(GenerativeUI[float]):
         )
         self.widget.set_digits(digits)
 
-        if self._can_reset:
-            self.widget.add_prefix(self._create_reset_button())
+        self._handle_reset_button_creation()
 
         self._adjustment.connect("value-changed", self._correct_step_amount)
         self.widget.connect("changed", self._value_changed)

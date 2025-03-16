@@ -80,10 +80,24 @@ class GenerativeUI[T](ABC):
         return self._action_base.get_translation(key, fallback)
 
     def _create_reset_button(self):
-        button = Gtk.Button(icon_name="edit-undo-symbolic")
-        button.set_margin_top(5)
-        button.set_margin_bottom(5)
+        button = Gtk.Button(icon_name="edit-undo-symbolic", vexpand=True, css_classes=["no-rounded-corners"], overflow=Gtk.Overflow.HIDDEN)
 
         button.connect("clicked", lambda _: self.reset_value())
 
         return button
+    
+    def _get_suffix_box(self):
+        return self.widget.get_first_child().get_last_child()
+    
+    def _handle_reset_button_creation(self):
+        self.widget.add_css_class("gen-ui-row")
+        self.widget.set_overflow(Gtk.Overflow.HIDDEN)
+        self.widget.get_child().add_css_class("gen-ui-box")
+        self.widget.get_child().set_overflow(Gtk.Overflow.HIDDEN)
+
+        suffix_box = self._get_suffix_box()
+        if suffix_box:
+            suffix_box.add_css_class("no-margin")
+
+        if self._can_reset:
+            self.widget.add_suffix(self._create_reset_button())

@@ -43,8 +43,7 @@ class ScaleRow(GenerativeUI[float]):
             text_entry_max_length=text_entry_max_length,
         )
 
-        if self._can_reset:
-            self.widget.add_prefix(self._create_reset_button())
+        self._handle_reset_button_creation()
 
         self.widget.scale.connect("value-changed", self._value_changed)
 

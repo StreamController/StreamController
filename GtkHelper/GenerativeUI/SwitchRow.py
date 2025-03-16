@@ -23,8 +23,7 @@ class SwitchRow(GenerativeUI[bool]):
             active=default_value
         )
 
-        if self._can_reset:
-            self.widget.add_prefix(self._create_reset_button())
+        self._handle_reset_button_creation()
 
         self.widget.connect("notify::active", self._value_changed)
 

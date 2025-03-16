@@ -39,8 +39,7 @@ class FileDialogRow(GenerativeUI[str]):
             file_change_callback=self._file_changed
         )
 
-        if self._can_reset:
-            self.widget.add_prefix(self._create_reset_button())
+        self._handle_reset_button_creation()
 
     def _file_changed(self, file: Gio.File):
         self._handle_value_changed(file.get_path())

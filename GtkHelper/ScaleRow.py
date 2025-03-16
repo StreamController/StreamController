@@ -58,7 +58,7 @@ class ScaleRow(Adw.ActionRow):
         self.scale.set_digits(digits)
 
         if self._add_text_entry:
-            self.entry_row = Gtk.Entry()
+            self.entry_row = Gtk.Entry(valign=Gtk.Align.CENTER)
             self.entry_row.set_margin_top(5)
             self.entry_row.set_margin_bottom(5)
             self.entry_row.set_text(str(value))

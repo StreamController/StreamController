@@ -36,9 +36,7 @@ class ColorButtonRow(Adw.ActionRow):
 
         self.color = default_color
 
-        self.color_button = Gtk.ColorButton(hexpand=True)
-        self.color_button.set_margin_top(5)
-        self.color_button.set_margin_bottom(5)
+        self.color_button = Gtk.ColorButton(valign=Gtk.Align.CENTER)
 
         self.color_button.connect("color-set", self._on_color_changed)
 

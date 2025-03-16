@@ -7,6 +7,26 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gdk, GLib, Gio
 
 class ColorButtonRow(Adw.ActionRow):
+    """
+        Initializes a ColorButtonRow widget with a color button and optional title and subtitle.
+
+        Parameters:
+            title (str, optional): The title to display in the row.
+            subtitle (str, optional): The subtitle to display below the title.
+            default_color (tuple[int, int, int, int], optional): The default color to set for the color button in
+                                                                RGBA format (default is black with full opacity).
+
+        Description:
+            This constructor creates a new ColorButtonRow widget. It sets up a Gtk.ColorButton for selecting
+            a color and assigns it to the row. The initial color is set based on the provided `default_color`
+            tuple, which represents the color in RGBA format (each value ranges from 0 to 255).
+
+            Additionally, the color button is connected to the `color-set` signal, which triggers the `_on_color_changed`
+            method when the color is modified. The color is stored internally as a tuple of integers representing
+            the RGBA values.
+
+            The row is set up with a title and subtitle if provided.
+    """
     def __init__(self,
                  title: str = None,
                  subtitle: str = None,
@@ -34,7 +54,6 @@ class ColorButtonRow(Adw.ActionRow):
         self.color_button.emit("color-set")
 
     def set_color_rgba(self, color: Gdk.RGBA):
-        """Sets the color from an rgba object"""
         normalized = (round(color.red * 255),
                       round(color.green * 255),
                       round(color.blue * 255),
@@ -44,7 +63,6 @@ class ColorButtonRow(Adw.ActionRow):
         self.color_button.emit("color-set")
 
     def get_color_rgba(self) -> Gdk.RGBA:
-        """Returns the current color in the rgba format"""
         rgba = Gdk.RGBA()
 
         if self.color is None:
@@ -58,7 +76,6 @@ class ColorButtonRow(Adw.ActionRow):
         return rgba
 
     def get_color(self) -> tuple[int, int, int, int]:
-        """Returns the current color as a tuple of ints"""
         rgba = self.color_button.get_rgba()
 
         return (round(rgba.red * 255),

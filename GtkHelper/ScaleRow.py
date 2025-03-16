@@ -8,6 +8,27 @@ from gi.repository import Gtk, Adw, Gdk, GLib
 from GtkHelper.GtkHelper import better_disconnect
 
 class ScaleRow(Adw.ActionRow):
+    """
+        Initializes a new instance of the ScaleRow widget.
+
+        Parameters:
+            value (float): The initial value of the scale.
+            min (float): The minimum value of the scale.
+            max (float): The maximum value of the scale.
+            add_text_entry (bool): Whether to include a text entry field alongside the scale.
+            title (str, optional): The title of the row (displayed on the left).
+            subtitle (str, optional): The subtitle of the row (displayed below the title).
+            step (float, optional): The step increment for the scale (default is 0.1).
+            digits (int, optional): The number of decimal places to display for the scale value (default is 2).
+            draw_value (bool, optional): Whether to display the current value of the scale on the scale itself (default is False).
+            round_digits (bool, optional): Whether to round the value to the nearest step increment (default is True).
+
+        Description:
+            This constructor creates a row containing a horizontal scale widget with optional labels for the minimum
+            and maximum values. If `add_text_entry` is set to True, a text entry field is included that allows the user
+            to enter a value directly. The value entered will be synchronized with the scale. The constructor also sets up
+            necessary signal handlers to ensure that changes to the scale or text entry are appropriately handled.
+    """
     def __init__(self,
                  value: float,
                  min: float,

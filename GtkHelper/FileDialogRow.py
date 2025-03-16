@@ -12,6 +12,19 @@ class FileDialogFilter:
     filters: list[str]
 
 class FileDialogRow(Adw.ActionRow):
+    """
+       A custom row widget that opens a file dialog when clicked.
+
+       Parameters:
+           title (str): The title for the row.
+           subtitle (str): The subtitle for the row.
+           dialog_title (str): Title for the file dialog.
+           initial_path (str): The path to set as the initial folder in the dialog.
+           block_interaction (bool): Whether to block interaction with other elements while the dialog is open.
+           only_show_filename (bool): Whether to show only the file name or full path.
+           filters (list[FileDialogFilter]): Filters to apply in the file dialog.
+           file_change_callback (Callable[[Gio.File], None]): Callback to execute when a file is selected.
+    """
     def __init__(self,
                  title: str = None,
                  subtitle: str = None,
@@ -75,7 +88,7 @@ class FileDialogRow(Adw.ActionRow):
                 return
 
             self.selected_file = file
-            self.set_label()
+            self.update_label()
 
             if self._callback:
                 self._callback(self.selected_file)
@@ -85,12 +98,12 @@ class FileDialogRow(Adw.ActionRow):
     def load_from_path(self, path: str):
         self.selected_file = Gio.File.new_for_path(path)
         self.file_label.set_label(path)
-        self.set_label()
+        self.update_label()
 
         if self._callback:
             self._callback(self.selected_file)
 
-    def set_label(self):
+    def update_label(self):
         if self.selected_file is None:
             self.file_label.set_label("")
             return

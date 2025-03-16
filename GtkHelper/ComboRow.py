@@ -26,6 +26,25 @@ class ComboRowItem(BaseComboRowItem):
         return self.label
 
 class ComboRow(Adw.ComboRow):
+    """
+        Initializes a new ComboRow widget with a list of items, allowing for search functionality and a default selection.
+
+        Parameters:
+            items (list[BaseComboRowItem]): A list of ComboRowItems (or subclasses) to populate the combo row.
+            title (str, optional): The title to display in the combo row.
+            subtitle (str, optional): The subtitle to display below the title.
+            enable_search (bool, optional): Whether to enable the search functionality for filtering items in the combo row (default is True).
+            default_selection (int, optional): The index of the item to be selected by default (default is 0).
+
+        Description:
+            This constructor sets up a ComboRow with the given list of items, allowing for interaction with the row
+            via search functionality and item selection. It connects a signal list item factory to customize the appearance
+            and behavior of the list items. The combo row’s model is populated with the given items, and the default
+            selection is set based on the provided index.
+
+            The method also sets up the filter expression for the search functionality and adds the items to the combo row.
+            The combo row will automatically highlight the item at the provided default selection index.
+    """
     def __init__(self,
                  items: list[BaseComboRowItem],
                  title: str = None,

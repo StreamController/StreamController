@@ -24,7 +24,8 @@ class ScaleRow(GenerativeUI[float]):
                  step: float = 0.1,
                  digits: int = 2,
                  draw_value: bool = True,
-                 round_digits: bool = True
+                 round_digits: bool = True,
+                 text_entry_max_length: int = 6,
                  ):
         super().__init__(action_base, var_name, default_value, can_reset, on_change)
 
@@ -38,7 +39,8 @@ class ScaleRow(GenerativeUI[float]):
             step=step,
             digits=digits,
             draw_value=draw_value,
-            round_digits=round_digits
+            round_digits=round_digits,
+            text_entry_max_length=text_entry_max_length,
         )
 
         if self._can_reset:

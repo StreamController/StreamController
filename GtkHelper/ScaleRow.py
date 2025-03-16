@@ -40,6 +40,7 @@ class ScaleRow(Adw.ActionRow):
                  digits: int = 2,
                  draw_value: bool = False,
                  round_digits: bool = True,
+                 text_entry_max_length: int = 6
                  ):
         super().__init__(title=title, subtitle=subtitle)
 
@@ -63,6 +64,7 @@ class ScaleRow(Adw.ActionRow):
             self.entry_row.set_text(str(value))
             self.entry_row.set_max_width_chars(5)
             self.entry_row.set_width_chars(5)
+            self.entry_row.set_max_length(text_entry_max_length)
 
             self.entry_row_controller = Gtk.EventControllerFocus()
             self.entry_row.add_controller(self.entry_row_controller)

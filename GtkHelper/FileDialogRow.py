@@ -46,9 +46,7 @@ class FileDialogRow(Adw.ActionRow):
 
         self.selected_file: Gio.File = None
 
-        self.open_dialog_button = Gtk.Button(icon_name="folder-symbolic")
-        self.open_dialog_button.set_margin_top(5)
-        self.open_dialog_button.set_margin_bottom(5)
+        self.open_dialog_button = Gtk.Button(icon_name="folder-symbolic", valign=Gtk.Align.CENTER)
 
         self.file_label = Gtk.Label(label="No File Selected", hexpand=True)
 

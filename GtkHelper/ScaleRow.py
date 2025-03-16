@@ -61,8 +61,8 @@ class ScaleRow(Adw.ActionRow):
         self._adjustment.connect("value-changed", self._correct_step_amount)
 
         if self._add_text_entry:
-            self.entry_row.connect("changed", self._entry_row_changed)
             self.entry_row.connect("activate", self._reset_entry_row)
+            self.entry_row.connect("changed", self._entry_row_changed)
             self.entry_row_controller.connect("leave", self._reset_entry_row)
 
     def _disconnect_signals(self):
@@ -73,73 +73,68 @@ class ScaleRow(Adw.ActionRow):
             better_disconnect(self.entry_row, self._reset_entry_row)
             better_disconnect(self.entry_row_controller, self._reset_entry_row)
 
-    def set_min(self, min: float):
-        if self._adjustment.get_upper() < min:
+    @property
+    def min(self):
+        return self._adjustment.get_lower()
+
+    @min.setter
+    def min(self, value: float):
+        if self._adjustment.get_upper() < value:
             return
 
-        self._adjustment.set_lower(min)
-        self.left.set_label(str(min))
+        self._adjustment.set_lower(value)
+        self.left.set_label(str(value))
 
-    def set_max(self, max: float):
-        if max < self._adjustment.get_lower():
+    @property
+    def max(self):
+        return self._adjustment.get_upper()
+
+    @max.setter
+    def max(self, value: float):
+        if value < self._adjustment.get_lower():
             return
 
-        self._adjustment.set_upper(max)
-        self.right.set_label(str(max))
+        self._adjustment.set_upper(value)
+        self.right.set_label(str(value))
 
-    def set_step(self, step: float):
-        self._adjustment.set_step_increment(step)
+    @property
+    def step(self):
+        return self._adjustment.get_step_increment()
+
+    @step.setter
+    def step(self, value: float):
+        self._adjustment.set_step_increment(value)
+
+    # Scale Row
 
     def _correct_step_amount(self, adjustment):
         value = adjustment.get_value()
         step = adjustment.get_step_increment()
         rounded_value = round(value / step) * step
-        adjustment.set_value(rounded_value)
 
-        if not self._add_text_entry:
-            return
+        if rounded_value != value:  # Prevent unnecessary updates
+            adjustment.set_value(rounded_value)
 
-        self._disconnect_signals()
+        if self._add_text_entry:
+            self._disconnect_signals()
+            self.entry_row.set_text(str(rounded_value))
+            self._connect_signals()
 
-        self.entry_row.set_text(str(rounded_value))
-
-        self._connect_signals()
-
-    def _text_reset(self, text):
-        better_disconnect(self.entry_row, self._entry_row_changed)
-
-        cursor_pos = self.entry_row.get_position()
-        self.entry_row.set_text(text)
-
-        self.entry_row.set_position(cursor_pos - 1)
-
-        self.entry_row.connect("changed", self._entry_row_changed)
+    # Entry Row
 
     def _entry_row_changed(self, entry_row):
         self._disconnect_signals()
 
         text = entry_row.get_text()
 
-        if not re.fullmatch(r"-?\d*\.?\d*", text):
-            text = re.sub(r"[^\d.-]", "", text)  # Remove non-numeric characters except '.' and '-'
-
-            print(text)
-
-            # Ensure only one '-' at the beginning
-            if text.count("-") > 1 or (text and text[0] != "-"):
-                text = text.lstrip("-")  # Remove all but the first '-'
-                text = "-" + text if text else ""
-
-            # Ensure only one decimal point exists
-            if text.count(".") > 1:
-                parts = text.split(".")
-                text = parts[0] + "." + "".join(parts[1:])  # Keep first '.', remove extra
+        text = re.sub(r"[^0-9.-]", "", text)  # Remove invalid characters
+        text = re.sub(r"^-?(?!\d)", "", text)  # Remove leading '-' if not followed by a digit
+        text = re.sub(r"\.(?=.*\.)", "", text)  # Keep only the first decimal point
 
         try:
             value = float(text)
         except ValueError:
             value = self._adjustment.get_value()
-
         value = min(max(value, self._adjustment.get_lower()), self._adjustment.get_upper())
 
         self.scale.set_value(value)
@@ -149,6 +144,10 @@ class ScaleRow(Adw.ActionRow):
     def _reset_entry_row(self, *args):
         self._disconnect_signals()
 
-        self.entry_row.set_text(str(self._adjustment.get_value()))
+        current_value = self.entry_row.get_text()
+        expected_value = str(self._adjustment.get_value())
+
+        if current_value != expected_value:  # Avoid unnecessary updates
+            self.entry_row.set_text(expected_value)
 
         self._connect_signals()

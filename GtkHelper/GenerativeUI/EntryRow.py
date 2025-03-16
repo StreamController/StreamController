@@ -1,9 +1,11 @@
 from GtkHelper.GenerativeUI.GenerativeUI import GenerativeUI
 
 import gi
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GLib
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
+from GtkHelper.GtkHelper import better_disconnect
+
 if TYPE_CHECKING:
     from src.backend.PluginManager import ActionBase
 
@@ -13,7 +15,8 @@ class EntryRow(GenerativeUI[str]):
                  default_value: str,
                  can_reset: bool = True,
                  on_change: callable = None,
-                 title: str = None):
+                 title: str = None,
+                 filter_func: Callable[[str], str] = None):
         super().__init__(action_base, var_name, default_value, can_reset, on_change)
 
         self.widget: Adw.EntryRow = Adw.EntryRow(
@@ -21,13 +24,36 @@ class EntryRow(GenerativeUI[str]):
             text=self._default_value
         )
 
+        self.filter_func = filter_func
+
         if self._can_reset:
             self.widget.add_prefix(self._create_reset_button())
 
         self.widget.connect("changed", self._value_changed)
 
+    def _text_reset(self, text):
+        better_disconnect(self.widget, self._value_changed)
+
+        cursor_pos = self.widget.get_position()
+        text_is_filtered = text != self.widget.get_text()
+
+        self.set_ui_value(text)
+
+        if text_is_filtered:
+            self.widget.set_position(cursor_pos-1)
+        else:
+            self.widget.set_position(cursor_pos)
+
+        self.widget.connect("changed", self._value_changed)
+
     def _value_changed(self, entry_row: Adw.EntryRow):
-        self._handle_value_changed(entry_row.get_text())
+        text = entry_row.get_text()
+
+        if self.filter_func is not None:
+            text = self.filter_func(text)
+
+        GLib.idle_add(self._text_reset, text)
+        self._handle_value_changed(text)
 
     def set_ui_value(self, value: str):
         self.widget.set_text(value)

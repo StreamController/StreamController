@@ -70,7 +70,7 @@ class ActionBase(rpyc.Service):
         self.action_id = action_id
         self.action_name = action_name
         self.plugin_base = plugin_base
-        self.generative_ui_objects = []
+        self.generative_ui_objects: list[GenerativeUI] = []
 
         self.on_ready_called = False
 
@@ -85,10 +85,13 @@ class ActionBase(rpyc.Service):
         self.generative_ui_objects.append(generative_ui_object)
 
     def get_generative_ui(self):
+        return self.generative_ui_objects
+
+    def get_generative_ui_widgets(self):
         widgets = []
 
         for generative_object in self.generative_ui_objects:
-            widget = generative_object.get_ui()
+            widget = generative_object.widget
 
             if widget is None:
                 continue

@@ -162,9 +162,9 @@ class ConfigGroup(Adw.PreferencesGroup):
 
     def load_for_action(self, action: ActionBase):
         config_rows = action.get_config_rows()
-        widgets = action.get_generative_ui()
+        generative_ui_objects = action.get_generative_ui()
 
-        if not config_rows and not widgets:
+        if not config_rows and not generative_ui_objects:
             self.hide()
             return
 
@@ -180,9 +180,17 @@ class ConfigGroup(Adw.PreferencesGroup):
             self.add(row)
             self.loaded_rows.append(row)
 
-        for gen_ui_row in widgets:
-            self.add(gen_ui_row)
-            self.loaded_rows.append(gen_ui_row)
+        for gen_ui in generative_ui_objects:
+            if not gen_ui.auto_add:
+                continue
+
+            widget = gen_ui.widget
+
+            if widget.get_parent() is not None:
+                continue
+
+            self.add(widget)
+            self.loaded_rows.append(widget)
         
         # Show
         self.show()

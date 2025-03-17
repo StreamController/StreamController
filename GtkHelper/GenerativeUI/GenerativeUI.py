@@ -14,22 +14,44 @@ class GenerativeUI[T](ABC):
     _action_base: "ActionBase"
     _var_name: str # name of the key in the actions settings
     _default_value: T # default value of the key
-    on_change: Callable[[Gtk.Widget, T], None] # method that gets called when the value changes
-    widget: Gtk.Widget # The actual widget of the UI Element
+    on_change: Callable[[Gtk.Widget, T], None] # method that gets called when the value changes    _widget: Gtk.Widget # The actual widget of the UI Element
     _can_reset: bool
+    _auto_add: bool
 
-    def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, can_reset: bool = True, on_change: Callable[[Gtk.Widget, T], None] = None):
+    def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, can_reset: bool = True, auto_add: bool = True, on_change: Callable[[Gtk.Widget, T], None] = None):
         self._action_base = action_base
         self._var_name = var_name
         self._default_value = default_value
         self.on_change = on_change
         self._can_reset = can_reset
-        self.widget: Gtk.Widget = None
+        self._auto_add = auto_add
+        self._widget: Gtk.Widget = None
 
         self._action_base.add_generative_ui_object(self)
 
-    def get_ui(self) -> Gtk.Widget:
-        return self.widget
+    @property
+    def action_base(self):
+        return self._action_base
+
+    @property
+    def var_name(self):
+        return self._var_name
+
+    @property
+    def default_value(self):
+        return self._default_value
+
+    @property
+    def widget(self):
+        return self._widget
+
+    @property
+    def can_reset(self):
+        return self._can_reset
+
+    @property
+    def auto_add(self):
+        return self._auto_add
 
     @abstractmethod
     def set_ui_value(self, value: T):

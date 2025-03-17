@@ -12,12 +12,13 @@ class SwitchRow(GenerativeUI[bool]):
                  var_name: str,
                  default_value: bool,
                  can_reset: bool = True,
+                 auto_add: bool = True,
                  on_change: callable = None,
                  title: str = None,
                  subtitle: str = None):
-        super().__init__(action_base, var_name, default_value, can_reset, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 
-        self.widget: Adw.SwitchRow = Adw.SwitchRow(
+        self._widget: Adw.SwitchRow = Adw.SwitchRow(
             title=self.get_translation(title, title),
             subtitle=self.get_translation(subtitle, subtitle),
             active=default_value

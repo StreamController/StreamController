@@ -14,17 +14,18 @@ class SpinRow(GenerativeUI[float]):
                  min: float,
                  max: float,
                  can_reset: bool = True,
+                 auto_add: bool = True,
                  on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
                  step: float = 0.1,
                  digits: int = 2,
                  ):
-        super().__init__(action_base, var_name, default_value, can_reset, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 
         self._adjustment = Gtk.Adjustment.new(self._default_value, min, max, step, 1, 0)
 
-        self.widget: Adw.SpinRow = Adw.SpinRow(
+        self._widget: Adw.SpinRow = Adw.SpinRow(
             title=self.get_translation(title, title),
             subtitle=self.get_translation(subtitle, subtitle),
             value=self._default_value,

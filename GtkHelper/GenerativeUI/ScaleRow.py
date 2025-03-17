@@ -18,6 +18,7 @@ class ScaleRow(GenerativeUI[float]):
                  max: float,
                  add_text_entry: bool = False,
                  can_reset: bool = True,
+                 auto_add: bool = True,
                  on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
@@ -27,9 +28,9 @@ class ScaleRow(GenerativeUI[float]):
                  round_digits: bool = True,
                  text_entry_max_length: int = 6,
                  ):
-        super().__init__(action_base, var_name, default_value, can_reset, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 
-        self.widget: Scale = Scale(
+        self._widget: Scale = Scale(
             title=self.get_translation(title, title),
             subtitle=self.get_translation(subtitle, subtitle),
             value=self._default_value,

@@ -18,13 +18,14 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
                  var_name: str,
                  default_value: tuple[int, int, int, int],
                  can_reset: bool = True,
+                 auto_add: bool = True,
                  on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
                  ):
-        super().__init__(action_base, var_name, default_value, can_reset, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 
-        self.widget: ColorDialog = ColorDialog(
+        self._widget: ColorDialog = ColorDialog(
             title=self.get_translation(title),
             subtitle=self.get_translation(subtitle),
             default_color=self._default_value

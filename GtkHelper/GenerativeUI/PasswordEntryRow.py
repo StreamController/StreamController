@@ -13,11 +13,12 @@ class PasswordEntryRow(GenerativeUI[str]):
                  var_name: str,
                  default_value: str,
                  can_reset: bool = True,
+                 auto_add: bool = True,
                  on_change: callable = None,
                  title: str = None):
-        super().__init__(action_base, var_name, default_value, can_reset, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 
-        self.widget: Adw.PasswordEntryRow = Adw.PasswordEntryRow(
+        self._widget: Adw.PasswordEntryRow = Adw.PasswordEntryRow(
             title=self.get_translation(title, title),
             text=self._default_value
         )

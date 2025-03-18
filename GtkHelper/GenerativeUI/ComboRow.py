@@ -90,8 +90,14 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
 
         self.widget.remove_items(start, amount)
 
+        self.widget.connect("notify::selected", self._value_changed)
+
     def remove_all_items(self):
+        better_disconnect(self.widget, self._value_changed)
+
         self.widget.remove_all_items()
+
+        self.widget.connect("notify::selected", self._value_changed)
 
     def get_item_at(self, index: int) -> BaseComboRowItem:
         return self.widget.get_item_at(index)
@@ -102,11 +108,16 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
     def get_selected_item(self) -> BaseComboRowItem | None:
         return self.widget.get_selected_item()
 
-    def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = ""):
+    def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = "", update_settings: bool = False):
         better_disconnect(self.widget, self._value_changed)
 
         self.remove_all_items()
         self.add_items(items)
         self.set_selected_item(selected_item)
+
+        if update_settings:
+            self.set_value(str(self.get_selected_item()))
+
+        self.update_value_in_ui()
 
         self.widget.connect("notify::selected", self._value_changed)

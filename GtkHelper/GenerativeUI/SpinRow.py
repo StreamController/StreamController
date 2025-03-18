@@ -38,6 +38,15 @@ class SpinRow(GenerativeUI[float]):
         self._adjustment.connect("value-changed", self._correct_step_amount)
         self.widget.connect("changed", self._value_changed)
 
+    def set_number(self, number: float, update_setting: bool = False):
+        self.set_ui_value(number)
+
+        if update_setting:
+            self.set_value(number)
+
+    def get_number(self) -> float:
+        return self.widget.get_value()
+
     def _value_changed(self, spin: Adw.SpinRow):
         self._handle_value_changed(spin.get_value())
     

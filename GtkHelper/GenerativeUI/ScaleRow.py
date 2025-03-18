@@ -48,6 +48,15 @@ class ScaleRow(GenerativeUI[float]):
 
         self.widget.scale.connect("value-changed", self._value_changed)
 
+    def set_number(self, number: float, update_setting: bool = False):
+        self.set_ui_value(number)
+
+        if update_setting:
+            self.set_value(number)
+
+    def get_number(self) -> float:
+        return self.widget.scale.get_value()
+
     def _value_changed(self, scale):
         self._handle_value_changed(scale.get_value())
 

@@ -36,6 +36,15 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
 
         self.widget.color_button.connect("color-set", self._value_changed)
 
+    def set_color(self, color: tuple[int, int, int, int], update_setting: bool):
+        self.set_ui_value(color)
+
+        if update_setting:
+            self.set_value(color)
+
+    def get_color(self) -> tuple[int, int, int, int]:
+        return self.widget.get_color()
+
     def _value_changed(self, button: Gtk.ColorButton):
         color = self.widget.get_color()
         self._handle_value_changed(color)

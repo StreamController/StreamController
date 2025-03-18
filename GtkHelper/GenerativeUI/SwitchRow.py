@@ -29,6 +29,15 @@ class SwitchRow(GenerativeUI[bool]):
 
         self.widget.connect("notify::active", self._value_changed)
 
+    def set_active(self, active: bool, change_setting: bool = False):
+        self.set_ui_value(active)
+
+        if change_setting:
+            self.set_value(active)
+
+    def get_active(self) -> bool:
+        return self.widget.get_active()
+
     def _value_changed(self, switch, _):
         self._handle_value_changed(switch.get_active())
     

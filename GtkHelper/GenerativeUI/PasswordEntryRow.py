@@ -28,6 +28,15 @@ class PasswordEntryRow(GenerativeUI[str]):
 
         self.widget.connect("changed", self._value_changed)
 
+    def set_password(self, password: str, update_setting: bool = False):
+        self.set_ui_value(password)
+
+        if update_setting:
+            self.set_value(password)
+
+    def get_password(self) -> str:
+        return self.widget.get_text()
+
     def _value_changed(self, entry_row: Adw.EntryRow):
         self._handle_value_changed(entry_row.get_text())
 

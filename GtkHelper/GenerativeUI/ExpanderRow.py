@@ -38,6 +38,23 @@ class ExpanderRow(GenerativeUI[bool]):
 
         self._handle_reset_button_creation()
 
+    def set_enable_expansion(self, enable_expansion: bool, update_setting: bool = False):
+        self.set_ui_value(enable_expansion)
+
+        if update_setting:
+            self.set_value(enable_expansion)
+
+    def get_enable_expansion(self) -> bool:
+        return self.widget.get_enable_expansion()
+
+    @property
+    def expanded(self):
+        return self.widget.get_expanded()
+
+    @expanded.setter
+    def expanded(self, value):
+        self.widget.set_expanded(value)
+
     def add_row(self, widget: Gtk.Widget):
         if widget.get_parent() is not None:
             self.widget.remove_child(widget)

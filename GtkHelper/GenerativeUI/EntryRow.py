@@ -32,6 +32,15 @@ class EntryRow(GenerativeUI[str]):
 
         self.widget.connect("changed", self._value_changed)
 
+    def set_text(self, text: str, update_setting: bool = False):
+        self.set_ui_value(text)
+
+        if update_setting:
+            self.set_value(text)
+
+    def get_text(self) -> str:
+        return self.widget.get_text()
+
     def _text_reset(self, text):
         better_disconnect(self.widget, self._value_changed)
 

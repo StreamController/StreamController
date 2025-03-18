@@ -2056,7 +2056,7 @@ class ControllerKey(ControllerInput):
                             ), update=False)
                             
                     elif is_svg(path):
-                        img = load_svg_as_pil(path)
+                        img = svg_to_pil(path, 192)
                         state.set_image(InputImage(
                             controller_input=self,
                             image=img
@@ -2351,7 +2351,7 @@ class ControllerDial(ControllerInput):
                     )
                     state.set_image(image, update=False)
                 elif is_svg(path):
-                    img = load_svg_as_pil(path)
+                    img = svg_to_pil(path, 192)
                     state.set_image(InputImage(
                         controller_input=self,
                         image=img

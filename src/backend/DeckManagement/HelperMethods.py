@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from datetime import datetime
 from functools import lru_cache
 import hashlib
+from io import BytesIO
 import multiprocessing
 import os
 import subprocess
@@ -222,27 +223,6 @@ def download_file(url: str, path: str = "", file_name: str = None) -> str:
 
     return path
 
-
-def load_svg_as_pil(file_path: str):
-    hash = sha256(file_path)
-    tmp = os.path.join(gl.DATA_PATH, "cache", "svg_to_png", f"{hash}.png")
-
-    if not os.path.exists(tmp):
-        os.makedirs(os.path.dirname(tmp), exist_ok=True)
-
-        if os.path.exists(file_path):
-            cairosvg.svg2png(url=file_path, write_to=tmp,
-                             output_width=96, output_height=96)
-        elif file_path.startswith("<svg "):
-            cairosvg.svg2png(bytestring=file_path, write_to=tmp,
-                             output_width=96, output_height=96)
-        else:
-            raise ValueError(f"Could not create SVG from string or path: {file_path}")
-
-    pil_image = Image.open(tmp)
-    return pil_image
-
-
 def natural_keys(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 
@@ -390,3 +370,62 @@ def open_web(url):
     if not url.startswith("http"):
         url = f"https://{url}"
     run_command(f"xdg-open {url}")
+
+def svg_string_to_pil(svg_string, width: int = 96, height: int = 96):
+    """
+    Convert an SVG string to a PIL Image object.
+    
+    Args:
+        svg_string (str): String containing SVG data
+        width (int, optional): Desired width of the output image
+        height (int, optional): Desired height of the output image
+        
+    Returns:
+        PIL.Image: The converted image
+    """
+    # Convert SVG string to PNG using cairosvg
+    png_data = cairosvg.svg2png(
+        bytestring=svg_string.encode('utf-8'),
+        output_width=width,
+        output_height=height
+    )
+    
+    # Create PIL Image from PNG data
+    img = Image.open(BytesIO(png_data))
+    
+    return img
+
+
+def svg_to_pil(svg_path: str, width: int = 96, height: int = 96):
+    """
+    Convert an SVG file to a PIL Image object.
+    
+    Args:
+        svg_path (str): Path to the SVG file or string containing SVG data
+        width (int, optional): Desired width of the output image
+        height (int, optional): Desired height of the output image
+        
+    Returns:
+        PIL.Image: The converted image
+    """
+    # Read SVG file
+
+    if os.path.exists(svg_path):
+        with open(svg_path, 'rb') as f:
+            svg_data = f.read()
+        
+        # Convert SVG to PNG using cairosvg
+        png_data = cairosvg.svg2png(
+            bytestring=svg_data,
+            output_width=width,
+            output_height=height
+        )
+        
+        # Create PIL Image from PNG data
+        img = Image.open(BytesIO(png_data))
+        
+        return img
+    elif svg_path.startswith("<svg "):
+        return svg_string_to_pil(svg_path, width, height)
+    else:
+        raise ValueError(f"Could not create SVG from string or path: {svg_path}")

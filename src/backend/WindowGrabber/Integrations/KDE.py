@@ -52,14 +52,14 @@ class KDE(Integration):
             command.insert(1, "--host")
         try:
             return Popen(command, stdout=PIPE, cwd="/")
-        except CalledProcessError as e:
+        except Exception as e:
             log.error(f"An error occurred while running {command}: {e}")
 
     @log.catch
     def get_is_kdotool_installed(self) -> bool:
         try:
             return self._run_command(["kdotool", "--version"]) is not None
-        except CalledProcessError as e:
+        except Exception as e:
             log.error(f"An error occurred while running kdotool: {e}")
             return False
 

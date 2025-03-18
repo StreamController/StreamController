@@ -19,6 +19,10 @@ from copy import copy
 import subprocess
 import os
 from PIL import Image
+import gi
+
+gi.require_version("Gtk", "4.0")
+from gi.repository import Gtk
 
 import rpyc
 from rpyc.utils.server import ThreadedServer
@@ -26,6 +30,7 @@ from rpyc.core.protocol import Connection
 from rpyc.core import netref
 
 # Import own modules
+from GtkHelper.GenerativeUI.GenerativeUI import GenerativeUI
 from src.Signals.Signals import Signal
 from src.backend.DeckManagement.HelperMethods import is_image, is_svg, is_video
 from src.backend.DeckManagement.Subclasses.KeyImage import InputImage
@@ -450,6 +455,21 @@ class ActionBase(rpyc.Service):
         if self.on_ready_called:
             return
         raise Warning("Seems like you're calling this method before the action is ready")
+    
+    def get_generative_ui_objects(self) -> list[GenerativeUI]:
+        objects = []
+        for attr in dir(self):
+            if isinstance(getattr(self, attr), GenerativeUI):
+                objects.append(getattr(self, attr))
+
+        return objects
+    
+    def get_generative_ui_widgets(self) -> list[Gtk.Widget]:
+        return [obj.get_ui() for obj in self.get_generative_ui_objects()]
+    
+    def load_initial_generative_ui_values(self):
+        for obj in self.get_generative_ui_objects():
+            obj.load_initial_ui_value()
     
     # ---------- #
     # Rpyc stuff #

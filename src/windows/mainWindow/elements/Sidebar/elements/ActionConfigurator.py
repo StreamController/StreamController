@@ -178,6 +178,10 @@ class ConfigGroup(Adw.PreferencesGroup):
         for row in config_rows:
             self.add(row)
             self.loaded_rows.append(row)
+
+        for gen_ui_row in action.get_generative_ui_widgets():
+            self.add(gen_ui_row)
+            self.loaded_rows.append(gen_ui_row)
         
         # Show
         self.show()

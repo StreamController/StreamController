@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.PluginManager import ActionBase
 
+from GtkHelper.GtkHelper import better_disconnect
+
 class ComboRow(GenerativeUI[BaseComboRowItem]):
     def __init__(self,
                  action_base: "ActionBase",
@@ -56,18 +58,36 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         return self.widget.set_selected_item(item)
 
     def add_item(self, combo_row_item: BaseComboRowItem):
+        better_disconnect(self.widget, self._value_changed)
+
         self.widget.add_item(combo_row_item)
 
+        self.widget.connect("notify::selected", self._value_changed)
+
     def add_items(self, items: list[BaseComboRowItem]):
+        better_disconnect(self.widget, self._value_changed)
+
         self.widget.add_items(items)
 
+        self.widget.connect("notify::selected", self._value_changed)
+
     def remove_item_at_index(self, index: int):
+        better_disconnect(self.widget, self._value_changed)
+
         self.widget.remove_item_at_index(index)
 
+        self.widget.connect("notify::selected", self._value_changed)
+
     def remove_item(self, item: BaseComboRowItem | str):
+        better_disconnect(self.widget, self._value_changed)
+
         self.widget.remove_item(item)
 
+        self.widget.connect("notify::selected", self._value_changed)
+
     def remove_items(self, start: int, amount: int):
+        better_disconnect(self.widget, self._value_changed)
+
         self.widget.remove_items(start, amount)
 
     def remove_all_items(self):
@@ -83,6 +103,10 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         return self.widget.get_selected_item()
 
     def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = ""):
+        better_disconnect(self.widget, self._value_changed)
+
         self.remove_all_items()
         self.add_items(items)
         self.set_selected_item(selected_item)
+
+        self.widget.connect("notify::selected", self._value_changed)

@@ -47,5 +47,42 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         if self.on_change:
             self.on_change(self.widget, item)
     
-    def set_ui_value(self, value: int):
-        self.widget.set_selected(value)
+    def set_ui_value(self, value: BaseComboRowItem | str):
+        self.widget.set_selected_item(value)
+
+    # Widget Wrappers
+
+    def set_selected_item(self, item: BaseComboRowItem | str = ""):
+        return self.widget.set_selected_item(item)
+
+    def add_item(self, combo_row_item: BaseComboRowItem):
+        self.widget.add_item(combo_row_item)
+
+    def add_items(self, items: list[BaseComboRowItem]):
+        self.widget.add_items(items)
+
+    def remove_item_at_index(self, index: int):
+        self.widget.remove_item_at_index(index)
+
+    def remove_item(self, item: BaseComboRowItem | str):
+        self.widget.remove_item(item)
+
+    def remove_items(self, start: int, amount: int):
+        self.widget.remove_items(start, amount)
+
+    def remove_all_items(self):
+        self.widget.remove_all_items()
+
+    def get_item_at(self, index: int) -> BaseComboRowItem:
+        return self.widget.get_item_at(index)
+
+    def get_item(self, name: str) -> BaseComboRowItem:
+        return self.widget.get_item(name)
+
+    def get_selected_item(self) -> BaseComboRowItem | None:
+        return self.widget.get_selected_item()
+
+    def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = ""):
+        self.remove_all_items()
+        self.add_items(items)
+        self.set_selected_item(selected_item)

@@ -16,17 +16,17 @@ class ScaleRow(GenerativeUI[float]):
                  default_value: float,
                  min: float,
                  max: float,
-                 add_text_entry: bool = False,
-                 can_reset: bool = True,
-                 auto_add: bool = True,
-                 on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
                  step: float = 0.1,
                  digits: int = 2,
                  draw_value: bool = True,
                  round_digits: bool = True,
+                 add_text_entry: bool = False,
                  text_entry_max_length: int = 6,
+                 on_change: callable = None,
+                 can_reset: bool = True,
+                 auto_add: bool = True,
                  ):
         super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 

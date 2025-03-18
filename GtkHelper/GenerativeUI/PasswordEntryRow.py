@@ -12,10 +12,11 @@ class PasswordEntryRow(GenerativeUI[str]):
     def __init__(self, action_base: "ActionBase",
                  var_name: str,
                  default_value: str,
+                 title: str = None,
+                 on_change: callable = None,
                  can_reset: bool = True,
                  auto_add: bool = True,
-                 on_change: callable = None,
-                 title: str = None):
+                 ):
         super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 
         self._widget: Adw.PasswordEntryRow = Adw.PasswordEntryRow(

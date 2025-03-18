@@ -17,13 +17,13 @@ class ExpanderRow(GenerativeUI[bool]):
     def __init__(self, action_base: "ActionBase",
                  var_name: str,
                  default_value: bool,
-                 can_reset: bool = False,
-                 auto_add: bool = True,
-                 on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
                  show_enable_switch: bool = False,
                  start_expanded: bool = False,
+                 on_change: callable = None,
+                 can_reset: bool = False,
+                 auto_add: bool = True,
                  ):
         super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 

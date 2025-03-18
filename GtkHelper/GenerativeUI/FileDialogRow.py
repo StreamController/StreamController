@@ -17,15 +17,15 @@ class FileDialogRow(GenerativeUI[str]):
     def __init__(self, action_base: "ActionBase",
                  var_name: str,
                  default_value: str,
-                 can_reset: bool = True,
-                 auto_add: bool = True,
-                 on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
                  dialog_title: str = None,
-                 block_interaction: bool = None,
+                 block_interaction: bool = True,
                  only_show_filename: bool = True,
-                 filters: list[FileDialogFilter] = None
+                 filters: list[FileDialogFilter] = None,
+                 on_change: callable = None,
+                 can_reset: bool = True,
+                 auto_add: bool = True,
                  ):
         super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 

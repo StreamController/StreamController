@@ -14,14 +14,15 @@ if TYPE_CHECKING:
 
 
 class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
-    def __init__(self, action_base: "ActionBase",
+    def __init__(self,
+                 action_base: "ActionBase",
                  var_name: str,
                  default_value: tuple[int, int, int, int],
-                 can_reset: bool = True,
-                 auto_add: bool = True,
-                 on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
+                 on_change: callable = None,
+                 can_reset: bool = True,
+                 auto_add: bool = True,
                  ):
         super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 

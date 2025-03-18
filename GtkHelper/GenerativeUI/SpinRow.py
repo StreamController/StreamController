@@ -13,13 +13,13 @@ class SpinRow(GenerativeUI[float]):
                  default_value: float,
                  min: float,
                  max: float,
-                 can_reset: bool = True,
-                 auto_add: bool = True,
-                 on_change: callable = None,
                  title: str = None,
                  subtitle: str = None,
                  step: float = 0.1,
                  digits: int = 2,
+                 on_change: callable = None,
+                 can_reset: bool = True,
+                 auto_add: bool = True,
                  ):
         super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
 

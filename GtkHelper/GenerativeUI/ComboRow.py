@@ -12,7 +12,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
     def __init__(self,
                  action_base: "ActionBase",
                  var_name: str,
-                 default_value: int,
+                 default_value: BaseComboRowItem | str,
                  items: list[BaseComboRowItem],
                  title: str = None,
                  subtitle: str = None,
@@ -42,7 +42,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         self._handle_value_changed(item, index)
 
     def _handle_value_changed(self, item: BaseComboRowItem, index: int):
-        self.set_value(index)
+        self.set_value(str(item))
 
         if self.on_change:
             self.on_change(self.widget, item)

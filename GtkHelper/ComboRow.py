@@ -50,7 +50,7 @@ class ComboRow(Adw.ComboRow):
                  title: str = None,
                  subtitle: str = None,
                  enable_search: bool = True,
-                 default_selection: int = 0):
+                 default_selection: BaseComboRowItem = None):
         super().__init__(title=title, subtitle=subtitle)
 
         self.model = Gio.ListStore(item_type=GObject.GObject)
@@ -65,8 +65,14 @@ class ComboRow(Adw.ComboRow):
         self.set_enable_search(enable_search)
         self.set_expression(Gtk.PropertyExpression.new(BaseComboRowItem, None, "filter_value"))
 
-        self.add_items(items)
-        self.set_selected(default_selection)
+        self.populate(items, default_selection)
+
+    def set_selected_item(self, item: BaseComboRowItem | str):
+        for index in range(self.model.get_n_items()):
+            if str(self.model.get_item(index)) == str(item):
+                self.set_selected(index)
+                return
+        self.set_selected(0)
 
     def add_item(self, combo_row_item: BaseComboRowItem):
         self.model.append(combo_row_item)
@@ -74,7 +80,7 @@ class ComboRow(Adw.ComboRow):
     def add_items(self, items: list[BaseComboRowItem]):
         self.model.splice(self.model.get_n_items(), 0, items)
 
-    def remove_item(self, index: int):
+    def remove_item_at_index(self, index: int):
         size = self.model.get_n_items()
 
         if not (0 <= index < size):
@@ -82,6 +88,12 @@ class ComboRow(Adw.ComboRow):
             return
 
         self.model.remove(index)
+
+    def remove_item(self, item: BaseComboRowItem | str):
+        for index in range(self.model.get_n_items()):
+            if str(self.model.get_item(index)) == str(item):
+                self.remove_item_at_index(index)
+                break
 
     def remove_items(self, start: int, amount: int):
         size = self.model.get_n_items()
@@ -96,15 +108,28 @@ class ComboRow(Adw.ComboRow):
     def remove_all_items(self):
         self.model.remove_all()
 
-    def get_item_at(self, index: int):
-        self.model.get_item(index)
+    def get_item_at(self, index: int) -> BaseComboRowItem:
+        return self.model.get_item(index)
 
-    def get_item(self, name: str):
+    def get_item(self, name: str) -> BaseComboRowItem:
         for item in range(self.model.get_n_items()):
             item = self.model.get_item(item)
             if item and str(item) == name:
                 return item
         return None
+
+    def get_selected_item(self) -> BaseComboRowItem | None:
+        selected_index = self.get_selected()
+
+        if selected_index == -1:
+            return None
+
+        return self.get_item_at(selected_index)
+
+    def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = ""):
+        self.remove_all_items()
+        self.add_items(items)
+        self.set_selected_item(selected_item)
 
     def _on_factory_setup(self, factory, list_item):
         label = Gtk.Label(halign=Gtk.Align.START)

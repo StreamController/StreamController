@@ -1,3 +1,4 @@
+import functools
 from abc import ABC, abstractmethod
 from typing import TypeVar, Callable
 
@@ -5,6 +6,9 @@ import gi
 from gi.repository import Gtk
 
 from typing import TYPE_CHECKING
+
+from globals import signal_manager
+
 if TYPE_CHECKING:
     from src.backend.PluginManager import ActionBase
 
@@ -28,6 +32,14 @@ class GenerativeUI[T](ABC):
         self._widget: Gtk.Widget = None
 
         self._action_base.add_generative_ui_object(self)
+
+    @abstractmethod
+    def connect_signals(self):
+        pass
+
+    @abstractmethod
+    def disconnect_signals(self):
+        pass
 
     @property
     def action_base(self):
@@ -53,7 +65,20 @@ class GenerativeUI[T](ABC):
     def auto_add(self):
         return self._auto_add
 
+    @staticmethod
+    def signal_manager(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            self.disconnect_signals()
+            try:
+                return func(self, *args, **kwargs)
+            finally:
+                self.connect_signals()
+
+        return wrapper
+
     @abstractmethod
+    @signal_manager
     def set_ui_value(self, value: T):
         pass
     

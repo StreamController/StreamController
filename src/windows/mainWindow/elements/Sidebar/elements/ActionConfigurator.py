@@ -175,15 +175,11 @@ class ConfigGroup(Adw.PreferencesGroup):
         # Clear
         self.clear()
 
-        # Load rows
-        for row in config_rows:
-            self.add(row)
-            self.loaded_rows.append(row)
-
         for gen_ui in generative_ui_objects:
             gen_ui.load_ui_value()
 
             if not gen_ui.auto_add:
+                gen_ui.unparent()
                 continue
 
             widget = gen_ui.widget
@@ -193,6 +189,11 @@ class ConfigGroup(Adw.PreferencesGroup):
 
             self.add(widget)
             self.loaded_rows.append(widget)
+
+        # Load rows
+        for row in config_rows:
+            self.add(row)
+            self.loaded_rows.append(row)
         
         # Show
         self.show()

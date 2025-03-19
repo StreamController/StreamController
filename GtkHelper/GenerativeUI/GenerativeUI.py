@@ -6,19 +6,19 @@ from gi.repository import Gtk
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 T = TypeVar("T")
 
 class GenerativeUI[T](ABC):
-    _action_base: "ActionBase"
+    _action_core: "ActionCore"
     _var_name: str # name of the key in the actions settings
     _default_value: T # default value of the key
     on_change: Callable[[T], None] # method that gets called when the value changes
     widget: Gtk.Widget # The actual widget of the UI Element
 
-    def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, on_change: Callable[[T], None] = None):
-        self._action_base = action_base
+    def __init__(self, action_core: "ActionCore", var_name: str, default_value: T, on_change: Callable[[T], None] = None):
+        self._action_core = action_core
         self._var_name = var_name
         self._default_value = default_value
         self.on_change = on_change
@@ -50,16 +50,16 @@ class GenerativeUI[T](ABC):
         """
         Sets the settings with the given value
         """
-        settings = self._action_base.get_settings()
+        settings = self._action_core.get_settings()
 
         settings[self._var_name] = value
-        self._action_base.set_settings(settings)
+        self._action_core.set_settings(settings)
 
     def get_value(self, fallback: T = None) -> T:
         """
         Returns the value from the settings
         """
-        settings = self._action_base.get_settings()
+        settings = self._action_core.get_settings()
 
         if fallback is None:
             fallback = self._default_value

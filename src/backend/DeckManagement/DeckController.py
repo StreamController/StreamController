@@ -67,7 +67,7 @@ from src.Signals import Signals
 from typing import TYPE_CHECKING, ClassVar
 
 from src.windows.mainWindow.elements.KeyGrid import KeyButton, KeyGrid
-from src.backend.PluginManager.ActionBase import ActionBase
+from src.backend.PluginManager.ActionCore import ActionCore
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.DeckStackChild import DeckStackChild
     from src.backend.DeckManagement.DeckManager import DeckManager
@@ -1514,7 +1514,7 @@ class ControllerInputState:
     def close_resources(self) -> None:
         pass
 
-    def get_own_actions(self) -> list["ActionBase"]:
+    def get_own_actions(self) -> list["ActionCore"]:
         if not self.deck_controller.get_alive(): return []
         active_page = self.deck_controller.active_page
         active_page = self.controller_input.deck_controller.active_page
@@ -1532,7 +1532,7 @@ class ControllerInputState:
     
     def own_actions_update(self) -> None:
         for action in self.get_own_actions():
-            if not isinstance(action, ActionBase):
+            if not isinstance(action, ActionCore):
                 continue
             if not action.on_ready_called:
                 continue
@@ -1541,7 +1541,7 @@ class ControllerInputState:
     @log.catch
     def own_actions_tick(self) -> None:
         for action in self.get_own_actions():
-            if not isinstance(action, ActionBase):
+            if not isinstance(action, ActionCore):
                 continue
             if not action.on_ready_called:
                 continue
@@ -1561,17 +1561,18 @@ class ControllerInputState:
                     gl.app.send_missing_plugin_notification(plugin_id)
                 continue
 
-            parsed_event = event
-            if action.allow_event_configuration:
-                parsed_event = action.get_event_assignments().get(event)
+            # parsed_event = event
+            # if action.allow_event_configuration:
+                # parsed_event = action.event_manager.get_event_assigner_for_event(event)
 
-            if parsed_event is None:
+            print()
+            if event is None:
                 continue
 
-            if not isinstance(action, ActionBase):
+            if not isinstance(action, ActionCore):
                 continue
 
-            action.event_callback(parsed_event, data)
+            action._raw_event_callback(event, data)
 
     def own_actions_ready_threaded(self) -> None:
         threading.Thread(target=self.own_actions_ready, name="own_actions_ready").start()

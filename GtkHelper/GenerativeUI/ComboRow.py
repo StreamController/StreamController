@@ -61,9 +61,11 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
 
     # Widget Wrappers
 
-    @GenerativeUI.signal_manager
-    def set_selected_item(self, item: BaseComboRowItem | str = ""):
-        return self.widget.set_selected_item(item)
+    def set_selected_item(self, item: BaseComboRowItem | str = "", update_setting: bool = True):
+        self.set_ui_value(item)
+
+        if update_setting:
+            self.set_value(str(item))
 
     @GenerativeUI.signal_manager
     def add_item(self, combo_row_item: BaseComboRowItem | str):
@@ -99,12 +101,12 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         return self.widget.get_selected_item()
 
     @GenerativeUI.signal_manager
-    def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = "", update_settings: bool = False):
+    def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = "", update_setting: bool = False):
         self.remove_all_items()
         self.add_items(items)
         self.set_selected_item(selected_item)
 
-        if update_settings:
+        if update_setting:
             self.set_value(str(self.get_selected_item()))
 
         self.update_value_in_ui()

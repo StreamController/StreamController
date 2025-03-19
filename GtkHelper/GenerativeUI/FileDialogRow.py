@@ -54,5 +54,6 @@ class FileDialogRow(GenerativeUI[str]):
     def _file_changed(self, file: Gio.File):
         self._handle_value_changed(file.get_path())
 
+    @GenerativeUI.signal_manager
     def set_ui_value(self, value: str):
         self.widget.load_from_path(value)

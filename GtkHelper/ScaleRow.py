@@ -128,6 +128,30 @@ class ScaleRow(Adw.ActionRow):
     def step(self, value: float):
         self._adjustment.set_step_increment(value)
 
+    @property
+    def digits(self):
+        return self.scale.get_digits()
+
+    @digits.setter
+    def digits(self, digits: int):
+        self.scale.set_digits(digits)
+
+    @property
+    def draw_value(self):
+        return self.scale.get_draw_value()
+
+    @draw_value.setter
+    def draw_value(self, draw: bool):
+        self.scale.set_draw_value(draw)
+
+    @property
+    def round_digits(self):
+        return self.scale.get_round_digits()
+
+    @round_digits.setter
+    def round_digits(self, round_digits: bool):
+        self.scale.set_round_digits(round_digits)
+
     # Scale Row
 
     def _correct_step_amount(self, adjustment):

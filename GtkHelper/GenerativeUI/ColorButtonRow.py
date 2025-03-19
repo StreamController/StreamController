@@ -8,6 +8,8 @@ from gi.repository import Gtk, Adw, Gio
 
 from typing import TYPE_CHECKING, Callable
 
+from GtkHelper.GtkHelper import better_disconnect
+
 if TYPE_CHECKING:
     from src.backend.PluginManager import ActionBase
 
@@ -33,8 +35,13 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
         )
 
         self._handle_reset_button_creation()
+        self.connect_signals()
 
+    def connect_signals(self):
         self.widget.color_button.connect("color-set", self._value_changed)
+
+    def disconnect_signals(self):
+        better_disconnect(self.widget.color_button, self._value_changed)
 
     def set_color(self, color: tuple[int, int, int, int], update_setting: bool):
         self.set_ui_value(color)
@@ -49,5 +56,6 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
         color = self.widget.get_color()
         self._handle_value_changed(color)
 
+    @GenerativeUI.signal_manager
     def set_ui_value(self, value: tuple[int, int, int, int]):
         self.widget.set_color(value)

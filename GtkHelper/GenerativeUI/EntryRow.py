@@ -30,7 +30,13 @@ class EntryRow(GenerativeUI[str]):
 
         self._handle_reset_button_creation()
 
+        self.connect_signals()
+
+    def connect_signals(self):
         self.widget.connect("changed", self._value_changed)
+
+    def disconnect_signals(self):
+        better_disconnect(self.widget, self._value_changed)
 
     def set_text(self, text: str, update_setting: bool = False):
         self.set_ui_value(text)
@@ -65,5 +71,6 @@ class EntryRow(GenerativeUI[str]):
         GLib.idle_add(self._text_reset, text)
         self._handle_value_changed(text)
 
+    @GenerativeUI.signal_manager
     def set_ui_value(self, value: str):
         self.widget.set_text(value)

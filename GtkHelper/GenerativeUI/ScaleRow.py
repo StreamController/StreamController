@@ -5,6 +5,8 @@ from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
 
+from GtkHelper.GtkHelper import better_disconnect
+
 if TYPE_CHECKING:
     from src.backend.PluginManager import ActionBase
 
@@ -46,7 +48,13 @@ class ScaleRow(GenerativeUI[float]):
 
         self._handle_reset_button_creation()
 
+        self.connect_signals()
+
+    def connect_signals(self):
         self.widget.scale.connect("value-changed", self._value_changed)
+
+    def disconnect_signals(self):
+        better_disconnect(self.widget.scale, self._value_changed)
 
     def set_number(self, number: float, update_setting: bool = False):
         self.set_ui_value(number)
@@ -60,6 +68,7 @@ class ScaleRow(GenerativeUI[float]):
     def _value_changed(self, scale):
         self._handle_value_changed(scale.get_value())
 
+    @GenerativeUI.signal_manager
     def set_ui_value(self, value: float):
         self.widget.scale.set_value(value)
 
@@ -71,3 +80,35 @@ class ScaleRow(GenerativeUI[float]):
 
     def set_step(self, step: float):
         self.widget.set_step(step)
+
+    @property
+    def min(self):
+        return self.widget.min
+
+    @min.setter
+    def min(self, value: float):
+        self.widget.min = value
+
+    @property
+    def max(self):
+        return self.widget.max
+
+    @max.setter
+    def max(self, value: float):
+        self.widget.max = value
+
+    @property
+    def step(self):
+        return self.widget.step
+
+    @step.setter
+    def step(self, value: float):
+        self.widget.step = value
+
+    @property
+    def digits(self):
+        return self._widget.digits
+
+    @digits.setter
+    def digits(self, digits: int):
+        self._widget.digits = digits

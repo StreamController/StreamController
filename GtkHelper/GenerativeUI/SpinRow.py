@@ -4,6 +4,9 @@ import gi
 from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
+
+from GtkHelper.GtkHelper import better_disconnect
+
 if TYPE_CHECKING:
     from src.backend.PluginManager import ActionBase
 
@@ -35,8 +38,15 @@ class SpinRow(GenerativeUI[float]):
 
         self._handle_reset_button_creation()
 
+        self.connect_signals()
+
+    def connect_signals(self):
         self._adjustment.connect("value-changed", self._correct_step_amount)
         self.widget.connect("changed", self._value_changed)
+
+    def disconnect_signals(self):
+        better_disconnect(self._adjustment, self._correct_step_amount)
+        better_disconnect(self.widget, self._value_changed)
 
     def set_number(self, number: float, update_setting: bool = False):
         self.set_ui_value(number)
@@ -49,7 +59,8 @@ class SpinRow(GenerativeUI[float]):
 
     def _value_changed(self, spin: Adw.SpinRow):
         self._handle_value_changed(spin.get_value())
-    
+
+    @GenerativeUI.signal_manager
     def set_ui_value(self, value: float):
         self.widget.set_value(value)
 

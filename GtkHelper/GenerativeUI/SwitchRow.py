@@ -4,6 +4,9 @@ import gi
 from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
+
+from GtkHelper.GtkHelper import better_disconnect
+
 if TYPE_CHECKING:
     from src.backend.PluginManager import ActionBase
 
@@ -26,8 +29,13 @@ class SwitchRow(GenerativeUI[bool]):
         )
 
         self._handle_reset_button_creation()
+        self.connect_signals()
 
+    def connect_signals(self):
         self.widget.connect("notify::active", self._value_changed)
+
+    def disconnect_signals(self):
+        better_disconnect(self.widget, self._value_changed)
 
     def set_active(self, active: bool, change_setting: bool = False):
         self.set_ui_value(active)
@@ -40,6 +48,7 @@ class SwitchRow(GenerativeUI[bool]):
 
     def _value_changed(self, switch, _):
         self._handle_value_changed(switch.get_active())
-    
+
+    @GenerativeUI.signal_manager
     def set_ui_value(self, value: bool):
         self.widget.set_active(value)

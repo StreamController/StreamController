@@ -5,6 +5,9 @@ import base64
 from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
+
+from GtkHelper.GtkHelper import better_disconnect
+
 if TYPE_CHECKING:
     from src.backend.PluginManager import ActionBase
 
@@ -25,8 +28,13 @@ class PasswordEntryRow(GenerativeUI[str]):
         )
 
         self._handle_reset_button_creation()
+        self.connect_signals()
 
+    def connect_signals(self):
         self.widget.connect("changed", self._value_changed)
+
+    def disconnect_signals(self):
+        better_disconnect(self.widget, self._value_changed)
 
     def set_password(self, password: str, update_setting: bool = False):
         self.set_ui_value(password)
@@ -51,5 +59,6 @@ class PasswordEntryRow(GenerativeUI[str]):
         settings[self._var_name] = encoded
         self._action_base.set_settings(settings)
 
+    @GenerativeUI.signal_manager
     def set_ui_value(self, value: str):
         self.widget.set_text(value)

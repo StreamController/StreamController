@@ -61,7 +61,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
 
     # Widget Wrappers
 
-    def set_selected_item(self, item: BaseComboRowItem | str = "", update_setting: bool = True):
+    def set_selected_item(self, item: BaseComboRowItem | str = "", update_setting: bool = False):
         self.set_ui_value(item)
 
         if update_setting:

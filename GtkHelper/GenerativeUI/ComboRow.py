@@ -15,7 +15,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
                  action_base: "ActionBase",
                  var_name: str,
                  default_value: BaseComboRowItem | str,
-                 items: list[BaseComboRowItem],
+                 items: list[BaseComboRowItem] | list[str],
                  title: str = None,
                  subtitle: str = None,
                  enable_search: bool = False,
@@ -65,19 +65,13 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
     def set_selected_item(self, item: BaseComboRowItem | str = ""):
         return self.widget.set_selected_item(item)
 
-    def add_item(self, combo_row_item: BaseComboRowItem):
-        better_disconnect(self.widget, self._value_changed)
-
+    @GenerativeUI.signal_manager
+    def add_item(self, combo_row_item: BaseComboRowItem | str):
         self.widget.add_item(combo_row_item)
 
-        self.widget.connect("notify::selected", self._value_changed)
-
-    def add_items(self, items: list[BaseComboRowItem]):
-        better_disconnect(self.widget, self._value_changed)
-
+    @GenerativeUI.signal_manager
+    def add_items(self, items: list[BaseComboRowItem] | str):
         self.widget.add_items(items)
-
-        self.widget.connect("notify::selected", self._value_changed)
 
     @GenerativeUI.signal_manager
     def remove_item_at_index(self, index: int):

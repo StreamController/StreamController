@@ -46,7 +46,7 @@ class ComboRow(Adw.ComboRow):
             The combo row will automatically highlight the item at the provided default selection index.
     """
     def __init__(self,
-                 items: list[BaseComboRowItem],
+                 items: list[BaseComboRowItem] | list[str],
                  title: str = None,
                  subtitle: str = None,
                  enable_search: bool = True,
@@ -65,7 +65,18 @@ class ComboRow(Adw.ComboRow):
         self.set_enable_search(enable_search)
         self.set_expression(Gtk.PropertyExpression.new(BaseComboRowItem, None, "filter_value"))
 
-        self.populate(items, default_selection)
+        self.populate(self.convert_item_list(items), default_selection)
+
+    def convert_item_list(self, items):
+        converted_list: list[BaseComboRowItem] = []
+
+        for item in items:
+            if isinstance(item, str):
+                converted_list.append(ComboRowItem(item))
+            if isinstance(item, BaseComboRowItem):
+                converted_list.append(item)
+
+        return converted_list
 
     def set_selected_item(self, item: BaseComboRowItem | str):
         for index in range(self.model.get_n_items()):
@@ -74,11 +85,16 @@ class ComboRow(Adw.ComboRow):
                 return
         self.set_selected(0)
 
-    def add_item(self, combo_row_item: BaseComboRowItem):
+    def add_item(self, combo_row_item: BaseComboRowItem | str):
+        if isinstance(combo_row_item, str):
+            combo_row_item = ComboRowItem(combo_row_item)
+
         self.model.append(combo_row_item)
 
-    def add_items(self, items: list[BaseComboRowItem]):
-        self.model.splice(self.model.get_n_items(), 0, items)
+    def add_items(self, items: list[BaseComboRowItem] | list[str]):
+        converted_list = self.convert_item_list(items)
+
+        self.model.splice(self.model.get_n_items(), 0, converted_list)
 
     def remove_item_at_index(self, index: int):
         size = self.model.get_n_items()

@@ -111,7 +111,7 @@ class ComboRow(Adw.ComboRow):
     def get_item_at(self, index: int) -> BaseComboRowItem:
         return self.model.get_item(index)
 
-    def get_item(self, name: str) -> BaseComboRowItem:
+    def get_item(self, name: str) -> BaseComboRowItem | None:
         for item in range(self.model.get_n_items()):
             item = self.model.get_item(item)
             if item and str(item) == name:

@@ -72,7 +72,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         self.widget.add_item(combo_row_item)
 
     @GenerativeUI.signal_manager
-    def add_items(self, items: list[BaseComboRowItem] | str):
+    def add_items(self, items: list[BaseComboRowItem] | list[str]):
         self.widget.add_items(items)
 
     @GenerativeUI.signal_manager
@@ -101,7 +101,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         return self.widget.get_selected_item()
 
     @GenerativeUI.signal_manager
-    def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = "", update_setting: bool = False):
+    def populate(self, items: list[BaseComboRowItem] | list[str], selected_item: BaseComboRowItem | str = "", update_setting: bool = False):
         self.remove_all_items()
         self.add_items(items)
         self.set_selected_item(selected_item)

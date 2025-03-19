@@ -132,6 +132,10 @@ class GenerativeUI[T](ABC):
 
         return self._action_base.get_translation(key, fallback)
 
+    def unparent(self):
+        if self.widget and self.widget.get_parent() is not None:
+            self.widget.unparent()
+
     def _create_reset_button(self):
         button = Gtk.Button(icon_name="edit-undo-symbolic", vexpand=True, css_classes=["no-rounded-corners"], overflow=Gtk.Overflow.HIDDEN)
 

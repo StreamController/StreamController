@@ -544,9 +544,9 @@ class Page:
         for action in self.get_all_actions():
             if hasattr(action, "on_ready"):
                 if not action.on_ready_called:
+                    action.load_initial_generative_ui_values()
                     action.on_ready()
                     action.on_ready_called = True
-                    action.load_initial_generative_ui_values()
 
     def clear_action_objects(self):
         for input_type in self.action_objects:

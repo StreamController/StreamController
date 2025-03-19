@@ -39,15 +39,16 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
 
     def _value_changed(self, combo_row: Combo, _):
         item = combo_row.get_selected_item()
-        index = combo_row.get_selected()
+        self._handle_value_changed(item)
 
-        self._handle_value_changed(item, index)
+    def _handle_value_changed(self, item: BaseComboRowItem):
+        old_value = self.get_value(self._default_value)
+        old_value = self.get_item(old_value)
 
-    def _handle_value_changed(self, item: BaseComboRowItem, index: int):
         self.set_value(str(item))
 
         if self.on_change:
-            self.on_change(self.widget, item)
+            self.on_change(self.widget, item, old_value)
     
     def set_ui_value(self, value: BaseComboRowItem | str):
         self.widget.set_selected_item(value)

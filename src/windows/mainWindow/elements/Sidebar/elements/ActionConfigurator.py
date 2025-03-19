@@ -181,7 +181,7 @@ class ConfigGroup(Adw.PreferencesGroup):
             self.loaded_rows.append(row)
 
         for gen_ui in generative_ui_objects:
-            gen_ui.load_initial_ui_value()
+            gen_ui.load_ui_value()
 
             if not gen_ui.auto_add:
                 continue

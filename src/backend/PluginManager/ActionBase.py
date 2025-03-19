@@ -99,9 +99,9 @@ class ActionBase(rpyc.Service):
             widgets.append(widget)
         return widgets
 
-    def load_initial_generative_ui_values(self):
+    def load_initial_generative_ui(self):
         for generative_object in self.generative_ui_objects:
-            generative_object.load_initial_ui_value()
+            generative_object.load_initial_ui()
 
     def set_deck_controller(self, deck_controller):
         """
@@ -259,7 +259,7 @@ class ActionBase(rpyc.Service):
         if self.get_state() is None:
             log.error(f"Could not find state, action: {self.action_id}, state: {self.state}")
             return
-        
+
         if not self.get_is_present():
             return
         if not self.on_ready_called:
@@ -273,7 +273,7 @@ class ActionBase(rpyc.Service):
 
         if not self.has_label_control(label_index):
             return
-        
+
         if text is None:
             text = ""
 

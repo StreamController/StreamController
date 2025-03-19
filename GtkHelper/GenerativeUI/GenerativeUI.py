@@ -118,7 +118,11 @@ class GenerativeUI[T](ABC):
 
         return settings.get(self._var_name, fallback)
 
-    def load_initial_ui_value(self):
+    def load_initial_ui(self):
+        value = self.get_value()
+        self._handle_value_changed(value)
+
+    def load_ui_value(self):
         value = self.get_value()
         self.set_ui_value(value)
 

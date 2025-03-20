@@ -57,6 +57,9 @@ class ExpanderRow(GenerativeUI[bool]):
             expanded=start_expanded,
             show_enable_switch=show_enable_switch
         )
+
+        self._switch_enabled = show_enable_switch
+
         self._handle_reset_button_creation()
         self.connect_signals()
 
@@ -129,6 +132,11 @@ class ExpanderRow(GenerativeUI[bool]):
         """
         self._handle_value_changed(expander_row.get_enable_expansion())
 
+    def _handle_value_changed(self, new_value: bool):
+        if not self._switch_enabled:
+            return
+        super()._handle_value_changed(new_value)
+
     @GenerativeUI.signal_manager
     def set_ui_value(self, value: bool):
         """
@@ -137,6 +145,9 @@ class ExpanderRow(GenerativeUI[bool]):
         Args:
             value (bool): The expansion state to set for the UI widget (expanded or collapsed).
         """
+        if not self._switch_enabled:
+            return
+
         self.widget.set_enable_expansion(value)
 
     @property

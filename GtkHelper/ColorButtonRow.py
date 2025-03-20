@@ -42,6 +42,8 @@ class ColorButtonRow(Adw.ActionRow):
 
         self.add_suffix(self.color_button)
 
+        self.set_color(self.color)
+
     def _on_color_changed(self, button: Gtk.ColorButton):
         self.color = self.get_color()
 

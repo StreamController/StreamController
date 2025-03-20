@@ -95,7 +95,8 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         self.set_ui_value(item)
 
         if update_setting:
-            self.set_value(str(item))
+            selected_item = self.get_selected_item()
+            self.set_value(str(selected_item))
 
     @GenerativeUI.signal_manager
     def add_item(self, combo_row_item: BaseComboRowItem | str):

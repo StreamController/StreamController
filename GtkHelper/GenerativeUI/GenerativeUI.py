@@ -150,7 +150,7 @@ class GenerativeUI[T](ABC):
 
     def reset_value(self):
         """Resets the UI element to its default value."""
-        self.set_value(self._default_value)
+        self._handle_value_changed(self._default_value)
         self.update_value_in_ui()
 
     def set_value(self, value: T):

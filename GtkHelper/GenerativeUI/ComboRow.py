@@ -73,17 +73,15 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         item = combo_row.get_selected_item()
         self._handle_value_changed(item)
 
-    def _handle_value_changed(self, item: BaseComboRowItem):
+    def _handle_value_changed(self, item: BaseComboRowItem, update_settings: bool = True, trigger_callback: bool = True):
         """Handles updating the stored value and triggering the change callback."""
-        old_value = self.get_value(self._default_value)
-        old_value = self.get_item(old_value)
-
-        if isinstance(item, BaseComboRowItem):
-            self.set_value(str(item))
-        else:
+        if update_settings:
             self.set_value(item)
 
-        if self.on_change:
+        if trigger_callback and self.on_change:
+            old_value = self.get_value(self._default_value)
+            old_value = self.get_item(old_value)
+
             self.on_change(self.widget, item, old_value)
 
     @GenerativeUI.signal_manager
@@ -91,15 +89,28 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         """Sets the selected item in the UI."""
         self.widget.set_selected_item(value)
 
+    def set_value(self, item: BaseComboRowItem | str):
+        """Sets the selected item in the UI."""
+
+        if isinstance(item, BaseComboRowItem):
+            value = str(item)
+        else:
+            value = item
+
+        settings = self._action_base.get_settings()
+        settings[self._var_name] = value
+        self._action_base.set_settings(settings)
+
     # Widget Wrappers
 
     def set_selected_item(self, item: BaseComboRowItem | str = "", update_setting: bool = False):
         """Sets the selected item and optionally updates the stored value."""
-        self.set_ui_value(item)
+        selected_item = self.widget.set_selected_item(item)
 
         if update_setting:
-            selected_item = self.get_selected_item()
-            self.set_value(str(selected_item))
+            self.set_value(selected_item)
+
+        return selected_item
 
     @GenerativeUI.signal_manager
     def add_item(self, combo_row_item: BaseComboRowItem | str):
@@ -146,12 +157,14 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         return self.widget.get_selected_item()
 
     @GenerativeUI.signal_manager
-    def populate(self, items: list[BaseComboRowItem] | list[str], selected_item: BaseComboRowItem | str = ""):
+    def populate(self, items: list[BaseComboRowItem] | list[str], selected_item: BaseComboRowItem | str = "",
+                 update_settings: bool = False,
+                 trigger_callback: bool = True):
         """Repopulates the combo box with new items and optionally updates the selection."""
         self.widget.remove_all_items()
         self.widget.add_items(items)
-        self.widget.set_selected_item(selected_item)
+        selected_item = self.widget.set_selected_item(selected_item)
 
-        self._handle_value_changed(selected_item)
+        self._handle_value_changed(selected_item, update_settings, trigger_callback)
 
         self.update_value_in_ui()

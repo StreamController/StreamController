@@ -79,11 +79,14 @@ class ComboRow(Adw.ComboRow):
         return converted_list
 
     def set_selected_item(self, item: BaseComboRowItem | str):
+        selected_item_index = 0
         for index in range(self.model.get_n_items()):
             if str(self.model.get_item(index)) == str(item):
-                self.set_selected(index)
-                return
-        self.set_selected(0)
+                selected_item_index = index
+                break
+
+        self.set_selected(selected_item_index)
+        return self.get_item_at(selected_item_index)
 
     def add_item(self, combo_row_item: BaseComboRowItem | str):
         if isinstance(combo_row_item, str):

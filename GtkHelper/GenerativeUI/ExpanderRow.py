@@ -113,6 +113,9 @@ class ExpanderRow(GenerativeUI[bool]):
             widget.unparent()
         self.widget.add_row(widget)
 
+    def clear_rows(self):
+        self.widget.clear()
+
     def _value_changed(self, expander_row: BetterExpander, _):
         """
         Handles the change in the expander's expansion state.

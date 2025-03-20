@@ -52,6 +52,10 @@ def better_disconnect(widget: Gtk.Widget, handler: callable):
     except Exception:
         pass
 
+def better_unparent(widget: Gtk.Widget):
+    if widget.get_parent() is not None:
+        widget.unparent()
+
 # Helper Classes
 class BetterExpander(Adw.ExpanderRow):
     def __init__(self, *args, **kwargs):

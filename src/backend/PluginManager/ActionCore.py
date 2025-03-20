@@ -21,7 +21,6 @@ import os
 from PIL import Image
 import gi
 
-from data.plugins.gg_kekemui_veadosc.observer import event
 from src.backend.PluginManager.EventManager import EventManager
 from src.backend.PluginManager.EventAssigner import EventAssigner
 

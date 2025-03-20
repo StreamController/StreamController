@@ -124,9 +124,10 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         self.widget.remove_items(start, amount)
 
     @GenerativeUI.signal_manager
-    def remove_all_items(self):
+    def remove_all_items(self, update_settings: bool = False):
         """Clears all items from the combo box."""
         self.widget.remove_all_items()
+        self.set_value(None)
 
     def get_item_at(self, index: int) -> BaseComboRowItem:
         """Retrieves an item at a specific index."""

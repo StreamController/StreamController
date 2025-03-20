@@ -225,6 +225,10 @@ class GenerativeUI[T](ABC):
         """
         Handles the creation and addition of the reset button to the UI element.
         """
+
+        if not self.can_reset:
+            return
+
         self.widget.add_css_class("gen-ui-row")
         self.widget.set_overflow(Gtk.Overflow.HIDDEN)
         self.widget.get_child().add_css_class("gen-ui-box")

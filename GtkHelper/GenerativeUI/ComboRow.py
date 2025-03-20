@@ -78,7 +78,10 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         old_value = self.get_value(self._default_value)
         old_value = self.get_item(old_value)
 
-        self.set_value(str(item))
+        if isinstance(item, BaseComboRowItem):
+            self.set_value(str(item))
+        else:
+            self.set_value(item)
 
         if self.on_change:
             self.on_change(self.widget, item, old_value)
@@ -124,14 +127,11 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         self.widget.remove_items(start, amount)
 
     @GenerativeUI.signal_manager
-    def remove_all_items(self, skip_setting_removal: bool = True):
+    def remove_all_items(self):
         """Clears all items from the combo box."""
         self.widget.remove_all_items()
 
-        if not skip_setting_removal:
-            self.set_value(None)
-        else:
-            self.set_value("")
+        self._handle_value_changed(self.widget.get_selected_item())
 
     def get_item_at(self, index: int) -> BaseComboRowItem:
         """Retrieves an item at a specific index."""
@@ -146,8 +146,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         return self.widget.get_selected_item()
 
     @GenerativeUI.signal_manager
-    def populate(self, items: list[BaseComboRowItem] | list[str], selected_item: BaseComboRowItem | str = "",
-                 update_setting: bool = False):
+    def populate(self, items: list[BaseComboRowItem] | list[str], selected_item: BaseComboRowItem | str = ""):
         """Repopulates the combo box with new items and optionally updates the selection."""
         self.widget.remove_all_items()
         self.widget.add_items(items)

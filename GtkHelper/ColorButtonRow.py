@@ -33,52 +33,43 @@ class ColorButtonRow(Adw.ActionRow):
                  default_color: tuple[int, int, int, int] = (0, 0, 0, 255),
                  ):
         super().__init__(title=title, subtitle=subtitle)
-
-        self.color = default_color
-
         self.color_button = Gtk.ColorButton(valign=Gtk.Align.CENTER)
-
-        self.color_button.connect("color-set", self._on_color_changed)
 
         self.add_suffix(self.color_button)
 
-        self.set_color(self.color)
+        self.color = default_color
 
-    def _on_color_changed(self, button: Gtk.ColorButton):
-        self.color = self.get_color()
+    @property
+    def color(self) -> tuple[int, int, int, int]:
+        rgba = self.color_button.get_rgba()
+        return self.convert_from_rgba(rgba)
 
-    def set_color(self, color: tuple[int, int, int, int]):
-        """Sets the color from an int tuple"""
-        self.color = color
-        self.color_button.set_rgba(self.get_color_rgba())
+    @color.setter
+    def color(self, value: tuple[int, int, int, int]):
+        rgba = self.convert_to_rgba(value)
+        self.color_button.set_rgba(rgba)
+
         self.color_button.emit("color-set")
 
-    def set_color_rgba(self, color: Gdk.RGBA):
-        normalized = (round(color.red * 255),
-                      round(color.green * 255),
-                      round(color.blue * 255),
-                      round(color.alpha * 255))
-        self.color = normalized
-        self.color_button.set_rgba(color)
-        self.color_button.emit("color-set")
+    def convert_from_rgba(self, color: Gdk.RGBA) -> tuple[int, int, int, int]:
+        color = (color.red, color.green, color.blue, color.alpha)
 
-    def get_color_rgba(self) -> Gdk.RGBA:
+        return self.normalize_to_255(color)
+
+    def convert_to_rgba(self, color: tuple[int, int, int, int]) -> Gdk.RGBA:
+        color = self.normalize_to_1(color)
+
         rgba = Gdk.RGBA()
 
-        if self.color is None:
-            return rgba
+        rgba.red = color[0]
+        rgba.green = color[1]
+        rgba.blue = color[2]
+        rgba.alpha = color[3]
 
-        normalized = tuple(color / 255.0 for color in self.color)
-        rgba.red = normalized[0]
-        rgba.green = normalized[1]
-        rgba.blue = normalized[2]
-        rgba.alpha = normalized[3]
         return rgba
 
-    def get_color(self) -> tuple[int, int, int, int]:
-        rgba = self.color_button.get_rgba()
+    def normalize_to_255(self, color: tuple[float, float, float, float]) -> tuple[int, int, int, int]:
+        return tuple(round(value * 255) for value in color)
 
-        return (round(rgba.red * 255),
-                round(rgba.green * 255),
-                round(rgba.blue * 255),
-                round(rgba.alpha * 255))
+    def normalize_to_1(self, color: tuple[int, int, int, int]) -> tuple[float, float, float, float]:
+        return tuple(value / 255.0 for value in color)

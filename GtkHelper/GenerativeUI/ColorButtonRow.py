@@ -88,7 +88,7 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
         Returns:
             tuple[int, int, int, int]: The RGBA color tuple.
         """
-        return self.widget.get_color()
+        return self.widget.color
 
     def _value_changed(self, button: Gtk.ColorButton):
         """
@@ -97,8 +97,7 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
         Args:
             button (Gtk.ColorButton): The color button that triggered the event.
         """
-        color = self.widget.get_color()
-        self._handle_value_changed(color)
+        self._handle_value_changed(self.widget.color)
 
     @GenerativeUI.signal_manager
     def set_ui_value(self, value: tuple[int, int, int, int]):
@@ -108,4 +107,4 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
         Args:
             value (tuple[int, int, int, int]): The new RGBA color value.
         """
-        self.widget.set_color(value)
+        self.widget.color = value

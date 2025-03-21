@@ -33,9 +33,10 @@ class GenerativeUI[T](ABC):
     on_change: Callable[[Gtk.Widget, T, T], None] # method that gets called when the value changes    _widget: Gtk.Widget # The actual widget of the UI Element
     _can_reset: bool
     _auto_add: bool
+    _complex_var_name: bool
 
     def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, can_reset: bool = True,
-                 auto_add: bool = True, on_change: Callable[[Gtk.Widget, T, T], None] = None):
+                 auto_add: bool = True, complex_var_name: bool = False, on_change: Callable[[Gtk.Widget, T, T], None] = None):
         """
         Initializes the UI element.
 
@@ -53,6 +54,7 @@ class GenerativeUI[T](ABC):
         self.on_change = on_change
         self._can_reset = can_reset
         self._auto_add = auto_add
+        self._complex_var_name = complex_var_name
         self._widget: Gtk.Widget = None
 
         self._action_base.add_generative_ui_object(self)
@@ -96,6 +98,11 @@ class GenerativeUI[T](ABC):
     def auto_add(self):
         """Returns whether the UI element is automatically added to the action."""
         return self._auto_add
+
+    @property
+    def complex_var_name(self):
+        """Returns the complex variable name used in settings."""
+        return self._complex_var_name
 
     @staticmethod
     def signal_manager(func):
@@ -154,6 +161,14 @@ class GenerativeUI[T](ABC):
         self._handle_value_changed(self._default_value)
         self.update_value_in_ui()
 
+    def resolve_var_name(self):
+        keys = [self.var_name]
+
+        if self.complex_var_name:
+            keys = self.var_name.split('.')
+
+        return keys
+
     def set_value(self, value: T):
         """
         Sets the value in the action's settings.
@@ -162,7 +177,20 @@ class GenerativeUI[T](ABC):
             value (T): The value to set.
         """
         settings = self._action_base.get_settings()
-        settings[self._var_name] = value
+        self._action_base.set_settings(settings)
+
+        keys = self.resolve_var_name()
+
+        d = settings
+
+        for key in keys[:-1]:
+            if key not in d:
+                d[key] = {}
+            d = d[key]
+
+        d[keys[-1]] = value
+
+        #settings[self._var_name] = value
         self._action_base.set_settings(settings)
 
     def get_value(self, fallback: T = None) -> T:
@@ -176,7 +204,16 @@ class GenerativeUI[T](ABC):
             T: The retrieved value.
         """
         settings = self._action_base.get_settings()
-        return settings.get(self._var_name, fallback or self._default_value)
+
+        keys = self.resolve_var_name()
+
+        d = settings
+        for key in keys:
+            if not isinstance(d, dict) or key not in d:
+                return fallback if fallback is not None else self._default_value
+            d = d[key]
+
+        return d
 
     def load_initial_ui(self):
         """Loads the initial UI state based on the stored value."""

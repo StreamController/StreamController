@@ -31,6 +31,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
                  on_change: callable = None,
                  can_reset: bool = True,
                  auto_add: bool = True,
+                 complex_var_name: bool = False
                  ):
         """
         Initializes the ComboRow UI element.
@@ -47,7 +48,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
             can_reset (bool, optional): Whether resetting is allowed. Defaults to True.
             auto_add (bool, optional): Whether to automatically add this UI element to the action. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: Combo = Combo(
             title=self.get_translation(title, title),
@@ -97,9 +98,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         else:
             value = item
 
-        settings = self._action_base.get_settings()
-        settings[self._var_name] = value
-        self._action_base.set_settings(settings)
+        super().set_value(value)
 
     # Widget Wrappers
 

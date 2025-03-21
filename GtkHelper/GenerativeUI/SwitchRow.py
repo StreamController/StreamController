@@ -27,7 +27,9 @@ class SwitchRow(GenerativeUI[bool]):
                  subtitle: str = None,
                  on_change: callable = None,
                  can_reset: bool = True,
-                 auto_add: bool = True):
+                 auto_add: bool = True,
+                 complex_var_name: bool = False
+                 ):
         """
         Initializes the SwitchRow widget, setting up the switch with the specified properties.
 
@@ -41,7 +43,7 @@ class SwitchRow(GenerativeUI[bool]):
             can_reset (bool, optional): Whether the switch value can be reset. Defaults to True.
             auto_add (bool, optional): Whether to automatically add the switch row to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: Adw.SwitchRow = Adw.SwitchRow(
             title=self.get_translation(title, title),

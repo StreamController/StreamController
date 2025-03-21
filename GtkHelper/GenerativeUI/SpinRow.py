@@ -37,7 +37,9 @@ class SpinRow(GenerativeUI[float]):
                  digits: int = 2,
                  on_change: callable = None,
                  can_reset: bool = True,
-                 auto_add: bool = True):
+                 auto_add: bool = True,
+                 complex_var_name: bool = False
+                 ):
         """
         Initializes the SpinRow widget, setting up the spin buttons with the specified properties.
 
@@ -55,7 +57,7 @@ class SpinRow(GenerativeUI[float]):
             can_reset (bool, optional): Whether the spin value can be reset. Defaults to True.
             auto_add (bool, optional): Whether to automatically add the spin row to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._adjustment = Gtk.Adjustment.new(self._default_value, min, max, step, 1, 0)
 

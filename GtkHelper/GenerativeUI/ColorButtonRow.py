@@ -31,6 +31,7 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
                  on_change: Callable[[Gtk.Widget, tuple[int, int, int, int], tuple[int, int, int, int]], None] = None,
                  can_reset: bool = True,
                  auto_add: bool = True,
+                 complex_var_name: bool = False
                  ):
         """
         Initializes the ColorButtonRow UI component.
@@ -45,7 +46,7 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
             can_reset (bool, optional): Whether the UI element can be reset. Defaults to True.
             auto_add (bool, optional): Whether the UI element is automatically added to the action. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: ColorDialog = ColorDialog(
             title=self.get_translation(title),

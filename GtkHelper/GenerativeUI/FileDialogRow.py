@@ -34,7 +34,9 @@ class FileDialogRow(GenerativeUI[str]):
                  filters: list[FileDialogFilter] = None,
                  on_change: callable = None,
                  can_reset: bool = True,
-                 auto_add: bool = True):
+                 auto_add: bool = True,
+                 complex_var_name: bool = False
+                 ):
         """
         Initializes the FileDialogRow widget with a file dialog for selecting a file.
 
@@ -52,7 +54,7 @@ class FileDialogRow(GenerativeUI[str]):
             can_reset (bool, optional): Whether the value can be reset. Defaults to True.
             auto_add (bool, optional): Whether to automatically add this entry to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, on_change)
+        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: FileDialog = FileDialog(
             title=self.get_translation(title),

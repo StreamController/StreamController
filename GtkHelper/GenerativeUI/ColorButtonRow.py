@@ -108,3 +108,15 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
             value (tuple[int, int, int, int]): The new RGBA color value.
         """
         self.widget.color = value
+
+    def convert_from_rgba(self, color: "Gdk.RGBA") -> tuple[int, int, int, int]:
+        return self.widget.convert_from_rgba(color)
+
+    def convert_to_rgba(self, color: tuple[int, int, int, int]) -> "Gdk.RGBA":
+        return self.widget.convert_to_rgba(color)
+
+    def normalize_to_255(self, color: tuple[float, float, float, float]) -> tuple[int, int, int, int]:
+        return self.widget.normalize_to_255(color)
+
+    def normalize_to_1(self, color: tuple[int, int, int, int]) -> tuple[float, float, float, float]:
+        return self.widget.normalize_to_1(color)

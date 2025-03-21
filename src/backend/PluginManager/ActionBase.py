@@ -377,6 +377,9 @@ class ActionBase(rpyc.Service):
             return os.path.join(self.plugin_base.PATH, asset_folder, subdir, asset_name)
         return ""
 
+    def load_ui_values(self):
+        pass
+
     def get_icon(self, key: str, skip_override: bool = False) -> Icon | None:
         return self.plugin_base.asset_manager.icons.get_asset(key, skip_override)
 

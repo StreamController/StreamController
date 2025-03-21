@@ -142,7 +142,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         """Clears all items from the combo box."""
         self.widget.remove_all_items()
 
-        self._handle_value_changed(self.widget.get_selected_item())
+        #self._handle_value_changed(self.widget.get_selected_item())
 
     def get_item_at(self, index: int) -> BaseComboRowItem:
         """Retrieves an item at a specific index."""
@@ -166,5 +166,4 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         selected_item = self.widget.set_selected_item(selected_item)
 
         self._handle_value_changed(selected_item, update_settings, trigger_callback)
-
-        self.update_value_in_ui()
+        self.widget.set_selected_item(selected_item)

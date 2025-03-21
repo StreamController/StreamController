@@ -144,11 +144,12 @@ class GenerativeUI[T](ABC):
         Args:
             new_value (T): The new value of the UI element.
         """
+        old_value = self.get_value()
+
         if update_settings:
             self.set_value(new_value)
 
         if trigger_callback and self.on_change:
-            old_value = self.get_value()
             self.on_change(self.widget, new_value, old_value)
 
     def update_value_in_ui(self):

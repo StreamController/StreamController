@@ -76,11 +76,12 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
 
     def _handle_value_changed(self, item: BaseComboRowItem, update_settings: bool = True, trigger_callback: bool = True):
         """Handles updating the stored value and triggering the change callback."""
+        old_value = self.get_value(self._default_value)
+
         if update_settings:
             self.set_value(item)
 
         if trigger_callback and self.on_change:
-            old_value = self.get_value(self._default_value)
             old_value = self.get_item(old_value)
 
             self.on_change(self.widget, item, old_value)

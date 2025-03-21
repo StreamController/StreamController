@@ -61,13 +61,11 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         self._handle_reset_button_creation()
         self.connect_signals()
 
-    @property
-    def sensitive(self):
-        return self.widget.get_sensitive()
+    def set_sensitive(self, sensitive: bool):
+        self.widget.set_sensitive(sensitive)
 
-    @sensitive.setter
-    def sensitive(self, value: bool):
-        self.widget.set_sensitive(value)
+    def get_sensitive(self):
+        return self.widget.get_sensitive()
 
     def connect_signals(self):
         """Connects the signal to detect selection changes in the combo box."""

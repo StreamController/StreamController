@@ -152,22 +152,8 @@ class ExpanderRow(GenerativeUI[bool]):
 
         self.widget.set_enable_expansion(value)
 
-    @property
-    def expanded(self):
-        """
-        Property getter for the expanded state of the expander.
-
-        Returns:
-            bool: True if the expander is expanded, False otherwise.
-        """
-        return self.widget.get_expanded()
-
-    @expanded.setter
-    def expanded(self, value):
-        """
-        Property setter for the expanded state of the expander.
-
-        Args:
-            value (bool): True to expand the expander, False to collapse it.
-        """
+    def set_expanded(self, value: bool):
         self.widget.set_expanded(value)
+
+    def get_expanded(self):
+        return self.widget.get_expanded()

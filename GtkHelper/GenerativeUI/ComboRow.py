@@ -142,8 +142,6 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         """Clears all items from the combo box."""
         self.widget.remove_all_items()
 
-        #self._handle_value_changed(self.widget.get_selected_item())
-
     def get_item_at(self, index: int) -> BaseComboRowItem:
         """Retrieves an item at a specific index."""
         return self.widget.get_item_at(index)

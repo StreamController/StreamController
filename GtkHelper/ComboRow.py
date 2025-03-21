@@ -137,6 +137,9 @@ class ComboRow(Adw.ComboRow):
                 return item
         return None
 
+    def get_item_amount(self):
+        return self.model.get_n_items()
+
     def get_selected_item(self) -> BaseComboRowItem | None:
         selected_index = self.get_selected()
 

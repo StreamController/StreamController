@@ -61,6 +61,14 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         self._handle_reset_button_creation()
         self.connect_signals()
 
+    @property
+    def sensitive(self):
+        return self.widget.get_sensitive()
+
+    @sensitive.setter
+    def sensitive(self, value: bool):
+        self.widget.set_sensitive(value)
+
     def connect_signals(self):
         """Connects the signal to detect selection changes in the combo box."""
         self.widget.connect("notify::selected", self._value_changed)
@@ -153,6 +161,9 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
     def get_selected_item(self) -> BaseComboRowItem | None:
         """Returns the currently selected item."""
         return self.widget.get_selected_item()
+
+    def get_item_amount(self):
+        return self.widget.get_item_amount()
 
     @GenerativeUI.signal_manager
     def populate(self, items: list[BaseComboRowItem] | list[str], selected_item: BaseComboRowItem | str = "",

@@ -24,8 +24,6 @@ class PluginManager:
             os.mkdir(gl.PLUGIN_DIR)
         folders = os.listdir(gl.PLUGIN_DIR)
         for folder in folders:
-            if "OSP" not in folder:
-                continue
             # Import main module
             import_string = f"plugins.{folder}.main"
             if import_string not in sys.modules.keys():
@@ -34,7 +32,6 @@ class PluginManager:
                     importlib.import_module(f"plugins.{folder}.main")
                 except Exception as e:
                     log.error(f"Error importing plugin {folder}: {e}")
-                    raise e
 
         # Get all classes inheriting from PluginBase and generate objects for them
         self.init_plugins()

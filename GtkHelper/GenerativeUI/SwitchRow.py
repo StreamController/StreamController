@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from GtkHelper.GtkHelper import better_disconnect
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager.ActionBase import ActionBase
 
 class SwitchRow(GenerativeUI[bool]):
     """

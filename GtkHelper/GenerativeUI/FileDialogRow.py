@@ -9,7 +9,7 @@ from gi.repository import Gtk, Adw, Gio, Gdk
 from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 class FileDialogRow(GenerativeUI[str]):
     """
@@ -23,7 +23,7 @@ class FileDialogRow(GenerativeUI[str]):
         selected_file (Gio.File): The currently selected file in the dialog.
     """
 
-    def __init__(self, action_base: "ActionBase",
+    def __init__(self, action_core: "ActionCore",
                  var_name: str,
                  default_value: str,
                  title: str = None,
@@ -41,7 +41,7 @@ class FileDialogRow(GenerativeUI[str]):
         Initializes the FileDialogRow widget with a file dialog for selecting a file.
 
         Args:
-            action_base (ActionBase): The base action that provides context for this file dialog row.
+            action_core (ActionCore): The base action that provides context for this file dialog row.
             var_name (str): The variable name to associate with this file dialog row.
             default_value (str): The initial path to display in the file dialog.
             title (str, optional): The title to display for the file dialog row.
@@ -54,7 +54,7 @@ class FileDialogRow(GenerativeUI[str]):
             can_reset (bool, optional): Whether the value can be reset. Defaults to True.
             auto_add (bool, optional): Whether to automatically add this entry to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
+        super().__init__(action_core, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: FileDialog = FileDialog(
             title=self.get_translation(title),

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from GtkHelper.GtkHelper import better_disconnect
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager.ActionBase import ActionBase
+    from src.backend.PluginManager.ActionCore import ActionCore
 
 class SwitchRow(GenerativeUI[bool]):
     """
@@ -20,7 +20,7 @@ class SwitchRow(GenerativeUI[bool]):
         active (bool): The current state of the switch (True for on, False for off).
     """
 
-    def __init__(self, action_base: "ActionBase",
+    def __init__(self, action_core: "ActionCore",
                  var_name: str,
                  default_value: bool,
                  title: str = None,
@@ -34,7 +34,7 @@ class SwitchRow(GenerativeUI[bool]):
         Initializes the SwitchRow widget, setting up the switch with the specified properties.
 
         Args:
-            action_base (ActionBase): The base action associated with the switch row.
+            action_core (ActionCore): The base action associated with the switch row.
             var_name (str): The variable name associated with this switch row.
             default_value (bool): The default value for the switch row (True for on, False for off).
             title (str, optional): The title to display for the switch row.
@@ -43,7 +43,7 @@ class SwitchRow(GenerativeUI[bool]):
             can_reset (bool, optional): Whether the switch value can be reset. Defaults to True.
             auto_add (bool, optional): Whether to automatically add the switch row to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
+        super().__init__(action_core, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: Adw.SwitchRow = Adw.SwitchRow(
             title=self.get_translation(title, title),

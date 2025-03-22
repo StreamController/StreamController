@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Callable
 from GtkHelper.GtkHelper import better_disconnect
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 from GtkHelper.GtkHelper import BetterExpander
 
@@ -24,7 +24,7 @@ class ExpanderRow(GenerativeUI[bool]):
         expanded (bool): Whether the expander is currently expanded or collapsed.
     """
 
-    def __init__(self, action_base: "ActionBase",
+    def __init__(self, action_core: "ActionCore",
                  var_name: str,
                  default_value: bool,
                  title: str = None,
@@ -40,7 +40,7 @@ class ExpanderRow(GenerativeUI[bool]):
         Initializes the ExpanderRow widget.
 
         Args:
-            action_base (ActionBase): The base action that provides context for this expander row.
+            action_core (ActionCore): The base action that provides context for this expander row.
             var_name (str): The variable name to associate with this expander row.
             default_value (bool): The default expanded/collapsed state of the expander.
             title (str, optional): The title to display for the expander row.
@@ -51,7 +51,7 @@ class ExpanderRow(GenerativeUI[bool]):
             can_reset (bool, optional): Whether the value can be reset. Defaults to False.
             auto_add (bool, optional): Whether to automatically add this entry to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
+        super().__init__(action_core, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: BetterExpander = BetterExpander(
             title=self.get_translation(title),

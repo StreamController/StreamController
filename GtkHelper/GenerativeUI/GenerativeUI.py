@@ -10,16 +10,16 @@ from typing import TYPE_CHECKING
 from globals import signal_manager
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 T = TypeVar("T")
 
 class GenerativeUI[T](ABC):
     """
-       Abstract base class for creating dynamic UI elements linked to an `ActionBase` instance.
+       Abstract base class for creating dynamic UI elements linked to an `ActionCore` instance.
 
        Attributes:
-           _action_base (ActionBase): The action this UI element is associated with.
+           _action_core (ActionCore): The action this UI element is associated with.
            _var_name (str): The key used to store the value in the action's settings.
            _default_value (T): The default value for this UI element.
            on_change (Callable[[Gtk.Widget, T, T], None]): Function called when the value changes.
@@ -27,7 +27,7 @@ class GenerativeUI[T](ABC):
            _can_reset (bool): Whether the UI element can be reset to its default value.
            _auto_add (bool): Whether the UI element is automatically added to the action.
        """
-    _action_base: "ActionBase"
+    _action_core: "ActionCore"
     _var_name: str # name of the key in the actions settings
     _default_value: T # default value of the key
     on_change: Callable[[Gtk.Widget, T, T], None] # method that gets called when the value changes    _widget: Gtk.Widget # The actual widget of the UI Element
@@ -35,20 +35,20 @@ class GenerativeUI[T](ABC):
     _auto_add: bool
     _complex_var_name: bool
 
-    def __init__(self, action_base: "ActionBase", var_name: str, default_value: T, can_reset: bool = True,
+    def __init__(self, action_core: "ActionCore", var_name: str, default_value: T, can_reset: bool = True,
                  auto_add: bool = True, complex_var_name: bool = False, on_change: Callable[[Gtk.Widget, T, T], None] = None):
         """
         Initializes the UI element.
 
         Args:
-            action_base (ActionBase): The action this UI element is associated with.
+            action_core (ActionCore): The action this UI element is associated with.
             var_name (str): The key used to store the value in the action's settings.
             default_value (T): The default value for this UI element.
             can_reset (bool, optional): Whether the UI element can be reset. Defaults to True.
             auto_add (bool, optional): Whether the UI element is automatically added to the action. Defaults to True.
             on_change (Callable[[Gtk.Widget, T, T], None], optional): Function called when the value changes. Defaults to None.
         """
-        self._action_base = action_base
+        self._action_core = action_core
         self._var_name = var_name
         self._default_value = default_value
         self.on_change = on_change
@@ -57,7 +57,7 @@ class GenerativeUI[T](ABC):
         self._complex_var_name = complex_var_name
         self._widget: Gtk.Widget = None
 
-        self._action_base.add_generative_ui_object(self)
+        self._action_core.add_generative_ui_object(self)
 
     @abstractmethod
     def connect_signals(self):
@@ -70,9 +70,9 @@ class GenerativeUI[T](ABC):
         pass
 
     @property
-    def action_base(self):
-        """Returns the associated `ActionBase` instance."""
-        return self._action_base
+    def action_core(self):
+        """Returns the associated `ActionCore` instance."""
+        return self._action_core
 
     @property
     def var_name(self):
@@ -177,8 +177,8 @@ class GenerativeUI[T](ABC):
         Args:
             value (T): The value to set.
         """
-        settings = self._action_base.get_settings()
-        self._action_base.set_settings(settings)
+        settings = self._action_core.get_settings()
+        self._action_core.set_settings(settings)
 
         keys = self.resolve_var_name()
 
@@ -192,7 +192,7 @@ class GenerativeUI[T](ABC):
         d[keys[-1]] = value
 
         #settings[self._var_name] = value
-        self._action_base.set_settings(settings)
+        self._action_core.set_settings(settings)
 
     def get_value(self, fallback: T = None) -> T:
         """
@@ -204,7 +204,7 @@ class GenerativeUI[T](ABC):
         Returns:
             T: The retrieved value.
         """
-        settings = self._action_base.get_settings()
+        settings = self._action_core.get_settings()
 
         keys = self.resolve_var_name()
 
@@ -237,7 +237,7 @@ class GenerativeUI[T](ABC):
         Returns:
             str: The translated string.
         """
-        return self._action_base.get_translation(key, fallback) if key else ""
+        return self._action_core.get_translation(key, fallback) if key else ""
 
     def unparent(self):
         """Removes the UI element from its parent widget if it has one."""

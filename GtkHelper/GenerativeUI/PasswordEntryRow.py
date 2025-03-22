@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from GtkHelper.GtkHelper import better_disconnect
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 
 class PasswordEntryRow(GenerativeUI[str]):
@@ -23,7 +23,7 @@ class PasswordEntryRow(GenerativeUI[str]):
         password (str): The currently entered password, encoded and decoded as needed for storage.
     """
 
-    def __init__(self, action_base: "ActionBase",
+    def __init__(self, action_core: "ActionCore",
                  var_name: str,
                  default_value: str,
                  title: str = None,
@@ -36,7 +36,7 @@ class PasswordEntryRow(GenerativeUI[str]):
         Initializes the PasswordEntryRow widget, setting up the password entry UI component.
 
         Args:
-            action_base (ActionBase): The base action that provides context for this password entry row.
+            action_core (ActionCore): The base action that provides context for this password entry row.
             var_name (str): The variable name to associate with this password entry row.
             default_value (str): The default password value to display in the entry field.
             title (str, optional): The title to display for the password entry row.
@@ -44,7 +44,7 @@ class PasswordEntryRow(GenerativeUI[str]):
             can_reset (bool, optional): Whether the password can be reset. Defaults to True.
             auto_add (bool, optional): Whether to automatically add this entry to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
+        super().__init__(action_core, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: Adw.PasswordEntryRow = Adw.PasswordEntryRow(
             title=self.get_translation(title, title),
@@ -129,11 +129,11 @@ class PasswordEntryRow(GenerativeUI[str]):
         Args:
             new_value (str): The new password to store, encoded in base64.
         """
-        settings = self._action_base.get_settings()
+        settings = self._action_core.get_settings()
 
         encoded = base64.b64encode(new_value.encode("utf-8")).decode("utf-8")
         settings[self._var_name] = encoded
-        self._action_base.set_settings(settings)
+        self._action_core.set_settings(settings)
 
     @GenerativeUI.signal_manager
     def set_ui_value(self, value: str):

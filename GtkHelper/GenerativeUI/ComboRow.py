@@ -6,7 +6,7 @@ from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 from GtkHelper.GtkHelper import better_disconnect
 
@@ -14,14 +14,14 @@ from GtkHelper.GtkHelper import better_disconnect
 class ComboRow(GenerativeUI[BaseComboRowItem]):
     """
     A UI element representing a combo box (drop-down menu) with selectable items,
-    linked to an `ActionBase` instance.
+    linked to an `ActionCore` instance.
 
     Attributes:
         _widget (Combo): The ComboRow widget instance.
     """
 
     def __init__(self,
-                 action_base: "ActionBase",
+                 action_core: "ActionCore",
                  var_name: str,
                  default_value: BaseComboRowItem | str,
                  items: list[BaseComboRowItem] | list[str],
@@ -37,7 +37,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         Initializes the ComboRow UI element.
 
         Args:
-            action_base (ActionBase): The associated action instance.
+            action_core (ActionCore): The associated action instance.
             var_name (str): The variable name for storing the selected value.
             default_value (BaseComboRowItem | str): The default selected item.
             items (list[BaseComboRowItem] | list[str]): The list of selectable items.
@@ -48,7 +48,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
             can_reset (bool, optional): Whether resetting is allowed. Defaults to True.
             auto_add (bool, optional): Whether to automatically add this UI element to the action. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
+        super().__init__(action_core, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: Combo = Combo(
             title=self.get_translation(title, title),

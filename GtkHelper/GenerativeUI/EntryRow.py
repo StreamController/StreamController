@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable
 from GtkHelper.GtkHelper import better_disconnect
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 class EntryRow(GenerativeUI[str]):
     """
@@ -20,7 +20,7 @@ class EntryRow(GenerativeUI[str]):
         filter_func (Callable[[str], str]): Optional function to filter or transform the input text.
     """
 
-    def __init__(self, action_base: "ActionBase",
+    def __init__(self, action_core: "ActionCore",
                  var_name: str,
                  default_value: str,
                  title: str = None,
@@ -34,7 +34,7 @@ class EntryRow(GenerativeUI[str]):
         Initializes the EntryRow widget.
 
         Args:
-            action_base (ActionBase): The base action that provides context for this entry row.
+            action_core (ActionCore): The base action that provides context for this entry row.
             var_name (str): The variable name to associate with this entry row.
             default_value (str): The default text to display in the entry row.
             title (str, optional): The title to display for the entry row.
@@ -43,7 +43,7 @@ class EntryRow(GenerativeUI[str]):
             can_reset (bool, optional): Whether the value can be reset. Defaults to True.
             auto_add (bool, optional): Whether to automatically add this entry to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
+        super().__init__(action_core, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: Adw.EntryRow = Adw.EntryRow(
             title=self.get_translation(title, title),

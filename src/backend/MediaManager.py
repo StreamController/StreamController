@@ -24,7 +24,7 @@ import os, psutil
 process = psutil.Process()
 
 # Import own modules
-from src.backend.DeckManagement.HelperMethods import is_svg, load_svg_as_pil, sha256, file_in_dir
+from src.backend.DeckManagement.HelperMethods import is_svg, sha256, file_in_dir, svg_to_pil
 
 
 # Import globals
@@ -80,7 +80,7 @@ class MediaManager:
         return pil_image
     
     def generate_svg_thumbnail(self, file_path):
-        return load_svg_as_pil(file_path)
+        return svg_to_pil(file_path, 1024)
 
     def generate_image_thumbnail(self, file_path):
         return Image.open(file_path)

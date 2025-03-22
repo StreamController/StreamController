@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from datetime import datetime
 from functools import lru_cache
 import hashlib
+from io import BytesIO
 import multiprocessing
 import os
 import subprocess
@@ -36,22 +37,23 @@ from autostart import is_flatpak
 import globals as gl
 
 
-def sha256(file_path):
+def sha256(text: str) -> str:
     """
-    Calculates the sha256 hash of a file.
+    Calculates the sha256 hash of a file or string.
 
     Args:
-        file_path (str): The path to the file.
+        text (str): The file path or string.
 
     Returns:
-        str: The sha256 hash of the file.
+        str: The sha256 hash of the file or string.
     """
     hash_sha256 = hashlib.sha256()
-    if not os.path.exists(file_path):
-        return
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_sha256.update(chunk)
+    if os.path.exists(text):
+        with open(text, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_sha256.update(chunk)
+    else:
+        hash_sha256.update(text.encode('utf-8'))
     return hash_sha256.hexdigest()
 
 
@@ -145,7 +147,7 @@ def is_video(path: str) -> bool:
 
 def is_image(path: str) -> bool:
     if path is None:
-        return
+        return False
     if os.path.isfile(path):
         return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.image_extensions
 
@@ -154,11 +156,11 @@ def is_image(path: str) -> bool:
 
 def is_svg(path: str) -> bool:
     if path is None:
-        return
+        return False
     if os.path.isfile(path):
         return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.svg_extensions
 
-    return False
+    return path.startswith("<svg ")
 
 
 def get_image_aspect_ratio(img: Image) -> str:
@@ -220,20 +222,6 @@ def download_file(url: str, path: str = "", file_name: str = None) -> str:
         f.write(requests.get(url).content)
 
     return path
-
-
-def load_svg_as_pil(file_path):
-    hash = sha256(file_path)
-    tmp = os.path.join(gl.DATA_PATH, "cache", "svg_to_png", f"{hash}.png")
-
-    if not os.path.exists(tmp):
-        os.makedirs(os.path.dirname(tmp), exist_ok=True)
-        cairosvg.svg2png(url=file_path, write_to=tmp,
-                         output_width=96, output_height=96)
-
-    pil_image = Image.open(tmp)
-    return pil_image
-
 
 def natural_keys(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
@@ -382,3 +370,62 @@ def open_web(url):
     if not url.startswith("http"):
         url = f"https://{url}"
     run_command(f"xdg-open {url}")
+
+def svg_string_to_pil(svg_string, width: int = 96, height: int = 96):
+    """
+    Convert an SVG string to a PIL Image object.
+    
+    Args:
+        svg_string (str): String containing SVG data
+        width (int, optional): Desired width of the output image
+        height (int, optional): Desired height of the output image
+        
+    Returns:
+        PIL.Image: The converted image
+    """
+    # Convert SVG string to PNG using cairosvg
+    png_data = cairosvg.svg2png(
+        bytestring=svg_string.encode('utf-8'),
+        output_width=width,
+        output_height=height
+    )
+    
+    # Create PIL Image from PNG data
+    img = Image.open(BytesIO(png_data))
+    
+    return img
+
+
+def svg_to_pil(svg_path: str, width: int = 96, height: int = 96):
+    """
+    Convert an SVG file to a PIL Image object.
+    
+    Args:
+        svg_path (str): Path to the SVG file or string containing SVG data
+        width (int, optional): Desired width of the output image
+        height (int, optional): Desired height of the output image
+        
+    Returns:
+        PIL.Image: The converted image
+    """
+    # Read SVG file
+
+    if os.path.exists(svg_path):
+        with open(svg_path, 'rb') as f:
+            svg_data = f.read()
+        
+        # Convert SVG to PNG using cairosvg
+        png_data = cairosvg.svg2png(
+            bytestring=svg_data,
+            output_width=width,
+            output_height=height
+        )
+        
+        # Create PIL Image from PNG data
+        img = Image.open(BytesIO(png_data))
+        
+        return img
+    elif svg_path.startswith("<svg "):
+        return svg_string_to_pil(svg_path, width, height)
+    else:
+        raise ValueError(f"Could not create SVG from string or path: {svg_path}")

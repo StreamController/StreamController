@@ -19,6 +19,7 @@ import json
 import sys
 import threading
 import time
+from evdev import InputEvent
 from loguru import logger as log
 from copy import copy
 import shutil
@@ -26,10 +27,11 @@ import shutil
 from numpy import isin
 
 # Import globals
+from src.backend.PluginManager.EventAssigner import EventAssigner
 from src.backend.DeckManagement.ImageHelpers import crop_key_image_from_deck_sized_image
 import globals as gl
 
-from src.backend.PluginManager.ActionBase import ActionBase
+from src.backend.PluginManager.ActionCore import ActionCore
 from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 # Import typing
 from typing import TYPE_CHECKING
@@ -180,7 +182,7 @@ class Page:
         ## Keep old object if it exists
         old_action = loaded_action_objects.get(input_ident.input_type, {}).get(input_ident.json_identifier, {}).get(state, {}).get(i)
         if old_action is not None:
-            if isinstance(old_action, action_holder.action_base):
+            if isinstance(old_action, action_holder.action_core):
                 return old_action #FIXME: gets never used
             
         ## Create new action object            
@@ -223,7 +225,7 @@ class Page:
                             else:
                                 input_action_objects[state][i] = NoActionHolderFound(id=action["id"])
                             continue
-                        action_class = action_holder.action_base
+                        action_class = action_holder.action_core
                         
                         if action_class is None:
                             input_action_objects[state][i] = NoActionHolderFound(id=action["id"])
@@ -256,13 +258,13 @@ class Page:
                     break
             time.sleep(0.02)
 
-        all_old_objects: list[ActionBase] = []
+        all_old_objects: list[ActionCore] = []
         for type in loaded_action_objects:
             for key in loaded_action_objects[type]:
                 for i in loaded_action_objects[type][key]:
                     all_old_objects.append(loaded_action_objects[type][key][i])
 
-        all_action_objects: list[ActionBase] = []
+        all_action_objects: list[ActionCore] = []
         for type in self.action_objects:
             for key in self.action_objects[type]:
                 for i in self.action_objects[type][key]:
@@ -270,7 +272,7 @@ class Page:
 
         for action in all_old_objects:
             if action not in all_action_objects:
-                if isinstance(action, ActionBase):
+                if isinstance(action, ActionCore):
                     action.on_removed_from_cache()
                     action.page = None
                 del action
@@ -279,7 +281,7 @@ class Page:
         from_actions = self.action_objects.get(type, {}).get(from_key, {})
 
         for action in from_actions.values():
-            action: "ActionBase" = action
+            action: "ActionCore" = action
             if type == "keys":
                 action.key_index = self.deck_controller.coords_to_index(to_key.split("x"))
             action.identifier = to_key
@@ -321,7 +323,7 @@ class Page:
             for key in list(self.action_objects[type].keys()):
                 for state in list(self.action_objects[type][key].keys()):
                     for index in list(self.action_objects[type][key][state].keys()):
-                        if not isinstance(self.action_objects[type][key][state][index], ActionBase):
+                        if not isinstance(self.action_objects[type][key][state][index], ActionCore):
                             continue
                         if self.action_objects[type][key][state][index].plugin_base == plugin_obj:
                             # Remove object
@@ -339,8 +341,8 @@ class Page:
             for json_identifier in list(self.action_objects[input_type].keys()):
                 for state in list(self.action_objects[input_type][json_identifier].keys()):
                     for index in list(self.action_objects[input_type][json_identifier][state].keys()):
-                        action_base = self.action_objects[input_type][json_identifier][state][index]
-                        action_id = action_base.action_id
+                        action_core = self.action_objects[input_type][json_identifier][state][index]
+                        action_id = action_core.action_id
 
                         if gl.plugin_manager.get_plugin_id_from_action_id(action_id) == plugin_id:
                             identifier = Input.FromTypeIdentifier(input_type, json_identifier)
@@ -359,7 +361,7 @@ class Page:
 #            for key in self.action_objects[type]:
 #                for state in self.action_objects[type][state]:
 #                    for action in self.action_objects[type][state][key].values():
-#                        if not isinstance(action, ActionBase):
+#                        if not isinstance(action, ActionCore):
 #                            continue
 #                        if action.plugin_base == plugin_obj:
 #                            keys.append(key)
@@ -400,12 +402,12 @@ class Page:
                     for action in action_dict[input_type][key][state].values():
                         if action is None:
                             continue
-                        if not isinstance(action, ActionBase):
+                        if not isinstance(action, ActionCore):
                             continue
                         actions.append(action)
         return actions
     
-    def get_all_actions_for_type(self, ident, only_action_bases: bool = False):
+    def get_all_actions_for_type(self, ident, only_action_cores: bool = False):
         actions = []
         input_type = ident.input_type
         input_identifier = ident.json_identifier
@@ -414,12 +416,12 @@ class Page:
                 for action in self.action_objects[input_type][input_identifier].get(state, {}).values():
                     if action is None or not action:
                         continue
-                    if only_action_bases and not isinstance(action, ActionBase):
+                    if only_action_cores and not isinstance(action, ActionCore):
                         continue
                     actions.append(action)
         return actions
     
-    def get_all_actions_for_input(self, ident, state, only_action_bases: bool = False):
+    def get_all_actions_for_input(self, ident, state, only_action_cores: bool = False):
         actions = []
         input_type = ident.input_type
         json_identifier = ident.json_identifier
@@ -428,7 +430,7 @@ class Page:
                 for action in self.action_objects[input_type][json_identifier].get(state, {}).values():
                     if action is None or not action:
                         continue
-                    if only_action_bases and not isinstance(action, ActionBase):
+                    if only_action_cores and not isinstance(action, ActionCore):
                         continue
                     actions.append(action)
         return actions
@@ -520,11 +522,20 @@ class Page:
 
     def get_action_event_assignments(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
-        return action_dict.get("event-assignments", {})
+
+        # backwards compat
+        assignments = action_dict.get("event-assignments", {})
+        for key, value in assignments.items():
+            if value == "None":
+                assignments[key] = None
+
+        return assignments
     
-    def set_action_event_assignments(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None, event_assignments: dict = None):
+    
+    def set_action_event_assigment(self, event_assigner: EventAssigner | None, input_event: InputEvent | None, action_object: ActionCore = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
-        action_dict["event-assignments"] = event_assignments
+        action_dict.setdefault("event-assignments", {})
+        action_dict["event-assignments"][str(input_event)] = event_assigner.id if event_assigner else None
         self.set_action_dict(action_object, identifier, state, index, action_dict)
 
 
@@ -545,6 +556,7 @@ class Page:
             if hasattr(action, "on_ready"):
                 if not action.on_ready_called:
                     action.on_ready_called = True
+                    action.load_event_overrides()
                     action.on_ready()
 
     def clear_action_objects(self):
@@ -554,7 +566,7 @@ class Page:
                     for i, action in enumerate(list(self.action_objects[input_type][input_identifier][state].values())):
                         self.action_objects[input_type][input_identifier][state][i].page = None
                         self.action_objects[input_type][input_identifier][state][i] = None
-                        if isinstance(self.action_objects[input_type][input_identifier][state][i], ActionBase):
+                        if isinstance(self.action_objects[input_type][input_identifier][state][i], ActionCore):
                             if hasattr(self.action_objects[input_type][input_identifier][state][i], "on_removed_from_cache"):
                                 self.action_objects[input_type][input_identifier][state][i].on_removed_from_cache()
                         self.action_objects[input_type][input_identifier][state][i] = None

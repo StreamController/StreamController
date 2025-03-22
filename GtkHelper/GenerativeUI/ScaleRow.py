@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from GtkHelper.GtkHelper import better_disconnect
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 from GtkHelper.ScaleRow import ScaleRow as Scale
 
@@ -28,7 +28,7 @@ class ScaleRow(GenerativeUI[float]):
         digits (int): The number of digits to display for the scale value.
     """
 
-    def __init__(self, action_base: "ActionBase",
+    def __init__(self, action_core: "ActionCore",
                  var_name: str,
                  default_value: float,
                  min: float,
@@ -50,7 +50,7 @@ class ScaleRow(GenerativeUI[float]):
         Initializes the ScaleRow widget, setting up the scale UI component with the specified properties.
 
         Args:
-            action_base (ActionBase): The base action associated with the scale row.
+            action_core (ActionCore): The base action associated with the scale row.
             var_name (str): The variable name associated with this scale row.
             default_value (float): The default value for the scale.
             min (float): The minimum value for the scale.
@@ -67,7 +67,7 @@ class ScaleRow(GenerativeUI[float]):
             can_reset (bool, optional): Whether the scale value can be reset. Defaults to True.
             auto_add (bool, optional): Whether to automatically add the scale row to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
+        super().__init__(action_core, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: Scale = Scale(
             title=self.get_translation(title, title),

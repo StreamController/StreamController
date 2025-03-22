@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 
 from src.backend.DeckManagement.InputIdentifier import Input
 if TYPE_CHECKING:
-    from backend.DeckManagement.DeckController import DeckController, ControllerKey, Background
+    from src.backend.DeckManagement.DeckController import DeckController, ControllerKey, Background
 
 class ScreenSaver:
     def __init__(self, deck_controller: "DeckController"):

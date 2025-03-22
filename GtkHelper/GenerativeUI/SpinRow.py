@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from GtkHelper.GtkHelper import better_disconnect
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 class SpinRow(GenerativeUI[float]):
     """
@@ -26,7 +26,7 @@ class SpinRow(GenerativeUI[float]):
         digits (int): The number of digits to display for the value.
     """
 
-    def __init__(self, action_base: "ActionBase",
+    def __init__(self, action_core: "ActionCore",
                  var_name: str,
                  default_value: float,
                  min: float,
@@ -44,7 +44,7 @@ class SpinRow(GenerativeUI[float]):
         Initializes the SpinRow widget, setting up the spin buttons with the specified properties.
 
         Args:
-            action_base (ActionBase): The base action associated with the spin row.
+            action_core (ActionCore): The base action associated with the spin row.
             var_name (str): The variable name associated with this spin row.
             default_value (float): The default value for the spin row.
             min (float): The minimum value for the spin row.
@@ -57,7 +57,7 @@ class SpinRow(GenerativeUI[float]):
             can_reset (bool, optional): Whether the spin value can be reset. Defaults to True.
             auto_add (bool, optional): Whether to automatically add the spin row to the UI. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
+        super().__init__(action_core, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._adjustment = Gtk.Adjustment.new(self._default_value, min, max, step, 1, 0)
 

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Callable
 from GtkHelper.GtkHelper import better_disconnect
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionBase
+    from src.backend.PluginManager import ActionCore
 
 
 class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
@@ -23,7 +23,7 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
     """
 
     def __init__(self,
-                 action_base: "ActionBase",
+                 action_core: "ActionCore",
                  var_name: str,
                  default_value: tuple[int, int, int, int],
                  title: str = None,
@@ -37,7 +37,7 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
         Initializes the ColorButtonRow UI component.
 
         Args:
-            action_base (ActionBase): The action this UI element is associated with.
+            action_core (ActionCore): The action this UI element is associated with.
             var_name (str): The key used to store the value in the action's settings.
             default_value (tuple[int, int, int, int]): The default RGBA color.
             title (str, optional): The title for the UI element.
@@ -46,7 +46,7 @@ class ColorButtonRow(GenerativeUI[tuple[int, int, int, int]]):
             can_reset (bool, optional): Whether the UI element can be reset. Defaults to True.
             auto_add (bool, optional): Whether the UI element is automatically added to the action. Defaults to True.
         """
-        super().__init__(action_base, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
+        super().__init__(action_core, var_name, default_value, can_reset, auto_add, complex_var_name, on_change)
 
         self._widget: ColorDialog = ColorDialog(
             title=self.get_translation(title),

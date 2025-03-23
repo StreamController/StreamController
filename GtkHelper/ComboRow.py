@@ -32,6 +32,18 @@ class ComboRowItem(BaseComboRowItem):
 
     def __str__(self):
         return self.label
+    
+class SimpleComboRowItem(BaseComboRowItem):
+    def __init__(self, value: str, label: str):
+        super().__init__()
+        self.value = value
+        self.label = label
+
+    def __str__(self):
+        return self.label
+    
+    def get_value(self):
+        return self.value
 
 class ComboRow(Adw.ComboRow):
     """

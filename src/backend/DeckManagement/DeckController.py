@@ -1482,8 +1482,8 @@ class ControllerInputState:
         self.controller_input = controller_input
         self.deck_controller = controller_input.deck_controller
         self.state = state
-        self._show_error: bool = False
-        self.hide_error_timer: Timer = None
+        self._overlay: Image.Image = None
+        self.hide_overlay_timer: Timer = None
 
         # managers
         self.layout_manager = LayoutManager(self.controller_input)
@@ -1498,31 +1498,38 @@ class ControllerInputState:
     def ready(self):
         pass
 
-    def stop_error_timer(self):
-        if self.hide_error_timer is not None:
-            self.hide_error_timer.cancel()
-            self.hide_error_timer = None
+    def stop_overlay_timer(self):
+        if self.hide_overlay_timer is not None:
+            self.hide_overlay_timer.cancel()
+            self.hide_overlay_timer = None
 
-    def show_error(self, duration: int = -1):
+    def show_overlay(self, image: Image.Image, duration: int = -1):
         """
         duration: -1 for infinite
         """
         if duration == 0:
-            self.stop_error_timer()
-            self._show_error = False
+            self.stop_overlay_timer()
+            self._overlay = None
             self.update()
         elif duration > 0:
-            self._show_error = True
+            self._overlay = image
             self.update()
-            self.hide_error_timer = Timer(duration, self.hide_error)
-            self.hide_error_timer.start()
+            self.hide_overlay_timer = Timer(duration, self.hide_error)
+            self.hide_overlay_timer.start()
         else:
-            self._show_error = True
+            self._overlay = image
             self.update()
 
-    def hide_error(self):
-        self._show_error = False
+    def hide_overlay(self):
+        self._overlay = False
         self.update()
+
+    def show_error(self, duration: int = -1):
+        error_img = Image.open(os.path.join("Assets", "images", "error.png"))
+        self.show_overlay(error_img, duration=duration)
+
+    def hide_error(self):
+        self.hide_overlay()
 
     def close_resources(self) -> None:
         pass
@@ -1937,11 +1944,10 @@ class ControllerKey(ControllerInput):
         if background is None:
             background = self.deck_controller.generate_alpha_key().copy()
 
-        if state._show_error:
+        if state._overlay:
             height = round(self.deck_controller.get_key_image_size()[1]*0.75)
-            error_img = Image.open(os.path.join("Assets", "images", "error.png"))
-            error_img = error_img.resize((height, height))
-            background.paste(error_img, (int((self.deck_controller.get_key_image_size()[0] - height) // 2), int((self.deck_controller.get_key_image_size()[1] - height) // 2)), error_img)
+            img = state._overlay.resize((height, height))
+            background.paste(img, (int((self.deck_controller.get_key_image_size()[0] - height) // 2), int((self.deck_controller.get_key_image_size()[1] - height) // 2)), img)
             return background
 
 

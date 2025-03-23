@@ -1,3 +1,4 @@
+
 """
 Author: Core447
 Year: 2024
@@ -249,6 +250,26 @@ class ActionCore(rpyc.Service):
         if self.get_is_multi_action(): return
         try:
             self.get_state().hide_error()
+        except AttributeError:
+            pass
+
+    def show_overlay(self, image: Image.Image, duration: int = -1) -> None:
+        self.raise_error_if_not_ready()
+
+        if not self.get_is_present(): return
+        if self.get_is_multi_action(): return
+        try:
+            self.get_state().show_overlay(image, duration=duration)
+        except AttributeError:
+            pass
+
+    def hide_overlay(self) -> None:
+        self.raise_error_if_not_ready()
+
+        if not self.get_is_present(): return
+        if self.get_is_multi_action(): return
+        try:
+            self.get_state().hide_overlay()
         except AttributeError:
             pass
 

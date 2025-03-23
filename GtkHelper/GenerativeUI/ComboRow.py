@@ -101,7 +101,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         """Sets the selected item in the UI."""
 
         if isinstance(item, BaseComboRowItem):
-            value = str(item)
+            value = item.save_value()
         else:
             value = item
 

@@ -11,7 +11,15 @@ class BaseComboRowItem(GObject.GObject):
         super().__init__()
 
     def __str__(self):
+        """Used to display values in the ComboRow"""
         pass
+
+    def save_value(self):
+        """Used to retrieve the value that will be saved"""
+        return self.__str__()
+
+    def __eq__(self, other):
+        return self.save_value() == str(other)
 
     @GObject.Property(type=GObject.TYPE_STRING)
     def filter_value(self):
@@ -80,8 +88,9 @@ class ComboRow(Adw.ComboRow):
 
     def set_selected_item(self, item: BaseComboRowItem | str):
         selected_item_index = 0
+
         for index in range(self.model.get_n_items()):
-            if str(self.model.get_item(index)) == str(item):
+            if self.model.get_item(index) == item:
                 selected_item_index = index
                 break
 
@@ -110,7 +119,7 @@ class ComboRow(Adw.ComboRow):
 
     def remove_item(self, item: BaseComboRowItem | str):
         for index in range(self.model.get_n_items()):
-            if str(self.model.get_item(index)) == str(item):
+            if self.model.get_item(index) == item:
                 self.remove_item_at_index(index)
                 break
 
@@ -133,7 +142,8 @@ class ComboRow(Adw.ComboRow):
     def get_item(self, name: str) -> BaseComboRowItem | None:
         for item in range(self.model.get_n_items()):
             item = self.model.get_item(item)
-            if item and str(item) == name:
+
+            if item and item == name:
                 return item
         return None
 

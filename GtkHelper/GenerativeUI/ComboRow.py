@@ -6,7 +6,7 @@ from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionCore
+    from src.backend.PluginManager.ActionCore import ActionCore
 
 from GtkHelper.GtkHelper import better_disconnect
 

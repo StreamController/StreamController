@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Callable
 from GtkHelper.GtkHelper import better_disconnect
 
 if TYPE_CHECKING:
-    from src.backend.PluginManager import ActionCore
+    from src.backend.PluginManager.ActionCore import ActionCore
 
 from GtkHelper.GtkHelper import BetterExpander
 

@@ -322,7 +322,7 @@ class DeckController:
         self.deck_manager: DeckManager = deck_manager
         # Open the deck - why store it as self.deck? So that self.get_alive() returns True in get_deck_settings
         self.deck = deck
-        self.deck.open()
+        self.deck.open(self.deck_manager.beta_resume_mode)
 
         rotation = self.get_deck_settings().get("rotation", 0)
         self.deck: BetterDeck = BetterDeck(deck, rotation)

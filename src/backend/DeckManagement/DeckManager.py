@@ -84,11 +84,8 @@ class DeckManager:
         decks=DeviceManager().enumerate()
         for deck in decks:
             try:
-                if self.beta_resume_mode:
-                    deck.reconnect_after_suspend = True
-                    deck._read = types.MethodType(beta_read, deck)
                 if not deck.is_open():
-                    deck.open()
+                    deck.open(self.beta_resume_mode)
             except:
                 log.error("Failed to open deck. Maybe it's already connected to another instance?")
                 continue

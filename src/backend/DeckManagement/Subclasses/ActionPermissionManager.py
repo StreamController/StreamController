@@ -17,7 +17,7 @@ from concurrent.futures import thread
 import threading
 from typing import TYPE_CHECKING
 
-from src.backend.PluginManager import ActionCore
+from src.backend.PluginManager.ActionCore import ActionCore
 if TYPE_CHECKING:
     from src.backend.DeckManagement.DeckController import ControllerInputState
 

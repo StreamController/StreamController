@@ -14,12 +14,12 @@ class BaseComboRowItem(GObject.GObject):
         """Used to display values in the ComboRow"""
         pass
 
-    def save_value(self):
+    def get_value(self):
         """Used to retrieve the value that will be saved"""
         return self.__str__()
 
     def __eq__(self, other):
-        return self.save_value() == str(other)
+        return self.get_value() == str(other)
 
     @GObject.Property(type=GObject.TYPE_STRING)
     def filter_value(self):

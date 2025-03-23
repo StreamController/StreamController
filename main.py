@@ -82,7 +82,7 @@ def config_logger():
     plugin_logger = Logger(
         LoggerConfig(
             name="PLUGIN",
-            log_file_path=os.path.join(gl.DATA_PATH, "logs/plugin.log"),
+            log_file_path=os.path.join(gl.DATA_PATH, "logs/plugins.log"),
             base_log_level="TRACE",
             rotation="3 days",
             retention=None,
@@ -99,7 +99,7 @@ def config_logger():
         ]
     )
 
-    gl.loggers["plugin"] = plugin_logger
+    gl.loggers["plugins"] = plugin_logger
 
 class Main:
     def __init__(self, application_id, deck_manager):

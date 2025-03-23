@@ -670,7 +670,6 @@ class PluginBase(rpyc.Service):
         self.backend_connection = rpyc.connect("localhost", port, config={"allow_public_attrs": True})
         self.backend = self.backend_connection.root
 
-        self.backend.exposed_set_data_path(gl.DATA_PATH)
         gl.plugin_manager.backends.append(self.backend_connection)
 
     def ping(self) -> bool:

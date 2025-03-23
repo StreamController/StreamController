@@ -163,8 +163,9 @@ class ConfigGroup(Adw.PreferencesGroup):
 
     def load_for_action(self, action: ActionCore):
         config_rows = action.get_config_rows()
+        generative_ui_objects = action.get_generative_ui()
 
-        if not config_rows:
+        if not config_rows and not generative_ui_objects:
             self.hide()
             return
 
@@ -180,9 +181,19 @@ class ConfigGroup(Adw.PreferencesGroup):
             self.add(row)
             self.loaded_rows.append(row)
 
-        for gen_ui_row in action.get_generative_ui_widgets():
-            self.add(gen_ui_row)
-            self.loaded_rows.append(gen_ui_row)
+        for gen_ui in generative_ui_objects:
+            gen_ui.load_ui_value()
+
+            if not gen_ui.auto_add:
+                continue
+
+            widget = gen_ui.widget
+
+            if widget.get_parent() is not None:
+                continue
+
+            self.add(widget)
+            self.loaded_rows.append(widget)
         
         # Show
         self.show()

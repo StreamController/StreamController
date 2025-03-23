@@ -76,10 +76,15 @@ class LocaleManager:
     def get(self, key: str, fallback: str = None) -> str:
         key_dict = self.locale_data.get(key, {})
 
+        if fallback is None:
+            fallback = key
+
         result = key_dict.get(self.language)
+
         if result in [None, ""]:
-            return key_dict.get(self.FALLBACK_LOCALE, key)
+            result = key_dict.get(self.FALLBACK_LOCALE, key)
+
         if result is None:
-            return key if fallback is None else fallback
+            result = fallback
 
         return result

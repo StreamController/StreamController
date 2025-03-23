@@ -558,7 +558,6 @@ class Page:
                     action.on_ready_called = True
                     action.load_event_overrides()
                     action.on_ready()
-                    action.load_initial_generative_ui_values()
 
     def clear_action_objects(self):
         for input_type in self.action_objects:

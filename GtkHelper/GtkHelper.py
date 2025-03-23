@@ -28,6 +28,35 @@ import webbrowser as web
 # Import globals
 import globals as gl
 
+# Helper Functions
+def get_focused_widgets(start: Gtk.Widget) -> list[Gtk.Widget]:
+    widgets = []
+    while True:
+        child = start.get_focus_child()
+        if child is None:
+            return widgets
+        widgets.append(child)
+        start = child
+
+def get_deepest_focused_widget(start: Gtk.Widget) -> Gtk.Widget:
+    return get_focused_widgets(start)[-1]
+
+def get_deepest_focused_widget_with_attr(start: Gtk.Widget, attr:str) -> Gtk.Widget:
+    for widget in reversed(get_focused_widgets(start)):
+        if hasattr(widget, attr):
+            return widget
+
+def better_disconnect(widget: Gtk.Widget, handler: callable):
+    try:
+        widget.disconnect_by_func(handler)
+    except Exception:
+        pass
+
+def better_unparent(widget: Gtk.Widget):
+    if widget.get_parent() is not None:
+        widget.unparent()
+
+# Helper Classes
 class BetterExpander(Adw.ExpanderRow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -127,7 +156,6 @@ class BetterExpander(Adw.ExpanderRow):
 
         return image
 
-
 class BetterPreferencesGroup(Adw.PreferencesGroup):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -198,29 +226,6 @@ class AttributeRow(Adw.PreferencesRow):
         if attr is None:
             attr = "N/A"
         self.attribute_label.set_label(attr)
-
-def get_focused_widgets(start: Gtk.Widget) -> list[Gtk.Widget]:
-    widgets = []
-    while True:
-        child = start.get_focus_child()
-        if child is None:
-            return widgets
-        widgets.append(child)
-        start = child
-
-def get_deepest_focused_widget(start: Gtk.Widget) -> Gtk.Widget:
-    return get_focused_widgets(start)[-1]
-
-def get_deepest_focused_widget_with_attr(start: Gtk.Widget, attr:str) -> Gtk.Widget:
-    for widget in reversed(get_focused_widgets(start)):
-        if hasattr(widget, attr):
-            return widget
-
-def better_disconnect(widget: Gtk.Widget, handler: callable):
-    try:
-        widget.disconnect_by_func(handler)
-    except Exception:
-        pass
         
 class EntryDialog(Gtk.ApplicationWindow):
     def __init__(self, parent_window, dialog_title:str, entry_heading:str = "Name:", default_text:str = None, confirm_label:str = "OK", forbid_answers:list[str] = [],
@@ -323,7 +328,6 @@ class EntryDialog(Gtk.ApplicationWindow):
         self.callback_func(self.input_box.get_text())
         self.destroy()
 
-
 class ErrorPage(Gtk.Box):
     def __init__(self, reload_func: callable = None,
                  error_text:str = "Error",
@@ -366,7 +370,6 @@ class ErrorPage(Gtk.Box):
     def set_reload_args(self, reload_args):
         self.reload_args = reload_args
 
-
 class OriginalURL(Adw.ActionRow):
     def __init__(self):
         super().__init__(title="Original URL:", subtitle="N/A")
@@ -392,7 +395,6 @@ class OriginalURL(Adw.ActionRow):
             return
         open_web(self.get_subtitle())
 
-
 class EntryRowWithoutTitle(Adw.EntryRow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -406,59 +408,6 @@ class EntryRowWithoutTitle(Adw.EntryRow):
 
         empty_title.set_visible(False)
         title.set_visible(False)
-
-class ComboRow(Adw.PreferencesRow):
-    def __init__(self, title, model: Gtk.ListStore, **kwargs):
-        super().__init__(title=title, **kwargs)
-        self.model = model
-
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
-                                margin_start=10, margin_end=10,
-                                margin_top=10, margin_bottom=10)
-        self.set_child(self.main_box)
-
-        self.label = Gtk.Label(label=title, hexpand=True, xalign=0)
-        self.main_box.append(self.label)
-
-        self.combo_box = Gtk.ComboBox.new_with_model(self.model)
-        self.main_box.append(self.combo_box)
-
-
-class ScaleRow(Adw.PreferencesRow):
-    def __init__(self, title, value: float, min: float, max: float, step: float, text_right: str = "", text_left: str = "", **kwargs):
-        super().__init__(title=title, **kwargs)
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
-                                margin_start=10, margin_end=10,
-                                margin_top=10, margin_bottom=10)
-        self.set_child(self.main_box)
-
-        self.label = Gtk.Label(label=title, hexpand=True, xalign=0)
-        self.main_box.append(self.label)
-
-        self.adjustment = Gtk.Adjustment.new(value, min, max, step, 1, 0)
-
-        self.scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=self.adjustment)
-        self.scale.set_size_request(200, -1)  # Adjust width as needed
-        self.scale.set_tooltip_text(str(value))
-
-        def correct_step_amount(adjustment):
-            value = adjustment.get_value()
-            step = adjustment.get_step_increment()
-            rounded_value = round(value / step) * step
-            adjustment.set_value(rounded_value)
-
-        self.adjustment.connect("value-changed", correct_step_amount)
-
-        self.label_right = Gtk.Label(label=text_right, hexpand=False, xalign=0)
-
-        self.label_left = Gtk.Label(label=text_left, hexpand=False, xalign=0)
-
-        self.main_box.append(self.label_left)
-        self.main_box.append(self.scale)
-        self.main_box.append(self.label_right)
-
-
-
 
 class BackButton(Gtk.Button):
     def __init__(self, *args, **kwargs):

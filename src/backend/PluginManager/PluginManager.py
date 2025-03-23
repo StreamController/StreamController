@@ -32,7 +32,6 @@ class PluginManager:
                     importlib.import_module(f"plugins.{folder}.main")
                 except Exception as e:
                     log.error(f"Error importing plugin {folder}: {e}")
-                    raise e
 
         # Get all classes inheriting from PluginBase and generate objects for them
         self.init_plugins()

@@ -34,7 +34,6 @@ from rpyc.core import netref
 
 # Import own modules
 from GtkHelper.GenerativeUI.GenerativeUI import GenerativeUI
-from src.Signals.Signals import Signal
 from src.backend.DeckManagement.HelperMethods import is_image, is_svg, is_video
 from src.backend.DeckManagement.Subclasses.KeyImage import InputImage
 from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
@@ -42,6 +41,7 @@ from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
 from src.backend.DeckManagement.Subclasses.KeyLayout import ImageLayout
 from src.backend.DeckManagement.Media.Media import Media
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
+from src.Signals.Signals import Signal
 
 # Import globals
 import globals as gl
@@ -73,6 +73,7 @@ class ActionCore(rpyc.Service):
         self.action_id = action_id
         self.action_name = action_name
         self.plugin_base = plugin_base
+        self.generative_ui_objects: list[GenerativeUI] = []
 
         self.on_ready_called = False
 
@@ -84,6 +85,28 @@ class ActionCore(rpyc.Service):
         self.event_manager = EventManager()
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
+
+    def add_generative_ui_object(self, generative_ui_object: GenerativeUI):
+        self.generative_ui_objects.append(generative_ui_object)
+
+    def get_generative_ui(self):
+        return self.generative_ui_objects
+
+    def get_generative_ui_widgets(self):
+        widgets = []
+
+        for generative_object in self.generative_ui_objects:
+            widget = generative_object.widget
+
+            if widget is None:
+                continue
+
+            widgets.append(widget)
+        return widgets
+
+    def load_initial_generative_ui(self):
+        for generative_object in self.generative_ui_objects:
+            generative_object.load_initial_ui()
 
     def clear_event_assigners(self):
         self.event_manager.clear_event_assigners()
@@ -324,7 +347,7 @@ class ActionCore(rpyc.Service):
             return
         self.page.set_action_settings(action_object=self, settings=settings)
 
-    def connect(self, signal:Signal = None, callback: callable = None) -> None:
+    def connect(self, signal: Signal = None, callback: callable = None) -> None:
         # Connect
         gl.signal_manager.connect_signal(signal = signal, callback = callback)
 
@@ -366,7 +389,7 @@ class ActionCore(rpyc.Service):
         return self.plugin_base.asset_manager.colors.get_asset(key, skip_override)
 
     def get_translation(self, key: str, fallback: str = None):
-        self.plugin_base.locale_manager.get(key, fallback)
+        return self.plugin_base.locale_manager.get(key, fallback)
     
     def has_label_controls(self):
         own_action_index = self.get_own_action_index()

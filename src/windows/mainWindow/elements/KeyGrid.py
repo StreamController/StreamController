@@ -117,6 +117,10 @@ class KeyGrid(Gtk.Grid):
             self.remove(self.get_first_child())
 
     def set_buttons_visible(self, visible):
+        for i in range(len(self.buttons)):
+            for j in range(len(self.buttons[i])):
+                self.buttons[i][j]._set_visible(visible)
+        return
         for x in range(self.deck_controller.deck.key_layout()[1]):
             for y in range(self.deck_controller.deck.key_layout()[0]):
                 self.buttons[x][y]._set_visible(visible)

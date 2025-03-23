@@ -31,6 +31,7 @@ from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
 from loguru import logger as log
 
 # Import own modules
+from src.backend.DeckManagement.BetterDeck import BetterDeck
 from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
@@ -319,10 +320,13 @@ class MediaPlayerThread(threading.Thread):
 class DeckController:
     def __init__(self, deck_manager: "DeckManager", deck: StreamDeck.StreamDeck):
         self.deck_manager: DeckManager = deck_manager
-        self.deck: StreamDeck = deck
-        # Open the deck
-        deck.open()
-        
+        # Open the deck - why store it as self.deck? So that self.get_alive() returns True in get_deck_settings
+        self.deck = deck
+        self.deck.open()
+
+        rotation = self.get_deck_settings().get("rotation", 0)
+        self.deck: BetterDeck = BetterDeck(deck, rotation)
+
         try:
             # Clear the deck
             self.clear()
@@ -380,9 +384,9 @@ class DeckController:
         brightness = deck_settings.get("brightness", {}).get("value", self.brightness)
         self.set_brightness(brightness)
 
-        self.rotation = 0
-        rotation = deck_settings.get("rotation", {}).get("value", self.rotation)
-        self.set_rotation(rotation)
+        # self.rotation = 270
+        # rotation = deck_settings.get("rotation", {}).get("value", self.rotation)
+        # self.set_rotation(rotation)
 
         self.load_default_page()
 
@@ -705,12 +709,24 @@ class DeckController:
         self.brightness = value
 
     def set_rotation(self, value):
-        if not value in [0, 90, 180, 270]:
-            value = 0
+        self.deck.set_rotation(value)
+
+
+        if recursive_hasattr(gl, "app.main_win"):
+            # self.get_own_key_grid().regenerate_buttons()
+
+            # Re-generate key grid
+            deck_stack_child = self.get_own_deck_stack_child()
+            deck_config = deck_stack_child.page_settings.deck_config
+            key_grid = deck_config.grid
+            deck_config.remove(key_grid)
+
+            deck_config.grid = KeyGrid(self, key_grid.page_settings_page)
+            deck_config.prepend(deck_config.grid)
 
         if not self.get_alive(): return
-        self.rotation = value
-        self.update_all_inputs()
+        self.load_page(self.active_page)
+        # self.update_all_inputs()
 
 
     def tick_actions(self) -> None:
@@ -758,7 +774,8 @@ class DeckController:
             self.active_page.ready_to_clear = ready_to_clear
     
     def get_deck_settings(self):
-        if not self.get_alive(): return {}
+        if not self.get_alive():
+            return {}
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())
     
     def get_own_deck_stack_child(self) -> "DeckStackChild":
@@ -1251,8 +1268,8 @@ class LabelManager:
     def update_label(self, position: str):
         self.controller_input.update()
 
-    def add_labels_to_image(self, image: Image.Image, rotation: int) -> Image.Image:
-        image = image.rotate(rotation*-1)
+    def add_labels_to_image(self, image: Image.Image) -> Image.Image:
+        # image = image.rotate(self.deck.get_rotation()*-1)
         draw = ImageDraw.Draw(image)
 
         labels = self.get_composed_labels()
@@ -1284,7 +1301,8 @@ class LabelManager:
 
         del draw
 
-        return image.copy().rotate(rotation)
+        return image.copy()
+        # return image.copy().rotate(self.deck.get_rotation())
 
 
 class LayoutManager:
@@ -1846,7 +1864,7 @@ class ControllerKey(ControllerInput):
 
     def update(self):
         image = self.get_current_image()
-        rgb_image = image.convert("RGB")
+        rgb_image = image.convert("RGB").rotate(self.deck_controller.deck.get_rotation())
 
         if self.deck_controller.is_visual():
             native_image = PILHelper.to_native_key_format(self.deck_controller.deck, rgb_image)
@@ -1927,22 +1945,22 @@ class ControllerKey(ControllerInput):
 
 
         key_image: Image.Image = None
-        rotation = self.deck_controller.get_deck_settings().get("rotation", {}).get("value", 0)
+        # rotation = self.deck_controller.get_deck_settings().get("rotation", {}).get("value", 0)
         if state.key_image is not None:
-            image = state.key_image.get_raw_image().rotate(rotation)
+            image = state.key_image.get_raw_image()
             key_image = state.layout_manager.add_image_to_background(
                 image=image,
                 background=background
             )
         elif state.key_video is not None:
-            image = state.key_video.get_raw_image().rotate(rotation)
+            image = state.key_video.get_raw_image()
             key_image = state.layout_manager.add_image_to_background(
                 image=image,
                 background=background)
         else:
             key_image = background
 
-        labeled_image = state.label_manager.add_labels_to_image(key_image, rotation)
+        labeled_image = state.label_manager.add_labels_to_image(key_image)
 
         if self.is_pressed():
             labeled_image = self.shrink_image(labeled_image)
@@ -2125,7 +2143,10 @@ class ControllerKey(ControllerInput):
             # Save to use later
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image # The ui key coords are in reverse order
         else:
-            self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
+            try:
+                self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
+            except:
+                print(f"Failed to set ui key image for {self.identifier}")
         
     def get_own_ui_key(self) -> KeyButton:
         x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)
@@ -2508,11 +2529,10 @@ class ControllerDialState(ControllerInputState):
         elif self.image is not None:
             image = self.image.image
 
-        rotation = self.deck_controller.get_deck_settings().get("rotation", {}).get("value", 0)
+        # rotation = self.deck_controller.get_deck_settings().get("rotation", {}).get("value", 0)
 
-        image = image.rotate(rotation)
         image = self.layout_manager.add_image_to_background(image, background)
-        image = self.label_manager.add_labels_to_image(image, rotation)
+        image = self.label_manager.add_labels_to_image(image)
 
         return image
 

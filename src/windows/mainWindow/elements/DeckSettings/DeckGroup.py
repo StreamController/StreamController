@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gtk modules
 import os
 import gi
+
+from GtkHelper.GtkHelper import better_disconnect
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
@@ -38,12 +40,70 @@ class DeckGroup(Adw.PreferencesGroup):
         self.deck_serial_number = settings_page.deck_serial_number
 
         self.brightness = Brightness(settings_page, self.deck_serial_number)
-        self.rotation = Rotation(settings_page, self.deck_serial_number)
         self.screensaver = Screensaver(settings_page, self.deck_serial_number)
+        self.rotation = Rotation(settings_page, self.deck_serial_number)
 
         self.add(self.brightness)
-        self.add(self.rotation)
         self.add(self.screensaver)
+        self.add(self.rotation)
+
+
+class Rotation(Adw.PreferencesRow):
+    def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
+        super().__init__()
+        self.settings_page = settings_page
+        self.deck_serial_number = deck_serial_number
+        self.build()
+
+        self.load_default()
+        self.connect("map", self.load_default)
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.rotation_label = Gtk.Label(label=gl.lm.get("deck.deck-group.rotation"), hexpand=True, xalign=0)
+        self.main_box.append(self.rotation_label)
+
+        self.toggle_group = Adw.ToggleGroup()
+        self.main_box.append(self.toggle_group)
+
+        self.toggle_0 = Adw.Toggle(label="0°", name="0")
+        self.toggle_group.add(self.toggle_0)
+
+        self.toggle_90 = Adw.Toggle(label="90°", name="90")
+        self.toggle_group.add(self.toggle_90)
+
+        self.toggle_180 = Adw.Toggle(label="180°", name="180")
+        self.toggle_group.add(self.toggle_180)
+
+        self.toggle_270 = Adw.Toggle(label="270°", name="270")
+        self.toggle_group.add(self.toggle_270)
+
+
+        self.toggle_group.connect("notify::active", self.on_value_changed)
+
+    def on_value_changed(self, _, __):
+        GLib.idle_add(self.on_value_changed_idle)
+
+    def on_value_changed_idle(self):
+        rot = int(self.toggle_group.get_active_name())
+
+        deck_settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        deck_settings["rotation"] = rot
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, deck_settings)
+
+        self.settings_page.deck_controller.set_rotation(rot)
+
+    def load_default(self, *args):
+        better_disconnect(self.toggle_group, "notify::active")
+
+        rot = gl.settings_manager.get_deck_settings(self.deck_serial_number).get("rotation", 0)
+        self.toggle_group.set_active_name(str(rot))
+
+        self.toggle_group.connect("notify::active", self.on_value_changed)
+
 
 class Brightness(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
@@ -116,82 +176,6 @@ class Brightness(Adw.PreferencesRow):
         # Update ui
         self.scale.set_value(brightness)
 
-class Rotation(Adw.PreferencesRow):
-    def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
-        super().__init__()
-        self.settings_page = settings_page
-        self.deck_serial_number = deck_serial_number
-        self.build()
-
-        """
-        To save performance and memory, we only load the thumbnail when the user sees the row
-        """
-        self.on_map_tasks: list = []
-        self.connect("map", self.on_map)
-
-        self.load_default()
-        self.rotation.connect("changed", self.on_value_changed)
-
-    def on_map(self, widget):
-        for f in self.on_map_tasks:
-            f()
-        self.on_map_tasks.clear()
-
-    def build(self):
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
-                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
-        self.set_child(self.main_box)
-
-        self.rotation_label = Gtk.Label(label=gl.lm.get("deck.deck-group.rotation"), hexpand=True, xalign=0)
-        self.main_box.append(self.rotation_label)
-
-        self.rotation_model = Gtk.ListStore.new([str, int])
-        self.rotation_model.append(["0°", 0])
-        self.rotation_model.append(["90°", 90])
-        self.rotation_model.append(["180°", 180])
-        self.rotation_model.append(["270°", 270])
-        self.rotation = Gtk.ComboBox.new_with_model(self.rotation_model)
-
-        renderer = Gtk.CellRendererText()
-        # Pack the renderer into the ComboBox
-        self.rotation.pack_start(renderer, True)
-        self.rotation.add_attribute(renderer, "text", 0)
-        self.main_box.append(self.rotation)
-
-    def on_value_changed(self, _):
-        GLib.idle_add(self.on_value_changed_idle)
-
-    def on_value_changed_idle(self):
-        value = self.rotation_model.get_value(self.rotation_model.get_iter(self.rotation.get_active()), 1)
-        # update value in deck settings
-        deck_settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
-        deck_settings.setdefault("rotation", {})
-        deck_settings["rotation"]["value"] = value
-        # save settings
-        gl.settings_manager.save_deck_settings(self.deck_serial_number, deck_settings)
-        self.settings_page.deck_controller.set_rotation(value)
-
-    def load_default(self):
-        if not self.get_mapped():
-            self.on_map_tasks.clear()
-            self.on_map_tasks.append(lambda: self.load_default())
-            return
-
-        original_values = gl.settings_manager.get_deck_settings(self.deck_serial_number)
-
-        # Set defaut values
-        original_values.setdefault("rotation", {})
-        rotation = original_values["rotation"].setdefault("value", 0)
-
-        # Save if changed
-        if original_values != gl.settings_manager.get_deck_settings(self.deck_serial_number):
-            gl.settings_manager.save_deck_settings(self.deck_serial_number, original_values)
-
-        # Update ui
-        for i, row in enumerate(self.rotation_model):
-            if row[1] == rotation:
-                self.rotation.set_active(i)
-                return
 
 class Screensaver(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):

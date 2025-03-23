@@ -12,53 +12,43 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+import gc
+import statistics
+import threading
+import time
 # Import Python modules
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
-from functools import lru_cache
-import os
-from queue import Queue
-import random
-import statistics
-from threading import Thread, Timer
-import threading
-import time
-from PIL import Image, ImageOps, ImageDraw, ImageFont, ImageSequence
-from StreamDeck.DeviceManager import DeviceManager
-from StreamDeck.ImageHelpers import PILHelper
-from StreamDeck.Devices import StreamDeck
-from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
-from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
-from numpy import empty
-from regex import D
-import usb.core
-import usb.util
-from loguru import logger as log
-import asyncio
-from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
-from src.backend.DeckManagement.Subclasses.ActionPermissionManager import ActionPermissionManager
-from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
-from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
-from src.backend.DeckManagement.Subclasses.key_video_cache import VideoFrameCache
-from src.backend.DeckManagement.Subclasses.KeyImage import InputImage
-from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
-from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
-from src.backend.DeckManagement.Subclasses.KeyLayout import ImageLayout
 from dataclasses import dataclass
-import gc
+from queue import Queue
+from threading import Thread, Timer
+
+import psutil
+from PIL import ImageDraw, ImageFont, ImageSequence
+from StreamDeck.Devices import StreamDeck
+from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
+from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
+from loguru import logger as log
 
 # Import own modules
+from src.backend.DeckManagement.BetterDeck import BetterDeck
 from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
-from src.backend.PageManagement.Page import ActionOutdated, Page, NoActionHolderFound
+from src.backend.DeckManagement.Subclasses.ActionPermissionManager import ActionPermissionManager
+from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
+from src.backend.DeckManagement.Subclasses.KeyImage import InputImage
+from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
+from src.backend.DeckManagement.Subclasses.KeyLayout import ImageLayout
+from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
+from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
+from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
+from src.backend.PageManagement.Page import ActionOutdated, Page, NoActionHolderFound
 
-import psutil
 process = psutil.Process()
 
-import gi
-from gi.repository import Gio, GLib
+from gi.repository import GLib
 
 # Import signals
 from src.Signals import Signals
@@ -75,7 +65,6 @@ if TYPE_CHECKING:
 # Import globals
 import globals as gl
 
-import traceback
 
 @dataclass
 class MediaPlayerTask:
@@ -331,10 +320,13 @@ class MediaPlayerThread(threading.Thread):
 class DeckController:
     def __init__(self, deck_manager: "DeckManager", deck: StreamDeck.StreamDeck):
         self.deck_manager: DeckManager = deck_manager
-        self.deck: StreamDeck = deck
-        # Open the deck
-        deck.open()
-        
+        # Open the deck - why store it as self.deck? So that self.get_alive() returns True in get_deck_settings
+        self.deck = deck
+        self.deck.open()
+
+        rotation = self.get_deck_settings().get("rotation", 0)
+        self.deck: BetterDeck = BetterDeck(deck, rotation)
+
         try:
             # Clear the deck
             self.clear()
@@ -363,10 +355,6 @@ class DeckController:
 
         self.active_page: Page = None
 
-        self.brightness:int = 75
-        #TODO: Load brightness from settings
-        self.set_brightness(self.brightness)
-
         self.inputs = {}
         for i in Input.All:
             self.inputs[i] = []
@@ -389,6 +377,16 @@ class DeckController:
 
         self.page_auto_loaded: bool = False
         self.last_manual_loaded_page_path: str = None
+
+        deck_settings = self.get_deck_settings()
+
+        self.brightness = 75
+        brightness = deck_settings.get("brightness", {}).get("value", self.brightness)
+        self.set_brightness(brightness)
+
+        # self.rotation = 270
+        # rotation = deck_settings.get("rotation", {}).get("value", self.rotation)
+        # self.set_rotation(rotation)
 
         self.load_default_page()
 
@@ -441,14 +439,6 @@ class DeckController:
             for i in self.inputs[t]:
                 i.update()
         log.debug(f"Updating all inputs took {time.time() - start} seconds")
-
-    def set_deck_key_image(self, key: int, image) -> None:
-        if not self.get_alive(): return
-        try:
-            with self.deck:
-                self.deck.set_key_image(key, image)
-        except StreamDeck.TransportError as e:
-            log.error(f"Failed to set deck key image. Error: {e}")
 
     def event_callback(self, ident: InputIdentifier, *args, **kwargs):
         if not self.allow_interaction:
@@ -718,6 +708,27 @@ class DeckController:
         self.deck.set_brightness(int(value))
         self.brightness = value
 
+    def set_rotation(self, value):
+        self.deck.set_rotation(value)
+
+
+        if recursive_hasattr(gl, "app.main_win"):
+            # self.get_own_key_grid().regenerate_buttons()
+
+            # Re-generate key grid
+            deck_stack_child = self.get_own_deck_stack_child()
+            deck_config = deck_stack_child.page_settings.deck_config
+            key_grid = deck_config.grid
+            deck_config.remove(key_grid)
+
+            deck_config.grid = KeyGrid(self, key_grid.page_settings_page)
+            deck_config.prepend(deck_config.grid)
+
+        if not self.get_alive(): return
+        self.load_page(self.active_page)
+        # self.update_all_inputs()
+
+
     def tick_actions(self) -> None:
         time.sleep(self.TICK_DELAY)
         while self.keep_actions_ticking:
@@ -763,7 +774,8 @@ class DeckController:
             self.active_page.ready_to_clear = ready_to_clear
     
     def get_deck_settings(self):
-        if not self.get_alive(): return {}
+        if not self.get_alive():
+            return {}
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())
     
     def get_own_deck_stack_child(self) -> "DeckStackChild":
@@ -1256,6 +1268,7 @@ class LabelManager:
         self.controller_input.update()
 
     def add_labels_to_image(self, image: Image.Image) -> Image.Image:
+        # image = image.rotate(self.deck.get_rotation()*-1)
         draw = ImageDraw.Draw(image)
 
         labels = self.get_composed_labels()
@@ -1288,6 +1301,7 @@ class LabelManager:
         del draw
 
         return image.copy()
+        # return image.copy().rotate(self.deck.get_rotation())
 
 
 class LayoutManager:
@@ -1851,7 +1865,7 @@ class ControllerKey(ControllerInput):
 
     def update(self):
         image = self.get_current_image()
-        rgb_image = image.convert("RGB")
+        rgb_image = image.convert("RGB").rotate(self.deck_controller.deck.get_rotation())
 
         if self.deck_controller.is_visual():
             native_image = PILHelper.to_native_key_format(self.deck_controller.deck, rgb_image)
@@ -1930,20 +1944,24 @@ class ControllerKey(ControllerInput):
             background.paste(error_img, (int((self.deck_controller.get_key_image_size()[0] - height) // 2), int((self.deck_controller.get_key_image_size()[1] - height) // 2)), error_img)
             return background
 
-        image: Image.Image = None
+
+        key_image: Image.Image = None
+        # rotation = self.deck_controller.get_deck_settings().get("rotation", {}).get("value", 0)
         if state.key_image is not None:
-            image = state.layout_manager.add_image_to_background(
-                image=state.key_image.get_raw_image(),
+            image = state.key_image.get_raw_image()
+            key_image = state.layout_manager.add_image_to_background(
+                image=image,
                 background=background
             )
         elif state.key_video is not None:
-            image = state.layout_manager.add_image_to_background(
-                image=state.key_video.get_raw_image(),
+            image = state.key_video.get_raw_image()
+            key_image = state.layout_manager.add_image_to_background(
+                image=image,
                 background=background)
         else:
-            image = background
+            key_image = background
 
-        labeled_image = state.label_manager.add_labels_to_image(image)
+        labeled_image = state.label_manager.add_labels_to_image(key_image)
 
         if self.is_pressed():
             labeled_image = self.shrink_image(labeled_image)
@@ -1953,8 +1971,8 @@ class ControllerKey(ControllerInput):
 
         if background is not None:
             background.close()
-        
-        image.close()
+
+        key_image.close()
 
         return labeled_image
     
@@ -2122,12 +2140,14 @@ class ControllerKey(ControllerInput):
         
         x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)
 
-
         if self.deck_controller.get_own_key_grid() is None or not gl.app.main_win.get_mapped():
             # Save to use later
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image # The ui key coords are in reverse order
         else:
-            self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
+            try:
+                self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
+            except:
+                print(f"Failed to set ui key image for {self.identifier}")
         
     def get_own_ui_key(self) -> KeyButton:
         x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)
@@ -2509,6 +2529,8 @@ class ControllerDialState(ControllerInputState):
             image = self.video.get_next_frame()
         elif self.image is not None:
             image = self.image.image
+
+        # rotation = self.deck_controller.get_deck_settings().get("rotation", {}).get("value", 0)
 
         image = self.layout_manager.add_image_to_background(image, background)
         image = self.label_manager.add_labels_to_image(image)

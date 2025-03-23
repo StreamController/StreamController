@@ -27,6 +27,7 @@ import types
 
 
 # Import own modules
+from src.backend.DeckManagement.BetterDeck import BetterDeck
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager

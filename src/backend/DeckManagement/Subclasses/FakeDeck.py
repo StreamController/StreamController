@@ -75,7 +75,7 @@ class FakeDeck:
         settings["key-layout"] = layout
         gl.settings_manager.save_deck_settings(self.serial_number, settings)
 
-    def open(self):
+    def open(self, *args, **kwargs):
         return
     
     def close(self):

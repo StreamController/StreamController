@@ -42,8 +42,6 @@ class ToggleRow(GenerativeUI[bool]):
         self._handle_reset_button_creation()
         self.connect_signals()
 
-
-
     def _handle_value_changed(self, new_value, update_settings: bool = True, trigger_callback: bool = True):
         old_value = self.get_value()
 
@@ -73,3 +71,52 @@ class ToggleRow(GenerativeUI[bool]):
     def reset_value(self):
         self.widget.set_active_toggle(self._default_value)
         self._handle_value_changed(self._default_value)
+
+    # Wrapper
+
+    def get_toggles(self):
+        return self.widget.get_toggles()
+
+    def get_toggle_amount(self):
+        return self.widget.get_n_toggles()
+
+    def get_toggle_by_name(self, name: str):
+        return self.widget.get_toggle_by_name(name)
+
+    def get_toggle_at(self, index: int):
+        return self.widget.get_toggle(index)
+
+    def add_toggle(self, label = None, tooltip: str = None, icon_name: str = None, name: str = None, enabled: bool = True):
+        self.widget.add_toggle(label, tooltip, icon_name, name, enabled)
+
+    def add_toggles(self, toggles: list[Adw.Toggle]):
+        self.widget.add_toggles(toggles)
+
+    def add_custom_toggle(self, toggle: Adw.Toggle):
+        self.widget.add(toggle)
+
+    def set_active_toggle(self, index: int):
+        self.widget.set_active(index)
+
+    def set_active_by_name(self, name: str):
+        self.widget.set_active_name(name)
+
+    @GenerativeUI.signal_manager
+    def populate(self, toggles: list[Adw.Toggle], active_index: int):
+        self.widget.remove_all()
+        self.add_toggles(toggles)
+        self.widget.set_active(active_index)
+
+    def remove_toggle(self, toggle: Adw.Toggle):
+        self.widget.remove(toggle)
+
+    def remove_at(self, index: int):
+        toggle = self.widget.get_toggle_at(index)
+        self.widget.remove(toggle)
+
+    def remove_with_name(self, name: str):
+        toggle = self.widget.get_toggle_by_name(name)
+        self.widget.remove(toggle)
+
+    def remove_all(self):
+        self.widget.remove_all()

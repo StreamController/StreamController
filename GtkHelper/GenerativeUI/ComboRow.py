@@ -92,10 +92,10 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
 
             self.on_change(self.widget, item, old_value)
 
+    @GenerativeUI.signal_manager
     def reset_value(self):
-        self.set_ui_value(self._default_value)
-        self._handle_value_changed(self.widget.get_selected_item())
-        self.update_value_in_ui()
+        selected_item = self.widget.set_selected_item(self._default_value)
+        self._handle_value_changed(selected_item)
 
     @GenerativeUI.signal_manager
     def set_ui_value(self, value: BaseComboRowItem | str):

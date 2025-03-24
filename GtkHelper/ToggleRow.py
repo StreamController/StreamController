@@ -30,7 +30,7 @@ class ToggleRow(Adw.ActionRow):
     def get_toggles(self):
         return self.toggle_group.get_toggles()
 
-    def get_toggle_amount(self):
+    def get_n_toggles(self):
         return self.toggle_group.get_n_toggles()
 
     def get_toggle_by_name(self, name: str):

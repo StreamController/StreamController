@@ -92,6 +92,11 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
 
             self.on_change(self.widget, item, old_value)
 
+    def reset_value(self):
+        self.set_ui_value(self._default_value)
+        self._handle_value_changed(self.widget.get_selected_item())
+        self.update_value_in_ui()
+
     @GenerativeUI.signal_manager
     def set_ui_value(self, value: BaseComboRowItem | str):
         """Sets the selected item in the UI."""

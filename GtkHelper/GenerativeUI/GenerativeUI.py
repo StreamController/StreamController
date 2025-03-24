@@ -219,6 +219,7 @@ class GenerativeUI[T](ABC):
     def load_initial_ui(self):
         """Loads the initial UI state based on the stored value."""
         value = self.get_value()
+        self.set_ui_value(value)
         self._handle_value_changed(value)
 
     def load_ui_value(self):

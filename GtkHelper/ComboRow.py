@@ -19,6 +19,8 @@ class BaseComboRowItem(GObject.GObject):
         return self.__str__()
 
     def __eq__(self, other):
+        if isinstance(other, BaseComboRowItem):
+            return self.get_value() == other.get_value()
         return self.get_value() == str(other)
 
     @GObject.Property(type=GObject.TYPE_STRING)

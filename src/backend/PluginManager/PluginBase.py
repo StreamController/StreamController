@@ -48,6 +48,8 @@ class PluginBase(rpyc.Service):
         self.backend: netref = None
         self.server: ThreadedServer = None
 
+        self.logger = gl.loggers.get("plugins", None)
+
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
         self.settings_path: str = os.path.join(gl.DATA_PATH, "settings", "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well
 
@@ -667,6 +669,7 @@ class PluginBase(rpyc.Service):
         """
         self.backend_connection = rpyc.connect("localhost", port, config={"allow_public_attrs": True})
         self.backend = self.backend_connection.root
+
         gl.plugin_manager.backends.append(self.backend_connection)
 
     def ping(self) -> bool:

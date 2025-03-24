@@ -1586,7 +1586,6 @@ class ControllerInputState:
             # if action.allow_event_configuration:
                 # parsed_event = action.event_manager.get_event_assigner_for_event(event)
 
-            print()
             if event is None:
                 continue
 

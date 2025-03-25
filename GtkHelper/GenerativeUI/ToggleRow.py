@@ -86,37 +86,46 @@ class ToggleRow(GenerativeUI[bool]):
     def get_toggle_at(self, index: int):
         return self.widget.get_toggle(index)
 
+    @GenerativeUI.signal_manager
     def add_toggle(self, label = None, tooltip: str = None, icon_name: str = None, name: str = None, enabled: bool = True):
         self.widget.add_toggle(label, tooltip, icon_name, name, enabled)
 
+    @GenerativeUI.signal_manager
     def add_toggles(self, toggles: list[Adw.Toggle]):
         self.widget.add_toggles(toggles)
 
+    @GenerativeUI.signal_manager
     def add_custom_toggle(self, toggle: Adw.Toggle):
         self.widget.add(toggle)
 
+    @GenerativeUI.signal_manager
     def set_active_toggle(self, index: int):
         self.widget.set_active(index)
 
+    @GenerativeUI.signal_manager
     def set_active_by_name(self, name: str):
         self.widget.set_active_name(name)
 
     @GenerativeUI.signal_manager
     def populate(self, toggles: list[Adw.Toggle], active_index: int):
         self.widget.remove_all()
-        self.add_toggles(toggles)
+        self.widget.add_toggles(toggles)
         self.widget.set_active(active_index)
 
+    @GenerativeUI.signal_manager
     def remove_toggle(self, toggle: Adw.Toggle):
         self.widget.remove(toggle)
 
+    @GenerativeUI.signal_manager
     def remove_at(self, index: int):
         toggle = self.widget.get_toggle_at(index)
         self.widget.remove(toggle)
 
+    @GenerativeUI.signal_manager
     def remove_with_name(self, name: str):
         toggle = self.widget.get_toggle_by_name(name)
         self.widget.remove(toggle)
 
+    @GenerativeUI.signal_manager
     def remove_all(self):
         self.widget.remove_all()

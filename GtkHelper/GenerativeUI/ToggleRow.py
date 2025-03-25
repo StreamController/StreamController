@@ -85,7 +85,7 @@ class ToggleRow(GenerativeUI[bool]):
 
     def get_toggle_at(self, index: int):
         return self.widget.get_toggle(index)
-
+      
     @GenerativeUI.signal_manager
     def add_toggle(self, label = None, tooltip: str = None, icon_name: str = None, name: str = None, enabled: bool = True):
         self.widget.add_toggle(label, tooltip, icon_name, name, enabled)

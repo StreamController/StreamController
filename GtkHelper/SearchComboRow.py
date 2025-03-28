@@ -14,6 +14,7 @@ from gi.repository import Gtk, Adw, Gio, GObject
 
 from loguru import logger as log
 
+@deprecated("This will be removed in 1.5.0-beta.10")
 class SearchComboRowItem(GObject.Object):
     __gtype_name__ = 'SearchComboRowItem'
 
@@ -25,6 +26,7 @@ class SearchComboRowItem(GObject.Object):
     def display_label(self):
         return self._display_label
 
+@deprecated("This will be removed in 1.5.0-beta.10")
 class SearchComboRow(Adw.PreferencesRow):
     __gtype_name__ = "SearchComboRow"
     __gsignals__ = {

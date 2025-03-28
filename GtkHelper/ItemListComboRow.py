@@ -20,6 +20,7 @@ from gi.repository import Gtk, Adw, Gio, GObject
 from loguru import logger as log
 
 
+@deprecated("This will be removed in 1.5.0-beta.10")
 class ItemListComboRowListItem(GObject.Object):
     def __init__(self, key: str, name: str):
         super().__init__()
@@ -35,6 +36,7 @@ class ItemListComboRowListItem(GObject.Object):
         return self._name
 
 
+@deprecated("This will be removed in 1.5.0-beta.10")
 class ItemListComboRow(Adw.ComboRow):
     """
     A primitive wrapper, to make simple "combo box"-style selections.

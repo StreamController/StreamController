@@ -58,7 +58,8 @@ class KDE(Integration):
     @log.catch
     def get_is_kdotool_installed(self) -> bool:
         try:
-            return self._run_command(["kdotool", "--version"]) is not None
+            out = self._run_command(["kdotool", "--version"]).communicate()[0].decode("utf-8")
+            return out not in ("", None)
         except Exception as e:
             log.error(f"An error occurred while running kdotool: {e}")
             return False

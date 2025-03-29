@@ -12,6 +12,8 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+from warnings import deprecated
+
 # Import gtk modules
 import gi
 
@@ -81,7 +83,7 @@ class BetterExpander(Adw.ExpanderRow):
         revealer_list_box = self.get_list_box()
         if revealer_list_box is None:
             return
-        
+
         rows = []
         child = revealer_list_box.get_first_child()
         while child is not None:
@@ -94,16 +96,16 @@ class BetterExpander(Adw.ExpanderRow):
         expander_box = self.get_first_child()
         if expander_box is None:
             return
-        
+
         expander_list_box = expander_box.get_first_child()
         if expander_list_box is None:
             return
-        
+
         revealer = expander_list_box.get_next_sibling()
         revealer_list_box = revealer.get_first_child()
 
         return revealer_list_box
-        
+
     def clear(self):
         rows = self.get_rows()
         list_box = self.get_list_box()
@@ -120,7 +122,7 @@ class BetterExpander(Adw.ExpanderRow):
         if after_index is None:
             log.warning("After child could not be found. Please add it first")
             return
-        
+
         # Remove child from list
         childs.remove(child)
 
@@ -141,9 +143,9 @@ class BetterExpander(Adw.ExpanderRow):
         for i, action in enumerate(self.actions):
             if action == child:
                 return i
-        
+
         raise ValueError("Child not found")
-    
+
     def get_arrow_image(self) -> Gtk.Image:
         box: Gtk.Box = self.get_child()
         list_box: Gtk.ListBox = box.get_first_child()
@@ -184,7 +186,7 @@ class BetterPreferencesGroup(Adw.PreferencesGroup):
         list_box = self.get_list_box()
         if list_box is None:
             return
-        
+
         rows = []
         child = list_box.get_first_child()
         while child is not None:
@@ -200,7 +202,7 @@ class BetterPreferencesGroup(Adw.PreferencesGroup):
         list_box = third_box.get_first_child()
 
         return list_box
-    
+
 class AttributeRow(Adw.PreferencesRow):
     def __init__(self, title:str, attr:str, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -226,7 +228,7 @@ class AttributeRow(Adw.PreferencesRow):
         if attr is None:
             attr = "N/A"
         self.attribute_label.set_label(attr)
-        
+
 class EntryDialog(Gtk.ApplicationWindow):
     def __init__(self, parent_window, dialog_title:str, entry_heading:str = "Name:", default_text:str = None, confirm_label:str = "OK", forbid_answers:list[str] = [],
                  empty_warning:str = "The name cannot be empty", cancel_label:str = "Cancel", already_exists_warning:str = "This name already exists",
@@ -279,7 +281,7 @@ class EntryDialog(Gtk.ApplicationWindow):
 
     def on_cancel(self, button):
         self.destroy()
-    
+
 
     def on_name_change(self, entry):
         if entry.get_text() == '':
@@ -335,7 +337,7 @@ class ErrorPage(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL,
                          halign=Gtk.Align.CENTER,
                          valign=Gtk.Align.CENTER)
-        
+
         self.reload_func = reload_func
         self.error_text = error_text
         self.reload_args = reload_args
@@ -347,7 +349,7 @@ class ErrorPage(Gtk.Box):
 
         self.retry_button = Gtk.Button(label="Retry")
         self.retry_button.connect("clicked", self.on_retry_button_click)
-        
+
         if callable(self.reload_func):
             self.append(self.retry_button)
 
@@ -427,7 +429,7 @@ class LoadingScreen(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
                          valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
-        
+
         self.spinner = Gtk.Spinner(spinning=False)
         self.append(self.spinner)
 
@@ -444,6 +446,7 @@ class LoadingScreen(Gtk.Box):
             GLib.idle_add(self.spinner.stop)
 
 
+@deprecated("This has been deprecated in favor of GtkHelper.ComboRow.ComboRow.")
 class ComboRow(Adw.PreferencesRow):
     def __init__(self, title, model: Gtk.ListStore, **kwargs):
         super().__init__(title=title, **kwargs)
@@ -461,6 +464,7 @@ class ComboRow(Adw.PreferencesRow):
         self.main_box.append(self.combo_box)
 
 
+@deprecated("This has been deprecated in favor of GtkHelper.ScaleRow.ScaleRow.")
 class ScaleRow(Adw.PreferencesRow):
     def __init__(self, title, value: float, min: float, max: float, step: float, text_right: str = "", text_left: str = "", **kwargs):
         super().__init__(title=title, **kwargs)

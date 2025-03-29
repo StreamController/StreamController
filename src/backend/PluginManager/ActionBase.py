@@ -1,3 +1,5 @@
+from warnings import deprecated
+
 from src.backend.PluginManager.EventAssigner import EventAssigner
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent
 from src.backend.PluginManager.ActionCore import ActionCore
@@ -9,6 +11,7 @@ if TYPE_CHECKING:
     from src.backend.PageManagement.Page import Page
     from src.backend.PluginManager.PluginBase import PluginBase
 
+@deprecated("This has been deprecated in favor of ActionCore.")
 class ActionBase(ActionCore):
     def __init__(self, action_id: str, action_name: str,
                  deck_controller: "DeckController", page: "Page", plugin_base: "PluginBase", state: int,
@@ -118,7 +121,7 @@ class ActionBase(ActionCore):
             callback=lambda data: self.event_callback(Input.Touchscreen.Events.DRAG_RIGHT, data)
         ))
 
-            
+
 
     # backward compatibility
     def event_callback(self, event: InputEvent, data: dict = None):

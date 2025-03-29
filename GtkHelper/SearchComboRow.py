@@ -6,6 +6,7 @@ Modified by: G4PLS
 Modified the Original code to fit the purpose of this application.
 """
 
+from warnings import deprecated
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -14,6 +15,7 @@ from gi.repository import Gtk, Adw, Gio, GObject
 
 from loguru import logger as log
 
+@deprecated("This has been deprecated in favor of GtkHelper.ComboRow")
 class SearchComboRowItem(GObject.Object):
     __gtype_name__ = 'SearchComboRowItem'
 
@@ -25,6 +27,7 @@ class SearchComboRowItem(GObject.Object):
     def display_label(self):
         return self._display_label
 
+@deprecated("This has been deprecated in favor of GtkHelper.ComboRow")
 class SearchComboRow(Adw.PreferencesRow):
     __gtype_name__ = "SearchComboRow"
     __gsignals__ = {

@@ -711,6 +711,8 @@ class DeckController:
     def set_rotation(self, value):
         self.deck.set_rotation(value)
 
+        self.own_key_grid = None
+
 
         if recursive_hasattr(gl, "app.main_win"):
             # self.get_own_key_grid().regenerate_buttons()

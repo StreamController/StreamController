@@ -446,7 +446,7 @@ class LoadingScreen(Gtk.Box):
             GLib.idle_add(self.spinner.stop)
 
 
-@deprecated("This has been deprecated in favor of the ComboRow implementation at GtkHelper.ComboRow.ComboRow. It will be removed in 1.5.0-beta.10")
+@deprecated("This has been deprecated in favor of GtkHelper.ComboRow.ComboRow.")
 class ComboRow(Adw.PreferencesRow):
     def __init__(self, title, model: Gtk.ListStore, **kwargs):
         super().__init__(title=title, **kwargs)
@@ -464,7 +464,7 @@ class ComboRow(Adw.PreferencesRow):
         self.main_box.append(self.combo_box)
 
 
-@deprecated("This will be removed in 1.5.0-beta.10")
+@deprecated("This has been deprecated in favor of GtkHelper.ScaleRow.ScaleRow.")
 class ScaleRow(Adw.PreferencesRow):
     def __init__(self, title, value: float, min: float, max: float, step: float, text_right: str = "", text_left: str = "", **kwargs):
         super().__init__(title=title, **kwargs)

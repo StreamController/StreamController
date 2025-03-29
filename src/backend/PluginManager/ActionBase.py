@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from src.backend.PageManagement.Page import Page
     from src.backend.PluginManager.PluginBase import PluginBase
 
-@deprecated("This has been deprecated in favor of ActionCore. It may be removed in beta.10.")
+@deprecated("This has been deprecated in favor of ActionCore.")
 class ActionBase(ActionCore):
     def __init__(self, action_id: str, action_name: str,
                  deck_controller: "DeckController", page: "Page", plugin_base: "PluginBase", state: int,

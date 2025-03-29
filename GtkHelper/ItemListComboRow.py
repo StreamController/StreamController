@@ -11,6 +11,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 from typing import Sequence
+from warnings import deprecated
 
 import gi
 gi.require_version("Gtk", "4.0")
@@ -20,7 +21,7 @@ from gi.repository import Gtk, Adw, Gio, GObject
 from loguru import logger as log
 
 
-@deprecated("This will be removed in 1.5.0-beta.10")
+@deprecated("This has been deprecated in favor of GtkHelper.ComboRow")
 class ItemListComboRowListItem(GObject.Object):
     def __init__(self, key: str, name: str):
         super().__init__()
@@ -36,7 +37,7 @@ class ItemListComboRowListItem(GObject.Object):
         return self._name
 
 
-@deprecated("This will be removed in 1.5.0-beta.10")
+@deprecated("This has been deprecated in favor of GtkHelper.ComboRow")
 class ItemListComboRow(Adw.ComboRow):
     """
     A primitive wrapper, to make simple "combo box"-style selections.

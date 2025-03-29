@@ -116,29 +116,26 @@ showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.8" # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.9" # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
     <p>Features:</p>
     <ul>
-        <li>Add Action Groups</li>
-        <li>Add auto page switching under KDE when kdotool is installed</li>
-        <li>Add tray icon</li>
-        <li>Add plugins settings page to the settings window</li>
+        <li>Option to configure deck rotation</li>
     </ul>
 
     <p>Improvements:</p>
     <ul>
-        <li>Increate max screensaver delay from 1h to 24h</li>
+        <li>Add Generative UI (for devs)</li>
+        <li>Add input specific action bases (for devs)</li>
+        <li>Add option to set svg strings as media (for devs)</li>
+        <li>Actions can define custom events</li>
     </ul>
 
     <p>Fixes:</p>
     <ul>
-        <li>Showing "no decks available" in header when no pages</li>
-        <li>Overwritting desktop file if already present</li>
-        <li>Deck lock during screensaver can be bypassed by reconnecting the deck</li>
-        <li>Copy/paste of buttons not working under KDE+Wayland</li>
+        <li>Fix log spamming on KDE when kdotool is not installed</li>
     </ul>
 """

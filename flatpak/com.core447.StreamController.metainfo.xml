@@ -41,6 +41,27 @@
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
+    <release version="1.5.0-beta.9" date="2025-03-29">
+      <description translatable="no">
+        <p>Features:</p>
+        <ul>
+          <li>Option to configure deck rotation</li>
+        </ul>
+
+        <p>Improvements:</p>
+        <ul>
+          <li>Add Generative UI (for devs)</li>
+          <li>Add input specific action bases (for devs)</li>
+          <li>Add option to set svg strings as media (for devs)</li>
+          <li>Actions can define custom events</li>
+        </ul>
+
+        <p>Fixes:</p>
+        <ul>
+          <li>Fix log spamming on KDE when kdotool is not installed</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.5.0-beta.8" date="2025-02-27">
       <description translatable="no">
         <p>Features:</p>

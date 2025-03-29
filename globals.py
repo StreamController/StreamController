@@ -80,6 +80,7 @@ if TYPE_CHECKING:
     from src.windows.PageManager.PageManager import PageManager
     from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
     from src.tray import TrayIcon
+    from src.backend.Logger import Logger
 
 
 top_level_dir:str = os.path.dirname(__file__)

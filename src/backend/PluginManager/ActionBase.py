@@ -1,4 +1,4 @@
-from warnings import deprecated
+from typing_extensions import deprecated
 
 from src.backend.PluginManager.EventAssigner import EventAssigner
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent

@@ -11,7 +11,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 from typing import Sequence
-from warnings import deprecated
+from typing_extensions import deprecated
 
 import gi
 gi.require_version("Gtk", "4.0")

@@ -6,7 +6,7 @@ Modified by: G4PLS
 Modified the Original code to fit the purpose of this application.
 """
 
-from warnings import deprecated
+from typing_extensions import deprecated
 import gi
 
 gi.require_version("Gtk", "4.0")

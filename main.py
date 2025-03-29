@@ -52,6 +52,7 @@ from src.Signals.SignalManager import SignalManager
 from src.backend.WindowGrabber.WindowGrabber import WindowGrabber
 from src.backend.GnomeExtensions import GnomeExtensions
 from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPermissionManager
+from src.backend.Wayland.Wayland import Wayland
 from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
 from src.tray import TrayIcon
 from src.backend.Logger import Logger, LoggerConfig, Loglevel
@@ -155,6 +156,10 @@ def create_global_objects():
     gl.plugin_manager.generate_action_index()
 
     gl.window_grabber = WindowGrabber()
+
+    if os.getenv("WAYLAND_DISPLAY", False):
+        gl.wayland = Wayland()
+
     gl.lock_screen_detector = LockScreenManager()
 
     

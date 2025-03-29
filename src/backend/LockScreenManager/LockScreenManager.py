@@ -16,6 +16,7 @@ import os
 from src.backend.LockScreenManager.Detectors.Gnome import GnomeLockScreenDetector
 from src.backend.LockScreenManager.Detectors.Cinnamon import CinnamonLockScreenDetector
 from src.backend.LockScreenManager.Detectors.KDE import KDELockScreenDetector
+from src.backend.LockScreenManager.Detectors.Hyprland import HyprlandLockScreenDetector
 from src.backend.LockScreenManager.LockScreenDetector import LockScreenDetector
 from loguru import logger as log
 
@@ -36,6 +37,8 @@ class LockScreenManager:
             self.detector = CinnamonLockScreenDetector(self)
         elif env == "kde":
             self.detector = KDELockScreenDetector(self)
+        elif env == "hyprland":
+            self.detector = HyprlandLockScreenDetector(self)
 
     @log.catch
     def get_active_environment(self) -> str:

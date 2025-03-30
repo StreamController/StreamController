@@ -75,6 +75,7 @@ pyproject-metadata==0.9.0
 Pyro5==5.15
 pyspellchecker==0.8.2
 python-dateutil==2.9.0.post0
+python-wayland-extra==0.7.0
 pyudev==0.24.3
 pyusb==1.3.1
 PyYAML==6.0.2
@@ -105,3 +106,4 @@ virtualenv==20.29.2
 webencodings==0.5.1
 websocket-client==1.8.0
 Werkzeug==3.1.3
+

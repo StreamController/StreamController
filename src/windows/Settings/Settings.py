@@ -649,7 +649,7 @@ class SystemGroup(Adw.PreferencesGroup):
         self.autostart = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-autostart"), subtitle=gl.lm.get("settings-system-settings-autostart-subtitle"), active=True)
         self.add(self.autostart)
 
-        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Only works on Gnome", active=True)
+        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Works on Gnome, KDE, Cinnamon and Hyprland", active=True)
         self.add(self.lock_on_lock_screen)
 
         self.beta_resume_mode = Adw.SwitchRow(title="Use new resume mode (beta)", subtitle="Use new way to resume after suspends - requires restart", active=False)

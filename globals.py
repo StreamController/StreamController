@@ -124,6 +124,7 @@ release_notes: str = """
     <p>Features:</p>
     <ul>
         <li>Option to configure deck rotation</li>
+        <li>Auto-lock support for Hyprland</li>
     </ul>
 
     <p>Improvements:</p>

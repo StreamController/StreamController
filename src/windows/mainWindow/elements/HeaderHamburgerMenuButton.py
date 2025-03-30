@@ -142,7 +142,9 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
                                                        "NeoMorfeo https://github.com/NeoMorfeo",
                                                        "fliflooo https://github.com/fliflooo",
                                                        "eumario https://github.com/eumario",
-                                                       "SilentSwordmaiden https://github.com/SilentSwordmaiden",]),
+                                                       "SilentSwordmaiden https://github.com/SilentSwordmaiden",
+                                                       "Kekemui https://github.com/Kekemui",
+                                                       "dennisrijsdijk https://github.com/dennisrijsdijk",]),
                                                        key=str.casefold))
         
         self.about.set_copyright("Copyright (C) 2024 Core447")

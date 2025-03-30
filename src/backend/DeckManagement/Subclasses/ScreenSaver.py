@@ -47,13 +47,14 @@ class ScreenSaver:
         self.brightness: int = 25
         self.fps: int = 30
         self.loop: bool = True
+        self.timer: threading.Timer = None
 
     def set_time(self, time_delay: int) -> None:
         time_delay = max(1, time_delay) # Min 1 minute - too small values leading to instant load if the screensaver lead to errors
         if time_delay != self.time_delay:
             log.info(f"Setting screen saver time delay to {time_delay} minutes")
         self.time_delay = time_delay
-        if hasattr(self, "timer"):
+        if self.timer:
             self.timer.cancel()
         # *60 to go from minuts (how it is stored) to seconds (how the timer needs it)
         self.timer = threading.Timer(time_delay*60, self.on_timer_end)
@@ -71,7 +72,7 @@ class ScreenSaver:
     def set_enable(self, enable: bool) -> None:
         self.enable = enable
 
-        if not hasattr(self, "timer"):
+        if not self.timer:
             return
         
         # Hide if showing
@@ -92,7 +93,8 @@ class ScreenSaver:
     def show(self):
         log.info("Showing screen saver")
         # Stop timer - in case this method is called manually
-        self.timer.cancel()
+        if self.timer:
+            self.timer.cancel()
         # Set showing = True - in case this method is called manually
         self.showing = True
 
@@ -125,7 +127,10 @@ class ScreenSaver:
         self.original_inputs.clear()
         self.deck_controller.clear() # Ensures that the first image visable is from the page not the screensaver if the brightness on the saver is 0
         self.showing = False
-        self.deck_controller.load_page(self.deck_controller.active_page, allow_reload=True)
+        if self.deck_controller.active_page:
+            self.deck_controller.load_page(self.deck_controller.active_page, allow_reload=True)
+        else:
+            self.deck_controller.load_default_page()
         self.set_time(self.time_delay)
 
     def on_key_change(self):

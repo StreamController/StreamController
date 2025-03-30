@@ -388,12 +388,13 @@ class DeckController:
         # rotation = deck_settings.get("rotation", {}).get("value", self.rotation)
         # self.set_rotation(rotation)
 
-        self.load_default_page()
 
         # If screen is locked start the screensaver - this happens when the deck gets reconnected during the screensaver
         if gl.screen_locked and gl.settings_manager.get_app_settings().get("system", {}).get("lock-on-lock-screen", True):
             self.allow_interaction = False
             self.screen_saver.show()
+        else:
+            self.load_default_page()
 
     def init_inputs(self):
         for i in Input.All:

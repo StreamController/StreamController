@@ -1,4 +1,4 @@
-
+from loguru import logger as log
 import globals as gl
 from src.backend.trayicon import DBusTrayIcon, DBusMenu
 
@@ -28,6 +28,7 @@ class TrayIcon(DBusTrayIcon):
         self.quit_app_action = None
         self.activate_id = -1
 
+    @log.catch
     def initialize(self, main_win):
         self.main_win = main_win
         self.show_about_action = main_win.menu_button.open_about_action
@@ -39,25 +40,32 @@ class TrayIcon(DBusTrayIcon):
         if show_now:
             self.register()
 
+    @log.catch
     def start(self):
         self.register()
 
+    @log.catch
     def stop(self):
         self.unregister()
 
+    @log.catch
     def on_show(self):
         self.main_win.present()
 
+    @log.catch
     def on_settings(self):
         self.show_settings_action.activate()
 
+    @log.catch
     def on_store(self):
         self.show_store_action.activate()
 
+    @log.catch
     def on_about(self):
         self.main_win.present()
         self.show_about_action.activate()
 
+    @log.catch
     def on_quit(self):
         self.quit_app_action.activate()
 

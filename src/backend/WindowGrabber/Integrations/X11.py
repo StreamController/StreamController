@@ -41,8 +41,10 @@ class X11(Integration):
         portal = Xdp.Portal.new()
 
         self.flatpak = portal.running_under_flatpak()
+        self.is_xprop_installed = self.get_is_xprop_installed()
 
-        self.start_active_window_change_thread()
+        if self.is_xprop_installed:
+            self.start_active_window_change_thread()
 
     @log.catch
     def _run_command(self, command: list[str]) -> subprocess.Popen:
@@ -53,6 +55,15 @@ class X11(Integration):
             return subprocess.Popen(command, stdout=subprocess.PIPE, cwd="/")
         except Exception as e:
             log.error(f"An error occurred while running {command}: {e}")
+
+    @log.catch
+    def get_is_xprop_installed(self) -> bool:
+        try:
+            out = self._run_command(["xprop", "-version"]).communicate()[0].decode("utf-8")
+            return out not in ("", None)
+        except Exception as e:
+            log.error(f"An error occurred while running xprop: {e}")
+            return False
 
     @log.catch
     def start_active_window_change_thread(self):

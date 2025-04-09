@@ -280,7 +280,7 @@ def main():
 
     gsk_render_env_var = os.environ.get("GSK_RENDERER")
     if gsk_render_env_var != "ngl":
-        log.warning('Should you get an Error 71 (Protocol error) please add '
+        log.warning('Should you get an Gtk X11 error preventing the app from starting please add '
                     'GSK_RENDERER=ngl to your "/etc/environment" file')
 
     DBusGMainLoop(set_as_default=True)

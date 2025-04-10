@@ -12,15 +12,17 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-# Import gtk modules
+from io import BytesIO
+
 import gi
+import globals as gl
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GdkPixbuf, Pango
+from gi.repository import Gtk, GdkPixbuf, Pango, Gio
 
 class Preview(Gtk.FlowBoxChild):
-    def __init__(self, image_path: str = None, text:str = None, can_be_deleted: bool = False):
+    def __init__(self, image_path: str = None, text:str = None, can_be_deleted: bool = False, has_info: bool = True):
         super().__init__()
         self.set_css_classes(["asset-preview"])
         self.set_margin_start(5)
@@ -30,6 +32,7 @@ class Preview(Gtk.FlowBoxChild):
 
         self.pixbuf: GdkPixbuf.Pixbuf = None
         self.can_be_deleted = can_be_deleted
+        self.has_info = has_info
 
         self._build()
 
@@ -55,7 +58,7 @@ class Preview(Gtk.FlowBoxChild):
                                margin_start=20, margin_end=20)
         self.main_box.append(self.label)
 
-        self.info_button = Gtk.Button(icon_name="help-about-symbolic", halign=Gtk.Align.START, valign=Gtk.Align.END, margin_start=5, margin_bottom=5)
+        self.info_button = Gtk.Button(icon_name="help-about-symbolic", halign=Gtk.Align.START, valign=Gtk.Align.END, margin_start=5, margin_bottom=5, visible=self.has_info)
         self.info_button.connect("clicked", self.on_click_info)
         self.overlay.add_overlay(self.info_button)
 
@@ -69,10 +72,17 @@ class Preview(Gtk.FlowBoxChild):
         if path is None:
             self.pixbuf = GdkPixbuf.Pixbuf.new(width=250, height=180)
             return
-        self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path,
-                                                              width=250,
-                                                              height=180,
-                                                              preserve_aspect_ratio=True)
+
+        if path.startswith("<svg "):
+            with BytesIO() as output:
+                gl.media_manager.generate_svg_thumbnail(path).save(output, format='PNG')  # You can choose other formats like 'JPEG'
+                memory_input_stream = Gio.MemoryInputStream.new_from_data(output.getvalue(), None)
+                self.pixbuf = GdkPixbuf.Pixbuf.new_from_stream(memory_input_stream, None)
+        else:
+            self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path,
+                                                                  width=250,
+                                                                  height=180,
+                                                                  preserve_aspect_ratio=True)
         self.picture.set_pixbuf(self.pixbuf)
 
     def set_text(self, text:str):

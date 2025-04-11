@@ -15,13 +15,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import own modules
 from src.windows.AssetManager.Preview import Preview
 
-# Import typing
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from src.windows.AssetManager.MaterialDesignIconAssets.FlowBox import MaterialDesignIconsChooserFlowBox
 
 class AssetPreview(Preview):
-    def __init__(self, flow:"MaterialDesignIconsChooserFlowBox", asset:dict):
+    def __init__(self, asset: dict):
         super().__init__(
             image_path=asset["icon_path"],
             text=asset["name"],
@@ -30,4 +26,3 @@ class AssetPreview(Preview):
         )
         self.set_hexpand(False)
         self.asset = asset
-        self.flow = flow

@@ -21,6 +21,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, GdkPixbuf, Pango, Gio
 
+MDI_SIZE = 200
+
 class Preview(Gtk.FlowBoxChild):
     def __init__(self, image_path: str = None, text:str = None, can_be_deleted: bool = False, has_info: bool = True):
         super().__init__()
@@ -48,9 +50,9 @@ class Preview(Gtk.FlowBoxChild):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, width_request=250, height_request=180)
         self.overlay.set_child(self.main_box)
 
-        self.picture = Gtk.Picture(width_request=250, height_request=180, overflow=Gtk.Overflow.HIDDEN, content_fit=Gtk.ContentFit.COVER,
+        self.picture = Gtk.Picture(overflow=Gtk.Overflow.HIDDEN, content_fit=Gtk.ContentFit.COVER,
                                    hexpand=False, vexpand=False, keep_aspect_ratio=True)
-        
+
         self.picture.set_pixbuf(self.pixbuf)
         self.main_box.append(self.picture)
 
@@ -75,14 +77,16 @@ class Preview(Gtk.FlowBoxChild):
 
         if path.startswith("<svg "):
             with BytesIO() as output:
-                gl.media_manager.generate_svg_thumbnail(path).save(output, format='PNG')  # You can choose other formats like 'JPEG'
+                gl.media_manager.generate_svg_thumbnail(path, MDI_SIZE, MDI_SIZE).save(output, format='PNG')  # You can choose other formats like 'JPEG'
                 memory_input_stream = Gio.MemoryInputStream.new_from_data(output.getvalue(), None)
-                self.pixbuf = GdkPixbuf.Pixbuf.new_from_stream(memory_input_stream, None)
+                self.pixbuf = GdkPixbuf.Pixbuf.new_from_stream_at_scale(memory_input_stream, width=MDI_SIZE, height=MDI_SIZE,
+                                                                        preserve_aspect_ratio=True)
+            self.picture.set_size_request(MDI_SIZE, MDI_SIZE)
         else:
-            self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path,
-                                                                  width=250,
-                                                                  height=180,
+            self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, width=250, height=180,
                                                                   preserve_aspect_ratio=True)
+            self.picture.set_size_request(250, 180)
+
         self.picture.set_pixbuf(self.pixbuf)
 
     def set_text(self, text:str):

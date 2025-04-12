@@ -16,8 +16,8 @@ import threading
 
 import gi
 
-from windows.AssetManager.MaterialDesignIconAssets.AssetPreview import AssetPreview
-from windows.AssetManager.MaterialDesignIcons import mdi_helper
+from src.windows.AssetManager.MaterialDesignIconAssets.AssetPreview import AssetPreview
+from src.windows.AssetManager.MaterialDesignIcons import mdi_helper
 
 gi.require_version("Gtk", "4.0")
 from gi.repository import GLib

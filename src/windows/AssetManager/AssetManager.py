@@ -135,8 +135,8 @@ class AssetChooser(Gtk.Stack):
         self.icon_pack_chooser = IconPackChooserStack(self.asset_manager)
         self.add_titled(self.icon_pack_chooser, "icon-packs", "Icon Packs")
 
-        self.md_icon_chooser = MaterialDesignIconAssetChooser(self.asset_manager)
-        self.add_titled(self.md_icon_chooser, "md-icons", "Material Design Icons")
+        self.material_design_icon_chooser = MaterialDesignIconAssetChooser(self.asset_manager)
+        self.add_titled(self.material_design_icon_chooser, "material-design-icons", "Material Design Icons")
 
         self.wallpaper_pack_chooser = WallpaperPackChooserStack(self.asset_manager)
         self.add_titled(self.wallpaper_pack_chooser, "wallpaper-packs", "Wallpaper Packs")

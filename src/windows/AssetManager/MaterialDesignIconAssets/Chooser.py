@@ -14,7 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import gi
 
-from windows.AssetManager.MaterialDesignIconAssets.Paginator import MaterialDesignIconsChooserPaginator
+from src.windows.AssetManager.MaterialDesignIconAssets.Paginator import MaterialDesignIconsChooserPaginator
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")

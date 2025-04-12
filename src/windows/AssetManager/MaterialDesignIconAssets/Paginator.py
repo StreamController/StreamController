@@ -42,9 +42,10 @@ class MaterialDesignIconsChooserPaginator(FlowBox):
         self.current_page = 0
         self.asset_chooser = asset_chooser
 
-        set_and_nav_box = Box(orientation=Orientation.HORIZONTAL, hexpand=True)
         settings_box = Box(orientation=Orientation.HORIZONTAL)
+        button_box = Box(css_classes=["linked"], orientation=Orientation.HORIZONTAL)
         navigation_box = Box(orientation=Orientation.HORIZONTAL, halign=Align.END)
+        set_and_nav_box = Box(orientation=Orientation.HORIZONTAL, hexpand=True)
         set_and_nav_box.append(settings_box)
         set_and_nav_box.append(Box(orientation=Orientation.HORIZONTAL, hexpand=True))
         set_and_nav_box.append(navigation_box)
@@ -82,20 +83,19 @@ class MaterialDesignIconsChooserPaginator(FlowBox):
 
         self.prev_button = Button(icon_name="go-previous")
         self.prev_button.connect("clicked", self.on_prev_clicked)
-        self.prev_button.set_size_request(50, -1)
 
         self.next_button = Button(icon_name="go-next")
         self.next_button.connect("clicked", self.on_next_clicked)
-        self.next_button.set_size_request(50, -1)
 
         settings_box.append(color_label)
         settings_box.append(self.color)
         settings_box.append(opacity_label)
         settings_box.append(opacity_box)
         settings_box.append(self.opacity_value_label)
+        button_box.append(self.prev_button)
+        button_box.append(self.next_button)
         navigation_box.append(self.nav_label)
-        navigation_box.append(self.prev_button)
-        navigation_box.append(self.next_button)
+        navigation_box.append(button_box)
 
         self.update_view()
 

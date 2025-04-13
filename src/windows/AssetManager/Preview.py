@@ -21,7 +21,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, GdkPixbuf, Pango, Gio
 
-MDI_SIZE = 200
+MDI_SIZE = 150
 
 class Preview(Gtk.FlowBoxChild):
     def __init__(self, image_path: str = None, text:str = None, can_be_deleted: bool = False, has_info: bool = True):
@@ -47,7 +47,7 @@ class Preview(Gtk.FlowBoxChild):
         self.overlay = Gtk.Overlay()
         self.set_child(self.overlay)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, width_request=250, height_request=180)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.overlay.set_child(self.main_box)
 
         self.picture = Gtk.Picture(overflow=Gtk.Overflow.HIDDEN, content_fit=Gtk.ContentFit.COVER,
@@ -73,6 +73,7 @@ class Preview(Gtk.FlowBoxChild):
 
         if path is None:
             self.pixbuf = GdkPixbuf.Pixbuf.new(width=250, height=180)
+            self.main_box.set_size_request(250, 180)
             return
 
         if path.startswith("<svg "):
@@ -82,10 +83,12 @@ class Preview(Gtk.FlowBoxChild):
                 self.pixbuf = GdkPixbuf.Pixbuf.new_from_stream_at_scale(memory_input_stream, width=MDI_SIZE, height=MDI_SIZE,
                                                                         preserve_aspect_ratio=True)
             self.picture.set_size_request(MDI_SIZE, MDI_SIZE)
+            self.main_box.set_size_request(MDI_SIZE, MDI_SIZE)
         else:
             self.pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, width=250, height=180,
                                                                   preserve_aspect_ratio=True)
             self.picture.set_size_request(250, 180)
+            self.main_box.set_size_request(250, 180)
 
         self.picture.set_pixbuf(self.pixbuf)
 

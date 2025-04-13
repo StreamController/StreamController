@@ -33,12 +33,13 @@ class MaterialDesignIconsChooserPaginator(FlowBox):
         super().__init__(*args, **kwargs)
         self.set_orientation(Orientation.HORIZONTAL)
         self.set_hexpand(True)
+        self.set_min_children_per_line(6)
         self.connect("child-activated", self.on_child_activated)
 
         self.items = mdi_helper.get_icon_names()
         self.filtered_items = self.items
         self.search_string = ""
-        self.items_per_page = 20
+        self.items_per_page = 50
         self.current_page = 0
         self.asset_chooser = asset_chooser
 

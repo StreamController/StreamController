@@ -374,6 +374,7 @@ class Screensaver(Adw.PreferencesRow):
         gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
         # Update brightness if not overwritten by the active page
         active_page = self.settings_page.deck_controller.active_page
+        active_page.dict.setdefault("screensaver", {})
         if not active_page.dict["screensaver"]["overwrite"]:
             self.settings_page.deck_controller.screen_saver.set_brightness(scale.get_value())
 

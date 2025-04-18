@@ -23,31 +23,31 @@ class ActionBase(ActionCore):
         self.add_event_assigner(EventAssigner(
             id="Key Down",
             ui_label="Key Down",
-            default_event=Input.Key.Events.DOWN,
+            default_events=[Input.Key.Events.DOWN],
             callback=lambda data: self.event_callback(Input.Key.Events.DOWN, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Key Up",
             ui_label="Key Up",
-            default_event=Input.Key.Events.UP,
+            default_events=[Input.Key.Events.UP],
             callback=lambda data: self.event_callback(Input.Key.Events.UP, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Key Short Up",
             ui_label="Key Short Up",
-            default_event=Input.Key.Events.SHORT_UP,
+            default_events=[Input.Key.Events.SHORT_UP],
             callback=lambda data: self.event_callback(Input.Key.Events.SHORT_UP, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Key Hold Start",
             ui_label="Key Hold Start",
-            default_event=Input.Key.Events.HOLD_START,
+            default_events=[Input.Key.Events.HOLD_START],
             callback=lambda data: self.event_callback(Input.Key.Events.HOLD_START, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Key Hold Stop",
             ui_label="Key Hold Stop",
-            default_event=Input.Key.Events.HOLD_STOP,
+            default_events=[Input.Key.Events.HOLD_STOP],
             callback=lambda data: self.event_callback(Input.Key.Events.HOLD_STOP, data)
         ))
 
@@ -55,55 +55,55 @@ class ActionBase(ActionCore):
         self.add_event_assigner(EventAssigner(
             id="Dial Down",
             ui_label="Dial Down",
-            default_event=Input.Dial.Events.DOWN,
+            default_events=[Input.Dial.Events.DOWN],
             callback=lambda data: self.event_callback(Input.Dial.Events.DOWN, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Dial Up",
             ui_label="Dial Up",
-            default_event=Input.Dial.Events.UP,
+            default_events=[Input.Dial.Events.UP],
             callback=lambda data: self.event_callback(Input.Dial.Events.UP, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Dial Short Up",
             ui_label="Dial Short Up",
-            default_event=Input.Dial.Events.SHORT_UP,
+            default_events=[Input.Dial.Events.SHORT_UP],
             callback=lambda data: self.event_callback(Input.Dial.Events.SHORT_UP, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Dial Hold Start",
             ui_label="Dial Hold Start",
-            default_event=Input.Dial.Events.HOLD_START,
+            default_events=[Input.Dial.Events.HOLD_START],
             callback=lambda data: self.event_callback(Input.Dial.Events.HOLD_START, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Dial Hold Stop",
             ui_label="Dial Hold Stop",
-            default_event=Input.Dial.Events.HOLD_STOP,
+            default_events=[Input.Dial.Events.HOLD_STOP],
             callback=lambda data: self.event_callback(Input.Dial.Events.HOLD_STOP, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Dial Turn CW",
             ui_label="Dial Turn CW",
-            default_event=Input.Dial.Events.TURN_CW,
+            default_events=[Input.Dial.Events.TURN_CW],
             callback=lambda data: self.event_callback(Input.Dial.Events.TURN_CW, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Dial Turn CCW",
             ui_label="Dial Turn CCW",
-            default_event=Input.Dial.Events.TURN_CCW,
+            default_events=[Input.Dial.Events.TURN_CCW],
             callback=lambda data: self.event_callback(Input.Dial.Events.TURN_CCW, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Dial Touchscreen Short Press",
             ui_label="Dial Touchscreen Short Press",
-            default_event=Input.Dial.Events.SHORT_TOUCH_PRESS,
+            default_events=[Input.Dial.Events.SHORT_TOUCH_PRESS],
             callback=lambda data: self.event_callback(Input.Dial.Events.SHORT_TOUCH_PRESS, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Dial Touchscreen Long Press",
             ui_label="Dial Touchscreen Long Press",
-            default_event=Input.Dial.Events.LONG_TOUCH_PRESS,
+            default_events=[Input.Dial.Events.LONG_TOUCH_PRESS],
             callback=lambda data: self.event_callback(Input.Dial.Events.LONG_TOUCH_PRESS, data)
         ))
 
@@ -111,13 +111,13 @@ class ActionBase(ActionCore):
         self.add_event_assigner(EventAssigner(
             id="Touchscreen Drag Left",
             ui_label="Touchscreen Drag Left",
-            default_event=Input.Touchscreen.Events.DRAG_LEFT,
+            default_events=[Input.Touchscreen.Events.DRAG_LEFT],
             callback=lambda data: self.event_callback(Input.Touchscreen.Events.DRAG_LEFT, data)
         ))
         self.add_event_assigner(EventAssigner(
             id="Touchscreen Drag Right",
             ui_label="Touchscreen Drag Right",
-            default_event=Input.Touchscreen.Events.DRAG_RIGHT,
+            default_events=[Input.Touchscreen.Events.DRAG_RIGHT],
             callback=lambda data: self.event_callback(Input.Touchscreen.Events.DRAG_RIGHT, data)
         ))
 

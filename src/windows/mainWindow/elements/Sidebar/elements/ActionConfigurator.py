@@ -372,7 +372,8 @@ class EventAssignerUI(BetterPreferencesGroup):
             # self.action.set_event_assignment(event, assigner.default_event)
         
         for assigner in self.action.event_manager.get_all_event_assigners():
-            self.action.set_event_assignment(assigner.default_event, assigner)
+            for event in assigner.default_events:
+                self.action.set_event_assignment(event, assigner)
 
 
     def on_reset(self, button):

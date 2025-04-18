@@ -36,7 +36,8 @@ class EventManager:
 
         # Assign default events
         for event_assigner in self._event_assigners:
-            event_map[event_assigner.default_event] = event_assigner
+            for event in event_assigner.default_events:
+                event_map[event] = event_assigner
 
         if not ignore_overrides:
             # Apply the overrides

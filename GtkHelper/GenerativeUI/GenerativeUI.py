@@ -220,7 +220,7 @@ class GenerativeUI[T](ABC):
         """Loads the initial UI state based on the stored value."""
         value = self.get_value()
         self.set_ui_value(value)
-        self._handle_value_changed(value)
+        self._handle_value_changed(value, False)
 
     def load_ui_value(self):
         """Loads the UI element with the stored value."""

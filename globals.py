@@ -116,27 +116,16 @@ showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.9" # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.10"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
     <p>Features:</p>
-    <ul>
-        <li>Option to configure deck rotation</li>
-        <li>Auto-lock support for Hyprland</li>
-    </ul>
-
-    <p>Improvements:</p>
-    <ul>
-        <li>Add Generative UI (for devs)</li>
-        <li>Add input specific action bases (for devs)</li>
-        <li>Add option to set svg strings as media (for devs)</li>
-        <li>Actions can define custom events</li>
-    </ul>
-
     <p>Fixes:</p>
     <ul>
-        <li>Fix log spamming on KDE when kdotool is not installed</li>
+        <li>Wrong input mapping when deck is rotated 90 or 270 degrees</li>
+        <li>Excessive startup times for some users</li>
+        <li>Weird behaviour of GenerativeUI in some cases</li>
     </ul>
 """

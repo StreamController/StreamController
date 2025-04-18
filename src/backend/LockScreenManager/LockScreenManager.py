@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import os
+import threading
 from src.backend.LockScreenManager.Detectors.Gnome import GnomeLockScreenDetector
 from src.backend.LockScreenManager.Detectors.Cinnamon import CinnamonLockScreenDetector
 from src.backend.LockScreenManager.Detectors.KDE import KDELockScreenDetector
@@ -26,7 +27,7 @@ class LockScreenManager:
     def __init__(self):
         self.locked = False
 
-        self.setup()
+        threading.Thread(target=self.setup, daemon=True).start() # Run in separate thread incase something gets stuck
 
     @log.catch
     def setup(self):

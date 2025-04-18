@@ -46,7 +46,7 @@ class MaterialDesignIconsChooserPaginator(FlowBox):
         settings_box = Box(orientation=Orientation.HORIZONTAL)
         button_box = Box(css_classes=["linked"], orientation=Orientation.HORIZONTAL)
         navigation_box = Box(orientation=Orientation.HORIZONTAL, halign=Align.END)
-        set_and_nav_box = Box(orientation=Orientation.HORIZONTAL, hexpand=True)
+        set_and_nav_box = Box(orientation=Orientation.HORIZONTAL, hexpand=True, margin_bottom=5)
         set_and_nav_box.append(settings_box)
         set_and_nav_box.append(Box(orientation=Orientation.HORIZONTAL, hexpand=True))
         set_and_nav_box.append(navigation_box)

@@ -451,6 +451,8 @@ class DeckController:
 
     def key_event_callback(self, deck, key, *args, **kwargs):
         coords = ControllerKey.Index_To_Coords(deck, key)
+        if self.deck.rotation % 180 != 0:
+            coords = (coords[1], coords[0])
         ident = Input.Key(f"{coords[0]}x{coords[1]}")
         self.event_callback(ident,*args, **kwargs)
 

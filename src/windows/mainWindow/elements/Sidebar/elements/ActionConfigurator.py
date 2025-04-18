@@ -398,6 +398,7 @@ class EventAssignerRowItem(GObject.Object):
 
     ui_label = GObject.Property(type=str)
     id = GObject.Property(type=str)
+    tooltip = GObject.Property(type=str)
     # event_assigner = GObject.Property(type=EventAssigner)
 
 
@@ -410,6 +411,7 @@ class EventAssignerRowItem(GObject.Object):
         
         self.ui_label = event_assigner.ui_label
         self.id = event_assigner.id
+        self.tooltip = event_assigner.tooltip
 
 
 
@@ -434,6 +436,7 @@ class EventAssignerRow(Adw.ComboRow):
 
         def f_bind(fact, item):
             item.get_child().set_label(item.get_item().ui_label)
+            item.get_child().set_tooltip_text(item.get_item().tooltip)
         self.factory.connect("bind", f_bind)
 
         self.connect("notify::selected", self.on_changed)

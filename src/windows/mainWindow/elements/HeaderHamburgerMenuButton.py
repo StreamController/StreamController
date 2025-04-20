@@ -165,9 +165,21 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
             license=None
         )
 
+        supporter_names = [
+            "frank", "Marv", "Jun Iyama", "Just_Don", "Grimmnebulin",
+            "YvesCB", "jonathan-cloudless", "Dennis", "Myrik Lord", "RandomLegend", "Julien",
+            "joshferrara", "mitteltritt", "Phanatik", "Frieder", "Matthias Reißner",
+            "Matt", "Graysorrel", "Chronoes", "Rix", "Ritchie", "Bill W.", "Alex H.", "Jesse",
+            "ADIOP", "mysterious lutin", "timo", "JesúsRíoBarrigón", "CodeFaux", "HorstRohrweck",
+            "Karit", "Aniel", "Siphoned Anomaly", "Logan", "Tobbe", "Skelmy", "Nathan Pyle",
+            "Calm Wiz", "GAPLS", "John Fegan", "Based Supporter", "MelanX", "Fredrik",
+            "ChristianSchulz", "Tomasu", "Daisuke88", "bäcky"
+        ]
+
         self.about.add_acknowledgement_section(
-            "Ko-fi Supporters",
-            ["bäcky https://ko-fi.com/core447"]
+            "Non-anonymous Ko-fi Supporters",
+            # ["bäcky https://ko-fi.com/core447"]
+            [f"{name} https://ko-fi.com/core447" for name in supporter_names]
         )
 
         self.about.set_debug_info("".join(gl.logs))

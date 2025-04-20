@@ -179,7 +179,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.add_acknowledgement_section(
             "Non-anonymous Ko-fi Supporters",
             # ["bäcky https://ko-fi.com/core447"]
-            [f"{name} https://ko-fi.com/core447" for name in supporter_names]
+            [f"{name} https://ko-fi.com/core447" for name in sorted(set(supporter_names))],
         )
 
         self.about.set_debug_info("".join(gl.logs))

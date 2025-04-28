@@ -100,7 +100,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
     def load_initial_ui(self):
         value = self.get_value()
         selected_item = self.widget.set_selected_item(value)
-        self._handle_value_changed(selected_item)
+        self._handle_value_changed(selected_item, False)
 
     @GenerativeUI.signal_manager
     def set_ui_value(self, value: BaseComboRowItem | str):

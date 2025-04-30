@@ -434,7 +434,10 @@ class DeckController:
         start = time.time()
         if not self.get_alive(): return
         if self.background.video is not None:
-            log.debug("Skipping update_all_inputs because there is a background video")
+            log.debug("Skipping update_all_inputs because there is a background video -- we will only update the dials (if exists) so as not to effect the video.")
+
+            for i in self.inputs[Input.Dial]:
+                i.update()
             return
         for t in self.inputs:
             for i in self.inputs[t]:

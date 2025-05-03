@@ -287,8 +287,7 @@ def color_values_to_gdk(color_values: tuple[int, int, int, int]) -> Gdk.RGBA:
     if len(color_values) == 3:
         color_values.append(255)
     color = Gdk.RGBA()
-    color.parse(f"rgba({color_values[0]}, {color_values[1]}, {
-                color_values[2]}, {color_values[3]})")
+    color.parse(f"rgba({color_values[0]}, {color_values[1]}, {color_values[2]}, {color_values[3]})")
 
     return color
 

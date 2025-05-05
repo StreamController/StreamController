@@ -367,8 +367,9 @@ class StatusNotifierItemService(DBusService):
     def set_items(self, items):
         self._menu.set_items(items)
 
-    def set_icon(self, icon):
+    def set_icon(self, icon, path: str = ""):
         self.IconName = icon
+        self.IconThemePath = path
 
         self.emit_signal(
             'NewIcon'
@@ -412,8 +413,8 @@ class DBusTrayIcon:
         if title != "":
             self.sni_service.Title = title
 
-    def set_icon(self, icon):
-        self.sni_service.set_icon(icon)
+    def set_icon(self, icon, path: str = ""):
+        self.sni_service.set_icon(icon, path)
 
     def set_tooltip(self, title, description = ""):
         self.sni_service.set_tooltip(title, description)

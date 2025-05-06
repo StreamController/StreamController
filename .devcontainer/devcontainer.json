@@ -1,0 +1,31 @@
+{
+  "name": "StreamController DevContainer",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/va-h/devcontainers-features/uv:1": {},
+    "ghcr.io/devcontainers-extra/features/apt-packages:1": {
+      "packages": "cmake,libcairo2,libcairo2-dev,pkg-config,libdbus-1-dev,dbus,gir1.2-gtk-3.0,libgirepository1.0-dev"
+    }
+  },
+  "postCreateCommand": "uv venv && . .venv/bin/activate && uv pip install -r requirements.txt && uv pip install black ruff mypy",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/workspaces/StreamController/.venv/bin/python",
+        "editor.formatOnSave": true,
+        "python.formatter.provider": "black",
+        "python.linting.enabled": true,
+        "python.linting.ruffEnabled": true,
+        "python.linting.mypyEnabled": true
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-python.black-formatter",
+        "ms-python.mypy-type-checker"
+      ]
+    }
+  }
+}

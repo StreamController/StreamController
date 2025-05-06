@@ -1,31 +1,52 @@
 {
-  "name": "StreamController DevContainer",
-  "image": "mcr.microsoft.com/devcontainers/python:3.11",
-  "features": {
-    "ghcr.io/va-h/devcontainers-features/uv:1": {},
-    "ghcr.io/devcontainers-extra/features/apt-packages:1": {
-      "packages": "cmake,libcairo2,libcairo2-dev,pkg-config,libdbus-1-dev,dbus,gir1.2-gtk-3.0,libgirepository1.0-dev"
-    }
+  "name": "StreamController Development",
+  "build": {
+    "dockerfile": "Dockerfile"
   },
-  "postCreateCommand": "uv venv && . .venv/bin/activate && uv pip install -r requirements.txt && uv pip install black ruff mypy",
+  "remoteUser": "ubuntu",
+  "runArgs": [
+    "--init",
+    "--privileged",
+    "--network=host",
+    "--device=/dev/bus/usb:/dev/bus/usb"
+  ],
+  "mounts": [
+    "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
+    "source=/run/user/1000/wayland-0,target=/run/user/1000/wayland-0,type=bind"
+  ],
+  "containerEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}",
+    "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+    "XDG_RUNTIME_DIR": "/run/user/1000",
+    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
+    "PULSE_SERVER": "${localEnv:PULSE_SERVER}",
+    "GSK_RENDERER": "ngl",
+    "PKG_CONFIG_PATH": "/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:${containerEnv:PKG_CONFIG_PATH}"
+  },
   "customizations": {
     "vscode": {
-      "settings": {
-        "python.defaultInterpreterPath": "/workspaces/StreamController/.venv/bin/python",
-        "editor.formatOnSave": true,
-        "python.formatter.provider": "black",
-        "python.linting.enabled": true,
-        "python.linting.ruffEnabled": true,
-        "python.linting.mypyEnabled": true
-      },
       "extensions": [
         "ms-python.python",
         "ms-python.debugpy",
         "ms-python.vscode-pylance",
-        "charliermarsh.ruff",
         "ms-python.black-formatter",
-        "ms-python.mypy-type-checker"
-      ]
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+        "python.formatting.provider": "black",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": [
+          "source.organizeImports"
+        ],
+        "python.linting.enabled": true,
+        "python.linting.lintOnSave": true,
+        "python.linting.ruffEnabled": true,
+        "python.linting.mypyEnabled": true
+      }
     }
-  }
+  },
+  "postCreateCommand": ". /app/.venv/bin/activate && uv pip install -r requirements.txt && dbus-daemon --session --address=unix:path=/run/user/1000/bus --fork --print-address"
 }

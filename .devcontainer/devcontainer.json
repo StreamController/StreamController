@@ -29,22 +29,11 @@
         "ms-python.python",
         "ms-python.debugpy",
         "ms-python.vscode-pylance",
-        "ms-python.black-formatter",
-        "charliermarsh.ruff",
         "ms-python.mypy-type-checker",
         "ms-azuretools.vscode-docker"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/app/.venv/bin/python",
-        "python.formatting.provider": "black",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": [
-          "source.organizeImports"
-        ],
-        "python.linting.enabled": true,
-        "python.linting.lintOnSave": true,
-        "python.linting.ruffEnabled": true,
-        "python.linting.mypyEnabled": true
       }
     }
   },

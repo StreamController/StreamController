@@ -161,6 +161,8 @@ cython_debug/
 
 # VSCode
 .vscode/
+!.vscode/launch.json
+
 
 # own folders
 Assets/copyrighted/

@@ -1,0 +1,41 @@
+{
+  "name": "StreamController Development",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "ubuntu",
+  "runArgs": [
+    "--init",
+    "--privileged",
+    "--network=host",
+    "--device=/dev/bus/usb:/dev/bus/usb"
+  ],
+  "mounts": [
+    "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
+    "source=/run/user/1000/wayland-0,target=/run/user/1000/wayland-0,type=bind"
+  ],
+  "containerEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}",
+    "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+    "XDG_RUNTIME_DIR": "/run/user/1000",
+    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
+    "PULSE_SERVER": "${localEnv:PULSE_SERVER}",
+    "GSK_RENDERER": "ngl",
+    "PKG_CONFIG_PATH": "/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:${containerEnv:PKG_CONFIG_PATH}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "ms-python.vscode-pylance",
+        "ms-python.mypy-type-checker",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+      }
+    }
+  },
+  "postCreateCommand": ". /app/.venv/bin/activate && uv pip install -r requirements.txt && dbus-daemon --session --address=unix:path=/run/user/1000/bus --fork --print-address"
+}

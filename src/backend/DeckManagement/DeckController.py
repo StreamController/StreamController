@@ -601,13 +601,19 @@ class DeckController:
     @log.catch
     def load_all_inputs(self, page: Page, update: bool = True):
         start = time.time()
+
         with ThreadPoolExecutor() as executor:
             futures = []
-            for t in self.inputs:
-                for controller_input in self.inputs[t]:
+            for input_group in self.inputs.values():
+                for controller_input in input_group:
                     futures.append(executor.submit(self.load_input, controller_input, page, update))
+
             for future in futures:
-                future.result()
+                try:
+                    future.result()
+                except Exception as e:
+                    log.error(f"Error loading input: {e}")
+
         log.info(f"Loading all inputs took {time.time() - start} seconds")
 
     def load_input_from_identifier(self, identifier: str, page: Page, update: bool = True):

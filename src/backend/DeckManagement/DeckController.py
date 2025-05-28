@@ -864,9 +864,8 @@ class DeckController:
         ))
 
     def delete(self):
-        if hasattr(self, "active_page"):
-            if self.active_page is not None:
-                self.active_page.action_objects = {}
+        if hasattr(self, "active_page") and self.active_page is not None:
+            self.active_page.action_objects = {}
 
         if hasattr(self, "media_player"):
             self.media_player.stop()
@@ -878,7 +877,7 @@ class DeckController:
         try:
             return self.deck.is_open()
         except Exception as e:
-            log.debug(f"Cougth dead deck error. Error: {e}")
+            log.debug(f"Caught dead deck error. Error: {e}")
             return False
 
 class Background:
@@ -915,20 +914,20 @@ class Background:
     def set_from_path(self, path: str, fps: int = 30, loop: bool = True, update: bool = True, allow_keep: bool = True) -> None:
         if path == "":
             path = None
+
         if path is None:
             self.image = None
-            # self.video = None
             self.set_video(None, update=False)
             self.update_tiles()
+
             if update:
                 self.deck_controller.update_all_inputs()
         elif is_video(path):
-            if allow_keep:
-                if self.video is not None and self.video.video_path == path:
-                    self.video.page = self.deck_controller.active_page
-                    self.video.fps = fps
-                    self.video.loop = loop
-                    return
+            if allow_keep and self.video is not None and self.video.video_path == path:
+                self.video.page = self.deck_controller.active_page
+                self.video.fps = fps
+                self.video.loop = loop
+                return
             self.set_video(BackgroundVideo(self.deck_controller, path, loop=loop, fps=fps), update=update)
         else:
             if path is None:

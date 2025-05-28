@@ -568,18 +568,18 @@ class DeckController:
 
     @log.catch
     def load_brightness(self, page: Page):
-        if not self.get_alive(): return
-        deck_settings = self.get_deck_settings()
-        def set_from_deck_settings(self: "DeckController"):
-            self.set_brightness(deck_settings.get("brightness", {}).get("value", 75))
+        if not self.get_alive():
+            return
 
-        def set_from_page(self: "DeckController"):
-            self.set_brightness(page.dict.get("brightness", {}).get("value", 75))
+        deck_settings = self.get_deck_settings().get("brightness", {})
+        page_settings = page.dict.get("brightness", {})
 
-        if page.dict.get("brightness", {}).get("overwrite", False):
-            set_from_page(self)
+        if page_settings.get("overwrite", False):
+            use_dict = page_settings
         else:
-            set_from_deck_settings(self)
+            use_dict = deck_settings
+
+        self.set_brightness(use_dict.get("value", 75))
 
     @log.catch
     def load_screensaver(self, page: Page):

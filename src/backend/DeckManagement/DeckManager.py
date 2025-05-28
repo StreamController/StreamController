@@ -82,7 +82,7 @@ class DeckManager:
             resume_thread.start()
 
     def load_decks(self):
-        if not gl.argparser.parse_args().skip_load_hardware_decks:
+        if not gl.cli_args.skip_hardware_decks:
             self.load_hardware_decks()
 
         self.load_fake_decks()

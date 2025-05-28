@@ -86,7 +86,7 @@ class App(Adw.Application):
     def on_activate(self, app):
         log.trace("running: on_activate")
         self.main_win = MainWindow(application=app, deck_manager=self.deck_manager)
-        if not gl.argparser.parse_args().b:
+        if not gl.cli_args.background:
             self.main_win.present()
 
         self.show_onboarding()
@@ -130,7 +130,7 @@ class App(Adw.Application):
         self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)
 
     def show_donate(self, ignore_background_launch: bool = False):
-        if not ignore_background_launch and gl.argparser.parse_args().b:
+        if not ignore_background_launch and gl.cli_args.background:
             return
         if gl.showed_donate_window:
             return
@@ -144,7 +144,7 @@ class App(Adw.Application):
         self.donate.present(self.main_win)
 
     def show_onboarding(self):
-        if gl.argparser.parse_args().b:
+        if gl.cli_args.background:
             return
         if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-onboarding")):
             return

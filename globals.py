@@ -78,6 +78,7 @@ argparser.add_argument(
 
 # Api Calls
 api_call_group = argparser.add_argument_group("Deck Calls")
+
 api_call_group.add_argument(
     "--change-page",
     action="append",
@@ -86,6 +87,15 @@ api_call_group.add_argument(
     help="Change the page for a device"
 )
 
+api_call_group.add_argument(
+    "--change-button-state",
+    action="append",
+    nargs=3,
+    metavar=("SERIAL_NUMBER", "COORDINATE", "STATE"),
+    help="Change the state of a button (NOT IMPLEMENTED)"
+)
+
+# General App Args
 argparser.add_argument(
     "app_args",
     nargs="*"
@@ -101,11 +111,11 @@ DATA_PATH: str = os.path.join(VAR_APP_PATH, "data")  # Maybe use XDG_DATA_HOME i
 PLUGIN_DIR: str = os.path.join(DATA_PATH, "plugins")
 TOP_LEVEL_DIR: str = os.path.dirname(__file__)
 
-args = argparser.parse_args()
+cli_args = argparser.parse_args()
 
-if args.data:
-    DATA_PATH = args.data
-elif not args.devel:
+if cli_args.data:
+    DATA_PATH = cli_args.data
+elif not cli_args.devel:
     # Check static settings
     if os.path.exists(STATIC_SETTINGS_FILE_PATH):
         try:

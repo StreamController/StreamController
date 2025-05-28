@@ -594,41 +594,20 @@ class DeckController:
 
     @log.catch
     def load_screensaver(self, page: Page):
-        deck_settings = self.get_deck_settings()
-        def set_from_deck_settings(self: "DeckController"):
-            path = deck_settings.get("screensaver", {}).get("path")
-            enable = deck_settings.get("screensaver", {}).get("enable", False)
-            loop = deck_settings.get("screensaver", {}).get("loop", False)
-            fps = deck_settings.get("screensaver", {}).get("fps", 30)
-            time = deck_settings.get("screensaver", {}).get("time-delay", 5)
-            brightness = deck_settings.get("screensaver", {}).get("brightness", 30)
+        deck_settings = self.get_deck_settings().get("screensaver", {})
+        page_settings = page.dict.get("screensaver", {})
 
-            self.screen_saver.set_media_path(path)
-            self.screen_saver.set_enable(enable)
-            self.screen_saver.set_time(time)
-            self.screen_saver.set_loop(loop)
-            self.screen_saver.set_fps(fps)
-            self.screen_saver.set_brightness(brightness)
-
-        def set_from_page(self: "DeckController"):
-            path = page.dict.get("screensaver", {}).get("path")
-            enable = page.dict.get("screensaver", {}).get("enable", False)
-            loop = page.dict.get("screensaver", {}).get("loop", False)
-            fps = page.dict.get("screensaver", {}).get("fps", 30)
-            time = page.dict.get("screensaver", {}).get("time-delay", 5)
-            brightness = page.dict.get("screensaver", {}).get("brightness", 30)
-
-            self.screen_saver.set_media_path(path)
-            self.screen_saver.set_enable(enable)
-            self.screen_saver.set_time(time)
-            self.screen_saver.set_loop(loop)
-            self.screen_saver.set_fps(fps)
-            self.screen_saver.set_brightness(brightness)
-
-        if self.active_page.dict.get("screensaver", {}).get("overwrite", False) is False and "screensaver" in deck_settings:
-            set_from_deck_settings(self)
+        if not self.active_page.dict.get("screensaver", {}).get("overwrite"):
+            use_dict = deck_settings
         else:
-            set_from_page(self)
+            use_dict = page_settings
+
+        self.screen_saver.set_media_path(use_dict.get("path", None))
+        self.screen_saver.set_enable(use_dict.get("enable", False))
+        self.screen_saver.set_loop(use_dict.get("loop", False))
+        self.screen_saver.set_fps(use_dict.get("fps", 30))
+        self.screen_saver.set_time(use_dict.get("time-delay", 5))
+        self.screen_saver.set_brightness(use_dict.get("brightness", 30))
 
     @log.catch
     def load_all_inputs(self, page: Page, update: bool = True):

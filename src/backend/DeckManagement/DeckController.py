@@ -399,12 +399,18 @@ class DeckController:
             self.load_default_page()
 
     def init_inputs(self):
-        for input in Input.All:
-            self.inputs[input] = []
-            input_class = getattr(sys.modules[__name__], input.controller_class_name)
+        for input_obj in Input.All:
+            self.inputs[input_obj] = []
 
-            for input_identifier in input_class.Available_Identifiers(self.deck):
-                self.inputs[input].append(input_class(self, Input.FromTypeIdentifier(input.input_type, input_identifier)))
+            try:
+                input_class = getattr(sys.modules[__name__], input_obj.controller_class_name)
+            except AttributeError:
+                log.error(f"Input class '{input_obj.controller_class_name}' not found. Skipping...'")
+                continue
+
+            for identifier in input_class.Available_Identifiers(self.deck):
+                input_instance = input_class(self, Input.FromTypeIdentifier(input_obj.input_type, identifier))
+                self.inputs[input_obj].append(input_instance)
 
     def get_inputs(self, identifier: InputIdentifier) -> list["ControllerInput"]:
         input_type = type(identifier)

@@ -97,7 +97,7 @@ class StoreBackend:
         if isinstance(versions_file, NoConnectionError):
             return versions_file
         versions = json.loads(versions_file)
-        v = versions.get(gl.app_version, "main")
+        v = versions.get(gl.APP_VERSION, "main")
         self.official_store_branch_cache = v
         return v
 
@@ -607,12 +607,12 @@ class StoreBackend:
     
     def get_newest_compatible_version(self, available_versions: list[str]) -> str:
         if gl.exact_app_version_check:
-            if gl.app_version in available_versions:
-                return gl.app_version
+            if gl.APP_VERSION in available_versions:
+                return gl.APP_VERSION
             else:
                 return None
             
-        current_major = version.parse(gl.app_version).major
+        current_major = version.parse(gl.APP_VERSION).major
 
         compatible_versions = [v for v in available_versions if version.parse(v).major == current_major]
         parsed_compatible_versions = [version.parse(v) for v in compatible_versions]

@@ -102,7 +102,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about = Adw.AboutDialog()
         self.about.set_application_name("StreamController")
 
-        app_version = gl.app_version
+        app_version = gl.APP_VERSION
         if gl.argparser.parse_args().devel:
             app_version += " devel"
         self.about.set_version(app_version)
@@ -185,8 +185,8 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.set_debug_info("".join(gl.logs))
         self.about.set_debug_info_filename(os.path.join(gl.DATA_PATH, "StreamController.log"))
 
-        self.about.set_release_notes(gl.release_notes)  
-        self.about.set_release_notes_version(gl.app_version)
+        self.about.set_release_notes(gl.RELEASE_NOTES)
+        self.about.set_release_notes_version(gl.APP_VERSION)
         
         self.about.present(gl.app.get_active_window())
 

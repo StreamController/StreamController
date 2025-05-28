@@ -157,22 +157,22 @@ class PluginBase(rpyc.Service):
         else:
             reason = None
 
-            if self._get_parsed_base_version(self.min_app_version) > self._get_parsed_base_version(gl.app_version):
+            if self._get_parsed_base_version(self.min_app_version) > self._get_parsed_base_version(gl.APP_VERSION):
                 # Plugin is too new - StreamController is too old
                 log.warning(
                     f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
                     f"Please update StreamController! Plugin requires app version {self.min_app_version} "
-                    f"you are running version {gl.app_version}. Disabling plugin."
+                    f"you are running version {gl.APP_VERSION}. Disabling plugin."
                 )
                 reason = "app-out-of-date"
 
-            elif version.parse(self.app_version).major != version.parse(gl.app_version).major:
+            elif version.parse(self.app_version).major != version.parse(gl.APP_VERSION).major:
                 # Plugin is too old - StreamController is too new
                 max_version = f"{version.parse(self.app_version).major}.x.x"
                 log.warning(
                     f"Plugin {self.plugin_id} is not compatible with this version of StreamController. "
                     f"Please update your assets! Plugin requires an app version between {self.min_app_version} and {max_version} "
-                    f"you are running version {gl.app_version}. Disabling plugin."
+                    f"you are running version {gl.APP_VERSION}. Disabling plugin."
                 )
                 reason = "plugin-out-of-date"
 
@@ -224,7 +224,7 @@ class PluginBase(rpyc.Service):
         if self.min_app_version is None:
             return True
         
-        app_version = self._get_parsed_base_version(gl.app_version)
+        app_version = self._get_parsed_base_version(gl.APP_VERSION)
         min_app_version = self._get_parsed_base_version(self.min_app_version)
 
         return app_version >= min_app_version
@@ -236,7 +236,7 @@ class PluginBase(rpyc.Service):
         Returns:
             bool: True if the major versions are matching, False otherwise.
         """
-        app_version = version.parse(gl.app_version)
+        app_version = version.parse(gl.APP_VERSION)
         # Should use the current app version the plugin uses instead of the minimum app version
         current_app_version = version.parse(self.app_version)
 

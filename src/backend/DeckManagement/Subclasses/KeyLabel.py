@@ -38,7 +38,7 @@ class KeyLabel:
     def get_font_path(self) -> str:
         font_name = self.font_name
         if self.font_name in ["", None]:
-            font_name = gl.fallback_font
+            font_name = gl.FALLBACK_FONT
 
         return matplotlib.font_manager.findfont(
             matplotlib.font_manager.FontProperties(

@@ -1252,7 +1252,7 @@ class LabelManager:
         if label.color is None:
             label.color = gl.settings_manager.font_defaults.get("font-color") or (255, 255, 255, 255)
         if label.font_name is None:
-            label.font_name = gl.settings_manager.font_defaults.get("font-family") or gl.fallback_font
+            label.font_name = gl.settings_manager.font_defaults.get("font-family") or gl.FALLBACK_FONT
         if label.font_size is None:
             label.font_size = round(gl.settings_manager.font_defaults.get("font-size") or 15)
         if label.font_weight is None:

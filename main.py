@@ -19,6 +19,7 @@ setproctitle.setproctitle("StreamController")
 
 # "install" patches
 from src.patcher.patcher import Patcher
+
 patcher = Patcher()
 patcher.patch()
 
@@ -62,20 +63,22 @@ from src.backend.Migration.MigrationManager import MigrationManager
 from src.backend.Migration.Migrators.Migrator_1_5_0 import Migrator_1_5_0
 from src.backend.Migration.Migrators.Migrator_1_5_0_beta_5 import Migrator_1_5_0_beta_5
 
-# Import globals
 import globals as gl
 
 main_path = os.path.abspath(os.path.dirname(__file__))
 gl.MAIN_PATH = main_path
 
+
 def write_logs(record):
     gl.logs.append(record)
+
 
 @log.catch
 def config_logger():
     log.remove()
     # Create log files
-    log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
+    log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True,
+            level="TRACE")
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
     log.add(write_logs, level="TRACE")
@@ -102,6 +105,7 @@ def config_logger():
 
     gl.loggers["plugins"] = plugin_logger
 
+
 class Main:
     def __init__(self, application_id, deck_manager):
         # Launch gtk application
@@ -111,6 +115,7 @@ class Main:
 
         self.app.run(gl.argparser.parse_args().app_args)
 
+
 @log.catch
 def load():
     log.info("Loading app")
@@ -118,14 +123,14 @@ def load():
     gl.deck_manager.load_decks()
     gl.main = Main(application_id="com.core447.StreamController", deck_manager=gl.deck_manager)
 
+
 @log.catch
 def create_cache_folder():
     os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
 
+
 def create_global_objects():
-    # Setup locales
     gl.tray_icon = TrayIcon()
-    # gl.tray_icon.run_detached()
 
     gl.lm = LocaleManager(csv_path=os.path.join(main_path, "locales", "locales.csv"))
     gl.lm.set_to_os_default()
@@ -147,10 +152,8 @@ def create_global_objects():
     gl.icon_pack_manager = IconPackManager()
     gl.wallpaper_pack_manager = WallpaperPackManager()
 
-    # Store
     gl.store_backend = StoreBackend()
 
-    # Plugin Manager
     gl.plugin_manager = PluginManager()
     gl.plugin_manager.load_plugins(show_notification=True)
     gl.plugin_manager.generate_action_index()
@@ -162,8 +165,6 @@ def create_global_objects():
 
     gl.lock_screen_detector = LockScreenManager()
 
-    
-    # gl.dekstop_grabber = DesktopGrabber()
 
 @log.catch
 def update_assets():
@@ -194,6 +195,7 @@ def update_assets():
     if hasattr(gl.app, "main_win"):
         gl.app.main_win.show_info_toast(f"{number_of_installed_updates} assets updated")
 
+
 @log.catch
 def reset_all_decks():
     # Find all USB devices
@@ -216,6 +218,7 @@ def reset_all_decks():
         except:
             log.error("Failed to reset deck, maybe it's already connected to another instance? Skipping...")
 
+
 def quit_running():
     log.info("Checking if another instance is running")
     session_bus = dbus.SessionBus()
@@ -230,36 +233,38 @@ def quit_running():
     except ValueError as e:
         log.info("The last instance has not been properly closed, continuing... This may cause issues")
 
-    if None not in [obj, action_interface]:
-        if gl.cli_args.close_running:
-            log.info("Closing running instance")
-            try:
-                action_interface.Activate("quit", [], [])
-            except dbus.exceptions.DBusException as e:
-                if "org.freedesktop.DBus.Error.NoReply" in str(e):
-                    log.error("Could not close running instance: " + str(e))
-                    sys.exit(0)
-            time.sleep(5)
+    if obj is None or action_interface is None:
+        return
 
-        else:
-            action_interface.Activate("reopen", [], [])
-            log.info("Already running, exiting")
-            sys.exit(0)
+    if gl.cli_args.close_running:
+        log.info("Closing running instance")
+        try:
+            action_interface.Activate("quit", [], [])
+        except dbus.exceptions.DBusException as e:
+            if "org.freedesktop.DBus.Error.NoReply" in str(e):
+                log.error("Could not close running instance: " + str(e))
+                sys.exit(0)
+        time.sleep(5)
+    else:
+        action_interface.Activate("reopen", [], [])
+        log.info("Already running, exiting")
+        sys.exit(0)
 
+
+# TODO: Improve Api Calls
 def make_api_calls():
     if not gl.argparser.parse_args().change_page:
         return False
-    
+
     session_bus = dbus.SessionBus()
     obj: dbus.BusObject = None
     action_interface: dbus.Interface = None
     try:
         obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
         action_interface = dbus.Interface(obj, "org.gtk.Actions")
-    except dbus.exceptions.DBusException as e:
+    except dbus.exceptions.DBusException or ValueError as e:
         obj = None
-    except ValueError as e:
-        obj = None
+        log.error(e)
 
     for serial_number, page_name in gl.argparser.parse_args().change_page:
         if None in [obj, action_interface] or gl.cli_args.close_running:
@@ -268,11 +273,9 @@ def make_api_calls():
             # Other instance is running - call dbus interfaces
             action_interface.Activate("change_page", [[serial_number, page_name]], [])
             return True
-
     return False
 
 
-    
 @log.catch
 def main():
     if make_api_calls():
@@ -303,13 +306,13 @@ def main():
     app_settings = gl.settings_manager.get_app_settings()
     auto_start = app_settings.get("system", {}).get("autostart", True)
     setup_autostart(auto_start)
-    
+
     create_cache_folder()
     threading.Thread(target=update_assets, name="update_assets").start()
     load()
 
+
 if __name__ == "__main__":
     main()
-
 
 log.trace("Reached end of main.py")

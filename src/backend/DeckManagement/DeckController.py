@@ -553,7 +553,7 @@ class DeckController:
 
         if not page_settings.get("overwrite", False) and deck_settings.get("enable", False):
             use_dict = deck_settings
-        elif page_settings.get("show", True):
+        elif page_settings.get("show", True) and page_settings.get("overwrite", False):
             use_dict = page_settings
 
         if use_dict:

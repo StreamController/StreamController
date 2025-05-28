@@ -551,10 +551,10 @@ class DeckController:
 
         use_dict = {}
 
-        if not page_settings.get("overwrite", False) and deck_settings.get("enable", False):
-            use_dict = deck_settings
-        elif page_settings.get("show", True) and page_settings.get("overwrite", False):
+        if page_settings.get("overwrite", False) and page_settings.get("show", True):
             use_dict = page_settings
+        elif deck_settings.get("enable"):
+            use_dict = deck_settings
 
         if use_dict:
             self.background.set_from_path(

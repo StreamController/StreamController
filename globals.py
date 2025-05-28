@@ -76,6 +76,14 @@ argparser.add_argument(
     help="Data path"
 )
 
+argparser.add_argument(
+    "-T", "--tick-delay",
+    type=int,
+    default=1,
+    action="store",
+    help="The delay between tick actions",
+)
+
 # Api Calls
 api_call_group = argparser.add_argument_group("Deck Calls")
 

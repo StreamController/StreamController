@@ -557,21 +557,17 @@ class DeckController:
     def load_background(self, page: Page, update: bool = True):
         log.info(f"Loading background in thread: {threading.get_ident()}")
 
-        deck_settings_background = self.get_deck_settings().get("background", {})
-        page_background = page.dict.get("background", {})
+        deck_settings = self.get_deck_settings().get("background", {})
+        page_settings = page.dict.get("background", {})
 
         use_dict = {}
 
-        if not page_background.get("overwrite", False) and deck_settings_background.get("enable", False):
-            log.debug("Using deck settings")
-            use_dict = deck_settings_background
-        elif page_background.get("show", True):
-            log.debug("Using Page settings")
-            use_dict = page_background
+        if not page_settings.get("overwrite", False) and deck_settings.get("enable", False):
+            use_dict = deck_settings
+        elif page_settings.get("show", True):
+            use_dict = page_settings
 
         if use_dict:
-            #log.debug(use_dict.get("path", ""), update, use_dict.get("loop", True), use_dict.get("fps", 30))
-            log.debug("APPLYING WALLPAPER")
             self.background.set_from_path(
                 path=use_dict.get("path", ""),
                 update=update,
@@ -579,7 +575,6 @@ class DeckController:
                 fps=use_dict.get("fps", 30)
             )
         else:
-            log.debug("No usable dict found")
             self.background.set_from_path(None, update=update)
 
     @log.catch

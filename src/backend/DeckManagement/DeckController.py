@@ -654,13 +654,15 @@ class DeckController:
             except AttributeError as e:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
 
-    def close_image_ressources(self):
-        for t in self.inputs:
-            for i in self.inputs[t]:
-                i.close_resources()
+
+    def close_image_resources(self):
+        for input_group in self.inputs.values():
+            for input_instance in input_group:
+                input_instance.close_resources()
 
         if self.background.video is not None:
             self.background.video.close()
+
         if self.background.image is not None:
             self.background.image.close()
 

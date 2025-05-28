@@ -802,11 +802,14 @@ class DeckController:
         if self.own_deck_stack_child is not None:
             return self.own_deck_stack_child
         
-        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"): return
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
+
         serial_number = self.deck.get_serial_number()
         deck_stack = gl.app.main_win.leftArea.deck_stack
         deck_stack_child = deck_stack.get_child_by_name(serial_number)
-        if deck_stack_child == None:
+
+        if deck_stack_child is None:
             return
         
         self.own_deck_stack_child = deck_stack_child
@@ -815,8 +818,10 @@ class DeckController:
     def clear(self):
         if not self.is_visual():
             return
+
         alpha_image = self.generate_alpha_key()
         native_image = PILHelper.to_native_key_format(self.deck, alpha_image.convert("RGB"))
+
         for i in range(self.deck.key_count()):
             self.deck.set_key_image(i, native_image)
 
@@ -833,7 +838,8 @@ class DeckController:
             return self.own_key_grid
         
         deck_stack_child = self.get_own_deck_stack_child()
-        if deck_stack_child == None:
+
+        if deck_stack_child is None:
             return
         
         self.own_key_grid = deck_stack_child.page_settings.deck_config.grid

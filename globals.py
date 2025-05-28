@@ -36,15 +36,60 @@ if TYPE_CHECKING:
 argparser = argparse.ArgumentParser()
 
 # Static Values
-argparser.add_argument("-b", help="Open in background", action="store_true")
-argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
-argparser.add_argument("--skip-load-hardware-decks", help="Skips initilization/use of hardware decks", action="store_true")
-argparser.add_argument("--close-running", help="Close running", action="store_true")
-argparser.add_argument("--data", help="Data path", type=str)
-argparser.add_argument("app_args", nargs="*")
+
+argparser.add_argument(
+    "-b", "--background",
+    action="store_true",
+    help="Opens the app in the background"
+)
+
+argparser.add_argument(
+    "-d", "--devel",
+    action="store_true",
+    help="Enable developer mode"
+)
+
+argparser.add_argument(
+    "-u", "--auto-update",
+    type=str,
+    default="1",
+    choices=["0", "1"],
+    action="store",
+    help="Enable or disable automatic updates. Default is 1."
+)
+
+argparser.add_argument(
+    "-s", "--skip-hardware-decks",
+    action="store_true",
+    help="Skips initialization/use of hardware decks"
+)
+
+argparser.add_argument(
+    "-c", "--close-running",
+    action="store_true",
+    help="Close running"
+)
+
+argparser.add_argument(
+    "-D", "--data",
+    type=str,
+    help="Data path"
+)
 
 # Api Calls
-argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
+api_call_group = argparser.add_argument_group("Deck Calls")
+api_call_group.add_argument(
+    "--change-page",
+    action="append",
+    nargs=2,
+    metavar=("SERIAL_NUMBER", "PAGE_NAME"),
+    help="Change the page for a device"
+)
+
+argparser.add_argument(
+    "app_args",
+    nargs="*"
+)
 
 # ─────────────────────────────────────────────────────────────
 # PATHS AND STATIC CONFIGURATION

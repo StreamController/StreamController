@@ -51,10 +51,10 @@ argparser.add_argument("--change-page", action="append", nargs=2, help="Change t
 # PATHS AND STATIC CONFIGURATION
 # ─────────────────────────────────────────────────────────────
 MAIN_PATH: str
-VAR_APP_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")
-STATIC_SETTINGS_FILE_PATH = os.path.join(VAR_APP_PATH, "static", "settings.json")
-DATA_PATH = os.path.join(VAR_APP_PATH, "data") # Maybe use XDG_DATA_HOME instead
-PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")
+VAR_APP_PATH: str = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")
+STATIC_SETTINGS_FILE_PATH: str = os.path.join(VAR_APP_PATH, "static", "settings.json")
+DATA_PATH: str = os.path.join(VAR_APP_PATH, "data") # Maybe use XDG_DATA_HOME instead
+PLUGIN_DIR: str = os.path.join(DATA_PATH, "plugins")
 TOP_LEVEL_DIR: str = os.path.dirname(__file__)
 
 args = argparser.parse_args()
@@ -80,6 +80,8 @@ if not os.path.exists(DATA_PATH):
     except Exception as e:
         log.error(f"Failed to create data path: {e}\nPlease change the data path manually in the config file under {STATIC_SETTINGS_FILE_PATH}")
         sys.exit(1)
+
+PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")
 
 # Used for nix packaging
 if os.getenv("PLUGIN_DIR") is not None:

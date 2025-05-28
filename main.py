@@ -170,7 +170,7 @@ def update_assets():
     settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
     auto_update = settings.get("store", {}).get("auto-update", True)
 
-    if gl.argparser.parse_args().devel:
+    if gl.cli_args.devel:
         auto_update = False
 
     if not auto_update:
@@ -231,7 +231,7 @@ def quit_running():
         log.info("The last instance has not been properly closed, continuing... This may cause issues")
 
     if None not in [obj, action_interface]:
-        if gl.argparser.parse_args().close_running:
+        if gl.cli_args.close_running:
             log.info("Closing running instance")
             try:
                 action_interface.Activate("quit", [], [])
@@ -262,7 +262,7 @@ def make_api_calls():
         obj = None
 
     for serial_number, page_name in gl.argparser.parse_args().change_page:
-        if None in [obj, action_interface] or gl.argparser.parse_args().close_running:
+        if None in [obj, action_interface] or gl.cli_args.close_running:
             gl.api_page_requests[serial_number] = page_name
         else:
             # Other instance is running - call dbus interfaces

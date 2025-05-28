@@ -665,7 +665,7 @@ class StoreBackend:
         return extracted_folder_name
     
     async def download_repo(self, repo_url:str, directory:str, commit_sha:str = None, branch_name:str = None):
-        if not is_flatpak() and gl.argparser.parse_args().devel:
+        if not is_flatpak() and gl.cli_args.devel:
             await self.clone_repo(repo_url, directory, commit_sha, branch_name)
             return
 

@@ -29,6 +29,13 @@ from src.windows.Permissions.FlatpakPermissionRequest import FlatpakPermissionRe
 
 
 class FlatpakPermissionManager:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
         self.portal = Xdp.Portal.new()
         self.app_id = "com.core447.StreamController"

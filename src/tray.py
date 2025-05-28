@@ -8,6 +8,13 @@ class TrayIcon(DBusTrayIcon):
     IndicatorPath = "/org/ayatana/NotificationItem/com_core447_StreamController_TrayIcon"
     AppId = "com.core447.StreamController.TrayIcon"
 
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
         self.menu = DBusMenu()
         self.menu.add_menu_item(1, "Show Window", callback=self.on_show)

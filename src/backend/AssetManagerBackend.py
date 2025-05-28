@@ -35,11 +35,18 @@ import globals as gl
 
 class AssetManagerBackend(list):
     JSON_PATH = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets.json")
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        super().__init__()
+
         self.load_json()
-
         self.fill_missing_data()
-
         self.remove_invalid_data()
 
     def load_json(self):

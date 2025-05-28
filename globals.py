@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 # ─────────────────────────────────────────────────────────────
 argparser = argparse.ArgumentParser()
 
-## Static Values
+# Static Values
 argparser.add_argument("-b", help="Open in background", action="store_true")
 argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
 argparser.add_argument("--skip-load-hardware-decks", help="Skips initilization/use of hardware decks", action="store_true")
@@ -44,7 +44,7 @@ argparser.add_argument("--close-running", help="Close running", action="store_tr
 argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("app_args", nargs="*")
 
-## Api Calls
+# Api Calls
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
 
 # ─────────────────────────────────────────────────────────────
@@ -101,30 +101,30 @@ sys.path.append(DATA_PATH)
 # GLOBAL SINGLETONS (WILL BE SET LATER)
 # ─────────────────────────────────────────────────────────────
 
-# Singleton added
+# Singletons
 app:"App" = None #App
-lm:"LocaleManager" = None
-
-# No singleton
-media_manager:"MediaManager" = None #MediaManager  # Rework to use Static methods
 asset_manager_backend:"AssetManagerBackend" = None #AssetManager
-asset_manager: "AssetManager" = None
 page_manager_window: "PageManager" = None # Only if opened
 page_manager:"PageManagerBackend" = None #PageManager #TODO: Rename to page_manager_backend in 2.0.0
 gnome_extensions:"GnomeExtensions" = None
-settings_manager:"SettingsManager" = None #SettingsManager
-deck_manager:"DeckManager" = None #DeckManager
-plugin_manager:"PluginManager" = None #PluginManager
 icon_pack_manager: "IconPackManager" = None
+plugin_manager:"PluginManager" = None #PluginManager
+deck_manager:"DeckManager" = None #DeckManager
+media_manager:"MediaManager" = None #MediaManager  # Rework to use Static methods
 wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
-pyro_daemon: Pyro5.api.Daemon = None
 signal_manager: "SignalManager" = None
 window_grabber: "WindowGrabber" = None
-lock_screen_detector: "LockScreenDetector" = None
-store: "Store" = None # Only if opened
 flatpak_permission_manager: "FlatpakPermissionManager" = None
 tray_icon: "TrayIcon" = None
+
+# No singleton
+lm:"LocaleManager" = None # Used at multiple different locations
+asset_manager: "AssetManager" = None
+settings_manager:"SettingsManager" = None #SettingsManager
+pyro_daemon: Pyro5.api.Daemon = None
+lock_screen_detector: "LockScreenDetector" = None
+store: "Store" = None # Only if opened
 
 # ─────────────────────────────────────────────────────────────
 # GLOBAL STATE VARIABLES

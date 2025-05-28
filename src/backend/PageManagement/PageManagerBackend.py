@@ -34,6 +34,13 @@ from src.backend.DeckManagement.HelperMethods import get_sub_folders, natural_so
 import globals as gl
 
 class PageManagerBackend:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self, settings_manager):
         self.settings_manager = settings_manager
 

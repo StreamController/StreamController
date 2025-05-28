@@ -738,17 +738,18 @@ class DeckController:
 
     def tick_actions(self) -> None:
         time.sleep(self.TICK_DELAY)
+
         while self.keep_actions_ticking:
             start = time.time()
+
             self.mark_page_ready_to_clear(False)
-            if not self.screen_saver.showing and True:
-                for t in self.inputs:
-                    for i in self.inputs[t]:
-                        i.get_active_state().own_actions_tick_threaded()
-            else:
-                for t in self.inputs:
-                    for i in self.inputs[t]:
-                        i.update()
+
+            for input_group in self.inputs.values():
+                for input_instance in input_group:
+                    if not self.screen_saver.showing:
+                        input_instance.get_active_state().own_actions_tick_threaded()
+                    else:
+                        input_instance.update()
 
             self.mark_page_ready_to_clear(True)
 

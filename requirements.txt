@@ -19,7 +19,7 @@ dnspython==2.7.0
 evdev==1.9.1
 filelock==3.17.0
 Flask==3.1.1
-flask-cors==5.0.1
+flask-cors==6.0.0
 fonttools==4.56.0
 fuzzywuzzy==0.18.0
 get-video-properties==0.1.1

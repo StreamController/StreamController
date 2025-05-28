@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 import Pyro5.api
 from loguru import logger as log
-
 from src.backend.DeckManagement.HelperMethods import find_fallback_font
 
 if TYPE_CHECKING:
@@ -53,7 +52,7 @@ argparser.add_argument("--change-page", action="append", nargs=2, help="Change t
 MAIN_PATH: str
 VAR_APP_PATH: str = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")
 STATIC_SETTINGS_FILE_PATH: str = os.path.join(VAR_APP_PATH, "static", "settings.json")
-DATA_PATH: str = os.path.join(VAR_APP_PATH, "data") # Maybe use XDG_DATA_HOME instead
+DATA_PATH: str = os.path.join(VAR_APP_PATH, "data")  # Maybe use XDG_DATA_HOME instead
 PLUGIN_DIR: str = os.path.join(DATA_PATH, "plugins")
 TOP_LEVEL_DIR: str = os.path.dirname(__file__)
 
@@ -78,7 +77,8 @@ if not os.path.exists(DATA_PATH):
     try:
         os.makedirs(DATA_PATH)
     except Exception as e:
-        log.error(f"Failed to create data path: {e}\nPlease change the data path manually in the config file under {STATIC_SETTINGS_FILE_PATH}")
+        log.error(
+            f"Failed to create data path: {e}\nPlease change the data path manually in the config file under {STATIC_SETTINGS_FILE_PATH}")
         sys.exit(1)
 
 PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")
@@ -90,7 +90,8 @@ if os.getenv("PLUGIN_DIR") is not None:
     sys.path.append(top_level_folder)
 
     if os.path.exists(os.path.join(DATA_PATH, "plugins")):
-        log.warning(f"You're using a plugin dir path outside of your data dir, but also have a plugin dir in the data dir. This may cause problems.")
+        log.warning(
+            f"You're using a plugin dir path outside of your data dir, but also have a plugin dir in the data dir. This may cause problems.")
 
 os.makedirs(PLUGIN_DIR, exist_ok=True)
 
@@ -102,15 +103,15 @@ sys.path.append(DATA_PATH)
 # ─────────────────────────────────────────────────────────────
 
 # Singletons
-app:"App" = None #App
-asset_manager_backend:"AssetManagerBackend" = None #AssetManager
-page_manager_window: "PageManager" = None # Only if opened
-page_manager:"PageManagerBackend" = None #PageManager #TODO: Rename to page_manager_backend in 2.0.0
-gnome_extensions:"GnomeExtensions" = None
+app: "App" = None  # App
+asset_manager_backend: "AssetManagerBackend" = None  # AssetManager
+page_manager_window: "PageManager" = None  # Only if opened
+page_manager: "PageManagerBackend" = None  # PageManager #TODO: Rename to page_manager_backend in 2.0.0
+gnome_extensions: "GnomeExtensions" = None
 icon_pack_manager: "IconPackManager" = None
-plugin_manager:"PluginManager" = None #PluginManager
-deck_manager:"DeckManager" = None #DeckManager
-media_manager:"MediaManager" = None #MediaManager  # Rework to use Static methods
+plugin_manager: "PluginManager" = None  # PluginManager
+deck_manager: "DeckManager" = None  # DeckManager
+media_manager: "MediaManager" = None  # MediaManager  # Rework to use Static methods
 wallpaper_pack_manager: "WallpaperPackManager" = None
 store_backend: "StoreBackend" = None
 signal_manager: "SignalManager" = None
@@ -119,12 +120,12 @@ flatpak_permission_manager: "FlatpakPermissionManager" = None
 tray_icon: "TrayIcon" = None
 
 # No singleton
-lm:"LocaleManager" = None # Used at multiple different locations
+lm: "LocaleManager" = None  # Used at multiple different locations
 asset_manager: "AssetManager" = None
-settings_manager:"SettingsManager" = None #SettingsManager
+settings_manager: "SettingsManager" = None  # SettingsManager
 pyro_daemon: Pyro5.api.Daemon = None
 lock_screen_detector: "LockScreenDetector" = None
-store: "Store" = None # Only if opened
+store: "Store" = None  # Only if opened
 
 # ─────────────────────────────────────────────────────────────
 # GLOBAL STATE VARIABLES
@@ -137,7 +138,7 @@ APP_VERSION: str = "1.5.0-beta.10"  # In breaking.feature.fix-state format
 
 threads_running: bool = True
 app_loading_finished_tasks: callable = []
-api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
+api_page_requests: dict[str, str] = {}  # Stores api page requests made my --change-page
 showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}

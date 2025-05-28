@@ -1260,19 +1260,19 @@ class LabelManager:
         if label.text is None:
             label.text = ""
         if label.color is None:
-            label.color = gl.settings_manager.font_defaults.get("font-color") or (255, 255, 255, 255)
+            label.color = gl.settings_manager.font_defaults.get("font-color", [255, 255, 255, 255])
         if label.font_name is None:
-            label.font_name = gl.settings_manager.font_defaults.get("font-family") or gl.FALLBACK_FONT
+            label.font_name = gl.settings_manager.font_defaults.get("font-family", gl.FALLBACK_FONT)
         if label.font_size is None:
-            label.font_size = round(gl.settings_manager.font_defaults.get("font-size") or 15)
+            label.font_size = round(gl.settings_manager.font_defaults.get("font-size", 15))
         if label.font_weight is None:
-            label.font_weight = round(gl.settings_manager.font_defaults.get("font-weight") or 400)
+            label.font_weight = round(gl.settings_manager.font_defaults.get("font-weight", 400))
         if label.style is None:
-            label.style = gl.settings_manager.font_defaults.get("font-style") or "normal"
+            label.style = gl.settings_manager.font_defaults.get("font-style", "normal")
         if label.outline_width is None:
-            label.outline_width = round(gl.settings_manager.font_defaults.get("outline-width") or 2)
+            label.outline_width = round(gl.settings_manager.font_defaults.get("outline-width", 2))
         if label.outline_color is None:
-            label.outline_color = gl.settings_manager.font_defaults.get("outline-color") or (0, 0, 0, 255)
+            label.outline_color = gl.settings_manager.font_defaults.get("outline-color", [0, 0, 0, 255])
 
         return label
     

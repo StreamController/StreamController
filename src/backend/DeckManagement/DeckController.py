@@ -928,6 +928,7 @@ class Background:
 
     def update_tiles(self) -> None:
         old_tiles = self.tiles # Why store them and close them later? So that there is not key error if the media threads fetches them during the update
+
         if self.image is not None:
             self.tiles = self.image.get_tiles()
         elif self.video is not None:
@@ -936,10 +937,9 @@ class Background:
             self.tiles = [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
 
         for tile in old_tiles:
-            if tile is not None:
-                tile.close()
-                tile = None
-                del tile
+            if tile is None:
+                continue
+            tile.close()
         del old_tiles
 
 class BackgroundImage:

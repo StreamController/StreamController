@@ -160,7 +160,8 @@ class MediaPlayerThread(threading.Thread):
         self.fps: list[float] = []
         self.old_warning_state = False
 
-        self.show_fps_warnings = gl.settings_manager.get_app_settings().get("warnings", {}).get("enable-fps-warnings", True)
+        app_settings = gl.settings_manager.get_app_settings()
+        self.show_fps_warnings = app_settings.get("warning", {}).get("show_fps_warnings", True)
 
     # @log.catch
     def run(self):
@@ -197,13 +198,12 @@ class MediaPlayerThread(threading.Thread):
             # print(f"possible FPS: {1 / (end - start)}")
             self.append_fps(1 / (end - start))
             self.update_low_fps_warning()
-            wait = max(0, 1/self.FPS - (end - start))
+            wait = max(0, 1 / self.FPS - (end - start))
             time.sleep(wait)
 
             if self._stop:
-                break
-
-        self.running = False
+                self.running = False
+                return
 
     def append_fps(self, fps: float) -> None:
         self.fps.append(fps)
@@ -278,14 +278,14 @@ class MediaPlayerThread(threading.Thread):
             try:
                 self.tasks.remove(task)
             except ValueError:
-                pass
+                continue
 
         for key in list(self.image_tasks.keys()):
             try:
                 self.image_tasks[key].run()
                 del self.image_tasks[key]
             except KeyError:
-                pass
+                continue
 
         if self.touchscreen_task is not None:
             self.touchscreen_task.run()
@@ -360,7 +360,7 @@ class DeckController:
         self.media_player.start()
 
         self.keep_actions_ticking = True
-        self.TICK_DELAY = 1
+        self.TICK_DELAY = gl.cli_args.tick_delay
         self.tick_thread = Thread(target=self.tick_actions, name="tick_actions")
         self.tick_thread.start()
 
@@ -379,19 +379,21 @@ class DeckController:
 
 
         # If screen is locked start the screensaver - this happens when the deck gets reconnected during the screensaver
-        if gl.screen_locked and gl.settings_manager.get_app_settings().get("system", {}).get("lock-on-lock-screen", True):
+        app_settings = gl.settings_manager.get_app_settings()
+
+        if gl.screen_locked and app_settings.get("system", {}).get("lock-on-lock-screen", True):
             self.allow_interaction = False
             self.screen_saver.show()
         else:
             self.load_default_page()
 
     def init_inputs(self):
-        for i in Input.All:
-            self.inputs[i] = []
-            input_class = getattr(sys.modules[__name__], i.controller_class_name)
+        for input in Input.All:
+            self.inputs[input] = []
+            input_class = getattr(sys.modules[__name__], input.controller_class_name)
 
-            for k in input_class.Available_Identifiers(self.deck):
-                self.inputs[i].append(input_class(self, Input.FromTypeIdentifier(i.input_type, k)))
+            for input_identifier in input_class.Available_Identifiers(self.deck):
+                self.inputs[input].append(input_class(self, Input.FromTypeIdentifier(input.input_type, input_identifier)))
 
     def get_inputs(self, identifier: InputIdentifier) -> list["ControllerInput"]:
         input_type = type(identifier)
@@ -400,9 +402,9 @@ class DeckController:
         return self.inputs[input_type]
 
     def get_input(self, identifier: InputIdentifier) -> "ControllerInput":
-        for i in self.get_inputs(identifier):
-            if i.identifier == identifier:
-                return i
+        for input in self.get_inputs(identifier):
+            if input.identifier == identifier:
+                return input
         return None
 
     @lru_cache(maxsize=None)
@@ -413,33 +415,44 @@ class DeckController:
         return self.deck.is_visual()
 
     def update_input(self, identifier: InputIdentifier):
-        i = self.get_input(identifier)
-        if not i:
+        input = self.get_input(identifier)
+
+        if not input:
             return
-        i.update()
+
+        input.update()
 
     @log.catch
     def update_all_inputs(self):
-        start = time.time()
-        if not self.get_alive(): return
-        if self.background.video is not None:
-            log.debug("Skipping update_all_inputs because there is a background video -- we will only update the dials (if exists) so as not to effect the video.")
-
-            for i in self.inputs[Input.Dial]:
-                i.update()
+        if not self.get_alive():
             return
-        for t in self.inputs:
-            for i in self.inputs[t]:
-                i.update()
-        log.debug(f"Updating all inputs took {time.time() - start} seconds")
+
+        start_time = time.time()
+
+        if self.background.video is not None:
+            log.debug(
+                "Skipping full input update due to background video; updating only dials if present."
+            )
+            for dial_input in self.inputs.get(Input.Dial, []):
+                dial_input.update()
+        else:
+            for input_group in self.inputs.values():
+                for input_instance in input_group:
+                    input_instance.update()
+
+        elapsed = time.time() - start_time
+        log.debug(f"Updating all inputs took {elapsed:.3f} seconds")
 
     def event_callback(self, ident: InputIdentifier, *args, **kwargs):
         if not self.allow_interaction:
             return
-        i = self.get_input(ident)
-        if not i:
+
+        input = self.get_input(ident)
+
+        if not input:
             return
-        i.event_callback(*args, **kwargs)
+
+        input.event_callback(*args, **kwargs)
 
     def key_event_callback(self, deck, key, *args, **kwargs):
         coords = ControllerKey.Index_To_Coords(deck, key)
@@ -462,20 +475,28 @@ class DeckController:
         return Image.new("RGBA", self.get_key_image_size(), (0, 0, 0, 0))
     
     @lru_cache(maxsize=None)
-    def get_key_image_size(self) -> tuple[int]:
-        if not self.get_alive(): return
+    def get_key_image_size(self) -> tuple[int, int]:
+        if not self.get_alive():
+            return
+
         size = self.deck.key_image_format()["size"]
+
         if size is None:
-            return (72, 72)
+            return 72, 72
+
         size = max(size[0], 72), max(size[1], 72)
         return size
-    
+
     @lru_cache(maxsize=None)
-    def get_touchscreen_image_size(self) -> tuple[int]:
-        if not self.get_alive(): return
+    def get_touchscreen_image_size(self) -> tuple[int, int]:
+        if not self.get_alive():
+            return
+
         size = self.deck.touchscreen_image_format()["size"]
+
         if size is None:
-            return (800, 100)
+            return 800, 100
+
         size = max(size[0], 800), max(size[1], 100)
         return size
 
@@ -487,6 +508,8 @@ class DeckController:
         if not self.get_alive(): return
 
         api_page_path = None
+
+        # TODO: REWORK PAGE REQUESTS
         if self.serial_number() in gl.api_page_requests:
             api_page_path = gl.api_page_requests[self.serial_number()]
             api_page_path = gl.page_manager.get_best_page_path_match_from_name(api_page_path)
@@ -499,7 +522,7 @@ class DeckController:
         if default_page_path is not None:
             if not os.path.isfile(default_page_path):
                 default_page_path = None
-            
+
         if default_page_path is None:
             # Use the first page
             pages = gl.page_manager.get_pages()
@@ -509,7 +532,7 @@ class DeckController:
 
         if default_page_path is None:
             return
-        
+
         page = gl.page_manager.get_page(default_page_path, self)
         self.load_page(page)
 

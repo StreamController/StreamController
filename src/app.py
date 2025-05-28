@@ -55,11 +55,11 @@ class App(Adw.Application):
         self.connect("activate", self.on_activate)
 
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_path(os.path.join(gl.top_level_dir, "style.css"))
+        css_provider.load_from_path(os.path.join(gl.TOP_LEVEL_DIR, "style.css"))
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
         icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
-        icon_theme.add_search_path(os.path.join(gl.top_level_dir, "Assets", "icons"))
+        icon_theme.add_search_path(os.path.join(gl.TOP_LEVEL_DIR, "Assets", "icons"))
 
         app_settings = gl.settings_manager.get_app_settings()
         

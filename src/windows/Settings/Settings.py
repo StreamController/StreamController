@@ -315,7 +315,7 @@ class FontRow(Adw.ActionRow):
 
         default_font = self.font_page_group.settings.settings_json.get("general", {}).get("default-font", {})
 
-        font_family = default_font.get("font-family") or gl.fallback_font
+        font_family = default_font.get("font-family") or gl.FALLBACK_FONT
         font_size = default_font.get("font-size") or 15
         font_weight = default_font.get("font-weight") or 400
         font_style = default_font.get("font-style") or "normal"

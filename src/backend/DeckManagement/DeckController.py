@@ -657,24 +657,20 @@ class DeckController:
 
     @log.catch
     def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_inputs: bool = True, allow_reload: bool = True):
-        if not self.get_alive(): return
+        if not self.get_alive():
+            return
 
-        start = time.time()
+        if not allow_reload and self.active_page is page:
+            return
 
-        if not allow_reload:
-            if self.active_page is page:
-                return
-        
-        old_path = self.active_page.json_path if self.active_page is not None else None
-
-        if self.active_page is not None and False:
-            self.active_page.clear_action_objects()
-        # self.active_page = None
+        if self.active_page is not None:
+            old_path = self.active_page.json_path
+        else:
+            old_path = None
 
         self.active_page = page
 
-        if page is None:
-            # Clear deck
+        if self.active_page is None:
             self.clear()
             return
 
@@ -692,7 +688,6 @@ class DeckController:
         GLib.idle_add(self.update_ui_on_page_change) #TODO: Use new signal manager instead
 
         if load_background:
-            # self.load_background(page, update=False)
             self.media_player.add_task(self.load_background, page, update=False)
         if load_brightness:
             self.load_brightness(page)

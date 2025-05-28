@@ -1030,17 +1030,17 @@ class BackgroundVideo(BackgroundVideoCache):
 
         self.active_frame: int = -1
 
+        # TODO: MOVE IT TO THE TOP OF __init__ when the super() logic can be executed first
         super().__init__(video_path, deck_controller=deck_controller)
 
     def get_next_tiles(self) -> list[Image.Image]:
         # return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
         self.active_frame += 1
 
-        if self.active_frame >= self.n_frames:
-            if self.loop:
-                self.active_frame = 0
+        if self.active_frame >= self.n_frames and self.loop:
+            self.active_frame = 0
 
-        tiles =  self.get_tiles(self.active_frame)
+        tiles = self.get_tiles(self.active_frame)
         try:
             copied_tiles = [tile.copy() for tile in tiles]
         except:
@@ -1060,9 +1060,8 @@ class BackgroundVideo(BackgroundVideoCache):
     def get_next_frame(self) -> Image.Image:
         self.active_frame += 1
 
-        if self.active_frame >= self.n_frames:
-            if self.loop:
-                self.active_frame = 0
+        if self.active_frame >= self.n_frames and self.loop:
+            self.active_frame = 0
         
         return self.get_frame(self.active_frame)
     

@@ -2213,7 +2213,7 @@ class ControllerTouchScreen(ControllerInput):
     def get_dial_image_area(self, identifier: Input.Dial) -> tuple[int, int, int, int]:
         width, height = self.get_screen_dimensions()
 
-        n_dials = len(self.deck_controller.inputs[Input.Dial])
+        n_dials = len(self.deck_controller.inputs.get(Input.Dial, []))
         dial_index = identifier.index
 
         start_x = int((dial_index / n_dials) * width)
@@ -2226,14 +2226,14 @@ class ControllerTouchScreen(ControllerInput):
     def get_dial_image_area_size(self) -> tuple[int, int]:
         width, height = self.get_screen_dimensions()
 
-        n_dials = len(self.deck_controller.inputs[Input.Dial])
+        n_dials = len(self.deck_controller.inputs.get(Input.Dial, []))
 
         return int(width / n_dials), height
     
     def get_empty_dial_image(self) -> Image.Image:
         screen_width, screen_height = self.get_screen_dimensions()
 
-        n_dials = len(self.deck_controller.inputs[Input.Dial])
+        n_dials = len(self.deck_controller.inputs.get(Input.Dial, []))
 
         return Image.new("RGBA", (screen_width // n_dials, screen_height), (0, 0, 0, 0))
 

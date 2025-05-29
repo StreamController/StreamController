@@ -264,9 +264,11 @@ class StorePreview(Gtk.FlowBoxChild):
         # Remove ending periods
         if description[-1] == ".":
             description = description[:-1]
-        
-        if len(description) >= 50:
-            description = description[:47] + "..."
+
+        cutoff = 60
+
+        if len(description) >= cutoff:
+            description = description[:(cutoff-3)] + "..."
         self.description.set_label(description)
 
     def check_required_version(self, app_version_to_check: str):

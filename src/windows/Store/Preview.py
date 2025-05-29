@@ -91,18 +91,13 @@ class StorePreview(Gtk.FlowBoxChild):
 
         self.name_label = Gtk.Label(css_classes=["bold"], xalign=0)
         self.author_label = Gtk.Label(sensitive=False, xalign=0)
+        self.description_label = Gtk.Label(css_classes=["dim-label"], margin_bottom=6,
+                                     label=gl.lm.get("store.preview.no-description"),
+                                     halign=Gtk.Align.START, hexpand=False)
 
         self.label_box.append(self.name_label)
         self.label_box.append(self.author_label)
-
-        # Add Descriptions
-        self.description_box = Gtk.Box(hexpand=False, width_request=100, margin_start=6, halign=Gtk.Align.START)
-        self.main_button_box.append(self.description_box)
-        
-        self.description = Gtk.Label(css_classes=["dim-label"], margin_bottom=6, label=gl.lm.get("store.preview.no-description"),
-                                     halign=Gtk.Align.START, hexpand=False)
-        
-        self.description_box.append(self.description)
+        self.label_box.append(self.description_label)
 
         # Add Buttons
         self.main_button_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
@@ -259,7 +254,9 @@ class StorePreview(Gtk.FlowBoxChild):
     def set_description(self, description: str) -> None:
         if description is None:
             return
+
         description = description.strip()
+
         if description in ["", "N/A", None]:
             description = gl.lm.get("store.preview.no-description")
 
@@ -271,11 +268,13 @@ class StorePreview(Gtk.FlowBoxChild):
 
         if len(description) >= cutoff:
             description = description[:(cutoff-3)] + "..."
-        self.description.set_label(description)
+
+        self.description_label.set_label(description)
 
     def check_required_version(self, app_version_to_check: str):
         if app_version_to_check is None:
             return True
+
         min_version = version.parse(app_version_to_check)
         app_version = version.parse(gl.app_version)
 

@@ -1836,20 +1836,18 @@ class ControllerInput:
         GLib.idle_add(gl.app.main_win.sidebar.update)
 
     def load_from_config(self, config, update: bool = True):
-        n_states = len(config.get("states", {}))
-        self.create_n_states(max(1, n_states))
+        state_data: dict = config.get("states", {})
+        self.create_n_states(max(1, len(state_data)))
 
         old_state_index = self.state
-
         self.state = 0
 
-        #TODO: Reset states
-        for state in config.get("states", {}):
-            state: ControllerKeyState = self.states.get(int(state))
+        # TODO: Reset states
+        for state_id_str in state_data.keys():
+            state: ControllerInputState = self.states.get(int(state_id_str))
+
             if state is None:
                 continue
-
-            state_dict = config["states"][str(state.state)]
 
             self.get_active_state().own_actions_ready()
             # state.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
@@ -1890,9 +1888,7 @@ class ControllerKey(ControllerInput):
 
     def on_hold_timer_end(self):
         state = self.get_active_state()
-        state.own_actions_event_callback_threaded(
-            event=Input.Key.Events.HOLD_START
-        )
+        state.own_actions_event_callback_threaded(Input.Key.Events.HOLD_START)
 
     @staticmethod
     def Available_Identifiers(deck):
@@ -1939,9 +1935,11 @@ class ControllerKey(ControllerInput):
 
     def event_callback(self, press_state):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
+
         if press_state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
             self.deck_controller.screen_saver.on_key_change()
+
         if screensaver_was_showing:
             return
         
@@ -1951,6 +1949,7 @@ class ControllerKey(ControllerInput):
         self.update()
 
         active_state = self.get_active_state()
+
         if press_state: # Key down
             self.down_start_time = time.time()
             self.start_hold_timer()
@@ -1960,20 +1959,16 @@ class ControllerKey(ControllerInput):
             )
 
         elif self.down_start_time is not None: # Key up
-            if time.time() - self.down_start_time >= self.deck_controller.hold_time:
-                active_state.own_actions_event_callback_threaded(
-                    event=Input.Key.Events.HOLD_STOP
-                )
-            else:
-                active_state.own_actions_event_callback_threaded(
-                    event=Input.Key.Events.SHORT_UP
-                )
-            self.down_start_time = None
             self.stop_hold_timer()
-            active_state.own_actions_event_callback_threaded(
-                event=Input.Key.Events.UP,
-                show_notifications=False
-            )
+
+            elapsed_time = time.time() - self.down_start_time
+
+            event = Input.Key.Events.HOLD_STOP if elapsed_time >= self.deck_controller.hold_time else Input.Key.Events.SHORT_UP
+            active_state.own_actions_event_callback_threaded(event)
+
+            self.down_start_time = None
+
+            active_state.own_actions_event_callback_threaded(Input.Key.Events.UP)
         self.deck_controller.mark_page_ready_to_clear(True)
 
     def get_current_image(self) -> Image.Image:

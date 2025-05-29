@@ -93,19 +93,8 @@ class PluginPreview(StorePreview):
         self.set_image(plugin_data.image)
         self.set_url(plugin_data.github)
 
-        self.set_official(plugin_data.official, """<b>Official Plugin</b>
-        
-This plugin is <i>officially created</i> by the main application developer.""")
-        self.set_verified(plugin_data.verified, """<b>Warning: Unverified Plugin</b>
-
-This plugin is <i>not verified</i> by the official developers.  
-Use caution when installing and using third-party plugins, as they may:  
-- Contain bugs or cause instability
-- Include malicious code or compromise your system
-- Lack proper support or updates
-
-Always review plugin sources carefully.
-""")
+        self.set_official(plugin_data.official, gl.lm.get("store.badges.official.plugin"))
+        self.set_verified(plugin_data.verified, gl.lm.get("store.badges.warning.plugin"))
 
         # Set install button state
         if plugin_data.local_sha is None:

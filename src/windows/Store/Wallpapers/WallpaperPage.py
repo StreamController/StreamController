@@ -81,14 +81,10 @@ class WallpaperPreview(StorePreview):
         self.set_image(wallpaper_data.image)
         self.set_url(wallpaper_data.github)
 
-        self.set_official(wallpaper_data.official, """<b>Official Wallpaper Pack</b>
-        
-This wallpaper pack is <i>officially created</i> by the main application developer.""")
-        self.set_verified(wallpaper_data.verified, """<b>Warning: Unverified Wallpaper Pack</b>
 
-This wallpaper pack is <i>not verified</i> by the official developers.
-Always review sources carefully.
-""")
+
+        self.set_official(wallpaper_data.official, gl.lm.get("store.badges.official.wallpaper"))
+        self.set_verified(wallpaper_data.verified, gl.lm.get("store.badges.warning.wallpaper"))
 
         if not self.check_required_version(wallpaper_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")

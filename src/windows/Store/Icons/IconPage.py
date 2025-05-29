@@ -83,14 +83,8 @@ class IconPreview(StorePreview):
         self.set_image(icon_data.image)
         self.set_url(icon_data.github)
 
-        self.set_official(icon_data.official, """<b>Official Icon Pack</b>
-        
-This icon pack is <i>officially created</i> by the main application developer.""")
-        self.set_verified(icon_data.verified, """<b>Warning: Unverified Icon Pack</b>
-
-This icon pack is <i>not verified</i> by the official developers.
-Always review sources carefully.
-""")
+        self.set_official(icon_data.official, gl.lm.get("store.badges.official.icon"))
+        self.set_verified(icon_data.verified, gl.lm.get("store.badges.warning.icon"))
 
         if not self.check_required_version(icon_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")

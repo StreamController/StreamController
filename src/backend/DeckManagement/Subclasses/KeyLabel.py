@@ -13,7 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
-from PIL import Image
+from PIL import Image, ImageFont
 from dataclasses import dataclass
 import matplotlib.font_manager
 
@@ -60,3 +60,6 @@ class KeyLabel:
         self.color = None
         self.outline_width = None
         self.outline_color = None
+
+    def get_font(self) -> ImageFont.FreeTypeFont:
+        return ImageFont.truetype(self.get_font_path(), self.font_size)

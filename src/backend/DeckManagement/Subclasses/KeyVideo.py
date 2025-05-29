@@ -34,7 +34,9 @@ class InputVideo(SingleKeyAsset):
         self.active_frame: int = -1
 
     def get_next_frame(self) -> Image:
-        self.active_frame += 1
+        every_n_frames = self.controller_input.deck_controller.media_player.FPS // self.fps
+        if self.controller_input.media_ticks % every_n_frames == 0:
+            self.active_frame += 1
 
         if self.active_frame >= self.video_cache.n_frames:
             if self.loop:

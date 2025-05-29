@@ -54,7 +54,7 @@ from gi.repository import GLib
 from src.Signals import Signals
 
 # Import typing
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from src.windows.mainWindow.elements.KeyGrid import KeyButton, KeyGrid
 from src.backend.PluginManager.ActionCore import ActionCore
@@ -181,21 +181,10 @@ class MediaPlayerThread(threading.Thread):
 
                 #TODO: generalize
                 for key in self.deck_controller.inputs[Input.Key]:
-                    key_state = key.get_active_state()
-                    if key_state.key_video is not None:
-                        video_each_nth_frame = self.FPS // key_state.key_video.fps
-                        if self.media_ticks % video_each_nth_frame == 0:
-                            key.update()
-                    elif self.deck_controller.background.video is not None:
-                        key.update()
+                    cast("ControllerKey", key).on_media_player_tick()
 
                 for dial in self.deck_controller.inputs[Input.Dial]:
-                    dial_state = dial.get_active_state()
-                    if dial_state.video is not None:
-                        video_each_nth_frame = self.FPS // dial_state.video.fps
-                        if self.media_ticks % video_each_nth_frame == 0:
-                            dial.update()
-
+                    cast("ControllerDial", dial).on_media_player_tick()
                 # self.deck_controller.update_all_inputs()
 
                 # Perform media player tasks
@@ -1144,6 +1133,11 @@ class LabelManager:
         self.action_labels = {}
 
         self.init_labels()
+        self.frames: dict[str, int] = {
+            "top": 0,
+            "center": 0,
+            "bottom": 0,
+        }
 
     def init_labels(self):
         for position in ["top", "center", "bottom"]:
@@ -1239,7 +1233,7 @@ class LabelManager:
         injected = self.inject_defaults(label)
         return self.fix_invalid(injected)
     
-    def get_composed_labels(self) -> dict:
+    def get_composed_labels(self) -> dict[str, "KeyLabel"]:
         composed_labels = {}
         for position in ["top", "center", "bottom"]:
             composed_labels[position] = self.get_composed_label(position)
@@ -1275,6 +1269,18 @@ class LabelManager:
     def update_label(self, position: str):
         self.controller_input.update()
 
+    def get_available_width(self) -> int:
+        return self.controller_input.get_image_size()[0]
+
+    def get_has_scroll_labels(self) -> bool:
+        labels = self.get_composed_labels()
+        for label in labels:
+            if labels[label].text is not None and labels[label].text != "":
+                _, _, w, _ = labels[label].get_font().getbbox(labels[label].text)
+                if w > self.get_available_width():
+                    return True
+        return False
+
     def add_labels_to_image(self, image: Image.Image) -> Image.Image:
         # image = image.rotate(self.deck.get_rotation()*-1)
         draw = ImageDraw.Draw(image)
@@ -1285,21 +1291,35 @@ class LabelManager:
             if text in [None, ""]:
                 continue
 
-            font_path = labels[label].get_font_path()
             color = tuple(labels[label].color)
-            font_size = labels[label].font_size
-            font = ImageFont.truetype(font_path, font_size)
+            font = labels[label].get_font()
             outline_width = labels[label].outline_width
             outline_color = tuple(labels[label].outline_color)
 
             _, _, w, h = draw.textbbox((0, 0), text, font=font)
 
+            # Center
+            x_position = image.width / 2
+
+            if image.width < w:
+                # Need to scroll
+                start = image.width / 2 - (image.width - w) / 2 + 10
+                stop = image.width / 2 + (image.width - w) / 2 - 10
+
+                x_position = start - self.frames[label]
+                if x_position < stop:
+                    x_position = start
+                    self.frames[label] = 0
+                elif self.controller_input.media_ticks % 2 == 0:
+                    self.frames[label] += 1
+
+
             if label == "top":
-                position = (image.width / 2, h/2 + 3)
+                position = (x_position, h/2 + 3)
             elif label == "bottom":
-                position = (image.width / 2, image.height - h/2 - 3)
+                position = (x_position, image.height - h/2 - 3)
             else:
-                position = ((image.width - 0) / 2, (image.height - 0) / 2)
+                position = (x_position, (image.height - 0) / 2)
 
             draw.text(position,
                       text=text, font=font, anchor="mm", align="center",
@@ -1632,6 +1652,7 @@ class ControllerInput:
         self.hold_start_timer: Timer = None
         self.ControllerStateClass = state_class
         self.identifier: InputIdentifier = identifier
+        self.media_ticks: int = 0
 
         self.is_visual: bool = True
 
@@ -1888,6 +1909,18 @@ class ControllerKey(ControllerInput):
 
         del rgb_image
         self.set_ui_key_image(image)
+
+    def get_active_state(self) -> "ControllerKeyState":
+        return super().get_active_state()
+
+    def on_media_player_tick(self) -> None:
+        self.media_ticks += 1
+
+        state = self.get_active_state()
+        if not any([state.key_video, self.deck_controller.background.video, state.label_manager.get_has_scroll_labels()]):
+            return
+
+        self.update()
 
     def event_callback(self, press_state):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
@@ -2424,6 +2457,18 @@ class ControllerDial(ControllerInput):
 
     def update(self):
         self.get_touch_screen().update()
+
+    def get_active_state(self) -> "ControllerDialState":
+        return super().get_active_state()
+
+    def on_media_player_tick(self) -> None:
+        self.media_ticks += 1
+
+        state = self.get_active_state()
+        if not any([state.video, state.label_manager.get_has_scroll_labels()]):
+            return
+
+        self.update()
 
     def get_image_size(self) -> tuple[int, int]:
         return self.get_touch_screen().get_dial_image_area_size()

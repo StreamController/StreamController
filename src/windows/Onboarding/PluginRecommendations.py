@@ -57,6 +57,8 @@ class PluginRecommendations(Gtk.Box):
         plugins = gl.store_backend.get_all_plugins()
 
         for plugin in plugins:
+            if not plugin:
+                continue
             if not plugin.is_compatible:
                 continue
 

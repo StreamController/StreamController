@@ -62,6 +62,8 @@ class PluginPage(StorePage):
             self.show_connection_error()
             return
         for plugin in plugins:
+            if not plugin:
+                continue
             if plugin.is_compatible:
                 section = self.compatible_section
             else:

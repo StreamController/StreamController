@@ -11,6 +11,7 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+import os
 # Import gtk modules
 from textwrap import wrap
 import time
@@ -51,9 +52,6 @@ class StorePreview(Gtk.FlowBoxChild):
         self.build()
 
     def build(self):
-        self.overlay = Gtk.Overlay()
-        self.set_child(self.overlay)
-
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                                  hexpand=True, vexpand=False,
                                  css_classes=["no-padding"],
@@ -84,22 +82,24 @@ class StorePreview(Gtk.FlowBoxChild):
                                  css_classes=["plugin-store-image"], can_shrink=True)
         self.main_button_box.append(self.image)
 
-        self.label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
-                                 margin_start=6, margin_top=6)
+        # Add Labels
+        self.label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_start=6, margin_top=6)
         self.main_button_box.append(self.label_box)
 
-        self.name_label = Gtk.Label(css_classes=["bold"],
-                                    xalign=0)
-        self.label_box.append(self.name_label)
+        self.name_label = Gtk.Label(css_classes=["bold"], xalign=0)
+        self.author_label = Gtk.Label(sensitive=False, xalign=0)
+        self.description_label = Gtk.Label(css_classes=["dim-label"], margin_bottom=6,
+                                     label=gl.lm.get("store.preview.no-description"),
+                                     halign=Gtk.Align.START, hexpand=False)
 
-        self.author_label = Gtk.Label(sensitive=False, #Grey out
-                                      xalign=0)
+        self.label_box.append(self.name_label)
         self.label_box.append(self.author_label)
+        self.label_box.append(self.description_label)
 
         self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER,
                                  hexpand=False, vexpand=True,
                                  margin_start=6, margin_top=6, margin_bottom=6)
-        # self.overlay.add_overlay(self.batch_box)
+
         self.main_button_box.append(self.batch_box)
 
         self.official_batch = OfficialBadge(margin_end=7, visible=False)
@@ -108,22 +108,7 @@ class StorePreview(Gtk.FlowBoxChild):
         self.batch_box.append(self.official_batch)
         self.batch_box.append(self.verified_batch)
 
-        self.description_box = Gtk.Box(hexpand=False, width_request=100, margin_start=6, halign=Gtk.Align.START)
-        self.main_button_box.append(self.description_box)
-
-        # self.description = Gtk.Label(label="",
-        #                              wrap=False, wrap_mode=Pango.WrapMode.WORD_CHAR, width_chars=60, max_width_chars=60,
-        #                              justify=Gtk.Justification.LEFT, hexpand=False, vexpand=True, xalign=0,
-        #                              margin_top=0, margin_bottom=20, css_classes=["dim-label"], lines=1, ellipsize=Pango.EllipsizeMode.END)
-        
-        # self.description = Gtk.Label(label="", ellipsize=Pango.EllipsizeMode.END, max_width_chars=60, width_chars=10,
-        #                              hexpand=False, xalign=0, justify=Gtk.Justification.LEFT, lines=1)
-        
-        self.description = Gtk.Label(css_classes=["dim-label"], margin_bottom=6, label=gl.lm.get("store.preview.no-description"),
-                                     halign=Gtk.Align.START, hexpand=False)
-        
-        self.description_box.append(self.description)
-
+        # Add Buttons
         self.main_button_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
 
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
@@ -269,7 +254,7 @@ class StorePreview(Gtk.FlowBoxChild):
 
         if len(description) >= cutoff:
             description = description[:(cutoff-3)] + "..."
-        self.description.set_label(description)
+        self.description_label.set_label(description)
 
     def check_required_version(self, app_version_to_check: str):
         if app_version_to_check is None:

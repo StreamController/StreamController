@@ -80,8 +80,10 @@ class StoreBackend:
         log.info(f"Official store branch: {branch}")
         stores.append((self.STORE_REPO_URL, branch))
 
-        if settings.get("store", {}).get("enable-custom-stores", False):
-            for store in settings.get("store", {}).get("custom-stores", {}):
+        store_dict = settings.get("store", {})
+
+        if store_dict.get("enable-custom-stores", False):
+            for store in store_dict.get("custom-stores", {}):
                 stores.append((store.get("url"), store.get("branch")))
 
         return stores
@@ -90,8 +92,11 @@ class StoreBackend:
         settings = gl.settings_manager.get_app_settings()
 
         plugins = []
-        if settings.get("store", {}).get("enable-custom-plugins", False):
-            for plugin in settings.get("store", {}).get("custom-plugins", []):
+
+        store_dict = settings.get("store", {})
+
+        if store_dict.get("enable-custom-plugins", False):
+            for plugin in store_dict.get("custom-plugins", []):
                 plugins.append((plugin.get("url"), plugin.get("branch")))
 
         return plugins
@@ -99,13 +104,17 @@ class StoreBackend:
     async def get_official_store_branch(self) -> str:
         if self.official_store_branch_cache is not None:
             return self.official_store_branch_cache
+
         versions_file = await self.get_remote_file(self.STORE_REPO_URL, "versions.json", branch_name="versions", force_refetch=True)
+
         if isinstance(versions_file, NoConnectionError):
             return versions_file
-        versions = json.loads(versions_file)
-        v = versions.get(gl.APP_VERSION, "main")
-        self.official_store_branch_cache = v
-        return v
+
+        versions_json = json.loads(versions_file)
+        versions = versions_json.get(gl.APP_VERSION, "main")
+        self.official_store_branch_cache = versions
+
+        return versions
 
     async def request_from_url(self, url: str) -> requests.Response:
         try:
@@ -150,6 +159,7 @@ class StoreBackend:
               with raw.githubusercontent.com.
         """
         byte_suffix = ""
+
         if data_type == "content":
             byte_suffix = "b"
 
@@ -163,8 +173,6 @@ class StoreBackend:
         if is_cached:
             with self.store_cache.open_cache_file(url=repo_url, branch=branch_name, path=file_path, mode=f"r{byte_suffix}") as f:
                 return f.read()
-        else:
-            pass
 
         url = self.build_url(repo_url, file_path, branch_name)
 
@@ -177,8 +185,6 @@ class StoreBackend:
             return
         
         with self.store_cache.open_cache_file(url=repo_url, branch=branch_name, path=file_path, mode=f"w{byte_suffix}") as f:
-            if answer is None:
-                return
             if data_type == "text":
                 f.write(answer.text)
             elif data_type == "content":
@@ -197,23 +203,29 @@ class StoreBackend:
             return
         
         commits = response.json()
+
         if len(commits) == 0:
             return
+
         return commits[0].get("sha")
     
     async def get_official_authors(self) -> list:
         authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH, force_refetch=True)
+
         if isinstance(authors_json, NoConnectionError):
             return authors_json
+
         authors_json = json.loads(authors_json)
         return authors_json
     
     async def fetch_and_parse_store_json(self, url: str, filename: str, branch: str, n_stores_with_errors: int = 0):
         try:
             store_file_json = await self.get_remote_file(url, filename, branch, force_refetch=True)
+
             if isinstance(store_file_json, NoConnectionError):
                 n_stores_with_errors += 1
                 return None, n_stores_with_errors
+
             store_file_json = json.loads(store_file_json)
             return store_file_json, n_stores_with_errors
         except (json.decoder.JSONDecodeError, TypeError) as e:
@@ -262,21 +274,34 @@ class StoreBackend:
     async def get_manifest(self, url:str, commit:str) -> dict:
         # url = self.build_url(url, "manifest.json", commit)
         manifest = await self.get_remote_file(url, "manifest.json", commit)
+
         if isinstance(manifest, NoConnectionError):
             return manifest
+
         if manifest is None:
             return
+
         return json.loads(manifest)
     
     def remove_old_manifest_cache(self, url:str, commit_sha:str):
-        for cached_url in list(self.manifest_cache.keys()):
-            if self.get_repo_name(cached_url) == self.get_repo_name(url) and not commit_sha in cached_url:
-                if os.path.isfile(self.manifest_cache[cached_url]):
-                    os.remove(self.manifest_cache[cached_url])
-                del self.manifest_cache[cached_url]
+        target_repo = self.get_repo_name(url)
+
+        keys_to_remove = []
+
+        for cached_url in self.manifest_cache.keys():
+            if self.get_repo_name(cached_url) == target_repo and commit_sha not in cached_url:
+                keys_to_remove.append(cached_url)
+
+        for cached_url in keys_to_remove:
+            cache_path = self.manifset_cache[cached_url]
+
+            if os.path.isfile(cache_path):
+                os.remove(cache_path)
+            del self.manifset_cache[cached_url]
 
     async def get_attribution(self, url:str, commit:str) -> dict:
         result = await self.get_remote_file(url, "attribution.json", commit)
+
         if isinstance(result, NoConnectionError):
             return result
         
@@ -286,11 +311,20 @@ class StoreBackend:
             return {}
     
     def remove_old_attribution_cache(self, url:str, commit_sha:str):
-        for cached_url in list(self.attribution_cache.keys()):
-            if self.get_repo_name(cached_url) == self.get_repo_name(url) and not commit_sha in cached_url:
-                if os.path.isfile(self.attribution_cache[cached_url]):
-                    os.remove(self.attribution_cache[cached_url])
-                del self.attribution_cache[cached_url]
+        target_repo = self.get_repo_name(url)
+
+        keys_to_remove = []
+
+        for cached_url in self.attribution_cache.keys():
+            if self.get_repo_name(cached_url) == target_repo and commit_sha not in cached_url:
+                keys_to_remove.append(cached_url)
+
+        for cached_url in keys_to_remove:
+            cache_path = self.attribution_cache[cached_url]
+
+            if os.path.isfile(cache_path):
+                os.remove(cache_path)
+            del self.attribution_cache[cached_url]
 
     async def prepare_plugin(self, plugin, include_image: bool = True, verified: bool = False):
         url = plugin["url"]

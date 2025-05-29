@@ -89,8 +89,8 @@ class StorePreview(Gtk.FlowBoxChild):
         self.label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_start=6, margin_top=6)
         self.main_button_box.append(self.label_box)
 
-        self.name_label = Gtk.Label(css_classes=["bold"], xalign=0)
-        self.author_label = Gtk.Label(sensitive=False, xalign=0)
+        self.name_label = Gtk.Label(css_classes=["plugin-store-plugin-name"], xalign=0)
+        self.author_label = Gtk.Label(css_classes=["bold"], xalign=0)
         self.description_label = Gtk.Label(css_classes=["dim-label"], margin_bottom=6,
                                      label=gl.lm.get("store.preview.no-description"),
                                      halign=Gtk.Align.START, hexpand=False)

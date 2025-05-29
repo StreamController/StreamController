@@ -132,6 +132,7 @@ Always review sources carefully.
         self.icon_page.info_page.set_description(self.icon_data.description)
         self.icon_page.info_page.set_author(self.icon_data.author)
         self.icon_page.info_page.set_version(self.icon_data.icon_version)
+        # self.icon_page.info_page.set_stargazer(self.icon_data.stargazer)
 
         self.icon_page.info_page.set_license(self.icon_data.license)
         self.icon_page.info_page.set_copyright(self.icon_data.copyright)

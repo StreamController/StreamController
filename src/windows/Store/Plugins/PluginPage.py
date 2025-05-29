@@ -141,6 +141,7 @@ Always review plugin sources carefully.
         self.plugin_page.info_page.set_description(self.plugin_data.description)
         self.plugin_page.info_page.set_author(self.plugin_data.author)
         self.plugin_page.info_page.set_version(self.plugin_data.plugin_version)
+        #self.plugin_page.info_page.set_stargazer(self.plugin_data.stargazer)
 
         self.plugin_page.info_page.set_license(self.plugin_data.license)
         self.plugin_page.info_page.set_copyright(self.plugin_data.copyright)

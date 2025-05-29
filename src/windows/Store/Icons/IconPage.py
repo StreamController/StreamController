@@ -31,7 +31,7 @@ import asyncio
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
-from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
+from src.windows.Store.Badges import Badge
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview

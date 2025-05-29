@@ -140,8 +140,7 @@ if not os.path.exists(DATA_PATH):
     try:
         os.makedirs(DATA_PATH)
     except Exception as e:
-        log.error(
-            f"Failed to create data path: {e}\nPlease change the data path manually in the config file under {STATIC_SETTINGS_FILE_PATH}")
+        log.error(f"Failed to create data path: {e}")
         sys.exit(1)
 
 PLUGIN_DIR = os.path.join(DATA_PATH, "plugins")

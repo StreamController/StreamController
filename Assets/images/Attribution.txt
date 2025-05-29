@@ -2,3 +2,11 @@
     - source: fonts.google.com
     - licence: Apache License 2.0
     - licence_link: https://www.apache.org/licenses/LICENSE-2.0
+- warning.png
+    - source: https://www.flaticon.com/free-icon/warning_6897039
+    - license: Flaticon License
+    - licence_link: https://www.flaticon.com/legal
+- verified.png:
+    - source: https://www.flaticon.com/free-icon/check_13984041
+    - licence: Flaticon License
+    - licence_link: https://www.flaticon.com/legal

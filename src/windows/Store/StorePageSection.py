@@ -89,28 +89,26 @@ class StorePageSection(Gtk.Stack):
         name_score = fuzz.ratio(search_string, name)
         author_score = fuzz.ratio(search_string, author)
 
-        MIN_FUZZY_SCORE = 40
+        MIN_FUZZY_SCORE = 20
 
         return name_score >= MIN_FUZZY_SCORE or author_score >= MIN_FUZZY_SCORE
     
     def sort_func(self, item_a, item_b):
         search_string = self.search_entry.get_text().strip().lower()
 
-        def get_combined_score(item):
+        def get_weighted_score(item):
             name = item.name_label.get_text().lower()
             author = item.author_label.get_text().lower()
 
             name_score = fuzz.ratio(search_string, name)
             author_score = fuzz.ratio(search_string, author)
-            return max(name_score, author_score)
+            return (name_score * 0.7) + (author_score * 0.3)
 
         if search_string == "":
             return (item_a.name_label.get_text() > item_b.name_label.get_text()) - \
                 (item_a.name_label.get_text() < item_b.name_label.get_text())
 
-        score_a = get_combined_score(item_a)
-        score_b = get_combined_score(item_b)
-
-        print((score_b > score_a) - (score_b < score_a))
+        score_a = get_weighted_score(item_a)
+        score_b = get_weighted_score(item_b)
 
         return (score_b > score_a) - (score_b < score_a)

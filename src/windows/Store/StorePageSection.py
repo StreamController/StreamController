@@ -85,13 +85,15 @@ class StorePageSection(Gtk.Stack):
 
         name = item.name_label.get_text().lower()
         author = item.author_label.get_text().lower()
+        description = item.description_label.get_text().lower()
 
         name_score = fuzz.ratio(search_string, name)
         author_score = fuzz.ratio(search_string, author)
+        description_score = fuzz.ratio(search_string, description)
 
         MIN_FUZZY_SCORE = 20
 
-        return name_score >= MIN_FUZZY_SCORE or author_score >= MIN_FUZZY_SCORE
+        return name_score >= MIN_FUZZY_SCORE or author_score >= MIN_FUZZY_SCORE or description_score >= MIN_FUZZY_SCORE
     
     def sort_func(self, item_a, item_b):
         search_string = self.search_entry.get_text().strip().lower()
@@ -99,10 +101,12 @@ class StorePageSection(Gtk.Stack):
         def get_weighted_score(item):
             name = item.name_label.get_text().lower()
             author = item.author_label.get_text().lower()
+            description = item.description_label.get_text().lower()
 
             name_score = fuzz.ratio(search_string, name)
             author_score = fuzz.ratio(search_string, author)
-            return (name_score * 0.7) + (author_score * 0.3)
+            description_score = fuzz.ratio(search_string, description)
+            return (name_score * 0.6) + (author_score * 0.3) + (description_score * 0.1)
 
         if search_string == "":
             return (item_a.name_label.get_text() > item_b.name_label.get_text()) - \

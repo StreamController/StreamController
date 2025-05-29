@@ -58,6 +58,7 @@ class InfoPage(Gtk.Box):
         self.version_row = AttributeRow(title="Version:", attr="Error")
         self.about_group.add(self.version_row)
 
+        # TODO: Enable in the future
         #self.stargazer_row = AttributeRow(title="Stargazers:", attr="0")
         #self.about_group.add(self.stargazer_row)
 

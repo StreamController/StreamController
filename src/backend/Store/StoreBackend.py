@@ -313,7 +313,11 @@ class StoreBackend:
 
         manifest = await self.get_manifest(url, commit or branch)
         if isinstance(manifest, NoConnectionError):
+            log.error(f"manifest failed to load due to NoConnectionError for repository {url}")
             return manifest
+        if not manifest:
+            log.error(f"manifest failed to load for repository {url}")
+            return
 
         image = None
         thumbnail_path = manifest.get("thumbnail")

@@ -327,45 +327,58 @@ class StoreBackend:
             del self.attribution_cache[cached_url]
 
     async def prepare_plugin(self, plugin, include_image: bool = True, verified: bool = False):
-        url = plugin["url"]
-
-        # Check if suitable version is available
+        url = plugin.get("url")
+        branch = plugin.get("branch")
+        commit: str | None = None
         compatible = True
-        commit: str = None
+
         if "commits" in plugin:
-            version = self.get_newest_compatible_version(plugin["commits"])
+            plugin_commits = plugin.get("commits")
+
+            version = self.get_newest_compatible_version(plugin_commits)
+
             if version is None:
                 compatible = False
-                version = self.get_newest_version(list(plugin["commits"].keys()))
+                version = self.get_newest_version(list(plugin_commits.keys()))
+
                 if version is None:
                     return NoCompatibleVersion #TODO
-            commit = plugin["commits"][version]
 
-        branch = plugin.get("branch")
+            commit = plugin_commits.get(version)
+
         if branch is not None:
             commit = await self.get_last_commit(url, branch)
 
         manifest = await self.get_manifest(url, commit or branch)
+
         if isinstance(manifest, NoConnectionError):
-            log.error(f"manifest failed to load due to NoConnectionError for repository {url}")
+            log.error(f"Manifest failed to load due to NoConnectionError for repository {url}")
             return manifest
-        if not manifest:
-            log.error(f"manifest failed to load for repository {url}")
+        elif not manifest:
+            log.error(f"Manifest failed to load for repository {url}")
             return
 
         image = None
         thumbnail_path = manifest.get("thumbnail")
+
         if include_image:
             image = await self.get_web_image(url, thumbnail_path, commit or branch)
-            if isinstance(manifest, NoConnectionError):
+
+            if isinstance(image, NoConnectionError):
+                log.error(f"Thumbnail failed to load due to NoConnectionError for repository {url}")
                 return image
         
         attribution = await self.get_attribution(url, commit or branch)
         if isinstance(attribution, NoConnectionError):
+            log.error(f"Attribution failed to load due to NoConnectionError for repository {url}")
             return attribution
+
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
         stargazers = await self.get_stargazers(url)
+        if isinstance(stargazers, NoConnectionError):
+            log.error(f"Stargazers failed to load due ot NoConnectionError for repository: {url}")
+            return stargazers
 
         author = self.get_user_name(url)
 
@@ -402,7 +415,8 @@ class StoreBackend:
             plugin_id=manifest.get("id") or None,
 
             is_compatible=compatible,
-            verified=verified
+            verified=verified,
+            stargazers=stargazers
         )
     
     def get_current_git_commit_hash_without_git(self, repo_path: str) -> str:
@@ -446,39 +460,56 @@ class StoreBackend:
     async def prepare_icon(self, icon, include_image: bool = True, verified: bool = False):
         if not include_image:
             raise NotImplementedError("Not yet implemented") #TODO
-        if "url" not in icon:
-            return None
 
-        url = icon["url"]
-
-        # Check if suitable version is available
+        url = icon.get("url")
+        icon_commits = icon.get("commits")
         compatible = True
-        version = self.get_newest_compatible_version(icon["commits"])
+        version = self.get_newest_compatible_version(icon_commits)
+
         if version is None:
             compatible = False
-            version = self.get_newest_version(list(icon["commits"].keys()))
+            version = self.get_newest_version(list(icon_commits.keys()))
+
             if version is None:
                 return NoCompatibleVersion
-        commit = icon["commits"][version]
 
+        commit = icon_commits.get(version)
+
+        # Load Manifest
         manifest = await self.get_manifest(url, commit)
+
         if isinstance(manifest, NoConnectionError):
+            log.error(f"Manifest failed to load due ot NoConnectionError for repository: {url}")
             return manifest
-        attribution = await self.get_attribution(url, commit)
-        if isinstance(attribution, NoConnectionError):
-            return attribution
-        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
+        elif not manifest:
+            log.error(f"Manifest failed to load for repository: {url}")
+            return
 
+        # Load Thumbnail
+        image = None
         thumbnail_path = manifest.get("thumbnail")
-        image = await self.get_web_image(url, thumbnail_path, commit)
-        if isinstance(image, NoConnectionError):
-            return image
 
-        author = self.get_user_name(url)
+        if include_image:
+            image = await self.get_web_image(url, thumbnail_path, commit)
+            if isinstance(image, NoConnectionError):
+                log.error(f"Image failed to load for repository: {url}")
+                return image
+
+        # Load Attribution
+        attribution = await self.get_attribution(url, commit)
+
+        if isinstance(attribution, NoConnectionError):
+            log.error(f"Attribution failed to load due ot NoConnectionError for repository: {url}")
+            return attribution
+
+        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
         stargazers = await self.get_stargazers(url)
         if isinstance(stargazers, NoConnectionError):
+            log.error(f"Stargazers failed to load due ot NoConnectionError for repository: {url}")
             return stargazers
+
+        author = self.get_user_name(url)
         
         translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
         translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
@@ -512,41 +543,63 @@ class StoreBackend:
             icon_id=manifest.get("id") or None,
 
             is_compatible=compatible,
-            verified=verified
+            verified=verified,
+            stargazers=stargazers
         )
 
     
     async def prepare_wallpaper(self, wallpaper, include_image: bool = True, verified: bool = False):
         if not include_image:
             raise NotImplementedError("Not yet implemented") #TODO
-        if "url" not in wallpaper:
-            return None
 
-        url = wallpaper["url"]
-
-        # Check if suitable version is available
+        url = wallpaper.get("url")
+        wallpaper_commits = wallpaper.get("commits")
         compatible = True
         version = self.get_newest_compatible_version(wallpaper["commits"])
+
         if version is None:
             compatible = False
-            version = self.get_newest_version(list(wallpaper["commits"].keys()))
+            version = self.get_newest_version(list(wallpaper_commits.keys()))
+
             if version is None:
                 return NoCompatibleVersion
-        commit = wallpaper["commits"][version]
 
+        commit = wallpaper_commits.get(version)
+
+        # Load Manifest
         manifest = await self.get_manifest(url, commit)
-        if isinstance(manifest, NoConnectionError):
-            return manifest
 
+        if isinstance(manifest, NoConnectionError):
+            log.error(f"Manifest failed to load due ot NoConnectionError for repository: {url}")
+            return manifest
+        elif not manifest:
+            log.error(f"Manifest failed to load for repository: {url}")
+            return
+
+        # Load Thumbnail
+        image = None
         thumbnail_path = manifest.get("thumbnail")
-        image = await self.get_web_image(url, thumbnail_path, commit)
-        if isinstance(image, NoConnectionError):
-            return image
+
+        if include_image:
+            image = await self.get_web_image(url, thumbnail_path, commit)
+            if isinstance(image, NoConnectionError):
+                log.error(f"Image failed to load for repository: {url}")
+                return image
+
+        # Load Attribution
         attribution = await self.get_attribution(url, commit)
+
         if isinstance(attribution, NoConnectionError):
+            log.error(f"Attribution failed to load due ot NoConnectionError for repository: {url}")
             return attribution
-        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
-        
+
+        attribution = attribution.get("generic", {})  # TODO: Choose correct attribution
+
+        stargazers = await self.get_stargazers(url)
+        if isinstance(stargazers, NoConnectionError):
+            log.error(f"Stargazers failed to load due ot NoConnectionError for repository: {url}")
+            return stargazers
+
         author = self.get_user_name(url)
 
         translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
@@ -581,7 +634,8 @@ class StoreBackend:
             wallpaper_id=manifest.get("id") or None,
 
             is_compatible=compatible,
-            verified=verified
+            verified=verified,
+            stargazers=stargazers
         )
 
     async def get_web_image(self, url: str, path: str, branch: str = "main") -> Image:

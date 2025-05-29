@@ -26,7 +26,7 @@ from gi.repository import GdkPixbuf
 class Badge:
     def __init__(self, badge_name):
         path = os.path.join(gl.top_level_dir, "Assets", "images", "badges", badge_name)
-        size = 128
+        size = 16
 
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(path, width=size, height=size)
         self.image = Gtk.Image.new_from_pixbuf(pixbuf)

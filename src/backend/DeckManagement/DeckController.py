@@ -2250,44 +2250,45 @@ class ControllerTouchScreen(ControllerInput):
 
     def event_callback(self, event_type, value):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
+
         if event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG, TouchscreenEventType.DRAG):
             self.deck_controller.screen_saver.on_key_change()
+
         if screensaver_was_showing:
             return
         
         active_state = self.get_active_state()
         if event_type == TouchscreenEventType.DRAG:
             # Check if from left to right or the other way
-            if value['x'] > value['x_out']:
-                active_state.own_actions_event_callback_threaded(
-                    Input.Touchscreen.Events.DRAG_LEFT
-                )
-            else:
-                active_state.own_actions_event_callback_threaded(
-                    Input.Touchscreen.Events.DRAG_RIGHT
-                )
+            event = Input.Touchscreen.Events.DRAG_LEFT if value["x"] > value["x_out"] else Input.Touchscreen.Events.DRAG_RIGHT
+            active_state.own_actions_event_callback_threaded(event)
 
 
         #TODO get matching actions from the dials
         elif event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG):
             dial = self.get_dial_for_touch_x(value['x'])
-            if dial is not None:
-                dial_active_state = dial.get_active_state()
-                if dial_active_state is not None:
 
-                    event = Input.Dial.Events.SHORT_TOUCH_PRESS
-                    if event_type == TouchscreenEventType.LONG:
-                        event = Input.Dial.Events.LONG_TOUCH_PRESS
+            if dial is None:
+                return
 
-                    dial_active_state.own_actions_event_callback_threaded(
-                        event,
-                        data={"x": value['x'], "y": value['y']},
-                        show_notifications=True
-                    )
+            dial_active_state = dial.get_active_state()
+
+            if dial_active_state is None:
+                return
+
+            event = Input.Dial.Events.SHORT_TOUCH_PRESS
+            if event_type == TouchscreenEventType.LONG:
+                event = Input.Dial.Events.LONG_TOUCH_PRESS
+
+            dial_active_state.own_actions_event_callback_threaded(
+                event,
+                data={"x": value['x'], "y": value['y']},
+                show_notifications=True
+            )
 
     def get_dial_for_touch_x(self, touch_x: float) -> "ControllerDial":
         screen_width = self.deck_controller.get_touchscreen_image_size()[0]
-        n_dials = len(self.deck_controller.inputs[Input.Dial])
+        n_dials = len(self.deck_controller.inputs.get(Input.Dial, []))
         dial_index = int((touch_x / screen_width) * n_dials)
 
         return self.deck_controller.get_input(Input.Dial(str(dial_index)))
@@ -2316,15 +2317,15 @@ class ControllerDial(ControllerInput):
 
     def event_callback(self, event_type, value):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
-        if event_type == DialEventType.TURN:
+
+        if event_type == DialEventType.TURN or (event_type == DialEventType.PUSH and value):
             self.deck_controller.screen_saver.on_key_change()
-        if event_type == DialEventType.PUSH and value:
-            # Only on push, not on hold to allow actions to enable the screensaver without directly causing it to wake up again
-            self.deck_controller.screen_saver.on_key_change()
+
         if screensaver_was_showing:
             return
         
         active_state = self.get_active_state()
+
         if event_type == DialEventType.PUSH:
             if value:
                 self.down_start_time = time.time()
@@ -2335,7 +2336,10 @@ class ControllerDial(ControllerInput):
                 )
             elif self.down_start_time is not None:
                 self.stop_hold_timer()
-                if time.time() >= self.down_start_time + self.deck_controller.hold_time:
+
+                elapsed_time = time.time() - self.down_start_time
+
+                if elapsed_time >= self.deck_controller.hold_time:
                     active_state.own_actions_event_callback_threaded(
                         event=Input.Dial.Events.HOLD_STOP
                     )
@@ -2347,16 +2351,9 @@ class ControllerDial(ControllerInput):
                 active_state.own_actions_event_callback_threaded(
                     event=Input.Dial.Events.UP
                 )
-        
         elif event_type == DialEventType.TURN:
-            if value < 0:
-                active_state.own_actions_event_callback_threaded(
-                    event=Input.Dial.Events.TURN_CCW
-                )
-            else:
-                active_state.own_actions_event_callback_threaded(
-                    event=Input.Dial.Events.TURN_CW
-                )
+            event = Input.Dial.Events.TURN_CCW if value < 0 else Input.Dial.Events.TURN_CW
+            active_state.own_actions_event_callback_threaded(event)
 
     def load_from_input_dict(self, page_dict, update: bool = True):
         states_data = page_dict.get("states", {})

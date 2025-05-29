@@ -146,9 +146,11 @@ class StorePreview(Gtk.FlowBoxChild):
 
         self.official_badge = Badge("official.png", "This Plugin is Offical")
         self.verified_badge = Badge("verified.png", "This Plugin got verified by StreamController")
+        self.warning_badge = Badge("warning.png", "This Plugin is not Verified and got added as a Custom Plugin or manually. Be careful when using 3rd Party Plugins")
 
         self.badge_box.append(self.official_badge.image)
         self.badge_box.append(self.verified_badge.image)
+        self.badge_box.append(self.warning_badge.image)
 
         self.overlay.add_overlay(self.badge_box)
 
@@ -174,6 +176,7 @@ class StorePreview(Gtk.FlowBoxChild):
 
     def set_verified(self, verified:bool):
         self.verified_badge.set_enabled(verified)
+        self.warning_badge.set_enabled(not verified)
 
     def set_author_label(self, author:str):
         self.author_label.set_text(author)

@@ -2080,20 +2080,18 @@ class ControllerKey(ControllerInput):
         """
         Attention: Disabling load_media might result into disabling custom user assets
         """
-        n_states = len(input_dict.get("states", {}))
-        self.create_n_states(max(1, n_states))
+        states_data = input_dict.get("states", {})
+        self.create_n_states(max(1, len(states_data)))
 
         old_state_index = self.state
-
         self.state = 0
 
         #TODO: Reset states
-        for state in input_dict.get("states", {}):
-            state: ControllerKeyState = self.states.get(int(state))
-            if state is None:
-                continue
+        for state_id_str, state_dict in states_data.items():
+            state: ControllerInputState = self.states.get(int(state_id_str), None)
 
-            state_dict = input_dict["states"][str(state.state)]
+            if state is None or state_dict is None:
+                continue
 
             ## Load media - why here? so that it doesn't overwrite the images chosen by the actions
             if load_media:
@@ -2104,88 +2102,74 @@ class ControllerKey(ControllerInput):
                 state.label_manager.clear_labels()
 
             # Reset action layout
-            layout = ImageLayout()
-            state.layout_manager.set_action_layout(layout, update=False)
-
+            state.layout_manager.set_action_layout(ImageLayout(), update=False)
             state.own_actions_update() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
 
             ## Load labels
             if load_labels:
-                for label in state_dict.get("labels", []):
+                for label_id, label_data in state_dict.get("labels", {}).items():
                     key_label = KeyLabel(
                         controller_input=self,
-                        text=state_dict["labels"][label].get("text"),
-                        font_size=state_dict["labels"][label].get("font-size"),
-                        font_name=state_dict["labels"][label].get("font-family"),
-                        color=state_dict["labels"][label].get("color"),
-                        outline_width=state_dict["labels"][label].get("outline_width"),
-                        outline_color=state_dict["labels"][label].get("outline_color")
+                        text=label_data.get("text"),
+                        font_size=label_data.get("font-size"),
+                        font_name=label_data.get("font-family"),
+                        color=label_data.get("color")
                     )
-                    # self.add_label(key_label, position=label, update=False)
-                    state.label_manager.set_page_label(label, key_label, update=False)
+                    state.label_manager.set_page_label(label_id, key_label, update=False)
 
             ## Load media
             if load_media:
-                path = state_dict.get("media", {}).get("path", None)
-                if path not in ["", None]:
-                    if is_image(path):
-                        with Image.open(path) as image:
-                            state.set_image(InputImage(
-                                controller_input=self,
-                                image=image.copy()
-                            ), update=False)
-                            
-                    elif is_svg(path):
-                        img = svg_to_pil(path, 192)
-                        state.set_image(InputImage(
-                            controller_input=self,
-                            image=img
-                        ), update=False)
-
-                    elif is_video(path):
-                        if os.path.splitext(path)[1].lower() == ".gif":
-                            state.set_video(KeyGIF(
-                                controller_key=self,
-                                gif_path=path,
-                                loop=state_dict.get("media", {}).get("loop", True),
-                                fps=state_dict.get("media", {}).get("fps", 30)
-                            )) # GIFs always update
-                        else:
-                            state.set_video(InputVideo(
-                                controller_input=self,
-                                video_path=path,
-                                loop = state_dict.get("media", {}).get("loop", True),
-                                fps = state_dict.get("media", {}).get("fps", 30),
-                            )) # Videos always update
+                media_dict = state_dict.get("media", {})
+                self.load_media_for_state(state, media_dict)
 
                 layout = ImageLayout(
-                    fill_mode=state_dict.get("media", {}).get("fill-mode"),
-                    size=state_dict.get("media", {}).get("size"),
-                    valign=state_dict.get("media", {}).get("valign"),
-                    halign=state_dict.get("media", {}).get("halign"),
+                    fill_mode=media_dict.get("fill-mode"),
+                    size=media_dict.get("size"),
+                    valign=media_dict.get("valign"),
+                    halign=media_dict.get("halign")
                 )
                 state.layout_manager.set_page_layout(layout, update=False)
-
-            elif len(state.get_own_actions()) > 1 and False: # Disabled for now - we might reuse it later
-                if state_dict.get("image-control-action") is None:
-                    with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
-                        self.set_key_image(InputImage(
-                            controller_input=self,
-                            image=image.copy(),
-                        ), update=False)
-            
-            elif len(state.get_own_actions()) == 1:
-                if state_dict.get("image-control-action") is None:
-                    self.set_key_image(None, update=False)
-                # action = self.get_own_actions()[0]
-                # if action.has_image_control()
+            #elif len(state.get_own_actions()) > 1 and False:
+            #    if state_dict.get("image-control-action") is None:
+            #        with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
+            #            self.set_key_image(InputImage(
+            #                controller_input=self,
+            #                image=image.copy(),
+            #            ), update=False)
+            elif len(state.get_own_actions()) == 1 and state_dict.get("image-control-action") is None:
+                self.set_key_image(None, update=False)
 
             if load_background_color:
-                state.background_manager.set_page_color(state_dict.get("background", {}).get("color"), update=False)
+                state.background_manager.set_page_color(state_dict.get("background", {}).get("color", None), update=False)
 
         if update:
             self.set_state(old_state_index)
             self.update()
+
+    def load_media_for_state(self, state, media_data: dict):
+        path = media_data.get("path")
+
+        if not path:
+            return
+
+        if is_image(path):
+            image = InputImage(self, Image.open(path))
+            state.set_image(image, update=False)
+        elif is_svg(path):
+            pil_image = svg_to_pil(path, 192)
+            state.set_image(InputImage(self, pil_image), update=False)
+        elif is_video(path):
+            if os.path.splitext(path)[1].lower() == ".gif":
+                raise NotImplementedError("TODO: GIF SUPPORT")
+            else:
+                video = InputVideo(
+                    controller_input=self,
+                    video_path=path,
+                    loop=media_data.get("loop", True),
+                    fps=media_data.get("fps", 30)
+                )
+                state.set_video(video, update=False)
+
 
     def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False) -> None:
         old_state = self.state

@@ -38,7 +38,8 @@ from src.backend.DeckManagement.HelperMethods import get_sub_folders, natural_so
 # Import globals
 import globals as gl
 
-class PageManagerBackendV2:
+
+class PageManagerBackend:
     def __init__(self, settings_manager):
         self.settings_manager = settings_manager
 
@@ -343,17 +344,19 @@ class PageManagerBackendV2:
         for page in pages:
             page.update_dict()
 
-    def get_page_data(self, path: str) -> dict:
+    def get_page_data(self, path: str, use_backup: bool = True) -> dict:
+        """
+        Loads the whole page settings and returns the dictionary.
+        :param path: Path to the settings file.
+        :param use_backup: Whether to use a backup file or not.
+        :return: The dict containing the page settings.
+        """
         backup_path = os.path.join(self.PAGE_PATH, "backups", os.path.basename(path))
 
-        if not os.path.exists(path) and os.path.exists(backup_path):
+        if not os.path.exists(path) and os.path.exists(backup_path) and use_backup:
             path = backup_path
 
-        try:
-            with open(path, "r") as f:
-                return json.load(f)
-        except json.decoder.JSONDecodeError:
-            return {}
+        return self.settings_manager.load_settings_from_file(path)
 
     def remove_asset_from_all_pages(self, path: str):
         # Validate input path; reject empty or None
@@ -474,131 +477,161 @@ class PageManagerBackendV2:
             except Exception as e:
                 log.error(f"Failed to remove backup file {old_backup}: {e}")
 
+    def get_page_settings(self, path: str) -> dict:
+        data = self.get_page_data(path, False)
+        return data.get("settings", {})
 
-class PageManagerBackend:
-    def __init__(self, settings_manager):
-        self.v2 = PageManagerBackendV2(settings_manager)
+    def set_page_settings(self, path: str, settings: dict):
+        """
+        Sets the whole settings section of the page json
+        :param path: Path to the file
+        :param settings: Settings dictionary to write into settings section of the file.
+        :return: None
+        """
+        data = self.get_page_data(path, False)
+        data["settings"] = settings
+        self.settings_manager.save_settings_to_file(path, data)
 
+    def get_auto_change_settings(self, path: str) -> dict:
+        """
+        Returns the auto change settings section of the page settings
+        :param path: Path to the file
+        :return: dict
+        """
+        page_settings = self.get_page_settings(path)
+        return page_settings.get("auto-change", {})
 
-        self.settings_manager = settings_manager
-        self.global_settings_manager = gl.settings_manager
+    def set_auto_change_settings(self, path: str, enable: bool = False, wm_class: str = "", regex_title: str = "", stay_on_page: bool = False, decks: list[str] = None):
+        settings = self.get_page_settings(path)
 
-        self.created_pages = {}
-        self.created_pages_order = []
+        decks = decks or []
 
-        self.max_pages = 3
+        settings["auto-change"] = {
+            "enable": enable,
+            "wm-class": wm_class,
+            "title": regex_title,
+            "stay-on-page": stay_on_page,
+            "decks": decks
+        }
 
-        settings = self.global_settings_manager.get_app_settings()
-        self.set_n_pages_to_cache(int(settings.get("performance", {}).get("n-cached-pages", self.max_pages)))
+        self.set_page_settings(path, settings)
 
-        self.page_number: int = 0
+    def overwrite_auto_change_settings(self, path: str, enable: bool = None, wm_class: str = None, regex_title: str = None, stay_on_page: bool = None, decks: list[str] = None):
+        settings = self.get_page_settings(path)
+        auto_change_settings = settings.get("auto-change", {})
 
-        self.custom_pages = []
+        if enable is not None:
+            auto_change_settings["enable"] = enable
+        if wm_class is not None:
+            auto_change_settings["wm-class"] = wm_class
+        if regex_title is not None:
+            auto_change_settings["title"] = regex_title
+        if stay_on_page is not None:
+            auto_change_settings["stay-on-page"] = stay_on_page
+        if decks is not None:
+            auto_change_settings["decks"] = decks
 
-        self.auto_change_info = {}
-        self.update_auto_change_info()
+        settings["auto-change"] = auto_change_settings
+        self.set_page_settings(path, settings)
 
-        self.dummy_page = DummyPage()
+    def get_screensaver_settings(self, path: str):
+        page_settings = self.get_page_settings(path)
+        return page_settings.get("screensaver", {})
 
-    def set_n_pages_to_cache(self, n_pages):
-        self.v2.set_pages_to_cache(n_pages)
+    def set_screensaver_settings(self, path: str, overwrite: bool = False, enable: bool = False, time_delay: int = 5, loop: bool = False, fps: int = 30, brightness: float = 75, media_path: str = ""):
+        settings = self.get_page_settings(path)
 
-    def get_pages(self, add_custom_pages: bool = True, sort: bool = True) -> list[str]:
-        return self.v2.get_pages(add_custom_pages=add_custom_pages, sort=sort)
+        settings["screensaver"] = {
+            "overwrite": overwrite,
+            "enable": enable,
+            "time-delay": time_delay,
+            "loop": loop,
+            "fps": fps,
+            "brightness": brightness,
+            "media-path": media_path
+        }
 
-    def get_page_names(self, add_custom_pages: bool = True) -> list[str]:
-        return self.v2.get_page_names(add_custom_pages=add_custom_pages)
-    
-    def create_page(self, path: str, deck_controller: "DeckController") -> Page:
-        return self.v2.load_page(path, deck_controller)
-    
-    def get_page(self, path: str, deck_controller: "DeckController") -> Page:
-        return self.v2.get_page(path, deck_controller)
+        self.set_page_settings(path, settings)
 
-    def clear_old_cached_pages(self):
-        self.v2.clear_old_cached_pages()
+    def overwrite_screensaver_settings(self, path: str, overwrite: bool = None, enable: bool = None, time_delay: int = None, loop: bool = None, fps: int = None, brightness: float = None, media_path: str = None):
+        settings = self.get_page_settings(path)
+        screensaver_settings = settings.get("screensaver", {})
 
-    def get_default_page_for_deck(self, serial_number: str) -> str:
-        return self.v2.get_default_page(serial_number)
-    
-    def set_default_page_for_deck(self, serial_number: str, path: str):
-        self.v2.set_default_page(serial_number, path)
+        if overwrite is not None:
+            screensaver_settings["overwrite"] = overwrite
+        if enable is not None:
+            screensaver_settings["enable"] = enable
+        if time_delay is not None:
+            screensaver_settings["time-delay"] = time_delay
+        if loop is not None:
+            screensaver_settings["loop"] = loop
+        if fps is not None:
+            screensaver_settings["fps"] = fps
+        if brightness is not None:
+            screensaver_settings["brightness"] = brightness
+        if media_path is not None:
+            screensaver_settings["media-path"] = media_path
 
-    def get_all_deck_serial_numbers_with_set_default_page(self) -> list[str]:
-        return self.v2.get_all_default_page_serial_numbers()
-    
-    def get_all_deck_serial_numbers_with_page_as_default(self, path: str) -> list[str]:
-        return self.v2.get_serial_numbers_from_page(path)
-    
-    def move_page(self, old_path: str, new_path: str):
-        self.v2.move_page(old_path, new_path)
+        settings["screensaver"] = screensaver_settings
+        self.set_page_settings(path, settings)
 
-    def remove_page(self, page_path: str):
-        self.v2.remove_page(page_path)
+    def get_brightness_settings(self, path: str):
+        page_settings = self.get_page_settings(path)
+        return page_settings.get("brightness", {})
 
+    def set_brightness_settings(self, path: str, overwrite: bool = False, brightness: float = 75):
+        settings = self.get_page_settings(path)
 
-    def add_page(self, name:str, page_dict: dict = None):
-        self.v2.add_page(name, page_dict)
+        settings["brightness"] = {
+            "overwrite": overwrite,
+            "brightness": brightness
+        }
 
-    def register_page(self, path: str):
-        self.v2.register_page(path)
+        self.set_page_settings(path, settings)
 
-    def unregister_page(self, path: str):
-        self.v2.unregister_page(path)
+    def overwrite_brightness_settings(self, path: str, overwrite: bool = None, brightness: float = None):
+        settings = self.get_page_settings(path)
+        brightness_settings = settings.get("brightness", {})
 
-    def get_pages_with_path(self, page_path: str) -> list[Page]:
-        self.v2.get_pages_with_path(page_path)
-    
-    def reload_pages_with_path(self, page_path: str) -> None:
-        self.v2.reload_pages_with_path(page_path)
+        if overwrite is not None:
+            brightness_settings["overwrite"] = overwrite
+        if brightness is not None:
+            brightness_settings["brightness"] = brightness
 
-    def reload_all_pages(self) -> None:
-        self.v2.reload_all_pages()
+        settings["brightness"] = brightness_settings
+        self.set_page_settings(path, settings)
 
-    def update_dict_of_pages_with_path(self, page_path: str) -> None:
-        self.v2.update_dict_of_pages_with_path(page_path)
+    def get_background_settings(self, path: str):
+        page_settings = self.get_page_settings(path)
+        return page_settings.get("background", {})
 
-    def update_auto_change_info(self):
-        start = time.time()
-        self.auto_change_info = {}
-        pages = self.get_pages(sort=False)
-        for page in pages:
-            abs_path = os.path.abspath(page)
-            page_dict = self.get_page_json(abs_path)
-            if page_dict is None:
-                continue
-            self.auto_change_info[abs_path] = page_dict.get("auto-change", {})
+    def set_background_settings(self, path: str, overwrite: bool = False, show: bool = False, fps: int = 30, loop: bool = False, media_path: str = ""):
+        settings = self.get_page_settings(path)
 
-        log.info(f"Updated auto-change info in {time.time() - start} seconds")
+        settings["background"] = {
+            "overwrite": overwrite,
+            "show": show,
+            "fps": fps,
+            "loop": loop,
+            "media-path": media_path
+        }
 
-    def set_auto_change_info_for_page(self, page_path: str, info: dict) -> None:
-        abs_path = os.path.abspath(page_path)
-        self.auto_change_info[abs_path] = info
-        page = self.get_page_json(abs_path)
+        self.set_page_settings(path, settings)
 
-        page["auto-change"] = info
+    def overwrite_background_settings(self, path: str, overwrite: bool = None, show: bool = None, fps: int = None, loop: bool = None, media_path: str = None):
+        settings = self.get_page_settings(path)
+        background_settings = settings.get("background", {})
 
-        with open(abs_path, "w") as f:
-            json.dump(page, f, indent=4)
+        if overwrite is not None:
+            background_settings["overwrite"] = overwrite
+        if show is not None:
+            background_settings["show"] = show
+        if fps is not None:
+            background_settings["fps"] = fps
+        if loop is not None:
+            background_settings["loop"] = loop
+        if media_path is not None:
+            background_settings["media-path"] = media_path
 
-        self.update_dict_of_pages_with_path(abs_path)
-
-    def get_auto_change_info_for_page(self, page_path: str) -> dict:
-        abs_path = os.path.abspath(page_path)
-        return self.auto_change_info.get(abs_path, {})
-    
-    def get_page_json(self, page_path: str) -> dict:
-        return self.v2.get_page_data(page_path)
-        
-    def remove_asset_from_all_pages(self, path: str):
-        self.v2.remove_asset_from_all_pages(path)
-
-    def get_best_page_path_match_from_name(self, name: str) -> str:
-        return self.v2.find_matching_page_path(name)
-    
-    def backup_pages(self) -> None:
-        self.v2.backup_pages()
-
-
-    def remove_old_backups(self) -> None:
-        self.v2.remove_old_backups()
+        settings["screensaver"] = background_settings
+        self.set_page_settings(path, settings)

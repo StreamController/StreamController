@@ -245,18 +245,16 @@ class AutoChangeGroup(Adw.PreferencesGroup):
     def on_filter_apply(self, entry: Adw.EntryRow, *args):
         self.matching_windows_expander.update_matching_windows()
 
-        auto_change = {
-            "enable": self.enable_row.get_active(),
-            "wm_class": self.wm_class_entry.get_text(),
-            "title": self.title_entry.get_text(),
-            "stay_on_page": self.stay_on_page.get_active()
-        }
-        gl.page_manager.set_auto_change_info_for_page(page_path=self.page_editor.active_page_path,
-                                                      info=auto_change)
+        gl.page_manager.overwrite_auto_change_settings(
+            path =self.page_editor.active_page_path,
+            enable = self.enable_row.get_active(),
+            wm_class = self.wm_class_entry.get_text(),
+            regex_title = self.title_entry.get_text(),
+            stay_on_page = self.stay_on_page.get_active(),
+        )
         
     def on_selected_devices_changed(self, serial_number, state):
-        # gl.page_manager.update_auto_change_info()
-        info = gl.page_manager.get_auto_change_info_for_page(page_path=self.page_editor.active_page_path)
+        info = gl.page_manager.get_auto_change_settings(self.page_editor.active_page_path)
         decks = info.get("decks", [])
         if state:
             if serial_number in decks:
@@ -268,8 +266,7 @@ class AutoChangeGroup(Adw.PreferencesGroup):
                 return
             decks.remove(serial_number)
 
-        info["decks"] = decks
-        gl.page_manager.set_auto_change_info_for_page(page_path=self.page_editor.active_page_path, info=info)
+        gl.page_manager.overwrite_auto_change_settings(self.page_editor.active_page_path, decks=decks)
 
     def load_config_settings(self):
         if self.page_editor.active_page_path is None:
@@ -277,11 +274,11 @@ class AutoChangeGroup(Adw.PreferencesGroup):
         
         self.disconnect_signals()
 
-        auto_change = gl.page_manager.get_auto_change_info_for_page(page_path=self.page_editor.active_page_path)
+        auto_change = gl.page_manager.get_auto_change_settings(self.page_editor.active_page_path)
 
         self.enable_row.set_active(auto_change.get("enable", False))
-        self.stay_on_page.set_active(auto_change.get("stay_on_page", True))
-        self.wm_class_entry.set_text(auto_change.get("wm_class", ""))
+        self.stay_on_page.set_active(auto_change.get("stay-on-page", True))
+        self.wm_class_entry.set_text(auto_change.get("wm-class", ""))
         self.title_entry.set_text(auto_change.get("title", ""))
         self.device_selector.set_selected_deck_serials(auto_change.get("decks", []).copy())
 
@@ -322,7 +319,7 @@ class DefaultPageGroup(Adw.PreferencesGroup):
         self.build()
 
     def build(self):
-        matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
+        matches = gl.page_manager.get_serial_numbers_from_page(path=self.page_editor.active_page_path)
         self.row = MultiDeckSelectorRow(source_window=self.page_editor.page_manager, title=gl.lm.get("page-manager.page-editor.default-page.row.title"),
                                         subtitle=gl.lm.get("page-manager.page-editor.default-page.row.subtitle"),
                                         callback=self.on_changed, selected_deck_serials=matches.copy())
@@ -332,14 +329,14 @@ class DefaultPageGroup(Adw.PreferencesGroup):
         path = self.page_editor.active_page_path
         if not state:
             path = None
-        
-        gl.page_manager.set_default_page_for_deck(serial_number=serial_number, path=path)
+
+        gl.page_manager.set_default_page(serial_number, path)
 
     def load_for_page(self, page_path: str) -> None:
         self.update()
 
     def update(self) -> None:
-        matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
+        matches = gl.page_manager.get_serial_numbers_from_page(path=self.page_editor.active_page_path)
         self.row.set_label(len(matches))
         self.row.set_selected_deck_serials(matches)
 

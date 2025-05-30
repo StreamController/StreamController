@@ -15,6 +15,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 # Import gi
 import gi
 
+from GtkHelper.ScaleRow import ScaleRow
+from GtkHelper.ToggleRow import ToggleRow
 from src.windows.MultiDeckSelector.MultiDeckSelectorRow import MultiDeckSelectorRow
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -32,7 +34,7 @@ import globals as gl
 import os
 
 # Import own modules
-from GtkHelper.GtkHelper import BetterExpander
+from GtkHelper.GtkHelper import BetterExpander, better_disconnect
 from src.backend.WindowGrabber.Window import Window
 from src.windows.PageManager.elements.MenuButton import MenuButton
 
@@ -86,6 +88,10 @@ class PageEditor(Adw.NavigationPage):
         self.default_page_group = DefaultPageGroup(page_editor=self)
         self.editor_main_box.append(self.default_page_group)
 
+        # Overwrite Group - Used to Overwrite deck settings
+        self.deck_overwrite_group = DeckOverwriteGroup(page_editor=self)
+        self.editor_main_box.append(self.deck_overwrite_group)
+
         # Delete button
         self.delete_button = DeleteButton(page_editor=self, margin_top=40)
         self.editor_main_box.append(self.delete_button)
@@ -123,7 +129,6 @@ class DeleteButton(Gtk.Button):
         dialog = DeletePageConfirmationDialog(page_editor=self.page_editor)
         dialog.present()
 
-
 class DeletePageConfirmationDialog(Adw.MessageDialog):
     def __init__(self, page_editor: PageEditor, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -148,7 +153,6 @@ class DeletePageConfirmationDialog(Adw.MessageDialog):
             page_path = self.page_editor.active_page_path
             self.page_editor.page_manager.remove_page_by_path(page_path)
         self.destroy()
-
 
 class NameGroup(Adw.PreferencesGroup):
     def __init__(self, page_editor: PageEditor):
@@ -268,7 +272,6 @@ class AutoChangeGroup(Adw.PreferencesGroup):
         gl.page_manager.set_auto_change_info_for_page(page_path=self.page_editor.active_page_path, info=info)
 
     def load_config_settings(self):
-
         if self.page_editor.active_page_path is None:
             return
         
@@ -339,3 +342,119 @@ class DefaultPageGroup(Adw.PreferencesGroup):
         matches = gl.page_manager.get_all_deck_serial_numbers_with_page_as_default(path=self.page_editor.active_page_path)
         self.row.set_label(len(matches))
         self.row.set_selected_deck_serials(matches)
+
+class DeckOverwriteGroup(Adw.PreferencesGroup):
+    def __init__(self, page_editor: PageEditor):
+        super().__init__(title="OVERWRITE DECK SETTINGS")
+        self.page_editor = page_editor
+        self.build()
+
+    def build(self):
+        # Brightness
+        self.overwrite_brightness_toggle = Adw.SwitchRow(title="Brightness")
+        self.add(self.overwrite_brightness_toggle)
+
+        self.brightness_scale = ScaleRow(0, 0, 100, digits=0, draw_side_values=False, draw_value=True)
+        self.add(self.brightness_scale)
+
+        # Screensaver
+        self.screensaver = ScreensaverGroup()
+        self.add(self.screensaver)
+
+        # Background
+        self.overwrite_background_toggle = Adw.SwitchRow(title="Background")
+        self.add(self.overwrite_background_toggle)
+
+        self.background_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(self.background_box)
+
+        self.connect_signals()
+
+    def connect_signals(self):
+        self.overwrite_brightness_toggle.connect("notify::active", self.brightness_toggle_changed)
+        self.overwrite_brightness_toggle.connect("notify::active", self.screensaver_toggle_changed)
+        self.overwrite_brightness_toggle.connect("notify::active", self.background_toggle_changed)
+
+    def brightness_toggle_changed(self):
+        pass
+
+    def screensaver_toggle_changed(self):
+        pass
+
+    def background_toggle_changed(self):
+        pass
+
+
+class ScreensaverGroup(Adw.PreferencesRow):
+    def __init__(self):
+        super().__init__()
+        self.build()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.set_child(self.main_box)
+
+        self.overwrite_toggle = Adw.SwitchRow(title="Overwrite")
+        self.main_box.append(self.overwrite_toggle)
+
+        self.media_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.main_box.append(self.media_box)
+
+        self.enable_toggle = Adw.SwitchRow(title="Enable")
+        self.media_box.append(self.enable_toggle)
+
+        self.delay_spin = Adw.SpinRow(title="Delay")
+        self.media_box.append(self.delay_spin)
+
+        self.media_select_button = Gtk.Button(label="Select", css_classes=["page-settings-media-selector"], halign=Gtk.Align.CENTER)
+        self.media_box.append(self.media_select_button)
+
+        self.loop_toggle = Adw.SwitchRow(title="Loop")
+        self.media_box.append(self.loop_toggle)
+
+        self.fps_spin = Adw.SpinRow(title="FPS")
+        self.media_box.append(self.fps_spin)
+
+        self.brightness_scale = ScaleRow(0, 0, 100, title="Brightness", digits=0, draw_side_values=False, draw_value=True)
+        self.media_box.append(self.brightness_scale)
+
+    def connect_signals(self):
+        self.overwrite_toggle.connect("notify::active", self.overwrite_changed)
+        self.enable_toggle.connect("notify::active", self.enable_changed)
+        self.delay_spin.connect("changed", self.delay_changed)
+        self.media_select_button.connect("clicked", self.media_select_clicked)
+        self.loop_toggle.connect("notify::active", self.loop_changed)
+        self.fps_spin.connect("changed", self.fps_changed)
+        self.brightness_scale.connect("changed", self.brightness_changed)
+
+    def disconnect_signals(self):
+        better_disconnect(self.overwrite_toggle, self.overwrite_changed)
+        better_disconnect(self.enable_toggle, self.enable_changed)
+        better_disconnect(self.delay_spin, self.delay_changed)
+        better_disconnect(self.media_select_button, self.media_select_clicked)
+        better_disconnect(self.loop_toggle, self.loop_changed)
+        better_disconnect(self.fps_spin, self.fps_changed)
+        better_disconnect(self.brightness_scale, self.brightness_changed)
+
+
+    def overwrite_changed(self, *args):
+        gl.page_manager.page
+        pass
+
+    def enable_changed(self, *args):
+        pass
+
+    def delay_changed(self, *args):
+        pass
+
+    def media_select_clicked(self, *args):
+        pass
+
+    def loop_changed(self, *args):
+        pass
+
+    def fps_changed(self, *args):
+        pass
+
+    def brightness_changed(self, *args):
+        pass

@@ -33,6 +33,7 @@ class ScaleRow(Adw.ActionRow):
                  value: float,
                  min: float,
                  max: float,
+                 draw_side_values: bool = True,
                  add_text_entry: bool = False,
                  title: str = None,
                  subtitle: str = None,
@@ -47,9 +48,13 @@ class ScaleRow(Adw.ActionRow):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
 
         self._add_text_entry = add_text_entry
+        self._draw_side_values = draw_side_values
 
         self.left = Gtk.Label(label=str(min), hexpand=False, halign=Gtk.Align.END)
         self.right = Gtk.Label(label=str(max), hexpand=False, halign=Gtk.Align.START)
+
+        self.left.set_visible(self._draw_side_values)
+        self.right.set_visible(self._draw_side_values)
 
         self._adjustment = Gtk.Adjustment.new(value, min, max, step, 1, 0)
         self.scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=self._adjustment, hexpand=True)

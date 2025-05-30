@@ -19,12 +19,16 @@ import gc
 import os
 import shutil
 import json
+import zipfile
 from copy import copy
 from signal import Signals
 import time
+from typing import Union
+
 from loguru import logger as log
 
 from src.Signals import Signals
+from src.backend.DeckManagement.DeckController import DeckController
 
 # Import own modules
 from src.backend.PageManagement.Page import Page
@@ -38,7 +42,7 @@ class PageManagerBackendV2:
     def __init__(self, settings_manager):
         self.settings_manager = settings_manager
 
-        self.pages = {}
+        self.pages: dict["DeckController", dict[str, dict[str, Union["Page", int]]]] = {}
         self.custom_pages = []
 
         self.page_order = []
@@ -46,6 +50,7 @@ class PageManagerBackendV2:
         self.max_pages = 3
         self.page_number = 0
 
+        self.MAX_BACKUPS = 5
         self.PAGE_PATH = os.path.join(gl.DATA_PATH, "pages")
         self.PAGE_SETTINGS_PATH = os.path.join(gl.DATA_PATH, "settings", "pages.json")
 
@@ -278,6 +283,198 @@ class PageManagerBackendV2:
 
         #self.update_auto_change_info()
 
+    def register_page(self, path: str):
+        if not os.path.isfile(path):
+            log.error(f"Page {path} does not exist")
+            return
+
+        log.trace(f"Registering page {path}")
+        self.custom_pages.append(path)
+
+        gl.signal_manager.trigger_signal(Signals.PageAdd, path)
+
+        # self.update_auto_change_info()
+
+    def unregister_page(self, path: str):
+        if not self.custom_pages.__contains__(path):
+            return
+
+        self.custom_pages.remove(path)
+        gl.signal_manager.trigger_signal(Signals.PageDelete, path)
+
+    def get_pages_with_path(self, path: str):
+        pages_set = set()
+
+        for controller in gl.deck_manager.deck_controller:
+            # Check active_page
+            page = controller.active_page
+            if page is not None and page.json_path == path:
+                pages_set.add(page)
+
+            # Check in page cache for the same controller
+            if controller not in self.pages:
+                continue
+
+            path_dict = self.pages[controller]
+            if path in path_dict:
+                page = path_dict[path]["page"]
+                pages_set.add(page)
+
+        return list(pages_set)
+
+    def reload_pages_with_path(self, path: str):
+        pages = self.get_pages_with_path(path)
+
+        for page in pages:
+            page.load()
+
+            if page.deck_controller.active_page != page:
+                continue
+
+            page.deck_controller.load_page(page, allow_relaod=True)
+
+    @staticmethod
+    def reload_all_pages() -> None:
+        for controller in gl.deck_manager.deck_controller:
+            controller.load_page(controller.active_page, allow_reload=True)
+
+    def update_dict_of_pages_with_path(self, path: str) -> None:
+        pages = self.get_pages_with_path(path)
+        for page in pages:
+            page.update_dict()
+
+    def get_page_data(self, path: str) -> dict:
+        backup_path = os.path.join(self.PAGE_PATH, "backups", os.path.basename(path))
+
+        if not os.path.exists(path) and os.path.exists(backup_path):
+            path = backup_path
+
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except json.decoder.JSONDecodeError:
+            return {}
+
+    def remove_asset_from_all_pages(self, path: str):
+        # Validate input path; reject empty or None
+        if not path:
+            raise ValueError("Invalid path")
+
+        # Compute absolute path once for comparison
+        abs_target_path = os.path.abspath(path)
+
+        # Iterate over all page files (paths)
+        for page_path in self.get_pages():
+            page_had_asset = False  # Flag to track if this page had the asset
+
+            # Open and load JSON page data
+            with open(page_path, "r") as f:
+                page_dict = json.load(f)
+
+            # Safely get keys dictionary from page data
+            keys = page_dict.get("keys", {})
+
+            # Iterate over each key and its data
+            for key, key_data in keys.items():
+                # Get all states for this key
+                states = key_data.get("states", {})
+
+                # Iterate through each state and its data
+                for state, state_data in states.items():
+                    # Get media dictionary from state data
+                    media = state_data.get("media", {})
+                    dict_path = media.get("path")
+
+                    # If no media path defined, skip
+                    if dict_path is None:
+                        continue
+
+                    # Compare absolute paths; if match, remove asset reference
+                    if os.path.abspath(dict_path) == abs_target_path:
+                        page_had_asset = True
+                        state_data["media"]["path"] = None  # Remove the asset path
+
+            # If any asset was removed, update page file and reload pages
+            if page_had_asset:
+                # Write updated page data back to file with pretty JSON
+                with open(page_path, "w") as f:
+                    json.dump(page_dict, f, indent=4)
+
+                # Update internal cache or tracking dict with this page path
+                self.update_dict_of_pages_with_path(page_path)
+
+                # Reload any loaded Page objects corresponding to this file
+                pages = self.get_pages_with_path(page_path)
+                for page in pages:
+                    # Reload the page if it is currently active on its controller
+                    if page.deck_controller.active_page == page:
+                        page.deck_controller.load_page(page, allow_reload=True)
+
+    def find_matching_page_path(self, name: str) -> str:
+        if not name:
+            return None
+
+        # If 'name' is already a valid full file path, return it directly
+        if os.path.isfile(name):
+            return name
+
+        # Normalize the name for comparison
+        target_name = name.lower()
+
+        for page_path in self.get_pages():
+            base = os.path.basename(page_path).lower()
+            base_no_ext = os.path.splitext(base)[0]
+
+            # Check exact filename or filename without extension
+            if base == target_name or base_no_ext == target_name:
+                return page_path
+
+        return None
+
+    def backup_pages(self) -> None:
+        # Create a timestamp string safe for filenames
+        time_stamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+
+        # Create backup zip file path
+        backup_zip_path = os.path.join(self.PAGE_PATH, "backups", f"backup_{time_stamp}.zip")
+
+        # Ensure backup directory exists
+        os.makedirs(os.path.dirname(backup_zip_path), exist_ok=True)
+
+        # Create a zip archive and add all page files
+        with zipfile.ZipFile(backup_zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as backup_zip:
+            for page_path in self.get_pages():
+                # Add each file with only its basename (no folders inside zip)
+                backup_zip.write(page_path, arcname=os.path.basename(page_path))
+
+    def remove_old_backups(self) -> None:
+        backup_dir = os.path.join(self.PAGE_PATH, "backups")
+
+        # List all zip files in the backup directory
+        backup_files = [file for file in os.listdir(backup_dir) if file.endswith(".zip")]
+
+        # Sort backups by timestamp embedded in filename, descending (newest first)
+        # Assuming filename format: backup_YYYYMMDDTHHMMSS.zip
+        def extract_timestamp(filename: str) -> str:
+            # Extract the timestamp part, e.g. "20250530T142530" from "backup_20250530T142530.zip"
+            return filename.removeprefix("backup_").removesuffix(".zip")
+
+        sorted_backups = sorted(backup_files, key=extract_timestamp, reverse=True)
+
+        # If backups are fewer than or equal to keep count, no deletion needed
+        if len(sorted_backups) < self.MAX_BACKUPS:
+            return
+
+        # Delete oldest backups beyond the number to keep
+        for old_backup in sorted_backups[self.MAX_BACKUPS-1:]:
+            backup_path = os.path.join(backup_dir, old_backup)
+            try:
+                os.remove(backup_path)
+                log.info(f"Removed old page backup file: {old_backup}")
+            except Exception as e:
+                log.error(f"Failed to remove backup file {old_backup}: {e}")
+
+
 class PageManagerBackend:
     def __init__(self, settings_manager):
         self.v2 = PageManagerBackendV2(settings_manager)
@@ -306,292 +503,60 @@ class PageManagerBackend:
     def set_n_pages_to_cache(self, n_pages):
         self.v2.set_pages_to_cache(n_pages)
 
-        #old_max_pages = self.max_pages
-        #self.max_pages = n_pages + 1 # +1 to keep the active page
-
-        #if old_max_pages > self.max_pages:
-        #    self.clear_old_cached_pages()
-
-    def save_pages(self) -> None:
-        for page in self.pages.values():
-            page.save()
-
     def get_pages(self, add_custom_pages: bool = True, sort: bool = True) -> list[str]:
         return self.v2.get_pages(add_custom_pages=add_custom_pages, sort=sort)
 
-
-        #pages = []
-        ## Create pages dir if it doesn't exist
-        #os.makedirs(os.path.join(gl.DATA_PATH, "pages"), exist_ok=True)
-        ## Get all pages
-        #for page in os.listdir(os.path.join(gl.DATA_PATH, "pages")):
-        #    if os.path.splitext(page)[1] == ".json":
-        #        pages.append(os.path.join(gl.DATA_PATH, "pages", page))
-
-        #if add_custom_pages:
-        #    pages.extend(self.custom_pages)
-
-        #if sort:
-        #    pages = natural_sort_by_filenames(pages)
-
-        ## print(pages)
-        #return pages
-
     def get_page_names(self, add_custom_pages: bool = True) -> list[str]:
         return self.v2.get_page_names(add_custom_pages=add_custom_pages)
-
-        #pages: list[str] = []
-        #for page in self.get_pages(add_custom_pages):
-        #    pages.append(os.path.splitext(os.path.basename(page))[0])
-        #return pages
     
     def create_page(self, path: str, deck_controller: "DeckController") -> Page:
         return self.v2.load_page(path, deck_controller)
-
-        #if path is None:
-        #    return None
-        #if not os.path.exists(path):
-        #    return None
-        #page = Page(json_path=path, deck_controller=deck_controller)
-        #self.created_pages.setdefault(deck_controller, {})
-        #self.created_pages[deck_controller][path] = {
-        #    "page": page,
-        #    "page_number": self.page_number
-        #}
-        #self.page_number += 1
-
-        #return page
     
     def get_page(self, path: str, deck_controller: "DeckController") -> Page:
         return self.v2.get_page(path, deck_controller)
 
-        #if deck_controller in self.created_pages:
-        #    if path in self.created_pages[deck_controller]:
-        #        self.created_pages[deck_controller][path]["page_number"] = self.page_number
-        #        self.page_number += 1
-        #        return self.created_pages[deck_controller][path]["page"]
-        #
-        #new_page = self.create_page(path, deck_controller)
-        #self.clear_old_cached_pages()
-        #return new_page
-
     def clear_old_cached_pages(self):
         self.v2.clear_old_cached_pages()
 
-        #n_pages = 0
-        #for controller in self.created_pages:
-        #    for page in self.created_pages[controller]:
-        #        n_pages += 1
-
-        #for _ in range(n_pages - self.max_pages):
-        #    if n_pages > self.max_pages:
-        #        # Remove entry with lowest page number
-        #        lowest_page = min(self.created_pages[controller][p]["page_number"] for controller in self.created_pages for p in self.created_pages[controller])
-        #        for controller in self.created_pages:
-        #            for page in self.created_pages[controller]:
-        #                if controller.active_page is None:
-        #                    continue
-        #                if not self.created_pages[controller][page]["page"].ready_to_clear:
-        #                    continue
-        #                if self.created_pages[controller][page]["page"] is controller.active_page:
-        #                    continue
-        #                if self.created_pages[controller][page]["page_number"] == lowest_page:
-        #                    page_object: Page = self.created_pages[controller][page]["page"]
-        #                    page_object.clear_action_objects()
-
-        #                    self.created_pages[controller][page] = None
-        #                    del self.created_pages[controller][page]
-        #
-        #                    break
-
     def get_default_page_for_deck(self, serial_number: str) -> str:
         return self.v2.get_default_page(serial_number)
-
-        #page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        #page_path = page_settings.get("default-pages", {}).get(serial_number, None)
-        #if page_path is not None:
-        #    if not os.path.exists(page_path):
-        #        return None
-        #    return page_path
-        #return None
     
     def set_default_page_for_deck(self, serial_number: str, path: str):
         self.v2.set_default_page(serial_number, path)
 
-        #page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        #page_settings.setdefault("default-pages", {})
-        #page_settings["default-pages"][serial_number] = path
-        #self.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), page_settings)
-
     def get_all_deck_serial_numbers_with_set_default_page(self) -> list[str]:
         return self.v2.get_all_default_page_serial_numbers()
-
-        #matches: list[str] = []
-        #page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        #for serial_number in page_settings.get("default-pages", {}):
-        #    if page_settings["default-pages"][serial_number] not in ["", None]:
-        #        matches.append(serial_number)
-
-        #return matches
     
     def get_all_deck_serial_numbers_with_page_as_default(self, path: str) -> list[str]:
         return self.v2.get_serial_numbers_from_page(path)
-
-        #matches: list[str] = []
-        #page_settings = self.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        #for serial_number in page_settings.get("default-pages", {}):
-        #    if page_settings["default-pages"][serial_number] == path:
-        #        matches.append(serial_number)
-
-        #return matches
     
     def move_page(self, old_path: str, new_path: str):
         self.v2.move_page(old_path, new_path)
 
-        ## Copy page json file
-        #shutil.copy2(old_path, new_path)
-
-        ## Change name in page objects
-        #for controller in gl.deck_manager.deck_controller:
-        #    if controller.active_page is None:
-        #        continue
-        #    page = self.get_page(path=old_path, deck_controller=controller)
-        #    if page is None:
-        #        continue
-        #    page.json_path = new_path
-        #
-        #    # Update default page settings
-        #    settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        #    if settings.get("default-pages") is None:
-        #        continue
-        #    for serial_number, path in settings.get("default-pages", {}).items():
-        #        if path == old_path:
-        #            settings["default-pages"][serial_number] = new_path
-        #    gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)
-
-        ## Remove old page
-        #os.remove(old_path)
-
-        ## Update ui
-        ## self.update_ui()
-
-        #self.update_auto_change_info()
-
     def remove_page(self, page_path: str):
         self.v2.remove_page(page_path)
-
-        ## Clear page objects
-        #for controller in gl.deck_manager.deck_controller:
-        #    if controller.active_page is None:
-        #        continue
-
-        #    if controller.active_page.json_path != page_path:
-        #        continue
-
-        #    deck_default_page = self.get_default_page_for_deck(controller.deck.get_serial_number())
-        #    if page_path != deck_default_page and deck_default_page is not None:
-        #        new_page = self.get_page(deck_default_page, controller)
-        #        controller.load_page(new_page)
-        #        continue
-
-        #    else:
-        #        page_list = self.get_pages()
-        #        page_list.remove(page_path)
-        #        controller.load_page(self.get_page(page_list[0], controller))
-
-
-        ## Remove page json file
-        #os.remove(page_path)
-
-        #self.remove_page_path_from_created_pages(page_path)
-
-        ## Remove default page entries
-        #settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"))
-        #for serial_number, path in list(settings.get("default-pages",{}).items()):
-        #    if path == page_path:
-        #        del settings["default-pages"][serial_number]
-        #gl.settings_manager.save_settings_to_file(os.path.join(gl.DATA_PATH, "settings", "pages.json"), settings)
-
-        ## Update ui
-        ## self.update_ui()
-
-        #self.update_auto_change_info()
-
-    #def remove_page_path_from_created_pages(self, path: str):
-    #    for controller in self.created_pages:
-    #        if path in self.created_pages[controller]:
-    #            page_object: Page = self.created_pages[controller][path]["page"]
-    #            page_object.clear_action_objects()
-
-    #            self.created_pages[controller][path] = None
-    #            del self.created_pages[controller][path]
 
 
     def add_page(self, name:str, page_dict: dict = None):
         self.v2.add_page(name, page_dict)
 
-
-        #with open(os.path.join(gl.DATA_PATH, "pages", f"{name}.json"), "w") as f:
-        #    json.dump(page_dict, f)
-
-        ## Update ui
-        ## self.update_ui()
-
-        #self.update_auto_change_info()
-
     def register_page(self, path: str):
-        if not os.path.exists(path):
-            log.error(f"Page {path} does not exist")
-            return
-        log.trace(f"Registering page: {path}")
-        self.custom_pages.append(path)
-
-        # Update ui
-        # self.update_ui()
-        gl.signal_manager.trigger_signal(Signals.PageAdd, path)
-
-        self.update_auto_change_info()
+        self.v2.register_page(path)
 
     def unregister_page(self, path: str):
-        self.custom_pages.remove(path)
-
-        gl.signal_manager.trigger_signal(Signals.PageDelete, path)
+        self.v2.unregister_page(path)
 
     def get_pages_with_path(self, page_path: str) -> list[Page]:
-        pages: list[Page] = []
-
-        ## Add from controllers
-        for controller in gl.deck_manager.deck_controller:
-            if controller.active_page is None:
-                continue
-            if controller.active_page.json_path == page_path:
-                pages.append(controller.active_page)
-
-        ## Add from cache
-        for controller in self.created_pages:
-            if page_path in self.created_pages[controller]:
-                page = self.created_pages[controller][page_path]["page"]
-                if page not in pages:
-                    pages.append(page)
-
-        return pages
+        self.v2.get_pages_with_path(page_path)
     
     def reload_pages_with_path(self, page_path: str) -> None:
-        pages = self.get_pages_with_path(page_path)
-
-        for page in pages:
-            page.load()
-            if page.deck_controller.active_page == page:
-                page.deck_controller.load_page(page, allow_reload=True)
+        self.v2.reload_pages_with_path(page_path)
 
     def reload_all_pages(self) -> None:
-        for controller in gl.deck_manager.deck_controller:
-            controller.load_page(controller.active_page, allow_reload=True)
+        self.v2.reload_all_pages()
 
     def update_dict_of_pages_with_path(self, page_path: str) -> None:
-        pages = self.get_pages_with_path(page_path)
-        for page in pages:
-            page.update_dict()
+        self.v2.update_dict_of_pages_with_path(page_path)
 
     def update_auto_change_info(self):
         start = time.time()
@@ -623,100 +588,17 @@ class PageManagerBackend:
         return self.auto_change_info.get(abs_path, {})
     
     def get_page_json(self, page_path: str) -> dict:
-        """
-        Loads and returns the json of the page.
-        If the page is corrupt it will fallback to the backed up page.
-        """
-        if not os.path.exists(page_path):
-            return
-        
-        try:
-            with open(page_path, "r") as f:
-                return json.load(f)
-        except json.decoder.JSONDecodeError:
-            pass
-        
-
-        backup_path = os.path.join(gl.DATA_PATH, "pages", "backups", os.path.basename(page_path))
-        if not os.path.exists(backup_path):
-            log.error(f"Invalid json in {page_path}, no backup exists, returning None")
-            return
-        
-        log.error(f"Invalid json in {page_path}, falling back to backup")
-        try:
-            with open(backup_path, "r") as f:
-                return json.load(f)
-        except json.decoder.JSONDecodeError:
-            return
+        return self.v2.get_page_data(page_path)
         
     def remove_asset_from_all_pages(self, path: str):
-        if path in ["", None]:
-            raise ValueError("Invalid path")
-        
-        for page_path in self.get_pages():
-            page_had_asset = False
-            with open(page_path, "r") as f:
-                page_dict = json.load(f)
-                for key in page_dict.get("keys", {}):
-                    for state in page_dict["keys"][key].get("states", {}):
-                        dict_path = page_dict["keys"][key]["states"][state].get("media", {}).get("path")
-                        if dict_path is None:
-                            continue
-                        if os.path.abspath(dict_path) == os.path.abspath(path):
-                            page_had_asset = True
-                            page_dict["keys"][key]["states"][state]["media"]["path"] = None
-
-            if page_had_asset:
-                with open(page_path, "w") as f:
-                    json.dump(page_dict, f, indent=4)
-
-                self.update_dict_of_pages_with_path(page_path)
-
-                pages = self.get_pages_with_path(page_path)
-                for page in pages:
-                    if page.deck_controller.active_page == page:
-                        page.deck_controller.load_page(page, allow_reload=True)
+        self.v2.remove_asset_from_all_pages(path)
 
     def get_best_page_path_match_from_name(self, name: str) -> str:
-        if name in ["", None]:
-            return
-        
-        # Is a full path
-        if os.path.isfile(name):
-            return name
-        
-        # Not a full path
-        for page in self.get_pages():
-            if os.path.basename(page) == name:
-                return page
-            if os.path.splitext(os.path.basename(page))[0] == name:
-                return page
-            
-        return
+        return self.v2.find_matching_page_path(name)
     
     def backup_pages(self) -> None:
-        time_stamp = datetime.datetime.now().isoformat()
-        folder = os.path.join(gl.DATA_PATH, "pages", "backups", time_stamp)
-        if os.path.exists(folder):
-            return
-        os.makedirs(folder)
-
-        for page in self.get_pages():
-            backup_path = os.path.join(folder, os.path.basename(page))
-            shutil.copy(page, backup_path)
+        self.v2.backup_pages()
 
 
     def remove_old_backups(self) -> None:
-        n_backups_to_keep = 5
-
-        backup_dir = os.path.join(gl.DATA_PATH, "pages", "backups")
-
-        unsorted_backups = get_sub_folders(backup_dir)
-        sorted_backups = sort_times(unsorted_backups)
-
-        if len(sorted_backups) <= n_backups_to_keep:
-            return
-        
-        for backup in sorted_backups[:-n_backups_to_keep]:
-            shutil.rmtree(os.path.join(backup_dir, backup))
-            log.info(f"Removed old page backups: {backup}")
+        self.v2.remove_old_backups()

@@ -35,11 +35,18 @@ import globals as gl
 
 class AssetManagerBackend(list):
     JSON_PATH = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets.json")
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        super().__init__()
+
         self.load_json()
-
         self.fill_missing_data()
-
         self.remove_invalid_data()
 
     def load_json(self):
@@ -240,7 +247,7 @@ class AssetManagerBackend(list):
         if path is None and url is not None:
             # Lower domain and remove point
             extension = os.path.splitext(url)[1].lower().replace(".", "")
-            if extension not in (set(gl.video_extensions) | set(gl.image_extensions) | set(gl.svg_extensions)):
+            if extension not in (set(gl.VIDEO_EXTENSIONS) | set(gl.IMAGE_EXTENSIONS) | set(gl.SVG_EXTENSIONS)):
 
                 # Not a valid url
                 dial = Gtk.AlertDialog(

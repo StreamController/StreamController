@@ -46,6 +46,13 @@ from src.Signals import Signals
 import globals as gl
 
 class App(Adw.Application):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
@@ -55,11 +62,11 @@ class App(Adw.Application):
         self.connect("activate", self.on_activate)
 
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_path(os.path.join(gl.top_level_dir, "style.css"))
+        css_provider.load_from_path(os.path.join(gl.TOP_LEVEL_DIR, "style.css"))
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
         icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
-        icon_theme.add_search_path(os.path.join(gl.top_level_dir, "Assets", "icons"))
+        icon_theme.add_search_path(os.path.join(gl.TOP_LEVEL_DIR, "Assets", "icons"))
 
         app_settings = gl.settings_manager.get_app_settings()
         
@@ -79,7 +86,7 @@ class App(Adw.Application):
     def on_activate(self, app):
         log.trace("running: on_activate")
         self.main_win = MainWindow(application=app, deck_manager=self.deck_manager)
-        if not gl.argparser.parse_args().b:
+        if not gl.cli_args.background:
             self.main_win.present()
 
         self.show_onboarding()
@@ -123,7 +130,7 @@ class App(Adw.Application):
         self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)
 
     def show_donate(self, ignore_background_launch: bool = False):
-        if not ignore_background_launch and gl.argparser.parse_args().b:
+        if not ignore_background_launch and gl.cli_args.background:
             return
         if gl.showed_donate_window:
             return
@@ -137,7 +144,7 @@ class App(Adw.Application):
         self.donate.present(self.main_win)
 
     def show_onboarding(self):
-        if gl.argparser.parse_args().b:
+        if gl.cli_args.background:
             return
         if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-onboarding")):
             return

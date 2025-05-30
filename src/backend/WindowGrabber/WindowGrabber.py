@@ -32,6 +32,13 @@ from src.backend.WindowGrabber.Integrations.X11 import X11
 from src.backend.WindowGrabber.Integrations.KDE import KDE
 
 class WindowGrabber:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
         self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "x11", "kde"]
 

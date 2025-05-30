@@ -13,7 +13,15 @@ from streamcontroller_plugin_tools import BackendBase
 import globals as gl
 
 class PluginManager:
+    _instance = None
     action_index = {}
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+
     def __init__(self):
         self.initialized_plugin_classes = list[PluginBase]()
         self.backends:list[BackendBase] = []

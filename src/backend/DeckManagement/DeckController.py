@@ -160,7 +160,8 @@ class MediaPlayerThread(threading.Thread):
         self.fps: list[float] = []
         self.old_warning_state = False
 
-        self.show_fps_warnings = gl.settings_manager.get_app_settings().get("warnings", {}).get("enable-fps-warnings", True)
+        app_settings = gl.settings_manager.get_app_settings()
+        self.show_fps_warnings = app_settings.get("warning", {}).get("show_fps_warnings", True)
 
     # @log.catch
     def run(self):
@@ -197,13 +198,12 @@ class MediaPlayerThread(threading.Thread):
             # print(f"possible FPS: {1 / (end - start)}")
             self.append_fps(1 / (end - start))
             self.update_low_fps_warning()
-            wait = max(0, 1/self.FPS - (end - start))
+            wait = max(0, 1 / self.FPS - (end - start))
             time.sleep(wait)
 
             if self._stop:
-                break
-
-        self.running = False
+                self.running = False
+                return
 
     def append_fps(self, fps: float) -> None:
         self.fps.append(fps)
@@ -278,14 +278,14 @@ class MediaPlayerThread(threading.Thread):
             try:
                 self.tasks.remove(task)
             except ValueError:
-                pass
+                continue
 
         for key in list(self.image_tasks.keys()):
             try:
                 self.image_tasks[key].run()
                 del self.image_tasks[key]
             except KeyError:
-                pass
+                continue
 
         if self.touchscreen_task is not None:
             self.touchscreen_task.run()
@@ -360,7 +360,7 @@ class DeckController:
         self.media_player.start()
 
         self.keep_actions_ticking = True
-        self.TICK_DELAY = 1
+        self.TICK_DELAY = gl.cli_args.tick_delay
         self.tick_thread = Thread(target=self.tick_actions, name="tick_actions")
         self.tick_thread.start()
 
@@ -379,19 +379,27 @@ class DeckController:
 
 
         # If screen is locked start the screensaver - this happens when the deck gets reconnected during the screensaver
-        if gl.screen_locked and gl.settings_manager.get_app_settings().get("system", {}).get("lock-on-lock-screen", True):
+        app_settings = gl.settings_manager.get_app_settings()
+
+        if gl.screen_locked and app_settings.get("system", {}).get("lock-on-lock-screen", True):
             self.allow_interaction = False
             self.screen_saver.show()
         else:
             self.load_default_page()
 
     def init_inputs(self):
-        for i in Input.All:
-            self.inputs[i] = []
-            input_class = getattr(sys.modules[__name__], i.controller_class_name)
+        for input_obj in Input.All:
+            self.inputs[input_obj] = []
 
-            for k in input_class.Available_Identifiers(self.deck):
-                self.inputs[i].append(input_class(self, Input.FromTypeIdentifier(i.input_type, k)))
+            try:
+                input_class = getattr(sys.modules[__name__], input_obj.controller_class_name)
+            except AttributeError:
+                log.error(f"Input class '{input_obj.controller_class_name}' not found. Skipping...'")
+                continue
+
+            for identifier in input_class.Available_Identifiers(self.deck):
+                input_instance = input_class(self, Input.FromTypeIdentifier(input_obj.input_type, identifier))
+                self.inputs[input_obj].append(input_instance)
 
     def get_inputs(self, identifier: InputIdentifier) -> list["ControllerInput"]:
         input_type = type(identifier)
@@ -400,9 +408,9 @@ class DeckController:
         return self.inputs[input_type]
 
     def get_input(self, identifier: InputIdentifier) -> "ControllerInput":
-        for i in self.get_inputs(identifier):
-            if i.identifier == identifier:
-                return i
+        for input in self.get_inputs(identifier):
+            if input.identifier == identifier:
+                return input
         return None
 
     @lru_cache(maxsize=None)
@@ -413,33 +421,44 @@ class DeckController:
         return self.deck.is_visual()
 
     def update_input(self, identifier: InputIdentifier):
-        i = self.get_input(identifier)
-        if not i:
+        input = self.get_input(identifier)
+
+        if not input:
             return
-        i.update()
+
+        input.update()
 
     @log.catch
     def update_all_inputs(self):
-        start = time.time()
-        if not self.get_alive(): return
-        if self.background.video is not None:
-            log.debug("Skipping update_all_inputs because there is a background video -- we will only update the dials (if exists) so as not to effect the video.")
-
-            for i in self.inputs[Input.Dial]:
-                i.update()
+        if not self.get_alive():
             return
-        for t in self.inputs:
-            for i in self.inputs[t]:
-                i.update()
-        log.debug(f"Updating all inputs took {time.time() - start} seconds")
+
+        start_time = time.time()
+
+        if self.background.video is not None:
+            log.debug(
+                "Skipping full input update due to background video; updating only dials if present."
+            )
+            for dial_input in self.inputs.get(Input.Dial, []):
+                dial_input.update()
+        else:
+            for input_group in self.inputs.values():
+                for input_instance in input_group:
+                    input_instance.update()
+
+        elapsed = time.time() - start_time
+        log.debug(f"Updating all inputs took {elapsed:.3f} seconds")
 
     def event_callback(self, ident: InputIdentifier, *args, **kwargs):
         if not self.allow_interaction:
             return
-        i = self.get_input(ident)
-        if not i:
+
+        input = self.get_input(ident)
+
+        if not input:
             return
-        i.event_callback(*args, **kwargs)
+
+        input.event_callback(*args, **kwargs)
 
     def key_event_callback(self, deck, key, *args, **kwargs):
         coords = ControllerKey.Index_To_Coords(deck, key)
@@ -462,20 +481,28 @@ class DeckController:
         return Image.new("RGBA", self.get_key_image_size(), (0, 0, 0, 0))
     
     @lru_cache(maxsize=None)
-    def get_key_image_size(self) -> tuple[int]:
-        if not self.get_alive(): return
+    def get_key_image_size(self) -> tuple[int, int]:
+        if not self.get_alive():
+            return
+
         size = self.deck.key_image_format()["size"]
+
         if size is None:
-            return (72, 72)
+            return 72, 72
+
         size = max(size[0], 72), max(size[1], 72)
         return size
-    
+
     @lru_cache(maxsize=None)
-    def get_touchscreen_image_size(self) -> tuple[int]:
-        if not self.get_alive(): return
+    def get_touchscreen_image_size(self) -> tuple[int, int]:
+        if not self.get_alive():
+            return
+
         size = self.deck.touchscreen_image_format()["size"]
+
         if size is None:
-            return (800, 100)
+            return 800, 100
+
         size = max(size[0], 800), max(size[1], 100)
         return size
 
@@ -487,6 +514,8 @@ class DeckController:
         if not self.get_alive(): return
 
         api_page_path = None
+
+        # TODO: REWORK PAGE REQUESTS
         if self.serial_number() in gl.api_page_requests:
             api_page_path = gl.api_page_requests[self.serial_number()]
             api_page_path = gl.page_manager.get_best_page_path_match_from_name(api_page_path)
@@ -499,7 +528,7 @@ class DeckController:
         if default_page_path is not None:
             if not os.path.isfile(default_page_path):
                 default_page_path = None
-            
+
         if default_page_path is None:
             # Use the first page
             pages = gl.page_manager.get_pages()
@@ -509,98 +538,82 @@ class DeckController:
 
         if default_page_path is None:
             return
-        
+
         page = gl.page_manager.get_page(default_page_path, self)
         self.load_page(page)
 
     @log.catch
     def load_background(self, page: Page, update: bool = True):
         log.info(f"Loading background in thread: {threading.get_ident()}")
-        deck_settings = self.get_deck_settings()
-        def set_from_deck_settings(self: "DeckController"):
-            if deck_settings.get("background", {}).get("enable", False):
-                loop = deck_settings.get("background", {}).get("loop", True)
-                fps = deck_settings.get("background", {}).get("fps", 30)
-                self.background.set_from_path(deck_settings.get("background", {}).get("path"), update=update, loop=loop, fps=fps)
-            else:
-                self.background.set_from_path(None, update=update)
 
-        def set_from_page(self: "DeckController"):
-            if not page.dict.get("background", {}).get("show", True):
-                self.background.set_from_path(None, update=update)
-            else:
-                loop = page.dict.get("background", {}).get("loop", True)
-                fps = page.dict.get("background", {}).get("fps", 30)
-                self.background.set_from_path(page.dict.get("background", {}).get("path"), update=update, loop=loop, fps=fps)
+        deck_settings = self.get_deck_settings().get("background", {})
+        page_settings = page.dict.get("background", {})
 
-        if page.dict.get("background", {}).get("overwrite", False) is False and "background" in deck_settings:
-            set_from_deck_settings(self)
+        use_dict = {}
+
+        if page_settings.get("overwrite", False) and page_settings.get("show", True):
+            use_dict = page_settings
+        elif deck_settings.get("enable"):
+            use_dict = deck_settings
+
+        if use_dict:
+            self.background.set_from_path(
+                path=use_dict.get("path", ""),
+                update=update,
+                loop=use_dict.get("loop", True),
+                fps=use_dict.get("fps", 30)
+            )
         else:
-            set_from_page(self)
+            self.background.set_from_path(None, update=update)
 
     @log.catch
     def load_brightness(self, page: Page):
-        if not self.get_alive(): return
-        deck_settings = self.get_deck_settings()
-        def set_from_deck_settings(self: "DeckController"):
-            self.set_brightness(deck_settings.get("brightness", {}).get("value", 75))
+        if not self.get_alive():
+            return
 
-        def set_from_page(self: "DeckController"):
-            self.set_brightness(page.dict.get("brightness", {}).get("value", 75))
+        deck_settings = self.get_deck_settings().get("brightness", {})
+        page_settings = page.dict.get("brightness", {})
 
-        if page.dict.get("brightness", {}).get("overwrite", False):
-            set_from_page(self)
+        if page_settings.get("overwrite", False):
+            use_dict = page_settings
         else:
-            set_from_deck_settings(self)
+            use_dict = deck_settings
+
+        self.set_brightness(use_dict.get("value", 75))
 
     @log.catch
     def load_screensaver(self, page: Page):
-        deck_settings = self.get_deck_settings()
-        def set_from_deck_settings(self: "DeckController"):
-            path = deck_settings.get("screensaver", {}).get("path")
-            enable = deck_settings.get("screensaver", {}).get("enable", False)
-            loop = deck_settings.get("screensaver", {}).get("loop", False)
-            fps = deck_settings.get("screensaver", {}).get("fps", 30)
-            time = deck_settings.get("screensaver", {}).get("time-delay", 5)
-            brightness = deck_settings.get("screensaver", {}).get("brightness", 30)
+        deck_settings = self.get_deck_settings().get("screensaver", {})
+        page_settings = page.dict.get("screensaver", {})
 
-            self.screen_saver.set_media_path(path)
-            self.screen_saver.set_enable(enable)
-            self.screen_saver.set_time(time)
-            self.screen_saver.set_loop(loop)
-            self.screen_saver.set_fps(fps)
-            self.screen_saver.set_brightness(brightness)
-
-        def set_from_page(self: "DeckController"):
-            path = page.dict.get("screensaver", {}).get("path")
-            enable = page.dict.get("screensaver", {}).get("enable", False)
-            loop = page.dict.get("screensaver", {}).get("loop", False)
-            fps = page.dict.get("screensaver", {}).get("fps", 30)
-            time = page.dict.get("screensaver", {}).get("time-delay", 5)
-            brightness = page.dict.get("screensaver", {}).get("brightness", 30)
-
-            self.screen_saver.set_media_path(path)
-            self.screen_saver.set_enable(enable)
-            self.screen_saver.set_time(time)
-            self.screen_saver.set_loop(loop)
-            self.screen_saver.set_fps(fps)
-            self.screen_saver.set_brightness(brightness)
-
-        if self.active_page.dict.get("screensaver", {}).get("overwrite", False) is False and "screensaver" in deck_settings:
-            set_from_deck_settings(self)
+        if not self.active_page.dict.get("screensaver", {}).get("overwrite"):
+            use_dict = deck_settings
         else:
-            set_from_page(self)
+            use_dict = page_settings
+
+        self.screen_saver.set_media_path(use_dict.get("path", None))
+        self.screen_saver.set_enable(use_dict.get("enable", False))
+        self.screen_saver.set_loop(use_dict.get("loop", False))
+        self.screen_saver.set_fps(use_dict.get("fps", 30))
+        self.screen_saver.set_time(use_dict.get("time-delay", 5))
+        self.screen_saver.set_brightness(use_dict.get("brightness", 30))
 
     @log.catch
     def load_all_inputs(self, page: Page, update: bool = True):
         start = time.time()
+
         with ThreadPoolExecutor() as executor:
             futures = []
-            for t in self.inputs:
-                for controller_input in self.inputs[t]:
+            for input_group in self.inputs.values():
+                for controller_input in input_group:
                     futures.append(executor.submit(self.load_input, controller_input, page, update))
+
             for future in futures:
-                future.result()
+                try:
+                    future.result()
+                except Exception as e:
+                    log.error(f"Error loading input: {e}")
+
         log.info(f"Loading all inputs took {time.time() - start} seconds")
 
     def load_input_from_identifier(self, identifier: str, page: Page, update: bool = True):
@@ -630,36 +643,34 @@ class DeckController:
             except AttributeError as e:
                 log.error(f"{e} -> This is okay if you just activated your first deck.")
 
-    def close_image_ressources(self):
-        for t in self.inputs:
-            for i in self.inputs[t]:
-                i.close_resources()
+
+    def close_image_resources(self):
+        for input_group in self.inputs.values():
+            for input_instance in input_group:
+                input_instance.close_resources()
 
         if self.background.video is not None:
             self.background.video.close()
+
         if self.background.image is not None:
             self.background.image.close()
 
     @log.catch
     def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_inputs: bool = True, allow_reload: bool = True):
-        if not self.get_alive(): return
+        if not self.get_alive():
+            return
 
-        start = time.time()
+        if not allow_reload and self.active_page is page:
+            return
 
-        if not allow_reload:
-            if self.active_page is page:
-                return
-        
-        old_path = self.active_page.json_path if self.active_page is not None else None
-
-        if self.active_page is not None and False:
-            self.active_page.clear_action_objects()
-        # self.active_page = None
+        if self.active_page is not None:
+            old_path = self.active_page.json_path
+        else:
+            old_path = None
 
         self.active_page = page
 
-        if page is None:
-            # Clear deck
+        if self.active_page is None:
             self.clear()
             return
 
@@ -677,7 +688,6 @@ class DeckController:
         GLib.idle_add(self.update_ui_on_page_change) #TODO: Use new signal manager instead
 
         if load_background:
-            # self.load_background(page, update=False)
             self.media_player.add_task(self.load_background, page, update=False)
         if load_brightness:
             self.load_brightness(page)
@@ -728,17 +738,18 @@ class DeckController:
 
     def tick_actions(self) -> None:
         time.sleep(self.TICK_DELAY)
+
         while self.keep_actions_ticking:
             start = time.time()
+
             self.mark_page_ready_to_clear(False)
-            if not self.screen_saver.showing and True:
-                for t in self.inputs:
-                    for i in self.inputs[t]:
-                        i.get_active_state().own_actions_tick_threaded()
-            else:
-                for t in self.inputs:
-                    for i in self.inputs[t]:
-                        i.update()
+
+            for input_group in self.inputs.values():
+                for input_instance in input_group:
+                    if not self.screen_saver.showing:
+                        input_instance.get_active_state().own_actions_tick_threaded()
+                    else:
+                        input_instance.update()
 
             self.mark_page_ready_to_clear(True)
 
@@ -780,11 +791,14 @@ class DeckController:
         if self.own_deck_stack_child is not None:
             return self.own_deck_stack_child
         
-        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"): return
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
+
         serial_number = self.deck.get_serial_number()
         deck_stack = gl.app.main_win.leftArea.deck_stack
         deck_stack_child = deck_stack.get_child_by_name(serial_number)
-        if deck_stack_child == None:
+
+        if deck_stack_child is None:
             return
         
         self.own_deck_stack_child = deck_stack_child
@@ -793,8 +807,10 @@ class DeckController:
     def clear(self):
         if not self.is_visual():
             return
+
         alpha_image = self.generate_alpha_key()
         native_image = PILHelper.to_native_key_format(self.deck, alpha_image.convert("RGB"))
+
         for i in range(self.deck.key_count()):
             self.deck.set_key_image(i, native_image)
 
@@ -811,7 +827,8 @@ class DeckController:
             return self.own_key_grid
         
         deck_stack_child = self.get_own_deck_stack_child()
-        if deck_stack_child == None:
+
+        if deck_stack_child is None:
             return
         
         self.own_key_grid = deck_stack_child.page_settings.deck_config.grid
@@ -836,9 +853,8 @@ class DeckController:
         ))
 
     def delete(self):
-        if hasattr(self, "active_page"):
-            if self.active_page is not None:
-                self.active_page.action_objects = {}
+        if hasattr(self, "active_page") and self.active_page is not None:
+            self.active_page.action_objects = {}
 
         if hasattr(self, "media_player"):
             self.media_player.stop()
@@ -850,7 +866,7 @@ class DeckController:
         try:
             return self.deck.is_open()
         except Exception as e:
-            log.debug(f"Cougth dead deck error. Error: {e}")
+            log.debug(f"Caught dead deck error. Error: {e}")
             return False
 
 class Background:
@@ -887,20 +903,20 @@ class Background:
     def set_from_path(self, path: str, fps: int = 30, loop: bool = True, update: bool = True, allow_keep: bool = True) -> None:
         if path == "":
             path = None
+
         if path is None:
             self.image = None
-            # self.video = None
             self.set_video(None, update=False)
             self.update_tiles()
+
             if update:
                 self.deck_controller.update_all_inputs()
         elif is_video(path):
-            if allow_keep:
-                if self.video is not None and self.video.video_path == path:
-                    self.video.page = self.deck_controller.active_page
-                    self.video.fps = fps
-                    self.video.loop = loop
-                    return
+            if allow_keep and self.video is not None and self.video.video_path == path:
+                self.video.page = self.deck_controller.active_page
+                self.video.fps = fps
+                self.video.loop = loop
+                return
             self.set_video(BackgroundVideo(self.deck_controller, path, loop=loop, fps=fps), update=update)
         else:
             if path is None:
@@ -912,6 +928,7 @@ class Background:
 
     def update_tiles(self) -> None:
         old_tiles = self.tiles # Why store them and close them later? So that there is not key error if the media threads fetches them during the update
+
         if self.image is not None:
             self.tiles = self.image.get_tiles()
         elif self.video is not None:
@@ -920,10 +937,9 @@ class Background:
             self.tiles = [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
 
         for tile in old_tiles:
-            if tile is not None:
-                tile.close()
-                tile = None
-                del tile
+            if tile is None:
+                continue
+            tile.close()
         del old_tiles
 
 class BackgroundImage:
@@ -1003,17 +1019,17 @@ class BackgroundVideo(BackgroundVideoCache):
 
         self.active_frame: int = -1
 
+        # TODO: MOVE IT TO THE TOP OF __init__ when the super() logic can be executed first
         super().__init__(video_path, deck_controller=deck_controller)
 
     def get_next_tiles(self) -> list[Image.Image]:
         # return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
         self.active_frame += 1
 
-        if self.active_frame >= self.n_frames:
-            if self.loop:
-                self.active_frame = 0
+        if self.active_frame >= self.n_frames and self.loop:
+            self.active_frame = 0
 
-        tiles =  self.get_tiles(self.active_frame)
+        tiles = self.get_tiles(self.active_frame)
         try:
             copied_tiles = [tile.copy() for tile in tiles]
         except:
@@ -1033,9 +1049,8 @@ class BackgroundVideo(BackgroundVideoCache):
     def get_next_frame(self) -> Image.Image:
         self.active_frame += 1
 
-        if self.active_frame >= self.n_frames:
-            if self.loop:
-                self.active_frame = 0
+        if self.active_frame >= self.n_frames and self.loop:
+            self.active_frame = 0
         
         return self.get_frame(self.active_frame)
     
@@ -1244,19 +1259,19 @@ class LabelManager:
         if label.text is None:
             label.text = ""
         if label.color is None:
-            label.color = gl.settings_manager.font_defaults.get("font-color") or (255, 255, 255, 255)
+            label.color = gl.settings_manager.font_defaults.get("font-color", [255, 255, 255, 255])
         if label.font_name is None:
-            label.font_name = gl.settings_manager.font_defaults.get("font-family") or gl.fallback_font
+            label.font_name = gl.settings_manager.font_defaults.get("font-family", gl.FALLBACK_FONT)
         if label.font_size is None:
-            label.font_size = round(gl.settings_manager.font_defaults.get("font-size") or 15)
+            label.font_size = round(gl.settings_manager.font_defaults.get("font-size", 15))
         if label.font_weight is None:
-            label.font_weight = round(gl.settings_manager.font_defaults.get("font-weight") or 400)
+            label.font_weight = round(gl.settings_manager.font_defaults.get("font-weight", 400))
         if label.style is None:
-            label.style = gl.settings_manager.font_defaults.get("font-style") or "normal"
+            label.style = gl.settings_manager.font_defaults.get("font-style", "normal")
         if label.outline_width is None:
-            label.outline_width = round(gl.settings_manager.font_defaults.get("outline-width") or 2)
+            label.outline_width = round(gl.settings_manager.font_defaults.get("outline-width", 2))
         if label.outline_color is None:
-            label.outline_color = gl.settings_manager.font_defaults.get("outline-color") or (0, 0, 0, 255)
+            label.outline_color = gl.settings_manager.font_defaults.get("outline-color", [0, 0, 0, 255])
 
         return label
     
@@ -1821,20 +1836,18 @@ class ControllerInput:
         GLib.idle_add(gl.app.main_win.sidebar.update)
 
     def load_from_config(self, config, update: bool = True):
-        n_states = len(config.get("states", {}))
-        self.create_n_states(max(1, n_states))
+        state_data: dict = config.get("states", {})
+        self.create_n_states(max(1, len(state_data)))
 
         old_state_index = self.state
-
         self.state = 0
 
-        #TODO: Reset states
-        for state in config.get("states", {}):
-            state: ControllerKeyState = self.states.get(int(state))
+        # TODO: Reset states
+        for state_id_str in state_data.keys():
+            state: ControllerInputState = self.states.get(int(state_id_str))
+
             if state is None:
                 continue
-
-            state_dict = config["states"][str(state.state)]
 
             self.get_active_state().own_actions_ready()
             # state.own_actions_ready() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
@@ -1875,9 +1888,7 @@ class ControllerKey(ControllerInput):
 
     def on_hold_timer_end(self):
         state = self.get_active_state()
-        state.own_actions_event_callback_threaded(
-            event=Input.Key.Events.HOLD_START
-        )
+        state.own_actions_event_callback_threaded(Input.Key.Events.HOLD_START)
 
     @staticmethod
     def Available_Identifiers(deck):
@@ -1924,9 +1935,11 @@ class ControllerKey(ControllerInput):
 
     def event_callback(self, press_state):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
+
         if press_state:
             # Only on key down this allows plugins to control screen saver without directly deactivating it
             self.deck_controller.screen_saver.on_key_change()
+
         if screensaver_was_showing:
             return
         
@@ -1936,6 +1949,7 @@ class ControllerKey(ControllerInput):
         self.update()
 
         active_state = self.get_active_state()
+
         if press_state: # Key down
             self.down_start_time = time.time()
             self.start_hold_timer()
@@ -1945,20 +1959,16 @@ class ControllerKey(ControllerInput):
             )
 
         elif self.down_start_time is not None: # Key up
-            if time.time() - self.down_start_time >= self.deck_controller.hold_time:
-                active_state.own_actions_event_callback_threaded(
-                    event=Input.Key.Events.HOLD_STOP
-                )
-            else:
-                active_state.own_actions_event_callback_threaded(
-                    event=Input.Key.Events.SHORT_UP
-                )
-            self.down_start_time = None
             self.stop_hold_timer()
-            active_state.own_actions_event_callback_threaded(
-                event=Input.Key.Events.UP,
-                show_notifications=False
-            )
+
+            elapsed_time = time.time() - self.down_start_time
+
+            event = Input.Key.Events.HOLD_STOP if elapsed_time >= self.deck_controller.hold_time else Input.Key.Events.SHORT_UP
+            active_state.own_actions_event_callback_threaded(event)
+
+            self.down_start_time = None
+
+            active_state.own_actions_event_callback_threaded(Input.Key.Events.UP)
         self.deck_controller.mark_page_ready_to_clear(True)
 
     def get_current_image(self) -> Image.Image:
@@ -2065,20 +2075,18 @@ class ControllerKey(ControllerInput):
         """
         Attention: Disabling load_media might result into disabling custom user assets
         """
-        n_states = len(input_dict.get("states", {}))
-        self.create_n_states(max(1, n_states))
+        states_data = input_dict.get("states", {})
+        self.create_n_states(max(1, len(states_data)))
 
         old_state_index = self.state
-
         self.state = 0
 
         #TODO: Reset states
-        for state in input_dict.get("states", {}):
-            state: ControllerKeyState = self.states.get(int(state))
-            if state is None:
-                continue
+        for state_id_str, state_dict in states_data.items():
+            state: ControllerInputState = self.states.get(int(state_id_str), None)
 
-            state_dict = input_dict["states"][str(state.state)]
+            if state is None or state_dict is None:
+                continue
 
             ## Load media - why here? so that it doesn't overwrite the images chosen by the actions
             if load_media:
@@ -2089,88 +2097,74 @@ class ControllerKey(ControllerInput):
                 state.label_manager.clear_labels()
 
             # Reset action layout
-            layout = ImageLayout()
-            state.layout_manager.set_action_layout(layout, update=False)
-
+            state.layout_manager.set_action_layout(ImageLayout(), update=False)
             state.own_actions_update() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
 
             ## Load labels
             if load_labels:
-                for label in state_dict.get("labels", []):
+                for label_id, label_data in state_dict.get("labels", {}).items():
                     key_label = KeyLabel(
                         controller_input=self,
-                        text=state_dict["labels"][label].get("text"),
-                        font_size=state_dict["labels"][label].get("font-size"),
-                        font_name=state_dict["labels"][label].get("font-family"),
-                        color=state_dict["labels"][label].get("color"),
-                        outline_width=state_dict["labels"][label].get("outline_width"),
-                        outline_color=state_dict["labels"][label].get("outline_color")
+                        text=label_data.get("text"),
+                        font_size=label_data.get("font-size"),
+                        font_name=label_data.get("font-family"),
+                        color=label_data.get("color")
                     )
-                    # self.add_label(key_label, position=label, update=False)
-                    state.label_manager.set_page_label(label, key_label, update=False)
+                    state.label_manager.set_page_label(label_id, key_label, update=False)
 
             ## Load media
             if load_media:
-                path = state_dict.get("media", {}).get("path", None)
-                if path not in ["", None]:
-                    if is_image(path):
-                        with Image.open(path) as image:
-                            state.set_image(InputImage(
-                                controller_input=self,
-                                image=image.copy()
-                            ), update=False)
-                            
-                    elif is_svg(path):
-                        img = svg_to_pil(path, 192)
-                        state.set_image(InputImage(
-                            controller_input=self,
-                            image=img
-                        ), update=False)
-
-                    elif is_video(path):
-                        if os.path.splitext(path)[1].lower() == ".gif":
-                            state.set_video(KeyGIF(
-                                controller_key=self,
-                                gif_path=path,
-                                loop=state_dict.get("media", {}).get("loop", True),
-                                fps=state_dict.get("media", {}).get("fps", 30)
-                            )) # GIFs always update
-                        else:
-                            state.set_video(InputVideo(
-                                controller_input=self,
-                                video_path=path,
-                                loop = state_dict.get("media", {}).get("loop", True),
-                                fps = state_dict.get("media", {}).get("fps", 30),
-                            )) # Videos always update
+                media_dict = state_dict.get("media", {})
+                self.load_media_for_state(state, media_dict)
 
                 layout = ImageLayout(
-                    fill_mode=state_dict.get("media", {}).get("fill-mode"),
-                    size=state_dict.get("media", {}).get("size"),
-                    valign=state_dict.get("media", {}).get("valign"),
-                    halign=state_dict.get("media", {}).get("halign"),
+                    fill_mode=media_dict.get("fill-mode"),
+                    size=media_dict.get("size"),
+                    valign=media_dict.get("valign"),
+                    halign=media_dict.get("halign")
                 )
                 state.layout_manager.set_page_layout(layout, update=False)
-
-            elif len(state.get_own_actions()) > 1 and False: # Disabled for now - we might reuse it later
-                if state_dict.get("image-control-action") is None:
-                    with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
-                        self.set_key_image(InputImage(
-                            controller_input=self,
-                            image=image.copy(),
-                        ), update=False)
-            
-            elif len(state.get_own_actions()) == 1:
-                if state_dict.get("image-control-action") is None:
-                    self.set_key_image(None, update=False)
-                # action = self.get_own_actions()[0]
-                # if action.has_image_control()
+            #elif len(state.get_own_actions()) > 1 and False:
+            #    if state_dict.get("image-control-action") is None:
+            #        with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
+            #            self.set_key_image(InputImage(
+            #                controller_input=self,
+            #                image=image.copy(),
+            #            ), update=False)
+            elif len(state.get_own_actions()) == 1 and state_dict.get("image-control-action") is None:
+                self.set_key_image(None, update=False)
 
             if load_background_color:
-                state.background_manager.set_page_color(state_dict.get("background", {}).get("color"), update=False)
+                state.background_manager.set_page_color(state_dict.get("background", {}).get("color", None), update=False)
 
         if update:
             self.set_state(old_state_index)
             self.update()
+
+    def load_media_for_state(self, state, media_data: dict):
+        path = media_data.get("path")
+
+        if not path:
+            return
+
+        if is_image(path):
+            image = InputImage(self, Image.open(path))
+            state.set_image(image, update=False)
+        elif is_svg(path):
+            pil_image = svg_to_pil(path, 192)
+            state.set_image(InputImage(self, pil_image), update=False)
+        elif is_video(path):
+            if os.path.splitext(path)[1].lower() == ".gif":
+                raise NotImplementedError("TODO: GIF SUPPORT")
+            else:
+                video = InputVideo(
+                    controller_input=self,
+                    video_path=path,
+                    loop=media_data.get("loop", True),
+                    fps=media_data.get("fps", 30)
+                )
+                state.set_video(video, update=False)
+
 
     def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False) -> None:
         old_state = self.state
@@ -2231,7 +2225,7 @@ class ControllerTouchScreen(ControllerInput):
     def get_dial_image_area(self, identifier: Input.Dial) -> tuple[int, int, int, int]:
         width, height = self.get_screen_dimensions()
 
-        n_dials = len(self.deck_controller.inputs[Input.Dial])
+        n_dials = len(self.deck_controller.inputs.get(Input.Dial, []))
         dial_index = identifier.index
 
         start_x = int((dial_index / n_dials) * width)
@@ -2244,14 +2238,14 @@ class ControllerTouchScreen(ControllerInput):
     def get_dial_image_area_size(self) -> tuple[int, int]:
         width, height = self.get_screen_dimensions()
 
-        n_dials = len(self.deck_controller.inputs[Input.Dial])
+        n_dials = len(self.deck_controller.inputs.get(Input.Dial, []))
 
         return int(width / n_dials), height
     
     def get_empty_dial_image(self) -> Image.Image:
         screen_width, screen_height = self.get_screen_dimensions()
 
-        n_dials = len(self.deck_controller.inputs[Input.Dial])
+        n_dials = len(self.deck_controller.inputs.get(Input.Dial, []))
 
         return Image.new("RGBA", (screen_width // n_dials, screen_height), (0, 0, 0, 0))
 
@@ -2268,44 +2262,45 @@ class ControllerTouchScreen(ControllerInput):
 
     def event_callback(self, event_type, value):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
+
         if event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG, TouchscreenEventType.DRAG):
             self.deck_controller.screen_saver.on_key_change()
+
         if screensaver_was_showing:
             return
         
         active_state = self.get_active_state()
         if event_type == TouchscreenEventType.DRAG:
             # Check if from left to right or the other way
-            if value['x'] > value['x_out']:
-                active_state.own_actions_event_callback_threaded(
-                    Input.Touchscreen.Events.DRAG_LEFT
-                )
-            else:
-                active_state.own_actions_event_callback_threaded(
-                    Input.Touchscreen.Events.DRAG_RIGHT
-                )
+            event = Input.Touchscreen.Events.DRAG_LEFT if value["x"] > value["x_out"] else Input.Touchscreen.Events.DRAG_RIGHT
+            active_state.own_actions_event_callback_threaded(event)
 
 
         #TODO get matching actions from the dials
         elif event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG):
             dial = self.get_dial_for_touch_x(value['x'])
-            if dial is not None:
-                dial_active_state = dial.get_active_state()
-                if dial_active_state is not None:
 
-                    event = Input.Dial.Events.SHORT_TOUCH_PRESS
-                    if event_type == TouchscreenEventType.LONG:
-                        event = Input.Dial.Events.LONG_TOUCH_PRESS
+            if dial is None:
+                return
 
-                    dial_active_state.own_actions_event_callback_threaded(
-                        event,
-                        data={"x": value['x'], "y": value['y']},
-                        show_notifications=True
-                    )
+            dial_active_state = dial.get_active_state()
+
+            if dial_active_state is None:
+                return
+
+            event = Input.Dial.Events.SHORT_TOUCH_PRESS
+            if event_type == TouchscreenEventType.LONG:
+                event = Input.Dial.Events.LONG_TOUCH_PRESS
+
+            dial_active_state.own_actions_event_callback_threaded(
+                event,
+                data={"x": value['x'], "y": value['y']},
+                show_notifications=True
+            )
 
     def get_dial_for_touch_x(self, touch_x: float) -> "ControllerDial":
         screen_width = self.deck_controller.get_touchscreen_image_size()[0]
-        n_dials = len(self.deck_controller.inputs[Input.Dial])
+        n_dials = len(self.deck_controller.inputs.get(Input.Dial, []))
         dial_index = int((touch_x / screen_width) * n_dials)
 
         return self.deck_controller.get_input(Input.Dial(str(dial_index)))
@@ -2334,15 +2329,15 @@ class ControllerDial(ControllerInput):
 
     def event_callback(self, event_type, value):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
-        if event_type == DialEventType.TURN:
+
+        if event_type == DialEventType.TURN or (event_type == DialEventType.PUSH and value):
             self.deck_controller.screen_saver.on_key_change()
-        if event_type == DialEventType.PUSH and value:
-            # Only on push, not on hold to allow actions to enable the screensaver without directly causing it to wake up again
-            self.deck_controller.screen_saver.on_key_change()
+
         if screensaver_was_showing:
             return
         
         active_state = self.get_active_state()
+
         if event_type == DialEventType.PUSH:
             if value:
                 self.down_start_time = time.time()
@@ -2353,7 +2348,10 @@ class ControllerDial(ControllerInput):
                 )
             elif self.down_start_time is not None:
                 self.stop_hold_timer()
-                if time.time() >= self.down_start_time + self.deck_controller.hold_time:
+
+                elapsed_time = time.time() - self.down_start_time
+
+                if elapsed_time >= self.deck_controller.hold_time:
                     active_state.own_actions_event_callback_threaded(
                         event=Input.Dial.Events.HOLD_STOP
                     )
@@ -2365,95 +2363,80 @@ class ControllerDial(ControllerInput):
                 active_state.own_actions_event_callback_threaded(
                     event=Input.Dial.Events.UP
                 )
-        
         elif event_type == DialEventType.TURN:
-            if value < 0:
-                active_state.own_actions_event_callback_threaded(
-                    event=Input.Dial.Events.TURN_CCW
-                )
-            else:
-                active_state.own_actions_event_callback_threaded(
-                    event=Input.Dial.Events.TURN_CW
-                )
+            event = Input.Dial.Events.TURN_CCW if value < 0 else Input.Dial.Events.TURN_CW
+            active_state.own_actions_event_callback_threaded(event)
 
     def load_from_input_dict(self, page_dict, update: bool = True):
-        n_states = len(page_dict.get("states", {}))
-        self.create_n_states(max(1, n_states))
+        states_data = page_dict.get("states", {})
+        self.create_n_states(max(1, len(states_data)))
 
         old_state_index = self.state
-
         self.state = 0
 
-        for state in page_dict.get("states", {}):
-            state: ControllerDialState = self.states.get(int(state))
-            if state is None:
+        for state_id_str, state_dict in states_data.items():
+            state: ControllerInputState = self.states.get(int(state_id_str), None)
+
+            if state is None or state_dict is None:
                 continue
 
-            state_dict = page_dict["states"][str(state.state)]
+            state.layout_manager.set_action_layout(ImageLayout(), update=False)
+            state.own_actions_update()
 
-            # Reset action layout
-            layout = ImageLayout()
-            state.layout_manager.set_action_layout(layout, update=False)
-
-            state.own_actions_update() # Why not threaded? Because this would mean that some image changing calls might get executed after the next lines which blocks custom assets
-
-            ## Load labels
-            for label in state_dict.get("labels", []):
+            for label_id, label_data in state_dict.get("labels", {}).items():
                 key_label = KeyLabel(
                     controller_input=self,
-                    text=state_dict["labels"][label].get("text"),
-                    font_size=state_dict["labels"][label].get("font-size"),
-                    font_name=state_dict["labels"][label].get("font-family"),
-                    color=state_dict["labels"][label].get("color"),
+                    text=label_data.get("text"),
+                    font_size=label_data.get("font-size"),
+                    font_name=label_data.get("font-family"),
+                    color=label_data.get("color")
                 )
-                state.label_manager.set_page_label(label, key_label, update=False)
+                state.label_manager.set_page_label(label_id, key_label, update=False)
 
-            ## Load media
-            path = state_dict.get("media", {}).get("path")
-            if path not in ["", None]:
-                if is_image(path):
-                    image = InputImage(
-                        controller_input=self,
-                        image=Image.open(path),
-                    )
-                    state.set_image(image, update=False)
-                elif is_svg(path):
-                    img = svg_to_pil(path, 192)
-                    state.set_image(InputImage(
-                        controller_input=self,
-                        image=img
-                    ), update=False)
+            media_dict = state_dict.get("media", {})
 
-                elif is_video(path):
-                    if os.path.splitext(path)[1].lower() == ".gif":
-                        raise NotImplementedError("TODO") #TODO
-                        state.set_video(KeyGIF(
-                            controller_key=self,
-                            gif_path=path,
-                            loop=state_dict.get("media", {}).get("loop", True),
-                            fps=state_dict.get("media", {}).get("fps", 30)
-                        )) # GIFs always update
-                    else:
-                        state.set_video(InputVideo(
-                            controller_input=self,
-                            video_path=path,
-                            loop = state_dict.get("media", {}).get("loop", True),
-                            fps = state_dict.get("media", {}).get("fps", 30),
-                        )) # Videos always update
+            self.load_media_for_state(state, media_dict)
 
             layout = ImageLayout(
-                fill_mode=state_dict.get("media", {}).get("fill-mode"),
-                size=state_dict.get("media", {}).get("size"),
-                valign=state_dict.get("media", {}).get("valign"),
-                halign=state_dict.get("media", {}).get("halign"),
+                fill_mode=media_dict.get("fill-mode"),
+                size=media_dict.get("size"),
+                valign=media_dict.get("valign"),
+                halign=media_dict.get("halign")
             )
             state.layout_manager.set_page_layout(layout, update=False)
 
-            state.background_manager.set_page_color(state_dict.get("background", {}).get("color", [0, 0, 0, 0]), update=False)
+            state.background_manager.set_page_color(
+                state_dict.get("background", {}).get("color", [0,0,0,0]),
+                update=False
+            )
 
         if update:
             self.set_state(old_state_index)
             self.update()
+
+    def load_media_for_state(self, state, media_data: dict):
+        path = media_data.get("path")
+
+        if not path:
+            return
+
+        if is_image(path):
+            image = InputImage(self, Image.open(path))
+            state.set_image(image, update=False)
+        elif is_svg(path):
+            pil_image = svg_to_pil(path, 192)
+            state.set_image(InputImage(self, pil_image), update=False)
+        elif is_video(path):
+            if os.path.splitext(path)[1].lower() == ".gif":
+                raise NotImplementedError("TODO: GIF SUPPORT")
+            else:
+                video = InputVideo(
+                    controller_input=self,
+                    video_path=path,
+                    loop=media_data.get("loop", True),
+                    fps=media_data.get("fps", 30)
+                )
+                state.set_video(video, update=False)
 
     def update(self):
         self.get_touch_screen().update()

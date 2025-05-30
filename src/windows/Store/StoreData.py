@@ -15,10 +15,11 @@ class StoreData:
     minimum_app_version: str | None = None # Minimum app version that is required to use the Content
     app_version: str | None = None # The Current app version the Plugin is made for
     repository_name: str | None = None # Name of the Repository
-    tags: list[str] = field(default_factory=list) # If the asset has a compatible version
-    is_compatible: bool | None = None
-    branch: str = None
-    verified: bool = False
+    tags: list[str] = field(default_factory=list) # Tags that the Repository has
+    is_compatible: bool | None = None # If the asset has a compatible version
+    branch: str = None # Branch of the Repository
+    verified: bool = False # If the Repository is verifier
+    stargazers: int = 0 # Current Stargazers of the Repository
 
 @dataclass
 class ImageData:

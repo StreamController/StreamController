@@ -26,7 +26,7 @@ class Migrator:
         self.parsed_app_version = version.parse(app_version)
 
     def get_need_migration(self) -> bool:
-        app_version = version.parse(gl.app_version)
+        app_version = version.parse(gl.APP_VERSION)
         migrator_version = self.parsed_app_version
         if app_version < migrator_version:
             return False
@@ -66,7 +66,7 @@ class Migrator:
         # Create zip
         log.info(f"Creating backup to {backup_path}")
         path = shutil.make_archive(
-            base_name=os.path.join(backup_path, f"before_{gl.app_version}_migration"),
+            base_name=os.path.join(backup_path, f"before_{gl.APP_VERSION}_migration"),
             format="zip",
             root_dir=pages_path,
         )

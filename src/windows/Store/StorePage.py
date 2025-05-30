@@ -126,6 +126,6 @@ class StorePage(Gtk.Stack):
             if app_version_to_check is None:
                 return True
             min_version = version.parse(app_version_to_check)
-            app_version = version.parse(gl.app_version)
+            app_version = version.parse(gl.APP_VERSION)
 
             return min_version < app_version

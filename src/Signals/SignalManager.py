@@ -18,6 +18,13 @@ from src.Signals.Signals import AppQuit, Signal
 from gi.repository import GLib
 
 class SignalManager:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
         self.connected_signals: dict = {}
 

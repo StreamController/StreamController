@@ -31,8 +31,12 @@ from src.backend.DeckManagement.HelperMethods import is_svg, sha256, file_in_dir
 import globals as gl
 
 class MediaManager:
-    def __init__(self):
-        pass
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def get_thumbnail(self, file_path):
         hash = sha256(file_path)

@@ -118,7 +118,7 @@ class HeaderBar(Gtk.HeaderBar):
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutWindow(transient_for=self.main_window)
         self.about.set_application_name("StreamController")
-        self.about.set_version(gl.app_version)
+        self.about.set_version(gl.APP_VERSION)
         self.about.set_developers(["Core447"])
         self.about.set_developer_name("Core447")
         self.about.set_license_type(Gtk.License.GPL_3_0)
@@ -140,5 +140,5 @@ class HeaderBar(Gtk.HeaderBar):
         self.about.set_debug_info("".join(gl.logs))
         self.about.set_debug_info_filename(os.path.join(gl.DATA_PATH, "logs/logs.log"))
 
-        self.about.set_release_notes(gl.release_notes)  
-        self.about.set_release_notes_version(gl.app_version)
+        self.about.set_release_notes(gl.RELEASE_NOTES)
+        self.about.set_release_notes_version(gl.APP_VERSION)

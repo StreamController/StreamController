@@ -79,7 +79,7 @@ class ActionHolder:
         
     def get_is_compatible(self) -> bool:
         if self.min_app_version is not None:
-            if version.parse(gl.app_version) < version.parse(self.min_app_version):
+            if version.parse(gl.APP_VERSION) < version.parse(self.min_app_version):
                 return False
             
         return True

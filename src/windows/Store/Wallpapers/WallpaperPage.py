@@ -81,6 +81,8 @@ class WallpaperPreview(StorePreview):
         self.set_image(wallpaper_data.image)
         self.set_url(wallpaper_data.github)
 
+
+
         self.set_official(wallpaper_data.official)
         self.set_verified(wallpaper_data.verified)
 

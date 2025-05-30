@@ -11,8 +11,6 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-import os
-
 # Import gtk modules
 import gi
 gi.require_version("Gtk", "4.0")
@@ -21,22 +19,11 @@ from gi.repository import Gtk
 
 # Import globals
 import globals as gl
-from gi.repository import GdkPixbuf
 
-class Badge:
-    def __init__(self, badge_name):
-        path = os.path.join(gl.top_level_dir, "Assets", "images", "badges", badge_name)
-        size = 16
+class OfficialBadge(Gtk.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(label=gl.lm.get("store.badges.official"), *args, **kwargs)
 
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(path, width=size, height=size)
-        self.image = Gtk.Image.new_from_pixbuf(pixbuf)
-
-        self.image.set_valign(Gtk.Align.START)
-        self.image.set_halign(Gtk.Align.START)
-        self.image.set_margin_end(5)
-
-    def set_enabled(self, enable: bool):
-        self.image.set_visible(enable)
-
-    def set_tooltip(self, tooltip: str):
-        self.image.set_tooltip_markup(tooltip)
+class VerifiedBadge(Gtk.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(label=gl.lm.get("store.badges.verified"), *args, **kwargs)

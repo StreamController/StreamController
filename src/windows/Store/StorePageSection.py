@@ -85,7 +85,7 @@ class StorePageSection(Gtk.Stack):
 
         name = item.name_label.get_text().lower()
         author = item.author_label.get_text().lower()
-        description = item.description_label.get_text().lower()
+        description = item.description.get_text().lower()
 
         name_score = fuzz.ratio(search_string, name)
         author_score = fuzz.ratio(search_string, author)
@@ -101,7 +101,7 @@ class StorePageSection(Gtk.Stack):
         def get_weighted_score(item):
             name = item.name_label.get_text().lower()
             author = item.author_label.get_text().lower()
-            description = item.description_label.get_text().lower()
+            description = item.description.get_text().lower()
 
             name_score = fuzz.ratio(search_string, name)
             author_score = fuzz.ratio(search_string, author)

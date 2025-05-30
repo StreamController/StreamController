@@ -31,7 +31,7 @@ import asyncio
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
-from src.windows.Store.Badges import Badge
+from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
@@ -83,8 +83,8 @@ class IconPreview(StorePreview):
         self.set_image(icon_data.image)
         self.set_url(icon_data.github)
 
-        self.set_official(icon_data.official, gl.lm.get("store.badges.official.icon"))
-        self.set_verified(icon_data.verified, gl.lm.get("store.badges.warning.icon"))
+        self.set_official(icon_data.official)
+        self.set_verified(icon_data.verified)
 
         if not self.check_required_version(icon_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")

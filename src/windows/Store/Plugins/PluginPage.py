@@ -29,7 +29,7 @@ from loguru import logger as log
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
-from src.windows.Store.Badges import Badge
+from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
@@ -93,8 +93,8 @@ class PluginPreview(StorePreview):
         self.set_image(plugin_data.image)
         self.set_url(plugin_data.github)
 
-        self.set_official(plugin_data.official, gl.lm.get("store.badges.official.plugin"))
-        self.set_verified(plugin_data.verified, gl.lm.get("store.badges.warning.plugin"))
+        self.set_official(plugin_data.official)
+        self.set_verified(plugin_data.verified)
 
         # Set install button state
         if plugin_data.local_sha is None:

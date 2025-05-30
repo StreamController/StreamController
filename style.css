@@ -166,10 +166,6 @@
   border-top-right-radius: 6px;
   min-height: 90px;
 }
-.plugin-store-plugin-name{
-  font-size:17px;
-  font-weight: bold;
-}
 .no-round-bottom {
   border-bottom-left-radius: 0px;
   border-bottom-right-radius: 0px;

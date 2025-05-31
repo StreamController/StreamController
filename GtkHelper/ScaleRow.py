@@ -101,6 +101,12 @@ class ScaleRow(Adw.ActionRow):
             better_disconnect(self.entry_row, self._reset_entry_row)
             better_disconnect(self.entry_row_controller, self._reset_entry_row)
 
+    def get_value(self) -> float:
+        return self._adjustment.get_value()
+
+    def set_value(self, value: float):
+        self._adjustment.set_value(value)
+
     @property
     def min(self):
         return self._adjustment.get_lower()

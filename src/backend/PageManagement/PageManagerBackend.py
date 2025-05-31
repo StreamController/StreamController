@@ -351,6 +351,9 @@ class PageManagerBackend:
         :param use_backup: Whether to use a backup file or not.
         :return: The dict containing the page settings.
         """
+        if path is None:
+            return {}
+
         backup_path = os.path.join(self.PAGE_PATH, "backups", os.path.basename(path))
 
         if not os.path.exists(path) and os.path.exists(backup_path) and use_backup:
@@ -488,9 +491,17 @@ class PageManagerBackend:
         :param settings: Settings dictionary to write into settings section of the file.
         :return: None
         """
+        if path is None:
+            return
+
         data = self.get_page_data(path, False)
         data["settings"] = settings
         self.settings_manager.save_settings_to_file(path, data)
+
+        for controller in gl.deck_manager.deck_controller:
+            if controller.active_page.json_path != path:
+                continue
+            controller.active_page.dict = data
 
     def get_auto_change_settings(self, path: str) -> dict:
         """
@@ -633,5 +644,5 @@ class PageManagerBackend:
         if media_path is not None:
             background_settings["media-path"] = media_path
 
-        settings["screensaver"] = background_settings
+        settings["background"] = background_settings
         self.set_page_settings(path, settings)

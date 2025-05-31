@@ -366,13 +366,18 @@ class Screensaver(Adw.PreferencesRow):
     def set_thumbnail(self, file_path):
         if file_path == None:
             return
+
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
+
         self.media_selector_image.set_from_pixbuf(None)
         self.media_selector_image.pixbuf = None
+
         del self.media_selector_image.pixbuf
+
         self.media_selector_image.set_from_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
+
         image.close()
         image = None
         pixbuf = None

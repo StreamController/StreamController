@@ -521,25 +521,19 @@ class DeckController:
         page_background_settings = page.dict.get("settings", {}).get("background", {})
 
         log.info(f"Loading background in thread: {threading.get_ident()}")
-
-        # Deck Background is True and Page Override is False
         if deck_background_settings.get("enable", False) and not page_background_settings.get("overwrite", False):
-            self.background.set_from_path(
-                deck_background_settings.get("path"),
-                update=update,
-                loop=deck_background_settings.get("loop", True),
-                fps=deck_background_settings.get("fps", 30),
-            )
-        # Page Override is True and Page Show is True
+            config = deck_background_settings
         elif page_background_settings.get("overwrite", False) and page_background_settings.get("show", False):
-            self.background.set_from_path(
-                page_background_settings.get("media-path"),
-                update=update,
-                loop=page_background_settings.get("loop", True),
-                fps=page_background_settings.get("fps", 30),
-            )
+            config = page_background_settings
         else:
-            self.background.set_from_path(None, update=update)
+            config = {}
+
+        self.background.set_from_path(
+            path=config.get("media-path"),
+            update=update,
+            loop=config.get("loop", False),
+            fps=config.get("fps", 30),
+        )
 
     @log.catch
     def load_brightness(self, page: Page):
@@ -554,18 +548,25 @@ class DeckController:
         else:
             value = deck_brightness.get("value", 75)
 
+        log.info(value)
+
         self.set_brightness(value)
 
     @log.catch
     def load_screensaver(self, page: Page):
-        deck_screensaver_settings = self.get_deck_settings().get("screensaver", {})
+        deck_settings = self.get_deck_settings()
+        deck_screensaver_settings = deck_settings.get("screensaver", {})
         page_screensaver_settings = page.dict.get("settings", {}).get("screensaver", {})
 
-        # Choose the source of the config
-        use_deck = not page_screensaver_settings.get("overwrite", False) and "screensaver" in deck_screensaver_settings
-        config = deck_screensaver_settings if use_deck else page_screensaver_settings
+        log.info(f"Loading screensaver in thread: {threading.get_ident()}")
+        if deck_screensaver_settings.get("enable", False) and not page_screensaver_settings.get("overwrite", False):
+            config = deck_screensaver_settings
+        elif page_screensaver_settings.get("overwrite", False) and page_screensaver_settings.get("enable", False):
+            config = page_screensaver_settings
+        else:
+            config = {}
 
-        self.screen_saver.set_media_path(config.get("path"))
+        self.screen_saver.set_media_path(config.get("media-path"))
         self.screen_saver.set_enable(config.get("enable", False))
         self.screen_saver.set_time(config.get("time-delay", 5))
         self.screen_saver.set_loop(config.get("loop", False))

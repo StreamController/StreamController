@@ -595,7 +595,7 @@ class PageManagerBackend:
 
         settings["brightness"] = {
             "overwrite": overwrite,
-            "brightness": brightness
+            "value": brightness
         }
 
         self.set_page_settings(path, settings)
@@ -607,7 +607,7 @@ class PageManagerBackend:
         if overwrite is not None:
             brightness_settings["overwrite"] = overwrite
         if brightness is not None:
-            brightness_settings["brightness"] = brightness
+            brightness_settings["value"] = brightness
 
         settings["brightness"] = brightness_settings
         self.set_page_settings(path, settings)

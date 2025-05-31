@@ -61,7 +61,7 @@ class PageEditor(Adw.NavigationPage):
         self.header.pack_end(self.menu_button)
 
         # Main stack - one page for the normal editor and one for the no page info screen
-        self.main_stack = Gtk.Stack(hexpand=True, vexpand=True)
+        self.main_stack = Gtk.Stack(hexpand=True, vexpand=True, margin_bottom=20)
         self.main_box.append(self.main_stack)
 
         # The box for the normal editor
@@ -104,10 +104,6 @@ class PageEditor(Adw.NavigationPage):
         self.screensaver_group = ScreensaverGroup(page_editor=self)
         self.editor_main_box.append(self.screensaver_group)
 
-        # Delete button
-        self.delete_button = DeleteButton(page_editor=self, margin_top=40)
-        self.editor_main_box.append(self.delete_button)
-
         # No page page
         self.no_page_box = Gtk.Box(hexpand=True, vexpand=True)
         self.main_stack.add_titled(self.no_page_box, "no-page", "No Page")
@@ -131,7 +127,6 @@ class PageEditor(Adw.NavigationPage):
             return
         
         self.page_manager.remove_page_by_path(self.active_page_path)
-
 
 class PageEditorGroup(Adw.PreferencesGroup):
     def __init__(self, page_editor: PageEditor, *args, **kwargs):
@@ -374,7 +369,6 @@ class BrightnessGroup(PageEditorGroup):
                     controller.load_brightness(controller.active_page)
 
         GLib.idle_add(on_idle)
-
 
 class BackgroundGroup(PageEditorGroup):
     def __init__(self, page_editor: PageEditor):
@@ -694,39 +688,3 @@ class MatchingWindowExpander(BetterExpander):
 
         matching_windows = gl.window_grabber.get_all_matching_windows(class_regex=class_regex, title_regex=title_regex)
         self.load_windows(windows=matching_windows)
-
-class DeleteButton(Gtk.Button):
-    def __init__(self, page_editor: PageEditor, *args, **kwargs):
-        super().__init__(css_classes=["destructive-action", "tall-button"], hexpand=True, *args, **kwargs)
-        self.page_editor = page_editor
-        self.set_label(gl.lm.get("page-manager.page-editor.delete-page"))
-        self.connect("clicked", self.on_delete_clicked)
-
-    def on_delete_clicked(self, button: Gtk.Button) -> None:
-        dialog = DeletePageConfirmationDialog(page_editor=self.page_editor)
-        dialog.present()
-
-class DeletePageConfirmationDialog(Adw.MessageDialog):
-    def __init__(self, page_editor: PageEditor, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.page_editor = page_editor
-
-        self.set_transient_for(page_editor.page_manager)
-        self.set_modal(True)
-        self.set_title(gl.lm.get("page-manager.page-editor.delete-page-confirm.title"))
-        self.add_response("cancel", gl.lm.get("page-manager.page-editor.delete-page-confirm.cancel"))
-        self.add_response("delete", gl.lm.get("page-manager.page-editor.delete-page-confirm.delete"))
-        self.set_default_response("cancel")
-        self.set_close_response("cancel")
-        self.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
-
-        page_name = os.path.splitext(os.path.basename(self.page_editor.active_page_path))[0]
-        self.set_body(f'{gl.lm.get("page-manager.page-editor.delete-page-confirm.body")}"{page_name}"?')
-
-        self.connect("response", self.on_response)
-
-    def on_response(self, dialog: Adw.MessageDialog, response: int) -> None:
-        if response == "delete":
-            page_path = self.page_editor.active_page_path
-            self.page_editor.page_manager.remove_page_by_path(page_path)
-        self.destroy()

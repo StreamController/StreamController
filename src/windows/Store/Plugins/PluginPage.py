@@ -77,7 +77,7 @@ class PluginPage(StorePage):
             if app_version_to_check is None:
                 return True
             min_version = version.parse(app_version_to_check)
-            app_version = version.parse(gl.app_version)
+            app_version = version.parse(gl.APP_VERSION)
 
             return min_version < app_version
 
@@ -130,6 +130,7 @@ class PluginPreview(StorePreview):
         self.plugin_page.info_page.set_description(self.plugin_data.description)
         self.plugin_page.info_page.set_author(self.plugin_data.author)
         self.plugin_page.info_page.set_version(self.plugin_data.plugin_version)
+        self.plugin_page.info_page.set_stargazer(self.plugin_data.stargazers)
 
         self.plugin_page.info_page.set_license(self.plugin_data.license)
         self.plugin_page.info_page.set_copyright(self.plugin_data.copyright)
@@ -140,6 +141,6 @@ class PluginPreview(StorePreview):
         if app_version_to_check is None:
             return True
         min_version = version.parse(app_version_to_check)
-        app_version = version.parse(gl.app_version)
+        app_version = version.parse(gl.APP_VERSION)
 
         return min_version < app_version

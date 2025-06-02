@@ -1,0 +1,7 @@
+<p>Features:</p>
+<p>Fixes:</p>
+<ul>
+    <li>Wrong input mapping when deck is rotated 90 or 270 degrees</li>
+    <li>Excessive startup times for some users</li>
+    <li>Weird behaviour of GenerativeUI in some cases</li>
+</ul>

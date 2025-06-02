@@ -140,7 +140,7 @@ def is_video(path: str) -> bool:
     if path is None:
         return
     if os.path.isfile(path):
-        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.video_extensions
+        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.VIDEO_EXTENSIONS
 
     return False
 
@@ -149,7 +149,7 @@ def is_image(path: str) -> bool:
     if path is None:
         return False
     if os.path.isfile(path):
-        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.image_extensions
+        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.IMAGE_EXTENSIONS
 
     return False
 
@@ -158,7 +158,7 @@ def is_svg(path: str) -> bool:
     if path is None:
         return False
     if os.path.isfile(path):
-        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.svg_extensions
+        return os.path.splitext(path)[1][1:].lower().replace(".", "") in gl.SVG_EXTENSIONS
 
     return path.startswith("<svg ")
 

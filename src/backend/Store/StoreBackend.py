@@ -58,6 +58,12 @@ class StoreBackend:
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
     STORE_BRANCH = "1.5.0"
 
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
         self.store_cache = StoreCache()
@@ -74,8 +80,10 @@ class StoreBackend:
         log.info(f"Official store branch: {branch}")
         stores.append((self.STORE_REPO_URL, branch))
 
-        if settings.get("store", {}).get("enable-custom-stores", False):
-            for store in settings.get("store", {}).get("custom-stores", {}):
+        store_dict = settings.get("store", {})
+
+        if store_dict.get("enable-custom-stores", False):
+            for store in store_dict.get("custom-stores", {}):
                 stores.append((store.get("url"), store.get("branch")))
 
         return stores
@@ -84,8 +92,11 @@ class StoreBackend:
         settings = gl.settings_manager.get_app_settings()
 
         plugins = []
-        if settings.get("store", {}).get("enable-custom-plugins", False):
-            for plugin in settings.get("store", {}).get("custom-plugins", []):
+
+        store_dict = settings.get("store", {})
+
+        if store_dict.get("enable-custom-plugins", False):
+            for plugin in store_dict.get("custom-plugins", []):
                 plugins.append((plugin.get("url"), plugin.get("branch")))
 
         return plugins
@@ -93,13 +104,17 @@ class StoreBackend:
     async def get_official_store_branch(self) -> str:
         if self.official_store_branch_cache is not None:
             return self.official_store_branch_cache
+
         versions_file = await self.get_remote_file(self.STORE_REPO_URL, "versions.json", branch_name="versions", force_refetch=True)
+
         if isinstance(versions_file, NoConnectionError):
             return versions_file
-        versions = json.loads(versions_file)
-        v = versions.get(gl.app_version, "main")
-        self.official_store_branch_cache = v
-        return v
+
+        versions_json = json.loads(versions_file)
+        versions = versions_json.get(gl.APP_VERSION, "main")
+        self.official_store_branch_cache = versions
+
+        return versions
 
     async def request_from_url(self, url: str) -> requests.Response:
         try:
@@ -144,6 +159,7 @@ class StoreBackend:
               with raw.githubusercontent.com.
         """
         byte_suffix = ""
+
         if data_type == "content":
             byte_suffix = "b"
 
@@ -157,8 +173,6 @@ class StoreBackend:
         if is_cached:
             with self.store_cache.open_cache_file(url=repo_url, branch=branch_name, path=file_path, mode=f"r{byte_suffix}") as f:
                 return f.read()
-        else:
-            pass
 
         url = self.build_url(repo_url, file_path, branch_name)
 
@@ -171,8 +185,6 @@ class StoreBackend:
             return
         
         with self.store_cache.open_cache_file(url=repo_url, branch=branch_name, path=file_path, mode=f"w{byte_suffix}") as f:
-            if answer is None:
-                return
             if data_type == "text":
                 f.write(answer.text)
             elif data_type == "content":
@@ -191,23 +203,29 @@ class StoreBackend:
             return
         
         commits = response.json()
+
         if len(commits) == 0:
             return
+
         return commits[0].get("sha")
     
     async def get_official_authors(self) -> list:
         authors_json = await self.get_remote_file(self.STORE_REPO_URL, "OfficialAuthors.json", self.STORE_BRANCH, force_refetch=True)
+
         if isinstance(authors_json, NoConnectionError):
             return authors_json
+
         authors_json = json.loads(authors_json)
         return authors_json
     
     async def fetch_and_parse_store_json(self, url: str, filename: str, branch: str, n_stores_with_errors: int = 0):
         try:
             store_file_json = await self.get_remote_file(url, filename, branch, force_refetch=True)
+
             if isinstance(store_file_json, NoConnectionError):
                 n_stores_with_errors += 1
                 return None, n_stores_with_errors
+
             store_file_json = json.loads(store_file_json)
             return store_file_json, n_stores_with_errors
         except (json.decoder.JSONDecodeError, TypeError) as e:
@@ -256,21 +274,34 @@ class StoreBackend:
     async def get_manifest(self, url:str, commit:str) -> dict:
         # url = self.build_url(url, "manifest.json", commit)
         manifest = await self.get_remote_file(url, "manifest.json", commit)
+
         if isinstance(manifest, NoConnectionError):
             return manifest
+
         if manifest is None:
             return
+
         return json.loads(manifest)
     
     def remove_old_manifest_cache(self, url:str, commit_sha:str):
-        for cached_url in list(self.manifest_cache.keys()):
-            if self.get_repo_name(cached_url) == self.get_repo_name(url) and not commit_sha in cached_url:
-                if os.path.isfile(self.manifest_cache[cached_url]):
-                    os.remove(self.manifest_cache[cached_url])
-                del self.manifest_cache[cached_url]
+        target_repo = self.get_repo_name(url)
+
+        keys_to_remove = []
+
+        for cached_url in self.manifest_cache.keys():
+            if self.get_repo_name(cached_url) == target_repo and commit_sha not in cached_url:
+                keys_to_remove.append(cached_url)
+
+        for cached_url in keys_to_remove:
+            cache_path = self.manifset_cache[cached_url]
+
+            if os.path.isfile(cache_path):
+                os.remove(cache_path)
+            del self.manifset_cache[cached_url]
 
     async def get_attribution(self, url:str, commit:str) -> dict:
         result = await self.get_remote_file(url, "attribution.json", commit)
+
         if isinstance(result, NoConnectionError):
             return result
         
@@ -280,52 +311,74 @@ class StoreBackend:
             return {}
     
     def remove_old_attribution_cache(self, url:str, commit_sha:str):
-        for cached_url in list(self.attribution_cache.keys()):
-            if self.get_repo_name(cached_url) == self.get_repo_name(url) and not commit_sha in cached_url:
-                if os.path.isfile(self.attribution_cache[cached_url]):
-                    os.remove(self.attribution_cache[cached_url])
-                del self.attribution_cache[cached_url]
+        target_repo = self.get_repo_name(url)
+
+        keys_to_remove = []
+
+        for cached_url in self.attribution_cache.keys():
+            if self.get_repo_name(cached_url) == target_repo and commit_sha not in cached_url:
+                keys_to_remove.append(cached_url)
+
+        for cached_url in keys_to_remove:
+            cache_path = self.attribution_cache[cached_url]
+
+            if os.path.isfile(cache_path):
+                os.remove(cache_path)
+            del self.attribution_cache[cached_url]
 
     async def prepare_plugin(self, plugin, include_image: bool = True, verified: bool = False):
-        url = plugin["url"]
-
-        # Check if suitable version is available
+        url = plugin.get("url")
+        branch = plugin.get("branch")
+        commit: str | None = None
         compatible = True
-        commit: str = None
+
         if "commits" in plugin:
-            version = self.get_newest_compatible_version(plugin["commits"])
+            plugin_commits = plugin.get("commits")
+
+            version = self.get_newest_compatible_version(plugin_commits)
+
             if version is None:
                 compatible = False
-                version = self.get_newest_version(list(plugin["commits"].keys()))
+                version = self.get_newest_version(list(plugin_commits.keys()))
+
                 if version is None:
                     return NoCompatibleVersion #TODO
-            commit = plugin["commits"][version]
 
-        branch = plugin.get("branch")
+            commit = plugin_commits.get(version)
+
         if branch is not None:
             commit = await self.get_last_commit(url, branch)
 
         manifest = await self.get_manifest(url, commit or branch)
+
         if isinstance(manifest, NoConnectionError):
-            log.error(f"manifest failed to load due to NoConnectionError for repository {url}")
+            log.error(f"Manifest failed to load due to NoConnectionError for repository {url}")
             return manifest
-        if not manifest:
-            log.error(f"manifest failed to load for repository {url}")
+        elif not manifest:
+            log.error(f"Manifest failed to load for repository {url}")
             return
 
         image = None
         thumbnail_path = manifest.get("thumbnail")
+
         if include_image:
             image = await self.get_web_image(url, thumbnail_path, commit or branch)
-            if isinstance(manifest, NoConnectionError):
+
+            if isinstance(image, NoConnectionError):
+                log.error(f"Thumbnail failed to load due to NoConnectionError for repository {url}")
                 return image
         
         attribution = await self.get_attribution(url, commit or branch)
         if isinstance(attribution, NoConnectionError):
+            log.error(f"Attribution failed to load due to NoConnectionError for repository {url}")
             return attribution
+
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
         stargazers = await self.get_stargazers(url)
+        if isinstance(stargazers, NoConnectionError):
+            log.error(f"Stargazers failed to load due ot NoConnectionError for repository: {url}")
+            return stargazers
 
         author = self.get_user_name(url)
 
@@ -362,7 +415,8 @@ class StoreBackend:
             plugin_id=manifest.get("id") or None,
 
             is_compatible=compatible,
-            verified=verified
+            verified=verified,
+            stargazers=stargazers
         )
     
     def get_current_git_commit_hash_without_git(self, repo_path: str) -> str:
@@ -406,39 +460,56 @@ class StoreBackend:
     async def prepare_icon(self, icon, include_image: bool = True, verified: bool = False):
         if not include_image:
             raise NotImplementedError("Not yet implemented") #TODO
-        if "url" not in icon:
-            return None
 
-        url = icon["url"]
-
-        # Check if suitable version is available
+        url = icon.get("url")
+        icon_commits = icon.get("commits")
         compatible = True
-        version = self.get_newest_compatible_version(icon["commits"])
+        version = self.get_newest_compatible_version(icon_commits)
+
         if version is None:
             compatible = False
-            version = self.get_newest_version(list(icon["commits"].keys()))
+            version = self.get_newest_version(list(icon_commits.keys()))
+
             if version is None:
                 return NoCompatibleVersion
-        commit = icon["commits"][version]
 
+        commit = icon_commits.get(version)
+
+        # Load Manifest
         manifest = await self.get_manifest(url, commit)
+
         if isinstance(manifest, NoConnectionError):
+            log.error(f"Manifest failed to load due ot NoConnectionError for repository: {url}")
             return manifest
-        attribution = await self.get_attribution(url, commit)
-        if isinstance(attribution, NoConnectionError):
-            return attribution
-        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
+        elif not manifest:
+            log.error(f"Manifest failed to load for repository: {url}")
+            return
 
+        # Load Thumbnail
+        image = None
         thumbnail_path = manifest.get("thumbnail")
-        image = await self.get_web_image(url, thumbnail_path, commit)
-        if isinstance(image, NoConnectionError):
-            return image
 
-        author = self.get_user_name(url)
+        if include_image:
+            image = await self.get_web_image(url, thumbnail_path, commit)
+            if isinstance(image, NoConnectionError):
+                log.error(f"Image failed to load for repository: {url}")
+                return image
+
+        # Load Attribution
+        attribution = await self.get_attribution(url, commit)
+
+        if isinstance(attribution, NoConnectionError):
+            log.error(f"Attribution failed to load due ot NoConnectionError for repository: {url}")
+            return attribution
+
+        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
 
         stargazers = await self.get_stargazers(url)
         if isinstance(stargazers, NoConnectionError):
+            log.error(f"Stargazers failed to load due ot NoConnectionError for repository: {url}")
             return stargazers
+
+        author = self.get_user_name(url)
         
         translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
         translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
@@ -472,41 +543,63 @@ class StoreBackend:
             icon_id=manifest.get("id") or None,
 
             is_compatible=compatible,
-            verified=verified
+            verified=verified,
+            stargazers=stargazers
         )
 
     
     async def prepare_wallpaper(self, wallpaper, include_image: bool = True, verified: bool = False):
         if not include_image:
             raise NotImplementedError("Not yet implemented") #TODO
-        if "url" not in wallpaper:
-            return None
 
-        url = wallpaper["url"]
-
-        # Check if suitable version is available
+        url = wallpaper.get("url")
+        wallpaper_commits = wallpaper.get("commits")
         compatible = True
         version = self.get_newest_compatible_version(wallpaper["commits"])
+
         if version is None:
             compatible = False
-            version = self.get_newest_version(list(wallpaper["commits"].keys()))
+            version = self.get_newest_version(list(wallpaper_commits.keys()))
+
             if version is None:
                 return NoCompatibleVersion
-        commit = wallpaper["commits"][version]
 
+        commit = wallpaper_commits.get(version)
+
+        # Load Manifest
         manifest = await self.get_manifest(url, commit)
-        if isinstance(manifest, NoConnectionError):
-            return manifest
 
+        if isinstance(manifest, NoConnectionError):
+            log.error(f"Manifest failed to load due ot NoConnectionError for repository: {url}")
+            return manifest
+        elif not manifest:
+            log.error(f"Manifest failed to load for repository: {url}")
+            return
+
+        # Load Thumbnail
+        image = None
         thumbnail_path = manifest.get("thumbnail")
-        image = await self.get_web_image(url, thumbnail_path, commit)
-        if isinstance(image, NoConnectionError):
-            return image
+
+        if include_image:
+            image = await self.get_web_image(url, thumbnail_path, commit)
+            if isinstance(image, NoConnectionError):
+                log.error(f"Image failed to load for repository: {url}")
+                return image
+
+        # Load Attribution
         attribution = await self.get_attribution(url, commit)
+
         if isinstance(attribution, NoConnectionError):
+            log.error(f"Attribution failed to load due ot NoConnectionError for repository: {url}")
             return attribution
-        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
-        
+
+        attribution = attribution.get("generic", {})  # TODO: Choose correct attribution
+
+        stargazers = await self.get_stargazers(url)
+        if isinstance(stargazers, NoConnectionError):
+            log.error(f"Stargazers failed to load due ot NoConnectionError for repository: {url}")
+            return stargazers
+
         author = self.get_user_name(url)
 
         translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
@@ -541,7 +634,8 @@ class StoreBackend:
             wallpaper_id=manifest.get("id") or None,
 
             is_compatible=compatible,
-            verified=verified
+            verified=verified,
+            stargazers=stargazers
         )
 
     async def get_web_image(self, url: str, path: str, branch: str = "main") -> Image:
@@ -611,12 +705,12 @@ class StoreBackend:
     
     def get_newest_compatible_version(self, available_versions: list[str]) -> str:
         if gl.exact_app_version_check:
-            if gl.app_version in available_versions:
-                return gl.app_version
+            if gl.APP_VERSION in available_versions:
+                return gl.APP_VERSION
             else:
                 return None
             
-        current_major = version.parse(gl.app_version).major
+        current_major = version.parse(gl.APP_VERSION).major
 
         compatible_versions = [v for v in available_versions if version.parse(v).major == current_major]
         parsed_compatible_versions = [version.parse(v) for v in compatible_versions]
@@ -663,7 +757,7 @@ class StoreBackend:
         return extracted_folder_name
     
     async def download_repo(self, repo_url:str, directory:str, commit_sha:str = None, branch_name:str = None):
-        if not is_flatpak() and gl.argparser.parse_args().devel:
+        if not is_flatpak() and gl.cli_args.devel:
             await self.clone_repo(repo_url, directory, commit_sha, branch_name)
             return
 

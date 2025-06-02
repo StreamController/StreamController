@@ -36,7 +36,7 @@ import threading
 # Import own modules
 from src.windows.Store.StorePage import StorePage
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
-from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
+from src.windows.Store.Badges import Badge
 from packaging import version
 
 class StorePreview(Gtk.FlowBoxChild):
@@ -71,20 +71,22 @@ class StorePreview(Gtk.FlowBoxChild):
                                       css_classes=["no-padding", "no-round-bottom"])
         self.main_button.connect("clicked", self.on_click_main)
         self.main_box.append(self.main_button)
-        
+
+        # Main Box
         self.main_button_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                                        hexpand=True, vexpand=False)
         self.main_button.set_child(self.main_button_box)
-        
+
+        # Thumbnail
         self.image = Gtk.Picture(hexpand=True, vexpand=True,
                                  content_fit=Gtk.ContentFit.COVER,
                                  height_request=90, width_request=250,
                                  css_classes=["plugin-store-image"], can_shrink=True)
         self.main_button_box.append(self.image)
 
-        # Add Labels
-        self.label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_start=6, margin_top=6)
-        self.main_button_box.append(self.label_box)
+        # Container for Labels and Badges
+        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=6, margin_start=6, margin_bottom=6)
+        self.main_button_box.append(self.content_box)
 
         self.name_label = Gtk.Label(css_classes=["bold"], xalign=0)
         self.author_label = Gtk.Label(sensitive=False, xalign=0)
@@ -92,29 +94,31 @@ class StorePreview(Gtk.FlowBoxChild):
                                      label=gl.lm.get("store.preview.no-description"),
                                      halign=Gtk.Align.START, hexpand=False)
 
-        self.label_box.append(self.name_label)
-        self.label_box.append(self.author_label)
-        self.label_box.append(self.description_label)
+        self.content_box.append(self.name_label)
+        self.content_box.append(self.author_label)
+        self.content_box.append(self.description_label)
 
+        # Container for Badges
         self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER,
-                                 hexpand=False, vexpand=True,
-                                 margin_start=6, margin_top=6, margin_bottom=6)
+                                 hexpand=False)
+        self.content_box.append(self.batch_box)
 
-        self.main_button_box.append(self.batch_box)
+        self.warning_badge = Badge("store.badges.label.warning", "store.badges.tooltip.warning", css_classes=["destructive-action", "bold"], margin_end=6)
+        self.official_batch = Badge("store.badges.label.official", "store.badges.tooltip.official", margin_end=6)
+        self.verified_batch = Badge("store.badges.label.verified", "store.badges.tooltip.verified", margin_end=6)
 
-        self.official_batch = OfficialBadge(margin_end=7, visible=False)
-        self.verified_batch = VerifiedBadge(visible=False)
-
+        self.batch_box.append(self.warning_badge)
         self.batch_box.append(self.official_batch)
         self.batch_box.append(self.verified_batch)
 
-        # Add Buttons
+        # Add Bottom Buttons
         self.main_button_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
 
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,
                                   hexpand=True)
         self.main_box.append(self.button_box)
 
+        # Github Button
         self.github_button = Gtk.Button(icon_name="web-browser-symbolic",
                                         hexpand=True,
                                         css_classes=["no-round-top-left", "no-round-top-right", "no-round-bottom-right"])
@@ -123,12 +127,14 @@ class StorePreview(Gtk.FlowBoxChild):
 
         self.button_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
 
+        # Install Button
         self.install_uninstall_button = Gtk.Button(icon_name="folder-download-symbolic",
                                           hexpand=True,
                                           css_classes=["no-round-top-left", "no-round-top-right", "no-round-bottom-left"])
         self.install_uninstall_button.connect("clicked", self.on_download_clicked)
         self.button_box.append(self.install_uninstall_button)
 
+        # Install Spinner
         self.install_spinner_box = Gtk.Box(hexpand=True,
                                            css_classes=["round-bottom-right", "button-color"],
                                            overflow=Gtk.Overflow.HIDDEN, visible=False)
@@ -159,6 +165,7 @@ class StorePreview(Gtk.FlowBoxChild):
 
     def set_verified(self, verified:bool):
         self.verified_batch.set_visible(verified)
+        self.warning_badge.set_visible(not verified)
 
     def set_author_label(self, author:str):
         self.author_label.set_text(author)

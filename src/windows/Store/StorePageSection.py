@@ -79,7 +79,6 @@ class StorePageSection(Gtk.Stack):
             bool: True if the item passes the filter, False otherwise.
         """
         search_string = self.search_entry.get_text().strip().lower()
-
         if search_string == "":
             return True
 
@@ -93,7 +92,11 @@ class StorePageSection(Gtk.Stack):
 
         MIN_FUZZY_SCORE = 20
 
-        return name_score >= MIN_FUZZY_SCORE or author_score >= MIN_FUZZY_SCORE or description_score >= MIN_FUZZY_SCORE
+        return (
+                name_score >= MIN_FUZZY_SCORE or
+                author_score >= MIN_FUZZY_SCORE or
+                description_score >= MIN_FUZZY_SCORE
+        )
     
     def sort_func(self, item_a, item_b):
         search_string = self.search_entry.get_text().strip().lower()
@@ -106,7 +109,9 @@ class StorePageSection(Gtk.Stack):
             name_score = fuzz.ratio(search_string, name)
             author_score = fuzz.ratio(search_string, author)
             description_score = fuzz.ratio(search_string, description)
-            return (name_score * 0.6) + (author_score * 0.3) + (description_score * 0.1)
+
+            # Adjust weights as desired
+            return (name_score * 0.7) + (author_score * 0.25) + (description_score * 0.05)
 
         if search_string == "":
             return (item_a.name_label.get_text() > item_b.name_label.get_text()) - \

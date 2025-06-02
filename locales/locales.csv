@@ -87,8 +87,12 @@ open-about;Über;About;A propos;Acerca de
 store.plugins.section;Plugins;Plugins;Plugins;Plugins
 store.icons.section;Icons;Icons;Icônes;Iconos
 store.wallpapers.section;Hintergründe;Wallpapers;Fonds d'écrans;Fondos de pantalla
-store.badges.official;Offiziell;Official;Officiel;Oficial
-store.badges.verified;Verifiziert;Verified;Vérifié;Verificado
+store.badges.label.warning;WARNUNG;WARNING;;
+store.badges.label.official;Offiziell;Official;Officiel;Oficial
+store.badges.label.verified;Verifiziert;Verified;Vérifié;Verificado
+store.badges.tooltip.warning;A;A;A;A
+store.badges.tooltip.official;A;A;A;A
+store.badges.tooltip.verified;A;A;A;A
 quit;Beenden;Quit;Quitter;Salir de
 store.plugins.search-placeholder;Nach Plugins suchen;Search for plugins;Recherchez des plugins;Buscar plugins
 store.icons.search-placeholder;Nach Icons suchen;Search for icons;Recherchez des icônes;Buscar iconos

@@ -85,6 +85,10 @@ class IconPreview(StorePreview):
         self.set_official(icon_data.official)
         self.set_verified(icon_data.verified)
 
+        self.warning_badge.set_tooltip("store.badges.icon.warning")
+        self.official_badge.set_tooltip("store.badges.icon.official")
+        self.verified_badge.set_tooltip("store.badges.icon.verified")
+
         if not self.check_required_version(icon_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")
         else:

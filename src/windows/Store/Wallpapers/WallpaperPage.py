@@ -83,6 +83,10 @@ class WallpaperPreview(StorePreview):
         self.set_official(wallpaper_data.official)
         self.set_verified(wallpaper_data.verified)
 
+        self.warning_badge.set_tooltip("store.badges.wallpaper.warning")
+        self.official_badge.set_tooltip("store.badges.wallpaper.official")
+        self.verified_badge.set_tooltip("store.badges.wallpaper.verified")
+
         if not self.check_required_version(wallpaper_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")
         else:

@@ -99,17 +99,17 @@ class StorePreview(Gtk.FlowBoxChild):
         self.content_box.append(self.description_label)
 
         # Container for Badges
-        self.batch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER,
+        self.badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER,
                                  hexpand=False)
-        self.content_box.append(self.batch_box)
+        self.content_box.append(self.badge_box)
 
-        self.warning_badge = Badge("store.badges.label.warning", "store.badges.tooltip.warning", css_classes=["destructive-action", "bold"], margin_end=6)
-        self.official_batch = Badge("store.badges.label.official", "store.badges.tooltip.official", margin_end=6)
-        self.verified_batch = Badge("store.badges.label.verified", "store.badges.tooltip.verified", margin_end=6)
+        self.warning_badge = Badge("store.badges.label.warning", css_classes=["destructive-action", "bold"], margin_end=6)
+        self.official_badge = Badge("store.badges.label.official", margin_end=6)
+        self.verified_badge = Badge("store.badges.label.verified", margin_end=6)
 
-        self.batch_box.append(self.warning_badge)
-        self.batch_box.append(self.official_batch)
-        self.batch_box.append(self.verified_batch)
+        self.badge_box.append(self.warning_badge)
+        self.badge_box.append(self.official_badge)
+        self.badge_box.append(self.verified_badge)
 
         # Add Bottom Buttons
         self.main_button_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
@@ -161,10 +161,10 @@ class StorePreview(Gtk.FlowBoxChild):
         GLib.idle_add(self.image.set_pixbuf, pixbuf)
 
     def set_official(self, official:bool):
-        self.official_batch.set_visible(official)
+        self.official_badge.set_visible(official)
 
     def set_verified(self, verified:bool):
-        self.verified_batch.set_visible(verified)
+        self.verified_badge.set_visible(verified)
         self.warning_badge.set_visible(not verified)
 
     def set_author_label(self, author:str):

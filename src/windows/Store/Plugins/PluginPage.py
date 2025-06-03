@@ -95,6 +95,10 @@ class PluginPreview(StorePreview):
         self.set_official(plugin_data.official)
         self.set_verified(plugin_data.verified)
 
+        self.warning_badge.set_tooltip("store.badges.plugin.warning")
+        self.official_badge.set_tooltip("store.badges.plugin.official")
+        self.verified_badge.set_tooltip("store.badges.plugin.verified")
+
         # Set install button state
         if plugin_data.local_sha is None:
             self.set_install_state(0)

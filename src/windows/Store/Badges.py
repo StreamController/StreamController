@@ -21,10 +21,16 @@ from gi.repository import Gtk
 import globals as gl
 
 class Badge(Gtk.Button):
-    def __init__(self, label: str, tooltip: str, *args, **kwargs):
+    def __init__(self, label: str, tooltip: str = None, *args, **kwargs):
         super().__init__(
             label=gl.lm.get(label),
             *args, **kwargs
         )
+        self.set_tooltip(tooltip)
+
+    def set_tooltip(self, tooltip: str):
+        if tooltip:
+            self.set_has_tooltip(True)
+        else:
+            self.set_has_tooltip(False)
         self.set_tooltip_text(gl.lm.get(tooltip))
-        self.set_has_tooltip(True)

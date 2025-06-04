@@ -67,7 +67,7 @@ class StorePreview(Gtk.FlowBoxChild):
         self.search_box.append(self.search_bar)
 
         self.main_button = Gtk.Button(hexpand=True, vexpand=False,
-                                      width_request=250, height_request=250,
+                                      width_request=250, height_request=275,
                                       css_classes=["no-padding", "no-round-bottom"])
         self.main_button.connect("clicked", self.on_click_main)
         self.main_box.append(self.main_button)
@@ -156,7 +156,7 @@ class StorePreview(Gtk.FlowBoxChild):
     def set_image(self, image:Image):
         if image is None:
             return
-        image.thumbnail((250, 90))
+        image.thumbnail((250, 360))
         pixbuf = image2pixbuf(image, force_transparency=True)
         GLib.idle_add(self.image.set_pixbuf, pixbuf)
 
@@ -183,7 +183,7 @@ class StorePreview(Gtk.FlowBoxChild):
 
     def on_download_clicked(self, button: Gtk.Button):
         GLib.idle_add(self.show_install_spinner, True)
-        
+
         threading.Thread(target=self.perform_download_threaded, args=(), name="perform_download_threaded").start()
 
     @log.catch
@@ -242,7 +242,7 @@ class StorePreview(Gtk.FlowBoxChild):
 
         elif state == 2:
             self.install_uninstall_button.set_icon_name("software-update-available-symbolic")
-            
+
             self.install_uninstall_button.add_css_class("confirm-button")
             self.install_uninstall_button.remove_css_class("red-background")
 

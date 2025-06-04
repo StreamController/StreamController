@@ -58,6 +58,10 @@ class InfoPage(Gtk.Box):
         self.version_row = AttributeRow(title="Version:", attr="Error")
         self.about_group.add(self.version_row)
 
+        # TODO: Enable in the future
+        #self.stargazer_row = AttributeRow(title="Stargazers:", attr="0")
+        #self.about_group.add(self.stargazer_row)
+
         self.description_row = DescriptionRow(title="Description:", desc="N/A")
         self.about_group.add(self.description_row)
 
@@ -90,6 +94,9 @@ class InfoPage(Gtk.Box):
 
     def set_license(self, license:str):
         self.license_row.set_url(license)
+
+    def set_stargazer(self, stargazer: int):
+        self.stargazer_row.set_url(str(stargazer))
 
     def set_copyright(self, copyright:str):
         self.copyright_row.set_url(copyright)

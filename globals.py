@@ -116,16 +116,21 @@ showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.10"  # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.11"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
-    <p>Features:</p>
-    <p>Fixes:</p>
+<p>Features:</p>
     <ul>
-        <li>Wrong input mapping when deck is rotated 90 or 270 degrees</li>
-        <li>Excessive startup times for some users</li>
-        <li>Weird behaviour of GenerativeUI in some cases</li>
+        <li>Auto scroll too long labels</li>
+        <li>Add support for Stream Deck Modules</li>
+    </ul>
+<p>Fixes:</p>
+    <ul>
+        <li>Not updating dials when there is a background video</li>
+        <li>Tray icon not showing up on plasma</li>
+        <li>Store not loading if a single plugin is misconfigured</li>
+        <li>Error for rotated decks that aren't 3x5</li>
     </ul>
 """

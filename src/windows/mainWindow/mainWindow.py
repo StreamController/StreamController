@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+from src.windows.mainWindow.elements.DeckSettingsButton import DeckSettingsButton
 
 
 gi.require_version("Gtk", "4.0")
@@ -138,6 +139,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.menu_button = HeaderHamburgerMenuButton(main_window=self)
         self.header.pack_end(self.menu_button)
 
+        # Deck settings button
+        self.deck_settings_button = DeckSettingsButton(main_window=self)
+        self.header.pack_start(self.deck_settings_button)
+
         # Add sidebar toggle button to the header bar
         self.sidebar_toggle_button = Gtk.ToggleButton(icon_name="sidebar-show-symbolic", active=True)
         self.sidebar_toggle_button.connect("toggled", self.on_toggle_sidebar)
@@ -229,6 +234,7 @@ class MainWindow(Adw.ApplicationWindow):
             GLib.idle_add(self.sidebar_toggle_button.set_visible, True)
             GLib.idle_add(self.menu_button.set_optional_actions_state, True)
             GLib.idle_add(self.split_view.set_collapsed, False)
+            GLib.idle_add(self.deck_settings_button.set_visible, True)
             return
         
         elif error == "no-decks":
@@ -243,6 +249,7 @@ class MainWindow(Adw.ApplicationWindow):
         GLib.idle_add(self.sidebar_toggle_button.set_visible, False)
         GLib.idle_add(self.menu_button.set_optional_actions_state, False)
         GLib.idle_add(self.split_view.set_collapsed, True)
+        GLib.idle_add(self.deck_settings_button.set_visible, False)
 
     def check_for_errors(self):
         if len(gl.deck_manager.deck_controller) == 0:

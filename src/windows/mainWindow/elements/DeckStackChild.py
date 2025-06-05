@@ -52,12 +52,6 @@ class DeckStackChild(Gtk.Overlay):
         self.stack.add_titled(self.page_settings, "page-settings", "Page Settings")
         self.stack.add_titled(self.deck_settings, "deck-settings", "Deck Settings")
 
-        # Switch overlay button
-        self.toggle_settings_button = Gtk.Button(icon_name="applications-system-symbolic", css_classes=["circular"],
-                                  halign=Gtk.Align.END, valign=Gtk.Align.END, margin_end=50, margin_bottom=50)
-        self.toggle_settings_button.connect("clicked", self.on_toggle_settings_button_click)
-        self.add_overlay(self.toggle_settings_button)
-
         # Low-fps banner
         self.low_fps_banner = Adw.Banner(
             title=gl.lm.get("warning.low-fps"),
@@ -66,19 +60,6 @@ class DeckStackChild(Gtk.Overlay):
         )
         self.low_fps_banner.connect("button-clicked", self.on_banner_dismiss)
         self.main_box.prepend(self.low_fps_banner)
-
-    def on_toggle_settings_button_click(self, button):
-        if self.stack.get_visible_child_name() == "page-settings":
-            self.stack.set_visible_child_name("deck-settings")
-            self.toggle_settings_button.set_icon_name("view-paged-symbolic")
-            # gl.app.main_win.sidebar_toggle_button.set_visible(False)
-            # gl.app.main_win.split_view.set_collapsed(True)
-
-        else:
-            self.stack.set_visible_child_name("page-settings")
-            self.toggle_settings_button.set_icon_name("applications-system-symbolic")
-            # gl.app.main_win.sidebar_toggle_button.set_visible(True)
-            # gl.app.main_win.split_view.set_collapsed(False)
 
     def on_banner_dismiss(self, banner):
         banner.set_revealed(False)

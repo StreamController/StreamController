@@ -78,6 +78,13 @@ class PageSelector(Adw.NavigationPage):
         self.add_new_button = AddNewButton(page_manager=self.page_manager, margin_top=7, margin_start=7, margin_end=7, margin_bottom=7)
         self.main_box.append(self.add_new_button)
 
+    def activate_page(self, page_path: str):
+        for page_row in self.page_rows:
+            if page_row.page_path == page_path:
+                self.list_box.select_row(page_row)
+                return
+        self.list_box.select_row(None)
+
     def load_pages(self) -> None:
         self.page_rows.clear()
         self.list_box.remove_all()
@@ -90,8 +97,6 @@ class PageSelector(Adw.NavigationPage):
             self.page_manager.page_editor.main_stack.set_visible_child_name("no-page")
             self.page_manager.page_editor.menu_button.set_page_specific_actions_enabled(False)
             return
-        self.page_manager.page_editor.menu_button.set_page_specific_actions_enabled(True)
-        self.page_manager.page_editor.main_stack.set_visible_child_name("editor")
         self.page_manager.page_editor.load_for_page(row.page_path)
 
     def rename_page_row(self, old_path: str, new_path: str) -> None:

@@ -64,6 +64,11 @@ class PageSelector(Gtk.Box):
         self.sidebar.append(self.drop_down)
 
         # Settings button
+        self.open_settings_button = Gtk.Button(icon_name="settings-symbolic", tooltip_text=gl.lm.get("header-page-selector-page-settings-hint"))
+        self.open_settings_button.connect("clicked", self.on_click_open_page_settings)
+        self.sidebar.append(self.open_settings_button)
+
+        # Manager button
         self.open_manager_button = Gtk.Button(icon_name="folder-open-symbolic", tooltip_text=gl.lm.get("header-page-selector-page-manager-hint"))
         self.open_manager_button.connect("clicked", self.on_click_open_page_manager)
         self.sidebar.append(self.open_manager_button)
@@ -132,6 +137,12 @@ class PageSelector(Gtk.Box):
             gl.page_manager_window.present()
         gl.page_manager_window = PageManager(main_win=gl.app.main_win)
         gl.page_manager_window.present()
+
+    def on_click_open_page_settings(self, button):
+        self.on_click_open_page_manager(button)
+
+        page_path = self.pages_model[self.drop_down.get_active()][1]
+        gl.page_manager_window.page_selector.activate_page(page_path)
 
     def disconnect_change_signal(self):
         try:

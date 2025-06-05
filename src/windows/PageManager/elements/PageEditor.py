@@ -122,6 +122,9 @@ class PageEditor(Adw.NavigationPage):
         self.background_group.load_for_page(page_path=page_path)
         self.screensaver_group.load_for_page(page_path=page_path)
 
+        self.main_stack.set_visible_child_name("editor")
+        self.menu_button.set_page_specific_actions_enabled(True)
+
     def delete_active_page(self) -> None:
         if self.active_page_path is None:
             return

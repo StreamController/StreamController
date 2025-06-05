@@ -23,7 +23,7 @@ class DeckSettingsButton(Gtk.Button):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.set_child(self.main_box)
 
-        self.icon = Gtk.Image(icon_name="settings-symbolic")
+        self.icon = Gtk.Image(icon_name="preferences-system-symbolic")
         self.main_box.append(self.icon)
 
         self.label = Gtk.Label(label="Deck Settings")
@@ -31,11 +31,11 @@ class DeckSettingsButton(Gtk.Button):
 
     def set_state(self, state: str):
         if state == "page-settings":
-            self.icon.set_from_icon_name("settings-symbolic")
+            self.icon.set_from_icon_name("preferences-system-symbolic")
             self.label.set_label("Deck Settings")
         else:
             self.icon.set_from_icon_name("view-paged-symbolic")
-            self.label.set_label("Page Settings")
+            self.label.set_label("Key Grid")
 
     def update_state(self):
         deck_stack_child = self.main_window.leftArea.deck_stack.get_visible_child()

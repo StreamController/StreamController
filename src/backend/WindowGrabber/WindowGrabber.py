@@ -108,11 +108,8 @@ class WindowGrabber:
         for deck_controller in gl.deck_manager.deck_controller:
             found_page = False
             for page_path in gl.page_manager.get_pages():
-                abs_path = os.path.abspath(page_path)
-                if abs_path not in gl.page_manager.auto_change_info:
-                    continue
-                info = gl.page_manager.auto_change_info[abs_path]
-                wm_regex = info.get("wm_class")
+                info = gl.page_manager.get_auto_change_settings(page_path)
+                wm_regex = info.get("wm-class")
                 title_regex = info.get("title")
                 enabled = info.get("enable", False)
                 decks = info.get("decks", [])
@@ -143,10 +140,9 @@ class WindowGrabber:
                 if not deck_controller.deck.is_open():
                     return
 
-
                 if deck_controller.page_auto_loaded:
-                    active_page_change_info = gl.page_manager.auto_change_info.get(os.path.abspath(deck_controller.active_page.json_path))
-                    if active_page_change_info.get("stay_on_page", True):
+                    active_page_change_info = gl.page_manager.get_auto_change_settings(deck_controller.active_page.json_path)
+                    if active_page_change_info.get("stay-on-page", True):
                         continue
                     deck_controller.page_auto_loaded = False
                     if deck_controller.last_manual_loaded_page_path is None:

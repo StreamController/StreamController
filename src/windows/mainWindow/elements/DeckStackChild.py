@@ -20,7 +20,6 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
 # Import own modules
-from src.windows.mainWindow.elements.PageSettings.PageSettings import PageSettings
 from src.windows.mainWindow.elements.DeckSettings.DeckSettingsPage import DeckSettingsPage
 from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
 

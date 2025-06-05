@@ -24,7 +24,6 @@ from loguru import logger as log
 
 # Import own modules
 from src.windows.mainWindow.elements.DeckConfig import DeckConfig
-from src.windows.mainWindow.elements.PageSettings.PageSettings import PageSettings
 
 # Import globals
 import globals as gl

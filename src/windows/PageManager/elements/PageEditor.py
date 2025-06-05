@@ -331,30 +331,37 @@ class BrightnessGroup(PageEditorGroup):
         super().__init__(page_editor, title="Brightness Override")
 
     def build(self):
-        self.enable_toggle = Adw.SwitchRow(title="Enable Brightness Override", subtitle="Overrides the Deck Brighness")
-        self.add(self.enable_toggle)
+        self.enable_expander = BetterExpander(
+            title="Overwrite Brightness",
+            subtitle="Overrides the Deck Brightness",
+            expanded=False,
+            show_enable_switch=True
+        )
+        self.add(self.enable_expander)
 
         self.brightness_scale = ScaleRow(0, 0, 100, digits=0, draw_value=True, draw_side_values=False, title="Brightness")
-        self.add(self.brightness_scale)
+        self.enable_expander.add_row(self.brightness_scale)
 
     def connect_events(self):
-        self.enable_toggle.connect("notify::active", self.on_enable_changed)
+        self.enable_expander.connect("notify::enable-expansion", self.on_enable_changed)
         self.brightness_scale.scale.connect("value-changed", self.on_brightness_changed)
 
     def disconnect_events(self):
-        better_disconnect(self.enable_toggle, self.on_enable_changed)
+        better_disconnect(self.enable_expander, self.on_enable_changed)
         better_disconnect(self.brightness_scale.scale, self.on_brightness_changed)
 
     def load_config_settings(self, page_path: str):
         settings = gl.page_manager.get_brightness_settings(page_path)
 
-        self.enable_toggle.set_active(settings.get("overwrite", False))
+        self.enable_expander.set_enable_expansion(settings.get("overwrite", False))
+        self.enable_expander.set_expanded(settings.get("overwrite", False))
+
         self.brightness_scale.set_value(settings.get("value", 75))
 
     def on_enable_changed(self, *args):
         gl.page_manager.overwrite_brightness_settings(
             path=self.page_editor.active_page_path,
-            overwrite=self.enable_toggle.get_active()
+            overwrite=self.enable_expander.get_enable_expansion()
         )
         self.update_brightness()
 

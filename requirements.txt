@@ -80,7 +80,7 @@ PyYAML==6.0.2
 RapidFuzz==3.12.1
 regex==2024.11.6
 req2flatpak==0.2.0
-requests==2.32.3
+requests==2.32.4
 requirements-parser==0.11.0
 rich==13.9.4
 rpyc==6.0.1

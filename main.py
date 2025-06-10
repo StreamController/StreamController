@@ -568,7 +568,7 @@ def main():
     app_settings = gl.settings_manager.get_app_settings()
     auto_start = app_settings.get("system", {}).get("autostart", True)
     setup_autostart(auto_start)
-    
+
     create_cache_folder()
     threading.Thread(target=update_assets, name="update_assets").start()
     load()

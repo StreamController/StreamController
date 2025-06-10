@@ -480,6 +480,16 @@ class DeckController:
         size = max(size[0], 800), max(size[1], 100)
         return size
 
+    @lru_cache(maxsize=None)
+    def get_screen_image_size(self) -> tuple[int]:
+        if not self.get_alive(): return
+        size = self.deck.screen_image_format()["size"]
+        if size is None:
+            return (800, 100)
+        size = max(size[0], 800), max(size[1], 100)
+        return size
+
+    # ------------ #
     # ------------ #
     # Page Loading #
     # ------------ #
@@ -842,6 +852,13 @@ class DeckController:
             native_image = PILHelper.to_native_touchscreen_format(self.deck, empty)
 
             self.deck.set_touchscreen_image(native_image, x_pos=0, y_pos=0, width=touchscreen_size[0], height=touchscreen_size[1])
+
+        if self.deck.is_visual():
+            screen_size = self.get_screen_image_size()
+            empty = Image.new("RGB", screen_size, (0, 0, 0))
+            native_image = PILHelper.to_native_screen_format(self.deck, empty)
+
+            self.deck.set_screen_image(None)
 
     def get_own_key_grid(self) -> KeyGrid:
         # Why not just lru_cache this? Because this would also cache the None that gets returned while the ui is still loading
@@ -2285,6 +2302,83 @@ class ControllerKey(ControllerInput):
     
     def get_image_size(self) -> tuple[int, int]:
         return self.deck_controller.get_key_image_size()
+
+class ControllerScreen(ControllerInput):
+    def __init__(self, deck_controller: DeckController, ident: InputIdentifier):
+        super().__init__(deck_controller, ControllerTouchScreenState, ident)
+
+        self.enable_states = False
+
+    @staticmethod
+    def Available_Identifiers(deck):
+        if deck.is_visual():
+            return ["sd-neo"]
+        return []
+
+    def update(self) -> None:
+        image = self.get_current_image()
+        rgb_image = image.convert("RGB")
+        native_image = PILHelper.to_native_screen_format(self.deck_controller.deck, rgb_image)
+        rgb_image.close()
+        self.deck_controller.media_player.add_touchscreen_task(native_image)
+
+        del rgb_image
+        self.set_ui_image(image)
+
+    def generate_empty_image(self) -> Image.Image:
+        return Image.new("RGBA", self.get_screen_dimensions(), (0, 0, 0, 0))
+
+    # def get_dial_image_area(self, identifier: Input.Dial) -> tuple[int, int, int, int]:
+    #     width, height = self.get_screen_dimensions()
+
+    #     n_dials = len(self.deck_controller.inputs[Input.Dial])
+    #     dial_index = identifier.index
+
+    #     start_x = int((dial_index / n_dials) * width)
+    #     start_y = 0
+    #     end_x = int(((dial_index + 1) / n_dials) * width)
+    #     end_y = height
+
+    #     return start_x, start_y, end_x, end_y
+
+    # def get_dial_image_area_size(self) -> tuple[int, int]:
+    #     width, height = self.get_screen_dimensions()
+
+    #     n_dials = len(self.deck_controller.inputs[Input.Dial])
+
+    #     return int(width / n_dials), height
+
+    # def get_empty_dial_image(self) -> Image.Image:
+    #     screen_width, screen_height = self.get_screen_dimensions()
+
+    #     n_dials = len(self.deck_controller.inputs[Input.Dial])
+
+    #     return Image.new("RGBA", (screen_width // n_dials, screen_height), (0, 0, 0, 0))
+
+    def set_ui_image(self, image: Image.Image) -> None:
+        if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
+            screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
+            screenbar.image.set_image(image)
+        else:
+            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
+
+    def get_current_image(self) -> Image.Image:
+        active_state = self.get_active_state()
+        return active_state.get_current_image()
+
+    #def event_callback(self, event_type, value):
+    #    screensaver_was_showing = self.deck_controller.screen_saver.showing
+    #    if event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG, TouchscreenEventType.DRAG):
+    #        self.deck_controller.screen_saver.on_key_change()
+    #    if screensaver_was_showing:
+    #        return
+
+    #    active_state = self.get_active_state()
+
+    def get_screen_dimensions(self) -> tuple[int, int]:
+        return self.deck_controller.get_screen_image_size()
+
+
 
 class ControllerTouchScreen(ControllerInput):
     def __init__(self, deck_controller: DeckController, ident: InputIdentifier):

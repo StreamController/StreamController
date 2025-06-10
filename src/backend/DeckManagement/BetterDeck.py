@@ -410,6 +410,18 @@ class BetterDeck():
         """
         self.deck.set_touchscreen_image(image, x_pos, y_pos, width, height)
 
+    def set_screen_image(self, image):
+        """
+        Draws an image on the touchless screen of the StreamDeck.
+
+        .. seealso:: See :func:`~StreamDeck.screen_image_format` method for
+                     information on the image format accepted by the device.
+
+        :param enumerable image: Raw data of the image to set on the button.
+                                 If `None`, the screen will be cleared.
+        """
+        self.deck.set_screen_image(image)
+
     def set_key_color(self, key, r, g, b):
         """
         Sets the color of the touch buttons. These buttons are indexed

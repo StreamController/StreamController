@@ -486,7 +486,6 @@ class DeckController:
         size = self.deck.screen_image_format()["size"]
         if size is None:
             return (800, 100)
-        size = max(size[0], 800), max(size[1], 100)
         return size
 
     # ------------ #
@@ -858,7 +857,7 @@ class DeckController:
             empty = Image.new("RGB", screen_size, (0, 0, 0))
             native_image = PILHelper.to_native_screen_format(self.deck, empty)
 
-            self.deck.set_screen_image(None)
+            self.deck.set_screen_image(native_image)
 
     def get_own_key_grid(self) -> KeyGrid:
         # Why not just lru_cache this? Because this would also cache the None that gets returned while the ui is still loading

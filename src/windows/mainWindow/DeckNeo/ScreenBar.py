@@ -94,7 +94,7 @@ class ScreenBar(Gtk.Frame):
             if not self.get_mapped():
                 return
 
-        # sidebar.load_for_identifier(self.identifier, self.state)
+        sidebar.load_for_identifier(self.identifier, None)
 
     def set_border_active(self, active: bool):
         if active:
@@ -123,9 +123,6 @@ class ScreenBarImage(Gtk.Picture):
         #screen_image = self.get_controller_screen().get_current_image()
         #self.set_image(screen_image)
 
-
-
-
     def on_map(self, *args):
         for task in self.on_map_tasks:
             task()
@@ -133,9 +130,7 @@ class ScreenBarImage(Gtk.Picture):
 
     def get_controller_screen(self) -> "ControllerScreen":
         controller =   gl.app.main_win.get_active_controller()
-        breakpoint()
         return controller.get_input(Input.Screen("sd-neo"))
-
 
     def get_new_task_id(self):
         if self.latest_task_id is None:
@@ -158,7 +153,7 @@ class ScreenBarImage(Gtk.Picture):
 
         thumbnail.close()
         del thumbnail
-        
+
         if not recursive_hasattr(gl, "app.main_win.sidebar"):
             return
 

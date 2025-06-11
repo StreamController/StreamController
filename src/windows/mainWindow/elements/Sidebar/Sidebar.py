@@ -177,6 +177,12 @@ class Sidebar(Adw.NavigationPage):
         self.configurator_stack.set_visible_child(self.screen_editor)
         self.screen_editor.load_for_identifier(identifier, state)
 
+    def load_for_screen(self, identifier: Input.Screen, state: int):
+        self.active_identifier = identifier
+        self.active_state = state
+        self.main_stack.set_visible_child(self.screen_editor)
+        self.screen_editor.load_for_identifier(identifier, state)
+
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
         if isinstance(identifier, Input.Key):
             self.load_for_key(identifier, state)
@@ -184,6 +190,8 @@ class Sidebar(Adw.NavigationPage):
             self.load_for_dial(identifier, state)
         elif isinstance(identifier, Input.Touchscreen):
             self.load_for_touchscreen(identifier, state)
+        elif isinstance(identifier, Input.Screen):
+            self.load_for_screen(identifier, state)
 
     def show_error(self):
         if self.main_stack.get_visible_child() == self.error_page:

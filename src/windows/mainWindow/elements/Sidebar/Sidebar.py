@@ -22,6 +22,7 @@ from src.windows.mainWindow.elements.PageSelector import PageSelector
 from src.windows.mainWindow.elements.Sidebar.elements.DialEditor import DialEditor
 from src.windows.mainWindow.elements.Sidebar.elements.StateSwitcher import StateSwitcher
 from src.windows.mainWindow.elements.Sidebar.elements.ScreenEditor import ScreenEditor
+from src.windows.mainWindow.elements.Sidebar.elements.SimpleScreenEditor import SimpleScreenEditor
 
 
 gi.require_version("Gtk", "4.0")
@@ -85,6 +86,9 @@ class Sidebar(Adw.NavigationPage):
 
         self.screen_editor = ScreenEditor(self)
         self.configurator_stack.add_named(self.screen_editor, "screen_editor")
+
+        self.simple_screen_editor = SimpleScreenEditor(self)
+        self.configurator_stack.add_named(self.simple_screen_editor, "simple_screen_editor")
 
         self.action_chooser = ActionChooser(self)
         self.main_stack.add_named(self.action_chooser, "action_chooser")
@@ -178,10 +182,18 @@ class Sidebar(Adw.NavigationPage):
         self.screen_editor.load_for_identifier(identifier, state)
 
     def load_for_screen(self, identifier: Input.Screen, state: int):
+        if not isinstance(identifier, Input.Screen):
+            raise ValueError
         self.active_identifier = identifier
         self.active_state = state
-        self.main_stack.set_visible_child(self.screen_editor)
-        self.screen_editor.load_for_identifier(identifier, state)
+
+        self.main_stack.set_visible_child(self.configurator_stack)
+        self.configurator_stack.set_visible_child(self.simple_screen_editor)
+
+        #self.active_identifier = identifier
+        #self.active_state = state
+        #self.main_stack.set_visible_child(self.screen_editor)
+        #self.screen_editor.load_for_identifier(identifier, state)
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
         if isinstance(identifier, Input.Key):
@@ -212,7 +224,6 @@ class Sidebar(Adw.NavigationPage):
 
     def update(self):
         self.load_for_identifier(self.active_identifier, self.active_state)
-
 
 class KeyEditor(Gtk.Box):
     def __init__(self, sidebar: Sidebar, **kwargs):

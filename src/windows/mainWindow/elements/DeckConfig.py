@@ -26,6 +26,7 @@ from gi.repository import Gtk, Adw
 # Import own modules
 from src.windows.mainWindow.elements.KeyGrid import KeyGrid
 from src.windows.mainWindow.DeckPlus.ScreenBar import ScreenBar
+from src.windows.mainWindow.DeckNeo.ScreenBar import ScreenBar as SimpleScreenBar
 from src.windows.mainWindow.DeckPlus.DialBox import DialBox
 
 from typing import TYPE_CHECKING
@@ -48,6 +49,11 @@ class DeckConfig(Gtk.Box):
 
         if self.page_settings_page.deck_controller.deck.is_touch():
             self.screenbar = ScreenBar(self.page_settings_page, Input.Touchscreen("sd-plus"))
+            self.append(self.screenbar)
+
+        # Add non touch screen
+        if self.page_settings_page.deck_controller.deck.is_visual():
+            self.screenbar = SimpleScreenBar(self.page_settings_page, Input.Screen("sd-neo"))
             self.append(self.screenbar)
 
         self.dial_box = DialBox(self.page_settings_page.deck_controller, self.page_settings_page)

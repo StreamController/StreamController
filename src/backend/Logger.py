@@ -28,6 +28,8 @@ class LoggerConfig:
     enqueue: bool = False
 
 class Logger:
+    _register: dict[str, "Logger"] = {}
+
     def __init__(self, config: LoggerConfig, levels: list[Loglevel]):
         self.config = config
         self.name = config.name
@@ -35,7 +37,16 @@ class Logger:
 
         self._register_log_levels(levels)
         self._add_file_sink()
-        self._add_console_sink()
+        #self._add_console_sink()
+        Logger._register[self.name] = self
+
+    @classmethod
+    def get(cls, name: str):
+        return cls._register.get(name)
+
+    @classmethod
+    def exists(cls, name: str):
+        return name in cls._register
 
     def _register_log_levels(self, levels: list[Loglevel]):
         for level in levels:

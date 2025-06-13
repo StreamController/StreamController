@@ -100,8 +100,6 @@ def config_logger():
         ]
     )
 
-    Logger.get("PLUGIN").debug("WILLIAM")
-
 class Main:
     def __init__(self, application_id, deck_manager):
         # Launch gtk application

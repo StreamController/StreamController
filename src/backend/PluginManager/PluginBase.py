@@ -35,6 +35,8 @@ from locales.LegacyLocaleManager import LegacyLocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.EventHolder import EventHolder
 
+from src.backend.Logger import Logger
+
 class PluginBase(rpyc.Service):
     """
     The base class for all plugins.
@@ -48,7 +50,7 @@ class PluginBase(rpyc.Service):
         self.backend: netref = None
         self.server: ThreadedServer = None
 
-        self.logger = gl.loggers.get("plugins", None)
+        self.logger = Logger.get("PLUGIN")
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
         self.settings_path: str = os.path.join(gl.DATA_PATH, "settings", "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well

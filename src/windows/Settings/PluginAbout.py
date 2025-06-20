@@ -28,7 +28,11 @@ class PluginAboutFactory:
             log_path = self.plugin_base.LOG_FILE_PATH
 
             with open(log_path, "r") as log:
-                about.set_debug_info(log.read())
+                data = log.read()
+                if data == "":
+                    about.set_debug_info("No Debugging Info available")
+                else:
+                    about.set_debug_info(data)
             about.set_debug_info_filename(log_path)
 
         self._full_setup(about)

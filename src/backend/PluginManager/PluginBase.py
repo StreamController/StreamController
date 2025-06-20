@@ -652,11 +652,15 @@ class PluginBase(rpyc.Service):
 
     def log(self, message, *args, **kwargs) -> None:
         """
-        Can be used to add more information into the log.
+        Can be used to add more information into the log. Can only be used after the plugin is registered.
         :param message: The log message that will be displayed.
         :param args: Any arguments that may want to be passed to loguru
         :param kwargs: Arguments that will be used as extra information in the log. This will only be visible in the log file and not in the CLI
         """
+        if not self.registered:
+            log.error("Can't log to Plugin file yet. Make sure to call this method after the Plugin is registered!")
+            return
+
         file_name = function_name = line_number = "?"
 
         try:
@@ -707,9 +711,12 @@ class PluginBase(rpyc.Service):
             )
         except Exception as e:
             # If logging fails (e.g. plugin_id not registered), show an error with details
-            logger.error(f"Failed logging to Plugin log file. Make sure to call the troubleshoot method after the Plugin is registered. | Error: {e} | Troubleshoot content: {file_name}:{function_name}:{line_number} - {message} : {extra}")
+            logger.error(f"Failed logging to Plugin log file. | Error: {e} | Troubleshoot content: {file_name}:{function_name}:{line_number} - {message} : {extra}")
 
     def troubleshoot(self):
+        if not self.registered:
+            log.error("Can't troubleshoot yet. Make sure to call this method after the plugin is registered")
+            return
         self.trigger_event(event_id_suffix="Troubleshooting")
 
     # ---------- #

@@ -285,6 +285,10 @@ class PluginBase(rpyc.Service):
         for action_holder in action_holders:
             self.add_action_holder(action_holder)
 
+    # --------------- #
+    #  Action Events  #
+    # --------------- #
+
     def add_event_holder(self, event_holder: EventHolder) -> None:
         """
         Adds a EventHolder to the Plugin
@@ -307,81 +311,89 @@ class PluginBase(rpyc.Service):
         for event_holder in event_holders:
             self.add_event_holder(event_holder)
 
+    def connect_to_event(self, callback: callable, plugin_id = None, event_id: str = None, event_id_suffix: str = None):
+        """
+        Connects to an event by using the plugin and event id
+        :param callback: The callback that gets triggered when the event is triggered.
+        :param plugin_id: Either a custom plugin id or None. If its None the plugin id from the plugin that the method got called in is being used.
+        :param event_id: The full event id that is used, this is optional when using event_id_suffix
+        :param event_id_suffix: This will replace the event_id by using the suffix only, the event_id will then be in the format of: <Plugin Id>::<Event Id Suffix>
+        """
+        plugin_id = plugin_id or self.get_plugin_id()
+        event_id = event_id or f"{plugin_id}::{event_id_suffix}"
+
+        plugin = self.get_plugin(plugin_id)
+
+        if plugin is None:
+            log.error(f"Plugin {plugin_id} not found")
+            return
+        if event_id is None:
+            log.error(f"Event for {plugin_id} is None")
+            return
+        if event_id not in plugin.event_holders:
+            log.error(f"Event {event_id} not found")
+            return
+
+        plugin.event_holders[event_id].add_listener(callback)
+
+    def disconnect_from_event(self, callback: callable, plugin_id = None, event_id: str = None, event_id_suffix: str = None):
+        """
+        Disconnects from an event by using the plugin and event id
+        :param callback: The callback that should be removed.
+        :param plugin_id: Either a custom plugin id or None. If its None the plugin id from the plugin that the method got called in is being used.
+        :param event_id: The full event id that is used, this is optional when using event_id_suffix
+        :param event_id_suffix: This will replace the event_id by using the suffix only, the event_id will then be in the format of: <Plugin Id>::<Event Id Suffix>
+        """
+        plugin_id = plugin_id or self.get_plugin_id()
+        event_id = event_id or f"{plugin_id}::{event_id_suffix}"
+
+        plugin = self.get_plugin(plugin_id)
+
+        if plugin is None:
+            log.error(f"Plugin {plugin_id} not found")
+            return
+        if event_id is None:
+            log.error(f"Event for {plugin_id} is None")
+            return
+        if event_id not in plugin.event_holders:
+            log.error(f"Event {event_id} not found")
+            return
+
+        plugin.event_holders[event_id].remove_listener(callback)
+
+    def trigger_event(self, plugin_id = None, event_id: str = None, event_id_suffix: str = None):
+        """
+        Triggers an event by using the plugin and event id
+        :param plugin_id: Either a custom plugin id or None. If its None the plugin id from the plugin that the method got called in is being used.
+        :param event_id: The full event id that is used, this is optional when using event_id_suffix
+        :param event_id_suffix: This will replace the event_id by using the suffix only, the event_id will then be in the format of: <Plugin Id>::<Event Id Suffix>
+        """
+        plugin_id = plugin_id or self.get_plugin_id()
+        event_id = event_id or f"{plugin_id}::{event_id_suffix}"
+
+        plugin = self.get_plugin(plugin_id)
+
+        if plugin is None:
+            log.error(f"Plugin {plugin_id} not found")
+            return
+        if event_id is None:
+            log.error(f"Event for {plugin_id} is None")
+            return
+        if event_id not in plugin.event_holders:
+            log.error(f"Event {event_id} not found")
+            return
+
+        plugin.event_holders[event_id].trigger_event()
+
+    # --------------- #
+    #  Action Groups  #
+    # --------------- #
+
     def add_action_holder_group(self, action_holder_group: ActionHolderGroup) -> None:
         self.action_holder_groups.add(action_holder_group)
 
     def add_action_holder_groups(self, action_holder_groups: list[ActionHolderGroup]) -> None:
         self.action_holder_groups.update(action_holder_groups)
-
-    def connect_to_event(self, callback: callable, event_id: str = None, event_id_suffix: str = None) -> None:
-        """
-        Connects a Callback to the Event which gets specified by the event ID
-
-        Args:
-            event_id (str): The ID of the Event.
-            callback (callable): The Callback that gets Called when the Event triggers
-
-        Returns:
-            None
-        """
-        full_id = event_id or f"{self.get_plugin_id()}::{event_id_suffix}"
-
-        if full_id in self.event_holders:
-            self.event_holders[event_id].add_listener(callback)
-        else:
-            log.warning(f"{event_id} does not exist in {self.plugin_name}")
-
-    def connect_to_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
-        """
-        Connects a Callback directly to a Plugin with the specified ID
-
-        Args:
-            plugin_id (str): The ID of the Plugin
-            event_id (str): The ID of the Event
-            callback (callable): The Callback that gets Called when the Event triggers
-
-        Returns:
-            None
-        """
-        plugin = self.get_plugin(plugin_id)
-        if plugin is None:
-            log.warning(f"{plugin_id} does not exist")
-        else:
-            plugin.connect_to_event(event_id, callback)
-
-    def disconnect_from_event(self, event_id: str, callback: callable) -> None:
-        """
-        Disconnects a Callback from the Event which gets specified by the event ID
-
-        Args:
-            event_id (str): The ID of the Event.
-            callback (callable): The Callback that gets Removed
-
-        Returns:
-            None
-        """
-        if event_id in self.event_holders:
-            self.event_holders[event_id].remove_listener(callback)
-        else:
-            log.warning(f"{event_id} does not exist in {self.plugin_name}")
-
-    def disconnect_from_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
-        """
-        Disconnects a Callback directly from a plugin with the specified ID
-
-        Args:
-            plugin_id (str): The ID of the Plugin
-            event_id (str): The ID of the Event.
-            callback (callable): The Callback that gets Removed
-
-        Returns:
-            None
-        """
-        plugin = self.get_plugin(plugin_id)
-        if plugin is None:
-            log.warning(f"{plugin_id} does not exist")
-        else:
-            self.disconnect_from_event(event_id, callback)
 
     def get_settings(self):
         """
@@ -583,12 +595,22 @@ class PluginBase(rpyc.Service):
         This method gets called in the register function
         :return:
         """
+        self._add_logger()
+        self._create_log_signal()
+
+    def _create_log_signal(self):
+        self.add_event_holder(EventHolder(
+            plugin_base=self,
+            event_id_suffix="Troubleshooting"
+        ))
+
+    def _add_logger(self):
         self.LOG_PATH = os.path.join(gl.DATA_PATH, "logs", "plugins", self.plugin_id)
         self.LOG_FILE_PATH = os.path.join(self.LOG_PATH, f"{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log")
 
-        log_level = self.plugin_id
+        log_level = self.get_plugin_id()
 
-        os.makedirs(self.LOG_PATH, exist_ok=True) # Create the log directory if it doesn't exist yet
+        os.makedirs(self.LOG_PATH, exist_ok=True)  # Create the log directory if it doesn't exist yet
         self._cleanup_old_logs()
 
         # New custom log level with a high numeric value (100)
@@ -628,7 +650,7 @@ class PluginBase(rpyc.Service):
             except Exception as e:
                 print(f"Error deleting {old_file}: {e}")
 
-    def troubleshoot(self, message, *args, **kwargs) -> None:
+    def log(self, message, *args, **kwargs) -> None:
         """
         Can be used to add more information into the log.
         :param message: The log message that will be displayed.
@@ -674,7 +696,7 @@ class PluginBase(rpyc.Service):
 
         try:
             logger.log(
-                self.plugin_id,
+                self.get_plugin_id(),
                 message,
                 *args,
                 line=line_number,
@@ -686,6 +708,9 @@ class PluginBase(rpyc.Service):
         except Exception as e:
             # If logging fails (e.g. plugin_id not registered), show an error with details
             logger.error(f"Failed logging to Plugin log file. Make sure to call the troubleshoot method after the Plugin is registered. | Error: {e} | Troubleshoot content: {file_name}:{function_name}:{line_number} - {message} : {extra}")
+
+    def troubleshoot(self):
+        self.trigger_event(event_id_suffix="Troubleshooting")
 
     # ---------- #
     # Rpyc stuff #

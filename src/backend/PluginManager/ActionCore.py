@@ -84,6 +84,8 @@ class ActionCore(rpyc.Service):
 
         self.event_manager = EventManager()
 
+        self.plugin_base.connect_to_event(event_id_suffix="Troubleshooting", callback=self.troubleshoot)
+
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
 
     def clear_event_assigners(self):
@@ -509,13 +511,16 @@ class ActionCore(rpyc.Service):
     #  Logging   #
     # ---------- #
 
-    def troubleshoot(self, message, **kwargs):
+    def log(self, message, **kwargs):
         """
         Can be used to add more information into the log.
         :param message: The log message that will be displayed.
         :param kwargs: Arguments that will be used as extra information in the log. This will only be visible in the log file and not in the CLI
         """
-        self.plugin_base.troubleshoot(message, **kwargs)
+        self.plugin_base.log(message, **kwargs)
+
+    async def troubleshoot(self, *args, **kwargs):
+        pass
     
     # ---------- #
     # Rpyc stuff #

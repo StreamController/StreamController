@@ -24,7 +24,7 @@ from src.windows.Settings.PluginSettingsPage import PluginSettingsPage
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio, Pango, Xdp
+from gi.repository import Gtk, Adw, Gio, Pango, Xdp, GLib
 
 # Import globals
 import globals as gl
@@ -223,7 +223,7 @@ class DevPageGroup(Adw.PreferencesGroup):
         self.settings.save_json()
 
         # Reload decks
-        gl.deck_manager.load_fake_decks()
+        gl.deck_manager.add_all_virtual_decks()
 
     def on_data_path_changed(self, *args):
         static_settings = gl.settings_manager.get_static_settings()

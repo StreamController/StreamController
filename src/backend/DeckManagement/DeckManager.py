@@ -99,9 +99,10 @@ class DeckManager:
 
     def load_all_decks(self):
         """
-        Will load all decks and controllers
+        Will load all decks and controllers. If there are currently controllers that exist they will be removed first.
         :return:
         """
+        self.remove_all_controllers()
 
         if not gl.cli_args.skip_hardware_decks:
             self.add_all_physical_decks()
@@ -165,15 +166,13 @@ class DeckManager:
 
         deck_controller = DeckController(self, deck)
 
-        def try_idle_add(attr_path: str, method_name: str, *args):
-            target = recursive_hasattr(gl, attr_path)
-            if target:
-                method = getattr(target, method_name, None)
-                if callable(method):
-                    GLib.idle_add(method, *args)
+        # Todo: Make it easier to call
+        if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            # Add to deck stack
+            GLib.idle_add(gl.app.main_win.leftArea.deck_stack.add_page, deck_controller)
 
-        try_idle_add("app.main_win.leftArea.deck_stack", "add_page", deck_controller)
-        try_idle_add("app.main_win.sidebar.page_selector", "update")
+        if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
+            GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
 
         if is_virtual:
             self.virtual_controllers.append(deck_controller)
@@ -239,7 +238,7 @@ class DeckManager:
                 )
                 self.add_deck(virtual_deck, True)
         elif virtual_deck_difference < 0:
-            to_remove = self.virtual_controllers[-virtual_deck_difference:]
+            to_remove = self.virtual_controllers[virtual_deck_difference:]
 
             for controller in to_remove:
                 self.remove_virtual_controller(controller)
@@ -249,6 +248,15 @@ class DeckManager:
             gl.app.main_win.check_for_errors()
 
     # Remove Controller
+
+    def remove_controller(self, controller: DeckController):
+        """
+        Tries removing a controller from the physical or virtual controllers
+        :param controller: The controller to remove
+        :return:
+        """
+        self.remove_physical_controller(controller)
+        self.remove_virtual_controller(controller)
 
     def remove_all_controllers(self):
         """

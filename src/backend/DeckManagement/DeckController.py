@@ -105,7 +105,7 @@ class MediaPlayerSetTouchscreenImageTask:
                 self.deck_controller.media_player.running = False # Set stop flag - otherwise remove_controller will wait until this task is done, which it never will because it waits
                 gl.deck_manager.remove_controller(self.deck_controller)
 
-                gl.deck_manager.connect_new_decks()
+                gl.deck_manager.load_all_decks()
 
 @dataclass
 class MediaPlayerSetImageTask:

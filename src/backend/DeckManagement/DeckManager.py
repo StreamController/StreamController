@@ -45,6 +45,11 @@ import globals as gl
 
 ELGATO_VENDOR_ID = "0fd9"
 
+# Todos:
+# When adding virtual devices over the UI you can break it.
+# This is because we get 2+ calls to add devices, making it so both modify the list at the same time, resulting in a conflict.
+# This can be resolved by checking if the method is resolved before starting another call
+
 class DeckManager:
     _instance = None
 

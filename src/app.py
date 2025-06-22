@@ -183,7 +183,7 @@ class App(Adw.Application):
         timer.setDaemon(True)
         timer.start()
 
-        for ctrl in gl.deck_manager.deck_controller:
+        for ctrl in gl.deck_manager.get_all_controllers():
             ctrl.delete()
 
         gl.plugin_manager.loop_daemon = False
@@ -199,7 +199,7 @@ class App(Adw.Application):
         gl.tray_icon.stop()
 
         # Close all decks
-        gl.deck_manager.close_all()
+        gl.deck_manager.close_all_decks()
         # Stop timer
         log.success("Stopped StreamController. Have a nice day!")
         sys.exit(0)
@@ -292,7 +292,7 @@ class App(Adw.Application):
         """
         serial_number, page_name = data.unpack()
 
-        for controller in self.deck_manager.deck_controller:
+        for controller in self.deck_manager.get_all_controllers():
             if controller.serial_number() == serial_number:
                 page_path = gl.page_manager.get_best_page_path_match_from_name(page_name)
 

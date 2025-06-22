@@ -57,7 +57,7 @@ class MultiDeckSelector(Gtk.ApplicationWindow):
         self.main_box.append(self.not_attached_label)
 
     def load_decks(self):
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_physical_controllers():
             serial_number, name = gl.app.main_win.leftArea.deck_stack.get_page_attributes(controller)
 
             row = DeckRow(self, name, serial_number, False)
@@ -86,7 +86,7 @@ class MultiDeckSelector(Gtk.ApplicationWindow):
                 row.set_active(False)
 
         n_not_connected = 0
-        connected = gl.deck_manager.get_connected_serials()
+        connected = gl.deck_manager.get_physical_deck_serials()
         for serial in serials:
             if serial not in connected:
                 n_not_connected += 1

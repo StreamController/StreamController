@@ -23,7 +23,7 @@ class StreamDeckUIImporter:
     def index_to_page_coords(self, index: int, deck_serial: int) -> str:
         # Find deck
         rows, cols = 3, 5
-        for deck_controller in gl.app.deck_manager.deck_controller:
+        for deck_controller in gl.app.deck_manager.get_all_controllers():
             if deck_controller.serial_number() == deck_serial:
                 rows, cols = deck_controller.deck.key_layout()
                 break

@@ -112,7 +112,7 @@ class WindowGrabber:
 
     def on_active_window_changed(self, window: Window) -> None:
         # log.info(f"Active window changed to: {window}")
-        for deck_controller in gl.deck_manager.deck_controller:
+        for deck_controller in gl.deck_manager.get_all_controllers():
             found_page = False
             for page_path in gl.page_manager.get_pages():
                 abs_path = os.path.abspath(page_path)

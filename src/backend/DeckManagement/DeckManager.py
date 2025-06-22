@@ -45,7 +45,6 @@ import globals as gl
 
 ELGATO_VENDOR_ID = "0fd9"
 
-
 class DeckManager:
     _instance = None
 
@@ -55,257 +54,371 @@ class DeckManager:
         return cls._instance
 
     def __init__(self):
-        #TODO: Maybe outsource some objects
-        self.deck_controller: list[DeckController] = []
-        self.fake_deck_controller = []
-        self.settings_manager = SettingsManager()
-        self.page_manager = gl.page_manager
-        # self.page_manager.load_pages()
+        self.physical_controllers: list[DeckController] = []
+        self.virtual_controllers: list[DeckController] = []
 
-        # USB monitor to detect connections and disconnections
-        self.usb_monitor = USBMonitor()
-        self.usb_monitor.start_monitoring(on_connect=self.on_connect, on_disconnect=self.on_disconnect)
+        self.resume_from_suspend = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
 
-        self.flatpak_disconnect_thread = FlatpakDeckDisconnectThread(self)
+        self._usb_monitor: USBMonitor = USBMonitor()
+        self._usb_monitor.start_monitoring(on_connect=self._on_deck_connected, on_disconnect=self._on_deck_disconnected)
 
         portal = Xdp.Portal.new()
-        self.flatpak = portal.running_under_flatpak() # on_disconnect is not working under Flatpak - we use a separate thread #TODO: Find a better solution
-        if self.flatpak:
-            log.info("Running under Flatpak. Using separate thread to detect device disconnection.")
-            self.flatpak_disconnect_thread.start()
+        uses_flatpak = portal.running_under_flatpak()
 
-        self.beta_resume_mode = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
-        log.info(f"Beta resume mode: {self.beta_resume_mode}")
+        if uses_flatpak:
+            GLib.timeout_add_seconds(2, self._on_deck_disconnected)
 
         resume_thread = DetectResumeThread(self)
-        if not self.beta_resume_mode:
+        if not self.resume_from_suspend:
             resume_thread.start()
 
-    def load_decks(self):
-        if not gl.cli_args.skip_hardware_decks:
-            self.load_hardware_decks()
+    def reset_all_decks(self):
+        for deck in self.get_all_decks():
+            deck.reset()
 
-        self.load_fake_decks()
-
-    def load_hardware_decks(self):
-        decks=DeviceManager().enumerate()
-        for deck in decks:
-            try:
-                if not deck.is_open():
-                    deck.open(self.beta_resume_mode)
-            except:
-                log.error("Failed to open deck. Maybe it's already connected to another instance?")
+    def close_all_decks(self):
+        for controller in self.get_all_controllers():
+            if not controller.deck:
                 continue
-            deck_controller = DeckController(self, deck)
-            self.deck_controller.append(deck_controller)
 
-    def load_fake_decks(self):
-        old_n_fake_decks = len(self.fake_deck_controller)
-        n_fake_decks = int(gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json")).get("dev", {}).get("n-fake-decks", 0))
-
-        if n_fake_decks > old_n_fake_decks:
-            log.info(f"Loading {n_fake_decks - old_n_fake_decks} fake deck(s)")
-            # Load difference in number of fake decks
-            for controller in range(n_fake_decks - old_n_fake_decks):
-                a = f"Fake Deck {len(self.fake_deck_controller)+1}"
-                fake_deck = FakeDeck(serial_number = f"fake-deck-{len(self.fake_deck_controller)+1}", deck_type=f"Fake Deck {len(self.fake_deck_controller)+1}")
-                self.add_newly_connected_deck(fake_deck, is_fake=True)
-
-            # Update header deck switcher if the new deck is the only one
-            if len(self.deck_controller) == 1 and False:
-                # Check if ui is loaded - if not it will grab the controller automatically
-                if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
-                    gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(True)
-
-        elif n_fake_decks < old_n_fake_decks:
-            # Remove difference in number of fake decks
-            log.info(f"Removing {old_n_fake_decks - n_fake_decks} fake deck(s)")
-            for controller in self.fake_deck_controller[-(old_n_fake_decks - n_fake_decks):]:
-                # Remove controller from fake_decks
-                self.fake_deck_controller.remove(controller)
-                # Remove controller from main list
-                self.deck_controller.remove(controller)
-                # Remove deck page on stack
-                gl.app.main_win.leftArea.deck_stack.remove_page(controller)
-
-            # Update header deck switcher if there are no more decks
-            if len(self.deck_controller) == 0 and False:
-                # Check if ui is loaded - if not it will grab the controller automatically
-                if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
-                    gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(False)
-        if hasattr(gl.app, "main_win"):
-            gl.app.main_win.check_for_errors()
-
-    def on_connect(self, device_id, device_info):
-        log.info(f"Device {device_id} with info: {device_info} connected")
-        # Check if it is a supported device
-        if device_info["ID_VENDOR_ID"] != ELGATO_VENDOR_ID:
-            return
-
-        self.connect_new_decks()
-
-    def connect_new_decks(self):
-        # Get already loaded deck serial ids
-        loaded_deck_ids = []
-        for controller in self.deck_controller:
-            loaded_deck_ids.append(controller.deck.id())
-
-        for deck in DeviceManager().enumerate():
-            if deck.id() in loaded_deck_ids:
-                continue
-            # Add deck
-            self.add_newly_connected_deck(deck)
-
-        gl.app.main_win.check_for_errors()
-
-
-    def on_disconnect(self, device_id, device_info):
-        log.info(f"Device {device_id} with info: {device_info} disconnected")
-        if device_info["ID_VENDOR_ID"] != ELGATO_VENDOR_ID:
-            return
-
-        for controller in self.deck_controller:
-            if not controller.deck.connected():
-                self.remove_controller(controller)
-
-        gl.app.main_win.check_for_errors()
-
-    def remove_controller(self, deck_controller: DeckController) -> None:
-        self.deck_controller.remove(deck_controller)
-        if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
-            gl.app.main_win.leftArea.deck_stack.remove_page(deck_controller)
-        deck_controller.delete()
-        del deck_controller
-
-    def get_controller_for_deck(self, deck: StreamDeck) -> DeckController | None:
-        for controller in self.deck_controller:
-            if controller.deck is deck:
-                return controller
-
-    def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):
-        deck_controller = DeckController(self, deck)
-
-        # Check if ui is loaded - if not it will grab the controller automatically
-        if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
-            # Add to deck stack
-            GLib.idle_add(gl.app.main_win.leftArea.deck_stack.add_page, deck_controller)
-
-        if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
-            GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
-
-
-
-        self.deck_controller.append(deck_controller)
-        if is_fake:
-            self.fake_deck_controller.append(deck_controller)
-
-        if not recursive_hasattr(gl, "app.main_win."):
-            return
-        gl.app.main_win.check_for_errors()
-
-    def close_all(self):
-        log.info("Closing all decks")
-        for controller in self.deck_controller:
-            if controller.deck is None:
-                return
             if not controller.deck.is_open():
-                return
-            
-            log.info(f"Closing deck: {controller.deck.get_serial_number()}")
+                continue
+
             controller.clear()
             controller.deck.close()
 
-    def reset_all_decks(self):
-        # Find all USB devices
-        devices = usb.core.find(find_all=True)
-        for device in devices:
+    def resume_suspend(self):
+        """
+        This will get called after the Operating System is being woken from suspend
+        :return:
+        """
+        time.sleep(2)
+
+        self.remove_all_physical_controllers()
+        self.add_all_physical_decks()
+
+    def load_all_decks(self):
+        """
+        Will load all decks and controllers
+        :return:
+        """
+
+        if not gl.cli_args.skip_hardware_decks:
+            self.add_all_physical_decks()
+
+        self.add_all_virtual_decks()
+
+    # Events
+
+    def _on_deck_connected(self, device_id = None, device_info = None):
+        """
+        Gets called when a StreamDeck gets connected
+        :param device_id: The device id of the StreamDeck
+        :param device_info: Info about the device
+        :return:
+        """
+        device_info = device_info or {}
+
+        if device_info.get("ID_VENDOR_ID", "") != ELGATO_VENDOR_ID:
+            return
+
+        self.add_physical_deck_by_id(device_id)
+
+    def _on_deck_disconnected(self, device_id, device_info: dict):
+        """
+        Gets called when a StreamDeck does not run under flatpak and is disconnected.
+        :param device_id: The device id of the StreamDeck
+        :param device_info: Info about the device
+        :return:
+        """
+        log.info(f"Device {device_id} with info: {device_info} disconnected")
+
+        if device_info["ID_VENDOR_ID"] != ELGATO_VENDOR_ID:
+            return
+
+        for controller in self.physical_controllers:
+            if not controller.deck.connected():
+                self.remove_physical_controller(controller)
+
+        gl.app.main_win.check_for_errors()
+
+    def _on_deck_disconnected_flatpak(self):
+        """
+        Gets called when the application runs under flatpak and a StreamDeck got removed
+        :return:
+        """
+        for controller in self.physical_controllers[:]:  # Copy to avoid modification during iteration
+            if not controller.deck.connected():
+                self.remove_physical_controller(controller)
+                gl.app.main_win.check_for_errors()
+        return gl.threads_running  # Continue if app is still running
+
+    # Add Deck
+
+    def add_deck(self, deck: StreamDeck, is_virtual: bool = False):
+        """
+        Adds a new StreamDeck by creating a Controller for it
+        :param deck: The StreamDeck to add
+        :param is_virtual: Weather the StreamDeck is physical or not
+        :return:
+        """
+
+        deck_controller = DeckController(self, deck)
+
+        def try_idle_add(attr_path: str, method_name: str, *args):
+            target = recursive_hasattr(gl, attr_path)
+            if target:
+                method = getattr(target, method_name, None)
+                if callable(method):
+                    GLib.idle_add(method, *args)
+
+        try_idle_add("app.main_win.leftArea.deck_stack", "add_page", deck_controller)
+        try_idle_add("app.main_win.sidebar.page_selector", "update")
+
+        if is_virtual:
+            self.virtual_controllers.append(deck_controller)
+        else:
+            self.physical_controllers.append(deck_controller)
+
+        if not recursive_hasattr(gl, "app.main_win."):
+            return
+
+        gl.app.main_win.check_for_errors()
+
+    def add_all_physical_decks(self):
+        """
+        Adds all physical decks
+        :return:
+        """
+        decks = self.get_all_decks()
+
+        for deck in decks:
             try:
-                # Check if it's a StreamDeck
-                if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in [
-                    DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
-                    DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
-                    DeviceManager.USB_PID_STREAMDECK_MINI,
-                    DeviceManager.USB_PID_STREAMDECK_XL,
-                    DeviceManager.USB_PID_STREAMDECK_MK2,
-                    DeviceManager.USB_PID_STREAMDECK_PEDAL,
-                    DeviceManager.USB_PID_STREAMDECK_PLUS,
-                    DeviceManager.USB_PID_STREAMDECK_NEO
-                ]:
-                    # Reset deck
-                    usb.util.dispose_resources(device)
-                    device.reset()
-            except:
-                log.error("Failed to reset deck, maybe it's already connected to another instance? Skipping...")
+                if not deck.is_open():
+                    deck.open(self.resume_from_suspend)
+            except Exception as e:
+                return
 
-    def get_device_by_serial(self, serial: str):
-        for deck in DeviceManager().enumerate():
-            if not deck.is_open():
-                try:
-                    deck.open()
-                except:
-                    return
-            if deck.get_serial_number() == serial:
-                return deck
+            self.add_deck(deck)
 
-    def on_resumed(self):
-        log.info("Resume from suspend detected, reloading decks...")
-        time.sleep(2) # Give the kernel some time to handle the usb devices
-        n_removed = 0
-        for deck_controller in self.deck_controller:
-            new_device = self.get_device_by_serial(deck_controller.serial_number())
-            if new_device:
-                log.info(f"Replacing deck")
-                deck_controller.deck = new_device
-                deck_controller.update_all_inputs()
+    def add_physical_deck_by_id(self, device_id, is_virtual: bool = False):
+        """
+        Adds a new StreamDeck by creating a Controller for it using the device id
+        :param device_id: The device ID of the StreamDeck
+        :param is_virtual: Weather the StreamDeck is physical or not
+        :return:
+        """
 
-                deck_controller.deck.set_key_callback(deck_controller.key_event_callback)
-                deck_controller.deck.set_dial_callback(deck_controller.dial_event_callback)
-                deck_controller.deck.set_touchscreen_callback(deck_controller.touchscreen_event_callback)
+        deck_ids = self.get_physical_deck_ids()
 
-                # deck_controller.deck._setup_reader(deck_controller.deck._read)
+        for deck in self.get_all_decks():
+            if deck.id() in deck_ids:
+                continue
 
-            else:
-                n_removed += 1
-                log.info(f"Removing deck")
-                deck_controller.deck.close()
-                deck_controller.media_player.running = False
-                self.remove_controller(deck_controller)
+            if deck.id() != device_id:
+                continue
 
-        if n_removed > 0:
-            self.connect_new_decks()
+            self.add_deck(deck, is_virtual)
 
-    def get_connected_serials(self) -> list[str]:
-        return [controller.serial_number() for controller in self.deck_controller]
+    def add_all_virtual_decks(self):
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
 
+        virtual_deck_amount = int(settings.get("dev", {}).get("n-fake-decks", 0))
+        old_virtual_deck_amount = len(self.virtual_controllers)
 
-class FlatpakDeckDisconnectThread(threading.Thread):
-    def __init__(self, deck_manager: DeckManager):
-        super().__init__(name="FlatpakDeckDisconnectThread")
-        self.deck_manager = deck_manager
+        virtual_deck_difference = virtual_deck_amount - old_virtual_deck_amount
 
-    def run(self):
-        while gl.threads_running:
-            time.sleep(2)
-            for controller in self.deck_manager.deck_controller:
-                if not controller.deck.connected():
-                    self.deck_manager.remove_controller(controller)
-                    gl.app.main_win.check_for_errors()
+        if virtual_deck_difference > 0:
+            for i in range(virtual_deck_difference):
+                index = len(self.virtual_controllers) + 1
+                name = f"Fake Deck {index}"
+
+                virtual_deck = FakeDeck(
+                    serial_number=f"fake-deck-{index}",
+                    deck_type=name
+                )
+                self.add_deck(virtual_deck, True)
+        elif virtual_deck_difference < 0:
+            to_remove = self.virtual_controllers[-virtual_deck_difference:]
+
+            for controller in to_remove:
+                self.remove_virtual_controller(controller)
+                gl.app.main_win.leftArea.deck_stack.remove_page(controller)
+
+        if hasattr(gl.app, "main_win"):
+            gl.app.main_win.check_for_errors()
+
+    # Remove Controller
+
+    def remove_all_controllers(self):
+        """
+        Removes all physical and virutal deck controllers
+        :return:
+        """
+        self.remove_all_physical_controllers()
+        self.remove_all_virtual_controllers()
+
+    def remove_physical_controller(self, controller: DeckController):
+        """
+        Removes a physical deck controller
+        :param controller: Deck controller to remove
+        """
+        if controller not in self.physical_controllers:
+            return
+
+        if controller.deck and controller.deck.is_open():
+            controller.deck.close()
+
+        self.physical_controllers.remove(controller)
+
+    def remove_all_physical_controllers(self):
+        """
+        Removes all physical deck controllers
+        :return:
+        """
+        for controller in self.physical_controllers:
+            self.remove_physical_controller(controller)
+
+    def remove_virtual_controller(self, controller: DeckController):
+        """
+        Removes a virtual deck controller
+        :param controller: Deck controller to remove
+        """
+        if controller not in self.virtual_controllers:
+            return
+
+        if controller.deck.is_open():
+            controller.deck.close()
+
+        self.virtual_controllers.remove(controller)
+
+    def remove_all_virtual_controllers(self):
+        """
+        Removes all virtual deck controllers
+        :return:
+        """
+        for controller in self.virtual_controllers:
+            self.remove_virtual_controller(controller)
+
+    # Get Controllers
+
+    def get_all_controllers(self) -> list[DeckController]:
+        """
+        Get all currently active controllers. Physical and Virtual controllers get combined
+        :return: A combined list of physical and virtual controllers
+        """
+        return self.physical_controllers + self.virtual_controllers
+
+    def get_physical_controllers(self):
+        """
+        Get all currently active physical controllers.
+        :return: A list of physical controllers
+        """
+        return self.physical_controllers
+
+    def get_virtual_controllers(self):
+        """
+        Get all currently active virtual controllers.
+        :return: A list of virtual controllers
+        """
+        return self.virtual_controllers
+
+    def get_controller_for_deck(self, deck: StreamDeck) -> DeckController | None:
+        """
+        Returns the corresponding controller depending on the deck. This can be either physical or virtual
+        :param deck: The StreamDeck that the controller should be associated with
+        :return: The actual controller that the deck belongs to
+        """
+        for controller in self.get_all_controllers():
+            if controller.deck is deck:
+                return controller
+
+        return None
+
+    # Get Ids
+
+    def get_all_loaded_deck_ids(self) -> list:
+        """
+        Gets all deck ids for physical and virtual decks combined
+        :return: A list containing physical and virtual deck ids
+        """
+        return [controller.get_device_id() for controller in self.get_all_controllers()]
+
+    def get_physical_deck_ids(self) -> list:
+        """
+        Gets all physical deck ids
+        :return: A list containing physical deck ids
+        """
+        return [controller.get_device_id() for controller in self.physical_controllers]
+
+    def get_virtual_deck_ids(self) -> list:
+        """
+        Gets all virtual deck ids
+        :return: A list containing virtual deck ids
+        """
+        return [controller.get_device_id() for controller in self.virtual_controllers]
+
+    # Get Serial Numbers
+
+    def get_all_loaded_serial_numbers(self) -> list:
+        """
+        Gets all serial numbers for physical and virtual decks combined
+        :return: A list containing physical and virtual deck serial numbers
+        """
+        return [controller.get_serial_number() for controller in self.get_all_controllers()]
+
+    def get_physical_deck_serials(self) -> list:
+        """
+        Gets serial numbers for all physical decks
+        :return: A list containing physical deck serial numbers
+        """
+        return [controller.get_serial_number() for controller in self.physical_controllers]
+
+    def get_virtual_deck_serials(self) -> list:
+        """
+        Gets serial numbers for all virtual decks
+        :return: A list containing virtual deck serial numbers
+        """
+        return [controller.get_serial_number() for controller in self.virtual_controllers]
+
+    # Get Deck
+
+    @staticmethod
+    def get_all_decks() -> list[StreamDeck]:
+        """
+        Gets all currently connected physical decks
+        :return: A list containing all physical StreamDecks
+        """
+        return [deck for deck in DeviceManager().enumerate()]
+
+    def get_deck_by_serial(self, serial: str) -> BetterDeck | None:
+        """
+        Gets a deck by serial number
+        :param serial: Serial number of the deck
+        :return: The StreamDeck that the serial number belongs to
+        """
+        for controller in self.get_all_controllers():
+            if controller.deck.get_serial_number() != serial:
+                continue
+
+            return controller.deck
+        return None
 
 class DetectResumeThread(threading.Thread):
     def __init__(self, deck_manager: DeckManager):
         super().__init__(name="DetectResumeThread")
         self.deck_manager = deck_manager
-
-        self.last_1 = time.time()
-        self.last_2 = time.time()
+        self._last_check = time.time()
 
     def run(self):
         while gl.threads_running:
-            self.last_1 = time.time()
-            if time.time() - self.last_1 >= 5 or time.time() - self.last_2 >= 5:
-                self.deck_manager.on_resumed()
-            self.last_2 = time.time()
-            if time.time() - self.last_1 >= 5 or time.time() - self.last_2 >= 5:
-                self.deck_manager.on_resumed()
-            
             time.sleep(2)
+
+            now = time.time()
+            elapsed = now - self._last_check
+
+            # If more than 5 seconds have passed, system likely resumed from sleep
+            if elapsed > 5:
+                self.deck_manager.resume_suspend()
+
+            self._last_check = now

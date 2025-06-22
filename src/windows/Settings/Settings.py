@@ -145,7 +145,7 @@ class UIPageGroup(Adw.PreferencesGroup):
         self.settings.save_json()
 
         # Inform all deck controllers
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             controller.media_player.set_show_fps_warnings(self.enable_fps_warnings_row.get_active())
 
     def on_allow_white_mode_toggled(self, *args):
@@ -276,14 +276,14 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         self.settings.settings_json.setdefault("general", {})
         self.settings.settings_json["general"]["hold-time"] = self.hold_time_row.get_value()
 
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             controller.hold_time = self.hold_time_row.get_value()
 
         # Save
         self.settings.save_json()
 
         # Reload decks
-        gl.deck_manager.load_fake_decks()
+        gl.deck_manager.add_all_virtual_decks()
 
 class FontPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):

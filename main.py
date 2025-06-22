@@ -120,7 +120,7 @@ class Main:
 def load():
     log.info("Loading app")
     gl.deck_manager = DeckManager()
-    gl.deck_manager.load_decks()
+    gl.deck_manager.load_all_decks()
     gl.main = Main(application_id="com.core447.StreamController", deck_manager=gl.deck_manager)
 
 

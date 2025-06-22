@@ -61,10 +61,10 @@ class DeckStack(Gtk.Stack):
         self.connect("notify::visible-child-name", self.on_switch)
 
     def add_pages(self):
-        for deck_controller in self.deck_manager.deck_controller:
+        for deck_controller in self.deck_manager.get_all_controllers():
             self.add_page(deck_controller)
 
-        if len(self.deck_manager.deck_controller) == 0:
+        if len(self.deck_manager.get_all_controllers()) == 0:
             self.main_window.change_ui_to_no_connected_deck()
 
     def add_page(self, deck_controller):

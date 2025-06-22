@@ -30,7 +30,7 @@ class DeckSwitcher(Gtk.Box):
         self.main_window = main_window
         self.build()
 
-        no_decks = len(main_window.deck_manager.deck_controller) == 0
+        no_decks = len(main_window.deck_manager.get_all_controllers()) == 0
         self.set_show_switcher(not no_decks)
 
 

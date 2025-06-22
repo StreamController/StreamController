@@ -578,7 +578,7 @@ class Page:
     
     def get_pages_with_same_json(self, get_self: bool = False) -> list:
         pages: list[Page]= []
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             if controller.active_page is None:
                 continue
             if controller.active_page == self and not get_self:
@@ -653,7 +653,7 @@ class Page:
         #TODO: Move to DeckController
         #TODO: Make input specific
         coords = self.get_tuple_coords(coords)
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             if controller.active_page.json_path != self.json_path:
                 continue
             key_index = controller.coords_to_index(coords)
@@ -666,7 +666,7 @@ class Page:
                 key.update()
 
     def update_input(self, identifier: InputIdentifier, state: int, wake: bool = True) -> None:
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             if wake:
                 if controller.screen_saver.showing:
                     controller.screen_saver.hide()
@@ -683,7 +683,7 @@ class Page:
     def get_controller_inputs(self, identifier: InputIdentifier) -> list["ControllerInput"]:
         inputs: list["ControllerInput"] = []
 
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             for c_input in controller.get_inputs(identifier):
                 if c_input.identifier == identifier:
                     inputs.append(c_input)

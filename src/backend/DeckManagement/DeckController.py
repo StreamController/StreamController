@@ -311,7 +311,7 @@ class DeckController:
         self.deck_manager: DeckManager = deck_manager
         # Open the deck - why store it as self.deck? So that self.get_alive() returns True in get_deck_settings
         self.deck = deck
-        self.deck.open(self.deck_manager.beta_resume_mode)
+        self.deck.open(self.deck_manager.resume_from_suspend)
 
         rotation = self.get_deck_settings().get("rotation", 0)
         self.deck: BetterDeck = BetterDeck(deck, rotation)
@@ -386,6 +386,12 @@ class DeckController:
             self.screen_saver.show()
         else:
             self.load_default_page()
+
+    def get_serial_number(self):
+        return self.deck.get_serial_number()
+
+    def get_device_id(self):
+        return self.deck.id()
 
     def init_inputs(self):
         for input_obj in Input.All:
@@ -517,7 +523,7 @@ class DeckController:
 
         # TODO: REWORK PAGE REQUESTS
         if self.serial_number() in gl.api_page_requests:
-            api_page_path = gl.api_page_requests[self.serial_number()]
+            api_page_path = gl.api_page_requests[self.serial_number ()]
             api_page_path = gl.page_manager.get_best_page_path_match_from_name(api_page_path)
 
         if api_page_path is None:
@@ -1040,7 +1046,7 @@ class BackgroundVideo(BackgroundVideoCache):
         frame_full_sized_image = self.create_full_deck_sized_image(frame)
 
         tiles: list[Image.Image] = []
-        for key in range(self.deck_controller.deck.key_count()):
+        for key in range(self.physical_controllers.deck.key_count()):
             key_image = self.crop_key_image_from_deck_sized_image(frame_full_sized_image, key)
             tiles.append(key_image)
 
@@ -1823,7 +1829,7 @@ class ControllerInput:
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
             return
-        controller = visible_child.deck_controller
+        controller = visible_child.physical_controllers
         if controller is None:
             return
         

@@ -62,7 +62,7 @@ class LockScreenManager:
         
         log.info(f"Locking screen: {active}")
 
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             controller.allow_interaction = not active
             if active:
                 controller.screen_saver.show()

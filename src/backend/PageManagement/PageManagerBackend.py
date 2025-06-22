@@ -189,7 +189,7 @@ class PageManagerBackend:
         shutil.copy2(old_path, new_path)
 
         # Change name in page objects
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             if controller.active_page is None:
                 continue
             page = self.get_page(path=old_path, deck_controller=controller)
@@ -217,7 +217,7 @@ class PageManagerBackend:
 
     def remove_page(self, page_path: str):
         # Clear page objects
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             if controller.active_page is None:
                 continue
 
@@ -294,7 +294,7 @@ class PageManagerBackend:
         pages: list[Page] = []
 
         ## Add from controllers
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             if controller.active_page is None:
                 continue
             if controller.active_page.json_path == page_path:
@@ -318,7 +318,7 @@ class PageManagerBackend:
                 page.deck_controller.load_page(page, allow_reload=True)
 
     def reload_all_pages(self) -> None:
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             controller.load_page(controller.active_page, allow_reload=True)
 
     def update_dict_of_pages_with_path(self, page_path: str) -> None:

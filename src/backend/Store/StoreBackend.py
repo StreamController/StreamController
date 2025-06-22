@@ -886,7 +886,7 @@ class StoreBackend:
             GLib.idle_add(gl.app.main_win.sidebar.action_chooser.plugin_group.update)
 
         ## Update page
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             ## Checks required to prevent errors after auto-update
             if hasattr(controller, "active_page"):
                 if controller.active_page is not None:
@@ -901,7 +901,7 @@ class StoreBackend:
         
     def uninstall_plugin(self, plugin_id:str, remove_from_pages:bool = False, remove_files:bool = True) -> bool:
         ## 1. Remove all action objects in all pages
-        for deck_controller in gl.deck_manager.deck_controller:
+        for deck_controller in gl.deck_manager.get_all_controllers():
             # Track all keys controlled by this plugin
             if deck_controller.active_page is None:
                 continue
@@ -951,11 +951,11 @@ class StoreBackend:
             if module.startswith(base_module):
                 del sys.modules[module]
 
-        # for controller in gl.deck_manager.deck_controller:
+        # for controller in gl.deck_manager.get_all_controllers():
             # controller.active_page.update_inputs_with_actions_from_plugin(plugin_id)
 
         ## Update page
-        for controller in gl.deck_manager.deck_controller:
+        for controller in gl.deck_manager.get_all_controllers():
             ## Checks required to prevent errors after auto-update
             if hasattr(controller, "active_page"):
                 if controller.active_page is not None:

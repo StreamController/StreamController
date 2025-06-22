@@ -25,7 +25,7 @@ import usb.util
 import os
 import types
 
-
+from globals import deck_manager
 # Import own modules
 from src.backend.DeckManagement.BetterDeck import BetterDeck
 from src.backend.DeckManagement.DeckController import DeckController
@@ -78,10 +78,18 @@ class DeckManager:
             resume_thread.start()
 
     def reset_all_decks(self):
+        """
+        This will reset all decks
+        :return:
+        """
         for deck in self.get_all_decks():
             deck.reset()
 
     def close_all_decks(self):
+        """
+        This will close all physical and virtual decks
+        :return:
+        """
         for controller in self.get_all_controllers():
             if not controller.deck:
                 continue
@@ -225,6 +233,10 @@ class DeckManager:
             self.add_deck(deck, is_virtual)
 
     def add_all_virtual_decks(self):
+        """
+        Adds all virtual decks
+        :return:
+        """
         settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
 
         virtual_deck_amount = int(settings.get("dev", {}).get("n-fake-decks", 0))
@@ -373,6 +385,15 @@ class DeckManager:
 
     # Get Serial Numbers
 
+    @staticmethod
+    def get_all_serial_numbers() -> list:
+        """
+        Gets all serial numbers from all decks that are currently connected.
+        This does not mean that they have a controller associated with them.
+        :return: A list containing all serial numbers from all decks that are currently connected to the system
+        """
+        return [deck.get_serial_number() for deck in DeckManager.get_all_decks()]
+
     def get_all_loaded_serial_numbers(self) -> list:
         """
         Gets all serial numbers for physical and virtual decks combined
@@ -404,16 +425,53 @@ class DeckManager:
         """
         return [deck for deck in DeviceManager().enumerate()]
 
-    def get_deck_by_serial(self, serial: str) -> BetterDeck | None:
+    @staticmethod
+    def get_deck_by_serial(serial: str) -> BetterDeck | None:
         """
         Gets a deck by serial number
         :param serial: Serial number of the deck
         :return: The StreamDeck that the serial number belongs to
         """
-        for controller in self.get_all_controllers():
-            if controller.deck.get_serial_number() != serial:
+        for deck in DeckManager.get_all_decks():
+            if deck.get_serial_number() != serial:
                 continue
+            return deck
+        return None
 
+    def get_deck_from_controller_by_serial(self, serial: str) -> BetterDeck | None:
+        """
+        Gets a deck from a controller by serial number
+        :param serial: Serial number of the deck
+        :return: The StreamDeck that the serial number belongs to
+        """
+        for controller in self.get_all_controllers():
+            if controller.get_serial_number() != serial:
+                continue
+            return controller.deck
+        return None
+
+    @staticmethod
+    def get_deck_by_id(device_id) -> BetterDeck | None:
+        """
+        Gets a deck by the device id
+        :param device_id: Device id of the deck
+        :return: The StreamDeck that the device id belongs to
+        """
+        for deck in DeckManager.get_all_decks():
+            if deck.id() != device_id:
+                continue
+            return deck
+        return None
+
+    def get_deck_from_controller_by_id(self, device_id) -> BetterDeck | None:
+        """
+        Gets a deck from a controller by device id
+        :param device_id: device id of the deck
+        :return: The StreamDeck that the device id belongs to
+        """
+        for controller in self.get_all_controllers():
+            if controller.get_device_id() != device_id:
+                continue
             return controller.deck
         return None
 

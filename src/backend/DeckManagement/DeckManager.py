@@ -78,18 +78,12 @@ class DeckManager:
             resume_thread.start()
 
     def reset_all_decks(self):
-        """
-        This will reset all decks
-        :return:
-        """
+        """Reset all currently connected decks."""
         for deck in self.get_all_decks():
             deck.reset()
 
     def close_all_decks(self):
-        """
-        This will close all physical and virtual decks
-        :return:
-        """
+        """Close all physical and virtual decks if they are open."""
         for controller in self.get_all_controllers():
             if not controller.deck:
                 continue
@@ -101,20 +95,14 @@ class DeckManager:
             controller.deck.close()
 
     def resume_suspend(self):
-        """
-        This will get called after the Operating System is being woken from suspend
-        :return:
-        """
+        """Handle actions required when the system resumes from suspend."""
         time.sleep(2)
 
         self.remove_all_physical_controllers()
         self.add_all_physical_decks()
 
     def load_all_decks(self):
-        """
-        Will load all decks and controllers. If there are currently controllers that exist they will be removed first.
-        :return:
-        """
+        """Load all deck controllers after clearing any existing ones."""
         self.remove_all_controllers()
 
         if not gl.cli_args.skip_hardware_decks:
@@ -126,10 +114,10 @@ class DeckManager:
 
     def _on_deck_connected(self, device_id = None, device_info = None):
         """
-        Gets called when a StreamDeck gets connected
-        :param device_id: The device id of the StreamDeck
-        :param device_info: Info about the device
-        :return:
+        Callback for when a StreamDeck device is connected.
+
+        :param: device_id: The unique ID of the connected device.
+        :param: device_info: A dictionary containing device metadata.
         """
         device_info = device_info or {}
 
@@ -140,9 +128,9 @@ class DeckManager:
 
     def _on_deck_disconnected(self, device_id, device_info: dict):
         """
-        Gets called when a StreamDeck does not run under flatpak and is disconnected.
-        :param device_id: The device id of the StreamDeck
-        :param device_info: Info about the device
+        Callback for when a StreamDeck device is disconnected.
+        :param device_id: The unique ID of the disconnected device.
+        :param device_info: A dictionary containing device metadata.
         :return:
         """
         log.info(f"Device {device_id} with info: {device_info} disconnected")
@@ -157,10 +145,7 @@ class DeckManager:
         gl.app.main_win.check_for_errors()
 
     def _on_deck_disconnected_flatpak(self):
-        """
-        Gets called when the application runs under flatpak and a StreamDeck got removed
-        :return:
-        """
+        """Callback for handling disconnections in a Flatpak environment."""
         for controller in self.physical_controllers[:]:  # Copy to avoid modification during iteration
             if not controller.deck.connected():
                 self.remove_physical_controller(controller)
@@ -171,9 +156,9 @@ class DeckManager:
 
     def add_deck(self, deck: StreamDeck, is_virtual: bool = False):
         """
-        Adds a new StreamDeck by creating a Controller for it
-        :param deck: The StreamDeck to add
-        :param is_virtual: Weather the StreamDeck is physical or not
+        Add a StreamDeck to the application by creating a controller for it.
+        :param deck: The StreamDeck instance.
+        :param is_virtual: Whether the deck is virtual (fake) or physical.
         :return:
         """
 
@@ -198,10 +183,7 @@ class DeckManager:
         gl.app.main_win.check_for_errors()
 
     def add_all_physical_decks(self):
-        """
-        Adds all physical decks
-        :return:
-        """
+        """Detect and add all connected physical StreamDeck devices."""
         decks = self.get_all_decks()
 
         for deck in decks:
@@ -215,10 +197,9 @@ class DeckManager:
 
     def add_physical_deck_by_id(self, device_id, is_virtual: bool = False):
         """
-        Adds a new StreamDeck by creating a Controller for it using the device id
-        :param device_id: The device ID of the StreamDeck
-        :param is_virtual: Weather the StreamDeck is physical or not
-        :return:
+        Add a physical StreamDeck using its device ID.
+        :param device_id: The ID of the device to add.
+        :param is_virtual: Whether to treat the deck as virtual (default: False).
         """
 
         deck_ids = self.get_physical_deck_ids()
@@ -233,10 +214,7 @@ class DeckManager:
             self.add_deck(deck, is_virtual)
 
     def add_all_virtual_decks(self):
-        """
-        Adds all virtual decks
-        :return:
-        """
+        """Add all virtual (fake) decks based on the application settings."""
         settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
 
         virtual_deck_amount = int(settings.get("dev", {}).get("n-fake-decks", 0))
@@ -268,25 +246,21 @@ class DeckManager:
 
     def remove_controller(self, controller: DeckController):
         """
-        Tries removing a controller from the physical or virtual controllers
-        :param controller: The controller to remove
-        :return:
+        Remove a controller, whether physical or virtual.
+        :param controller: The controller instance to remove.
         """
         self.remove_physical_controller(controller)
         self.remove_virtual_controller(controller)
 
     def remove_all_controllers(self):
-        """
-        Removes all physical and virutal deck controllers
-        :return:
-        """
+        """Remove all controllers, both physical and virtual."""
         self.remove_all_physical_controllers()
         self.remove_all_virtual_controllers()
 
     def remove_physical_controller(self, controller: DeckController):
         """
-        Removes a physical deck controller
-        :param controller: Deck controller to remove
+        Remove a specific physical deck controller.
+        :param controller: The controller to remove.
         """
         if controller not in self.physical_controllers:
             return
@@ -297,17 +271,14 @@ class DeckManager:
         self.physical_controllers.remove(controller)
 
     def remove_all_physical_controllers(self):
-        """
-        Removes all physical deck controllers
-        :return:
-        """
+        """Remove all physical deck controllers."""
         for controller in self.physical_controllers:
             self.remove_physical_controller(controller)
 
     def remove_virtual_controller(self, controller: DeckController):
         """
-        Removes a virtual deck controller
-        :param controller: Deck controller to remove
+        Remove a specific virtual deck controller.
+        :param controller: The controller to remove.
         """
         if controller not in self.virtual_controllers:
             return
@@ -318,10 +289,7 @@ class DeckManager:
         self.virtual_controllers.remove(controller)
 
     def remove_all_virtual_controllers(self):
-        """
-        Removes all virtual deck controllers
-        :return:
-        """
+        """Remove all virtual deck controllers."""
         for controller in self.virtual_controllers:
             self.remove_virtual_controller(controller)
 
@@ -329,30 +297,24 @@ class DeckManager:
 
     def get_all_controllers(self) -> list[DeckController]:
         """
-        Get all currently active controllers. Physical and Virtual controllers get combined
-        :return: A combined list of physical and virtual controllers
+        Get a combined list of all physical and virtual deck controllers.
+        :return: List of all deck controllers.
         """
         return self.physical_controllers + self.virtual_controllers
 
     def get_physical_controllers(self):
-        """
-        Get all currently active physical controllers.
-        :return: A list of physical controllers
-        """
+        """Return a list of all active physical deck controllers."""
         return self.physical_controllers
 
     def get_virtual_controllers(self):
-        """
-        Get all currently active virtual controllers.
-        :return: A list of virtual controllers
-        """
+        """Return a list of all active virtual deck controllers."""
         return self.virtual_controllers
 
     def get_controller_for_deck(self, deck: StreamDeck) -> DeckController | None:
         """
-        Returns the corresponding controller depending on the deck. This can be either physical or virtual
-        :param deck: The StreamDeck that the controller should be associated with
-        :return: The actual controller that the deck belongs to
+        Retrieve the controller instance for a specific StreamDeck.
+        :param deck: The StreamDeck object.
+        :return: The associated controller, or None if not found.
         """
         for controller in self.get_all_controllers():
             if controller.deck is deck:
@@ -364,23 +326,17 @@ class DeckManager:
 
     def get_all_loaded_deck_ids(self) -> list:
         """
-        Gets all deck ids for physical and virtual decks combined
-        :return: A list containing physical and virtual deck ids
+        Retrieve all loaded deck device IDs.
+        :return: List of device IDs from both physical and virtual decks.
         """
         return [controller.get_device_id() for controller in self.get_all_controllers()]
 
     def get_physical_deck_ids(self) -> list:
-        """
-        Gets all physical deck ids
-        :return: A list containing physical deck ids
-        """
+        """Return a list of device IDs for all physical decks."""
         return [controller.get_device_id() for controller in self.physical_controllers]
 
     def get_virtual_deck_ids(self) -> list:
-        """
-        Gets all virtual deck ids
-        :return: A list containing virtual deck ids
-        """
+        """Return a list of device IDs for all virtual decks."""
         return [controller.get_device_id() for controller in self.virtual_controllers]
 
     # Get Serial Numbers
@@ -388,31 +344,24 @@ class DeckManager:
     @staticmethod
     def get_all_serial_numbers() -> list:
         """
-        Gets all serial numbers from all decks that are currently connected.
-        This does not mean that they have a controller associated with them.
-        :return: A list containing all serial numbers from all decks that are currently connected to the system
+        Retrieve the serial numbers of all currently connected decks (not necessarily loaded).
+        :return: List of serial numbers.
         """
         return [deck.get_serial_number() for deck in DeckManager.get_all_decks()]
 
     def get_all_loaded_serial_numbers(self) -> list:
         """
-        Gets all serial numbers for physical and virtual decks combined
-        :return: A list containing physical and virtual deck serial numbers
+        Retrieve serial numbers from all currently loaded controllers.
+        :return: List of serial numbers from physical and virtual decks.
         """
         return [controller.get_serial_number() for controller in self.get_all_controllers()]
 
     def get_physical_deck_serials(self) -> list:
-        """
-        Gets serial numbers for all physical decks
-        :return: A list containing physical deck serial numbers
-        """
+        """Return serial numbers for all physical decks."""
         return [controller.get_serial_number() for controller in self.physical_controllers]
 
     def get_virtual_deck_serials(self) -> list:
-        """
-        Gets serial numbers for all virtual decks
-        :return: A list containing virtual deck serial numbers
-        """
+        """Return serial numbers for all virtual decks."""
         return [controller.get_serial_number() for controller in self.virtual_controllers]
 
     # Get Deck
@@ -420,17 +369,17 @@ class DeckManager:
     @staticmethod
     def get_all_decks() -> list[StreamDeck]:
         """
-        Gets all currently connected physical decks
-        :return: A list containing all physical StreamDecks
+        Retrieve all connected physical StreamDeck devices.
+        :return: List of StreamDeck objects.
         """
         return [deck for deck in DeviceManager().enumerate()]
 
     @staticmethod
     def get_deck_by_serial(serial: str) -> BetterDeck | None:
         """
-        Gets a deck by serial number
-        :param serial: Serial number of the deck
-        :return: The StreamDeck that the serial number belongs to
+        Find a deck by its serial number.
+        :param serial: The serial number to search for.
+        :return: The matching StreamDeck instance, or None if not found.
         """
         for deck in DeckManager.get_all_decks():
             if deck.get_serial_number() != serial:
@@ -440,9 +389,9 @@ class DeckManager:
 
     def get_deck_from_controller_by_serial(self, serial: str) -> BetterDeck | None:
         """
-        Gets a deck from a controller by serial number
-        :param serial: Serial number of the deck
-        :return: The StreamDeck that the serial number belongs to
+        Retrieve a deck from its controller using the serial number.
+        :param serial: The serial number of the deck.
+        :return: The deck object, or None if not found.
         """
         for controller in self.get_all_controllers():
             if controller.get_serial_number() != serial:
@@ -453,9 +402,9 @@ class DeckManager:
     @staticmethod
     def get_deck_by_id(device_id) -> BetterDeck | None:
         """
-        Gets a deck by the device id
-        :param device_id: Device id of the deck
-        :return: The StreamDeck that the device id belongs to
+        Find a deck using its device ID.
+        :param device_id: The device ID to search for.
+        :return: The matching StreamDeck instance, or None if not found.
         """
         for deck in DeckManager.get_all_decks():
             if deck.id() != device_id:
@@ -465,9 +414,9 @@ class DeckManager:
 
     def get_deck_from_controller_by_id(self, device_id) -> BetterDeck | None:
         """
-        Gets a deck from a controller by device id
-        :param device_id: device id of the deck
-        :return: The StreamDeck that the device id belongs to
+        Retrieve a deck from its controller using the device ID.
+        :param device_id: The ID of the deck.
+        :return: The deck object, or None if not found.
         """
         for controller in self.get_all_controllers():
             if controller.get_device_id() != device_id:

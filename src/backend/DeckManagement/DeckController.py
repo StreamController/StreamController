@@ -686,7 +686,7 @@ class DeckController:
         if load_inputs:
             self.media_player.add_task(self.load_all_inputs, page, update=False)
 
-        self.active_page.call_actions_ready_and_set_flag()
+        self.active_page.initialize_actions()
 
         # Load page onto deck
         self.media_player.add_task(self.update_all_inputs)

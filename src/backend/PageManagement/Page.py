@@ -557,6 +557,7 @@ class Page:
                 if not action.on_ready_called:
                     action.on_ready_called = True
                     action.load_event_overrides()
+                    action.load_initial_generative_ui()
                     action.on_ready()
 
     def clear_action_objects(self):

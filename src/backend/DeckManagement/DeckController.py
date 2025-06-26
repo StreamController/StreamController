@@ -1584,7 +1584,6 @@ class ControllerInputState:
                 continue
             if not action.on_ready_called:
                 continue
-            action.load_initial_generative_ui()
             action.on_update()
 
     @log.catch

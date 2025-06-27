@@ -1131,12 +1131,22 @@ class LabelManager:
         
         self.page_labels = {}
         self.action_labels = {}
+        self.scroll_wait = 50
 
         self.init_labels()
-        self.frames: dict[str, int] = {
-            "top": 0,
-            "center": 0,
-            "bottom": 0,
+        self.frames: dict[str, dict[str, int]] = {
+            "top": {
+                "position": 0,
+                "wait": self.scroll_wait
+            },
+            "center": {
+                "position": 0,
+                "wait": self.scroll_wait
+            },
+            "bottom": {
+                "position": 0,
+                "wait": self.scroll_wait
+            },
         }
 
     def init_labels(self):
@@ -1306,12 +1316,22 @@ class LabelManager:
                 start = image.width / 2 - (image.width - w) / 2 + 10
                 stop = image.width / 2 + (image.width - w) / 2 - 10
 
-                x_position = start - self.frames[label]
+                x_position = start - self.frames[label]["position"]
                 if x_position < stop:
-                    x_position = start
-                    self.frames[label] = 0
+                    if self.frames[label]["wait"] == 0:
+                        x_position = start
+                        self.frames[label]["position"] = 0
+                        self.frames[label]["wait"] = self.scroll_wait
+                    else:
+                        self.frames[label]["wait"] -= 1
                 elif self.controller_input.media_ticks % 2 == 0:
-                    self.frames[label] += 1
+                    if self.frames[label]["wait"] == 0:
+                        if x_position == stop:
+                            self.frames[label]["wait"] = self.scroll_wait
+
+                        self.frames[label]["position"] += 1
+                    else:
+                        self.frames[label]["wait"] -= 1
 
 
             if label == "top":

@@ -1131,7 +1131,7 @@ class LabelManager:
         
         self.page_labels = {}
         self.action_labels = {}
-        self.scroll_wait = 50
+        self.scroll_wait = 25
 
         self.init_labels()
         self.frames: dict[str, dict[str, int]] = {

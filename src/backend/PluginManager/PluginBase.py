@@ -9,6 +9,7 @@ import threading
 import time
 import subprocess
 from pathlib import Path
+from typing import Any
 
 from packaging import version
 
@@ -48,8 +49,8 @@ class PluginBase(rpyc.Service):
     The base class for all plugins.
     """
 
-    plugins = {}
-    disabled_plugins = {}
+    plugins: dict[str, dict[str, Any]] = {}
+    disabled_plugins: dict[str, dict[str, Any]] = {}
 
     def __init__(self, use_legacy_locale: bool = True, legacy_dir: str = "locales"):
         self.backend_connection: Connection = None

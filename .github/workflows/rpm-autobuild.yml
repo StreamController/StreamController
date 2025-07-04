@@ -11,15 +11,16 @@ jobs:
     container: fedora:latest
 
     steps:
-      - name: Install Dependencies
-        run: |
-          dnf install -y git rpm-build desktop-file-utils python3-devel python3-pip python3-setuptools python3-wheel make
-          pip3 install -r requirements.txt
+      - name: Install System Dependencies
+        run: dnf install -y git rpm-build desktop-file-utils python3-devel python3-pip python3-setuptools python3-wheel make
 
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: 'rpm-autobuild'
+
+      - name: Install Python Dependencies
+        run: pip3 install -r requirements.txt
 
       - name: Set up Git
         run: |

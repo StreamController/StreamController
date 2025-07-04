@@ -1,0 +1,68 @@
+name: RPM Autobuild
+
+on:
+  schedule:
+    - cron: '0 2 * * 0' # Runs weekly on Sunday at 2 AM UTC
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  sync-and-build:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+      - name: Install Dependencies
+        run: |
+          dnf install -y git rpm-build desktop-file-utils python3-devel python3-pip python3-setuptools python3-wheel make
+          pip3 install -r requirements.txt
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: 'rpm-autobuild'
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Botcho"
+          git config --global user.email "actions@github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/StreamController/StreamController.git
+
+      - name: Sync with upstream
+        run: |
+          git fetch upstream
+          git merge upstream/main --no-edit || (git status && git diff && exit 1)
+          git push origin rpm-autobuild
+
+      - name: Build RPM
+        run: |
+          cd rpm
+          make rpm
+
+      - name: Get Version
+        id: get_version
+        run: echo "::set-output name=version::$(grep -m 1 'Version:' rpm/StreamController.spec | awk '{print $2}')"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          body: |
+            Automated release based on upstream changes.
+          draft: false
+          prerelease: false
+
+      - name: Upload RPM Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ~/rpmbuild/RPMS/x86_64/streamcontroller-${{ steps.get_version.outputs.version }}-1.fc42.x86_64.rpm
+          asset_name: streamcontroller-${{ steps.get_version.outputs.version }}.rpm
+          asset_content_type: application/x-rpm

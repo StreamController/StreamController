@@ -114,7 +114,6 @@ tray_icon: "TrayIcon" = None
 fallback_font: str = find_fallback_font()
 showed_donate_window: bool = False
 screen_locked: bool = False
-loggers: dict[str, "Logger"] = {}
 
 app_version: str = "1.5.0-beta.11"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False

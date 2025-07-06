@@ -287,7 +287,7 @@ class App(Adw.Application):
 
         for controller in self.deck_manager.deck_controller:
             if controller.serial_number() == serial_number:
-                page_path = gl.page_manager.get_best_page_path_match_from_name(page_name)
+                page_path = gl.page_manager.find_matching_page_path(page_name)
 
                 if controller is not None:
                     if controller.active_page is not None:

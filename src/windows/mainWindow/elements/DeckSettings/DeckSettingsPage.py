@@ -49,11 +49,6 @@ class DeckSettingsPage(Gtk.Overlay):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.set_child(self.main_box)
 
-        ## Back button
-        self.back_button = BackButton(halign=Gtk.Align.START)
-        self.back_button.connect("clicked", self.on_back_clicked)
-        self.main_box.append(self.back_button)
-
         ## Main area
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True, margin_top=50)
         self.main_box.append(self.scrolled_window)
@@ -82,18 +77,11 @@ class DeckSettingsPage(Gtk.Overlay):
 
         self.fake_deck_group.set_visible(fake)
 
-        self.serial_number_label = Gtk.Label(label=f"Serial: {self.deck_controller.serial_number()}", margin_top=20, margin_bottom=20, css_classes=["dim-label"], selectable=True)
-        self.main_box.append(self.serial_number_label)
-
-    def on_back_clicked(self, button):
-        self.deck_stack_child.stack.set_visible_child_name("page-settings")
-        self.deck_stack_child.toggle_settings_button.set_icon_name("applications-system-symbolic")
-        
+        self.serial_number_label = Gtk.Label(label=f"Serial: {self.deck_controller.serial_number()}", margin_top=20, css_classes=["dim-label"], selectable=False, sensitive=False)
+        self.clamp_box.append(self.serial_number_label)
 
     def on_open_page_settings_button_click(self, button):
         self.deck_stack_child.set_visible_child_name("page-settings")
-
-
 
     def show_no_page_error(self):
         self.clear()

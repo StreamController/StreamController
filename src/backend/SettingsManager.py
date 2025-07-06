@@ -24,7 +24,8 @@ class SettingsManager:
         self.font_defaults: dict = {} # Used by the LabelManager to get the default font settings
         self.load_font_defaults()
 
-    def load_settings_from_file(self, file_path: str) -> dict:
+    @staticmethod
+    def load_settings_from_file(file_path: str) -> dict:
         if not os.path.exists(file_path):
             return {}
         try:
@@ -34,8 +35,8 @@ class SettingsManager:
             log.error(f"Invalid json in {file_path}: {e}")
             return {}
         
-        
-    def save_settings_to_file(self, file_path: str, settings: dict) -> None:
+    @staticmethod
+    def save_settings_to_file(file_path: str, settings: dict) -> None:
         # Create directories if they don't exist
         if not os.path.exists(os.path.dirname(file_path)) and os.path.dirname(file_path) != "":
             os.makedirs(os.path.dirname(file_path))

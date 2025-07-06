@@ -1,7 +1,8 @@
 {
   "name": "StreamController Development",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "options": [ "--network", "host" ]
   },
   "remoteUser": "ubuntu",
   "runArgs": [

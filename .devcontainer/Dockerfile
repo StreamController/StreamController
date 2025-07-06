@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:25.04
 
 # Define Python version as build argument with default
 ARG PYTHON_VERSION=3.12

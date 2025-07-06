@@ -164,7 +164,7 @@ class Page:
 
         if self.deck_controller.active_page == self:
             # if it's already loaded - this way it only triggers on newly added actions
-            self.call_actions_ready_and_set_flag()
+            self.initialize_actions()
 
     # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
 
@@ -551,13 +551,14 @@ class Page:
         return False
 
     @log.catch
-    def call_actions_ready_and_set_flag(self):
+    def initialize_actions(self):
         for action in self.get_all_actions():
-            if hasattr(action, "on_ready"):
-                if not action.on_ready_called:
-                    action.on_ready_called = True
-                    action.load_event_overrides()
-                    action.on_ready()
+            if not action.on_ready_called:
+                action.on_ready_called = True
+                action.load_event_overrides()
+                action.load_initial_generative_ui()
+                action.on_ready()
+                action.on_update()
 
     def clear_action_objects(self):
         for input_type in self.action_objects:

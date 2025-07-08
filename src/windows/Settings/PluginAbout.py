@@ -24,6 +24,17 @@ class PluginAboutFactory:
         about.set_website(self.plugin_base.github_repo)
         about.set_issue_url(f"{self.plugin_base.github_repo}/issues")
 
+        if os.path.exists(self.plugin_base.LOG_FILE_PATH):
+            log_path = self.plugin_base.LOG_FILE_PATH
+
+            with open(log_path, "r") as log:
+                data = log.read()
+                if data == "":
+                    about.set_debug_info("No Debugging Info available")
+                else:
+                    about.set_debug_info(data)
+            about.set_debug_info_filename(log_path)
+
         self._full_setup(about)
 
         return about

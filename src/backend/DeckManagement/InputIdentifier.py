@@ -84,13 +84,13 @@ class Input:
             x, y = map(int, coords)
             rows, cols = deck_controller.deck.key_layout()
             return y * cols + x
-        
+
         def get_page_coords(self):
             return self.Coords_To_PageCoords(self.coords)
-        
+
         def get_index(self, deck_controller: "DeckController"):
             return self.Coords_To_Index(deck_controller, self.coords)
-        
+
     class Dial(InputIdentifier):
         input_type = "dials"
         controller_class_name = "ControllerDial"
@@ -105,7 +105,7 @@ class Input:
             TURN_CCW = "Dial Turn CCW"
             SHORT_TOUCH_PRESS = "Dial Touchscreen Short Press"
             LONG_TOUCH_PRESS = "Dial Touchscreen Long Press"
-  
+
         def __init__(self, json_identifier: str):
             self.index = int(json_identifier)
             super().__init__(self.input_type, json_identifier, self.controller_class_name)
@@ -123,20 +123,32 @@ class Input:
             self.index = str(json_identifier)
             super().__init__(self.input_type, json_identifier, self.controller_class_name)
 
-    All = (Key, Dial, Touchscreen)
+    class Screen(InputIdentifier):
+        input_type = "screens"
+        controller_class_name = "ControllerScreen"
+
+        class Events(InputEvent):
+            UPDATE = "Screen Update"
+
+        def __init__(self, json_identifier: str):
+            self.index = str(json_identifier)
+            super().__init__(self.input_type, json_identifier, self.controller_class_name)
+
+    All = (Key, Dial, Touchscreen, Screen)
     KeyTypes = [key_type.input_type for key_type in All]
-    
+
     @staticmethod
     def FromTypeIdentifier(input_type: str, json_identifier: str):
         input_map = {
             "keys": Input.Key,
             "dials": Input.Dial,
-            "touchscreens": Input.Touchscreen
+            "touchscreens": Input.Touchscreen,
+            "screens": Input.Screen
         }
         if input_type in input_map:
             return input_map[input_type](json_identifier)
         raise ValueError(f"Unknown input type {input_type}")
-    
+
     @staticmethod
     def AllEvents() -> list[InputEvent]:
         events: list[InputEvent] = []

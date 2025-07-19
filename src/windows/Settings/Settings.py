@@ -652,6 +652,9 @@ class SystemGroup(Adw.PreferencesGroup):
         self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Works on Gnome, KDE, Cinnamon and Hyprland", active=True)
         self.add(self.lock_on_lock_screen)
 
+        self.turn_screen_off_on_lock_screen = Adw.SwitchRow(title="Turn screen off on lock screen", subtitle="Set brightness to zero when screen is locked", active=False)
+        self.add(self.turn_screen_off_on_lock_screen)
+
         self.beta_resume_mode = Adw.SwitchRow(title="Use new resume mode (beta)", subtitle="Use new way to resume after suspends - requires restart", active=False)
         self.add(self.beta_resume_mode)
 
@@ -661,12 +664,14 @@ class SystemGroup(Adw.PreferencesGroup):
         self.keep_running.connect("notify::active", self.on_keep_running_toggled)
         self.autostart.connect("notify::active", self.on_autostart_toggled)
         self.lock_on_lock_screen.connect("notify::active", self.on_lock_on_lock_screen_toggled)
+        self.turn_screen_off_on_lock_screen.connect("notify::active", self.on_turn_screen_off_on_lock_screen_toggled)
         self.beta_resume_mode.connect("notify::active", self.on_beta_resume_mode_toggled)
 
     def load_defaults(self):
         self.keep_running.set_active(self.settings.settings_json.get("system", {}).get("keep-running", False) == True)
         self.autostart.set_active(self.settings.settings_json.get("system", {}).get("autostart", True))
         self.lock_on_lock_screen.set_active(self.settings.settings_json.get("system", {}).get("lock-on-lock-screen", True))
+        self.turn_screen_off_on_lock_screen.set_active(self.settings.settings_json.get("system", {}).get("turn-screen-off-on-lock-screen", False))
         self.beta_resume_mode.set_active(self.settings.settings_json.get("system", {}).get("beta-resume-mode", True))
 
     def on_keep_running_toggled(self, *args):
@@ -688,6 +693,13 @@ class SystemGroup(Adw.PreferencesGroup):
     def on_lock_on_lock_screen_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})
         self.settings.settings_json["system"]["lock-on-lock-screen"] = self.lock_on_lock_screen.get_active()
+
+        # Save
+        self.settings.save_json()
+
+    def on_turn_screen_off_on_lock_screen_toggled(self, *args):
+        self.settings.settings_json.setdefault("system", {})
+        self.settings.settings_json["system"]["turn-screen-off-on-lock-screen"] = self.turn_screen_off_on_lock_screen.get_active()
 
         # Save
         self.settings.save_json()

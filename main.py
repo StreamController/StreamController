@@ -162,7 +162,7 @@ def create_global_objects():
 
     gl.lock_screen_detector = LockScreenManager()
 
-    
+
     # gl.dekstop_grabber = DesktopGrabber()
 
 @log.catch
@@ -200,8 +200,8 @@ def reset_all_decks():
     devices = usb.core.find(find_all=True, idVendor=DeviceManager.USB_VID_ELGATO)
     for device in devices:
         try:
-            # Check if it's a StreamDeck
-            if device.idProduct in [
+            # Build list of supported device PIDs with defensive checks
+            supported_pids = [
                 DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
                 DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
                 DeviceManager.USB_PID_STREAMDECK_MINI,
@@ -209,16 +209,26 @@ def reset_all_decks():
                 DeviceManager.USB_PID_STREAMDECK_MK2,
                 DeviceManager.USB_PID_STREAMDECK_PEDAL,
                 DeviceManager.USB_PID_STREAMDECK_PLUS,
-                DeviceManager.USB_PID_STREAMDECK_MK2_SCISSOR,
-                DeviceManager.USB_PID_STREAMDECK_MK2_MODULE,
-                DeviceManager.USB_PID_STREAMDECK_MINI_MK2_MODULE,
-                DeviceManager.USB_PID_STREAMDECK_XL_V2_MODULE,
-            ]:
+                DeviceManager.USB_PID_STREAMDECK_NEO
+            ]
+
+            # Add newer device PIDs only if they exist in the current library version
+            if hasattr(DeviceManager, 'USB_PID_STREAMDECK_MK2_SCISSOR'):
+                supported_pids.append(DeviceManager.USB_PID_STREAMDECK_MK2_SCISSOR)
+            if hasattr(DeviceManager, 'USB_PID_STREAMDECK_MK2_MODULE'):
+                supported_pids.append(DeviceManager.USB_PID_STREAMDECK_MK2_MODULE)
+            if hasattr(DeviceManager, 'USB_PID_STREAMDECK_MINI_MK2_MODULE'):
+                supported_pids.append(DeviceManager.USB_PID_STREAMDECK_MINI_MK2_MODULE)
+            if hasattr(DeviceManager, 'USB_PID_STREAMDECK_XL_V2_MODULE'):
+                supported_pids.append(DeviceManager.USB_PID_STREAMDECK_XL_V2_MODULE)
+
+            # Check if it's a StreamDeck
+            if device.idProduct in supported_pids:
                 # Reset deck
                 usb.util.dispose_resources(device)
                 device.reset()
-        except:
-            log.error("Failed to reset deck, maybe it's already connected to another instance? Skipping...")
+        except Exception as e:
+            log.error(f"Failed to reset deck, maybe it's already connected to another instance? Exception: {e}. Skipping...")
 
 def quit_running():
     log.info("Checking if another instance is running")
@@ -253,7 +263,7 @@ def quit_running():
 def make_api_calls():
     if not gl.argparser.parse_args().change_page:
         return False
-    
+
     session_bus = dbus.SessionBus()
     obj: dbus.BusObject = None
     action_interface: dbus.Interface = None
@@ -276,7 +286,7 @@ def make_api_calls():
     return False
 
 
-    
+
 @log.catch
 def main():
     if make_api_calls():
@@ -287,11 +297,18 @@ def main():
         log.warning('Should you get an Gtk X11 error preventing the app from starting please add '
                     'GSK_RENDERER=ngl to your "/etc/environment" file')
 
-    DBusGMainLoop(set_as_default=True)
-    # Dbus
-    quit_running()
+    dbus_running = False
+    try:
+        DBusGMainLoop(set_as_default=True)
+        dbus_running = True
+        # Dbus
+        quit_running()
+    except dbus.exceptions.DBusException as e:
+        log.warning("DBus is not available. Features like checking for running instances will be disabled.")
+        log.warning(f"DBus exception: {e}")
 
-    reset_all_decks()
+    if dbus_running:
+        reset_all_decks()
 
     config_logger()
 
@@ -307,7 +324,7 @@ def main():
     app_settings = gl.settings_manager.get_app_settings()
     auto_start = app_settings.get("system", {}).get("autostart", True)
     setup_autostart(auto_start)
-    
+
     create_cache_folder()
     threading.Thread(target=update_assets, name="update_assets").start()
     load()

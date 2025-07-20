@@ -203,7 +203,7 @@ class DeckManager:
                 return
             if not controller.deck.is_open():
                 return
-            
+
             log.info(f"Closing deck: {controller.deck.get_serial_number()}")
             controller.clear()
             controller.deck.close()
@@ -213,8 +213,8 @@ class DeckManager:
         devices = usb.core.find(find_all=True)
         for device in devices:
             try:
-                # Check if it's a StreamDeck
-                if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in [
+                # Build list of supported device PIDs with defensive checks
+                supported_pids = [
                     DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
                     DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
                     DeviceManager.USB_PID_STREAMDECK_MINI,
@@ -223,7 +223,20 @@ class DeckManager:
                     DeviceManager.USB_PID_STREAMDECK_PEDAL,
                     DeviceManager.USB_PID_STREAMDECK_PLUS,
                     DeviceManager.USB_PID_STREAMDECK_NEO
-                ]:
+                ]
+
+                # Add newer device PIDs only if they exist in the current library version
+                if hasattr(DeviceManager, 'USB_PID_STREAMDECK_MK2_SCISSOR'):
+                    supported_pids.append(DeviceManager.USB_PID_STREAMDECK_MK2_SCISSOR)
+                if hasattr(DeviceManager, 'USB_PID_STREAMDECK_MK2_MODULE'):
+                    supported_pids.append(DeviceManager.USB_PID_STREAMDECK_MK2_MODULE)
+                if hasattr(DeviceManager, 'USB_PID_STREAMDECK_MINI_MK2_MODULE'):
+                    supported_pids.append(DeviceManager.USB_PID_STREAMDECK_MINI_MK2_MODULE)
+                if hasattr(DeviceManager, 'USB_PID_STREAMDECK_XL_V2_MODULE'):
+                    supported_pids.append(DeviceManager.USB_PID_STREAMDECK_XL_V2_MODULE)
+
+                # Check if it's a StreamDeck
+                if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in supported_pids:
                     # Reset deck
                     usb.util.dispose_resources(device)
                     device.reset()
@@ -300,5 +313,5 @@ class DetectResumeThread(threading.Thread):
             self.last_2 = time.time()
             if time.time() - self.last_1 >= 5 or time.time() - self.last_2 >= 5:
                 self.deck_manager.on_resumed()
-            
+
             time.sleep(2)

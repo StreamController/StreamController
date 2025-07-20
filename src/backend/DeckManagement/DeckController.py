@@ -513,6 +513,59 @@ class DeckController:
         page = gl.page_manager.get_page(default_page_path, self)
         self.load_page(page)
 
+        # Handle state change requests
+        if self.serial_number() in gl.api_state_requests:
+            state_request = gl.api_state_requests[self.serial_number()]
+            page_name = state_request["page_name"]
+            coords = state_request["coords"]
+            state = state_request["state"]
+            
+            # Get the page path for the specified page
+            requested_page_path = gl.page_manager.get_best_page_path_match_from_name(page_name)
+            
+            if requested_page_path is None:
+                # Page not found - log available pages
+                available_pages = [os.path.splitext(os.path.basename(p))[0] for p in gl.page_manager.get_pages()]
+                log.error(f"State change failed: Page '{page_name}' not found for device {self.serial_number()}. Available pages: {', '.join(available_pages)}")
+            else:
+                # Load the requested page if it's different from the current one
+                if os.path.abspath(requested_page_path) != os.path.abspath(self.active_page.json_path):
+                    requested_page = gl.page_manager.get_page(requested_page_path, self)
+                    self.load_page(requested_page)
+                
+                # Parse coordinates and change state with enhanced error handling
+                try:
+                    x, y = map(int, coords.split(','))
+                    
+                    # Validate coordinates are within bounds
+                    rows, cols = self.deck.key_layout()
+                    if x < 0 or x >= cols or y < 0 or y >= rows:
+                        log.error(f"State change failed: Coordinates ({x},{y}) out of bounds for device {self.serial_number()}. Valid range: x=0-{cols-1}, y=0-{rows-1}")
+                    else:
+                        identifier = Input.Key(f"{x}x{y}")
+                        c_input = self.get_input(identifier)
+                        
+                        if c_input is None:
+                            log.error(f"State change failed: No input found at coordinates ({x},{y}) on device {self.serial_number()}")
+                        elif state < 0 or state >= len(c_input.states):
+                            max_state = len(c_input.states) - 1
+                            if max_state == 0:
+                                log.error(f"State change failed: Position ({x},{y}) on device {self.serial_number()} only has 1 state (state 0). Requested state {state} does not exist")
+                            else:
+                                log.error(f"State change failed: Position ({x},{y}) on device {self.serial_number()} has states 0-{max_state}. Requested state {state} does not exist")
+                        else:
+                            # Successfully change state
+                            c_input.set_state(state)
+                            log.info(f"Successfully changed state of position ({x},{y}) to state {state} on device {self.serial_number()}")
+                            
+                except (ValueError, AttributeError) as e:
+                    log.error(f"State change failed: Invalid coordinate format '{coords}' for device {self.serial_number()}. Expected format: 'x,y' (e.g., '0,0'). Exception: {e}")
+                except Exception as e:
+                    log.error(f"State change failed: Unexpected error for device {self.serial_number()}: {e}")
+            
+            # Remove the request after processing
+            del gl.api_state_requests[self.serial_number()]
+
     @log.catch
     def load_background(self, page: Page, update: bool = True):
         log.info(f"Loading background in thread: {threading.get_ident()}")

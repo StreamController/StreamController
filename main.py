@@ -65,6 +65,11 @@ from src.backend.Migration.Migrators.Migrator_1_5_0_beta_5 import Migrator_1_5_0
 # Import globals
 import globals as gl
 
+# Define constants
+DEFAULT_DATA_PATH = os.path.expanduser("~/.var/app/com.core447.StreamController/data")
+MAX_REASONABLE_X = 10
+MAX_REASONABLE_Y = 10
+
 main_path = os.path.abspath(os.path.dirname(__file__))
 gl.MAIN_PATH = main_path
 
@@ -250,9 +255,225 @@ def quit_running():
             log.info("Already running, exiting")
             sys.exit(0)
 
+def handle_listing_commands():
+    """
+    Handle --list-devices and --list-pages commands
+    Returns True if a listing command was handled, False otherwise
+    """
+    args = gl.argparser.parse_args()
+    
+    if args.list_devices:
+        print("Scanning for connected StreamDeck devices...")
+        print()
+        
+        # We need to initialize deck manager to scan for devices
+        try:
+            # Minimal initialization to scan for devices
+            from StreamDeck.DeviceManager import DeviceManager
+            devices = DeviceManager().enumerate()
+            
+            if not devices:
+                print("No StreamDeck devices found.")
+                print("\nTips:")
+                print("- Make sure your StreamDeck is connected via USB")
+                print("- Check that the device is recognized by your system")
+                print("- Try running with sudo if you have permission issues")
+                return True
+            
+            print(f"Found {len(devices)} StreamDeck device(s):")
+            print()
+            
+            for i, device in enumerate(devices):
+                print(f"Device {i+1}:")
+                try:
+                    # Try to get basic info without opening if possible
+                    device_id = getattr(device, 'id', lambda: 'Unknown')()
+                    print(f"  Device ID: {device_id}")
+                    
+                    # Try to get info that doesn't require opening the device
+                    try:
+                        deck_type = getattr(device, 'deck_type', lambda: 'Unknown StreamDeck')()
+                        print(f"  Product Name: {deck_type}")
+                    except:
+                        print(f"  Product Name: Unknown (permission issue)")
+                    
+                    # Try to open device to get detailed info
+                    device_opened = False
+                    try:
+                        if not device.is_open():
+                            device.open()
+                            device_opened = True
+                        
+                        print(f"  Serial Number: {device.get_serial_number()}")
+                        key_layout = device.key_layout()
+                        print(f"  Key Layout: {key_layout[1]}x{key_layout[0]} ({device.key_count()} keys)")
+                        
+                        if hasattr(device, 'dial_count') and device.dial_count() > 0:
+                            print(f"  Dials: {device.dial_count()}")
+                        if hasattr(device, 'is_touch') and device.is_touch():
+                            print(f"  Touchscreen: Yes")
+                        print(f"  Connected: {'Yes' if device.connected() else 'No'}")
+                        
+                        if device_opened:
+                            device.close()
+                            
+                    except PermissionError:
+                        print(f"  Status: Permission denied")
+                        print(f"  Note: Run 'sudo python main.py --list-devices' or install udev rules")
+                    except Exception as open_error:
+                        print(f"  Status: Could not access device ({open_error})")
+                        print(f"  Note: This may be a permission issue or device is in use")
+                        
+                except Exception as e:
+                    print(f"  Error: {e}")
+                    if "permission" in str(e).lower() or "access" in str(e).lower():
+                        print(f"  Note: Try running with sudo or install proper udev rules")
+                
+                print()
+        except ImportError:
+            print("Error: StreamDeck library not available")
+        except Exception as e:
+            print(f"Error scanning devices: {e}")
+        
+        # Add helpful information about permissions
+        print("\nTroubleshooting:")
+        print("- If you see permission errors, try: sudo python main.py --list-devices")
+        print("- For permanent fix, install udev rules: sudo cp udev.rules /etc/udev/rules.d/70-streamdeck.rules")
+        print("- Then run: sudo udevadm control --reload-rules && sudo udevadm trigger")
+        print("- After installing udev rules, unplug and replug your StreamDeck")
+        
+        return True
+    
+    if args.list_pages:
+        print("Scanning for available pages...")
+        print()
+        
+        try:
+            # Try to get pages from the file system
+            import os
+            data_path = gl.DATA_PATH if hasattr(gl, 'DATA_PATH') else DEFAULT_DATA_PATH
+            pages_dir = os.path.join(data_path, "pages")
+            
+            if not os.path.exists(pages_dir):
+                print(f"Pages directory not found: {pages_dir}")
+                print("\nThis might mean StreamController hasn't been set up yet.")
+                return True
+            
+            page_files = [f for f in os.listdir(pages_dir) if f.endswith('.json') and not f.startswith('.')]
+            
+            if not page_files:
+                print("No pages found.")
+                print(f"\nPages should be located in: {pages_dir}")
+                return True
+            
+            print(f"Found {len(page_files)} page(s):")
+            print()
+            
+            for page_file in sorted(page_files):
+                page_name = os.path.splitext(page_file)[0]
+                page_path = os.path.join(pages_dir, page_file)
+                
+                try:
+                    # Try to read basic info from the page file
+                    import json
+                    with open(page_path, 'r') as f:
+                        page_data = json.load(f)
+                    
+                    print(f"  {page_name}")
+                    
+                    # Count items with states
+                    items_with_states = 0
+                    for input_type in ['keys', 'dials', 'touchscreens']:
+                        if input_type in page_data:
+                            for item_id, item_data in page_data[input_type].items():
+                                if 'states' in item_data and item_data['states']:
+                                    states_count = len(item_data['states'])
+                                    items_with_states += 1
+                                    if states_count > 1:
+                                        print(f"    - {input_type[:-1]} {item_id}: {states_count} states")
+                    
+                    if items_with_states == 0:
+                        print(f"    - No configured items")
+                    
+                except Exception as e:
+                    print(f"    - Error reading page: {e}")
+                
+                print()
+                    
+        except Exception as e:
+            print(f"Error scanning pages: {e}")
+        
+        return True
+    
+    return False
+
+def validate_state_change_args(args):
+    """
+    Validate CLI arguments for --change-state
+    Returns (is_valid, error_message)
+    """
+    if not args.change_state:
+        return True, None
+    
+    for i, (serial_number, page_name, coords, state_number) in enumerate(args.change_state):
+        # Validate serial number format (basic check)
+        if not serial_number or not isinstance(serial_number, str):
+            return False, f"Invalid serial number in argument {i+1}: '{serial_number}'"
+        
+        # Validate page name
+        if not page_name or not isinstance(page_name, str):
+            return False, f"Invalid page name in argument {i+1}: '{page_name}'"
+        
+        # Validate coordinate format
+        if not coords or not isinstance(coords, str):
+            return False, f"Invalid coordinates in argument {i+1}: '{coords}'"
+        
+        if ',' not in coords:
+            return False, f"Invalid coordinate format in argument {i+1}: '{coords}'. Expected format: 'x,y' (e.g., '0,0')"
+        
+        try:
+            x, y = map(int, coords.split(','))
+            if x < 0 or y < 0:
+                return False, f"Coordinates must be non-negative in argument {i+1}: '{coords}'"
+            if x > MAX_REASONABLE_X or y > MAX_REASONABLE_Y:  # Reasonable bounds check
+                return False, f"Coordinates seem too large in argument {i+1}: '{coords}'. Most StreamDecks have coordinates 0-4"
+        except ValueError:
+            return False, f"Invalid coordinate format in argument {i+1}: '{coords}'. Expected integers like '0,0'"
+        
+        # Validate state number
+        try:
+            state_num = int(state_number)
+            if state_num < 0:
+                return False, f"State number must be non-negative in argument {i+1}: '{state_number}'"
+            if state_num > 20:  # Reasonable bounds check
+                return False, f"State number seems too large in argument {i+1}: '{state_number}'. Most items have 1-5 states"
+        except ValueError:
+            return False, f"Invalid state number in argument {i+1}: '{state_number}'. Must be an integer"
+    
+    return True, None
+
 def make_api_calls():
-    if not gl.argparser.parse_args().change_page:
+    args = gl.argparser.parse_args()
+    has_page_requests = args.change_page
+    has_state_requests = args.change_state
+    
+    if not has_page_requests and not has_state_requests:
         return False
+    
+    # Validate state change arguments before proceeding
+    if has_state_requests:
+        is_valid, error_msg = validate_state_change_args(args)
+        if not is_valid:
+            print(f"Error: {error_msg}", file=sys.stderr)
+            print("\nUsage examples:", file=sys.stderr)
+            print("  --change-state CL123456789 Main 0,0 1", file=sys.stderr)
+            print("  --change-state CL123456789 Soundboard 2,1 0", file=sys.stderr)
+            print("\nParameters:", file=sys.stderr)
+            print("  SERIAL_NUMBER: Device serial (e.g., CL123456789)", file=sys.stderr)
+            print("  PAGE_NAME: Page name (e.g., Main, Soundboard)", file=sys.stderr)
+            print("  COORDINATES: Position as x,y (e.g., 0,0 for top-left)", file=sys.stderr)
+            print("  STATE_NUMBER: State to change to (e.g., 0, 1, 2)", file=sys.stderr)
+            sys.exit(1)
     
     session_bus = dbus.SessionBus()
     obj: dbus.BusObject = None
@@ -265,13 +486,34 @@ def make_api_calls():
     except ValueError as e:
         obj = None
 
-    for serial_number, page_name in gl.argparser.parse_args().change_page:
-        if None in [obj, action_interface] or gl.argparser.parse_args().close_running:
-            gl.api_page_requests[serial_number] = page_name
-        else:
-            # Other instance is running - call dbus interfaces
-            action_interface.Activate("change_page", [[serial_number, page_name]], [])
-            return True
+    # Handle page change requests
+    if has_page_requests:
+        for serial_number, page_name in args.change_page:
+            if None in [obj, action_interface] or args.close_running:
+                gl.api_page_requests[serial_number] = page_name
+            else:
+                # Other instance is running - call dbus interfaces
+                action_interface.Activate("change_page", [[serial_number, page_name]], [])
+                return True
+
+    # Handle state change requests
+    if has_state_requests:
+        for serial_number, page_name, coords, state_number in args.change_state:
+            if None in [obj, action_interface] or args.close_running:
+                try:
+                    state_num = int(state_number)
+                    gl.api_state_requests[serial_number] = {
+                        "page_name": page_name,
+                        "coords": coords,
+                        "state": state_num
+                    }
+                except ValueError:
+                    print(f"Error: Invalid state number '{state_number}'. Must be an integer.", file=sys.stderr)
+                    sys.exit(1)
+            else:
+                # Other instance is running - call dbus interfaces
+                action_interface.Activate("change_state", [[serial_number, page_name, coords, state_number]], [])
+                return True
 
     return False
 
@@ -279,6 +521,10 @@ def make_api_calls():
     
 @log.catch
 def main():
+    # Handle listing commands first (they don't need full initialization)
+    if handle_listing_commands():
+        return
+    
     if make_api_calls():
         return
 

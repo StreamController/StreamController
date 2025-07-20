@@ -239,8 +239,10 @@ def quit_running():
         obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
         action_interface = dbus.Interface(obj, "org.gtk.Actions")
     except dbus.exceptions.DBusException as e:
-        log.info("No other instance running, continuing")
-        log.error(e)
+        if "org.freedesktop.DBus.Error.ServiceUnknown" in str(e):
+            log.info("No other instance running, continuing")
+        else:
+            log.error(e)
     except ValueError as e:
         log.info("The last instance has not been properly closed, continuing... This may cause issues")
 

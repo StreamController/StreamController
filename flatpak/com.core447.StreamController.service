@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=com.core447.StreamController
+Exec=/app/bin/launch.sh

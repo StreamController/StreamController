@@ -916,6 +916,8 @@ class Background:
 
         self.tiles: list[Image.Image] = [None] * deck_controller.deck.key_count()
 
+        self.screen = None
+
     def set_image(self, image: "BackgroundImage", update: bool = True) -> None:
         self.image = image
         if self.video is not None:
@@ -924,8 +926,12 @@ class Background:
         gc.collect()
 
         self.update_tiles()
+        self.update_screen()
+
         if update:
             self.deck_controller.update_all_inputs()
+
+        self.screen = self.image.get_screen_image()
 
     def set_video(self, video: "BackgroundVideo", update: bool = True) -> None:
         if self.video is not None:
@@ -980,6 +986,10 @@ class Background:
                 del tile
         del old_tiles
 
+    def update_screen(self) -> None:
+        if self.image is not None:
+            self.screen = self.image.get_screen_image()
+
 class BackgroundImage:
     def __init__(self, deck_controller: DeckController, image: Image) -> None:
         self.deck_controller = deck_controller
@@ -1002,10 +1012,17 @@ class BackgroundImage:
         # obscured pixels.
         full_deck_image_size = (key_width + spacing_x, key_height + spacing_y)
 
+        # If it has a screen, then extend the image to account for it
+        if self.deck_controller.deck.is_visual():
+            extra_screen_size = self.deck_controller.get_screen_image_size()
+
+            # Adds extra screen space, plus the vertical spacing
+            full_deck_image_size = tuple(map(sum, zip(full_deck_image_size, extra_screen_size, (0, spacing_y))))
+
         # Convert to RGBA first to preserve transparency, then resize
         img_rgba = self.image.convert("RGBA")
         return ImageOps.fit(img_rgba, full_deck_image_size, Image.LANCZOS)
-    
+
     def crop_key_image_from_deck_sized_image(self, image: Image.Image, key):
         deck = self.deck_controller.deck
 
@@ -1028,9 +1045,44 @@ class BackgroundImage:
         region = (start_x, start_y, start_x + key_width, start_y + key_height)
         segment = image.crop(region)
 
+<<<<<<< HEAD
         # Return the segment directly, converting to RGBA to preserve transparency
         return segment.convert("RGBA")
     
+=======
+        # Create a new key-sized image, and paste in the cropped section of the
+        # larger image.
+        key_image = PILHelper.create_key_image(deck)
+        key_image.paste(segment)
+
+        return key_image
+
+    def crop_screen_image_from_deck_sized_image(self, image: Image.Image):
+        deck = self.deck_controller.deck
+
+        key_rows, key_cols = deck.key_layout()
+        key_width, key_height = deck.key_image_format()['size']
+        screen_width, screen_height = self.deck_controller.get_screen_image_size()
+        spacing_x, spacing_y = self.deck_controller.key_spacing
+
+        # Compute the starting X and Y offsets into the full size image that the
+        # requested key should display.
+        start_x = key_width + spacing_x
+        start_y = key_rows * (key_height + spacing_y)
+
+        # Compute the region of the larger deck image that is occupied by the given
+        # key, and crop out that segment of the full image.
+        region = (start_x, start_y, start_x + screen_width, start_y + screen_height)
+        segment = image.crop(region)
+
+        # Create a new screen-sized image, and paste in the cropped section of the
+        # larger image.
+        screen_image = PILHelper.create_screen_image(deck)
+        screen_image.paste(segment)
+
+        return screen_image
+
+>>>>>>> 405a6a9 (Background Image extends to the Neo Screen)
     def get_tiles(self) -> list[Image.Image]:
         full_deck_sized_image = self.create_full_deck_sized_image()
 
@@ -1040,6 +1092,11 @@ class BackgroundImage:
             tiles.append(key_image)
 
         return tiles
+
+    def get_screen_image(self):
+        full_deck_sized_image = self.create_full_deck_sized_image()
+
+        return self.crop_screen_image_from_deck_sized_image(full_deck_sized_image)
 
 class BackgroundVideo(BackgroundVideoCache):
     def __init__(self, deck_controller: DeckController, video_path: str, loop: bool = True, fps: int = 30) -> None:
@@ -2319,40 +2376,13 @@ class ControllerScreen(ControllerInput):
         rgb_image = image.convert("RGB")
         native_image = PILHelper.to_native_screen_format(self.deck_controller.deck, rgb_image)
         rgb_image.close()
-        self.deck_controller.media_player.add_touchscreen_task(native_image)
-
         del rgb_image
         self.set_ui_image(image)
 
+        self.deck_controller.deck.set_screen_image(native_image)
+
     def generate_empty_image(self) -> Image.Image:
         return Image.new("RGBA", self.get_screen_dimensions(), (0, 0, 0, 0))
-
-    # def get_dial_image_area(self, identifier: Input.Dial) -> tuple[int, int, int, int]:
-    #     width, height = self.get_screen_dimensions()
-
-    #     n_dials = len(self.deck_controller.inputs[Input.Dial])
-    #     dial_index = identifier.index
-
-    #     start_x = int((dial_index / n_dials) * width)
-    #     start_y = 0
-    #     end_x = int(((dial_index + 1) / n_dials) * width)
-    #     end_y = height
-
-    #     return start_x, start_y, end_x, end_y
-
-    # def get_dial_image_area_size(self) -> tuple[int, int]:
-    #     width, height = self.get_screen_dimensions()
-
-    #     n_dials = len(self.deck_controller.inputs[Input.Dial])
-
-    #     return int(width / n_dials), height
-
-    # def get_empty_dial_image(self) -> Image.Image:
-    #     screen_width, screen_height = self.get_screen_dimensions()
-
-    #     n_dials = len(self.deck_controller.inputs[Input.Dial])
-
-    #     return Image.new("RGBA", (screen_width // n_dials, screen_height), (0, 0, 0, 0))
 
     def set_ui_image(self, image: Image.Image) -> None:
         if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
@@ -2362,17 +2392,7 @@ class ControllerScreen(ControllerInput):
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
 
     def get_current_image(self) -> Image.Image:
-        active_state = self.get_active_state()
-        return active_state.get_current_image()
-
-    #def event_callback(self, event_type, value):
-    #    screensaver_was_showing = self.deck_controller.screen_saver.showing
-    #    if event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG, TouchscreenEventType.DRAG):
-    #        self.deck_controller.screen_saver.on_key_change()
-    #    if screensaver_was_showing:
-    #        return
-
-    #    active_state = self.get_active_state()
+        return self.deck_controller.background.screen
 
     def get_screen_dimensions(self) -> tuple[int, int]:
         return self.deck_controller.get_screen_image_size()

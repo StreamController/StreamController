@@ -99,6 +99,8 @@ class ImageRow(Adw.PreferencesRow):
 
         self.set_background_to_page(file_path)
 
+        # self.set_ui_background(file_path)
+
     def set_thumbnail(self, file_path):
         if file_path == None:
             self.media_selector_image.clear()
@@ -126,16 +128,18 @@ class ImageRow(Adw.PreferencesRow):
 
     def set_background_to_page(self, file_path):
 
-        active_page = gl.app.main_win.get_active_page()
-        deck = active_page.deck_controller.deck
+        deck_controller = gl.app.main_win.get_active_page().deck_controller
 
-        screen_size = active_page.deck_controller.get_screen_image_size()
+        screen_size = deck_controller.get_screen_image_size()
         empty = Image.open(file_path).crop((0, 0) + screen_size) #new("RGB", screen_size, (0, 0, 0))
-        native_image = PILHelper.to_native_screen_format(deck, empty)
+        native_image = PILHelper.to_native_screen_format(deck_controller.deck, empty)
 
-        c_input = deck.set_screen_image(native_image) #.et_input(identifier)
+        c_input = deck_controller.deck.set_screen_image(native_image) #.et_input(identifier)
 
         # TODO set image in preview
 
+    def set_ui_background(self, filepath):
+        breakpoint()
+        active_ident = self.sidebar.active_identifier
         # TODO save in settings somwhow
 

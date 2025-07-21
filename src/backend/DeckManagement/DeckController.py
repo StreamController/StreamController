@@ -323,9 +323,9 @@ class DeckController:
             log.error(f"Failed to clear deck, maybe it's already connected to another instance? Skipping... Error: {e}")
             del self
             return
-        
+
         self.hold_time: float = gl.settings_manager.get_app_settings().get("general", {}).get("hold-time", 0.5)
-        
+
         self.own_deck_stack_child: "DeckStackChild" = None
         self.own_key_grid: "KeyGridChild" = None
 
@@ -952,6 +952,7 @@ class Background:
             # self.video = None
             self.set_video(None, update=False)
             self.update_tiles()
+            self.update_screen()
             if update:
                 self.deck_controller.update_all_inputs()
         elif is_video(path):

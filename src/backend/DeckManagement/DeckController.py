@@ -141,6 +141,35 @@ class MediaPlayerSetImageTask:
 
                 gl.deck_manager.connect_new_decks()
 
+@dataclass
+class MediaPlayerSetScreenImageTask:
+    deck_controller: "DeckController"
+    page: Page
+    native_image: bytes
+
+    n_failed_in_row: ClassVar[dict] = {}
+
+    def run(self):
+        try:
+            self.deck_controller.deck.set_screen_image(self.native_image)
+            self.native_image = None
+            del self.native_image
+        except StreamDeck.TransportError as e:
+            log.error(f"Failed to set deck screen image. Error: {e}")
+
+            beta_resume = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
+            if beta_resume:
+                return
+
+            MediaPlayerSetScreenImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
+            if MediaPlayerSetScreenImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
+                log.debug(f"Failed to set screen image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
+
+                self.deck_controller.deck.close()
+                self.deck_controller.media_player.running = False # Set stop flag - otherwise remove_controller will wait until this task is done, which it never will because it waits
+                gl.deck_manager.remove_controller(self.deck_controller)
+
+                gl.deck_manager.connect_new_decks()
 
 class MediaPlayerThread(threading.Thread):
     def __init__(self, deck_controller: "DeckController"):
@@ -157,6 +186,7 @@ class MediaPlayerThread(threading.Thread):
         self.tasks: list[MediaPlayerTask] = []
         self.image_tasks = {}
         self.touchscreen_task = None
+        self.screen_task = None
         self._wake_event = threading.Event()
 
         self.fps: list[float] = []
@@ -294,6 +324,13 @@ class MediaPlayerThread(threading.Thread):
         )
         self._wake_event.set()
 
+    def add_screen_task(self, native_image: bytes):
+        self.screen_task = MediaPlayerSetScreenImageTask(
+            deck_controller=self.deck_controller,
+            page=self.deck_controller.active_page,
+            native_image=native_image
+        )
+
     def add_image_task(self, key_index: int, native_image: bytes):
         self.image_tasks[key_index] = MediaPlayerSetImageTask(
             deck_controller=self.deck_controller,
@@ -324,6 +361,12 @@ class MediaPlayerThread(threading.Thread):
             self.touchscreen_task.run()
             del self.touchscreen_task
             self.touchscreen_task = None
+
+        if self.screen_task is not None:
+            self.screen_task.run()
+            del self.screen_task
+            self.screen_task = None
+
     def check_connection(self):
         try:
             self.deck_controller.deck.get_firmware_version()
@@ -879,7 +922,7 @@ class DeckController:
         
         self.own_deck_stack_child = deck_stack_child
         return deck_stack_child
-    
+
     def clear(self):
         if not self.is_visual():
             return
@@ -973,8 +1016,7 @@ class Background:
 
         if update:
             self.deck_controller.update_all_inputs()
-
-        self.screen = self.image.get_screen_image()
+            self.screen = self.image.get_screen_image()
 
     def set_video(self, video: "BackgroundVideo", update: bool = True) -> None:
         if self.video is not None:
@@ -1089,17 +1131,8 @@ class BackgroundImage:
         region = (start_x, start_y, start_x + key_width, start_y + key_height)
         segment = image.crop(region)
 
-<<<<<<< HEAD
         # Return the segment directly, converting to RGBA to preserve transparency
         return segment.convert("RGBA")
-    
-=======
-        # Create a new key-sized image, and paste in the cropped section of the
-        # larger image.
-        key_image = PILHelper.create_key_image(deck)
-        key_image.paste(segment)
-
-        return key_image
 
     def crop_screen_image_from_deck_sized_image(self, image: Image.Image):
         deck = self.deck_controller.deck
@@ -1119,14 +1152,9 @@ class BackgroundImage:
         region = (start_x, start_y, start_x + screen_width, start_y + screen_height)
         segment = image.crop(region)
 
-        # Create a new screen-sized image, and paste in the cropped section of the
-        # larger image.
-        screen_image = PILHelper.create_screen_image(deck)
-        screen_image.paste(segment)
+        # Return the segment directly, converting to RGBA to preserve transparency
+        return segment.convert("RGBA")
 
-        return screen_image
-
->>>>>>> 405a6a9 (Background Image extends to the Neo Screen)
     def get_tiles(self) -> list[Image.Image]:
         full_deck_sized_image = self.create_full_deck_sized_image()
 
@@ -2492,10 +2520,10 @@ class ControllerScreen(ControllerInput):
         rgb_image = image.convert("RGB")
         native_image = PILHelper.to_native_screen_format(self.deck_controller.deck, rgb_image)
         rgb_image.close()
+        self.deck_controller.media_player.add_screen_task(native_image)
+
         del rgb_image
         self.set_ui_image(image)
-
-        self.deck_controller.deck.set_screen_image(native_image)
 
     def generate_empty_image(self) -> Image.Image:
         return Image.new("RGBA", self.get_screen_dimensions(), (0, 0, 0, 0))
@@ -2513,6 +2541,11 @@ class ControllerScreen(ControllerInput):
     def get_screen_dimensions(self) -> tuple[int, int]:
         return self.deck_controller.get_screen_image_size()
 
+    def clear(self):
+        self.set_current_image(self.controller_touch.generate_empty_image())
+
+    def set_current_image(self) -> None:
+        self.deck_controller.deck.set_screen_image(native_image)
 
 
 class ControllerTouchScreen(ControllerInput):

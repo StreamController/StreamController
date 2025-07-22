@@ -70,6 +70,17 @@ class ScreenBar(Gtk.Frame):
 
         self.set_focus_child(self.image)
         self.image.set_focusable(True)
+        self.load_from_changes()
+
+    def load_from_changes(self) -> None:
+        # Applt changes made before creation of self
+        if not hasattr(self.deck_controller, "ui_image_changes_while_hidden"):
+            return
+        tasks = self.deck_controller.ui_image_changes_while_hidden
+
+        if self.identifier in tasks:
+            self.image.set_image(tasks[self.identifier])
+            tasks.pop(self.identifier)
 
     def on_click(self, gesture, n_press, x, y):
         if gesture.get_current_button() == 1 and n_press == 1:
@@ -121,7 +132,7 @@ class ScreenBarImage(Gtk.Picture):
         self.latest_task_id: int = None
 
         #screen_image = self.get_controller_screen().get_current_image()
-        #self.set_image(screen_image)
+        # self.set_image(screen_image)
 
     def on_map(self, *args):
         for task in self.on_map_tasks:

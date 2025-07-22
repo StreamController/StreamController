@@ -991,6 +991,7 @@ class Background:
             path = None
         if path is None:
             self.image = None
+            self.screen = None
             # self.video = None
             self.set_video(None, update=False)
             self.update_tiles()
@@ -2416,6 +2417,10 @@ class ControllerScreen(ControllerInput):
 
     def update(self) -> None:
         image = self.get_current_image()
+
+        if image is None:
+            return
+
         rgb_image = image.convert("RGB")
         native_image = PILHelper.to_native_screen_format(self.deck_controller.deck, rgb_image)
         rgb_image.close()

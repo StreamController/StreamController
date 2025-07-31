@@ -29,7 +29,6 @@ from loguru import logger as log
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
-from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
@@ -96,6 +95,10 @@ class PluginPreview(StorePreview):
         self.set_official(plugin_data.official)
         self.set_verified(plugin_data.verified)
 
+        self.warning_badge.set_tooltip("store.badges.plugin.warning")
+        self.official_badge.set_tooltip("store.badges.plugin.official")
+        self.verified_badge.set_tooltip("store.badges.plugin.verified")
+
         # Set install button state
         if plugin_data.local_sha is None:
             self.set_install_state(0)
@@ -130,6 +133,7 @@ class PluginPreview(StorePreview):
         self.plugin_page.info_page.set_description(self.plugin_data.description)
         self.plugin_page.info_page.set_author(self.plugin_data.author)
         self.plugin_page.info_page.set_version(self.plugin_data.plugin_version)
+        #self.plugin_page.info_page.set_stargazer(self.plugin_data.stargazer)
 
         self.plugin_page.info_page.set_license(self.plugin_data.license)
         self.plugin_page.info_page.set_copyright(self.plugin_data.copyright)

@@ -57,6 +57,7 @@ class StoreBackend:
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
     STORE_BRANCH = "1.5.0"
+    GIT_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
     def __init__(self):
@@ -912,10 +913,30 @@ class StoreBackend:
                 # Plugin is not installed
                 continue
             if plugin.local_sha != plugin.commit_sha:
-                plugins_to_update.append(plugin)
+                local_sha_timestamp = await self.get_commit_timestamp(plugin.author, plugin.repository_name, plugin.local_sha)
+                commit_sha_timestamp = await self.get_commit_timestamp(plugin.author, plugin.repository_name, plugin.commit_sha)
+                if local_sha_timestamp < commit_sha_timestamp:
+                    plugins_to_update.append(plugin)
 
         return plugins_to_update
-    
+
+    async def get_commit_timestamp(self, repo_owner: str, repo_name: str, commit_sha: str):
+        """Get the timestamp of a specific commit from a GitHub repository using its SHA hash."""
+
+        url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/commits/{commit_sha}"
+
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            commit_data = response.json()
+            return datetime.strptime(commit_data['commit']['committer']['date'], self.GIT_TIMESTAMP_FORMAT)
+        elif response.status_code == 404:
+            log.error("Commit not found. Please check the repository and commit SHA.")
+        else:
+            log.error(f"Failed to retrieve data. Error code: {response.status_code}")
+
+        return datetime(9999, 12, 31, 23, 59, 59)  # Return a far future date if the commit is not found or an error occurs
+
     async def update_all_plugins(self) -> int:
         """
         Returns number of updated plugins

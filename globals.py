@@ -127,21 +127,23 @@ showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.11"  # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.12"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
 <p>Features:</p>
     <ul>
-        <li>Auto scroll too long labels</li>
-        <li>Add support for Stream Deck Modules</li>
+        <li>Add new cli options</li>
+    </ul>
+<p>Improvements:</p>
+    <ul>
+        <li>Add a scroll delay for long labels</li>
+        <li>Use more distinct path for icon</li>
     </ul>
 <p>Fixes:</p>
     <ul>
-        <li>Not updating dials when there is a background video</li>
-        <li>Tray icon not showing up on plasma</li>
-        <li>Store not loading if a single plugin is misconfigured</li>
-        <li>Error for rotated decks that aren't 3x5</li>
+        <li>Crashes regarding ComboRow</li>
+        <li>Missing  translation in onboarding dialog</li>
     </ul>
 """

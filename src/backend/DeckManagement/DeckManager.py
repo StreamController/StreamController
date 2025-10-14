@@ -27,6 +27,8 @@ import types
 
 
 # Import own modules
+from src.backend.DeckManagement.Subclasses.RemoteDeckManager import RemoteDeckManager
+from src.backend.DeckManagement.Subclasses.RemoteDeck import RemoteDeck
 from src.backend.DeckManagement.BetterDeck import BetterDeck
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
@@ -74,12 +76,15 @@ class DeckManager:
         if not self.beta_resume_mode:
             resume_thread.start()
 
+        self.remote_deck_manager = RemoteDeckManager(self)
+        self.deck_controller.extend(self.remote_deck_manager.deck_controllers)
+
     def load_decks(self):
         if not gl.argparser.parse_args().skip_load_hardware_decks:
             self.load_hardware_decks()
 
         self.load_fake_decks()
-
+    
     def load_hardware_decks(self):
         decks=DeviceManager().enumerate()
         for deck in decks:

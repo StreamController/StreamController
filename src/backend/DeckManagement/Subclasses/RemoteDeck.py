@@ -13,23 +13,29 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+from io import BytesIO
 import uuid
 from StreamDeck.Devices import StreamDeck
+from PIL import Image
 
 import globals as gl
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.DeckManagement.Subclasses.RemoteDeckManager import RemoteDeckManager
+
 class RemoteDeck:
-    def __init__(self, serial_number = None, deck_type = None):
+    def __init__(self, remote_deck_manager: "RemoteDeckManager", serial_number = None, deck_type = None):
+        self.remote_deck_manager: "RemoteDeckManager" = remote_deck_manager
         self.serial_number = serial_number
         self._deck_type = deck_type
 
         self.is_fake = True
 
-        self._key_layout = gl.settings_manager.get_deck_settings(self.serial_number).get("key-layout", [3, 5])
-        self._key_layout = [2, 4]
+        self._key_layout = [3, 5]
 
-        self._is_touch = True
-        self._dial_count = 4
+        self._is_touch = False
+        self._dial_count = 0
 
         key_callback: callable = None
 
@@ -53,8 +59,10 @@ class RemoteDeck:
         return
     def set_brightness(self, *args, **kwargs):
         return
-    def set_key_image(self, *args, **kwargs):
-        return
+    def set_key_image(self, key: int, image: bytes):
+        pillow_image = Image.open(BytesIO(image))
+        pillow_image = pillow_image.rotate(180)
+        self.remote_deck_manager.send_button_image(key, pillow_image)
     def key_states(self):
         return [False] * self.key_count()
     def key_image_format(self):

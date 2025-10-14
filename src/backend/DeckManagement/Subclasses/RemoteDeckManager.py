@@ -19,11 +19,12 @@ class RemoteDeckManager:
         self.deck_controllers = []
         self.httpd = None
         self.server_thread = None
+        self.handler_class = None
         
         # Start the webserver
         self.start_server()
 
-        deck = RemoteDeck(serial_number="remote-deck-1", deck_type="Remote Deck 1")
+        deck = RemoteDeck(self, serial_number="remote-deck-1", deck_type="Remote Deck 1")
         self.deck_controllers.append(DeckController(self.deck_manager, deck))
 
     
@@ -32,8 +33,8 @@ class RemoteDeckManager:
         """Start the HTTP server in a separate thread."""
         server_address = ('0.0.0.0', PORT)
         # Create a handler class with access to this RemoteDeckManager instance
-        handler_class = create_handler(self)
-        self.httpd = HTTPServer(server_address, handler_class)
+        self.handler_class = create_handler(self)
+        self.httpd = HTTPServer(server_address, self.handler_class)
 
         print("=" * 60)
         print("Local Network Python Server")
@@ -42,6 +43,8 @@ class RemoteDeckManager:
         print(f"Server time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("\nEndpoints:")
         print(f"  GET  http://localhost:{PORT}/status")
+        print(f"  GET  http://localhost:{PORT}/images")
+        print(f"  GET  http://localhost:{PORT}/images/{{button_id}}")
         print(f"  POST http://localhost:{PORT}/message")
         print(f"  POST http://localhost:{PORT}/button")
         print("\nWaiting for connections from Next.js web app...")
@@ -68,3 +71,14 @@ class RemoteDeckManager:
         print(self.deck_controllers)
         for deck_controller in self.deck_controllers:
             deck_controller.deck.deck.key_callback(deck_controller.deck.deck, key, state)
+    
+    def send_button_image(self, button_id: int, image):
+        """
+        Send a PIL image for a specific button to the browser.
+        
+        Args:
+            button_id: The button identifier (e.g., row * 5 + col)
+            image: PIL Image object
+        """
+        if self.handler_class:
+            self.handler_class.send_button_image(button_id, image)

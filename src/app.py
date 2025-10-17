@@ -219,7 +219,7 @@ class App(Adw.Application):
         self.add_action(self.install_plugin_action)
 
     def update_all_assets(self, *args, **kwargs):
-        threading.Thread(target=self._update_all_assets, name="update_all_assets").start()
+        gl.thread_pool.submit_network_task(self._update_all_assets)
 
     @log.catch
     def _update_all_assets(self):
@@ -233,7 +233,7 @@ class App(Adw.Application):
 
     def install_plugin(self, action, plugin_id: GLib.Variant):
         plugin_id = plugin_id.unpack()
-        threading.Thread(target=self._install_plugin, args=(plugin_id,), name="install_plugin").start()
+        gl.thread_pool.submit_network_task(self._install_plugin, plugin_id)
 
     @log.catch
     def _install_plugin(self, plugin_id: str):

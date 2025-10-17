@@ -143,8 +143,7 @@ class BackgroundVideoCache:
 
         self.cache_stored = False
 
-        thread = threading.Thread(target=self.load_cache, name="load_video_cache")
-        thread.start()
+        gl.thread_pool.submit_video_task(self.load_cache)
 
         if self.is_cache_complete():
             log.info("Cache is complete. Closing the video capture.")
@@ -281,8 +280,7 @@ class BackgroundVideoCache:
             return sha1sum.hexdigest()
         
     def save_cache_threaded(self):
-        t = threading.Thread(target=self.save_cache, name="save_video_cache")
-        t.start()
+        gl.thread_pool.submit_video_task(self.save_cache)
         
     @log.catch
     def save_cache(self):

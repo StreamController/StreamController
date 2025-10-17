@@ -1681,6 +1681,12 @@ class ControllerInputState:
         if self.controller_input.state == self.state:
             self.controller_input.update()
     
+    def own_actions_ready(self) -> None:
+        for action in self.get_own_actions():
+            if not isinstance(action, ActionCore):
+                continue
+            action.on_ready()
+    
     def own_actions_update(self) -> None:
         for action in self.get_own_actions():
             if not isinstance(action, ActionCore):
@@ -1725,16 +1731,16 @@ class ControllerInputState:
             action._raw_event_callback(event, data)
 
     def own_actions_ready_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_ready, name="own_actions_ready").start()
+        gl.thread_pool.submit_background_task(self.own_actions_ready)
 
     def own_actions_update_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_update, name="own_actions_update").start()
+        gl.thread_pool.submit_background_task(self.own_actions_update)
 
     def own_actions_tick_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_tick, name="own_actions_tick").start()
+        gl.thread_pool.submit_quick_task(self.own_actions_tick)
 
     def own_actions_event_callback_threaded(self, event: InputEvent, data: dict = None, show_notifications: bool = False) -> None:
-        threading.Thread(target=self.own_actions_event_callback, args=(event, data, show_notifications), name="own_actions_event_callback").start()
+        gl.thread_pool.submit_background_task(self.own_actions_event_callback, event, data, show_notifications)
 
     def remove_media(self) -> None:
         page = self.controller_input.deck_controller.active_page

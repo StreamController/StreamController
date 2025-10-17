@@ -45,7 +45,7 @@ class CustomAssetChooser(ChooserPage):
         self.build_finished = False
         self.build_task_finished_tasks: list[callable] = []
 
-        threading.Thread(target=self.build).start()
+        gl.thread_pool.submit_ui_task(self.build)
 
     @log.catch
     def build(self):
@@ -85,7 +85,7 @@ class CustomAssetChooser(ChooserPage):
             path = path.get_path()
 
             # gl.asset_manager_backend.add_custom_media_set_by_ui(url=url, path=path)
-            threading.Thread(target=gl.asset_manager_backend.add_custom_media_set_by_ui, args=(url, path), name="add_custom_media_set_by_ui").start()
+            gl.thread_pool.submit_background_task(gl.asset_manager_backend.add_custom_media_set_by_ui, url, path)
 
         gl.asset_manager.set_cursor_from_name("default")
 

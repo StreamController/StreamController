@@ -192,7 +192,7 @@ class StorePreview(Gtk.FlowBoxChild):
     def on_download_clicked(self, button: Gtk.Button):
         GLib.idle_add(self.show_install_spinner, True)
         
-        threading.Thread(target=self.perform_download_threaded, args=(), name="perform_download_threaded").start()
+        gl.thread_pool.submit_network_task(self.perform_download_threaded)
 
     @log.catch
     def perform_download_threaded(self):

@@ -91,6 +91,7 @@ if TYPE_CHECKING:
     from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
     from src.tray import TrayIcon
     from src.backend.Logger import Logger
+    from src.backend.ThreadPoolManager import ThreadPoolManager
 
 
 top_level_dir:str = os.path.dirname(__file__)
@@ -126,6 +127,7 @@ fallback_font: str = find_fallback_font()
 showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
+thread_pool: "ThreadPoolManager" = None
 
 app_version: str = "1.5.0-beta.12"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False

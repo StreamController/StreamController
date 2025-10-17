@@ -49,7 +49,7 @@ class IconPackChooser(ChooserPage):
 
         self.build_finished = False
 
-        threading.Thread(target=self.build).start()
+        gl.thread_pool.submit_ui_task(self.build)
         
     @log.catch
     def build(self):

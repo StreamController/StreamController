@@ -43,7 +43,7 @@ class WallpaperPackChooser(ChooserPage):
         super().__init__()
         self.asset_manager = asset_manager
 
-        threading.Thread(target=self.build).start()
+        gl.thread_pool.submit_ui_task(self.build)
         
     @log.catch
     def build(self):

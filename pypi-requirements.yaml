@@ -8,16 +8,16 @@ build-commands:
   cssselect2 cycler dbus-python decorator defusedxml distlib dnspython evdev filelock
   fonttools fuzzywuzzy get-video-properties gitdb h2 hpack hyperframe idna imageio
   imageio-ffmpeg indexed-bzip2 itsdangerous Jinja2 joblib kiwisolver Levenshtein linkify-it-py
-  loguru markdown-it-py MarkupSafe matplotlib mdit-py-plugins mdurl memory-profiler
-  memray meson meson-python natsort nltk numpy nvidia-ml-py opencv-python packaging
-  patchelf pillow pip-review pipenv platformdirs plumbum proglog psutil pulsectl py-gcode-metadata
-  py-spy pycairo pyclip pycparser pydantic pydantic-core pyenchant Pygments PyGObject
-  PyGObject-stubs pymongo pyparsing pyperclip pyproject-metadata Pyro5 pyspellchecker
-  python-dateutil python-wayland-extra pyudev pyusb PyYAML RapidFuzz regex req2flatpak
-  requests requirements-parser rich rpyc scalene serpent setproctitle setuptools six
-  smmap speedtest-cli streamcontroller-plugin-tools streamcontroller-streamdeck textual
-  tinycss2 tqdm types-setuptools typing-inspection typing-extensions uc-micro-py urllib3
-  usb-monitor virtualenv webencodings websocket-client Werkzeug
+  loguru markdown-it-py MarkupSafe matplotlib mdit-py-plugins mdurl memray meson meson-python
+  natsort nltk numpy opencv-python packaging patchelf pillow pip-review pipenv platformdirs
+  plumbum proglog psutil pulsectl py-gcode-metadata pycairo pyclip pycparser pydantic
+  pydantic-core pyenchant Pygments PyGObject PyGObject-stubs pymongo pyparsing pyperclip
+  pyproject-metadata Pyro5 pyspellchecker python-dateutil python-wayland-extra pyudev
+  pyusb PyYAML RapidFuzz regex req2flatpak requests requirements-parser rich rpyc
+  serpent setproctitle setuptools six smmap speedtest-cli streamcontroller-plugin-tools
+  streamcontroller-streamdeck textual tinycss2 tqdm types-setuptools typing-inspection
+  typing-extensions uc-micro-py urllib3 usb-monitor virtualenv webencodings websocket-client
+  Werkzeug
 sources:
 - type: file
   url: https://files.pythonhosted.org/packages/01/a5/1866b42151f50453f1a0d28fc4c39f5be5f412a2e914f33449c42daafdf1/CairoSVG-2.7.1-py3-none-any.whl
@@ -265,9 +265,6 @@ sources:
   url: https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl
   sha256: 84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8
 - type: file
-  url: https://files.pythonhosted.org/packages/49/26/aaca612a0634ceede20682e692a6c55e35a94c21ba36b807cc40fe910ae1/memory_profiler-0.61.0-py3-none-any.whl
-  sha256: 400348e61031e3942ad4d4109d18753b2fb08c2f6fb8290671c5513a34182d84
-- type: file
   url: https://files.pythonhosted.org/packages/46/35/151684bd2635f955f3381e0739e3abd13baa621e855bc3cc8a336f5e9587/memray-1.15.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
   sha256: d7745d2c58dfc33ef77f8827053cb957131420051b67e2d5642b605d0e65a586
   only-arches:
@@ -299,9 +296,6 @@ sources:
   sha256: 3b787adbf04b0db1967798dba8da1af07e387908ed1553a0d6e74c084d1ceafe
   only-arches:
   - x86_64
-- type: file
-  url: https://files.pythonhosted.org/packages/7f/96/d6d25a4c307d6645f4a9b91d620c0151c544ad38b5e371313a87d2761004/nvidia_ml_py-13.580.82-py3-none-any.whl
-  sha256: 4361db337b0c551e2d101936dae2e9a60f957af26818e8c0c3a1f32b8db8d0a7
 - type: file
   url: https://files.pythonhosted.org/packages/f3/bd/29c126788da65c1fb2b5fb621b7fed0ed5f9122aa22a0868c5e2c15c6d23/opencv_python-4.11.0.86-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
   sha256: 1b92ae2c8852208817e6776ba1ea0d6b1e0a1b5431e971a2a0ddd2a8cc398202
@@ -366,16 +360,6 @@ sources:
 - type: file
   url: https://files.pythonhosted.org/packages/11/ca/cc4e2676d8c98f5ee79775e505d97a714211898cba05ba12ec8b18a2edd4/py_gcode_metadata-0.2.0-py3-none-any.whl
   sha256: f10503319d335a876ed2bc788b6095e4bae12ce6210e9434e1be37531a82fa26
-- type: file
-  url: https://files.pythonhosted.org/packages/df/79/9ed50bb0a9de63ed023aa2db8b6265b04a7760d98c61eb54def6a5fddb68/py_spy-0.4.1-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-  sha256: ee776b9d512a011d1ad3907ed53ae32ce2f3d9ff3e1782236554e22103b5c084
-  only-arches:
-  - aarch64
-- type: file
-  url: https://files.pythonhosted.org/packages/68/fb/bc7f639aed026bca6e7beb1e33f6951e16b7d315594e7635a4f7d21d63f4/py_spy-0.4.1-py2.py3-none-manylinux_2_5_x86_64.manylinux1_x86_64.whl
-  sha256: 6a80ec05eb8a6883863a367c6a4d4f2d57de68466f7956b6367d4edd5c61bb29
-  only-arches:
-  - x86_64
 - type: file
   url: https://files.pythonhosted.org/packages/07/4a/42b26390181a7517718600fa7d98b951da20be982a50cd4afb3d46c2e603/pycairo-1.27.0.tar.gz
   sha256: 5cb21e7a00a2afcafea7f14390235be33497a2cce53a98a19389492a60628430
@@ -460,14 +444,6 @@ sources:
 - type: file
   url: https://files.pythonhosted.org/packages/16/2b/610e593b4b62fb1dbd7739afbf790848be1f661c7678eab6fd6c48a81bed/rpyc-6.0.1-py3-none-any.whl
   sha256: e4124c81e65efc4e498842624394b86305eeee64d9647e0808a2862212bac803
-- type: file
-  url: https://files.pythonhosted.org/packages/75/65/e57f87fd92aa8c14f5404dc04542054afbc41c1ba8e9e86f4414a58983e9/scalene-1.5.55.tar.gz
-  sha256: 71c0c89287f46f9f1fa965def5866156313a949ed592b8acb008f8cafcf7c518
-- type: file
-  url: https://files.pythonhosted.org/packages/37/b5/8b67429f201b74c576794a4fbfc7fa401d2f4570ba3aa98d9922e3a6f5a8/scalene-1.5.55-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
-  sha256: c31ddee2590bcb55c53d9562b6aa8989c8c975b49777a0b4beb5d68ac7804d8c
-  only-arches:
-  - x86_64
 - type: file
   url: https://files.pythonhosted.org/packages/ad/86/e029bd8a451f145e28530128239be057ca6e701aac46ad0d0000f852d551/serpent-1.41-py3-none-any.whl
   sha256: 5fd776b3420441985bc10679564c2c9b4a19f77bea59f018e473441d98ae5dd7

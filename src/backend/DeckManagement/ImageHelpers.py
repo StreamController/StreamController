@@ -22,26 +22,28 @@ from StreamDeck.ImageHelpers import PILHelper
 
 from gi.repository import GLib, GdkPixbuf
 
+from loguru import logger as log
+
 def create_full_deck_sized_image(deck, image_filename = None, image = None):
         key_rows, key_cols = deck.key_layout()
         key_width, key_height = deck.key_image_format()['size']
         spacing_x, spacing_y = (36, 36)
-
+    
         # Compute total size of the full StreamDeck image, based on the number of
         # buttons along each axis. This doesn't take into account the spaces between
         # the buttons that are hidden by the bezel.
         key_width *= key_cols
         key_height *= key_rows
-
+    
         # Compute the total number of extra non-visible pixels that are obscured by
         # the bezel of the StreamDeck.
         spacing_x *= key_cols - 1
         spacing_y *= key_rows - 1
-
+    
         # Compute final full deck image size, based on the number of buttons and
         # obscured pixels.
         full_deck_image_size = (key_width + spacing_x, key_height + spacing_y)
-
+    
         # Resize the image to suit the StreamDeck's full image size. We use the
         # helper function in Pillow's ImageOps module so that the image's aspect
         # ratio is preserved.
@@ -52,13 +54,14 @@ def create_full_deck_sized_image(deck, image_filename = None, image = None):
             image = image.convert("RGBA")
         image = ImageOps.fit(image, full_deck_image_size, Image.Resampling.LANCZOS)
         return image
+
 def create_wallpaper_image_array(deck, progress_dir = None, image = None):
         # Maybe use 2D array instead
         if progress_dir != None:
             image = create_full_deck_sized_image(deck, image_filename=progress_dir)
         elif image != None:
             image = create_full_deck_sized_image(deck, image=image)
-            
+    
         key_images = []
         for i in range(deck.key_count()):
             key_images.append(crop_key_image_from_deck_sized_image(deck, image, i)[1])
@@ -68,26 +71,26 @@ def crop_key_image_from_deck_sized_image(deck, image, key):
         key_rows, key_cols = deck.key_layout()
         key_width, key_height = deck.key_image_format()['size']
         spacing_x, spacing_y = (36, 36)
-
+    
         # Determine which row and column the requested key is located on.
         row = key // key_cols
         col = key % key_cols
-
+    
         # Compute the starting X and Y offsets into the full size image that the
         # requested key should display.
         start_x = col * (key_width + spacing_x)
         start_y = row * (key_height + spacing_y)
-
+    
         # Compute the region of the larger deck image that is occupied by the given
         # key, and crop out that segment of the full image.
         region = (start_x, start_y, start_x + key_width, start_y + key_height)
         segment = image.crop(region)
-
+    
         # Create a new key-sized image, and paste in the cropped section of the
         # larger image.
         key_image = PILHelper.create_image(deck)
         key_image.paste(segment)
-
+    
         return PILHelper.to_native_format(deck, key_image), key_image
 
 def shrink_image(image):
@@ -142,6 +145,8 @@ def image2pixbuf(img, force_transparency=False):
     channels = 4 if transparent else 3
 
     try:
+        if w == 0 or h == 0:
+            return
         pix = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                 transparent, 8, w, h, w * channels)
         # Clean up memory
@@ -149,6 +154,6 @@ def image2pixbuf(img, force_transparency=False):
         w, h = None, None
         del data
         return pix
-    except TypeError as e:
+    except TypeError:
          # This usually happens if the image is a non RGB image
-         return
+        return

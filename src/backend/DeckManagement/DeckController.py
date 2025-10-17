@@ -44,6 +44,7 @@ from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
 from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
+from src.backend.DeckManagement.VideoMemoryMonitor import VideoMemoryMonitor
 from src.backend.PageManagement.Page import ActionOutdated, Page, NoActionHolderFound
 
 process = psutil.Process()
@@ -350,6 +351,12 @@ class DeckController:
         self.init_inputs()
 
         self.background = Background(self)
+        
+        # Initialize video memory monitor
+        self.memory_monitor = VideoMemoryMonitor(
+            warning_threshold_mb=500,  # Start gentle cleanup at 500MB
+            critical_threshold_mb=1000  # Force aggressive cleanup at 1GB
+        )
 
         self.deck.set_key_callback(self.key_event_callback)
         self.deck.set_dial_callback(self.dial_event_callback)
@@ -358,6 +365,9 @@ class DeckController:
         # Start media player thread
         self.media_player = MediaPlayerThread(deck_controller=self)
         self.media_player.start()
+        
+        # Start the video memory monitor
+        self.memory_monitor.start_monitoring()
 
         self.keep_actions_ticking = True
         self.TICK_DELAY = 1
@@ -895,6 +905,9 @@ class DeckController:
 
         if hasattr(self, "media_player"):
             self.media_player.stop()
+            
+        if hasattr(self, "memory_monitor"):
+            self.memory_monitor.stop_monitoring()
 
         self.keep_actions_ticking = False
         self.deck.run_read_thread = False

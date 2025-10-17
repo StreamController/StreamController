@@ -1,3 +1,4 @@
+annotated-types==0.7.0
 async-lru==2.0.4
 bcrypt==4.2.1
 blinker==1.9.0
@@ -7,6 +8,7 @@ certifi==2025.1.31
 cffi==1.17.1
 charset-normalizer==3.4.1
 click==8.1.8
+cloudpickle==3.1.1
 colorama==0.4.6
 contourpy==1.3.1
 cssselect2==0.7.0
@@ -41,12 +43,14 @@ MarkupSafe==3.0.2
 matplotlib==3.10.0
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
+memory-profiler==0.61.0
 memray==1.15.0
 meson==1.7.0
 meson-python==0.17.1
 natsort==8.4.0
 nltk==3.9.1
 numpy==2.2.3
+nvidia-ml-py==13.580.82
 opencv-python==4.11.0.86
 packaging==24.2
 patchelf==0.17.2.1
@@ -59,9 +63,12 @@ proglog==0.1.10
 psutil==7.0.0
 pulsectl==24.12.0
 py-gcode-metadata==0.2.0
+py-spy==0.4.1
 pycairo==1.27.0
 pyclip==0.7.0
 pycparser==2.22
+pydantic==2.12.3
+pydantic_core==2.41.4
 pyenchant==3.2.2
 Pygments==2.19.1
 PyGObject==3.50.0
@@ -84,6 +91,7 @@ requests==2.32.3
 requirements-parser==0.11.0
 rich==13.9.4
 rpyc==6.0.1
+scalene==1.5.55
 serpent==1.41
 setproctitle==1.3.5
 setuptools==78.1.1
@@ -96,7 +104,8 @@ textual==2.1.2
 tinycss2==1.4.0
 tqdm==4.67.1
 types-setuptools==75.8.0.20250225
-typing_extensions==4.12.2
+typing-inspection==0.4.2
+typing_extensions==4.15.0
 uc-micro-py==1.0.3
 urllib3==2.3.0
 usb-monitor==1.23
@@ -104,4 +113,3 @@ virtualenv==20.29.2
 webencodings==0.5.1
 websocket-client==1.8.0
 Werkzeug==3.1.3
-

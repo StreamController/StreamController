@@ -1156,6 +1156,23 @@ class BackgroundVideo(BackgroundVideoCache):
         key_image.paste(segment)
 
         return key_image
+    
+    def stop_playback(self) -> None:
+        """Stop video playback and release resources."""
+        # Call parent cleanup method 
+        if hasattr(super(), 'close'):
+            super().close()
+        
+        # Release any additional resources specific to BackgroundVideo
+        if hasattr(self, 'page'):
+            self.page = None
+    
+    def __del__(self):
+        """Ensure cleanup when object is destroyed."""
+        try:
+            self.stop_playback()
+        except:
+            pass  # Ignore errors during cleanup
 
 class KeyGIF(SingleKeyAsset):
     def __init__(self, controller_key: "ControllerKey", gif_path: str, fps: int = 30, loop: bool = True):

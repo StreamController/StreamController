@@ -30,6 +30,7 @@ import uuid
 import shutil
 from packaging import version
 import urllib.request
+import threading
 
 # Import GLib
 import gi
@@ -64,7 +65,21 @@ class StoreBackend:
 
         self.official_store_branch_cache: str = None
 
-        self.official_authors = asyncio.run(self.get_official_authors())
+        # Set default fallback official authors
+        self.official_authors = ["Core447", "StreamController"]
+        
+        # Start fetching the real official authors in a background thread
+        threading.Thread(target=self._fetch_official_authors_background, daemon=True).start()
+
+    def _fetch_official_authors_background(self):
+        """Fetches official authors in a background thread and updates self.official_authors."""
+        try:
+            authors = asyncio.run(self.get_official_authors())
+            if not isinstance(authors, NoConnectionError):
+                self.official_authors = authors
+                log.info(f"Official authors updated: {authors}")
+        except Exception as e:
+            log.warning(f"Failed to fetch official authors, using fallback: {e}")
 
     async def get_stores(self) -> list[tuple[str, str]]:
         settings = gl.settings_manager.get_app_settings()

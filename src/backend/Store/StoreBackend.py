@@ -106,6 +106,8 @@ class StoreBackend:
             req = requests.get(url, stream=True)
             if req.status_code == 200:
                 return req
+            log.error(f"Request to {url} failed with status code {req.status_code}")
+            return NoConnectionError()
         except requests.exceptions.ConnectionError as e:
             log.error(e)
             return NoConnectionError()

@@ -289,7 +289,7 @@ class StoreBackend:
     async def get_attribution(self, url:str, commit:str) -> dict:
         result = await self.get_remote_file(url, "attribution.json", commit)
         if isinstance(result, NoConnectionError):
-            return result
+            return {}
         
         try:
             return json.loads(result)

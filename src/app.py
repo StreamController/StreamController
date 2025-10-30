@@ -187,8 +187,10 @@ class App(Adw.Application):
         gl.plugin_manager.loop_daemon = False
         log.debug("non-daemon threads:")
         for thread in threading.enumerate():
-            if thread.daemon:
-                continue
+            if thread is not threading.current_thread():
+                thread.join(timeout=2.0)
+                if thread.is_alive():
+                    log.error(f"Thread {thread.name} did not exit in time")
             log.debug(f"name: {thread.name}, id: {thread.ident} id2: {thread.native_id}")
 
         for child in multiprocessing.active_children():

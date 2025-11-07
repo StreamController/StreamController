@@ -26,6 +26,7 @@ import globals as gl
 class LockScreenManager:
     def __init__(self):
         self.locked = False
+        self.original_brightness = {}  # Store original brightness per controller
 
         threading.Thread(target=self.setup, daemon=True).start() # Run in separate thread incase something gets stuck
 
@@ -62,11 +63,23 @@ class LockScreenManager:
         
         log.info(f"Locking screen: {active}")
 
+        settings = gl.settings_manager.get_app_settings()
+        turn_screen_off = settings.get("system", {}).get("turn-screen-off-on-lock-screen", False)
+
         for controller in gl.deck_manager.deck_controller:
             controller.allow_interaction = not active
+            
             if active:
-                controller.screen_saver.show()
+                if turn_screen_off:
+                    self.original_brightness[controller.serial_number()] = controller.brightness
+                    controller.set_brightness(0)
+                else:
+                    controller.screen_saver.show()
             else:
-                controller.screen_saver.hide()
+                if controller.serial_number() in self.original_brightness:
+                    controller.set_brightness(self.original_brightness[controller.serial_number()])
+                    del self.original_brightness[controller.serial_number()]
+                else:
+                    controller.screen_saver.hide()
 
         self.locked = active

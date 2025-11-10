@@ -32,6 +32,9 @@ import os
 from fuzzywuzzy import fuzz
 from loguru import logger as log
 
+# Import globals
+import globals as gl
+
 # Import typing
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -48,7 +51,7 @@ class IconChooserPage(ChooserPage):
         self.selected_icon: str = None
 
         self.build_finished = False
-        threading.Thread(target=self.build).start()
+        gl.thread_pool.submit_ui_task(self.build)
 
     @log.catch
     def build(self):

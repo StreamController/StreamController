@@ -157,3 +157,23 @@ class VideoFrameCache:
     @lru_cache(maxsize=None)
     def is_cache_complete(self) -> bool:
         return len(self.cache) == self.n_frames
+    
+    def clear_cache(self) -> None:
+        """Clear all cached frames from memory and close PIL images."""
+        with self.lock:
+            for frame in self.cache.values():
+                if hasattr(frame, 'close'):
+                    frame.close()
+            self.cache.clear()
+            
+    def close(self) -> None:
+        """Close video resources and clear cache."""
+        self.release()  # Release cv2 video capture
+        self.clear_cache()  # Clear cached frames
+        
+    def __del__(self):
+        """Ensure cleanup when object is destroyed."""
+        try:
+            self.close()
+        except:
+            pass  # Ignore errors during cleanup

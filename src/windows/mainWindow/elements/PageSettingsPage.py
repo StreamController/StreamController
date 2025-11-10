@@ -24,7 +24,6 @@ from loguru import logger as log
 
 # Import own modules
 from src.windows.mainWindow.elements.DeckConfig import DeckConfig
-from src.windows.mainWindow.elements.PageSettings.PageSettings import PageSettings
 
 # Import globals
 import globals as gl
@@ -50,49 +49,10 @@ class PageSettingsPage(Gtk.Overlay):
         self.set_child(self.global_box)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        # self.set_child(self.main_box)
         self.global_box.append(self.main_box)
 
-
-        # Add stack
-        self.stack = Gtk.Stack(hexpand=True, vexpand=True)
-        self.main_box.append(self.stack)
-
-        # Add switcher
-        self.switcher_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        self.main_box.append(self.switcher_box)
-        self.switcher = Switcher(self)
-        self.switcher_box.append(self.switcher)
-        
-        ## Add stack pages
         self.deck_config = DeckConfig(self)
-        self.stack.add_titled(self.deck_config, "deck-config", gl.lm.get("main-page-deck-config"))
-
-        # Add settings
-        self.settings_page = PageSettings(self)
-        self.stack.add_titled(self.settings_page, "settings", gl.lm.get("main-page-page-settings"))
-
-        # # Switch overlay button
-        # self.open_deck_settings_button = Gtk.Button(icon_name="configure", css_classes=["circular"],
-        #                               halign=Gtk.Align.END, valign=Gtk.Align.END, margin_end=20, margin_bottom=50)
-        # self.open_deck_settings_button.connect("clicked", self.on_open_deck_settings_button_click)
-        # self.add_overlay(self.open_deck_settings_button)
-        return
-
-        ## Page selector bar - just for testing
-        self.page_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, vexpand=True, css_classes=["sidebar-color"])
-        self.global_box.append(self.page_box)
-
-        for i in range(5):
-            self.icon = Gtk.Image(icon_name="insert-image", hexpand=False, halign=Gtk.Align.CENTER,
-                                margin_bottom=15, pixel_size=30)
-            self.page_box.append(self.icon)
-
-        self.expand_button = Gtk.ToggleButton(icon_name="draw-arrow-back", css_classes=["flat"],
-                                              valign=Gtk.Align.END, vexpand=True, margin_bottom=5)
-        self.page_box.append(self.expand_button)
-
-        
+        self.main_box.append(self.deck_config)
 
     def on_open_deck_settings_button_click(self, button):
         self.deck_stack_child.set_visible_child_name("deck-settings")

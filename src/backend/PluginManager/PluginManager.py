@@ -1,6 +1,8 @@
 import os
 import importlib
 import sys
+from typing import Any
+
 from loguru import logger as log
 import threading
 
@@ -94,13 +96,21 @@ class PluginManager:
                 path = get_last_dir(path)
                 self.action_index[action_id] = plugins[plugin]["object"].ACTIONS[action_id]
 
-    def get_plugins(self, include_disabled: bool = False) -> list[PluginBase]:
+    def get_plugins(self, include_disabled: bool = False) -> dict[str, dict[str, Any]]:
         plugins = PluginBase.plugins
 
         if include_disabled:
             plugins.update(PluginBase.disabled_plugins)
 
         return plugins
+
+    def get_plugin_ids(self, include_disabled: bool = False) -> list[str]:
+        plugin_ids: list[str] = list(PluginBase.plugins.keys())
+
+        if include_disabled:
+            plugin_ids.extend(PluginBase.disabled_plugins.keys())
+
+        return plugin_ids
     
     def get_actions_for_plugin_id(self, plugin_id: str):
         return PluginBase.plugins[plugin_id]["object"].ACTIONS

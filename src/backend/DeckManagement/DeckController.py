@@ -2334,10 +2334,6 @@ class ControllerTouchScreen(ControllerInput):
         else:
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
 
-    def get_current_image(self) -> Image.Image:
-        active_state = self.get_active_state()
-        return active_state.get_current_image()
-
     def event_callback(self, event_type, value):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
         if event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG, TouchscreenEventType.DRAG):
@@ -2357,6 +2353,33 @@ class ControllerTouchScreen(ControllerInput):
                     Input.Touchscreen.Events.DRAG_RIGHT
                 )
 
+        # Handle all touchscreen events (short, long, drag) for corresponding dials
+        if event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG, TouchscreenEventType.DRAG):
+            dial = self.get_dial_for_touch_x(value['x'])
+            if dial is not None:
+                dial_active_state = dial.get_active_state()
+                if dial_active_state is not None:
+                    if event_type == TouchscreenEventType.DRAG:
+                        # Send swipe events to dial
+                        if value['x'] > value['x_out']:
+                            dial_active_state.own_actions_event_callback_threaded(
+                                Input.Touchscreen.Events.DRAG_LEFT
+                            )
+                        else:
+                            dial_active_state.own_actions_event_callback_threaded(
+                                Input.Touchscreen.Events.DRAG_RIGHT
+                            )
+                    else:
+                        # Send touch press events to dial
+                        event = Input.Dial.Events.SHORT_TOUCH_PRESS
+                        if event_type == TouchscreenEventType.LONG:
+                            event = Input.Dial.Events.LONG_TOUCH_PRESS
+
+                        dial_active_state.own_actions_event_callback_threaded(
+                            event,
+                            data={"x": value['x'], "y": value['y']},
+                            show_notifications=True
+                        )
 
         #TODO get matching actions from the dials
         elif event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG):

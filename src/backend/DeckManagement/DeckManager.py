@@ -215,6 +215,9 @@ class DeckManager:
             controller.clear()
             controller.deck.close()
 
+    def stop_usb_monitoring(self):
+        self.usb_monitor.stop_monitoring(timeout=2)
+
     def reset_all_decks(self):
         # Find all USB devices
         devices = usb.core.find(find_all=True)

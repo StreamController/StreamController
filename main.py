@@ -28,12 +28,18 @@ import os
 import time
 import asyncio
 import threading
-import dbus
-import dbus.service
+
 import usb.core
 import usb.util
 from StreamDeck.DeviceManager import DeviceManager
-from dbus.mainloop.glib import DBusGMainLoop
+
+# Import globals first to get IS_MAC
+import globals as gl
+
+if not gl.IS_MAC:
+    import dbus
+    import dbus.service
+    from dbus.mainloop.glib import DBusGMainLoop
 
 # Import own modules
 from src.app import App
@@ -226,6 +232,9 @@ def reset_all_decks():
             log.error("Failed to reset deck, maybe it's already connected to another instance? Skipping...")
 
 def quit_running():
+    if gl.IS_MAC:
+        return
+        
     log.info("Checking if another instance is running")
     session_bus = dbus.SessionBus()
     obj: dbus.BusObject = None
@@ -453,6 +462,9 @@ def validate_state_change_args(args):
     return True, None
 
 def make_api_calls():
+    if gl.IS_MAC:
+        return False
+        
     args = gl.argparser.parse_args()
     has_page_requests = args.change_page
     has_state_requests = args.change_state
@@ -533,9 +545,10 @@ def main():
         log.warning('Should you get an Gtk X11 error preventing the app from starting please add '
                     'GSK_RENDERER=ngl to your "/etc/environment" file')
 
-    DBusGMainLoop(set_as_default=True)
-    # Dbus
-    quit_running()
+    if not gl.IS_MAC:
+        DBusGMainLoop(set_as_default=True)
+        # Dbus
+        quit_running()
 
     reset_all_decks()
 

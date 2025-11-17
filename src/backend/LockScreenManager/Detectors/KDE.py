@@ -18,7 +18,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
 
-import dbus
+# Import globals first to get IS_MAC
+import globals as gl
+
+if not gl.IS_MAC:
+    import dbus
+
 from loguru import logger as log
 
 class KDELockScreenDetector(LockScreenDetector):
@@ -33,10 +38,12 @@ class KDELockScreenDetector(LockScreenDetector):
         self.lock_screen_manager.lock(active)
 
     def setup_dbus(self):
-        # Use the D-Bus MainLoop with glib integration
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
+        if gl.IS_MAC:
+            return
         try:
+            # Use the D-Bus MainLoop with glib integration
+            dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
             # Connect to the Session Bus
             bus = dbus.SessionBus()
 

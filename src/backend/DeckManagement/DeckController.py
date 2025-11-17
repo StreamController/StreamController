@@ -2333,7 +2333,11 @@ class ControllerTouchScreen(ControllerInput):
             screenbar.image.set_image(image)
         else:
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
-
+            
+    def get_current_image(self) -> Image.Image:
+        active_state = self.get_active_state()
+        return active_state.get_current_image()
+        
     def event_callback(self, event_type, value):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
         if event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG, TouchscreenEventType.DRAG):

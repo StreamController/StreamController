@@ -497,3 +497,12 @@ class ScaleRow(Adw.PreferencesRow):
         self.main_box.append(self.label_left)
         self.main_box.append(self.scale)
         self.main_box.append(self.label_right)
+
+class IconTextButton(Gtk.Button):
+    def __init__(self, icon_name: str, text: str, **kwargs):
+        super().__init__(**kwargs)
+        self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.set_child(self.box)
+
+        self.box.append(Gtk.Image(icon_name=icon_name, margin_end=5))
+        self.box.append(Gtk.Label(label=text))

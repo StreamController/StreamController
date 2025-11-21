@@ -39,6 +39,16 @@ class ColorButtonRow(Adw.ActionRow):
 
         self.color = default_color
 
+    def get_color(self):
+        rgba = self.color_button.get_rgba()
+        return self.convert_from_rgba(rgba)
+
+    def set_color(self, value: tuple[int, int, int, int]):
+        rgba = self.convert_to_rgba(value)
+        self.color_button.set_rgba(rgba)
+
+        self.color_button.emit("color-set")
+
     @property
     def color(self) -> tuple[int, int, int, int]:
         rgba = self.color_button.get_rgba()

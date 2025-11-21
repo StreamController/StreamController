@@ -132,7 +132,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
         # Set defaut values
         original_values.setdefault("background", {})
-        path = original_values["background"].setdefault("path", "")
+        path = original_values["background"].setdefault("media-path", "")
         enable = original_values["background"].setdefault("enable", False)
         loop = original_values["background"].setdefault("loop", True)
         fps = original_values["background"].setdefault("fps", 30)
@@ -163,7 +163,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
         overwrite = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("overwrite", False)
         show = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("show", False)
-        file_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)
+        file_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("media-path", None)
 
         # Save if changed
         if original_values != self.settings_page.deck_page.deck_controller.active_page:
@@ -210,7 +210,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
     def on_choose_image(self, button):
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("background", {})
-        media_path = settings["background"].setdefault("path", None)
+        media_path = settings["background"].setdefault("media-path", None)
 
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.update_image)
 
@@ -218,7 +218,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.set_thumbnail(file_path)   
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("background", {})
-        settings["background"]["path"] = file_path
+        settings["background"]["media-path"] = file_path
         gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
 
         controller = self.settings_page.deck_controller

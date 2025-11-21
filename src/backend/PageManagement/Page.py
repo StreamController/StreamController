@@ -205,7 +205,7 @@ class Page:
         # Store loaded action objects
         loaded_action_objects = copy(self.action_objects)
 
-        add_threads: list[threading.Thread] = []
+        add_futures = []
 
         # Load action objects
         self.action_objects = {}
@@ -251,18 +251,12 @@ class Page:
                         # self.action_objects[key][i] = action_object
                         if type == "keys" and self.deck_controller.coords_to_index(key.split("x")) > self.deck_controller.deck.key_count():
                             continue
-                        thread = threading.Thread(target=self.add_action_object_from_holder, args=(action_holder, input_ident, state, i), name=f"add_action_object_from_holder_{input_ident.json_identifier}_{state}_{i}")
-                        thread.start()
-                        add_threads.append(thread)
+                        future = gl.thread_pool.submit_background_task(self.add_action_object_from_holder, action_holder, input_ident, state, i)
+                        add_futures.append(future)
 
-        all_threads_finished = False
-        while not all_threads_finished:
-            all_threads_finished = True
-            for thread in add_threads:
-                if thread.is_alive():
-                    all_threads_finished = False
-                    break
-            time.sleep(0.02)
+        # Wait for all futures to complete
+        for future in add_futures:
+            future.result()  # This will wait for completion and raise any exceptions
 
         all_old_objects: list[ActionCore] = []
         for type in loaded_action_objects:

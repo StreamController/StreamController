@@ -342,7 +342,7 @@ class FontRow(Adw.ActionRow):
 
         self.font_page_group.settings.save_json()
 
-        threading.Thread(target=gl.page_manager.reload_all_pages, daemon=True, name="reload-all-pages").start()
+        gl.thread_pool.submit_ui_task(gl.page_manager.reload_all_pages)
 
 class FontColorRow(Adw.ActionRow):
     def __init__(self, font_page_group: FontPageGroup):
@@ -369,7 +369,7 @@ class FontColorRow(Adw.ActionRow):
         self.font_page_group.settings.settings_json["general"]["default-font"] = gl.settings_manager.font_defaults
         gl.settings_manager.save_font_defaults()
 
-        threading.Thread(target=gl.page_manager.reload_all_pages, daemon=True, name="reload-all-pages").start()
+        gl.thread_pool.submit_ui_task(gl.page_manager.reload_all_pages)
 
 class FontOutlineColorRow(Adw.ActionRow):
     def __init__(self, font_page_group: FontPageGroup):
@@ -396,7 +396,7 @@ class FontOutlineColorRow(Adw.ActionRow):
         self.font_page_group.settings.settings_json["general"]["default-font"] = gl.settings_manager.font_defaults
         gl.settings_manager.save_font_defaults()
 
-        threading.Thread(target=gl.page_manager.reload_all_pages, daemon=True, name="reload-all-pages").start()
+        gl.thread_pool.submit_ui_task(gl.page_manager.reload_all_pages)
 
 class FontOutlineWidthRow:
     """
@@ -424,7 +424,7 @@ class FontOutlineWidthRow:
         self.font_page_group.settings.settings_json["general"]["default-font"] = gl.settings_manager.font_defaults
         gl.settings_manager.save_font_defaults()
 
-        threading.Thread(target=gl.page_manager.reload_all_pages, daemon=True, name="reload-all-pages").start()
+        gl.thread_pool.submit_ui_task(gl.page_manager.reload_all_pages)
 
 
 class StorePage(Adw.PreferencesPage):

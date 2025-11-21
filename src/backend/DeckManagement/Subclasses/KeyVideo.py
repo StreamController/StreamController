@@ -32,6 +32,7 @@ class InputVideo(SingleKeyAsset):
         self.video_cache = VideoFrameCache(video_path, size=self.controller_input.get_image_size())
 
         self.active_frame: int = -1
+        self._is_stopped = False
 
     def get_next_frame(self) -> Image:
         every_n_frames = self.controller_input.deck_controller.media_player.FPS // self.fps
@@ -46,4 +47,23 @@ class InputVideo(SingleKeyAsset):
     
     def get_raw_image(self) -> Image.Image:
         return self.get_next_frame()
+    
+    def stop_playback(self) -> None:
+        """Stop video playback and release resources."""
+        if hasattr(self.video_cache, 'release'):
+            self.video_cache.release()
+        
+        # Clear any cached frames from memory
+        if hasattr(self.video_cache, 'cache'):
+            for frame in self.video_cache.cache.values():
+                if hasattr(frame, 'close'):
+                    frame.close()
+            self.video_cache.cache.clear()
+    
+    def __del__(self):
+        """Ensure cleanup when object is destroyed."""
+        try:
+            self.stop_playback()
+        except:
+            pass  # Ignore errors during cleanup
      

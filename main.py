@@ -150,6 +150,10 @@ def create_global_objects():
 
     gl.signal_manager = SignalManager()
 
+    # Initialize thread pool manager
+    from src.backend.ThreadPoolManager import ThreadPoolManager
+    gl.thread_pool = ThreadPoolManager()
+
     gl.media_manager = MediaManager()
     gl.asset_manager_backend = AssetManagerBackend()
     gl.page_manager = PageManagerBackend(gl.settings_manager)
@@ -568,7 +572,7 @@ def main():
     setup_autostart(auto_start)
     
     create_cache_folder()
-    threading.Thread(target=update_assets, name="update_assets").start()
+    gl.thread_pool.submit_network_task(update_assets)
     load()
 
 if __name__ == "__main__":

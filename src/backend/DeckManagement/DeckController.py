@@ -44,6 +44,7 @@ from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
 from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
+from src.backend.DeckManagement.VideoMemoryMonitor import VideoMemoryMonitor
 from src.backend.PageManagement.Page import ActionOutdated, Page, NoActionHolderFound
 
 process = psutil.Process()
@@ -350,6 +351,12 @@ class DeckController:
         self.init_inputs()
 
         self.background = Background(self)
+        
+        # Initialize video memory monitor
+        self.memory_monitor = VideoMemoryMonitor(
+            warning_threshold_mb=500,  # Start gentle cleanup at 500MB
+            critical_threshold_mb=1000  # Force aggressive cleanup at 1GB
+        )
 
         self.deck.set_key_callback(self.key_event_callback)
         self.deck.set_dial_callback(self.dial_event_callback)
@@ -358,6 +365,9 @@ class DeckController:
         # Start media player thread
         self.media_player = MediaPlayerThread(deck_controller=self)
         self.media_player.start()
+        
+        # Start the video memory monitor
+        self.memory_monitor.start_monitoring()
 
         self.keep_actions_ticking = True
         self.TICK_DELAY = 1
@@ -895,6 +905,9 @@ class DeckController:
 
         if hasattr(self, "media_player"):
             self.media_player.stop()
+            
+        if hasattr(self, "memory_monitor"):
+            self.memory_monitor.stop_monitoring()
 
         self.keep_actions_ticking = False
         self.deck.run_read_thread = False
@@ -1143,6 +1156,23 @@ class BackgroundVideo(BackgroundVideoCache):
         key_image.paste(segment)
 
         return key_image
+    
+    def stop_playback(self) -> None:
+        """Stop video playback and release resources."""
+        # Call parent cleanup method 
+        if hasattr(super(), 'close'):
+            super().close()
+        
+        # Release any additional resources specific to BackgroundVideo
+        if hasattr(self, 'page'):
+            self.page = None
+    
+    def __del__(self):
+        """Ensure cleanup when object is destroyed."""
+        try:
+            self.stop_playback()
+        except:
+            pass  # Ignore errors during cleanup
 
 class KeyGIF(SingleKeyAsset):
     def __init__(self, controller_key: "ControllerKey", gif_path: str, fps: int = 30, loop: bool = True):
@@ -1651,6 +1681,12 @@ class ControllerInputState:
         if self.controller_input.state == self.state:
             self.controller_input.update()
     
+    def own_actions_ready(self) -> None:
+        for action in self.get_own_actions():
+            if not isinstance(action, ActionCore):
+                continue
+            action.on_ready()
+    
     def own_actions_update(self) -> None:
         for action in self.get_own_actions():
             if not isinstance(action, ActionCore):
@@ -1695,16 +1731,16 @@ class ControllerInputState:
             action._raw_event_callback(event, data)
 
     def own_actions_ready_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_ready, name="own_actions_ready").start()
+        gl.thread_pool.submit_background_task(self.own_actions_ready)
 
     def own_actions_update_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_update, name="own_actions_update").start()
+        gl.thread_pool.submit_background_task(self.own_actions_update)
 
     def own_actions_tick_threaded(self) -> None:
-        threading.Thread(target=self.own_actions_tick, name="own_actions_tick").start()
+        gl.thread_pool.submit_quick_task(self.own_actions_tick)
 
     def own_actions_event_callback_threaded(self, event: InputEvent, data: dict = None, show_notifications: bool = False) -> None:
-        threading.Thread(target=self.own_actions_event_callback, args=(event, data, show_notifications), name="own_actions_event_callback").start()
+        gl.thread_pool.submit_background_task(self.own_actions_event_callback, event, data, show_notifications)
 
     def remove_media(self) -> None:
         page = self.controller_input.deck_controller.active_page

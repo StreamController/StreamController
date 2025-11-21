@@ -20,10 +20,17 @@ from gi.repository import Gtk
 # Import globals
 import globals as gl
 
-class OfficialBadge(Gtk.Button):
-    def __init__(self, *args, **kwargs):
-        super().__init__(label=gl.lm.get("store.badges.official"), *args, **kwargs)
+class Badge(Gtk.Button):
+    def __init__(self, label: str, tooltip: str = None, *args, **kwargs):
+        super().__init__(
+            label=gl.lm.get(label),
+            *args, **kwargs
+        )
+        self.set_tooltip(tooltip)
 
-class VerifiedBadge(Gtk.Button):
-    def __init__(self, *args, **kwargs):
-        super().__init__(label=gl.lm.get("store.badges.verified"), *args, **kwargs)
+    def set_tooltip(self, tooltip: str):
+        if tooltip:
+            self.set_has_tooltip(True)
+        else:
+            self.set_has_tooltip(False)
+        self.set_tooltip_text(gl.lm.get(tooltip))

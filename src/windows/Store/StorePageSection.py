@@ -78,52 +78,46 @@ class StorePageSection(Gtk.Stack):
         Returns:
             bool: True if the item passes the filter, False otherwise.
         """
-        search_string = self.search_entry.get_text()
-
+        search_string = self.search_entry.get_text().strip().lower()
         if search_string == "":
             return True
-        
-        item_name = item.name_label.get_text()
-        
-        fuzz_ratio = fuzz.ratio(search_string.lower(), item_name.lower())
 
-        MIN_FUZZY_SCORE = 40
+        name = item.name_label.get_text().lower()
+        author = item.author_label.get_text().lower()
+        description = item.description_label.get_text().lower()
 
-        return fuzz_ratio >= MIN_FUZZY_SCORE
+        name_score = fuzz.ratio(search_string, name)
+        author_score = fuzz.ratio(search_string, author)
+        description_score = fuzz.ratio(search_string, description)
+
+        MIN_FUZZY_SCORE = 20
+
+        return (
+                name_score >= MIN_FUZZY_SCORE or
+                author_score >= MIN_FUZZY_SCORE or
+                description_score >= MIN_FUZZY_SCORE
+        )
     
     def sort_func(self, item_a, item_b):
-        search_string = self.search_entry.get_text()
+        search_string = self.search_entry.get_text().strip().lower()
+
+        def get_weighted_score(item):
+            name = item.name_label.get_text().lower()
+            author = item.author_label.get_text().lower()
+            description = item.description_label.get_text().lower()
+
+            name_score = fuzz.ratio(search_string, name)
+            author_score = fuzz.ratio(search_string, author)
+            description_score = fuzz.ratio(search_string, description)
+
+            # Adjust weights as desired
+            return (name_score * 0.7) + (author_score * 0.25) + (description_score * 0.05)
 
         if search_string == "":
-            if  item_a.name_label.get_text() < item_b.name_label.get_text():
-                return -1
-            if item_a.name_label.get_text() > item_b.name_label.get_text():
-                return 1
-            return 0
+            return (item_a.name_label.get_text() > item_b.name_label.get_text()) - \
+                (item_a.name_label.get_text() < item_b.name_label.get_text())
 
-            # Sort by stars - currently not used
-            if item_a.stars > item_b.stars:
-                return -1
-            if item_a.stars < item_b.stars:
-                return 1
-            return 0
-        
-        item_a_fuzz = fuzz.ratio(search_string.lower(), item_a.name_label.get_text().lower())
-        item_b_fuzz = fuzz.ratio(search_string.lower(), item_b.name_label.get_text().lower())
+        score_a = get_weighted_score(item_a)
+        score_b = get_weighted_score(item_b)
 
-        # Set to 0 because stars are currently disabled for api rate limit reasons
-        item_a_stars = 0 # item_a.stars/item_b.stars
-        item_b_stars = 0 # item_a.stars/item_b.stars
-
-        if item_a_stars > 1 or item_b_stars > 1:
-            item_a_stars = item_b.stars/item_a.stars
-            item_b_stars = item_b.stars/item_a.stars
-
-        total_a = (item_a_fuzz + item_a_stars)/2
-        total_b = (item_b_fuzz + item_b_stars)/2
-
-        if total_a > total_b:
-            return -1
-        if total_a < total_b:
-            return 1
-        return 0
+        return (score_b > score_a) - (score_b < score_a)

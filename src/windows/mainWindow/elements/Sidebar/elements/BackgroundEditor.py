@@ -109,14 +109,16 @@ class ColorRow(Adw.PreferencesRow):
         self.connect_signals()
 
     def connect_signals(self):
-        self.button.button.connect("notify::rgba", self.on_change_color)
-        self.button.revert_button.connect("clicked", self.on_revert)
+        self._color_handler_id = self.button.button.connect("notify::rgba", self.on_change_color)
+        self._revert_handler_id = self.button.revert_button.connect("clicked", self.on_revert)
 
-    def disconnect_signals(self):
-        try:
-            self.button.button.disconnect_by_func(self.on_change_color)
-        except:
-            pass
+    def block_signals(self):
+        if hasattr(self, '_color_handler_id') and self._color_handler_id:
+            self.button.button.handler_block(self._color_handler_id)
+
+    def unblock_signals(self):
+        if hasattr(self, '_color_handler_id') and self._color_handler_id:
+            self.button.button.handler_unblock(self._color_handler_id)
 
     def set_color(self, color_values: list):
         if len(color_values) == 3:
@@ -138,14 +140,14 @@ class ColorRow(Adw.PreferencesRow):
         self.button.revert_button.set_visible(True)
 
     def on_revert(self, *args):
-        self.disconnect_signals()
+        self.block_signals()
         active_page = gl.app.main_win.get_active_page()
         active_page.set_background_color(identifier=self.active_identifier, state=self.active_state, color=None, update_ui=True)
         self.button.revert_button.set_visible(False)
-        self.connect_signals()
+        self.unblock_signals()
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
-        self.disconnect_signals()
+        self.block_signals()
 
         self.active_identifier = identifier
         self.active_state = state
@@ -155,21 +157,22 @@ class ColorRow(Adw.PreferencesRow):
         c_input = active_page.deck_controller.get_input(identifier)
         if c_input is None:
             log.error("Input not found")
+            self.unblock_signals()
             return
-        
+
         c_state = c_input.states.get(state)
         if c_state is None:
             log.error("State not found")
+            self.unblock_signals()
             return
 
-        color = active_page.get_background_color(identifier=identifier, state=self.active_state)
         color = c_state.background_manager.get_composed_color()
 
         self.set_color(color)
 
         self.button.revert_button.set_visible(c_state.background_manager.get_use_page_background())
 
-        self.connect_signals()
+        self.unblock_signals()
 
 class ColorButton(Gtk.Box):
     def __init__(self, color_row: ColorRow, **kwargs):

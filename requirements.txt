@@ -98,7 +98,7 @@ tqdm==4.67.1
 types-setuptools==75.8.0.20250225
 typing_extensions==4.12.2
 uc-micro-py==1.0.3
-urllib3==2.3.0
+urllib3==2.6.0
 usb-monitor==1.23
 virtualenv==20.29.2
 webencodings==0.5.1

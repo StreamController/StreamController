@@ -41,7 +41,39 @@ class SimpleScreenGroup(Adw.PreferencesGroup):
         self.expander = SimpleScreenExpanderRow(self)
         self.add(self.expander)
 
+        self.add(ClockExpanderRow(self))
+
         return
+
+class ClockExpanderRow(Adw.ExpanderRow):
+    def __init__(self, label_group):
+        super().__init__(title=gl.lm.get("simple-screen.clock"), subtitle=gl.lm.get("simple-screen.clock.expander.subtitle"))
+        self.label_group = label_group
+        self.active_identifier: InputIdentifier = None
+        self.active_state = None
+        self.build()
+
+    def build(self):
+        self.clock_row = ClockRow(sidebar=self.label_group.sidebar, expander=self)
+        self.add_row(self.clock_row)
+
+class ClockRow(Adw.PreferencesRow):
+    def __init__(self, sidebar, expander: SimpleScreenExpanderRow, **kwargs):
+        super().__init__(**kwargs)
+        self.sidebar = sidebar
+        self.expander = expander
+        self.active_identifier: InputIdentifier = None
+        self.active_state = None
+        self.build()
+        # self.define_handlers()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.label = Gtk.Label(label=gl.lm.get("enable"), xalign=0, hexpand=True)
+        self.main_box.append(self.label)
 
 class SimpleScreenExpanderRow(Adw.ExpanderRow):
     def __init__(self, label_group):
@@ -54,7 +86,6 @@ class SimpleScreenExpanderRow(Adw.ExpanderRow):
     def build(self):
         self.image_row = ImageRow(sidebar=self.label_group.sidebar, expander=self)
         self.add_row(self.image_row)
-
 
 class ImageRow(Adw.PreferencesRow):
     def __init__(self, sidebar, expander: SimpleScreenExpanderRow, **kwargs):

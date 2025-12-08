@@ -220,3 +220,5 @@ settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung
 settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;Taille du contour;
 settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline;Taille par défaut du contour;
 support;Unterstützen;Donate;Faites un don;
+simple-screen.clock;Uhr;Clock;Horloge;
+simple-screen.clock.expander.subtitle;Takt konfigurieren;Configure screen clock;Configurer l'horloge;

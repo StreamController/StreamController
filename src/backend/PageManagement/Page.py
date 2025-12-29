@@ -19,7 +19,13 @@ import json
 import sys
 import threading
 import time
-from evdev import InputEvent
+
+# Import globals first to get IS_MAC
+import globals as gl
+
+if not gl.IS_MAC:
+    from evdev import InputEvent
+
 from loguru import logger as log
 from copy import copy
 import shutil
@@ -532,7 +538,7 @@ class Page:
         return assignments
     
     
-    def set_action_event_assigment(self, event_assigner: EventAssigner | None, input_event: InputEvent | None, action_object: ActionCore = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
+    def set_action_event_assigment(self, event_assigner: EventAssigner | None, input_event: "InputEvent | None", action_object: ActionCore = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
         action_dict.setdefault("event-assignments", {})
         action_dict["event-assignments"][str(input_event)] = event_assigner.id if event_assigner else None

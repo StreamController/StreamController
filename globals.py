@@ -8,6 +8,9 @@ from loguru import logger as log
 
 from src.backend.DeckManagement.HelperMethods import find_fallback_font
 
+# Automatically detect macOS
+IS_MAC = sys.platform == "darwin"
+
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
 argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")

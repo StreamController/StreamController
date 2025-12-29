@@ -36,12 +36,15 @@ from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
 
 from src.backend.DeckManagement.beta_resume import _read as beta_read
 
-import gi
-gi.require_version("Xdp", "1.0")
-from gi.repository import GLib, Xdp
-
-# Import globals
+# Import globals first to get IS_MAC
 import globals as gl
+
+import gi
+from gi.repository import GLib
+
+if not gl.IS_MAC:
+    gi.require_version("Xdp", "1.0")
+    from gi.repository import Xdp
 
 ELGATO_VENDOR_ID = "0fd9"
 
@@ -61,8 +64,10 @@ class DeckManager:
 
         self.flatpak_disconnect_thread = FlatpakDeckDisconnectThread(self)
 
-        portal = Xdp.Portal.new()
-        self.flatpak = portal.running_under_flatpak() # on_disconnect is not working under Flatpak - we use a separate thread #TODO: Find a better solution
+        self.flatpak = False
+        if not gl.IS_MAC:
+            portal = Xdp.Portal.new()
+            self.flatpak = portal.running_under_flatpak() # on_disconnect is not working under Flatpak - we use a separate thread #TODO: Find a better solution
         if self.flatpak:
             log.info("Running under Flatpak. Using separate thread to detect device disconnection.")
             self.flatpak_disconnect_thread.start()
@@ -81,6 +86,8 @@ class DeckManager:
         self.load_fake_decks()
 
     def load_hardware_decks(self):
+        if gl.IS_MAC:
+            return
         decks=DeviceManager().enumerate()
         for deck in decks:
             try:

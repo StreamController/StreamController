@@ -22,12 +22,14 @@ from autostart import is_flatpak, setup_autostart
 from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
 from src.windows.Settings.PluginSettingsPage import PluginSettingsPage
 
+# Import globals first to get IS_MAC
+import globals as gl
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio, Pango, Xdp
-
-# Import globals
-import globals as gl
+from gi.repository import Gtk, Adw, Gio, Pango
+if not gl.IS_MAC:
+    from gi.repository import Xdp
 
 import os
 

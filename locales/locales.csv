@@ -8,6 +8,7 @@ label-editor-bottom-name;Unten;Bottom;Bas;Abajo
 label-editor-font-chooser-label;Schriftart:;Font:;Police :;Fuente:
 label-editor-outline-width-label;Randdicke:;Outline width:;Largeur du contour:;Ancho del contorno:
 label-editor-outline-color-label;Randfarbe:;Outline color:;Couleur du contour:;Color de contorno:
+label-editor-alignment-label;Ausrichtung:;Align:;Alignement :;Alineación:
 label-editor-placeholder-text;Text;Label;Étiquette;Etiqueta
 label-editor-expander-subtitle;Texte für diese Taste;Labels for this key;Étiquettes de ce bouton;Etiquetas para esta tecla
 action-editor-header;Aktions;Actions;Actions;Acciones

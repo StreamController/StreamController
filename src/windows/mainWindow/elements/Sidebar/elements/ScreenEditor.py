@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from src.backend.DeckManagement.InputIdentifier import Input
 from src.windows.mainWindow.elements.Sidebar.elements.ActionManager import ActionManager
+from src.windows.mainWindow.elements.Sidebar.elements.BackgroundEditor import BackgroundEditor
 from src.windows.mainWindow.elements.Sidebar.elements.StateSwitcher import StateSwitcher
 from src.windows.mainWindow.DeckPlus.ScreenBar import ScreenBarImage
 
@@ -36,6 +37,9 @@ class ScreenEditor(Gtk.ScrolledWindow):
         self.state_switcher.add_add_new_callback(self.on_add_new_state)
         self.state_switcher.set_n_states(0)
         self.main_box.append(self.state_switcher)
+
+        self.background_editor = BackgroundEditor(self.sidebar, margin_top=25)
+        self.main_box.append(self.background_editor)
 
         self.action_manager_group = Adw.PreferencesGroup(title="Actions")
         self.main_box.append(self.action_manager_group)
@@ -107,4 +111,5 @@ class ScreenEditor(Gtk.ScrolledWindow):
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
+        self.background_editor.load_for_identifier(identifier, state)
         self.action_manager.load_for_identifier(identifier, state)

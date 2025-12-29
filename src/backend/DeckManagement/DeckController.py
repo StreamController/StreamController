@@ -690,8 +690,10 @@ class DeckController:
 
         if self.background.video is not None:
             self.background.video.close()
+            self.background.video = None
         if self.background.image is not None:
             self.background.image.close()
+            self.background.image = None
 
     @log.catch
     def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_inputs: bool = True, allow_reload: bool = True):
@@ -1256,6 +1258,7 @@ class LabelManager:
                 "font-style": False,
                 "outline_width": False,
                 "outline_color": False,
+                "alignment": False,
             }
         return {
             "text": self.page_labels[position].text is not None,
@@ -1266,6 +1269,7 @@ class LabelManager:
             "font-style": self.page_labels[position].style is not None,
             "outline_width": self.page_labels[position].outline_width is not None,
             "outline_color": self.page_labels[position].outline_color is not None,
+            "alignment": self.page_labels[position].alignment is not None,
         }
 
     def get_composed_label(self, position: str) -> str:
@@ -1292,6 +1296,8 @@ class LabelManager:
                 label.outline_width = page_label.outline_width
             if use_page_label_properties["outline_color"]:
                 label.outline_color = page_label.outline_color
+            if use_page_label_properties["alignment"]:
+                label.alignment = page_label.alignment
 
         injected = self.inject_defaults(label)
         return self.fix_invalid(injected)
@@ -1320,6 +1326,8 @@ class LabelManager:
             label.outline_width = round(gl.settings_manager.font_defaults.get("outline-width") or 2)
         if label.outline_color is None:
             label.outline_color = gl.settings_manager.font_defaults.get("outline-color") or (0, 0, 0, 255)
+        if label.alignment is None:
+            label.alignment = gl.settings_manager.font_defaults.get("alignment") or "center"
 
         return label
     
@@ -1358,18 +1366,29 @@ class LabelManager:
             font = labels[label].get_font()
             outline_width = labels[label].outline_width
             outline_color = tuple(labels[label].outline_color)
+            alignment = labels[label].alignment
 
             _, _, w, h = draw.textbbox((0, 0), text, font=font)
 
-            # Center
-            x_position = image.width / 2
+            # Calculate x position based on alignment
+            padding = 3
+            if alignment == "left":
+                x_position = padding
+                anchor_x = "l"
+            elif alignment == "right":
+                x_position = image.width - padding
+                anchor_x = "r"
+            else:  # center (default)
+                x_position = image.width / 2
+                anchor_x = "m"
 
             if image.width < w:
-                # Need to scroll
+                # Need to scroll - always use center anchor for scrolling
                 start = image.width / 2 - (image.width - w) / 2 + 10
                 stop = image.width / 2 + (image.width - w) / 2 - 10
 
                 x_position = start - self.frames[label]["position"]
+                anchor_x = "m"
                 if x_position < stop:
                     if self.frames[label]["wait"] == 0:
                         x_position = start
@@ -1394,8 +1413,11 @@ class LabelManager:
             else:
                 position = (x_position, (image.height - 0) / 2)
 
+            # Use appropriate anchor based on alignment (x-anchor + "m" for vertical middle)
+            anchor = anchor_x + "m"
+
             draw.text(position,
-                      text=text, font=font, anchor="mm", align="center",
+                      text=text, font=font, anchor=anchor, align=alignment,
                       fill=color, stroke_width=outline_width,
                       stroke_fill=outline_color)
 
@@ -2176,7 +2198,8 @@ class ControllerKey(ControllerInput):
                         font_name=state_dict["labels"][label].get("font-family"),
                         color=state_dict["labels"][label].get("color"),
                         outline_width=state_dict["labels"][label].get("outline_width"),
-                        outline_color=state_dict["labels"][label].get("outline_color")
+                        outline_color=state_dict["labels"][label].get("outline_color"),
+                        alignment=state_dict["labels"][label].get("alignment")
                     )
                     # self.add_label(key_label, position=label, update=False)
                     state.label_manager.set_page_label(label, key_label, update=False)
@@ -2482,6 +2505,7 @@ class ControllerDial(ControllerInput):
                     font_size=state_dict["labels"][label].get("font-size"),
                     font_name=state_dict["labels"][label].get("font-family"),
                     color=state_dict["labels"][label].get("color"),
+                    alignment=state_dict["labels"][label].get("alignment"),
                 )
                 state.label_manager.set_page_label(label, key_label, update=False)
 
@@ -2563,8 +2587,56 @@ class ControllerTouchScreenState(ControllerInputState):
         self.update()
 
     def get_current_image(self) -> Image.Image:
-        background = self.controller_touch.generate_empty_image()
+        screen_width, screen_height = self.controller_touch.get_screen_dimensions()
+        
+        # Start with background image if set
+        background: Image.Image = None
+        active_page = self.controller_touch.deck_controller.active_page
+        background_image_path = active_page.get_background_image(
+            identifier=self.controller_touch.identifier, 
+            state=self.state
+        )
+        
+        if background_image_path and os.path.isfile(background_image_path):
+            try:
+                with Image.open(background_image_path) as img:
+                    # Resize to exact touchscreen dimensions (KISS - exact dimensions)
+                    background = img.resize((screen_width, screen_height), Image.Resampling.LANCZOS).convert("RGBA")
+            except Exception as e:
+                log.error(f"Error loading background image: {e}")
+                background = None
+        
+        # Get background color from touchscreen state's background_manager
+        background_color = self.background_manager.get_composed_color()
+        
+        # If no background image, start with empty or colored background
+        if background is None:
+            # If background color has transparency (alpha < 255), start with transparent
+            if background_color[-1] < 255:
+                background = self.controller_touch.generate_empty_image()
+            
+            # If background color is set (alpha > 0), create colored background
+            if background_color[-1] > 0:
+                background_color_img = Image.new("RGBA", (screen_width, screen_height), color=tuple(background_color))
+                
+                if background is None:
+                    # Use the color as the only background - happens if background color alpha is 255
+                    background = background_color_img
+                else:
+                    # Paste color on top of transparent background
+                    background.paste(background_color_img, (0, 0), background_color_img)
+            
+            # If no background color was set, use empty image
+            if background is None:
+                background = self.controller_touch.generate_empty_image()
+        else:
+            # Background image exists - apply color overlay if set
+            if background_color[-1] > 0:
+                background_color_img = Image.new("RGBA", (screen_width, screen_height), color=tuple(background_color))
+                # Blend color over image
+                background = Image.alpha_composite(background, background_color_img)
 
+        # Paste dial images on top of the background
         for dial in self.controller_touch.deck_controller.inputs[Input.Dial]:
             state = dial.get_active_state()
             image_area = self.controller_touch.get_dial_image_area(dial.identifier)

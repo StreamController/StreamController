@@ -194,14 +194,15 @@ class App(Adw.Application):
         for ctrl in gl.deck_manager.deck_controller:
             ctrl.delete()
 
+        gl.deck_manager.stop_usb_monitoring()
+
         gl.plugin_manager.loop_daemon = False
-        log.debug("non-daemon threads:")
+
         for thread in threading.enumerate():
-            if thread is not threading.current_thread():
-                thread.join(timeout=2.0)
+            if thread is not threading.current_thread() and not thread.daemon:
+                thread.join(timeout=5)
                 if thread.is_alive():
                     log.error(f"Thread {thread.name} did not exit in time")
-            log.debug(f"name: {thread.name}, id: {thread.ident} id2: {thread.native_id}")
 
         for child in multiprocessing.active_children():
             child.terminate()
@@ -212,6 +213,7 @@ class App(Adw.Application):
         gl.deck_manager.close_all()
         # Stop timer
         log.success("Stopped StreamController. Have a nice day!")
+        log.stop()
         sys.exit(0)
 
     def force_quit(self):

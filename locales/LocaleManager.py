@@ -39,8 +39,11 @@ class LocaleManager:
             self.available_locales = next(reader)[1:]
 
             for row in reader:
-                if row == []: continue
-                self.locale_data[row[0]] = dict(zip(self.available_locales, row[1:]))
+                if not row:
+                    continue
+
+                translations = [value.replace('\\n', '\n') for value in row[1:]]
+                self.locale_data[row[0]] = dict(zip(self.available_locales, translations))
 
     def set_language(self, language: str) -> str:
         self.language = language

@@ -45,6 +45,7 @@ class Store(Gtk.ApplicationWindow):
             title="Store",
             default_width=1050,
             default_height=750,
+            modal=True,
             transient_for=main_window,
             *args, **kwargs
             )

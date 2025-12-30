@@ -442,41 +442,34 @@ class BetterDeck():
         self.rotation = value
 
     def get_physical_index(self, logical_index):
-        p_rows, p_cols = self.deck.key_layout()
+        physical_rows, physical_cols = self.deck.key_layout()
         if self.rotation == 0:
             return logical_index
         elif self.rotation == 90:
-            return ( (p_rows - 1 - (logical_index % p_rows)) ) * p_cols + (logical_index // p_rows )
+            return ((physical_rows - 1 - (logical_index % physical_rows)) ) * physical_cols + (logical_index // physical_rows )
         elif self.rotation == 180:
-            return (p_rows * p_cols) - logical_index - 1
+            return (physical_rows * physical_cols) - logical_index - 1
         elif self.rotation == 270:
-            return ( (logical_index % p_rows) * p_cols ) + (p_cols - 1 - (logical_index // p_rows ))
+            return ((logical_index % physical_rows) * physical_cols ) + (physical_cols - 1 - (logical_index // physical_rows ))
     
         raise ValueError("Invalid rotation")
     
     def get_logical_index(self, physical_index):
-        p_rows, p_cols = self.deck.key_layout()
-        total = p_rows * p_cols
+        rows, cols = self.deck.key_layout()
         if self.rotation == 0:
             return physical_index
         elif self.rotation == 90:
-            return 3 * (physical_index % p_cols) + (2 - (physical_index // p_cols))
+            return (physical_index % cols) * rows + (rows - 1 - (physical_index // cols))
         elif self.rotation == 180:
-            return total - 1 - physical_index
+            return rows * cols - physical_index - 1
         elif self.rotation == 270:
-            # Iterate possible b values (0,1,2) to find valid case
-            for b in range(2, -1, -1):
-                if 5 * b <= physical_index and 5 * b >= physical_index - 4:
-                    a = 4 + 5 * b - physical_index
-                    if 0 <= a <= 4:
-                        return 3 * a + b
-            return None  # Handle invalid case as needed
+            return (cols - 1 - (physical_index % cols)) * rows + (physical_index // cols)
         else:
-            return None  # Handle unexpected rotation as needed
+            return None
     
     def reorder_physical_for_rotation(self, original_list):
-        p_rows, p_cols = self.deck.key_layout()
-        total = p_rows * p_cols
+        pysical_rows, physical_cols = self.deck.key_layout()
+        total = pysical_rows * physical_cols
         reordered = [None] * total
         
         for physical_index in range(total):

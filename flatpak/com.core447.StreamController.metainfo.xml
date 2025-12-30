@@ -41,6 +41,40 @@
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
+    <release version="1.5.0-beta.12" date="2025-10-11">
+      <description translatable="no">
+        <p>Features:</p>
+        <ul>
+          <li>Add new cli options</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Add a scroll delay for long labels</li>
+          <li>Use more distinct path for icon</li>
+        </ul>
+        <p>Fixes:</p>
+        <ul>
+          <li>Crashes regarding ComboRow</li>
+          <li>Missing translation in onboarding dialog</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.5.0-beta.11" date="2025-06-04">
+      <description translatable="no">
+        <p>Features:</p>
+        <ul>
+          <li>Auto scroll too long labels</li>
+          <li>Add support for Stream Deck Modules</li>
+        </ul>
+        <p>Fixes:</p>
+        <ul>
+          <li>Not updating dials when there is a background video</li>
+          <li>Tray icon not showing up on plasma</li>
+          <li>Store not loading if a single plugin is misconfigured</li>
+          <li>Error for rotated decks that aren't 3x5</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.5.0-beta.10" date="2025-04-18">
       <description translatable="no">
         <p>Fixes:</p>

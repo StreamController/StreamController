@@ -19,7 +19,13 @@ import json
 import sys
 import threading
 import time
-from evdev import InputEvent
+
+# Import globals first to get IS_MAC
+import globals as gl
+
+if not gl.IS_MAC:
+    from evdev import InputEvent
+
 from loguru import logger as log
 from copy import copy
 import shutil
@@ -164,7 +170,7 @@ class Page:
 
         if self.deck_controller.active_page == self:
             # if it's already loaded - this way it only triggers on newly added actions
-            self.call_actions_ready_and_set_flag()
+            self.initialize_actions()
 
     # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
 
@@ -532,7 +538,7 @@ class Page:
         return assignments
     
     
-    def set_action_event_assigment(self, event_assigner: EventAssigner | None, input_event: InputEvent | None, action_object: ActionCore = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
+    def set_action_event_assigment(self, event_assigner: EventAssigner | None, input_event: "InputEvent | None", action_object: ActionCore = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
         action_dict.setdefault("event-assignments", {})
         action_dict["event-assignments"][str(input_event)] = event_assigner.id if event_assigner else None
@@ -551,13 +557,14 @@ class Page:
         return False
 
     @log.catch
-    def call_actions_ready_and_set_flag(self):
+    def initialize_actions(self):
         for action in self.get_all_actions():
-            if hasattr(action, "on_ready"):
-                if not action.on_ready_called:
-                    action.on_ready_called = True
-                    action.load_event_overrides()
-                    action.on_ready()
+            if not action.on_ready_called:
+                action.on_ready_called = True
+                action.load_event_overrides()
+                action.load_initial_generative_ui()
+                action.on_ready()
+                action.on_update()
 
     def clear_action_objects(self):
         for input_type in self.action_objects:
@@ -849,6 +856,20 @@ class Page:
         if update:
             self.update_input(identifier, state)
 
+    def set_label_alignment(self, identifier: InputIdentifier, state: int, label_position: str, alignment: str, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
+            key_state.label_manager.page_labels[label_position].alignment = alignment
+
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "alignment"], alignment)
+
+        label_manager = self.get_label_manager(identifier, state)
+        if label_manager is not None:
+            label_manager.page_labels[label_position].alignment = alignment
+            label_manager.update_label_editor()
+
+        if update:
+            self.update_input(identifier, state)
+
     def get_media_size(self, identifier: InputIdentifier, state: int) -> float:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "size"])
 
@@ -905,6 +926,14 @@ class Page:
             key_state.background_manager.set_page_color(color, update=update, update_ui=update_ui)
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "background", "color"], color)
+
+    def get_background_image(self, identifier: InputIdentifier, state: int) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "background", "image"])
+
+    def set_background_image(self, identifier: InputIdentifier, state: int, path: str, update: bool = True) -> None:
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "background", "image"], path)
+        if update:
+            self.update_input(identifier, state)
 
 
 class NoActionHolderFound:

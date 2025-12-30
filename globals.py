@@ -8,6 +8,9 @@ from loguru import logger as log
 
 from src.backend.DeckManagement.HelperMethods import find_fallback_font
 
+# Automatically detect macOS
+IS_MAC = sys.platform == "darwin"
+
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
 argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
@@ -15,6 +18,16 @@ argparser.add_argument("--skip-load-hardware-decks", help="Skips initilization/u
 argparser.add_argument("--close-running", help="Close running", action="store_true")
 argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
+argparser.add_argument("--list-devices", help="List all connected StreamDeck devices and their properties", action="store_true")
+argparser.add_argument("--list-pages", help="List all available pages", action="store_true")
+argparser.add_argument("--change-state", action="append", nargs=4, 
+                      help="Change the state of a StreamDeck item. Format: SERIAL PAGE COORDS STATE\n"
+                           "  SERIAL: Device serial number (e.g., CL123456789)\n"
+                           "  PAGE: Page name (e.g., Main, Soundboard) \n"
+                           "  COORDS: Position as x,y (e.g., 0,0 for top-left)\n"
+                           "  STATE: State number to change to (0, 1, 2, etc.)\n"
+                           "Example: --change-state CL123456789 Main 0,0 1", 
+                      metavar=("SERIAL", "PAGE", "COORDS", "STATE"))
 argparser.add_argument("app_args", nargs="*")
 
 MAIN_PATH: str
@@ -104,28 +117,36 @@ store_backend: "StoreBackend" = None
 pyro_daemon: Pyro5.api.Daemon = None
 signal_manager: "SignalManager" = None
 window_grabber: "WindowGrabber" = None
-lock_screen_detector: "LockScreenDetector" = None
+lock_screen_detector: "LockScreenManager" = None
 store: "Store" = None # Only if opened
 flatpak_permission_manager: "FlatpakPermissionManager" = None
 threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
+api_state_requests: dict[str, dict] = {} # Stores api state change requests made by --change-state
 tray_icon: "TrayIcon" = None
 fallback_font: str = find_fallback_font()
 showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.10"  # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.12"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
-    <p>Features:</p>
-    <p>Fixes:</p>
+<p>Features:</p>
     <ul>
-        <li>Wrong input mapping when deck is rotated 90 or 270 degrees</li>
-        <li>Excessive startup times for some users</li>
-        <li>Weird behaviour of GenerativeUI in some cases</li>
+        <li>Add new cli options</li>
+    </ul>
+<p>Improvements:</p>
+    <ul>
+        <li>Add a scroll delay for long labels</li>
+        <li>Use more distinct path for icon</li>
+    </ul>
+<p>Fixes:</p>
+    <ul>
+        <li>Crashes regarding ComboRow</li>
+        <li>Missing  translation in onboarding dialog</li>
     </ul>
 """

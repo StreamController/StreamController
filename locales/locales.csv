@@ -8,6 +8,7 @@ label-editor-bottom-name;Unten;Bottom;Bas;Abajo
 label-editor-font-chooser-label;Schriftart:;Font:;Police :;Fuente:
 label-editor-outline-width-label;Randdicke:;Outline width:;Largeur du contour:;Ancho del contorno:
 label-editor-outline-color-label;Randfarbe:;Outline color:;Couleur du contour:;Color de contorno:
+label-editor-alignment-label;Ausrichtung:;Align:;Alignement :;Alineación:
 label-editor-placeholder-text;Text;Label;Étiquette;Etiqueta
 label-editor-expander-subtitle;Texte für diese Taste;Labels for this key;Étiquettes de ce bouton;Etiquetas para esta tecla
 action-editor-header;Aktions;Actions;Actions;Acciones
@@ -106,7 +107,7 @@ store.wallpapers.search-placeholder;Nach Hintergründen suchen;Search for wallpa
 onboarding.welcome.header;Willkommen bei StreamController!;Welcome To StreamController!;Bienvenue chez StreamController !;Bienvenido a StreamController
 onboarding.welcome.details;Die Linux App für das Elgato Stream Deck;The Linux app for the Elgato Stream Deck;L'application Linux pour le Stream Deck d’Elgato;La aplicación Linux para Elgato Stream Deck
 onboarding.store.header;Asset Store;Asset Store;Magasin de ressources;Tienda
-onboarding.store.details;Plugins; Icons und Hintergründe herunterladen;Télécharger des plugins;Búsqueda de iconos y fondos de pantalla
+onboarding.store.details;Icons und Hintergründe herunterladen;Download plugins;Télécharger des plugins;Búsqueda de iconos y fondos de pantalla
 onboarding.productive.header;Produktiver;Be More Productive;Soyez plus productif;Sea más productivo
 onboarding.productive.details;Mit eigenen Makros & Routinen;With your personal shortcuts;Avec vos raccourcis personnalisés;Con tus atajos personales
 onboarding.multiple.header;Multi Deck Support;Multi Deck Support;Support Multi Deck;Soporte Multi Deck

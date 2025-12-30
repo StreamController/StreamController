@@ -12,7 +12,12 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-import dbus
+# Import globals first to get IS_MAC
+import globals as gl
+
+if not gl.IS_MAC:
+    import dbus
+
 from loguru import logger as log
 
 class GnomeExtensions:
@@ -23,11 +28,13 @@ class GnomeExtensions:
         self.connect_dbus()
 
     def connect_dbus(self) -> None:
+        if gl.IS_MAC:
+            return
         try:
             self.bus = dbus.SessionBus()
             self.proxy = self.bus.get_object("org.gnome.Shell", "/org/gnome/Shell")
             self.interface = dbus.Interface(self.proxy, "org.gnome.Shell.Extensions")
-        except dbus.exceptions.DBusException as e:
+        except Exception as e:
             log.error(f"Failed to connect to D-Bus: {e}")
             pass
 

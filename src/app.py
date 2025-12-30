@@ -23,10 +23,18 @@ import gi
 
 from src.windows.Store.ResponsibleNotesDialog import ResponsibleNotesDialog
 from src.windows.Donate.DonateWindow import DonateWindow
+
+# Import globals first to get IS_MAC
+import globals as gl
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-gi.require_version("Xdp", "1.0")
-from gi.repository import Gtk, Adw, Gdk, Gio, Xdp, GLib
+if not gl.IS_MAC:
+    gi.require_version("Xdp", "1.0")
+
+from gi.repository import Gtk, Adw, Gdk, Gio, GLib
+if not gl.IS_MAC:
+    from gi.repository import Xdp
 
 # Import Python modules
 from loguru import logger as log
@@ -155,6 +163,8 @@ class App(Adw.Application):
             f.write("")
 
     def show_permissions(self):
+        if gl.IS_MAC:
+            return
         portal = Xdp.Portal.new()
         if not portal.running_under_flatpak():
             return
@@ -184,12 +194,15 @@ class App(Adw.Application):
         for ctrl in gl.deck_manager.deck_controller:
             ctrl.delete()
 
+        gl.deck_manager.stop_usb_monitoring()
+
         gl.plugin_manager.loop_daemon = False
-        log.debug("non-daemon threads:")
+
         for thread in threading.enumerate():
-            if thread.daemon:
-                continue
-            log.debug(f"name: {thread.name}, id: {thread.ident} id2: {thread.native_id}")
+            if thread is not threading.current_thread() and not thread.daemon:
+                thread.join(timeout=5)
+                if thread.is_alive():
+                    log.error(f"Thread {thread.name} did not exit in time")
 
         for child in multiprocessing.active_children():
             child.terminate()
@@ -200,6 +213,7 @@ class App(Adw.Application):
         gl.deck_manager.close_all()
         # Stop timer
         log.success("Stopped StreamController. Have a nice day!")
+        log.stop()
         sys.exit(0)
 
     def force_quit(self):

@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 
 from GtkHelper.GtkHelper import RevertButton
-from src.backend.DeckManagement.InputIdentifier import InputIdentifier
+from src.backend.DeckManagement.InputIdentifier import InputIdentifier, Input
 from src.backend.DeckManagement.HelperMethods import add_default_keys
 
 gi.require_version("Gtk", "4.0")
@@ -76,12 +76,21 @@ class BackgroundExpanderRow(Adw.ExpanderRow):
     def build(self):
         self.color_row = ColorRow(sidebar=self.label_group.sidebar, expander=self)
         self.add_row(self.color_row)
+        
+        self.image_row = ImageRow(sidebar=self.label_group.sidebar, expander=self)
+        self.add_row(self.image_row)
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
         self.active_identifier = identifier
         self.active_state = state
 
         self.color_row.load_for_identifier(identifier, state)
+        
+        # Only show image row for touchscreens
+        is_touchscreen = isinstance(identifier, Input.Touchscreen)
+        self.image_row.set_visible(is_touchscreen)
+        if is_touchscreen:
+            self.image_row.load_for_identifier(identifier, state)
 
 class ColorRow(Adw.PreferencesRow):
     def __init__(self, sidebar, expander: BackgroundExpanderRow, **kwargs):
@@ -210,3 +219,82 @@ class ResetColorButton(Adw.PreferencesRow):
             self.set_visible(False)
         else:
             self.set_visible(True)
+
+class ImageRow(Adw.PreferencesRow):
+    def __init__(self, sidebar, expander: BackgroundExpanderRow, **kwargs):
+        super().__init__(**kwargs)
+        self.sidebar = sidebar
+        self.expander = expander
+        self.active_identifier: InputIdentifier = None
+        self.active_state = None
+        self.build()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15,
+                                spacing=10)
+        self.set_child(self.main_box)
+
+        self.label = Gtk.Label(label="Background", xalign=0, hexpand=True)
+        self.main_box.append(self.label)
+        
+        # Image preview with constrained size
+        self.preview_frame = Gtk.Frame(css_classes=["card"])
+        self.preview_frame.set_size_request(48, 48)
+        self.preview = Gtk.Picture(
+            content_fit=Gtk.ContentFit.COVER,
+            overflow=Gtk.Overflow.HIDDEN,
+            width_request=48,
+            height_request=48,
+        )
+        self.preview_frame.set_child(self.preview)
+        self.preview_frame.set_visible(False)
+        self.main_box.append(self.preview_frame)
+        
+        self.button_box = Gtk.Box(css_classes=["linked"])
+        self.main_box.append(self.button_box)
+        
+        self.select_button = Gtk.Button(icon_name="folder-open-symbolic")
+        self.select_button.connect("clicked", self.on_select_image)
+        self.button_box.append(self.select_button)
+        
+        self.clear_button = Gtk.Button(icon_name="edit-clear-symbolic")
+        self.clear_button.connect("clicked", self.on_clear_image)
+        self.clear_button.set_visible(False)
+        self.button_box.append(self.clear_button)
+
+    def on_select_image(self, button):
+        active_page = gl.app.main_win.get_active_page()
+        current_path = active_page.get_background_image(identifier=self.active_identifier, state=self.active_state)
+        gl.app.let_user_select_asset(default_path=current_path, callback_func=self.set_background_image)
+
+    def set_background_image(self, file_path: str) -> None:
+        if not file_path:
+            return
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_background_image(identifier=self.active_identifier, state=self.active_state, path=file_path, update=True)
+        self.clear_button.set_visible(True)
+        self.update_preview(file_path)
+
+    def on_clear_image(self, button):
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_background_image(identifier=self.active_identifier, state=self.active_state, path=None, update=True)
+        self.clear_button.set_visible(False)
+        self.update_preview(None)
+
+    def update_preview(self, image_path: str | None):
+        if image_path:
+            self.preview.set_filename(image_path)
+            self.preview_frame.set_visible(True)
+        else:
+            self.preview.set_filename(None)
+            self.preview_frame.set_visible(False)
+
+    def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        self.active_identifier = identifier
+        self.active_state = state
+
+        active_page = gl.app.main_win.get_active_page()
+        image_path = active_page.get_background_image(identifier=identifier, state=state)
+        self.clear_button.set_visible(image_path is not None)
+        self.update_preview(image_path)

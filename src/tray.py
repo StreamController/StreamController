@@ -9,6 +9,8 @@ class TrayIcon(DBusTrayIcon):
     AppId = "com.core447.StreamController.TrayIcon"
 
     def __init__(self):
+        if gl.IS_MAC:
+            return
         self.menu = DBusMenu()
         self.menu.add_menu_item(1, "Show Window", callback=self.on_show)
         self.menu.add_menu_item(2, menu_type="separator")

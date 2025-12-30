@@ -57,6 +57,10 @@ class BackgroundVideoCache:
         self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
 
     def get_tiles(self, n):
+        # Check if cache is available (video may have been closed)
+        if not hasattr(self, 'cache') or self.cache is None:
+            return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
+        
         n = min(n, self.n_frames - 1)
         tiles = None
         with self.lock:
@@ -96,7 +100,7 @@ class BackgroundVideoCache:
                         if not self.is_cache_complete():
                             self.save_cache_threaded()
 
-                if self.do_caching:
+                if self.do_caching and self.cache is not None:
                     self.cache[self.last_frame_index] = tiles
                 self.last_tiles = tiles
                 
@@ -110,7 +114,10 @@ class BackgroundVideoCache:
             tiles = self.last_tiles
         if tiles is None:
             tiles = [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
-        return self.cache.get(n, tiles)
+        
+        if self.cache is not None:
+            return self.cache.get(n, tiles)
+        return tiles
     
     def create_full_deck_sized_image(self, frame: Image.Image) -> Image.Image:
         key_width *= self.key_layout[0]
@@ -212,6 +219,8 @@ class BackgroundVideoCache:
             return
 
     def is_cache_complete(self) -> bool:
+        if not hasattr(self, 'cache') or self.cache is None:
+            return False
         if self.n_frames != len(self.cache):
             return False
         
@@ -226,17 +235,12 @@ class BackgroundVideoCache:
         with self.lock:
             self.cap.release()
 
-        for n in self.cache:
-            for f in self.cache[n]:
-                # ref = gc.get_referrers(f)
-                # if len(ref) > 1:
-                    # 
-                f.close()
-                f = None
+        if hasattr(self, 'cache') and self.cache is not None:
+            for n in self.cache:
+                for f in self.cache[n]:
+                    if f is not None:
+                        f.close()
 
-
+            self.cache.clear()
         self.cache = None
-        del self.cache
-        del self.cap
         gc.collect()
-        del self

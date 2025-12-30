@@ -40,7 +40,7 @@ class PageManager(Adw.ApplicationWindow):
     def __init__(self, main_win: "MainWindow"):
         super().__init__(title=gl.lm.get("page-manager.title"), default_width=400, default_height=600)
         self.set_transient_for(main_win)
-        self.set_modal(True)
+        #self.set_modal(True) Removed to allow other popups in the PageEditor
 
         self.build()
 

@@ -13,7 +13,6 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import dbus
 from re import sub
 import threading
 import time
@@ -24,11 +23,13 @@ import subprocess
 import json
 from loguru import logger as log
 
-import gi
-gi.require_version("Xdp", "1.0")
-from gi.repository import Xdp
-
+# Import globals first to get IS_MAC
 import globals as gl
+
+import gi
+
+if not gl.IS_MAC:
+    import dbus
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -39,10 +40,11 @@ class Gnome(Integration):
     def __init__(self, window_grabber: "WindowGrabber"):
         super().__init__(window_grabber=window_grabber)
 
-        self.bus: dbus.Bus = None
-        self.proxy =  None
+        self.bus = None
+        self.proxy = None
         self.interface = None
-        self.connect_dbus()
+        if not gl.IS_MAC:
+            self.connect_dbus()
 
     def install_extension(self) -> None:
         uuid = ["streamcontroller@core447.com"]
@@ -55,12 +57,14 @@ class Gnome(Integration):
 
 
     def connect_dbus(self) -> None:
+        if gl.IS_MAC:
+            return
         try:
             self.bus = dbus.SessionBus()
             self.proxy = self.bus.get_object("org.gnome.Shell", "/org/gnome/Shell/Extensions/StreamController")
             self.interface = dbus.Interface(self.proxy, "org.gnome.Shell.Extensions.StreamController")
             self.interface.connect_to_signal("FocusedWindowChanged", self.on_window_changed)
-        except dbus.exceptions.DBusException as e:
+        except Exception as e:
             log.error(f"Failed to connect to D-Bus: {e}")
             pass
 

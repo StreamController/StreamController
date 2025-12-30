@@ -15,11 +15,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import os
 import shutil
-import globals as gl
+import sys
 
-import gi
-gi.require_version("Xdp", "1.0")
-from gi.repository import Xdp
+# Automatically detect macOS
+IS_MAC = sys.platform == "darwin"
+
+if not IS_MAC:
+    import gi
+    gi.require_version("Xdp", "1.0")
+    from gi.repository import Xdp
 
 from loguru import logger as log
 
@@ -28,6 +32,8 @@ def is_flatpak():
 
 log.catch
 def setup_autostart(enable: bool = True):
+    if IS_MAC:
+        return
     if enable:
         if is_flatpak():
             setup_autostart_flatpak(True)

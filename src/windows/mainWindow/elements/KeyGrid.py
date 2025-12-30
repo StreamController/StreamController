@@ -142,6 +142,8 @@ class KeyButton(Gtk.Frame):
 
         self.image = Gtk.Image(hexpand=True, vexpand=True, css_classes=["key-image", "key-button"])
         self.image.set_overflow(Gtk.Overflow.HIDDEN)
+        self.image.set_size_request(75, 75)
+        self.image.set_pixel_size(75)
         self.set_child(self.image)
 
         # self.button.connect("clicked", self.on_click)

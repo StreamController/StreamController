@@ -13,11 +13,15 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import gi
+# Import globals first to get IS_MAC
+import globals as gl
 
-gi.require_version("Xdp", "1.0")
+import gi
 from gi.repository import GLib
-from gi.repository import Xdp
+
+if not gl.IS_MAC:
+    gi.require_version("Xdp", "1.0")
+    from gi.repository import Xdp
 
 import subprocess
 import shlex
@@ -30,10 +34,14 @@ from src.windows.Permissions.FlatpakPermissionRequest import FlatpakPermissionRe
 
 class FlatpakPermissionManager:
     def __init__(self):
-        self.portal = Xdp.Portal.new()
+        self.portal = None
+        if not gl.IS_MAC:
+            self.portal = Xdp.Portal.new()
         self.app_id = "com.core447.StreamController"
 
     def get_is_flatpak(self):
+        if gl.IS_MAC or self.portal is None:
+            return False
         return self.portal.running_under_flatpak()
     
     def add_spawn_prefix_if_needed(self, command: str) -> str:

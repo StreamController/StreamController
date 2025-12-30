@@ -27,6 +27,7 @@ StreamController supports the following Elgato Stream Deck models:
 - Stream Deck Pedal
 - Stream Deck Plus
 - Stream Deck Neo (only the normal buttons)
+- Stream Deck Modules
 
 ## Features
 

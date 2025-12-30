@@ -513,6 +513,59 @@ class DeckController:
         page = gl.page_manager.get_page(default_page_path, self)
         self.load_page(page)
 
+        # Handle state change requests
+        if self.serial_number() in gl.api_state_requests:
+            state_request = gl.api_state_requests[self.serial_number()]
+            page_name = state_request["page_name"]
+            coords = state_request["coords"]
+            state = state_request["state"]
+            
+            # Get the page path for the specified page
+            requested_page_path = gl.page_manager.get_best_page_path_match_from_name(page_name)
+            
+            if requested_page_path is None:
+                # Page not found - log available pages
+                available_pages = [os.path.splitext(os.path.basename(p))[0] for p in gl.page_manager.get_pages()]
+                log.error(f"State change failed: Page '{page_name}' not found for device {self.serial_number()}. Available pages: {', '.join(available_pages)}")
+            else:
+                # Load the requested page if it's different from the current one
+                if os.path.abspath(requested_page_path) != os.path.abspath(self.active_page.json_path):
+                    requested_page = gl.page_manager.get_page(requested_page_path, self)
+                    self.load_page(requested_page)
+                
+                # Parse coordinates and change state with enhanced error handling
+                try:
+                    x, y = map(int, coords.split(','))
+                    
+                    # Validate coordinates are within bounds
+                    rows, cols = self.deck.key_layout()
+                    if x < 0 or x >= cols or y < 0 or y >= rows:
+                        log.error(f"State change failed: Coordinates ({x},{y}) out of bounds for device {self.serial_number()}. Valid range: x=0-{cols-1}, y=0-{rows-1}")
+                    else:
+                        identifier = Input.Key(f"{x}x{y}")
+                        c_input = self.get_input(identifier)
+                        
+                        if c_input is None:
+                            log.error(f"State change failed: No input found at coordinates ({x},{y}) on device {self.serial_number()}")
+                        elif state < 0 or state >= len(c_input.states):
+                            max_state = len(c_input.states) - 1
+                            if max_state == 0:
+                                log.error(f"State change failed: Position ({x},{y}) on device {self.serial_number()} only has 1 state (state 0). Requested state {state} does not exist")
+                            else:
+                                log.error(f"State change failed: Position ({x},{y}) on device {self.serial_number()} has states 0-{max_state}. Requested state {state} does not exist")
+                        else:
+                            # Successfully change state
+                            c_input.set_state(state)
+                            log.info(f"Successfully changed state of position ({x},{y}) to state {state} on device {self.serial_number()}")
+                            
+                except (ValueError, AttributeError) as e:
+                    log.error(f"State change failed: Invalid coordinate format '{coords}' for device {self.serial_number()}. Expected format: 'x,y' (e.g., '0,0'). Exception: {e}")
+                except Exception as e:
+                    log.error(f"State change failed: Unexpected error for device {self.serial_number()}: {e}")
+            
+            # Remove the request after processing
+            del gl.api_state_requests[self.serial_number()]
+
     @log.catch
     def load_background(self, page: Page, update: bool = True):
         deck_settings = self.get_deck_settings()
@@ -619,8 +672,10 @@ class DeckController:
 
         if self.background.video is not None:
             self.background.video.close()
+            self.background.video = None
         if self.background.image is not None:
             self.background.image.close()
+            self.background.image = None
 
     @log.catch
     def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_inputs: bool = True, allow_reload: bool = True):
@@ -668,7 +723,7 @@ class DeckController:
         if load_inputs:
             self.media_player.add_task(self.load_all_inputs, page, update=False)
 
-        self.active_page.call_actions_ready_and_set_flag()
+        self.active_page.initialize_actions()
 
         # Load page onto deck
         self.media_player.add_task(self.update_all_inputs)
@@ -1113,12 +1168,22 @@ class LabelManager:
         
         self.page_labels = {}
         self.action_labels = {}
+        self.scroll_wait = 25
 
         self.init_labels()
-        self.frames: dict[str, int] = {
-            "top": 0,
-            "center": 0,
-            "bottom": 0,
+        self.frames: dict[str, dict[str, int]] = {
+            "top": {
+                "position": 0,
+                "wait": self.scroll_wait
+            },
+            "center": {
+                "position": 0,
+                "wait": self.scroll_wait
+            },
+            "bottom": {
+                "position": 0,
+                "wait": self.scroll_wait
+            },
         }
 
     def init_labels(self):
@@ -1175,6 +1240,7 @@ class LabelManager:
                 "font-style": False,
                 "outline_width": False,
                 "outline_color": False,
+                "alignment": False,
             }
         return {
             "text": self.page_labels[position].text is not None,
@@ -1185,6 +1251,7 @@ class LabelManager:
             "font-style": self.page_labels[position].style is not None,
             "outline_width": self.page_labels[position].outline_width is not None,
             "outline_color": self.page_labels[position].outline_color is not None,
+            "alignment": self.page_labels[position].alignment is not None,
         }
 
     def get_composed_label(self, position: str) -> str:
@@ -1211,6 +1278,8 @@ class LabelManager:
                 label.outline_width = page_label.outline_width
             if use_page_label_properties["outline_color"]:
                 label.outline_color = page_label.outline_color
+            if use_page_label_properties["alignment"]:
+                label.alignment = page_label.alignment
 
         injected = self.inject_defaults(label)
         return self.fix_invalid(injected)
@@ -1239,6 +1308,8 @@ class LabelManager:
             label.outline_width = round(gl.settings_manager.font_defaults.get("outline-width") or 2)
         if label.outline_color is None:
             label.outline_color = gl.settings_manager.font_defaults.get("outline-color") or (0, 0, 0, 255)
+        if label.alignment is None:
+            label.alignment = gl.settings_manager.font_defaults.get("alignment") or "center"
 
         return label
     
@@ -1277,23 +1348,44 @@ class LabelManager:
             font = labels[label].get_font()
             outline_width = labels[label].outline_width
             outline_color = tuple(labels[label].outline_color)
+            alignment = labels[label].alignment
 
             _, _, w, h = draw.textbbox((0, 0), text, font=font)
 
-            # Center
-            x_position = image.width / 2
+            # Calculate x position based on alignment
+            padding = 3
+            if alignment == "left":
+                x_position = padding
+                anchor_x = "l"
+            elif alignment == "right":
+                x_position = image.width - padding
+                anchor_x = "r"
+            else:  # center (default)
+                x_position = image.width / 2
+                anchor_x = "m"
 
             if image.width < w:
-                # Need to scroll
+                # Need to scroll - always use center anchor for scrolling
                 start = image.width / 2 - (image.width - w) / 2 + 10
                 stop = image.width / 2 + (image.width - w) / 2 - 10
 
-                x_position = start - self.frames[label]
+                x_position = start - self.frames[label]["position"]
+                anchor_x = "m"
                 if x_position < stop:
-                    x_position = start
-                    self.frames[label] = 0
+                    if self.frames[label]["wait"] == 0:
+                        x_position = start
+                        self.frames[label]["position"] = 0
+                        self.frames[label]["wait"] = self.scroll_wait
+                    else:
+                        self.frames[label]["wait"] -= 1
                 elif self.controller_input.media_ticks % 2 == 0:
-                    self.frames[label] += 1
+                    if self.frames[label]["wait"] == 0:
+                        if x_position == stop:
+                            self.frames[label]["wait"] = self.scroll_wait
+
+                        self.frames[label]["position"] += 1
+                    else:
+                        self.frames[label]["wait"] -= 1
 
 
             if label == "top":
@@ -1303,8 +1395,11 @@ class LabelManager:
             else:
                 position = (x_position, (image.height - 0) / 2)
 
+            # Use appropriate anchor based on alignment (x-anchor + "m" for vertical middle)
+            anchor = anchor_x + "m"
+
             draw.text(position,
-                      text=text, font=font, anchor="mm", align="center",
+                      text=text, font=font, anchor=anchor, align=alignment,
                       fill=color, stroke_width=outline_width,
                       stroke_fill=outline_color)
 
@@ -1566,7 +1661,6 @@ class ControllerInputState:
                 continue
             if not action.on_ready_called:
                 continue
-            action.load_initial_generative_ui()
             action.on_update()
 
     @log.catch
@@ -2086,7 +2180,8 @@ class ControllerKey(ControllerInput):
                         font_name=state_dict["labels"][label].get("font-family"),
                         color=state_dict["labels"][label].get("color"),
                         outline_width=state_dict["labels"][label].get("outline_width"),
-                        outline_color=state_dict["labels"][label].get("outline_color")
+                        outline_color=state_dict["labels"][label].get("outline_color"),
+                        alignment=state_dict["labels"][label].get("alignment")
                     )
                     # self.add_label(key_label, position=label, update=False)
                     state.label_manager.set_page_label(label, key_label, update=False)
@@ -2387,6 +2482,7 @@ class ControllerDial(ControllerInput):
                     font_size=state_dict["labels"][label].get("font-size"),
                     font_name=state_dict["labels"][label].get("font-family"),
                     color=state_dict["labels"][label].get("color"),
+                    alignment=state_dict["labels"][label].get("alignment"),
                 )
                 state.label_manager.set_page_label(label, key_label, update=False)
 
@@ -2468,8 +2564,56 @@ class ControllerTouchScreenState(ControllerInputState):
         self.update()
 
     def get_current_image(self) -> Image.Image:
-        background = self.controller_touch.generate_empty_image()
+        screen_width, screen_height = self.controller_touch.get_screen_dimensions()
+        
+        # Start with background image if set
+        background: Image.Image = None
+        active_page = self.controller_touch.deck_controller.active_page
+        background_image_path = active_page.get_background_image(
+            identifier=self.controller_touch.identifier, 
+            state=self.state
+        )
+        
+        if background_image_path and os.path.isfile(background_image_path):
+            try:
+                with Image.open(background_image_path) as img:
+                    # Resize to exact touchscreen dimensions (KISS - exact dimensions)
+                    background = img.resize((screen_width, screen_height), Image.Resampling.LANCZOS).convert("RGBA")
+            except Exception as e:
+                log.error(f"Error loading background image: {e}")
+                background = None
+        
+        # Get background color from touchscreen state's background_manager
+        background_color = self.background_manager.get_composed_color()
+        
+        # If no background image, start with empty or colored background
+        if background is None:
+            # If background color has transparency (alpha < 255), start with transparent
+            if background_color[-1] < 255:
+                background = self.controller_touch.generate_empty_image()
+            
+            # If background color is set (alpha > 0), create colored background
+            if background_color[-1] > 0:
+                background_color_img = Image.new("RGBA", (screen_width, screen_height), color=tuple(background_color))
+                
+                if background is None:
+                    # Use the color as the only background - happens if background color alpha is 255
+                    background = background_color_img
+                else:
+                    # Paste color on top of transparent background
+                    background.paste(background_color_img, (0, 0), background_color_img)
+            
+            # If no background color was set, use empty image
+            if background is None:
+                background = self.controller_touch.generate_empty_image()
+        else:
+            # Background image exists - apply color overlay if set
+            if background_color[-1] > 0:
+                background_color_img = Image.new("RGBA", (screen_width, screen_height), color=tuple(background_color))
+                # Blend color over image
+                background = Image.alpha_composite(background, background_color_img)
 
+        # Paste dial images on top of the background
         for dial in self.controller_touch.deck_controller.inputs[Input.Dial]:
             state = dial.get_active_state()
             image_area = self.controller_touch.get_dial_image_area(dial.identifier)

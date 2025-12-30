@@ -31,7 +31,6 @@ import asyncio
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
-from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
@@ -83,6 +82,10 @@ class WallpaperPreview(StorePreview):
 
         self.set_official(wallpaper_data.official)
         self.set_verified(wallpaper_data.verified)
+
+        self.warning_badge.set_tooltip("store.badges.wallpaper.warning")
+        self.official_badge.set_tooltip("store.badges.wallpaper.official")
+        self.verified_badge.set_tooltip("store.badges.wallpaper.verified")
 
         if not self.check_required_version(wallpaper_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")

@@ -1,6 +1,6 @@
 id: com.core447.StreamController
 runtime: org.gnome.Platform
-runtime-version: '47'
+runtime-version: '48'
 sdk: org.gnome.Sdk
 command: launch.sh
 
@@ -19,9 +19,15 @@ finish-args:
   - --talk-name=org.gnome.Shell               # Interact with Gnome - used to open the "Install extension" dialog
   - --talk-name=org.gnome.Shell.Extensions.StreamController
   - --talk-name=org.gnome.ScreenSaver
-  - --talk-name=org.cinnamon.ScreenSaver
   - --talk-name=org.freedesktop.ScreenSaver
+  - --talk-name=org.cinnamon.ScreenSaver
   - --system-talk-name=org.freedesktop.UPower # Access to power management - used to get battery status
+
+  # Tray icon
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --talk-name=com.canonical.dbusmenu 
+  - --talk-name=org.kde.StatusNotifierItem
+
 
 modules:
   - pypi-requirements.yaml
@@ -32,7 +38,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/libusb/hidapi.git
-        tag: hidapi-0.14.0
+        tag: hidapi-0.15.0
 
   - name: gusb
     buildsystem: meson
@@ -56,7 +62,7 @@ modules:
     sources:
       - type: git
         url: https://gitlab.gnome.org/GNOME/libpeas.git
-        tag: 2.0.5
+        tag: 2.0.7
 
   - name: libportal
     buildsystem: meson
@@ -70,7 +76,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/flatpak/libportal.git
-        tag: 0.8.1
+        tag: 0.9.1
 
   - name: StreamController
     buildsystem: simple

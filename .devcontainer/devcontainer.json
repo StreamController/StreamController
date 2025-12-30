@@ -1,7 +1,8 @@
 {
   "name": "StreamController Development",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "options": [ "--network", "host" ]
   },
   "remoteUser": "ubuntu",
   "runArgs": [
@@ -37,5 +38,6 @@
       }
     }
   },
-  "postCreateCommand": ". /app/.venv/bin/activate && uv pip install -r requirements.txt && dbus-daemon --session --address=unix:path=/run/user/1000/bus --fork --print-address"
+  "postCreateCommand": ". /app/.venv/bin/activate && uv pip install -r requirements.txt",
+  "postStartCommand": "dbus-daemon --session --address=unix:path=/run/user/1000/bus --fork --print-address"
 }

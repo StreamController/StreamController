@@ -31,7 +31,6 @@ import asyncio
 
 # Import own modules
 from src.windows.Store.StorePage import StorePage
-from src.windows.Store.Badges import OfficialBadge, VerifiedBadge
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.backend.DeckManagement.HelperMethods import is_video
 from src.windows.Store.Preview import StorePreview
@@ -86,6 +85,10 @@ class IconPreview(StorePreview):
         self.set_official(icon_data.official)
         self.set_verified(icon_data.verified)
 
+        self.warning_badge.set_tooltip("store.badges.icon.warning")
+        self.official_badge.set_tooltip("store.badges.icon.official")
+        self.verified_badge.set_tooltip("store.badges.icon.verified")
+
         if not self.check_required_version(icon_data.minimum_app_version):
             self.main_button_box.add_css_class("red-border")
         else:
@@ -126,6 +129,7 @@ class IconPreview(StorePreview):
         self.icon_page.info_page.set_description(self.icon_data.description)
         self.icon_page.info_page.set_author(self.icon_data.author)
         self.icon_page.info_page.set_version(self.icon_data.icon_version)
+        # self.icon_page.info_page.set_stargazer(self.icon_data.stargazer)
 
         self.icon_page.info_page.set_license(self.icon_data.license)
         self.icon_page.info_page.set_copyright(self.icon_data.copyright)

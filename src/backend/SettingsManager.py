@@ -33,8 +33,7 @@ class SettingsManager:
         except json.decoder.JSONDecodeError as e:
             log.error(f"Invalid json in {file_path}: {e}")
             return {}
-        
-        
+
     def save_settings_to_file(self, file_path: str, settings: dict) -> None:
         # Create directories if they don't exist
         if not os.path.exists(os.path.dirname(file_path)) and os.path.dirname(file_path) != "":
@@ -78,6 +77,7 @@ class SettingsManager:
 
     def get_app_settings(self) -> dict:
         path = os.path.join(gl.DATA_PATH, "settings", "settings.json")
+
         settings =  self.load_settings_from_file(path)
         if settings == None:
             settings = {}

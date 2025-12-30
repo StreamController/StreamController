@@ -130,23 +130,24 @@ showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.12"  # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.13"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
 <p>Features:</p>
     <ul>
-        <li>Add new cli options</li>
+        <li>Add way to set alignments for labels</li>
+        <li>Add localization for Brazilian Portuguese</li>
     </ul>
 <p>Improvements:</p>
     <ul>
-        <li>Add a scroll delay for long labels</li>
-        <li>Use more distinct path for icon</li>
+        <li>Improve shutdown speed</li>
+        <li>Updated store badges</li>
     </ul>
 <p>Fixes:</p>
     <ul>
-        <li>Crashes regarding ComboRow</li>
-        <li>Missing  translation in onboarding dialog</li>
+        <li>Long startup time when started without internet connection</li>
+        <li>Too small preview images for keys in the UI</li>
     </ul>
 """

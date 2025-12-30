@@ -142,6 +142,16 @@ class LabelRow(Adw.PreferencesRow):
         self.font_chooser_button = FontChooserButton()
         self.font_chooser_box.append(self.font_chooser_button)
 
+        # Alignment box
+        self.alignment_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
+        self.main_box.append(self.alignment_box)
+
+        self.alignment_label = Gtk.Label(label=gl.lm.get("label-editor-alignment-label", "Align:"), xalign=0, hexpand=True, margin_start=2)
+        self.alignment_box.append(self.alignment_label)
+
+        self.alignment_buttons = AlignmentButtons()
+        self.alignment_box.append(self.alignment_buttons)
+
         self.outline_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_top=6)
         self.main_box.append(self.outline_box)
 
@@ -170,6 +180,7 @@ class LabelRow(Adw.PreferencesRow):
         self.font_chooser_button.revert_button.connect("clicked", self.on_reset_font)
         self.outline_width.revert_button.connect("clicked", self.on_reset_outline_width)
         self.outline_color_chooser_button.revert_button.connect("clicked", self.on_reset_outline_color)
+        self.alignment_buttons.revert_button.connect("clicked", self.on_reset_alignment)
 
     def connect_signals(self):
         self.text_entry.entry.connect("changed", self.on_change_text)
@@ -177,6 +188,9 @@ class LabelRow(Adw.PreferencesRow):
         self.font_chooser_button.button.connect("font-set", self.on_change_font)
         self.outline_width.button.connect("value-changed", self.on_change_outline_width)
         self.outline_color_chooser_button.button.connect("color-set", self.on_change_outline_color)
+        self.alignment_buttons.left_button.connect("toggled", self.on_change_alignment)
+        self.alignment_buttons.center_button.connect("toggled", self.on_change_alignment)
+        self.alignment_buttons.right_button.connect("toggled", self.on_change_alignment)
 
     def disconnect_signals(self):
         try:
@@ -204,6 +218,13 @@ class LabelRow(Adw.PreferencesRow):
         except Exception as e:
             log.error(f"Failed to disconnect signals. Error: {e}")
 
+        try:
+            self.alignment_buttons.left_button.disconnect_by_func(self.on_change_alignment)
+            self.alignment_buttons.center_button.disconnect_by_func(self.on_change_alignment)
+            self.alignment_buttons.right_button.disconnect_by_func(self.on_change_alignment)
+        except Exception as e:
+            log.error(f"Failed to disconnect signals. Error: {e}")
+
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
         if not isinstance(identifier, InputIdentifier):
             raise ValueError
@@ -227,6 +248,7 @@ class LabelRow(Adw.PreferencesRow):
         self.color_chooser_button.revert_button.set_visible(use_page_label_properties.get("color", False))
         self.outline_width.revert_button.set_visible(use_page_label_properties.get("outline_width", False))
         self.outline_color_chooser_button.revert_button.set_visible(use_page_label_properties.get("outline_color", False))
+        self.alignment_buttons.revert_button.set_visible(use_page_label_properties.get("alignment", False))
 
         font_combined = use_page_label_properties.get("font-family", False) and use_page_label_properties.get("font-size", False)
         self.font_chooser_button.revert_button.set_visible(font_combined)
@@ -253,10 +275,12 @@ class LabelRow(Adw.PreferencesRow):
         hide_details = composed_label.text.strip() == ""
         self.font_chooser_box.set_visible(not hide_details)
         self.outline_box.set_visible(not hide_details)
+        self.alignment_box.set_visible(not hide_details)
 
         self.set_color(composed_label.color)
         self.set_outline_width(composed_label.outline_width)
         self.set_outline_color(composed_label.outline_color)
+        self.set_alignment(composed_label.alignment)
 
         # self.font_chooser_button.button.set_font_desc(Pango.FontDescription.from_string(f"{composed_label.font_name} {composed_label.style} {composed_label.font_size}px"))
         desc = get_pango_font_description(
@@ -281,6 +305,9 @@ class LabelRow(Adw.PreferencesRow):
     def set_outline_color(self, color_values: list):
         color = color_values_to_gdk(color_values)
         self.outline_color_chooser_button.button.set_rgba(color)
+
+    def set_alignment(self, alignment: str):
+        self.alignment_buttons.set_alignment(alignment)
 
     def on_change_color(self, _):
         color = self.color_chooser_button.button.get_rgba()
@@ -358,6 +385,23 @@ class LabelRow(Adw.PreferencesRow):
 
         button.set_visible(False)
 
+    def on_change_alignment(self, button):
+        if not button.get_active():
+            return  # Only respond to the button being activated
+
+        alignment = self.alignment_buttons.get_alignment()
+
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_label_alignment(identifier=self.active_identifier, state=self.state, label_position=self.key_name, alignment=alignment)
+
+        self.alignment_buttons.revert_button.set_visible(True)
+
+    def on_reset_alignment(self, button):
+        active_page = gl.app.main_win.get_active_page()
+        active_page.set_label_alignment(identifier=self.active_identifier, state=self.state, label_position=self.key_name, alignment=None)
+
+        button.set_visible(False)
+
     def on_change_text(self, entry):
         text = entry.get_text()
 
@@ -369,6 +413,7 @@ class LabelRow(Adw.PreferencesRow):
         hide_details = text.strip() == ""
         self.font_chooser_box.set_visible(not hide_details)
         self.outline_box.set_visible(not hide_details)
+        self.alignment_box.set_visible(not hide_details)
 
 
 class TextEntry(Gtk.Box):
@@ -411,3 +456,39 @@ class SpinButton(Gtk.Box):
 
         self.append(self.button)
         self.append(self.revert_button)
+
+
+class AlignmentButtons(Gtk.Box):
+    def __init__(self, **kwargs):
+        super().__init__(css_classes=["linked"], **kwargs)
+
+        self.left_button = Gtk.ToggleButton(icon_name="format-justify-left-symbolic", tooltip_text="Left")
+        self.center_button = Gtk.ToggleButton(icon_name="format-justify-center-symbolic", tooltip_text="Center")
+        self.right_button = Gtk.ToggleButton(icon_name="format-justify-right-symbolic", tooltip_text="Right")
+
+        # Group the toggle buttons so only one can be active
+        self.center_button.set_group(self.left_button)
+        self.right_button.set_group(self.left_button)
+
+        self.revert_button = RevertButton()
+
+        self.append(self.left_button)
+        self.append(self.center_button)
+        self.append(self.right_button)
+        self.append(self.revert_button)
+
+    def get_alignment(self) -> str:
+        if self.left_button.get_active():
+            return "left"
+        elif self.right_button.get_active():
+            return "right"
+        else:
+            return "center"
+
+    def set_alignment(self, alignment: str):
+        if alignment == "left":
+            self.left_button.set_active(True)
+        elif alignment == "right":
+            self.right_button.set_active(True)
+        else:
+            self.center_button.set_active(True)

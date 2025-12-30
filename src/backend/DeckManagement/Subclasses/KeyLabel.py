@@ -34,6 +34,7 @@ class KeyLabel:
     color: list[int] = None
     outline_width: int = None
     outline_color: list[int] = None
+    alignment: str = None  # left, center, right
 
     def get_font_path(self) -> str:
         font_name = self.font_name
@@ -60,6 +61,7 @@ class KeyLabel:
         self.color = None
         self.outline_width = None
         self.outline_color = None
+        self.alignment = None
 
     def get_font(self) -> ImageFont.FreeTypeFont:
         return ImageFont.truetype(self.get_font_path(), self.font_size)

@@ -184,7 +184,7 @@ class MenuButton(Gtk.MenuButton):
         pages = {}
 
         for path in gl.page_manager.get_pages(add_custom_pages=False):
-            js = gl.page_manager.get_page_json(path)
+            js = gl.page_manager.get_page_data(path)
             pages[os.path.basename(path)] = js
 
         with open(selected_path, "w") as f:

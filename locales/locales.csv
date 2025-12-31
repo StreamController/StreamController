@@ -19,6 +19,7 @@ action-configurator-header;Aktion einstellen;Configure Action;Configurer l'actio
 action-configurator-remove-action;Aktion entfernen;Remove Action;Supprimer l'action;Borrar acción;Remover Ação
 header-page-selector-page-label;Seite:;Page:;Page :;Página:;Página:
 header-page-selector-drop-down-hint;Seite für aktives Deck auswählen;Select page for active deck;Sélectionnez la page pour le Deck actif;Selecciona la página para el deck activo;Selecione a página para o deck ativo
+header-page-selector-page-settings-hint;Einstellungen der Seite öffnen;Open Page Settings;Ouvrir les paramètres de la page;Abrir ajustes de página;Abrir Configurações da Página
 header-page-selector-page-manager-hint;Seiten verwalten;Open Page Manager;Ouvrir le gestionnaire de page;Abrir gestor de página;Abrir Gerenciador de Páginas
 main-page-page-settings;Einstellungen der Seite;Page Settings;Paramétrage de la page;Ajustes de página;Configurações da Página
 main-page-deck-config;Tasten der Seite;Page Key Grid;Paramétrage des boutons;Cuadrícula de teclas de la página;Grade de Teclas da Página

@@ -78,6 +78,13 @@ class PageSelector(Adw.NavigationPage):
         self.add_new_button = AddNewButton(page_manager=self.page_manager, margin_top=7, margin_start=7, margin_end=7, margin_bottom=7)
         self.main_box.append(self.add_new_button)
 
+    def activate_page(self, page_path: str):
+        for page_row in self.page_rows:
+            if page_row.page_path == page_path:
+                self.list_box.select_row(page_row)
+                return
+        self.list_box.select_row(None)
+
     def load_pages(self) -> None:
         self.page_rows.clear()
         self.list_box.remove_all()
@@ -90,8 +97,6 @@ class PageSelector(Adw.NavigationPage):
             self.page_manager.page_editor.main_stack.set_visible_child_name("no-page")
             self.page_manager.page_editor.menu_button.set_page_specific_actions_enabled(False)
             return
-        self.page_manager.page_editor.menu_button.set_page_specific_actions_enabled(True)
-        self.page_manager.page_editor.main_stack.set_visible_child_name("editor")
         self.page_manager.page_editor.load_for_page(row.page_path)
 
     def rename_page_row(self, old_path: str, new_path: str) -> None:
@@ -106,7 +111,7 @@ class PageSelector(Adw.NavigationPage):
                 return
             
     def add_row_by_path(self, path: str) -> None:
-        page_row = PageRow(page_manager=self, page_path=path)
+        page_row = PageRow(page_manager=self.page_manager, page_path=path)
         self.page_rows.append(page_row)
         self.list_box.append(page_row)
 
@@ -201,9 +206,40 @@ class PageRow(Gtk.ListBoxRow):
         self.set_page_path(self.page_path)
         self.main_box.append(self.label)
 
-        self.menu_button = Gtk.Button(icon_name="view-more-symbolic", halign=Gtk.Align.END, css_classes=["flat"])
-        # self.main_box.append(self.menu_button) #TODO: Not implemented
+        self.menu_button = Gtk.Button(icon_name="user-trash-symbolic", halign=Gtk.Align.END, css_classes=["flat"])
+        self.main_box.append(self.menu_button) #TODO: Not implemented
+
+        self.menu_button.connect("clicked", self.on_menu_click)
     
     def set_page_path(self, page_path: str) -> None:
         self.page_path = page_path
         self.label.set_text(os.path.splitext(os.path.basename(self.page_path))[0])
+
+    def on_menu_click(self, *args):
+        dialog = DeletePageConfirmationDialog(self.page_path, self.page_manager)
+        dialog.present()
+
+class DeletePageConfirmationDialog(Adw.MessageDialog):
+    def __init__(self, path: str, page_manager, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.page_path = path
+        self.page_manager = page_manager
+
+        self.set_transient_for(page_manager)
+        self.set_modal(True)
+        self.set_title(gl.lm.get("page-manager.page-editor.delete-page-confirm.title"))
+        self.add_response("cancel", gl.lm.get("page-manager.page-editor.delete-page-confirm.cancel"))
+        self.add_response("delete", gl.lm.get("page-manager.page-editor.delete-page-confirm.delete"))
+        self.set_default_response("cancel")
+        self.set_close_response("cancel")
+        self.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+
+        page_name = os.path.splitext(os.path.basename(self.page_path))[0]
+        self.set_body(f'{gl.lm.get("page-manager.page-editor.delete-page-confirm.body")}"{page_name}"?')
+
+        self.connect("response", self.on_response)
+
+    def on_response(self, dialog: Adw.MessageDialog, response: int) -> None:
+        if response == "delete":
+            self.page_manager.remove_page_by_path(self.page_path)
+        self.destroy()

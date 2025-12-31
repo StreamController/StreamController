@@ -288,15 +288,6 @@ class KeyButton(Gtk.Frame):
         
 
     def set_image(self, image):
-        # Check if we can perform the next checks
-        if recursive_hasattr(self, "key_grid.deck_page.grid_page"):
-            # Check if this keygrid is on the screen
-            if self.key_grid.page_settings_page.stack.get_visible_child() != self.key_grid.page_settings_page.grid_page:
-                self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
-            # Check if this deck is on the screen
-            if self.key_grid.page_settings_page.deck_stack_child.stack.get_visible_child() != self.key_grid.page_settings_page:
-                self.key_grid.deck_controller.ui_grid_buttons_changes_while_hidden[self.coords] = image
-
         self.pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
         GLib.idle_add(self.show_pixbuf, self.pixbuf, priority=GLib.PRIORITY_HIGH)
         # image.close()

@@ -257,7 +257,7 @@ class StorePreview(Gtk.FlowBoxChild):
         if description[-1] == ".":
             description = description[:-1]
 
-        cutoff = 60
+        cutoff = 60 # 50 to have 3 plugins per row per default
 
         if len(description) >= cutoff:
             description = description[:(cutoff-3)] + "..."

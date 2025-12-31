@@ -143,18 +143,19 @@ class Brightness(Adw.PreferencesRow):
 
     def on_value_changed_idle(self, scale):
         value = round(scale.get_value())
-        # update value in deck settings
-        deck_settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
-        deck_settings.setdefault("brightness", {})
-        deck_settings["brightness"]["value"] = value
-        # save settings
-        gl.settings_manager.save_deck_settings(self.deck_serial_number, deck_settings)
-        # update brightness if current page does not overwrite
-        overwrite = False
-        if "brightness" in self.settings_page.deck_controller.active_page.dict:
-            if "overwrite" in self.settings_page.deck_controller.active_page.dict["brightness"]:
-                overwrite = self.settings_page.deck_controller.active_page.dict["brightness"]["overwrite"]
-        if overwrite == False:
+
+        # Update and save brightness in deck settings
+        settings_manager = gl.settings_manager
+        deck_settings = settings_manager.get_deck_settings(self.deck_serial_number)
+        deck_settings.setdefault("brightness", {})["value"] = value
+        settings_manager.save_deck_settings(self.deck_serial_number, deck_settings)
+
+        # Check if brightness is overwritten by the current page
+        page_dict = self.settings_page.deck_controller.active_page.dict
+        overwrite = page_dict.get("settings", {}).get("brightness", {}).get("overwrite", False)
+
+        # Apply brightness if not overwritten
+        if not overwrite:
             self.settings_page.deck_controller.set_brightness(value)
 
     def load_default(self):
@@ -284,8 +285,6 @@ class Screensaver(Adw.PreferencesRow):
         self.fps_spinner.disconnect_by_func(self.on_change_fps)
         self.scale.disconnect_by_func(self.on_change_brightness)
 
-
-
     def load_defaults(self):
         self.disconnect_signals()
         original_values = gl.settings_manager.get_deck_settings(self.deck_serial_number)
@@ -293,7 +292,7 @@ class Screensaver(Adw.PreferencesRow):
         # Set defaut values 
         original_values.setdefault("screensaver", {})
         enable = original_values["screensaver"].setdefault("enable", False)
-        path = original_values["screensaver"].setdefault("path", None)
+        path = original_values["screensaver"].setdefault("media-path", None)
         loop = original_values["screensaver"].setdefault("loop", False)
         fps = original_values["screensaver"].setdefault("fps", 30)
         time = original_values["screensaver"].setdefault("time-delay", 5)
@@ -316,7 +315,6 @@ class Screensaver(Adw.PreferencesRow):
                 self.set_thumbnail(path)
 
         self.connect_signals()
-
 
     def on_toggle_enable(self, toggle_switch, state):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
@@ -393,7 +391,7 @@ class Screensaver(Adw.PreferencesRow):
     def on_choose_image(self, button):
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("screensaver", {})
-        media_path = settings["screensaver"].get("path", None)
+        media_path = settings["screensaver"].get("media-path", None)
 
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.update_image)
 
@@ -401,7 +399,7 @@ class Screensaver(Adw.PreferencesRow):
         self.set_thumbnail(image_path)
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("screensaver", {})
-        settings["screensaver"]["path"] = image_path
+        settings["screensaver"]["media-path"] = image_path
         gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
 
         deck_controller = self.settings_page.deck_controller

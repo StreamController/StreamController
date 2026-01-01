@@ -571,14 +571,13 @@ class Page:
             for input_identifier in self.action_objects[input_type]:
                 for state in self.action_objects[input_type][input_identifier]:
                     for i, action in enumerate(list(self.action_objects[input_type][input_identifier][state].values())):
-                        self.action_objects[input_type][input_identifier][state][i].page = None
-                        self.action_objects[input_type][input_identifier][state][i] = None
-                        if isinstance(self.action_objects[input_type][input_identifier][state][i], ActionCore):
-                            if hasattr(self.action_objects[input_type][input_identifier][state][i], "on_removed_from_cache"):
-                                self.action_objects[input_type][input_identifier][state][i].on_removed_from_cache()
-                        self.action_objects[input_type][input_identifier][state][i] = None
-                        del self.action_objects[input_type][input_identifier][state][i]
+                        # Call cleanup BEFORE clearing references
+                        if isinstance(action, ActionCore):
+                            if hasattr(action, "on_removed_from_cache"):
+                                action.on_removed_from_cache()
+                        action.page = None
             self.action_objects[input_type] = {}
+        self.action_objects = {}
 
     def get_name(self):
         return os.path.splitext(os.path.basename(self.json_path))[0]

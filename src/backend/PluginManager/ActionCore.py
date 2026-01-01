@@ -66,7 +66,7 @@ class ActionCore(rpyc.Service):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
-        
+
         self.deck_controller = deck_controller
         self.page = page
         self.state = state
@@ -84,6 +84,9 @@ class ActionCore(rpyc.Service):
         self.labels = {}
 
         self.event_manager = EventManager()
+
+        # Track connected signals for cleanup
+        self._connected_signals: list[tuple[Signal, callable]] = []
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
 
@@ -347,8 +350,40 @@ class ActionCore(rpyc.Service):
         self.page.set_action_settings(action_object=self, settings=settings)
 
     def connect(self, signal: Signal = None, callback: callable = None) -> None:
-        # Connect
-        gl.signal_manager.connect_signal(signal = signal, callback = callback)
+        """
+        Connect a callback to a signal. The connection is tracked and will be
+        automatically disconnected when the action is removed from cache.
+        """
+        gl.signal_manager.connect_signal(signal=signal, callback=callback)
+        # Track the connection for cleanup
+        self._connected_signals.append((signal, callback))
+
+    def disconnect(self, signal: Signal = None, callback: callable = None) -> bool:
+        """
+        Disconnect a callback from a signal.
+
+        Returns:
+            True if the callback was found and disconnected, False otherwise
+        """
+        result = gl.signal_manager.disconnect_signal(signal=signal, callback=callback)
+        if result:
+            try:
+                self._connected_signals.remove((signal, callback))
+            except ValueError:
+                pass
+        return result
+
+    def disconnect_all_signals(self) -> None:
+        """
+        Disconnect all signals that this action has connected to.
+        Called automatically when the action is removed from cache.
+        """
+        for signal, callback in self._connected_signals:
+            try:
+                gl.signal_manager.disconnect_signal(signal=signal, callback=callback)
+            except Exception:
+                pass
+        self._connected_signals.clear()
 
     def get_own_key(self) -> "ControllerKey":
         return self.deck_controller.keys[self.key_index]
@@ -573,9 +608,15 @@ class ActionCore(rpyc.Service):
         return True
     
     def on_removed_from_cache(self) -> None:
-        #TODO: Fully implement
-        pass
+        """
+        Called when the action is removed from the page cache.
+        Cleans up signal connections to prevent memory leaks.
+        """
+        self.disconnect_all_signals()
 
     def on_remove(self) -> None:
-        #TODO: Fully implement
-        pass
+        """
+        Called when the action is being removed.
+        Cleans up signal connections to prevent memory leaks.
+        """
+        self.disconnect_all_signals()

@@ -2583,7 +2583,7 @@ class ControllerTouchScreenState(ControllerInputState):
             try:
                 with Image.open(background_image_path) as img:
                     # Resize to exact touchscreen dimensions (KISS - exact dimensions)
-                    background = img.resize((screen_width, screen_height), Image.Resampling.LANCZOS).convert("RGBA")
+                    background = ImageOps.fit(img, (screen_width, screen_height), Image.Resampling.LANCZOS).convert("RGBA")
             except Exception as e:
                 log.error(f"Error loading background image: {e}")
                 background = None

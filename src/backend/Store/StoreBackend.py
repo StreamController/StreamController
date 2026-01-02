@@ -47,7 +47,7 @@ from src.Signals import Signals
 
 # Import globals
 import globals as gl
-from src.windows.Store.StoreData import PluginData, IconData, WallpaperData
+from src.windows.Store.StoreData import PluginData, IconData, SDPlusBarWallpaperData, WallpaperData
 
 
 class NoConnectionError:
@@ -58,6 +58,11 @@ class StoreBackend:
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
     STORE_BRANCH = "1.5.0"
+
+    WALLPAPERS_FILE = "Wallpapers.json"
+    PLUGIN_FILE = "Plugins.json"
+    ICON_FILE = "Icons.json"
+    SDPLUSWALLPAPERS_FILE = "SDPlusBarWallpapers.json"
 
 
     def __init__(self):
@@ -262,13 +267,16 @@ class StoreBackend:
         return results
 
     async def get_all_plugins_async(self, include_images: bool = True) -> int:
-        return await self.process_store_data("Plugins.json", self.prepare_plugin, self.get_custom_plugins, PluginData, include_images)
+        return await self.process_store_data(self.PLUGIN_FILE, self.prepare_plugin, self.get_custom_plugins, PluginData, include_images)
 
     async def get_all_icons(self) -> int:
-        return await self.process_store_data("Icons.json", self.prepare_icon, None, IconData)
+        return await self.process_store_data(self.ICON_FILE, self.prepare_icon, None, IconData)
 
     async def get_all_wallpapers(self) -> int:
-        return await self.process_store_data("Wallpapers.json", self.prepare_wallpaper, None, WallpaperData)
+        return await self.process_store_data(self.WALLPAPERS_FILE, self.prepare_wallpaper, None, WallpaperData)
+    
+    async def get_all_sd_plus_bar_wallpapers(self) -> int:
+        return await self.process_store_data(self.SDPLUSWALLPAPERS_FILE, self.prepare_sd_plus_bar_wallpaper, None, SDPlusBarWallpaperData)
     
     async def get_manifest(self, url:str, commit:str) -> dict:
         # url = self.build_url(url, "manifest.json", commit)
@@ -556,6 +564,73 @@ class StoreBackend:
             wallpaper_name=manifest.get("name") or None,
             wallpaper_version=manifest.get("version") or None,
             wallpaper_id=manifest.get("id") or None,
+
+            is_compatible=compatible,
+            verified=verified
+        )
+
+    async def prepare_sd_plus_bar_wallpaper(self, sd_plus_bar_wallpaper, include_image: bool = True, verified: bool = False):
+        if not include_image:
+            raise NotImplementedError("Not yet implemented") #TODO
+        if "url" not in sd_plus_bar_wallpaper:
+            return None
+
+        url = sd_plus_bar_wallpaper["url"]
+        
+        compatible = True
+        version = self.get_newest_compatible_version(sd_plus_bar_wallpaper["commits"])
+        if version is None:
+            compatible = False
+            version = self.get_newest_version(list(sd_plus_bar_wallpaper["commits"].keys()))
+            if version is None:
+                return NoCompatibleVersion
+        commit = sd_plus_bar_wallpaper["commits"][version]
+        
+        manifest = await self.get_manifest(url, commit)
+        if isinstance(manifest, NoConnectionError):
+            return manifest
+        
+        thumbnail_path = manifest.get("thumbnail")
+        image = await self.get_web_image(url, thumbnail_path, commit)
+        if isinstance(image, NoConnectionError):
+            return image
+        attribution = await self.get_attribution(url, commit)
+        if isinstance(attribution, NoConnectionError):
+            return attribution
+        attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
+        
+        author = self.get_user_name(url)
+        
+        translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
+        translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
+
+        return SDPlusBarWallpaperData(
+            description=translated_description or manifest.get("description"),
+            short_description=translated_short_description or manifest.get("short-description"),
+
+            github=url or None,
+            descriptions=manifest.get("descriptions") or None,
+            short_descriptions=manifest.get("short-descriptions") or None,
+            author=author or None,  # Formerly: user_name
+            official=author in self.official_authors or False,
+            commit_sha=commit,
+            local_sha=await self.get_local_sha(os.path.join(gl.DATA_PATH, "sd_plus_bar_wallpapers", (manifest.get("id") or ""))),
+            minimum_app_version=manifest.get("minimum-app-version") or None,
+            app_version=manifest.get("app-version") or None,
+            repository_name=self.get_repo_name(url),
+            tags=manifest.get("tags") or None,
+
+            thumbnail=thumbnail_path or None,
+            image=image or None,
+
+            copyright=attribution.get("copyright") or None,
+            original_url=attribution.get("original-url") or None,
+            license=attribution.get("licence") or None,
+            license_descriptions=attribution.get("licence-descriptions", attribution.get("descriptions")) or None,
+
+            name=manifest.get("name") or None,
+            version=manifest.get("version") or None,
+            id=manifest.get("id") or None,    
 
             is_compatible=compatible,
             verified=verified
@@ -909,6 +984,18 @@ class StoreBackend:
         folder_name = wallpaper_data.wallpaper_id
         if os.path.exists(os.path.join(gl.DATA_PATH, "wallpapers", folder_name)):
             shutil.rmtree(os.path.join(gl.DATA_PATH, "wallpapers", folder_name))
+
+    async def install_sd_plus_bar_wallpaper(self, sd_plus_bar_wallpaper_data:SDPlusBarWallpaperData):
+        wallpaper_path = os.path.join(gl.DATA_PATH, "sd_plus_bar_wallpapers", sd_plus_bar_wallpaper_data.id)
+
+        await self.uninstall_sd_plus_bar_wallpaper(sd_plus_bar_wallpaper_data)
+
+        await self.download_repo(repo_url=sd_plus_bar_wallpaper_data.github, directory=wallpaper_path, commit_sha=sd_plus_bar_wallpaper_data.commit_sha)
+
+    async def uninstall_sd_plus_bar_wallpaper(self, sd_plus_bar_wallpaper_data:SDPlusBarWallpaperData):
+        folder_name = sd_plus_bar_wallpaper_data.id
+        if os.path.exists(os.path.join(gl.DATA_PATH, "sd_plus_bar_wallpapers", folder_name)):
+            shutil.rmtree(os.path.join(gl.DATA_PATH, "sd_plus_bar_wallpapers", folder_name))
 
     async def get_plugin_for_id(self, plugin_id):
         plugins = await self.get_all_plugins_async()

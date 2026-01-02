@@ -49,3 +49,9 @@ class WallpaperData(StoreData, ImageData, LicenceData):
     wallpaper_name: str | None = None # Name of the wallpaper
     wallpaper_version: str | None = None # Version of the wallpaper
     wallpaper_id: str | None = None # Icon ID in the com.author.name format
+
+@dataclass
+class SDPlusBarWallpaperData(StoreData, ImageData, LicenceData):
+    name: str | None = None # Name of the SD+ Bar wallpaper
+    version: str | None = None # Version of the SD+ Bar wallpaper
+    id: str | None = None # SD+ Bar wallpaper ID in the com.author.name format

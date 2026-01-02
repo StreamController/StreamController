@@ -106,6 +106,11 @@ class StorePage(Gtk.Stack):
         GLib.idle_add(self.loading_box.set_visible, False)
         GLib.idle_add(self.spinner.set_spinning, False)
         GLib.idle_add(self.section_switcher.set_visible, True)
+        GLib.idle_add(self.hide_stack_switcher_if_all_compatible)
+
+    def hide_stack_switcher_if_all_compatible(self):
+        if not self.incompatible_section.are_items_present():
+            self.section_switcher.set_visible(False)
 
     def set_info_visible(self, visible:bool):
         if visible:

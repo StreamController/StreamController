@@ -101,14 +101,32 @@ class DeckManager:
 
     def load_fake_decks(self):
         old_n_fake_decks = len(self.fake_deck_controller)
-        n_fake_decks = int(gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json")).get("dev", {}).get("n-fake-decks", 0))
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
+        dev_settings = settings.get("dev", {})
+        n_fake_decks = int(dev_settings.get("n-fake-decks", 0))
+        
+        # Get list of deck types from settings, or use defaults
+        fake_deck_types = dev_settings.get("fake-deck-types", [])
+        
+        # Get available deck types from FakeDeck
+        from src.backend.DeckManagement.Subclasses.FakeDeck import get_available_deck_types
+        available_types = get_available_deck_types()
+        default_deck_type = available_types[0] if available_types else "Stream Deck Original"
 
         if n_fake_decks > old_n_fake_decks:
             log.info(f"Loading {n_fake_decks - old_n_fake_decks} fake deck(s)")
             # Load difference in number of fake decks
             for controller in range(n_fake_decks - old_n_fake_decks):
-                a = f"Fake Deck {len(self.fake_deck_controller)+1}"
-                fake_deck = FakeDeck(serial_number = f"fake-deck-{len(self.fake_deck_controller)+1}", deck_type=f"Fake Deck {len(self.fake_deck_controller)+1}")
+                deck_index = len(self.fake_deck_controller)
+                serial_number = f"fake-deck-{deck_index + 1}"
+                
+                # Get deck type for this index, or use default
+                if deck_index < len(fake_deck_types):
+                    deck_type = fake_deck_types[deck_index]
+                else:
+                    deck_type = default_deck_type
+                
+                fake_deck = FakeDeck(serial_number=serial_number, deck_type=deck_type)
                 self.add_newly_connected_deck(fake_deck, is_fake=True)
 
             # Update header deck switcher if the new deck is the only one

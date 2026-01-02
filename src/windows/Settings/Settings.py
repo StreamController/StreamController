@@ -18,6 +18,7 @@ import threading
 import gi
 
 from GtkHelper.GtkHelper import BetterPreferencesGroup
+from GtkHelper.ComboRow import ComboRow
 from autostart import is_flatpak, setup_autostart
 from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
 from src.windows.Settings.PluginSettingsPage import PluginSettingsPage
@@ -27,7 +28,7 @@ import globals as gl
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gio, Pango
+from gi.repository import Gtk, Adw, Gio, Pango, GObject
 if not gl.IS_MAC:
     from gi.repository import Xdp
 
@@ -191,35 +192,99 @@ class DevPageGroup(Adw.PreferencesGroup):
         self.settings = settings
         super().__init__(title=gl.lm.get("settings-fake-decks-header"))
 
+        self.data_path = Adw.EntryRow(title="Data path (requires restart)")
+
+        self.open_data_path_button = Gtk.Button(label="Open", valign=Gtk.Align.CENTER)
+        self.open_data_path_button.connect("clicked", self.on_open_data_path_button_clicked)
+        self.data_path.add_suffix(self.open_data_path_button)
+
+        self.add(self.data_path)
+
         self.n_fake_decks_row = Adw.SpinRow.new_with_range(min=0, max=3, step=1)
         self.n_fake_decks_row.set_title(gl.lm.get("settings-number-of-fake-decks"))
         self.n_fake_decks_row.set_subtitle(gl.lm.get("settings-number-of-fake-decks-hint"))
         self.n_fake_decks_row.set_range(0, 3)
         self.add(self.n_fake_decks_row)
 
-        self.data_path = Adw.EntryRow(title="Data path (requires restart)")
-        self.add(self.data_path)
-
-        self.open_data_path_button = Gtk.Button(label="Open", valign=Gtk.Align.CENTER)
-        self.open_data_path_button.connect("clicked", self.on_open_data_path_button_clicked)
-        self.data_path.add_suffix(self.open_data_path_button)
-
+        self.deck_type_rows = []
+        
+        try:
+            from src.backend.DeckManagement.Subclasses.FakeDeck import get_available_deck_types
+            self.available_deck_types = get_available_deck_types()
+        except:
+            self.available_deck_types = ["Stream Deck Original"]
+        
+        # Connect signals before load_defaults so we can block them
+        self.n_fake_decks_handler_id = self.n_fake_decks_row.connect("changed", self.on_n_fake_decks_row_changed)
+        self.data_path.connect("notify::text", self.on_data_path_changed)
+        
         self.load_defaults()
 
-        # Connect signals
-        self.n_fake_decks_row.connect("changed", self.on_n_fake_decks_row_changed)
-        self.data_path.connect("notify::text", self.on_data_path_changed)
-
     def load_defaults(self):
+        GObject.signal_handler_block(self.n_fake_decks_row, self.n_fake_decks_handler_id)
         self.n_fake_decks_row.set_value(self.settings.settings_json.get("dev", {}).get("n-fake-decks", 0))
+        GObject.signal_handler_unblock(self.n_fake_decks_row, self.n_fake_decks_handler_id)
+        
+        self.update_deck_type_rows()
 
         static_settings = gl.settings_manager.get_static_settings()
         self.data_path.set_text(static_settings.get("data-path", gl.DATA_PATH))
 
+    def _get_default_deck_type(self):
+        """Get the default deck type"""
+        return self.available_deck_types[0] if self.available_deck_types else "Stream Deck Original"
+
+    def update_deck_type_rows(self):
+        """Update the deck type selection rows based on number of fake decks"""
+        n_fake_decks = int(self.n_fake_decks_row.get_value())
+        
+        while len(self.deck_type_rows) > n_fake_decks:
+            row = self.deck_type_rows.pop()
+            self.remove(row)
+        
+        fake_deck_types = self.settings.settings_json.get("dev", {}).get("fake-deck-types", [])
+        default_type = self._get_default_deck_type()
+        
+        while len(self.deck_type_rows) < n_fake_decks:
+            deck_index = len(self.deck_type_rows)
+            selected_type = fake_deck_types[deck_index] if deck_index < len(fake_deck_types) else default_type
+            
+            if selected_type not in self.available_deck_types:
+                selected_type = default_type
+            
+            deck_type_row = ComboRow(
+                items=self.available_deck_types,
+                title=f"Fake Deck {deck_index + 1} Type",
+                subtitle="Select the type of fake deck",
+                enable_search=False
+            )
+            deck_type_row.set_selected_item(selected_type)
+            deck_type_row.connect("notify::selected", lambda row, _, index=deck_index: self.on_deck_type_changed(row, index))
+            
+            self.add(deck_type_row)
+            self.deck_type_rows.append(deck_type_row)
+
+    def on_deck_type_changed(self, combo_row, deck_index):
+        """Handle deck type selection change"""
+        selected_item = combo_row.get_selected_item()
+        if not selected_item:
+            return
+        
+        deck_type = selected_item.get_value()
+        dev_settings = self.settings.settings_json.setdefault("dev", {})
+        fake_deck_types = dev_settings.setdefault("fake-deck-types", [])
+        
+        fake_deck_types.extend([self._get_default_deck_type()] * (deck_index + 1 - len(fake_deck_types)))
+        fake_deck_types[deck_index] = deck_type
+        
+        self.settings.save_json()
+        gl.deck_manager.load_fake_decks()
+
     def on_n_fake_decks_row_changed(self, *args):
-        #FIXME: For some reason this gets called twice
         self.settings.settings_json.setdefault("dev", {})
         self.settings.settings_json["dev"]["n-fake-decks"] = self.n_fake_decks_row.get_value()
+        
+        self.update_deck_type_rows()
 
         # Save
         self.settings.save_json()

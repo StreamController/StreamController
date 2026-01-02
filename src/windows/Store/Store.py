@@ -15,6 +15,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import gi
 
 from src.backend.DeckManagement.HelperMethods import is_video
+from src.windows.Store.SDPlusBarWallpapers.SDPlusBarWallpaperPage import SDPlusBarWallpaperPage
 
 
 gi.require_version("Gtk", "4.0")
@@ -86,10 +87,12 @@ class Store(Gtk.ApplicationWindow):
         self.plugin_page = PluginPage(store=self)
         self.icon_page = IconPage(store=self)
         self.wallpaper_page = WallpaperPage(store=self)
+        self.sd_plus_bar_wallpaper_page = SDPlusBarWallpaperPage(store=self)
 
         self.main_stack.add_titled(self.plugin_page, "Plugins", gl.lm.get("store.plugins.section"))
         self.main_stack.add_titled(self.icon_page, "Icons", gl.lm.get("store.icons.section"))
         self.main_stack.add_titled(self.wallpaper_page, "Wallpapers", gl.lm.get("store.wallpapers.section"))
+        self.main_stack.add_titled(self.sd_plus_bar_wallpaper_page, "sdPlusBarWallpapers", gl.lm.get("store.sdPlusBarWallpapers.section"))
 
     def on_back_button_click(self, button: Gtk.Button):
         # Switch active page back from info page

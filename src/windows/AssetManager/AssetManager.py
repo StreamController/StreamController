@@ -36,6 +36,7 @@ from src.windows.AssetManager.InfoPage import InfoPage
 from src.windows.AssetManager.CustomAssets.Chooser import CustomAssetChooser
 from src.windows.AssetManager.IconPacks.Stack import IconPackChooserStack
 from src.windows.AssetManager.WallpaperPacks.Stack import WallpaperPackChooserStack
+from src.windows.AssetManager.SDPlusBarWallpaperPacks.Stack import SDPlusBarWallpaperPackChooserStack
 
 
 class AssetManager(Gtk.ApplicationWindow):
@@ -121,6 +122,11 @@ class AssetManager(Gtk.ApplicationWindow):
                     # Switch from pack chooser to icon chooser
                     self.asset_chooser.wallpaper_pack_chooser.set_visible_child_name("pack-chooser")
 
+            elif self.asset_chooser.get_visible_child_name() == "sd-plus-bar-wallpaper-packs":
+                if self.asset_chooser.sd_plus_bar_wallpaper_pack_chooser.get_visible_child_name() == "wallpaper-chooser":
+                    # Switch from pack chooser to icon chooser
+                    self.asset_chooser.sd_plus_bar_wallpaper_pack_chooser.set_visible_child_name("pack-chooser")
+
         self.back_button.set_visible(False)
 
 
@@ -140,6 +146,9 @@ class AssetChooser(Gtk.Stack):
 
         self.wallpaper_pack_chooser = WallpaperPackChooserStack(self.asset_manager)
         self.add_titled(self.wallpaper_pack_chooser, "wallpaper-packs", "Wallpaper Packs")
+
+        self.sd_plus_bar_wallpaper_pack_chooser = SDPlusBarWallpaperPackChooserStack(self.asset_manager)
+        self.add_titled(self.sd_plus_bar_wallpaper_pack_chooser, "sd-plus-bar-wallpaper-packs", "SD+ Bar Wallpapers")
 
         self.connect("notify::visible-child-name", self.on_switch)
 
@@ -162,4 +171,7 @@ class AssetChooser(Gtk.Stack):
                 self.asset_manager.back_button.set_visible(True)
         elif self.get_visible_child() is self.wallpaper_pack_chooser:
             if self.wallpaper_pack_chooser.get_visible_child_name() == "wallpaper-chooser":
+                self.asset_manager.back_button.set_visible(True)
+        elif self.get_visible_child() is self.sd_plus_bar_wallpaper_pack_chooser:
+            if self.sd_plus_bar_wallpaper_pack_chooser.get_visible_child_name() == "wallpaper-chooser":
                 self.asset_manager.back_button.set_visible(True)

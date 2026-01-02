@@ -64,6 +64,9 @@ class StorePageSection(Gtk.Stack):
         self.flow_box.append(item)
         self.set_visible_child(self.main_box)
 
+    def are_items_present(self):
+        return self.flow_box.get_first_child() is not None
+
     def on_search_changed(self, search_entry):
         self.flow_box.invalidate_filter()
         self.flow_box.invalidate_sort()

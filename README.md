@@ -8,7 +8,7 @@
 
 **StreamController** is an elegant Linux application designed for the Elgato Stream Deck, offering advanced features like plug-ins and automatic page switching to enhance your streaming and productivity setup.
 
-![Main Screen](https://core447.com/assets/screenshots/main_screen.png)  
+![Main Screen](https://streamcontroller.core447.com/assets/screenshots/main_screen.png)  
 *Background image by [kvacm](https://kvacm.artstation.com)*
 
 ## In Action

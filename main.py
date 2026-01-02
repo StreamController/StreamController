@@ -52,6 +52,7 @@ from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
+from src.backend.SDPlusBarWallpaperPackManagement.SDPlusBarWallpaperPackManager import SDPlusBarWallpaperPackManager
 from src.backend.Store.StoreBackend import StoreBackend, NoConnectionError
 from autostart import setup_autostart
 from src.Signals.SignalManager import SignalManager
@@ -157,6 +158,7 @@ def create_global_objects():
     gl.page_manager.backup_pages()
     gl.icon_pack_manager = IconPackManager()
     gl.wallpaper_pack_manager = WallpaperPackManager()
+    gl.sd_plus_bar_wallpaper_pack_manager = SDPlusBarWallpaperPackManager()
 
     # Store
     gl.store_backend = StoreBackend()

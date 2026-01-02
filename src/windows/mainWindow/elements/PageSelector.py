@@ -64,7 +64,7 @@ class PageSelector(Gtk.Box):
         self.sidebar.append(self.drop_down)
 
         # Settings button
-        self.open_settings_button = Gtk.Button(icon_name="preferences-system-symbolic", tooltip_text=gl.lm.get("header-page-selector-page-settings-hint"))
+        self.open_settings_button = Gtk.Button(icon_name="folder-documents-symbolic", tooltip_text=gl.lm.get("header-page-selector-page-settings-hint"))
         self.open_settings_button.connect("clicked", self.on_click_open_page_settings)
         self.sidebar.append(self.open_settings_button)
 

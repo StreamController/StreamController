@@ -30,6 +30,7 @@ from urllib.parse import urlparse
 from PIL import Image
 
 import gi
+gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, Pango
 
 # Import globals

@@ -87,6 +87,7 @@ def setup_autostart_flatpak(enable: bool = True):
 def setup_autostart_desktop_entry(enable: bool = True, native: bool = False):
     log.info("Setting up autostart using desktop entry")
 
+    import globals as gl
 
     xdg_config_home = os.path.join(os.environ.get("HOME"), ".config")
     AUTOSTART_DIR = os.path.join(xdg_config_home, "autostart")

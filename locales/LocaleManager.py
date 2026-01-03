@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import os
 import csv
 import locale
+import html
 from loguru import logger as log
 
 class LocaleManager:
@@ -89,5 +90,9 @@ class LocaleManager:
 
         if result is None:
             result = fallback
+
+        # Escape HTML/XML entities for GTK markup compatibility
+        if result:
+            result = html.escape(result)
 
         return result

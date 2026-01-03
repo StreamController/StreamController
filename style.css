@@ -485,6 +485,8 @@
 }
 
 /* Fix text artifacts in settings window */
-preferenceswindow, preferencespage, preferencesgroup {
+.settings-window preferenceswindow,
+.settings-window preferencespage,
+.settings-window preferencesgroup {
   background: @window_bg_color;
 }

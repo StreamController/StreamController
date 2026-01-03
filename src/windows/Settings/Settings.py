@@ -37,6 +37,9 @@ class Settings(Adw.PreferencesWindow):
     def __init__(self):
         super().__init__(title="Settings")
         self.set_default_size(1000, 700)
+        
+        # Add custom class for specific CSS targeting
+        self.get_style_context().add_class("settings-window")
 
         # Center settings win over main_win (depends on DE)
         self.set_transient_for(gl.app.main_win)

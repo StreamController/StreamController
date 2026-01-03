@@ -86,14 +86,20 @@ def crop_key_image_from_deck_sized_image(deck, image, key):
         # Create a new key-sized image, and paste in the cropped section of the
         # larger image.
         key_image = PILHelper.create_image(deck)
-        key_image.paste(segment)
+        if segment.has_transparency_data:
+            key_image.paste(segment, (0, 0), segment)
+        else:
+            key_image.paste(segment)
 
         return PILHelper.to_native_format(deck, key_image), key_image
 
 def shrink_image(image):
         image = image.resize((50, 50), Image.Resampling.LANCZOS)
         bg = Image.new("RGB", (72, 72), (0, 0, 0))
-        bg.paste(image, (11, 11))
+        if image.has_transparency_data:
+            bg.paste(image, (11, 11), image)
+        else:
+            bg.paste(image, (11, 11))
         return bg
 
 def is_transparent(img: Image.Image):

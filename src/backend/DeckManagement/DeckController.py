@@ -1015,7 +1015,10 @@ class BackgroundImage:
         # Create a new key-sized image, and paste in the cropped section of the
         # larger image.
         key_image = PILHelper.create_key_image(deck)
-        key_image.paste(segment)
+        if segment.has_transparency_data:
+            key_image.paste(segment, (0, 0), segment)
+        else:
+            key_image.paste(segment)
 
         return key_image
     
@@ -2131,7 +2134,10 @@ class ControllerKey(ControllerInput):
 
         background = Image.new("RGBA", self.deck_controller.get_key_image_size(), (0, 0, 0, 0))
 
-        background.paste(image, (int((self.deck_controller.get_key_image_size()[0] - width) / 2), int((self.deck_controller.get_key_image_size()[1] - height) / 2)))
+        if image.has_transparency_data:
+            background.paste(image, (int((self.deck_controller.get_key_image_size()[0] - width) / 2), int((self.deck_controller.get_key_image_size()[1] - height) / 2)), image)
+        else:
+            background.paste(image, (int((self.deck_controller.get_key_image_size()[0] - width) / 2), int((self.deck_controller.get_key_image_size()[1] - height) / 2)))
 
         image.close()
 

@@ -92,28 +92,6 @@ def config_logger():
     log.add(sys.stderr, level="TRACE")
     log.add(write_logs, level="TRACE")
 
-    plugin_logger = Logger(
-        LoggerConfig(
-            name="PLUGIN",
-            log_file_path=os.path.join(gl.DATA_PATH, "logs/plugins.log"),
-            base_log_level="TRACE",
-            rotation="3 days",
-            retention=None,
-            compression="zip"
-        ),
-        [
-            Loglevel("TRACE", "trace", 5, "<bold><cyan>"),
-            Loglevel("DEBUG", "debug", 10, "<bold><blue>"),
-            Loglevel("INFO", "info", 20, "<bold><white>"),
-            Loglevel("SUCCESS", "success", 25, "<bold><green>"),
-            Loglevel("WARNING", "warning", 30, "<bold><yellow>"),
-            Loglevel("ERROR", "error", 40, "<red>"),
-            Loglevel("CRITICAL", "critical", 50, "<bold><red>"),
-        ]
-    )
-
-    gl.loggers["plugins"] = plugin_logger
-
 class Main:
     def __init__(self, application_id, deck_manager):
         # Launch gtk application

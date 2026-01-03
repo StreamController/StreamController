@@ -483,3 +483,10 @@
   margin-bottom: 0px;
   margin-top: 0px;
 }
+
+/* Fix text artifacts in settings window */
+.settings-window preferenceswindow,
+.settings-window preferencespage,
+.settings-window preferencesgroup {
+  background: @window_bg_color;
+}

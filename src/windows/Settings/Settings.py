@@ -278,7 +278,7 @@ class DevPageGroup(Adw.PreferencesGroup):
         fake_deck_types[deck_index] = deck_type
         
         self.settings.save_json()
-        gl.deck_manager.load_fake_decks()
+        gl.deck_manager.reload_fake_deck(deck_index)
 
     def on_n_fake_decks_row_changed(self, *args):
         self.settings.settings_json.setdefault("dev", {})

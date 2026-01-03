@@ -154,6 +154,52 @@ class DeckManager:
         if hasattr(gl.app, "main_win"):
             gl.app.main_win.check_for_errors()
 
+    def reload_fake_deck(self, deck_index: int):
+        """Remove and re-add a specific fake deck to apply type changes."""
+        if deck_index < 0 or deck_index >= len(self.fake_deck_controller):
+            log.warning(f"Invalid fake deck index: {deck_index}")
+            return
+        
+        # Get the controller to remove
+        controller = self.fake_deck_controller[deck_index]
+        self.fake_deck_controller.remove(controller)
+        self.remove_controller(controller)
+        
+        # Load settings to get the new deck type
+        settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json"))
+        dev_settings = settings.get("dev", {})
+        fake_deck_types = dev_settings.get("fake-deck-types", [])
+        
+        from src.backend.DeckManagement.Subclasses.FakeDeck import get_available_deck_types
+        available_types = get_available_deck_types()
+        default_deck_type = available_types[0] if available_types else "Stream Deck Original"
+        
+        # Get deck type for this index
+        deck_type = fake_deck_types[deck_index] if deck_index < len(fake_deck_types) else default_deck_type
+        
+        serial_number = f"fake-deck-{deck_index + 1}"
+        fake_deck = FakeDeck(serial_number=serial_number, deck_type=deck_type)
+        deck_controller = DeckController(self, fake_deck)
+        
+        # Insert at the correct position in both lists
+        self.fake_deck_controller.insert(deck_index, deck_controller)
+        # Find position in main deck_controller list (hardware decks first, then fake decks)
+        hardware_deck_count = len(self.deck_controller) - len(self.fake_deck_controller)
+        insert_pos = hardware_deck_count + deck_index
+        self.deck_controller.insert(insert_pos, deck_controller)
+        
+        # Add to UI
+        if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            GLib.idle_add(gl.app.main_win.leftArea.deck_stack.add_page, deck_controller)
+        
+        if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
+            GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
+        
+        if hasattr(gl.app, "main_win"):
+            gl.app.main_win.check_for_errors()
+        
+        log.info(f"Reloaded fake deck {deck_index + 1} with type: {deck_type}")
+
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device

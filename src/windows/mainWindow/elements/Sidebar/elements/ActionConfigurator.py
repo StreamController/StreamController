@@ -176,24 +176,33 @@ class ConfigGroup(Adw.PreferencesGroup):
         # Clear
         self.clear()
 
-        # Load rows
-        for row in config_rows:
-            self.add(row)
-            self.loaded_rows.append(row)
+        def load_config_rows():
+            # Load rows
+            for row in config_rows:
+                self.add(row)
+                self.loaded_rows.append(row)
 
-        for gen_ui in generative_ui_objects:
-            gen_ui.load_ui_value()
+        def load_gen_ui_rows():
+            for gen_ui in generative_ui_objects:
+                gen_ui.load_ui_value()
 
-            if not gen_ui.auto_add:
-                continue
+                if not gen_ui.auto_add:
+                    continue
 
-            widget = gen_ui.widget
+                widget = gen_ui.widget
 
-            if widget.get_parent() is not None:
-                continue
+                if widget.get_parent() is not None:
+                    continue
 
-            self.add(widget)
-            self.loaded_rows.append(widget)
+                self.add(widget)
+                self.loaded_rows.append(widget)
+
+        if action.put_custom_config_rows_below_gen_ui:
+            load_gen_ui_rows()
+            load_config_rows()
+        else:
+            load_config_rows()
+            load_gen_ui_rows()
         
         # Show
         self.show()

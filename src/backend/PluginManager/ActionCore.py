@@ -81,6 +81,8 @@ class ActionCore(rpyc.Service):
         self.has_configuration = False
         self.allow_event_configuration: bool = True
 
+        self.put_custom_config_rows_below_gen_ui: bool = False
+
         self.labels = {}
 
         self.event_manager = EventManager()

@@ -2644,7 +2644,12 @@ class ControllerTouchScreenState(ControllerInputState):
         width, height = area[2] - area[0], area[3] - area[1]
 
         # Clear underground
-        self.current_image.paste(self.get_empty_dial_image(), area)
+        empty_dial = self.get_empty_dial_image()
+        # Use alpha mask if empty_dial has transparency to prevent edge artifacts
+        if empty_dial.has_transparency_data:
+            self.current_image.paste(empty_dial, area, empty_dial)
+        else:
+            self.current_image.paste(empty_dial, area)
 
         # Contain image into the area
         image = ImageOps.contain(image, (width, height), Image.Resampling.HAMMING)

@@ -31,7 +31,6 @@
   border-radius: 10px;
   opacity: 1;
   transition: opacity 0.2s;
-  background-color: #000000;
 }
 .icon-selector-image-hover {
   opacity: 0.25;
@@ -94,7 +93,7 @@
   padding-right: 0px;
   padding-top: 0px;
   padding-bottom: 0px;
-  background-color: #000000;
+  background-color: #363636;
 }
 .key-button-frame-hidden {
   border-radius:15px;
@@ -360,11 +359,13 @@
   padding-right: 0px;
   padding-top: 0px;
   padding-bottom: 0px;
-  background-color: #000000;
+  background-color: #363636;
+  min-height: 50px;
+  min-width: 800px;
 }
 .plus-screenbar-image {
   border-radius: 10px;
-  background-color: #000000;
+  background-color: #363636;
 }
 .dial {
   min-width:75px;	
@@ -393,6 +394,9 @@
   border-color: #00000000;
 }
 
+.action-row-toggle:toggled {
+  background-color: red;
+}
 
 .action-row-label-toggle-active {
   background-color: @accent_bg_color;

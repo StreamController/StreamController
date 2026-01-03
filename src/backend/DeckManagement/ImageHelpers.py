@@ -83,13 +83,8 @@ def crop_key_image_from_deck_sized_image(deck, image, key):
         region = (start_x, start_y, start_x + key_width, start_y + key_height)
         segment = image.crop(region)
 
-        # Create a new key-sized image, and paste in the cropped section of the
-        # larger image.
-        key_image = PILHelper.create_image(deck)
-        if segment.has_transparency_data:
-            key_image.paste(segment, (0, 0), segment)
-        else:
-            key_image.paste(segment)
+        # Return the segment directly, converting to RGBA to preserve transparency
+        key_image = segment.convert("RGBA")
 
         return PILHelper.to_native_format(deck, key_image), key_image
 

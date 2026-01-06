@@ -33,7 +33,7 @@ from src.backend.WindowGrabber.Integrations.KDE import KDE
 
 class WindowGrabber:
     def __init__(self):
-        self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "x11", "kde"]
+        self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "sway:wlroots", "sway:wlroots:swayfx", "x11", "kde"]
 
         self.integration: Integration = None
         self.init_integration()
@@ -66,7 +66,7 @@ class WindowGrabber:
             self.integration = Hyprland(self)
         elif self.environment == "gnome":
             self.integration = Gnome(self)
-        elif self.environment == "sway":
+        elif "sway" in self.environment:
             self.integration = Sway(self)
         elif self.server == "x11":
             self.integration = X11(self)

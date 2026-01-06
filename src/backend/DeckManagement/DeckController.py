@@ -985,10 +985,9 @@ class BackgroundImage:
         # obscured pixels.
         full_deck_image_size = (key_width + spacing_x, key_height + spacing_y)
 
-        # Resize the image to suit the StreamDeck's full image size. We use the
-        # helper function in Pillow's ImageOps module so that the image's aspect
-        # ratio is preserved.
-        return ImageOps.fit(self.image, full_deck_image_size, Image.LANCZOS)
+        # Convert to RGBA first to preserve transparency, then resize
+        img_rgba = self.image.convert("RGBA")
+        return ImageOps.fit(img_rgba, full_deck_image_size, Image.LANCZOS)
     
     def crop_key_image_from_deck_sized_image(self, image: Image.Image, key):
         deck = self.deck_controller.deck
@@ -1012,12 +1011,8 @@ class BackgroundImage:
         region = (start_x, start_y, start_x + key_width, start_y + key_height)
         segment = image.crop(region)
 
-        # Create a new key-sized image, and paste in the cropped section of the
-        # larger image.
-        key_image = PILHelper.create_key_image(deck)
-        key_image.paste(segment)
-
-        return key_image
+        # Return the segment directly, converting to RGBA to preserve transparency
+        return segment.convert("RGBA")
     
     def get_tiles(self) -> list[Image.Image]:
         full_deck_sized_image = self.create_full_deck_sized_image()
@@ -1976,7 +1971,14 @@ class ControllerKey(ControllerInput):
 
     def update(self):
         image = self.get_current_image()
-        rgb_image = image.convert("RGB").rotate(self.deck_controller.deck.get_rotation())
+        
+        # Handle transparency properly - composite RGBA onto RGB to preserve smooth edges
+        if image.mode == "RGBA":
+            rgb_background = Image.new("RGB", image.size, (0, 0, 0))
+            rgb_background.paste(image, (0, 0), image)
+            rgb_image = rgb_background.rotate(self.deck_controller.deck.get_rotation())
+        else:
+            rgb_image = image.convert("RGB").rotate(self.deck_controller.deck.get_rotation())
 
         if self.deck_controller.is_visual():
             native_image = PILHelper.to_native_key_format(self.deck_controller.deck, rgb_image)
@@ -2131,7 +2133,10 @@ class ControllerKey(ControllerInput):
 
         background = Image.new("RGBA", self.deck_controller.get_key_image_size(), (0, 0, 0, 0))
 
-        background.paste(image, (int((self.deck_controller.get_key_image_size()[0] - width) / 2), int((self.deck_controller.get_key_image_size()[1] - height) / 2)))
+        if image.has_transparency_data:
+            background.paste(image, (int((self.deck_controller.get_key_image_size()[0] - width) / 2), int((self.deck_controller.get_key_image_size()[1] - height) / 2)), image)
+        else:
+            background.paste(image, (int((self.deck_controller.get_key_image_size()[0] - width) / 2), int((self.deck_controller.get_key_image_size()[1] - height) / 2)))
 
         image.close()
 
@@ -2294,13 +2299,19 @@ class ControllerTouchScreen(ControllerInput):
 
     def update(self) -> None:
         image = self.get_current_image()
-        rgb_image = image.convert("RGB")
-        native_image = PILHelper.to_native_touchscreen_format(self.deck_controller.deck, rgb_image)
-        rgb_image.close()
+        
+        # Touchscreen only supports JPEG, so composite RGBA onto background
+        if image.mode == "RGBA":
+            # Create a background image (black by default)
+            background = Image.new("RGB", image.size, (0, 0, 0))
+            # Composite the RGBA image onto the RGB background
+            background.paste(image, (0, 0), image)
+            image = background
+        
+        native_image = PILHelper.to_native_touchscreen_format(self.deck_controller.deck, image)
         self.deck_controller.media_player.add_touchscreen_task(native_image)
 
-        del rgb_image
-        self.set_ui_image(image)
+        self.set_ui_image(self.get_current_image())
 
     def generate_empty_image(self) -> Image.Image:
         return Image.new("RGBA", self.get_screen_dimensions(), (0, 0, 0, 0))
@@ -2638,7 +2649,12 @@ class ControllerTouchScreenState(ControllerInputState):
         width, height = area[2] - area[0], area[3] - area[1]
 
         # Clear underground
-        self.current_image.paste(self.get_empty_dial_image(), area)
+        empty_dial = self.get_empty_dial_image()
+        # Use alpha mask if empty_dial has transparency to prevent edge artifacts
+        if empty_dial.has_transparency_data:
+            self.current_image.paste(empty_dial, area, empty_dial)
+        else:
+            self.current_image.paste(empty_dial, area)
 
         # Contain image into the area
         image = ImageOps.contain(image, (width, height), Image.Resampling.HAMMING)

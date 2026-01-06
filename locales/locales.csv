@@ -120,7 +120,7 @@ onboarding.multiple.details;Support für mehrere Elgato Stream Decks;Support for
 onboarding.ready.header;Bereit?;Ready?;Prêt ?;¿Preparado?;Pronto?
 onboarding.ready.button;Start;Start;Commencez;Iniciar;Começar
 deck.deck-group.title;Deck Einstellungen;Deck Settings;Paramètres du Deck;Configuración del deck;Configurações do Deck
-deck.deck-group.description;Betreffen das ganze Deck; sofern nicht überschrieben;Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire;Se aplica a todo el deck a menos que se sobrescriba;Aplica-se a todo o deck a menos que seja substituído
+deck.deck-group.description;Betreffen das ganze Deck, sofern nicht überschrieben;Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire;Se aplica a todo el deck a menos que se sobrescriba;Aplica-se a todo o deck a menos que seja substituído
 deck.deck-group.brightness;Helligkeit;Brightness;Luminosité;Brillo;Brilho
 deck.deck-group.enable-screensaver;Bildschirmschoner;Enable Screensaver;Activer l'économiseur d'écran;Activar salvapantallas;Habilitar Protetor de Tela
 deck.deck-group.rotation;Ausrichtung;Rotation;Rotation;Rotación;Rotação
@@ -130,7 +130,7 @@ deck.deck-group.media-select-label;Auswählen;Select;Sélectionner;Seleccione;Se
 deck.deck-group.media-loop;Wiederholen;Loop;Boucle;Bucle;Repetir
 deck.deck-group.media-fps;FPS;FPS;IPS;FPS;FPS
 deck.background-group.title;Hintergrund;Background;Fonds d'écran;Fondo;Fundo
-deck.background-group.description;Betreffen das ganze Deck; sofern nicht überschrieben;Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire;Se aplica a toda la cubierta a menos que se sobrescriba;Aplica-se a todo o deck a menos que seja substituído
+deck.background-group.description;Betreffen das ganze Deck, sofern nicht überschrieben;Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire;Se aplica a toda la cubierta a menos que se sobrescriba;Aplica-se a todo o deck a menos que seja substituído
 deck.background-group.enable;Hintergrund aktivieren;Enable Background;Activer l'arrière-plan;Habilitar fondo;Habilitar Fundo
 deck.background-group-media-select-label;Auswählen;Selecionar;Sélectionner;Seleccionar;Selecionar
 background.processing;Verarbeiten...;Processing...;Traitement en cours…;Procesando…;Processando...

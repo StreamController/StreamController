@@ -235,7 +235,6 @@ class Dial(Gtk.Frame):
             # Single right click
             # Open context menu
             popover = DialContextMenu(self)
-            popover.on_open()
             popover.popup()
 
         else:
@@ -417,7 +416,6 @@ class DialContextMenu(Gtk.PopoverMenu):
         self.connect("closed", self.on_close)
 
     def build(self):
-        self.set_parent(self.dial)
         self.set_has_arrow(False)
 
         self.main_menu = Gio.Menu.new()
@@ -437,6 +435,12 @@ class DialContextMenu(Gtk.PopoverMenu):
         self.main_menu.append_section(None, self.remove_menu)
 
         self.set_menu_model(self.main_menu)
+
+    def popup(self):
+        """Override popup to set parent just before showing"""
+        if self.dial and not self.get_parent():
+            self.set_parent(self.dial)
+        super().popup()
 
     def on_close(self, *args, **kwargs):
         return

@@ -29,7 +29,11 @@ class EventHolder:
         # FIX: This can throw an error, if this happens apply the fix from Observer.py
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(self._run_event(self.event_id, *args, **kwargs))
+        try:
+            loop.run_until_complete(self._run_event(self.event_id, *args, **kwargs))
+        finally:
+            loop.close()
+
 
     async def _run_event(self, *args, **kwargs):
         coroutines = [self._ensure_coroutine(observer, *args, **kwargs) for observer in self.observers]

@@ -98,14 +98,11 @@ class MediaPlayerSetTouchscreenImageTask:
             log.error(f"Failed to set deck touchscreen image. Error: {e}")
             MediaPlayerSetTouchscreenImageTask.n_failed_in_row += 1
             if MediaPlayerSetTouchscreenImageTask.n_failed_in_row > 5:
-                log.debug(f"Failed to set touchscreen image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
-                
-                
-                self.deck_controller.deck.close()
-                self.deck_controller.media_player.running = False # Set stop flag - otherwise remove_controller will wait until this task is done, which it never will because it waits
-                gl.deck_manager.remove_controller(self.deck_controller)
-
-                gl.deck_manager.connect_new_decks()
+                log.debug(
+                    f"Failed to set touchscreen image for 5 times in a row for deck "
+                    f"{self.deck_controller.serial_number()}. Keeping controller alive"
+                )
+                return
 
 @dataclass
 class MediaPlayerSetImageTask:
@@ -421,6 +418,8 @@ class DeckController:
     @log.catch
     def update_all_inputs(self):
         start = time.time()
+        if self.active_page is None:
+            return
         if not self.get_alive(): return
         if self.background.video is not None:
             log.debug("Skipping update_all_inputs because there is a background video -- we will only update the dials (if exists) so as not to effect the video.")
@@ -767,6 +766,9 @@ class DeckController:
         time.sleep(self.TICK_DELAY)
         while self.keep_actions_ticking:
             start = time.time()
+            if self.active_page is None:
+                time.sleep(0.1)
+                continue
             self.mark_page_ready_to_clear(False)
             if not self.screen_saver.showing and True:
                 for t in self.inputs:

@@ -16,8 +16,57 @@ from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from PIL import Image, ImageFont
 from dataclasses import dataclass
 import matplotlib.font_manager
+from functools import lru_cache
+from fontTools.ttLib import TTFont
+import subprocess
+import os
 
 import globals as gl
+
+# Add symbol fonts to matplotlib at startup
+_symbol_fonts_added = False
+def _ensure_symbol_fonts():
+    global _symbol_fonts_added
+    if _symbol_fonts_added:
+        return
+    
+    # Common symbol font names - use fc-match to find actual paths
+    symbol_font_names = ["Webdings", "Wingdings"]
+    
+    for font_name in symbol_font_names:
+        try:
+            result = subprocess.run(
+                ["fc-match", "-f", "%{file}", font_name],
+                capture_output=True, text=True, timeout=2
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                font_path = result.stdout.strip()
+                if os.path.exists(font_path):
+                    try:
+                        matplotlib.font_manager.fontManager.addfont(font_path)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+    
+    _symbol_fonts_added = True
+
+@lru_cache(maxsize=128)
+def _is_symbol_font(font_path: str) -> bool:
+    """Check if font uses symbol encoding (e.g., Webdings, Wingdings).
+    
+    Symbol fonts have a cmap table with platformID=3 (Windows) and 
+    platEncID=0 (Symbol encoding). Results are cached.
+    """
+    try:
+        font = TTFont(font_path)
+        for table in font['cmap'].tables:
+            if table.platformID == 3 and table.platEncID == 0:
+                return True
+        return False
+    except Exception:
+        return False
+
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -41,6 +90,9 @@ class KeyLabel:
         if self.font_name in ["", None]:
             font_name = gl.fallback_font
 
+        # Ensure symbol fonts are available to matplotlib
+        _ensure_symbol_fonts()
+
         return matplotlib.font_manager.findfont(
             matplotlib.font_manager.FontProperties(
                 family=font_name,
@@ -49,9 +101,6 @@ class KeyLabel:
                 style=self.style
             )
         )
-
-
-        # return matplotlib.font_manager.findfont(matplotlib.font_manager.FontProperties(family=font_name))
 
     def clear_values(self):
         self.text = None
@@ -64,4 +113,6 @@ class KeyLabel:
         self.alignment = None
 
     def get_font(self) -> ImageFont.FreeTypeFont:
-        return ImageFont.truetype(self.get_font_path(), self.font_size)
+        font_path = self.get_font_path()
+        encoding = "symb" if _is_symbol_font(font_path) else "unic"
+        return ImageFont.truetype(font_path, self.font_size, encoding=encoding)

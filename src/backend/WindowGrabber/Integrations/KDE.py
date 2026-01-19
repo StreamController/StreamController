@@ -79,7 +79,7 @@ class KDE(Integration):
         windows: list[Window] = []
 
         try:
-            root = self._run_command(["kdotool", "search"])
+            root = self._run_command(["kdotool", "search", "."])
             if root is None:
                 return []
             stdout, _ = root.communicate()

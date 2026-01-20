@@ -58,6 +58,7 @@ class KeyLabel:
         self.font_size = None
         self.font_name = None
         self.font_weight = None
+        self.style = None
         self.color = None
         self.outline_width = None
         self.outline_color = None

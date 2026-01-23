@@ -236,3 +236,14 @@ settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung
 settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;Taille du contour;Ancho del contorno;Largura do contorno
 settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline;Taille par défaut du contour;Ancho predeterminado del contorno;Largura padrão do contorno
 support;Unterstützen;Donate;Faites un don;Donar;Doar
+store.info.source.title;Quelle;Source;Source;Fuente;Fonte
+store.info.source.description;Wähle ob die Store-Version oder ein Git-Branch verwendet werden soll;Choose to use the store version or a specific git branch;Choisissez d'utiliser la version du magasin ou une branche git spécifique;Elija usar la versión de la tienda o una rama git específica;Escolha usar a versão da loja ou um branch git específico
+store.info.source.branch-row.title;Quelle;Source;Source;Fuente;Fonte
+store.info.source.branch-row.subtitle;Store-Version oder Git-Branch auswählen;Select store version or a git branch;Sélectionnez la version du magasin ou une branche git;Seleccione la versión de la tienda o una rama git;Selecione a versão da loja ou um branch git
+store.info.source.refresh.tooltip;Branches von GitHub aktualisieren;Refresh branches from GitHub;Actualiser les branches depuis GitHub;Actualizar ramas desde GitHub;Atualizar branches do GitHub
+store.info.source.status.title;Aktueller Status;Current Status;État actuel;Estado actual;Status atual
+store.info.source.status.using-branch;Verwendet Git-Branch: {branch};Using git branch: {branch};Utilisation de la branche git: {branch};Usando rama git: {branch};Usando branch git: {branch}
+store.info.source.status.using-store;Verwendet Store-Version;Using store version;Utilisation de la version du magasin;Usando versión de la tienda;Usando versão da loja
+store.info.source.store-version;Store-Version (empfohlen);Store Version (Recommended);Version du magasin (recommandée);Versión de la tienda (recomendada);Versão da Loja (Recomendada)
+store.info.source.apply.title;Jetzt anwenden;Apply Now;Appliquer maintenant;Aplicar ahora;Aplicar Agora
+store.info.source.apply.subtitle;Plugin mit der ausgewählten Quelle neu installieren;Reinstall plugin with the selected source;Réinstaller le plugin avec la source sélectionnée;Reinstalar el plugin con la fuente seleccionada;Reinstalar plugin com a fonte selecionada

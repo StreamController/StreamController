@@ -110,6 +110,62 @@ class StoreBackend:
 
         return plugins
     
+    def get_plugin_git_override(self, plugin_id: str) -> dict | None:
+        """
+        Get the git override settings for a plugin.
+        Returns dict with 'branch' key if override exists, None otherwise.
+        """
+        if plugin_id is None:
+            return None
+            
+        settings = gl.settings_manager.get_app_settings()
+        overrides = settings.get("store", {}).get("plugin-git-overrides", {})
+        return overrides.get(plugin_id)
+    
+    def set_plugin_git_override(self, plugin_id: str, branch: str | None):
+        """
+        Set a git override for a plugin. If branch is None or empty, removes the override.
+        """
+        if plugin_id is None:
+            return
+            
+        settings = gl.settings_manager.get_app_settings()
+        settings.setdefault("store", {})
+        settings["store"].setdefault("plugin-git-overrides", {})
+        
+        if branch is None or branch.strip() == "":
+            if plugin_id in settings["store"]["plugin-git-overrides"]:
+                del settings["store"]["plugin-git-overrides"][plugin_id]
+        else:
+            settings["store"]["plugin-git-overrides"][plugin_id] = {"branch": branch.strip()}
+        
+        gl.settings_manager.save_app_settings(settings)
+    
+    def remove_plugin_git_override(self, plugin_id: str):
+        """Remove git override for a plugin (use store version)."""
+        self.set_plugin_git_override(plugin_id, None)
+    
+    async def get_repo_branches(self, repo_url: str) -> list[str] | None:
+        """
+        Fetch available branches from a GitHub repository.
+        Returns list of branch names or None on error.
+        """
+        try:
+            user_name = self.get_user_name(repo_url)
+            repo_name = self.get_repo_name(repo_url)
+            url = f"https://api.github.com/repos/{user_name}/{repo_name}/branches?per_page=100"
+            response = requests.get(url)
+            
+            if response.status_code != 200:
+                log.error(f"Failed to fetch branches for {repo_url}: {response.status_code}")
+                return None
+            
+            branches = response.json()
+            return [branch["name"] for branch in branches]
+        except Exception as e:
+            log.error(f"Error fetching branches for {repo_url}: {e}")
+            return None
+    
     async def get_official_store_branch(self) -> str:
         if self.official_store_branch_cache is not None:
             return self.official_store_branch_cache
@@ -317,18 +373,46 @@ class StoreBackend:
         # Check if suitable version is available
         compatible = True
         commit: str = None
-        if "commits" in plugin:
-            version = self.get_newest_compatible_version(plugin["commits"])
-            if version is None:
-                compatible = False
-                version = self.get_newest_version(list(plugin["commits"].keys()))
-                if version is None:
-                    return NoCompatibleVersion #TODO
-            commit = plugin["commits"][version]
-
         branch = plugin.get("branch")
-        if branch is not None:
-            commit = await self.get_last_commit(url, branch)
+        using_git_override = False
+        
+        # First, try to get manifest to determine plugin_id for override check
+        # We need to do a preliminary check to see if there's an override
+        temp_commit = None
+        if "commits" in plugin:
+            temp_version = self.get_newest_compatible_version(plugin["commits"])
+            if temp_version is None:
+                temp_version = self.get_newest_version(list(plugin["commits"].keys()))
+            if temp_version:
+                temp_commit = plugin["commits"][temp_version]
+        
+        # Get manifest to find plugin_id
+        temp_manifest = await self.get_manifest(url, temp_commit or branch or "main")
+        plugin_id = None
+        if temp_manifest and not isinstance(temp_manifest, NoConnectionError):
+            plugin_id = temp_manifest.get("id")
+        
+        # Check for git override
+        if plugin_id:
+            override = self.get_plugin_git_override(plugin_id)
+            if override and override.get("branch"):
+                branch = override["branch"]
+                using_git_override = True
+                commit = await self.get_last_commit(url, branch)
+        
+        # If no override, use normal logic
+        if not using_git_override:
+            if "commits" in plugin:
+                version = self.get_newest_compatible_version(plugin["commits"])
+                if version is None:
+                    compatible = False
+                    version = self.get_newest_version(list(plugin["commits"].keys()))
+                    if version is None:
+                        return NoCompatibleVersion #TODO
+                commit = plugin["commits"][version]
+
+            if branch is not None:
+                commit = await self.get_last_commit(url, branch)
 
         manifest = await self.get_manifest(url, commit or branch)
         if isinstance(manifest, NoConnectionError):
@@ -387,7 +471,8 @@ class StoreBackend:
             plugin_id=manifest.get("id") or None,
 
             is_compatible=compatible,
-            verified=verified
+            verified=verified,
+            using_git_override=using_git_override
         )
     
     def get_current_git_commit_hash_without_git(self, repo_path: str) -> str:

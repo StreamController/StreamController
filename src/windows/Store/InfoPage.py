@@ -16,15 +16,19 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Pango
+from gi.repository import Gtk, Adw, Pango, GLib
 
 # Import python modules
 from typing import TYPE_CHECKING
 import webbrowser as web
+import threading
+import asyncio
+from loguru import logger as log
 
 # Import own modules
 if TYPE_CHECKING:
     from src.windows.Store.StorePage import StorePage
+    from src.windows.Store.StoreData import PluginData
 
 from GtkHelper.GtkHelper import AttributeRow, OriginalURL
 
@@ -37,6 +41,7 @@ class InfoPage(Gtk.Box):
                        margin_top=15)
         
         self.store_page = store_page
+        self.current_plugin_data: "PluginData" = None
         self.build()
 
     def build(self):
@@ -65,6 +70,10 @@ class InfoPage(Gtk.Box):
         self.description_row = DescriptionRow(title="Description:", desc="N/A")
         self.about_group.add(self.description_row)
 
+        # Source group for git branch selection
+        self.source_group = SourceGroup(info_page=self)
+        self.clamp_box.append(self.source_group)
+
         self.legal_group = Adw.PreferencesGroup(title="Legal")
         self.clamp_box.append(self.legal_group)
 
@@ -79,6 +88,16 @@ class InfoPage(Gtk.Box):
 
         self.license_description = DescriptionRow(title="License Description:", desc="N/A")
         self.legal_group.add(self.license_description)
+    
+    def set_plugin_data(self, plugin_data: "PluginData"):
+        """Set the current plugin data and update the source group."""
+        self.current_plugin_data = plugin_data
+        self.source_group.update_for_plugin(plugin_data)
+    
+    def clear_plugin_data(self):
+        """Clear plugin data (used when showing non-plugin content like icons)."""
+        self.current_plugin_data = None
+        self.source_group.set_visible(False)
 
     def set_name(self, name:str):
         self.name_row.set_url(name)
@@ -137,3 +156,280 @@ class DescriptionRow(Adw.PreferencesRow):
         if title in [None, ""]:
             title = "N/A"
         self.title_label.set_text(title)
+
+
+class SourceGroup(Adw.PreferencesGroup):
+    """Group for selecting plugin source - store version or git branch."""
+    
+    STORE_VERSION_ID = "__store_version__"
+    
+    def __init__(self, info_page: InfoPage):
+        super().__init__(title=gl.lm.get("store.info.source.title") or "Source")
+        self.info_page = info_page
+        self.current_plugin_data: "PluginData" = None
+        self.branches_cache: dict[str, list[str]] = {}
+        self.is_loading_branches = False
+        
+        self.set_margin_top(12)
+        
+        self.build()
+    
+    def build(self):
+        self.set_description(gl.lm.get("store.info.source.description") or 
+                           "Choose to use the store version or a specific git branch")
+        
+        self.branch_row = Adw.ComboRow(
+            title=gl.lm.get("store.info.source.branch-row.title") or "Source",
+            subtitle=gl.lm.get("store.info.source.branch-row.subtitle") or "Select store version or a git branch"
+        )
+        
+        self.refresh_button = Gtk.Button(
+            icon_name="view-refresh-symbolic",
+            valign=Gtk.Align.CENTER,
+            css_classes=["flat"],
+            tooltip_text=gl.lm.get("store.info.source.refresh.tooltip") or "Refresh branches from GitHub"
+        )
+        self.refresh_button.connect("clicked", self.on_refresh_clicked)
+        self.refresh_spinner = Gtk.Spinner(spinning=False, visible=False)
+        
+        self.branch_row.add_suffix(self.refresh_spinner)
+        self.branch_row.add_suffix(self.refresh_button)
+        self.add(self.branch_row)
+        
+        self.branch_model = Gtk.StringList()
+        self.branch_row.set_model(self.branch_model)
+        
+        self.branch_row.connect("notify::selected", self.on_branch_selected)
+        
+        self.status_row = Adw.ActionRow(
+            title=gl.lm.get("store.info.source.status.title") or "Current Status",
+            subtitle=""
+        )
+        self.add(self.status_row)
+        
+        self.apply_row = Adw.ActionRow(
+            title=gl.lm.get("store.info.source.apply.title") or "Apply Now",
+            subtitle=gl.lm.get("store.info.source.apply.subtitle") or "Reinstall plugin with the selected source",
+            activatable=True
+        )
+        self.apply_row.connect("activated", self.on_apply_clicked)
+        
+        self.apply_spinner = Gtk.Spinner(spinning=False)
+        self.apply_icon = Gtk.Image(icon_name="emblem-synchronizing-symbolic")
+        self.apply_row.add_suffix(self.apply_icon)
+        self.apply_row.add_suffix(self.apply_spinner)
+        self.add(self.apply_row)
+        
+        self.is_applying = False
+    
+    def update_for_plugin(self, plugin_data: "PluginData"):
+        """Update the source group for a specific plugin."""
+        self.current_plugin_data = plugin_data
+        
+        if plugin_data is None:
+            self.set_visible(False)
+            return
+        
+        self.set_visible(True)
+        
+        self.branch_row.handler_block_by_func(self.on_branch_selected)
+        
+        try:
+            override = gl.store_backend.get_plugin_git_override(plugin_data.plugin_id)
+            
+            self.branch_model.splice(0, self.branch_model.get_n_items(), [])
+            
+            store_label = gl.lm.get("store.info.source.store-version") or "Store Version (Recommended)"
+            self.branch_model.append(store_label)
+            
+            cached_branches = self.branches_cache.get(plugin_data.plugin_id, [])
+            for branch in cached_branches:
+                self.branch_model.append(branch)
+            
+            if override and override.get("branch"):
+                override_branch = override["branch"]
+                
+                found_index = -1
+                for i in range(self.branch_model.get_n_items()):
+                    if self.branch_model.get_string(i) == override_branch:
+                        found_index = i
+                        break
+                
+                if found_index == -1:
+                    self.branch_model.append(override_branch)
+                    found_index = self.branch_model.get_n_items() - 1
+                
+                self.branch_row.set_selected(found_index)
+                self.update_status(using_override=True, branch=override_branch)
+            else:
+                self.branch_row.set_selected(0)
+                self.update_status(using_override=False)
+        finally:
+            self.branch_row.handler_unblock_by_func(self.on_branch_selected)
+        
+        self.fetch_branches_async()
+    
+    def update_status(self, using_override: bool, branch: str = None):
+        """Update the status row to reflect current state."""
+        if using_override and branch:
+            status = (gl.lm.get("store.info.source.status.using-branch") or 
+                     "Using git branch: {branch}").format(branch=branch)
+            self.status_row.add_css_class("warning")
+        else:
+            status = gl.lm.get("store.info.source.status.using-store") or "Using store version"
+            self.status_row.remove_css_class("warning")
+        
+        self.status_row.set_subtitle(status)
+    
+    def on_branch_selected(self, combo_row, param):
+        """Handle branch selection change."""
+        if self.current_plugin_data is None:
+            return
+        
+        plugin_id = self.current_plugin_data.plugin_id
+        if plugin_id is None:
+            return
+        
+        selected_index = combo_row.get_selected()
+        if selected_index == Gtk.INVALID_LIST_POSITION:
+            return
+        
+        selected_text = self.branch_model.get_string(selected_index)
+        store_label = gl.lm.get("store.info.source.store-version") or "Store Version (Recommended)"
+        
+        if selected_index == 0 or selected_text == store_label:
+            gl.store_backend.remove_plugin_git_override(plugin_id)
+            self.update_status(using_override=False)
+        else:
+            branch = selected_text
+            gl.store_backend.set_plugin_git_override(plugin_id, branch)
+            self.update_status(using_override=True, branch=branch)
+    
+    def on_refresh_clicked(self, *args):
+        """Handle refresh button click."""
+        self.fetch_branches_async()
+    
+    def fetch_branches_async(self):
+        """Fetch branches from GitHub in a background thread."""
+        if self.is_loading_branches or self.current_plugin_data is None:
+            return
+        
+        self.is_loading_branches = True
+        GLib.idle_add(self.show_loading, True)
+        
+        threading.Thread(
+            target=self._fetch_branches_thread,
+            daemon=True,
+            name="fetch_branches"
+        ).start()
+    
+    def _fetch_branches_thread(self):
+        """Background thread to fetch branches."""
+        try:
+            plugin_id = self.current_plugin_data.plugin_id
+            branches = asyncio.run(
+                gl.store_backend.get_repo_branches(self.current_plugin_data.github)
+            )
+            
+            if branches:
+                self.branches_cache[plugin_id] = branches
+                GLib.idle_add(self._update_branches_ui, branches)
+        except Exception as e:
+            log.error(f"Error fetching branches: {e}")
+        finally:
+            self.is_loading_branches = False
+            GLib.idle_add(self.show_loading, False)
+    
+    def _update_branches_ui(self, branches: list[str]):
+        """Update the UI with fetched branches (must be called from main thread)."""
+        if self.current_plugin_data is None:
+            return
+        
+        self.branch_row.handler_block_by_func(self.on_branch_selected)
+        
+        try:
+            current_selected = self.branch_row.get_selected()
+            current_text = None
+            if current_selected != Gtk.INVALID_LIST_POSITION:
+                current_text = self.branch_model.get_string(current_selected)
+            
+            store_label = gl.lm.get("store.info.source.store-version") or "Store Version (Recommended)"
+            
+            self.branch_model.splice(0, self.branch_model.get_n_items(), [])
+            self.branch_model.append(store_label)
+            
+            for branch in branches:
+                self.branch_model.append(branch)
+            
+            new_index = 0
+            if current_text and current_text != store_label:
+                for i in range(self.branch_model.get_n_items()):
+                    if self.branch_model.get_string(i) == current_text:
+                        new_index = i
+                        break
+            
+            self.branch_row.set_selected(new_index)
+        finally:
+            self.branch_row.handler_unblock_by_func(self.on_branch_selected)
+    
+    def show_loading(self, loading: bool):
+        """Show or hide the loading spinner."""
+        self.refresh_spinner.set_spinning(loading)
+        self.refresh_spinner.set_visible(loading)
+        self.refresh_button.set_visible(not loading)
+        self.refresh_button.set_sensitive(not loading)
+    
+    def on_apply_clicked(self, *args):
+        """Handle apply button click - reinstall plugin with selected source."""
+        if self.is_applying or self.current_plugin_data is None:
+            return
+        
+        if self.current_plugin_data.local_sha is None:
+            return
+        
+        self.is_applying = True
+        GLib.idle_add(self.show_applying, True)
+        
+        threading.Thread(
+            target=self._apply_source_thread,
+            daemon=True,
+            name="apply_source"
+        ).start()
+    
+    def _apply_source_thread(self):
+        """Background thread to reinstall plugin with selected source."""
+        try:
+            plugin_id = self.current_plugin_data.plugin_id
+            
+            gl.store_backend.uninstall_plugin(
+                plugin_id=plugin_id,
+                remove_from_pages=False,
+                remove_files=False
+            )
+            
+            plugin_data = asyncio.run(
+                gl.store_backend.get_plugin_for_id(plugin_id)
+            )
+            
+            if plugin_data is None:
+                log.error(f"Failed to get plugin data for {plugin_id}")
+                return
+            
+            asyncio.run(gl.store_backend.install_plugin(plugin_data))
+            
+            self.current_plugin_data = plugin_data
+            
+        except Exception as e:
+            log.error(f"Error applying source change: {e}")
+        finally:
+            self.is_applying = False
+            GLib.idle_add(self.show_applying, False)
+    
+    def show_applying(self, applying: bool):
+        """Show or hide the applying spinner."""
+        self.apply_spinner.set_spinning(applying)
+        self.apply_spinner.set_visible(applying)
+        self.apply_icon.set_visible(not applying)
+        self.apply_row.set_sensitive(not applying)
+        self.branch_row.set_sensitive(not applying)
+        self.refresh_button.set_sensitive(not applying)

@@ -335,6 +335,7 @@ class DeckController:
         self.key_spacing = (36, 36)
 
         if isinstance(self.deck, StreamDeckPlus) or (isinstance(self.deck, FakeDeck) and self.deck.key_layout() == [2, 4]):
+            log.error("Deck recognized as StreamDeckPlus")
             self.key_spacing = (52, 36)
 
         # Tasks
@@ -2545,7 +2546,8 @@ class ControllerDial(ControllerInput):
             self.update()
 
     def update(self):
-        self.get_touch_screen().update()
+        if self.deck_controller.deck.is_touch():
+            self.get_touch_screen().update()
 
     def get_active_state(self) -> "ControllerDialState":
         return super().get_active_state()
@@ -2560,7 +2562,9 @@ class ControllerDial(ControllerInput):
         self.update()
 
     def get_image_size(self) -> tuple[int, int]:
-        return self.get_touch_screen().get_dial_image_area_size()
+        if self.deck_controller.deck.is_touch():
+            return self.get_touch_screen().get_dial_image_area_size()
+        return (0, 0)
     
 
 class ControllerTouchScreenState(ControllerInputState):

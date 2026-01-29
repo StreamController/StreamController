@@ -90,6 +90,8 @@ class MediaPlayerSetTouchscreenImageTask:
             return
         try:
             touchscreen_size = self.deck_controller.get_touchscreen_image_size()
+            if touchscreen_size is None:
+                return
             self.deck_controller.deck.set_touchscreen_image(self.native_image, x_pos=0, y_pos=0, width=touchscreen_size[0], height=touchscreen_size[1]) # Maybe avoid to always merge the dial images before applying it
             self.native_image = None
             del self.native_image
@@ -474,10 +476,12 @@ class DeckController:
     @lru_cache(maxsize=None)
     def get_touchscreen_image_size(self) -> tuple[int]:
         if not self.get_alive(): return
-        size = self.deck.touchscreen_image_format()["size"]
+        touchscreen_format = self.deck.touchscreen_image_format()
+        if touchscreen_format is None:
+            return None
+        size = touchscreen_format.get("size")
         if size is None:
-            return (800, 100)
-        size = max(size[0], 800), max(size[1], 100)
+            return None
         return size
 
     # ------------ #
@@ -838,9 +842,9 @@ class DeckController:
 
         if self.deck.is_touch():
             touchscreen_size = self.get_touchscreen_image_size()
-            empty = Image.new("RGB", touchscreen_size, (0, 0, 0))
+            if touchscreen_size:
+                empty = Image.new("RGB", touchscreen_size, (0, 0, 0))
             native_image = PILHelper.to_native_touchscreen_format(self.deck, empty)
-
             self.deck.set_touchscreen_image(native_image, x_pos=0, y_pos=0, width=touchscreen_size[0], height=touchscreen_size[1])
 
     def get_own_key_grid(self) -> KeyGrid:
@@ -2364,43 +2368,36 @@ class ControllerTouchScreen(ControllerInput):
         
         active_state = self.get_active_state()
         if event_type == TouchscreenEventType.DRAG:
-            # Check if from left to right or the other way
-            if value['x'] > value['x_out']:
-                active_state.own_actions_event_callback_threaded(
-                    Input.Touchscreen.Events.DRAG_LEFT
-                )
-            else:
-                active_state.own_actions_event_callback_threaded(
-                    Input.Touchscreen.Events.DRAG_RIGHT
-                )
+            self._send_swipe_event(active_state, value)
 
 
-        #TODO get matching actions from the dials
-        elif event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG):
-            dial = self.get_dial_for_touch_x(value['x'])
-            if dial is not None:
-                dial_active_state = dial.get_active_state()
-                if dial_active_state is not None:
-
-                    event = Input.Dial.Events.SHORT_TOUCH_PRESS
-                    if event_type == TouchscreenEventType.LONG:
-                        event = Input.Dial.Events.LONG_TOUCH_PRESS
-
-                    dial_active_state.own_actions_event_callback_threaded(
-                        event,
-                        data={"x": value['x'], "y": value['y']},
-                        show_notifications=True
-                    )
+    def _send_swipe_event(self, target_state, value):
+        """Helper method to send swipe events to a target state"""
+        if value['x'] > value['x_out']:
+            target_state.own_actions_event_callback_threaded(
+                Input.Touchscreen.Events.DRAG_LEFT
+            )
+        else:
+            target_state.own_actions_event_callback_threaded(
+                Input.Touchscreen.Events.DRAG_RIGHT
+            )
 
     def get_dial_for_touch_x(self, touch_x: float) -> "ControllerDial":
-        screen_width = self.deck_controller.get_touchscreen_image_size()[0]
+        touchscreen_size = self.deck_controller.get_touchscreen_image_size()
+        if touchscreen_size is None:
+            return None
+        screen_width = touchscreen_size[0]
         n_dials = len(self.deck_controller.inputs[Input.Dial])
         dial_index = int((touch_x / screen_width) * n_dials)
 
         return self.deck_controller.get_input(Input.Dial(str(dial_index)))
     
     def get_screen_dimensions(self) -> tuple[int, int]:
-        return self.deck_controller.get_touchscreen_image_size()
+        touchscreen_size = self.deck_controller.get_touchscreen_image_size()
+        if touchscreen_size is None:
+            # Fallback - should not happen if deck has touchscreen
+            return (800, 100)
+        return touchscreen_size
 
 class ControllerDial(ControllerInput):
     def __init__(self, deck_controller: DeckController, ident: InputIdentifier):

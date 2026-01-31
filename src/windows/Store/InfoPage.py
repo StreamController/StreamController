@@ -159,7 +159,7 @@ class DescriptionRow(Adw.PreferencesRow):
 
 
 class SourceGroup(Adw.PreferencesGroup):
-    """Group for selecting plugin source - store version or git branch."""
+    """Group for selecting plugin source - store version, git branch, or git tag."""
     
     STORE_VERSION_ID = "__store_version__"
     
@@ -168,7 +168,8 @@ class SourceGroup(Adw.PreferencesGroup):
         self.info_page = info_page
         self.current_plugin_data: "PluginData" = None
         self.branches_cache: dict[str, list[str]] = {}
-        self.is_loading_branches = False
+        self.tags_cache: dict[str, list[str]] = {}
+        self.is_loading_refs = False
         
         self.set_margin_top(12)
         
@@ -176,18 +177,18 @@ class SourceGroup(Adw.PreferencesGroup):
     
     def build(self):
         self.set_description(gl.lm.get("store.info.source.description") or 
-                           "Choose to use the store version or a specific git branch")
+                           "Choose to use the store version, a git branch, or a git tag")
         
         self.branch_row = Adw.ComboRow(
             title=gl.lm.get("store.info.source.branch-row.title") or "Source",
-            subtitle=gl.lm.get("store.info.source.branch-row.subtitle") or "Select store version or a git branch"
+            subtitle=gl.lm.get("store.info.source.branch-row.subtitle") or "Select store version, branch, or tag"
         )
         
         self.refresh_button = Gtk.Button(
             icon_name="view-refresh-symbolic",
             valign=Gtk.Align.CENTER,
             css_classes=["flat"],
-            tooltip_text=gl.lm.get("store.info.source.refresh.tooltip") or "Refresh branches from GitHub"
+            tooltip_text=gl.lm.get("store.info.source.refresh.tooltip") or "Refresh branches and tags from GitHub"
         )
         self.refresh_button.connect("clicked", self.on_refresh_clicked)
         self.refresh_spinner = Gtk.Spinner(spinning=False, visible=False)
@@ -243,37 +244,40 @@ class SourceGroup(Adw.PreferencesGroup):
             self.branch_model.append(store_label)
             
             cached_branches = self.branches_cache.get(plugin_data.plugin_id, [])
+            cached_tags = self.tags_cache.get(plugin_data.plugin_id, [])
             for branch in cached_branches:
                 self.branch_model.append(branch)
+            for tag in cached_tags:
+                self.branch_model.append(tag)
             
             if override and override.get("branch"):
-                override_branch = override["branch"]
+                override_ref = override["branch"]
                 
                 found_index = -1
                 for i in range(self.branch_model.get_n_items()):
-                    if self.branch_model.get_string(i) == override_branch:
+                    if self.branch_model.get_string(i) == override_ref:
                         found_index = i
                         break
                 
                 if found_index == -1:
-                    self.branch_model.append(override_branch)
+                    self.branch_model.append(override_ref)
                     found_index = self.branch_model.get_n_items() - 1
                 
                 self.branch_row.set_selected(found_index)
-                self.update_status(using_override=True, branch=override_branch)
+                self.update_status(using_override=True, ref=override_ref)
             else:
                 self.branch_row.set_selected(0)
                 self.update_status(using_override=False)
         finally:
             self.branch_row.handler_unblock_by_func(self.on_branch_selected)
         
-        self.fetch_branches_async()
+        self.fetch_refs_async()
     
-    def update_status(self, using_override: bool, branch: str = None):
+    def update_status(self, using_override: bool, ref: str = None):
         """Update the status row to reflect current state."""
-        if using_override and branch:
-            status = (gl.lm.get("store.info.source.status.using-branch") or 
-                     "Using git branch: {branch}").format(branch=branch)
+        if using_override and ref:
+            status = (gl.lm.get("store.info.source.status.using-ref") or 
+                     "Using git ref: {ref}").format(ref=ref)
             self.status_row.add_css_class("warning")
         else:
             status = gl.lm.get("store.info.source.status.using-store") or "Using store version"
@@ -301,47 +305,53 @@ class SourceGroup(Adw.PreferencesGroup):
             gl.store_backend.remove_plugin_git_override(plugin_id)
             self.update_status(using_override=False)
         else:
-            branch = selected_text
-            gl.store_backend.set_plugin_git_override(plugin_id, branch)
-            self.update_status(using_override=True, branch=branch)
+            ref = selected_text
+            gl.store_backend.set_plugin_git_override(plugin_id, ref)
+            self.update_status(using_override=True, ref=ref)
     
     def on_refresh_clicked(self, *args):
         """Handle refresh button click."""
-        self.fetch_branches_async()
+        self.fetch_refs_async()
     
-    def fetch_branches_async(self):
-        """Fetch branches from GitHub in a background thread."""
-        if self.is_loading_branches or self.current_plugin_data is None:
+    def fetch_refs_async(self):
+        """Fetch branches and tags from GitHub in a background thread."""
+        if self.is_loading_refs or self.current_plugin_data is None:
             return
         
-        self.is_loading_branches = True
+        self.is_loading_refs = True
         GLib.idle_add(self.show_loading, True)
         
         threading.Thread(
-            target=self._fetch_branches_thread,
+            target=self._fetch_refs_thread,
             daemon=True,
-            name="fetch_branches"
+            name="fetch_refs"
         ).start()
     
-    def _fetch_branches_thread(self):
-        """Background thread to fetch branches."""
+    def _fetch_refs_thread(self):
+        """Background thread to fetch branches and tags."""
         try:
             plugin_id = self.current_plugin_data.plugin_id
             branches = asyncio.run(
                 gl.store_backend.get_repo_branches(self.current_plugin_data.github)
             )
+            tags = asyncio.run(
+                gl.store_backend.get_repo_tags(self.current_plugin_data.github)
+            )
             
-            if branches:
+            if branches is not None:
                 self.branches_cache[plugin_id] = branches
-                GLib.idle_add(self._update_branches_ui, branches)
+            if tags is not None:
+                self.tags_cache[plugin_id] = tags
+            
+            GLib.idle_add(self._update_refs_ui, branches or [], tags or [])
         except Exception as e:
-            log.error(f"Error fetching branches: {e}")
+            log.error(f"Error fetching branches and tags: {e}")
         finally:
-            self.is_loading_branches = False
+            self.is_loading_refs = False
             GLib.idle_add(self.show_loading, False)
     
-    def _update_branches_ui(self, branches: list[str]):
-        """Update the UI with fetched branches (must be called from main thread)."""
+    def _update_refs_ui(self, branches: list[str], tags: list[str]):
+        """Update the UI with fetched branches and tags (must be called from main thread)."""
         if self.current_plugin_data is None:
             return
         
@@ -360,6 +370,8 @@ class SourceGroup(Adw.PreferencesGroup):
             
             for branch in branches:
                 self.branch_model.append(branch)
+            for tag in tags:
+                self.branch_model.append(tag)
             
             new_index = 0
             if current_text and current_text != store_label:

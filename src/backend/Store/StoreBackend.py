@@ -166,6 +166,27 @@ class StoreBackend:
             log.error(f"Error fetching branches for {repo_url}: {e}")
             return None
     
+    async def get_repo_tags(self, repo_url: str) -> list[str] | None:
+        """
+        Fetch available tags from a GitHub repository.
+        Returns list of tag names or None on error.
+        """
+        try:
+            user_name = self.get_user_name(repo_url)
+            repo_name = self.get_repo_name(repo_url)
+            url = f"https://api.github.com/repos/{user_name}/{repo_name}/tags?per_page=100"
+            response = requests.get(url)
+            
+            if response.status_code != 200:
+                log.error(f"Failed to fetch tags for {repo_url}: {response.status_code}")
+                return None
+            
+            tags = response.json()
+            return [tag["name"] for tag in tags]
+        except Exception as e:
+            log.error(f"Error fetching tags for {repo_url}: {e}")
+            return None
+    
     async def get_official_store_branch(self) -> str:
         if self.official_store_branch_cache is not None:
             return self.official_store_branch_cache
@@ -936,7 +957,8 @@ class StoreBackend:
             return
         
         if branch_name is not None:
-            await self.os_sys(f"cd '{local_path}' && git switch {branch_name}")
+            # Use git checkout (not git switch) - works for both branches and tags
+            await self.os_sys(f"cd '{local_path}' && git checkout {branch_name}")
             return
         
         

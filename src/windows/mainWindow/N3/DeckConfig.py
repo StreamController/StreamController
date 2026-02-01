@@ -27,7 +27,7 @@ from gi.repository import Gtk, Adw
 # Import own modules
 from src.windows.mainWindow.elements.KeyGrid import KeyGrid
 from src.windows.mainWindow.DeckPlus.ScreenBar import ScreenBar
-from src.windows.mainWindow.DeckPlus.DialBox import DialBox
+from src.windows.mainWindow.N3.DialBox import N3DialBox
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -43,19 +43,9 @@ class N3DeckConfig(Gtk.Box):
         self.build()
 
     def build(self):
-        if getattr(self.page_settings_page.deck_controller.deck, "LAYOUT", False):
-            if self.page_settings_page.deck_controller.deck.LAYOUT == "N3":
-                pass
-            else:
-                log.warning("Unsupported layout {} requested".format(self.page_settings_page.deck_controller.deck.LAYOUT))
-
-        # Add Left side with keys
-        self._left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, homogeneous=False,
-                         halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
 
         # Add key grid
         self.grid = KeyGrid(self.page_settings_page.deck_controller, self.page_settings_page)
-        # self.grid = KeyGrid(self.page_settings_page.deck_controller, self.page_settings_page)
 
         # Custom CSS classes for no image buttons
         for x in range(3):
@@ -64,12 +54,5 @@ class N3DeckConfig(Gtk.Box):
         self.append(self.grid)
 
         # Add right side with dials
-        self._right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, homogeneous=False,
-                         halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-
-
-        self.append(self._left)
-        self.append(self._right)
-
-        self.dial_box = DialBox(self.page_settings_page.deck_controller, self.page_settings_page)
+        self.dial_box = N3DialBox(self.page_settings_page.deck_controller, self.page_settings_page)
         self.append(self.dial_box)

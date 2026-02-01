@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
     from src.backend.DeckManagement.DeckController import DeckController
 
-class DialBox(Gtk.Box):
+class N3DialBox(Gtk.Box):
     def __init__(self, deck_controller: "DeckController", page_settings_page: "PageSettingsPage", **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.deck_controller = deck_controller
@@ -48,13 +48,13 @@ class DialBox(Gtk.Box):
 
 
     def build(self):
-        dial = Dial(self, Input.Dial(str(i)))
+        dial = Dial(self, Input.Dial("0"))
         self.dials.append(dial)
         self.append(dial)
 
-        self.bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         for i in range(1,self.deck_controller.deck.dial_count()):
             dial = Dial(self, Input.Dial(str(i)))
             self.dials.append(dial)
-            self.bottom.append(dial)
-        self.append(self.bottom)
+            bottom.append(dial)
+        self.append(bottom)

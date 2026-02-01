@@ -44,9 +44,11 @@ class DeckConfig(Gtk.Box):
         self.build()
 
     def build(self):
-        dLayout = getattr("LAYOUT", self.page_settings_page.deck_controller.deck, False)
+        dLayout = getattr(self.page_settings_page.deck_controller.deck.deck, "LAYOUT", False)
         if dLayout == "N3":
-            self.append(N3DeckConfig(self.page_settings_page))
+            n3config = N3DeckConfig(self.page_settings_page)
+            self.append(n3config)
+            self.grid = n3config.grid
         elif dLayout:
             log.warning("Unsupported layout {} requested".format(self.page_settings_page.deck_controller.deck.LAYOUT))
         else:

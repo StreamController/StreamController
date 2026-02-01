@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
 class DialBox(Gtk.Box):
     def __init__(self, deck_controller: "DeckController", page_settings_page: "PageSettingsPage", **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.deck_controller = deck_controller
         self.set_hexpand(True)
         self.set_homogeneous(True)
@@ -48,7 +48,13 @@ class DialBox(Gtk.Box):
 
 
     def build(self):
-        for i in range(self.deck_controller.deck.dial_count()):
+        dial = Dial(self, Input.Dial(str(i)))
+        self.dials.append(dial)
+        self.append(dial)
+
+        self.bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        for i in range(1,self.deck_controller.deck.dial_count()):
             dial = Dial(self, Input.Dial(str(i)))
             self.dials.append(dial)
-            self.append(dial)
+            self.bottom.append(dial)
+        self.append(self.bottom)

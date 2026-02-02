@@ -24,7 +24,7 @@ from queue import Queue
 from threading import Thread, Timer
 
 import psutil
-from PIL import ImageDraw, ImageFont, ImageSequence
+from PIL import Image, ImageDraw, ImageFont, ImageSequence
 from StreamDeck.Devices import StreamDeck
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
@@ -1134,8 +1134,19 @@ class KeyGIF(SingleKeyAsset):
         self.active_frame: int = -1
 
         self.gif = Image.open(self.gif_path)
-        self.gif = ImageSequence.Iterator(self.gif)
-        self.frames = [frame.convert("RGBA") for frame in self.gif]
+        self.frames = []
+        self.frame_delays = []
+        
+        # Extract frames and their delays
+        for frame in ImageSequence.Iterator(self.gif):
+            self.frames.append(frame.convert("RGBA"))
+            # Get frame delay from GIF metadata (in milliseconds)
+            # Default to 100ms (10fps) if no delay specified
+            delay = self.gif.info.get('duration', 100)
+            # Some GIFs use delay in centiseconds, convert to milliseconds
+            if delay < 50:
+                delay *= 10
+            self.frame_delays.append(delay)
 
     def get_next_frame(self) -> Image.Image:
         self.active_frame += 1
@@ -1147,7 +1158,12 @@ class KeyGIF(SingleKeyAsset):
                 self.active_frame = len(self.frames) - 1
 
         return self.frames[self.active_frame]
-        self.gif.convert("RGBA")
+    
+    def get_frame_delay(self) -> float:
+        """Get delay for current frame in seconds"""
+        if self.active_frame < 0 or self.active_frame >= len(self.frame_delays):
+            return 1.0 / self.fps  # Fallback to fps-based timing
+        return self.frame_delays[self.active_frame] / 1000.0  # Convert ms to seconds
     
     def get_raw_image(self) -> Image.Image:
         return self.get_next_frame()
@@ -1155,8 +1171,10 @@ class KeyGIF(SingleKeyAsset):
     def close(self) -> None:
         self.gif = None
         self.frames = None
+        self.frame_delays = None
         del self.gif
         del self.frames
+        del self.frame_delays
 
 class LabelManager:
     def __init__(self, controller_input: "ControllerInput"):
@@ -1944,6 +1962,9 @@ class ControllerKey(ControllerInput):
         self.press_state: bool = self.deck_controller.deck.key_states()[self.index]
 
         self.down_start_time: float = None
+        
+        # GIF timing tracking
+        self.last_gif_update_time: float = 0
 
     def on_hold_timer_end(self):
         state = self.get_active_state()
@@ -1994,12 +2015,32 @@ class ControllerKey(ControllerInput):
 
     def on_media_player_tick(self) -> None:
         self.media_ticks += 1
+        current_time = time.time()
 
         state = self.get_active_state()
-        if not any([state.key_video, self.deck_controller.background.video, state.label_manager.get_has_scroll_labels()]):
-            return
+        needs_update = False
+        
+        # Check if we need to update based on content type
+        if state.key_video is not None:
+            if isinstance(state.key_video, KeyGIF):
+                # Use GIF frame delay timing
+                if self.last_gif_update_time == 0:
+                    self.last_gif_update_time = current_time
+                    needs_update = True
+                else:
+                    frame_delay = state.key_video.get_frame_delay()
+                    if current_time - self.last_gif_update_time >= frame_delay:
+                        self.last_gif_update_time = current_time
+                        needs_update = True
+            else:
+                # For non-GIF videos, use the original FPS-based logic
+                needs_update = True
+        elif self.deck_controller.background.video is not None or state.label_manager.get_has_scroll_labels():
+            # Other content types
+            needs_update = True
 
-        self.update()
+        if needs_update:
+            self.update()
 
     def event_callback(self, press_state):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
@@ -2755,6 +2796,10 @@ class ControllerKeyState(ControllerInputState):
         if self.key_video is not None:
             self.key_video.close()
             self.key_video = None
+            
+        # Reset GIF timing
+        if isinstance(self.controller_input, ControllerKey):
+            self.controller_input.last_gif_update_time = 0
     
     def set_image(self, key_image: "InputImage", update: bool = True) -> None:
         if self.key_image is not None:
@@ -2771,6 +2816,10 @@ class ControllerKeyState(ControllerInputState):
         if self.key_image is not None:
             self.key_image.close()
         self.key_image = None
+        
+        # Reset GIF timing for new video
+        if isinstance(self.controller_input, ControllerKey):
+            self.controller_input.last_gif_update_time = 0
 
     def clear(self):
         self.key_image = None

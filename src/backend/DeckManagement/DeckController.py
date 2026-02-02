@@ -2184,6 +2184,8 @@ class ControllerKey(ControllerInput):
                         text=state_dict["labels"][label].get("text"),
                         font_size=state_dict["labels"][label].get("font-size"),
                         font_name=state_dict["labels"][label].get("font-family"),
+                        font_weight=state_dict["labels"][label].get("font-weight"),
+                        style=state_dict["labels"][label].get("style"),
                         color=state_dict["labels"][label].get("color"),
                         outline_width=state_dict["labels"][label].get("outline_width"),
                         outline_color=state_dict["labels"][label].get("outline_color"),
@@ -2493,6 +2495,8 @@ class ControllerDial(ControllerInput):
                     text=state_dict["labels"][label].get("text"),
                     font_size=state_dict["labels"][label].get("font-size"),
                     font_name=state_dict["labels"][label].get("font-family"),
+                    font_weight=state_dict["labels"][label].get("font-weight"),
+                    style=state_dict["labels"][label].get("style"),
                     color=state_dict["labels"][label].get("color"),
                     alignment=state_dict["labels"][label].get("alignment"),
                 )

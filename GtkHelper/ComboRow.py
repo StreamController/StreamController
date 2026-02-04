@@ -27,6 +27,9 @@ class BaseComboRowItem(GObject.GObject):
     def filter_value(self):
         return self.__str__()
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__} display={self.__str__()} value={self.get_value()} filter={self.filter_value}>"
+
 class ComboRowItem(BaseComboRowItem):
     def __init__(self, label: str):
         super().__init__()

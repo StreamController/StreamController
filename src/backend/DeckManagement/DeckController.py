@@ -620,7 +620,14 @@ class DeckController:
         else:
             config = {}
 
-        self.screen_saver.set_media_path(config.get("media-path"))
+        # Load media settings based on mode
+        media_mode = config.get("media-mode", "single")
+        if media_mode == "multiple":
+            self.screen_saver.set_media_paths(config.get("media-paths", []))
+            self.screen_saver.set_media_switch_interval(config.get("media-switch-interval", 5))
+        else:
+            self.screen_saver.set_media_path(config.get("media-path"))
+        
         self.screen_saver.set_enable(config.get("enable", False))
         self.screen_saver.set_time(config.get("time-delay", 5))
         self.screen_saver.set_loop(config.get("loop", False))

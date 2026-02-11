@@ -52,6 +52,25 @@ class CustomAssetChooser(ChooserPage):
         self.build_finished = False
         self.asset_chooser = CustomAssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         GLib.idle_add(self.scrolled_box.prepend, self.asset_chooser)
+        
+        # Connect selection change signal
+        self.asset_chooser.connect("selection-changed", self.on_selection_changed)
+
+        # Add bulk action buttons
+        bulk_actions_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5, margin_top=5, margin_bottom=10)
+        self.main_box.append(bulk_actions_box)
+        
+        self.delete_selected_button = Gtk.Button(label="Delete Selected", css_classes=["destructive-action"], sensitive=False)
+        self.delete_selected_button.connect("clicked", self.on_delete_selected)
+        bulk_actions_box.append(self.delete_selected_button)
+        
+        self.select_all_button = Gtk.Button(label="Select All", css_classes=["suggested-action"])
+        self.select_all_button.connect("clicked", self.on_select_all)
+        bulk_actions_box.append(self.select_all_button)
+        
+        self.clear_selection_button = Gtk.Button(label="Clear Selection")
+        self.clear_selection_button.connect("clicked", self.on_clear_selection)
+        bulk_actions_box.append(self.clear_selection_button)
 
         self.browse_files_button = Gtk.Button(label=gl.lm.get("asset-chooser.custom.browse-files"), margin_top=15)
         self.browse_files_button.connect("clicked", self.on_browse_files_clicked)
@@ -119,6 +138,37 @@ class CustomAssetChooser(ChooserPage):
     def on_search_changed(self, entry):
         self.asset_chooser.flow_box.invalidate_sort()
 
+    def on_selection_changed(self, flow_box):
+        selected_count = len(flow_box.get_selected_children())
+        self.delete_selected_button.set_sensitive(selected_count > 0)
+        self.clear_selection_button.set_sensitive(selected_count > 0)
+    
+    def on_delete_selected(self, button):
+        self.asset_chooser.delete_selected_assets()
+    
+    def on_select_all(self, button):
+        self.asset_chooser.select_all()
+    
+    def on_clear_selection(self, button):
+        self.asset_chooser.clear_selection()
+    
+    def auto_add_selected_assets(self):
+        """Automatically add selected assets when window closes"""
+        if callable(self.asset_manager.callback_func):
+            import threading
+            callback_thread = threading.Thread(target=self.confirm_selection_thread, args=(), name="auto_add_thread")
+            callback_thread.start()
+    
+    @log.catch
+    def confirm_selection_thread(self):
+        # Get all selected children and call callback for each
+        selected_children = self.asset_chooser.get_selected_children()
+        if selected_children:
+            for child in selected_children:
+                self.asset_manager.callback_func(child.asset["internal-path"],
+                                              *self.asset_manager.callback_args,
+                                              **self.asset_manager.callback_kwargs)
+    
     def on_browse_files_clicked(self, button):
         ChooseFileDialog(self) #TODO: Change to Xdp Portal call
 

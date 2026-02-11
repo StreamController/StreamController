@@ -25,6 +25,7 @@ import threading
 from loguru import logger as log
 from math import floor
 from time import sleep
+from PIL import Image
 
 # Import globals
 import globals as gl
@@ -82,7 +83,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER)
         self.config_box.append(self.media_selector)
 
-        self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
+        self.media_selector_image = Gtk.Picture(overflow=Gtk.Overflow.HIDDEN, can_shrink=True) # Will be bound to the button by self.set_thumbnail()
 
         self.media_selector_button = Gtk.Button(label=gl.lm.get("deck.deck-group.media-select-label"), css_classes=["page-settings-media-selector"])
         self.media_selector.append(self.media_selector_button)
@@ -230,10 +231,9 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         if not os.path.isfile(file_path):
             return
         image = gl.media_manager.get_thumbnail(file_path)
+        
         pixbuf = image2pixbuf(image)
-        self.media_selector_image.pixbuf = None
-        del self.media_selector_image.pixbuf
-        self.media_selector_image.set_from_pixbuf(pixbuf)
+        self.media_selector_image.set_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 
     def set_deck_background(self, file_path):

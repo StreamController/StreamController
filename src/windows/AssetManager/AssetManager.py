@@ -60,6 +60,11 @@ class AssetManager(Gtk.ApplicationWindow):
         self.connect("close-request", self.on_close)
 
     def on_close(self, *args, **kwargs):
+        # Auto-add selected assets from Custom Assets before closing
+        visible_child = self.asset_chooser.get_visible_child()
+        if visible_child == self.asset_chooser.custom_asset_chooser:
+            self.asset_chooser.custom_asset_chooser.auto_add_selected_assets()
+        
         gl.asset_manager = None
 
     def build(self):

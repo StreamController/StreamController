@@ -118,8 +118,8 @@ class Brightness(Adw.PreferencesRow):
     def on_value_changed_idle(self, scale):
         value = round(scale.get_value())
         # update value in page
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("brightness", {})
-        self.settings_page.deck_page.deck_controller.active_page.dict["brightness"]["value"] = value
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("settings", {}).setdefault("brightness", {})
+        self.settings_page.deck_page.deck_controller.active_page.dict["settings"]["brightness"]["value"] = value
         self.settings_page.deck_page.deck_controller.active_page.save()
         # update deck without reload of page
         self.settings_page.deck_page.deck_controller.set_brightness(value)
@@ -129,8 +129,8 @@ class Brightness(Adw.PreferencesRow):
 
         deck_controller = self.settings_page.deck_page.deck_controller
         # Update page
-        deck_controller.active_page.dict.setdefault("brightness", {})
-        deck_controller.active_page.dict["brightness"]["overwrite"] = state
+        deck_controller.active_page.dict.setdefault("settings", {}).setdefault("brightness", {})
+        deck_controller.active_page.dict["settings"]["brightness"]["overwrite"] = state
         # Save
         deck_controller.active_page.save()
         # Reload
@@ -148,7 +148,7 @@ class Brightness(Adw.PreferencesRow):
 
         # Update ui
         self.set_scale_from_page(self.settings_page.deck_page.deck_controller.active_page)
-        active = self.settings_page.deck_page.deck_controller.active_page.dict.get("brightness", {}).get("overwrite", False)
+        active = self.settings_page.deck_page.deck_controller.active_page.dict.get("settings", {}).get("brightness", {}).get("overwrite", False)
         self.overwrite_switch.set_active(active)
         self.config_box.set_visible(active)
 
@@ -220,7 +220,7 @@ class Screensaver(Adw.PreferencesRow):
         self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text=gl.lm.get("background.processing"), fraction=0, show_text=True, visible=False)
         self.config_box.append(self.progress_bar)
 
-        self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
+        self.media_selector_image = Gtk.Picture(overflow=Gtk.Overflow.HIDDEN, can_shrink=True) # Will be bound to the button by self.set_thumbnail()
 
         self.loop_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
         self.config_box.append(self.loop_box)
@@ -289,14 +289,15 @@ class Screensaver(Adw.PreferencesRow):
             return
 
         page_dict = self.settings_page.deck_page.deck_controller.active_page.dict
+        page_settings = page_dict.get("settings", {})
 
-        overwrite = page_dict.get("screensaver", {}).get("overwrite", False)
-        enable = page_dict.get("screensaver", {}).get("enable", False)
-        path = page_dict.get("screensaver", {}).get("path", None)
-        loop = page_dict.get("screensaver", {}).get("loop", False)
-        fps = page_dict.get("screensaver", {}).get("fps", 30)
-        time = page_dict.get("screensaver", {}).get("time-delay", 5)
-        brightness = page_dict.get("screensaver", {}).get("brightness", 75)
+        overwrite = page_settings.get("screensaver", {}).get("overwrite", False)
+        enable = page_settings.get("screensaver", {}).get("enable", False)
+        path = page_settings.get("screensaver", {}).get("media-path", None)
+        loop = page_settings.get("screensaver", {}).get("loop", False)
+        fps = page_settings.get("screensaver", {}).get("fps", 30)
+        time = page_settings.get("screensaver", {}).get("time-delay", 5)
+        brightness = page_settings.get("screensaver", {}).get("brightness", 75)
 
         # Update ui
         self.overwrite_switch.set_active(overwrite)
@@ -316,8 +317,8 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_toggle_enable(self, toggle_switch, state):
         deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("screensaver", {})
-        deck_controller.active_page.dict["screensaver"]["enable"] = state
+        deck_controller.active_page.dict.setdefault("settings", {}).setdefault("screensaver", {})
+        deck_controller.active_page.dict["settings"]["screensaver"]["enable"] = state
         deck_controller.active_page.save()
 
         deck_controller.screen_saver.set_enable(state)
@@ -328,8 +329,8 @@ class Screensaver(Adw.PreferencesRow):
 
     def on_toggle_overwrite(self, toggle_switch, state):
         deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("screensaver", {})
-        deck_controller.active_page.dict["screensaver"]["overwrite"] = state
+        deck_controller.active_page.dict.setdefault("settings", {}).setdefault("screensaver", {})
+        deck_controller.active_page.dict["settings"]["screensaver"]["overwrite"] = state
         # Save
         deck_controller.active_page.save()
 
@@ -340,26 +341,26 @@ class Screensaver(Adw.PreferencesRow):
         deck_controller.load_screensaver(deck_controller.active_page)
 
     def on_toggle_loop(self, toggle_switch, state):
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})
-        self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["loop"] = state
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("settings", {}).setdefault("screensaver", {})
+        self.settings_page.deck_page.deck_controller.active_page.dict["settings"]["screensaver"]["loop"] = state
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.screen_saver.set_loop(state)
 
     def on_change_fps(self, spinner):
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})
-        self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["fps"] = spinner.get_value_as_int()
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("settings", {}).setdefault("screensaver", {})
+        self.settings_page.deck_page.deck_controller.active_page.dict["settings"]["screensaver"]["fps"] = spinner.get_value_as_int()
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.screen_saver.set_fps(spinner.get_value_as_int())
 
     def on_change_time(self, spinner):
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})
-        self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["time-delay"] = round(spinner.get_value_as_int())
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("settings", {}).setdefault("screensaver", {})
+        self.settings_page.deck_page.deck_controller.active_page.dict["settings"]["screensaver"]["time-delay"] = round(spinner.get_value_as_int())
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.screen_saver.set_time(round(spinner.get_value_as_int()))
 
     def on_change_brightness(self, scale):
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("screensaver", {})
-        self.settings_page.deck_page.deck_controller.active_page.dict["screensaver"]["brightness"] = scale.get_value()
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("settings", {}).setdefault("screensaver", {})
+        self.settings_page.deck_page.deck_controller.active_page.dict["settings"]["screensaver"]["brightness"] = scale.get_value()
         self.settings_page.deck_page.deck_controller.active_page.save()
         self.settings_page.deck_page.deck_controller.screen_saver.set_brightness(scale.get_value())
 
@@ -370,12 +371,7 @@ class Screensaver(Adw.PreferencesRow):
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
 
-        self.media_selector_image.set_from_pixbuf(None)
-        self.media_selector_image.pixbuf = None
-
-        del self.media_selector_image.pixbuf
-
-        self.media_selector_image.set_from_pixbuf(pixbuf)
+        self.media_selector_image.set_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 
         image.close()
@@ -394,8 +390,8 @@ class Screensaver(Adw.PreferencesRow):
     def update_image(self, file_path):
         self.set_thumbnail(file_path)
         deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("screensaver", {})
-        deck_controller.active_page.dict["screensaver"]["path"] = file_path
+        deck_controller.active_page.dict.setdefault("settings", {}).setdefault("screensaver", {})
+        deck_controller.active_page.dict["settings"]["screensaver"]["media-path"] = file_path
         # Save page
         deck_controller.active_page.save()
 

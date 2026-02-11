@@ -120,8 +120,8 @@ class Page:
             self.dict[key] = value
 
     def set_background(self, file_path):
-        self.dict.setdefault("background", {})
-        self.dict["background"]["path"] = file_path
+        self.dict.setdefault("settings", {}).setdefault("background", {})
+        self.dict["settings"]["background"]["media-path"] = file_path
         self.save()
 
     def load_action_objects(self):

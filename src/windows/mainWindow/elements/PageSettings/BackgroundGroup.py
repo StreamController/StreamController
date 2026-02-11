@@ -89,7 +89,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.media_selector = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER)
         self.config_box.append(self.media_selector)
 
-        self.media_selector_image = Gtk.Image() # Will be bound to the button by self.set_thumbnail()
+        self.media_selector_image = Gtk.Picture(overflow=Gtk.Overflow.HIDDEN, can_shrink=True) # Will be bound to the button by self.set_thumbnail()
 
         self.media_selector_button = Gtk.Button(label=gl.lm.get("select"), css_classes=["page-settings-media-selector"])
         self.media_selector.append(self.media_selector_button)
@@ -150,12 +150,13 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             return
         
         page_dict = self.settings_page.deck_page.deck_controller.active_page.dict
+        page_settings = page_dict.get("settings", {})
 
-        overwrite = page_dict.get("background", {}).get("overwrite", False)
-        show = page_dict.get("background", {}).get("show", False)
-        file_path = page_dict.get("background", {}).get("path", None)
-        loop = page_dict.get("background", {}).get("loop", True)
-        fps = page_dict.get("background", {}).get("fps", 30)
+        overwrite = page_settings.get("background", {}).get("overwrite", False)
+        show = page_settings.get("background", {}).get("show", False)
+        file_path = page_settings.get("background", {}).get("media-path", None)
+        loop = page_settings.get("background", {}).get("loop", True)
+        fps = page_settings.get("background", {}).get("fps", 30)
 
         self.overwrite_switch.set_active(overwrite)
         self.show_switch.set_active(show)
@@ -172,8 +173,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
     def on_toggle_enable(self, toggle_switch, state):
         # Change setting in the active deck page
         deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("background", {})
-        deck_controller.active_page.dict["background"]["show"] = state
+        deck_controller.active_page.dict.setdefault("settings", {}).setdefault("background", {})
+        deck_controller.active_page.dict["settings"]["background"]["show"] = state
         deck_controller.active_page.save()
 
         deck_controller.active_page.reload_similar_pages(reload_self=True,
@@ -181,8 +182,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
     def on_toggle_loop(self, toggle_switch, state):
         deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("background", {})
-        deck_controller.active_page.dict["background"]["loop"] = state
+        deck_controller.active_page.dict.setdefault("settings", {}).setdefault("background", {})
+        deck_controller.active_page.dict["settings"]["background"]["loop"] = state
         deck_controller.active_page.save()
 
         deck_controller.active_page.reload_similar_pages(reload_self=True,
@@ -190,8 +191,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         
     def on_change_fps(self, spinner):
         deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("background", {})
-        deck_controller.active_page.dict["background"]["fps"] = spinner.get_value_as_int()
+        deck_controller.active_page.dict.setdefault("settings", {}).setdefault("background", {})
+        deck_controller.active_page.dict["settings"]["background"]["fps"] = spinner.get_value_as_int()
         deck_controller.active_page.save()
 
         deck_controller.active_page.reload_similar_pages(reload_self=True,
@@ -201,8 +202,8 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.config_box.set_visible(state)
         # Update page
         deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("background", {})
-        deck_controller.active_page.dict["background"]["overwrite"] = state
+        deck_controller.active_page.dict.setdefault("settings", {}).setdefault("background", {})
+        deck_controller.active_page.dict["settings"]["background"]["overwrite"] = state
         # Save
         deck_controller.active_page.save()
         deck_controller.load_background(page=deck_controller.active_page)
@@ -210,14 +211,14 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         deck_controller.active_page.reload_similar_pages()
 
     def on_choose_image(self, button):
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("background", {})
-        media_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)
+        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("settings", {}).setdefault("background", {})
+        media_path = self.settings_page.deck_page.deck_controller.active_page.dict["settings"]["background"].setdefault("media-path", None)
 
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.set_deck_background)
 
     def set_thumbnail(self, file_path):
         if file_path == None:
-            self.media_selector_image.clear()
+            self.media_selector_image.set_paintable(None)
             return
         if file_path is None:
             return
@@ -234,9 +235,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             )
             dial.show()
             return
-        self.media_selector_image.pixbuf = None
-        del self.media_selector_image.pixbuf
-        self.media_selector_image.set_from_pixbuf(pixbuf)
+        self.media_selector_image.set_pixbuf(pixbuf)
         self.media_selector_button.set_child(self.media_selector_image)
 
     def set_deck_background(self, file_path: str) -> None:

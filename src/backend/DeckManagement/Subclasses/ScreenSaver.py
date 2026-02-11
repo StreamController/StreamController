@@ -44,6 +44,10 @@ class ScreenSaver:
         self.showing: bool = False
 
         self.media_path: str = None
+        self.media_paths: list[str] = []
+        self.current_media_index: int = 0
+        self.media_switch_interval: int = 5  # minutes between media switches
+        self.media_timer: threading.Timer = None
         self.brightness: int = 25
         self.fps: int = 30
         self.loop: bool = True
@@ -68,6 +72,48 @@ class ScreenSaver:
 
         if self.showing:
             self.deck_controller.background.set_from_path(self.media_path)
+
+    def set_media_paths(self, media_paths: list[str]) -> None:
+        self.media_paths = media_paths if media_paths else []
+        self.current_media_index = 0
+        
+        if self.showing and self.media_paths:
+            self.show_current_media()
+
+    def set_media_switch_interval(self, interval: int) -> None:
+        self.media_switch_interval = max(1, interval)
+        if self.media_timer:
+            self.media_timer.cancel()
+        if self.showing and len(self.media_paths) > 1:
+            self.start_media_timer()
+
+    def show_current_media(self) -> None:
+        if self.media_paths and self.current_media_index < len(self.media_paths):
+            current_path = self.media_paths[self.current_media_index]
+            self.deck_controller.background.set_from_path(current_path)
+
+            if self.deck_controller.background.video is not None:
+                self.deck_controller.background.video.fps = self.fps
+                self.deck_controller.background.video.loop = self.loop
+
+    def start_media_timer(self) -> None:
+        if self.media_timer:
+            self.media_timer.cancel()
+        # *60 to go from minutes to seconds
+        self.media_timer = threading.Timer(self.media_switch_interval * 60, self.switch_to_next_media)
+        self.media_timer.setDaemon(True)
+        self.media_timer.setName("ScreenSaverMediaTimer")
+        self.media_timer.start()
+
+    def switch_to_next_media(self) -> None:
+        if len(self.media_paths) <= 1:
+            return
+            
+        self.current_media_index = (self.current_media_index + 1) % len(self.media_paths)
+        self.show_current_media()
+        
+        if self.showing:
+            self.start_media_timer()
 
     def set_enable(self, enable: bool) -> None:
         self.enable = enable
@@ -111,7 +157,12 @@ class ScreenSaver:
         self.deck_controller.clear_media_player_tasks()
 
         # Set background
-        self.deck_controller.background.set_from_path(self.media_path, update=True)
+        if self.media_paths:
+            self.show_current_media()
+            if len(self.media_paths) > 1:
+                self.start_media_timer()
+        elif self.media_path:
+            self.deck_controller.background.set_from_path(self.media_path, update=True)
 
         if self.deck_controller.background.video is not None:
             self.deck_controller.background.video.fps = self.fps
@@ -125,6 +176,12 @@ class ScreenSaver:
     def hide(self):
         log.info("Hiding screen saver")
         self.original_inputs.clear()
+        
+        # Cancel media timer if running
+        if self.media_timer:
+            self.media_timer.cancel()
+            self.media_timer = None
+            
         self.deck_controller.clear() # Ensures that the first image visable is from the page not the screensaver if the brightness on the saver is 0
         self.showing = False
         if self.deck_controller.active_page:

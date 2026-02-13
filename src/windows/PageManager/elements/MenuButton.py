@@ -146,10 +146,6 @@ class MenuButton(Gtk.MenuButton):
 
 
     def import_page_name_selected_callback(self, name):
-        page_path = os.path.join(gl.DATA_PATH, "pages", f"{name}.json")
-        if os.path.exists(page_path):
-            return
-        
         import_dict = {}
         with open(self.selected_file.get_path(), "r") as f:
             import_dict = json.load(f)
@@ -157,7 +153,10 @@ class MenuButton(Gtk.MenuButton):
         self.selected_file = None
 
         page_name = os.path.splitext(os.path.basename(page_path))[0]
-        gl.page_manager.add_page(page_name, import_dict)
+        try:
+            page_path = gl.page_manager.add_page(page_name, import_dict)
+        except FileExistsError:
+            return
 
         self.pageEditor.page_manager.page_selector.add_row_by_path(page_path)
 

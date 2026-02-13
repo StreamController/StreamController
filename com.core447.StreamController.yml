@@ -21,6 +21,7 @@ finish-args:
   - --talk-name=org.gnome.ScreenSaver
   - --talk-name=org.freedesktop.ScreenSaver
   - --talk-name=org.cinnamon.ScreenSaver
+  - --talk-name=com.core447.StreamController  # We provide an API over this interface
   - --system-talk-name=org.freedesktop.UPower # Access to power management - used to get battery status
 
   # Tray icon

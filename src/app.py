@@ -50,6 +50,7 @@ from src.windows.Permissions.FlatpakPermissionRequest import FlatpakPermissionRe
 from src.backend.DeckManagement.InputIdentifier import Input
 
 from src.Signals import Signals
+from src.api import start_dbus_service, stop_dbus_service
 
 # Import globals
 import globals as gl
@@ -122,6 +123,10 @@ class App(Adw.Application):
         change_state_action.connect("activate", self.on_change_state)
         self.add_action(change_state_action)
 
+        # Start DBus API service
+        if not gl.IS_MAC:
+            start_dbus_service()
+
         log.success("Finished loading app")
 
     def on_reopen(self, *args, **kwargs):
@@ -178,6 +183,10 @@ class App(Adw.Application):
 
     def on_quit(self, *args):
         log.info("Quitting...")
+
+        # Stop DBus API service
+        if not gl.IS_MAC:
+            stop_dbus_service()
 
         self.main_win.destroy()
 

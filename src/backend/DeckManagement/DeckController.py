@@ -432,6 +432,7 @@ class DeckController:
         for t in self.inputs:
             for i in self.inputs[t]:
                 i.update()
+        GLib.idle_add(lambda: (lambda g: g.load_from_changes() if g else None)(self.get_own_key_grid()))
         log.debug(f"Updating all inputs took {time.time() - start} seconds")
 
     def event_callback(self, ident: InputIdentifier, *args, **kwargs):
@@ -2266,17 +2267,7 @@ class ControllerKey(ControllerInput):
     def set_ui_key_image(self, image: Image.Image) -> None:
         if image is None:
             return
-        
-        x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)
-
-        if self.deck_controller.get_own_key_grid() is None or not gl.app.main_win.get_mapped():
-            # Save to use later
-            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image # The ui key coords are in reverse order
-        else:
-            try:
-                self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
-            except:
-                print(f"Failed to set ui key image for {self.identifier}")
+        self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
         
     def get_own_ui_key(self) -> KeyButton:
         x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)

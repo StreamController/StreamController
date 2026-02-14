@@ -95,6 +95,16 @@
   padding-bottom: 0px;
   background-color: #363636;
 }
+.key-button-no-image{
+  border-radius: 9999px;
+  min-width:60px;	
+	min-height:60px;
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  background-color: #363636;
+}
 .key-button-frame-hidden {
   border-radius:15px;
   border-width: 3px;

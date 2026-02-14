@@ -41,7 +41,7 @@ class KeyGrid(Gtk.Grid):
     Child of PageSettingsPage
     Key grid for the button config
     """
-    def __init__(self, deck_controller, page_settings_page, **kwargs):
+    def __init__(self, deck_controller, page_settings_page, no_img_buttons=[], **kwargs):
         super().__init__(**kwargs)
         self.deck_controller = deck_controller
         self.page_settings_page = page_settings_page

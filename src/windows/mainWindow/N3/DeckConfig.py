@@ -27,16 +27,15 @@ from gi.repository import Gtk, Adw
 # Import own modules
 from src.windows.mainWindow.elements.KeyGrid import KeyGrid
 from src.windows.mainWindow.DeckPlus.ScreenBar import ScreenBar
-from src.windows.mainWindow.DeckPlus.DialBox import DialBox
-from src.windows.mainWindow.N3.DeckConfig import N3DeckConfig
+from src.windows.mainWindow.N3.DialBox import N3DialBox
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
 
-class DeckConfig(Gtk.Box):
+class N3DeckConfig(Gtk.Box):
     def __init__(self, page_settings_page: "PageSettingsPage"):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, homogeneous=False,
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=False,
                          halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
         self.page_settings_page = page_settings_page
 
@@ -44,21 +43,16 @@ class DeckConfig(Gtk.Box):
         self.build()
 
     def build(self):
-        dLayout = getattr(self.page_settings_page.deck_controller.deck.deck, "LAYOUT", False)
-        if dLayout == "N3":
-            n3config = N3DeckConfig(self.page_settings_page)
-            self.append(n3config)
-            self.grid = n3config.grid
-        elif dLayout:
-            log.warning("Unsupported layout {} requested".format(self.page_settings_page.deck_controller.deck.LAYOUT))
-        else:
-            # Add key grid
-            self.grid = KeyGrid(self.page_settings_page.deck_controller, self.page_settings_page)
-            self.append(self.grid)
 
-            if self.page_settings_page.deck_controller.deck.is_touch():
-                self.screenbar = ScreenBar(self.page_settings_page, Input.Touchscreen("sd-plus"))
-                self.append(self.screenbar)
+        # Add key grid
+        self.grid = KeyGrid(self.page_settings_page.deck_controller, self.page_settings_page)
 
-            self.dial_box = DialBox(self.page_settings_page.deck_controller, self.page_settings_page)
-            self.append(self.dial_box)
+        # Custom CSS classes for no image buttons
+        for x in range(3):
+            self.grid.buttons[x][2].image.set_css_classes(['key-image', 'key-button-no-image'])
+
+        self.append(self.grid)
+
+        # Add right side with dials
+        self.dial_box = N3DialBox(self.page_settings_page.deck_controller, self.page_settings_page)
+        self.append(self.dial_box)

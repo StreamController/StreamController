@@ -1089,17 +1089,8 @@ class BackgroundImage:
         region = (start_x, start_y, start_x + key_width, start_y + key_height)
         segment = image.crop(region)
 
-<<<<<<< HEAD
         # Return the segment directly, converting to RGBA to preserve transparency
         return segment.convert("RGBA")
-    
-=======
-        # Create a new key-sized image, and paste in the cropped section of the
-        # larger image.
-        key_image = PILHelper.create_key_image(deck)
-        key_image.paste(segment)
-
-        return key_image
 
     def crop_screen_image_from_deck_sized_image(self, image: Image.Image):
         deck = self.deck_controller.deck
@@ -1119,14 +1110,9 @@ class BackgroundImage:
         region = (start_x, start_y, start_x + screen_width, start_y + screen_height)
         segment = image.crop(region)
 
-        # Create a new screen-sized image, and paste in the cropped section of the
-        # larger image.
-        screen_image = PILHelper.create_screen_image(deck)
-        screen_image.paste(segment)
+        # Return the segment directly, converting to RGBA to preserve transparency
+        return segment.convert("RGBA")
 
-        return screen_image
-
->>>>>>> 405a6a9 (Background Image extends to the Neo Screen)
     def get_tiles(self) -> list[Image.Image]:
         full_deck_sized_image = self.create_full_deck_sized_image()
 

@@ -59,7 +59,13 @@ class ScreenBar(Gtk.Frame):
         # self.image.set_from_file("Assets/800_100.png")
 
         self.image = ScreenBarImage(self)
-        self.image.set_image(Image.new("RGBA", (800, 100), (0, 0, 0, 0)))
+        # Use real touchscreen size from deck
+        touchscreen_size = self.deck_controller.get_touchscreen_image_size()
+        if touchscreen_size:
+            self.image.set_image(Image.new("RGBA", touchscreen_size, (0, 0, 0, 0)))
+        else:
+            # Fallback to default size
+            self.image.set_image(Image.new("RGBA", (800, 100), (0, 0, 0, 0)))
         self.set_child(self.image)
 
         # self.set_child(self.image)
@@ -173,11 +179,19 @@ class ScreenBar(Gtk.Frame):
         width = self.image.get_width()
         height = self.image.get_height()
 
-        # Map xy to 800x100
-        x, y = int(x * 800 / width), int(y * 100 / height)
+        # Get real touchscreen size from deck
+        touchscreen_size = self.deck_controller.get_touchscreen_image_size()
+        if touchscreen_size:
+            screen_width, screen_height = touchscreen_size
+        else:
+            # Fallback to default size
+            screen_width, screen_height = 800, 100
 
-        x = max(0, min(x, 800))
-        y = max(0, min(y, 100))
+        # Map xy to touchscreen size
+        x, y = int(x * screen_width / width), int(y * screen_height / height)
+
+        x = max(0, min(x, screen_width))
+        y = max(0, min(y, screen_height))
 
         return x, y
 
@@ -220,8 +234,21 @@ class ScreenBar(Gtk.Frame):
 
 class ScreenBarImage(Gtk.Picture):
     def __init__(self, screenbar: ScreenBar, **kwargs):
-        super().__init__(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
-                         halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
+        # Get real touchscreen size for UI dimensions
+        touchscreen_size = screenbar.deck_controller.get_touchscreen_image_size()
+        if touchscreen_size:
+            screen_width, screen_height = touchscreen_size
+            # Scale down for UI display (maintain aspect ratio, use larger scale for better visibility)
+            # For 800x100, scale to ~600px width to make it more visible
+            scale_factor = 600.0 / screen_width if screen_width > 0 else 0.75
+            ui_width = int(screen_width * scale_factor)
+            ui_height = int(screen_height * scale_factor)
+        else:
+            # Fallback to default size
+            ui_width, ui_height = 600, 75
+        
+        super().__init__(keep_aspect_ratio=True, can_shrink=False, content_fit=Gtk.ContentFit.FILL,
+                         halign=Gtk.Align.CENTER, hexpand=True, width_request=ui_width, height_request=ui_height,
                          valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
                          **kwargs)
         
@@ -260,9 +287,28 @@ class ScreenBarImage(Gtk.Picture):
             self.on_map_tasks = [lambda: self.set_image(image)]
             return
 
-        width = 385 #TODO: Find a better way to do this
+        # Get real touchscreen size for thumbnail calculation
+        touchscreen_size = self.screenbar.deck_controller.get_touchscreen_image_size()
+        if touchscreen_size:
+            screen_width, screen_height = touchscreen_size
+            # Use the actual widget size for thumbnail to match what's displayed
+            widget_width = self.get_width()
+            widget_height = self.get_height()
+            if widget_width > 0 and widget_height > 0:
+                # Use actual widget dimensions
+                thumbnail_width = widget_width
+                thumbnail_height = widget_height
+            else:
+                # Fallback: scale down for UI display (maintain aspect ratio)
+                scale_factor = 600.0 / screen_width if screen_width > 0 else 0.75
+                thumbnail_width = int(screen_width * scale_factor)
+                thumbnail_height = int(screen_height * scale_factor)
+        else:
+            # Fallback to default size
+            thumbnail_width, thumbnail_height = 600, 75
+        
         thumbnail = image.copy()
-        thumbnail.thumbnail((width, width/8))
+        thumbnail.thumbnail((thumbnail_width, thumbnail_height))
 
         pixbuf = image2pixbuf(thumbnail.convert("RGBA"), force_transparency=True)
         self.latest_task_id = self.get_new_task_id()

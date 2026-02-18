@@ -74,7 +74,10 @@ class KeyGrid(Gtk.Grid):
         for x in range(layout[1]):
             for y in range(layout[0]):
                 button = KeyButton(self, (x, y))
-                self.attach(button, x, y, 1, 1)
+                # Wrap button in a Box to center it in the grid cell
+                center_box = Gtk.Box(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=True, vexpand=True)
+                center_box.append(button)
+                self.attach(center_box, x, y, 1, 1)
                 button._set_visible(False) # Hide buttons per default - they will be shown when the the grid is mapped to prevent large grids to resize every child
                 self.buttons[x][y] = button
         return
@@ -140,10 +143,22 @@ class KeyButton(Gtk.Frame):
         # self.button = Gtk.Button(hexpand=True, vexpand=True, css_classes=["key-button"])
         # self.set_child(self.button)
 
-        self.image = Gtk.Image(hexpand=True, vexpand=True, css_classes=["key-image", "key-button"])
+        self.image = Gtk.Image(hexpand=False, vexpand=False, css_classes=["key-image", "key-button"])
         self.image.set_overflow(Gtk.Overflow.HIDDEN)
-        self.image.set_size_request(75, 75)
-        self.image.set_pixel_size(75)
+        
+        # Use real key image size from deck
+        key_size = self.key_grid.deck_controller.get_key_image_size()
+        if key_size and key_size[0] > 0 and key_size[1] > 0:
+            key_width, key_height = key_size
+            # Use the larger dimension for pixel_size (square display)
+            pixel_size = max(key_width, key_height)
+            self.image.set_size_request(key_width, key_height)
+            self.image.set_pixel_size(pixel_size)
+        else:
+            # Fallback to default size (e.g., for Stream Deck Pedal which has no display)
+            self.image.set_size_request(75, 75)
+            self.image.set_pixel_size(75)
+        
         self.set_child(self.image)
 
         # self.button.connect("clicked", self.on_click)

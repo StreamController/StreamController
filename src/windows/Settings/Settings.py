@@ -224,7 +224,7 @@ class RemoteDecksGroup(Adw.PreferencesGroup):
 
         self.n_remote_decks_row = Adw.SpinRow.new_with_range(min=0, max=1, step=1)
         self.n_remote_decks_row.set_title("Number of remote decks")
-        self.n_remote_decks_row.set_subtitle("Number of remote decks that can connect (beta)")
+        self.n_remote_decks_row.set_subtitle("Use remote.sc.core447.com to connect (beta)")
         self.n_remote_decks_row.set_range(0, 1)
         self.add(self.n_remote_decks_row)
 

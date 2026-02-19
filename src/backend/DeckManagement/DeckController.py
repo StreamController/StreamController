@@ -2364,33 +2364,38 @@ class ControllerTouchScreen(ControllerInput):
         
         active_state = self.get_active_state()
         if event_type == TouchscreenEventType.DRAG:
-            # Check if from left to right or the other way
-            if value['x'] > value['x_out']:
-                active_state.own_actions_event_callback_threaded(
-                    Input.Touchscreen.Events.DRAG_LEFT
-                )
-            else:
-                active_state.own_actions_event_callback_threaded(
-                    Input.Touchscreen.Events.DRAG_RIGHT
-                )
+            self._send_swipe_event(active_state, value)
 
-
-        #TODO get matching actions from the dials
-        elif event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG):
+        # Handle all touchscreen events (short, long, drag) for corresponding dials
+        if event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG, TouchscreenEventType.DRAG):
             dial = self.get_dial_for_touch_x(value['x'])
             if dial is not None:
                 dial_active_state = dial.get_active_state()
                 if dial_active_state is not None:
+                    if event_type == TouchscreenEventType.DRAG:
+                        self._send_swipe_event(dial_active_state, value)
+                    else:
+                        # Send touch press events to dial
+                        event = Input.Dial.Events.SHORT_TOUCH_PRESS
+                        if event_type == TouchscreenEventType.LONG:
+                            event = Input.Dial.Events.LONG_TOUCH_PRESS
 
-                    event = Input.Dial.Events.SHORT_TOUCH_PRESS
-                    if event_type == TouchscreenEventType.LONG:
-                        event = Input.Dial.Events.LONG_TOUCH_PRESS
+                        dial_active_state.own_actions_event_callback_threaded(
+                            event,
+                            data={"x": value['x'], "y": value['y']},
+                            show_notifications=True
+                        )
 
-                    dial_active_state.own_actions_event_callback_threaded(
-                        event,
-                        data={"x": value['x'], "y": value['y']},
-                        show_notifications=True
-                    )
+    def _send_swipe_event(self, target_state, value):
+        """Helper method to send swipe events to a target state"""
+        if value['x'] > value['x_out']:
+            target_state.own_actions_event_callback_threaded(
+                Input.Touchscreen.Events.DRAG_LEFT
+            )
+        else:
+            target_state.own_actions_event_callback_threaded(
+                Input.Touchscreen.Events.DRAG_RIGHT
+            )
 
     def get_dial_for_touch_x(self, touch_x: float) -> "ControllerDial":
         screen_width = self.deck_controller.get_touchscreen_image_size()[0]

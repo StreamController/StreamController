@@ -57,7 +57,6 @@ def create_handler(remote_deck_manager: "RemoteDeckManager"):
                 'data': f"data:image/jpeg;base64,{img_base64}",
                 'timestamp': int(time.time())
             }
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Updated image for button {button_id}")
 
         def do_OPTIONS(self):
             """Handle preflight OPTIONS request."""
@@ -77,7 +76,6 @@ def create_handler(remote_deck_manager: "RemoteDeckManager"):
                 self._send_json_response(200, response_data)
                 print(f"[{datetime.now().strftime('%H:%M:%S')}] Status check received")
             elif self.path == '/images':
-                print("/images")
                 # Return all button images
                 response_data = {
                     'status': 'ok',

@@ -20,13 +20,26 @@ class RemoteDeckManager:
         self.httpd = None
         self.server_thread = None
         self.handler_class = None
-        
+        self._is_running = False
+
+    def start(self):
+        if self._is_running:
+            return
+        self._is_running = True
         # Start the webserver
         self.start_server()
 
         deck = RemoteDeck(self, serial_number="remote-deck-1", deck_type="Remote Deck 1")
         self.deck_controllers.append(DeckController(self.deck_manager, deck))
 
+    def stop(self):
+        if not self._is_running:
+            return
+        self._is_running = False
+        # Stop the webserver
+        self.stop_server()
+
+        self.deck_controllers.clear()
     
 
     def start_server(self):

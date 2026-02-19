@@ -97,8 +97,8 @@ class DeckManager:
         if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
             GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
 
-
-        gl.app.main_win.check_for_errors()
+        if recursive_hasattr(gl, "app.main_win"):
+            gl.app.main_win.check_for_errors()
 
     def remove_remote_decks(self):
         for controller in self.remote_deck_manager.deck_controllers:

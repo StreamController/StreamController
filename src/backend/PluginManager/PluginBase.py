@@ -1,3 +1,5 @@
+import glob
+from datetime import datetime
 from functools import lru_cache
 import importlib
 import os
@@ -6,6 +8,8 @@ import json
 import threading
 import time
 import subprocess
+from pathlib import Path
+
 from packaging import version
 
 from loguru import logger as log
@@ -35,6 +39,10 @@ from locales.LegacyLocaleManager import LegacyLocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.EventHolder import EventHolder
 
+from src.backend.Logger import Logger
+
+from loguru import logger
+
 class PluginBase(rpyc.Service):
     """
     The base class for all plugins.
@@ -47,8 +55,6 @@ class PluginBase(rpyc.Service):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
-
-        self.logger = gl.loggers.get("plugins", None)
 
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
         self.settings_path: str = os.path.join(gl.DATA_PATH, "settings", "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well
@@ -154,6 +160,8 @@ class PluginBase(rpyc.Service):
 
             settings = self.get_settings()
             self.first_setup = settings.get("first-setup", True)
+
+            self._create_logger()
         else:
             reason = None
 
@@ -277,6 +285,10 @@ class PluginBase(rpyc.Service):
         for action_holder in action_holders:
             self.add_action_holder(action_holder)
 
+    # --------------- #
+    #  Action Events  #
+    # --------------- #
+
     def add_event_holder(self, event_holder: EventHolder) -> None:
         """
         Adds a EventHolder to the Plugin
@@ -299,81 +311,89 @@ class PluginBase(rpyc.Service):
         for event_holder in event_holders:
             self.add_event_holder(event_holder)
 
+    def connect_to_event(self, callback: callable, plugin_id = None, event_id: str = None, event_id_suffix: str = None):
+        """
+        Connects to an event by using the plugin and event id
+        :param callback: The callback that gets triggered when the event is triggered.
+        :param plugin_id: Either a custom plugin id or None. If its None the plugin id from the plugin that the method got called in is being used.
+        :param event_id: The full event id that is used, this is optional when using event_id_suffix
+        :param event_id_suffix: This will replace the event_id by using the suffix only, the event_id will then be in the format of: <Plugin Id>::<Event Id Suffix>
+        """
+        plugin_id = plugin_id or self.get_plugin_id()
+        event_id = event_id or f"{plugin_id}::{event_id_suffix}"
+
+        plugin = self.get_plugin(plugin_id)
+
+        if plugin is None:
+            log.error(f"Plugin {plugin_id} not found")
+            return
+        if event_id is None:
+            log.error(f"Event for {plugin_id} is None")
+            return
+        if event_id not in plugin.event_holders:
+            log.error(f"Event {event_id} not found")
+            return
+
+        plugin.event_holders[event_id].add_listener(callback)
+
+    def disconnect_from_event(self, callback: callable, plugin_id = None, event_id: str = None, event_id_suffix: str = None):
+        """
+        Disconnects from an event by using the plugin and event id
+        :param callback: The callback that should be removed.
+        :param plugin_id: Either a custom plugin id or None. If its None the plugin id from the plugin that the method got called in is being used.
+        :param event_id: The full event id that is used, this is optional when using event_id_suffix
+        :param event_id_suffix: This will replace the event_id by using the suffix only, the event_id will then be in the format of: <Plugin Id>::<Event Id Suffix>
+        """
+        plugin_id = plugin_id or self.get_plugin_id()
+        event_id = event_id or f"{plugin_id}::{event_id_suffix}"
+
+        plugin = self.get_plugin(plugin_id)
+
+        if plugin is None:
+            log.error(f"Plugin {plugin_id} not found")
+            return
+        if event_id is None:
+            log.error(f"Event for {plugin_id} is None")
+            return
+        if event_id not in plugin.event_holders:
+            log.error(f"Event {event_id} not found")
+            return
+
+        plugin.event_holders[event_id].remove_listener(callback)
+
+    def trigger_event(self, plugin_id = None, event_id: str = None, event_id_suffix: str = None):
+        """
+        Triggers an event by using the plugin and event id
+        :param plugin_id: Either a custom plugin id or None. If its None the plugin id from the plugin that the method got called in is being used.
+        :param event_id: The full event id that is used, this is optional when using event_id_suffix
+        :param event_id_suffix: This will replace the event_id by using the suffix only, the event_id will then be in the format of: <Plugin Id>::<Event Id Suffix>
+        """
+        plugin_id = plugin_id or self.get_plugin_id()
+        event_id = event_id or f"{plugin_id}::{event_id_suffix}"
+
+        plugin = self.get_plugin(plugin_id)
+
+        if plugin is None:
+            log.error(f"Plugin {plugin_id} not found")
+            return
+        if event_id is None:
+            log.error(f"Event for {plugin_id} is None")
+            return
+        if event_id not in plugin.event_holders:
+            log.error(f"Event {event_id} not found")
+            return
+
+        plugin.event_holders[event_id].trigger_event()
+
+    # --------------- #
+    #  Action Groups  #
+    # --------------- #
+
     def add_action_holder_group(self, action_holder_group: ActionHolderGroup) -> None:
         self.action_holder_groups.add(action_holder_group)
 
     def add_action_holder_groups(self, action_holder_groups: list[ActionHolderGroup]) -> None:
         self.action_holder_groups.update(action_holder_groups)
-
-    def connect_to_event(self, callback: callable, event_id: str = None, event_id_suffix: str = None) -> None:
-        """
-        Connects a Callback to the Event which gets specified by the event ID
-
-        Args:
-            event_id (str): The ID of the Event.
-            callback (callable): The Callback that gets Called when the Event triggers
-
-        Returns:
-            None
-        """
-        full_id = event_id or f"{self.get_plugin_id()}::{event_id_suffix}"
-
-        if full_id in self.event_holders:
-            self.event_holders[event_id].add_listener(callback)
-        else:
-            log.warning(f"{event_id} does not exist in {self.plugin_name}")
-
-    def connect_to_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
-        """
-        Connects a Callback directly to a Plugin with the specified ID
-
-        Args:
-            plugin_id (str): The ID of the Plugin
-            event_id (str): The ID of the Event
-            callback (callable): The Callback that gets Called when the Event triggers
-
-        Returns:
-            None
-        """
-        plugin = self.get_plugin(plugin_id)
-        if plugin is None:
-            log.warning(f"{plugin_id} does not exist")
-        else:
-            plugin.connect_to_event(event_id, callback)
-
-    def disconnect_from_event(self, event_id: str, callback: callable) -> None:
-        """
-        Disconnects a Callback from the Event which gets specified by the event ID
-
-        Args:
-            event_id (str): The ID of the Event.
-            callback (callable): The Callback that gets Removed
-
-        Returns:
-            None
-        """
-        if event_id in self.event_holders:
-            self.event_holders[event_id].remove_listener(callback)
-        else:
-            log.warning(f"{event_id} does not exist in {self.plugin_name}")
-
-    def disconnect_from_event_directly(self, plugin_id: str, event_id: str, callback: callable) -> None:
-        """
-        Disconnects a Callback directly from a plugin with the specified ID
-
-        Args:
-            plugin_id (str): The ID of the Plugin
-            event_id (str): The ID of the Event.
-            callback (callable): The Callback that gets Removed
-
-        Returns:
-            None
-        """
-        plugin = self.get_plugin(plugin_id)
-        if plugin is None:
-            log.warning(f"{plugin_id} does not exist")
-        else:
-            self.disconnect_from_event(event_id, callback)
 
     def get_settings(self):
         """
@@ -564,6 +584,140 @@ class PluginBase(rpyc.Service):
 
     def get_settings_area(self):
         pass
+
+    # ---------- #
+    #  Logging   #
+    # ---------- #
+
+    def _create_logger(self) -> None:
+        """
+        Creates the Logger for this Plugin.
+        This method gets called in the register function
+        :return:
+        """
+        self._add_logger()
+        self._create_log_signal()
+
+    def _create_log_signal(self):
+        self.add_event_holder(EventHolder(
+            plugin_base=self,
+            event_id_suffix="Troubleshooting"
+        ))
+
+    def _add_logger(self):
+        self.LOG_PATH = os.path.join(gl.DATA_PATH, "logs", "plugins", self.plugin_id)
+        self.LOG_FILE_PATH = os.path.join(self.LOG_PATH, f"{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log")
+
+        log_level = self.get_plugin_id()
+
+        os.makedirs(self.LOG_PATH, exist_ok=True)  # Create the log directory if it doesn't exist yet
+        self._cleanup_old_logs()
+
+        # New custom log level with a high numeric value (100)
+        logger.level(
+            name=log_level,
+            no=100,
+            color="<bold><magenta><italic>"
+        )
+
+        # Filter function that only allows records matching the plugin's log level
+        def filter_log(record):
+            if record["level"].name.startswith(log_level):
+                return True
+            return False
+
+        logger.add(
+            sink=self.LOG_FILE_PATH,
+            level=log_level,
+            filter=filter_log,
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {extra[file_name]}:{extra[function]}:{extra[line]} - {message} : {extra[extra]}"
+        )
+
+    def _cleanup_old_logs(self, retention: int = 5) -> None:
+        """
+        Cleans up old log files.
+        This method gets called before the logger gets created
+        :param retention: How long log files should be kept.
+        """
+        log_files = sorted(
+            glob.glob(os.path.join(self.LOG_PATH, "*.log")),
+            key=os.path.getmtime,
+            reverse=True
+        )
+        for old_file in log_files[retention-1:]:
+            try:
+                os.remove(old_file)
+            except Exception as e:
+                print(f"Error deleting {old_file}: {e}")
+
+    def log(self, message, *args, **kwargs) -> None:
+        """
+        Can be used to add more information into the log. Can only be used after the plugin is registered.
+        :param message: The log message that will be displayed.
+        :param args: Any arguments that may want to be passed to loguru
+        :param kwargs: Arguments that will be used as extra information in the log. This will only be visible in the log file and not in the CLI
+        """
+        if not self.registered:
+            log.error("Can't log to Plugin file yet. Make sure to call this method after the Plugin is registered!")
+            return
+
+        file_name = function_name = line_number = "?"
+
+        try:
+            frame = inspect.currentframe() # Get the current frame (inside troubleshoot)
+            caller = frame.f_back # Move one frame up to the direct caller of troubleshoot
+
+            # Walk up the stack until we find a frame that is NOT from the internal base classes/files
+            while caller:
+                self_obj = caller.f_locals.get("self") # Try to get the instance (`self`) if available
+                cls_name = type(self_obj).__name__ if self_obj else None # Get class name
+
+                filename = caller.f_code.co_filename # Full path to the file of the caller
+                basename = os.path.basename(filename) # Just the filename (e.g., ActionCore.py)
+
+                # Skip internal classes and files
+                if cls_name in ("ActionCore", "ActionBase", "PluginBAse") or basename in ("PluginBase.py", "ActionCore.py", "ActionBase.py"):
+                    caller = caller.f_back
+                    continue
+
+                # Found a relevant (external) caller
+                file_path = Path(filename)
+                rel_path = os.path.relpath(str(file_path), self.PATH)
+                file_name = rel_path.replace(os.sep, ".").removesuffix(".py")
+
+                function_name = caller.f_code.co_name # Name of the function
+                line_number = caller.f_lineno # Stop walking up the stack
+
+                break
+        except Exception as e:
+            logger.error(f"Logger context error: {e}")
+        finally:
+            del frame  # Cleanup to avoid potential reference cycles in CPython
+
+        # Separate loguru-reserved keywords from our custom extra info
+        # exc_info and stack_info must not be included in the `extra` dict
+        extra = {k: kwargs.pop(k) for k in list(kwargs) if k not in ("exc_info", "stack_info")}
+
+        try:
+            logger.log(
+                self.get_plugin_id(),
+                message,
+                *args,
+                line=line_number,
+                function=function_name,
+                file_name=file_name,
+                extra=extra,
+                **kwargs
+            )
+        except Exception as e:
+            # If logging fails (e.g. plugin_id not registered), show an error with details
+            logger.error(f"Failed logging to Plugin log file. | Error: {e} | Troubleshoot content: {file_name}:{function_name}:{line_number} - {message} : {extra}")
+
+    def troubleshoot(self):
+        if not self.registered:
+            log.error("Can't troubleshoot yet. Make sure to call this method after the plugin is registered")
+            return
+        self.trigger_event(event_id_suffix="Troubleshooting")
 
     # ---------- #
     # Rpyc stuff #

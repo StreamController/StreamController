@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import threading
 import time
 from loguru import logger as log
-from copy import copy
 import subprocess
 import os
 from PIL import Image
@@ -86,6 +85,8 @@ class ActionCore(rpyc.Service):
         self.labels = {}
 
         self.event_manager = EventManager()
+
+        self.plugin_base.connect_to_event(event_id_suffix="Troubleshooting", callback=self.troubleshoot)
 
         log.info(f"Loaded action {self.action_name} with id {self.action_id}")
 
@@ -507,6 +508,21 @@ class ActionCore(rpyc.Service):
     def load_initial_generative_ui(self):
         for generative_object in self.generative_ui_objects:
             generative_object.load_initial_ui()
+
+    # ---------- #
+    #  Logging   #
+    # ---------- #
+
+    def log(self, message, **kwargs):
+        """
+        Can be used to add more information into the log.
+        :param message: The log message that will be displayed.
+        :param kwargs: Arguments that will be used as extra information in the log. This will only be visible in the log file and not in the CLI
+        """
+        self.plugin_base.log(message, **kwargs)
+
+    async def troubleshoot(self, *args, **kwargs):
+        pass
     
     # ---------- #
     # Rpyc stuff #

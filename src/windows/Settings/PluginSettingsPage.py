@@ -37,8 +37,7 @@ class PluginSettingsGroup(Adw.PreferencesGroup):
         super().__init__(title="Plugin Settings")
         for plugin_id in gl.plugin_manager.get_plugins():
             plugin_base = gl.plugin_manager.get_plugin_by_id(plugin_id)
-            self.add(PluginExpander(plugin_page=plugin_page, plugin_base=plugin_base))
-
+            self.add(PluginRow(plugin_page=plugin_page, plugin_base=plugin_base))
 
 class IconTextButton(Gtk.Button):
     def __init__(self, icon_name: str, text: str, **kwargs):
@@ -49,8 +48,7 @@ class IconTextButton(Gtk.Button):
         self.box.append(Gtk.Image(icon_name=icon_name, margin_end=5))
         self.box.append(Gtk.Label(label=text))
 
-
-class PluginExpander(Adw.ActionRow):
+class PluginRow(Adw.ActionRow):
     def __init__(self, plugin_page: PluginSettingsPage, plugin_base: PluginBase):
         self.plugin_page = plugin_page
         self.plugin_base = plugin_base
@@ -59,15 +57,18 @@ class PluginExpander(Adw.ActionRow):
         self.suffix_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.add_suffix(self.suffix_box)
 
-        # self.settings_window_button = Gtk.Button(label="Settings", icon_name="preferences-desktop-remote-desktop-symbolic", valign=Gtk.Align.CENTER)
-        self.settings_window_button = IconTextButton(icon_name="preferences-desktop-remote-desktop-symbolic", text="Open Settings", valign=Gtk.Align.CENTER)
+        self.settings_window_button = IconTextButton(icon_name="emblem-system-symbolic", text="Settings", valign=Gtk.Align.CENTER)
         self.suffix_box.append(self.settings_window_button)
 
-        self.changelog_window_button = Gtk.Button(label="About", valign=Gtk.Align.CENTER)
+        self.changelog_window_button = IconTextButton(icon_name="help-about-symbolic", text="About", valign=Gtk.Align.CENTER)
         self.suffix_box.append(self.changelog_window_button)
+
+        self.troubleshoot_button = IconTextButton(icon_name="system-run-symbolic", text="Diagnostics", valign=Gtk.Align.CENTER)
+        self.suffix_box.append(self.troubleshoot_button)
 
         self.settings_window_button.connect("clicked", self.on_settings_window_button_clicked)
         self.changelog_window_button.connect("clicked", self.on_changelog_window_button_clicked)
+        self.troubleshoot_button.connect("clicked", self.on_troubleshoot_button_clicked)
 
     def on_settings_window_button_clicked(self, *args):
         settings = PluginSettingsWindow(self.plugin_base)
@@ -79,6 +80,8 @@ class PluginExpander(Adw.ActionRow):
 
         about.present(self)
 
+    def on_troubleshoot_button_clicked(self, *args):
+        self.plugin_base.troubleshoot()
 
 class ToggleRow(Adw.ActionRow):
     def __init__(self):

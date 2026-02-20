@@ -79,8 +79,8 @@ class MediaManager:
         pil_image = Image.fromarray(frame_rgb)
         return pil_image
     
-    def generate_svg_thumbnail(self, file_path):
-        return svg_to_pil(file_path, 1024)
+    def generate_svg_thumbnail(self, file_path, width: int=96, height: int=96):
+        return svg_to_pil(file_path, width, height)
 
     def generate_image_thumbnail(self, file_path):
         return Image.open(file_path)

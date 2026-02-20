@@ -236,3 +236,5 @@ settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung
 settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;Taille du contour;Ancho del contorno;Largura do contorno
 settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline;Taille par défaut du contour;Ancho predeterminado del contorno;Largura padrão do contorno
 support;Unterstützen;Donate;Faites un don;Donar;Doar
+simple-screen.clock;Uhr;Clock;Horloge;Relogio;Relogio
+simple-screen.clock.expander.subtitle;Takt konfigurieren;Configure screen clock;Configurer l'horloge;Configurar relogio;Configurar relogio

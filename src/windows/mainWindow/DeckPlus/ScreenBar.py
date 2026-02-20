@@ -132,7 +132,7 @@ class ScreenBar(Gtk.Frame):
             controller_input = self.page_settings_page.deck_controller.get_input(self.identifier)
             state = controller_input.get_active_state().state
             gl.app.main_win.sidebar.load_for_identifier(self.identifier, state)
-            
+
         elif gesture.get_current_button() == 1 and n_press == 2:
             pass
             # Double left click

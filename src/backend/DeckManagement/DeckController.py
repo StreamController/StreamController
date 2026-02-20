@@ -140,6 +140,35 @@ class MediaPlayerSetImageTask:
 
                 gl.deck_manager.connect_new_decks()
 
+@dataclass
+class MediaPlayerSetScreenImageTask:
+    deck_controller: "DeckController"
+    page: Page
+    native_image: bytes
+
+    n_failed_in_row: ClassVar[dict] = {}
+
+    def run(self):
+        try:
+            self.deck_controller.deck.set_screen_image(self.native_image)
+            self.native_image = None
+            del self.native_image
+        except StreamDeck.TransportError as e:
+            log.error(f"Failed to set deck screen image. Error: {e}")
+
+            beta_resume = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
+            if beta_resume:
+                return
+
+            MediaPlayerSetScreenImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
+            if MediaPlayerSetScreenImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
+                log.debug(f"Failed to set screen image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
+
+                self.deck_controller.deck.close()
+                self.deck_controller.media_player.running = False # Set stop flag - otherwise remove_controller will wait until this task is done, which it never will because it waits
+                gl.deck_manager.remove_controller(self.deck_controller)
+
+                gl.deck_manager.connect_new_decks()
 
 class MediaPlayerThread(threading.Thread):
     def __init__(self, deck_controller: "DeckController"):
@@ -156,6 +185,7 @@ class MediaPlayerThread(threading.Thread):
         self.tasks: list[MediaPlayerTask] = []
         self.image_tasks = {}
         self.touchscreen_task = None
+        self.screen_task = None
 
         self.fps: list[float] = []
         self.old_warning_state = False
@@ -262,6 +292,13 @@ class MediaPlayerThread(threading.Thread):
             native_image=native_image
         )
 
+    def add_screen_task(self, native_image: bytes):
+        self.screen_task = MediaPlayerSetScreenImageTask(
+            deck_controller=self.deck_controller,
+            page=self.deck_controller.active_page,
+            native_image=native_image
+        )
+
     def add_image_task(self, key_index: int, native_image: bytes):
         self.image_tasks[key_index] = MediaPlayerSetImageTask(
             deck_controller=self.deck_controller,
@@ -291,6 +328,12 @@ class MediaPlayerThread(threading.Thread):
             self.touchscreen_task.run()
             del self.touchscreen_task
             self.touchscreen_task = None
+
+        if self.screen_task is not None:
+            self.screen_task.run()
+            del self.screen_task
+            self.screen_task = None
+
     def check_connection(self):
         try:
             self.deck_controller.deck.get_firmware_version()
@@ -323,9 +366,9 @@ class DeckController:
             log.error(f"Failed to clear deck, maybe it's already connected to another instance? Skipping... Error: {e}")
             del self
             return
-        
+
         self.hold_time: float = gl.settings_manager.get_app_settings().get("general", {}).get("hold-time", 0.5)
-        
+
         self.own_deck_stack_child: "DeckStackChild" = None
         self.own_key_grid: "KeyGridChild" = None
 
@@ -480,6 +523,15 @@ class DeckController:
         size = max(size[0], 800), max(size[1], 100)
         return size
 
+    @lru_cache(maxsize=None)
+    def get_screen_image_size(self) -> tuple[int]:
+        if not self.get_alive(): return
+        size = self.deck.screen_image_format()["size"]
+        if size is None:
+            return (800, 100)
+        return size
+
+    # ------------ #
     # ------------ #
     # Page Loading #
     # ------------ #
@@ -827,7 +879,7 @@ class DeckController:
         
         self.own_deck_stack_child = deck_stack_child
         return deck_stack_child
-    
+
     def clear(self):
         if not self.is_visual():
             return
@@ -842,6 +894,13 @@ class DeckController:
             native_image = PILHelper.to_native_touchscreen_format(self.deck, empty)
 
             self.deck.set_touchscreen_image(native_image, x_pos=0, y_pos=0, width=touchscreen_size[0], height=touchscreen_size[1])
+
+        if self.deck.is_visual():
+            screen_size = self.get_screen_image_size()
+            empty = Image.new("RGB", screen_size, (0, 0, 0))
+            native_image = PILHelper.to_native_screen_format(self.deck, empty)
+
+            self.deck.set_screen_image(native_image)
 
     def get_own_key_grid(self) -> KeyGrid:
         # Why not just lru_cache this? Because this would also cache the None that gets returned while the ui is still loading
@@ -900,6 +959,8 @@ class Background:
 
         self.tiles: list[Image.Image] = [None] * deck_controller.deck.key_count()
 
+        self.screen = None
+
     def set_image(self, image: "BackgroundImage", update: bool = True) -> None:
         self.image = image
         if self.video is not None:
@@ -908,8 +969,11 @@ class Background:
         gc.collect()
 
         self.update_tiles()
+        self.update_screen()
+
         if update:
             self.deck_controller.update_all_inputs()
+            self.screen = self.image.get_screen_image()
 
     def set_video(self, video: "BackgroundVideo", update: bool = True) -> None:
         if self.video is not None:
@@ -927,9 +991,11 @@ class Background:
             path = None
         if path is None:
             self.image = None
+            self.screen = None
             # self.video = None
             self.set_video(None, update=False)
             self.update_tiles()
+            self.update_screen()
             if update:
                 self.deck_controller.update_all_inputs()
         elif is_video(path):
@@ -964,6 +1030,10 @@ class Background:
                 del tile
         del old_tiles
 
+    def update_screen(self) -> None:
+        if self.image is not None:
+            self.screen = self.image.get_screen_image()
+
 class BackgroundImage:
     def __init__(self, deck_controller: DeckController, image: Image) -> None:
         self.deck_controller = deck_controller
@@ -986,10 +1056,17 @@ class BackgroundImage:
         # obscured pixels.
         full_deck_image_size = (key_width + spacing_x, key_height + spacing_y)
 
+        # If it has a screen, then extend the image to account for it
+        if self.deck_controller.deck.is_visual():
+            extra_screen_size = self.deck_controller.get_screen_image_size()
+
+            # Adds extra screen space, plus the vertical spacing
+            full_deck_image_size = tuple(map(sum, zip(full_deck_image_size, extra_screen_size, (0, spacing_y))))
+
         # Convert to RGBA first to preserve transparency, then resize
         img_rgba = self.image.convert("RGBA")
         return ImageOps.fit(img_rgba, full_deck_image_size, Image.LANCZOS)
-    
+
     def crop_key_image_from_deck_sized_image(self, image: Image.Image, key):
         deck = self.deck_controller.deck
 
@@ -1014,7 +1091,28 @@ class BackgroundImage:
 
         # Return the segment directly, converting to RGBA to preserve transparency
         return segment.convert("RGBA")
-    
+
+    def crop_screen_image_from_deck_sized_image(self, image: Image.Image):
+        deck = self.deck_controller.deck
+
+        key_rows, key_cols = deck.key_layout()
+        key_width, key_height = deck.key_image_format()['size']
+        screen_width, screen_height = self.deck_controller.get_screen_image_size()
+        spacing_x, spacing_y = self.deck_controller.key_spacing
+
+        # Compute the starting X and Y offsets into the full size image that the
+        # requested key should display.
+        start_x = key_width + spacing_x
+        start_y = key_rows * (key_height + spacing_y)
+
+        # Compute the region of the larger deck image that is occupied by the given
+        # key, and crop out that segment of the full image.
+        region = (start_x, start_y, start_x + screen_width, start_y + screen_height)
+        segment = image.crop(region)
+
+        # Return the segment directly, converting to RGBA to preserve transparency
+        return segment.convert("RGBA")
+
     def get_tiles(self) -> list[Image.Image]:
         full_deck_sized_image = self.create_full_deck_sized_image()
 
@@ -1024,6 +1122,11 @@ class BackgroundImage:
             tiles.append(key_image)
 
         return tiles
+
+    def get_screen_image(self):
+        full_deck_sized_image = self.create_full_deck_sized_image()
+
+        return self.crop_screen_image_from_deck_sized_image(full_deck_sized_image)
 
 class BackgroundVideo(BackgroundVideoCache):
     def __init__(self, deck_controller: DeckController, video_path: str, loop: bool = True, fps: int = 30) -> None:
@@ -2285,6 +2388,55 @@ class ControllerKey(ControllerInput):
     
     def get_image_size(self) -> tuple[int, int]:
         return self.deck_controller.get_key_image_size()
+
+class ControllerScreen(ControllerInput):
+    def __init__(self, deck_controller: DeckController, ident: InputIdentifier):
+        super().__init__(deck_controller, ControllerTouchScreenState, ident)
+
+        self.enable_states = False
+
+    @staticmethod
+    def Available_Identifiers(deck):
+        if deck.is_visual():
+            return ["sd-neo"]
+        return []
+
+    def update(self) -> None:
+        image = self.get_current_image()
+
+        if image is None:
+            return
+
+        rgb_image = image.convert("RGB")
+        native_image = PILHelper.to_native_screen_format(self.deck_controller.deck, rgb_image)
+        rgb_image.close()
+        self.deck_controller.media_player.add_screen_task(native_image)
+
+        del rgb_image
+        self.set_ui_image(image)
+
+    def generate_empty_image(self) -> Image.Image:
+        return Image.new("RGBA", self.get_screen_dimensions(), (0, 0, 0, 0))
+
+    def set_ui_image(self, image: Image.Image) -> None:
+        if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
+            screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
+            screenbar.image.set_image(image)
+        else:
+            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
+
+    def get_current_image(self) -> Image.Image:
+        return self.deck_controller.background.screen
+
+    def get_screen_dimensions(self) -> tuple[int, int]:
+        return self.deck_controller.get_screen_image_size()
+
+    def clear(self):
+        self.set_current_image(self.controller_touch.generate_empty_image())
+
+    def set_current_image(self) -> None:
+        self.deck_controller.deck.set_screen_image(native_image)
+
 
 class ControllerTouchScreen(ControllerInput):
     def __init__(self, deck_controller: DeckController, ident: InputIdentifier):

@@ -45,6 +45,7 @@ from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
 from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
 from src.backend.PageManagement.Page import ActionOutdated, Page, NoActionHolderFound
+from src.api import notify_active_page_changed
 
 process = psutil.Process()
 
@@ -731,6 +732,9 @@ class DeckController:
 
         # Notify plugin actions
         gl.signal_manager.trigger_signal(Signals.ChangePage, self, old_path, self.active_page.json_path)
+
+        # Notify DBus API of the page change
+        notify_active_page_changed(self.serial_number(), page.get_name())
 
         log.info(f"Loaded page {page.get_name()} on deck {self.deck.get_serial_number()}")
         gc.collect()

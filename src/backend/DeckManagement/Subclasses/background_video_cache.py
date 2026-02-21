@@ -5,6 +5,7 @@ import pickle
 import sys
 import threading
 import time
+from collections import OrderedDict
 from PIL import Image, ImageOps
 import cv2
 from StreamDeck.ImageHelpers import PILHelper
@@ -29,7 +30,7 @@ class BackgroundVideoCache:
         self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)
         self.n_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.cache = {}
+        self.cache = OrderedDict()
         self.last_decoded_frame = None
         self.last_frame_index = -1
 
@@ -42,8 +43,15 @@ class BackgroundVideoCache:
         self.spacing = self.deck_controller.key_spacing
 
         self.cache_stored = False
+        self._closed = False
+        self.max_cached_frames = int(
+            gl.settings_manager.get_app_settings()
+            .get("performance", {})
+            .get("background-max-cached-frames", 180)
+        )
 
         thread = threading.Thread(target=self.load_cache, name="load_video_cache")
+        thread.daemon = True
         thread.start()
 
         if self.is_cache_complete():
@@ -57,6 +65,8 @@ class BackgroundVideoCache:
         self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
 
     def get_tiles(self, n):
+        if self._closed:
+            return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
         # Check if cache is available (video may have been closed)
         if not hasattr(self, 'cache') or self.cache is None:
             return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
@@ -96,12 +106,9 @@ class BackgroundVideoCache:
                     current_tiles = self.crop_key_image_from_deck_sized_image(full_sized, key)
                     tiles.append(current_tiles)
 
-                    if n >= self.n_frames - 1:
-                        if not self.is_cache_complete():
-                            self.save_cache_threaded()
-
                 if self.do_caching and self.cache is not None:
                     self.cache[self.last_frame_index] = tiles
+                    self._trim_cache_to_limit()
                 self.last_tiles = tiles
                 
 
@@ -200,6 +207,8 @@ class BackgroundVideoCache:
 
     @log.catch
     def load_cache(self, key_index: int = None):
+        if self._closed:
+            return
         cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
         if not os.path.exists(cache_path):
             return
@@ -211,7 +220,12 @@ class BackgroundVideoCache:
         _time = time.time()
         try:
             with ibz2.open(cache_path, parallelization=os.cpu_count()) as f:
-                self.cache = pickle.load(f)
+                loaded_cache = pickle.load(f)
+            if self._closed:
+                return
+            self.cache = OrderedDict(sorted(loaded_cache.items(), key=lambda x: x[0]))
+            self._trim_cache_to_limit()
+            del loaded_cache
             log.success(f"Loaded cache in {time.time() - _time:.2f} seconds")
         except Exception as e:
             os.remove(cache_path)
@@ -229,18 +243,35 @@ class BackgroundVideoCache:
                 return False
 
         return True
-    
+
+    def _trim_cache_to_limit(self) -> None:
+        if self.cache is None:
+            return
+        if self.max_cached_frames <= 0:
+            return
+        while len(self.cache) > self.max_cached_frames:
+            _, stale_tiles = self.cache.popitem(last=False)
+            for tile in stale_tiles:
+                if tile is not None:
+                    tile.close()
+
     def close(self) -> None:
         import gc
+        self._closed = True
         with self.lock:
             self.cap.release()
 
         if hasattr(self, 'cache') and self.cache is not None:
-            for n in self.cache:
+            for n in list(self.cache.keys()):
                 for f in self.cache[n]:
                     if f is not None:
                         f.close()
 
             self.cache.clear()
+        if hasattr(self, "last_tiles") and self.last_tiles is not None:
+            for tile in self.last_tiles:
+                if tile is not None:
+                    tile.close()
+            self.last_tiles = []
         self.cache = None
         gc.collect()

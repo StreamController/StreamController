@@ -1016,6 +1016,8 @@ class Background:
         self.tiles: list[Image.Image] = [None] * deck_controller.deck.key_count()
 
     def set_image(self, image: "BackgroundImage", update: bool = True) -> None:
+        if self.image is not None:
+            self.image.close()
         self.image = image
         if self.video is not None:
             self.video.close()
@@ -1027,6 +1029,8 @@ class Background:
             self.deck_controller.update_all_inputs()
 
     def set_video(self, video: "BackgroundVideo", update: bool = True) -> None:
+        if self.image is not None:
+            self.image.close()
         if self.video is not None:
             self.video.close()
         self.image = None
@@ -1137,8 +1141,15 @@ class BackgroundImage:
         for key in range(self.deck_controller.deck.key_count()):
             key_image = self.crop_key_image_from_deck_sized_image(full_deck_sized_image, key)
             tiles.append(key_image)
+        full_deck_sized_image.close()
 
         return tiles
+
+    def close(self) -> None:
+        if self.image is None:
+            return
+        self.image.close()
+        self.image = None
 
 class BackgroundVideo(BackgroundVideoCache):
     def __init__(self, deck_controller: DeckController, video_path: str, loop: bool = True, fps: int = 30) -> None:

@@ -1,6 +1,7 @@
 import os
 import importlib
 import sys
+import re
 from loguru import logger as log
 import threading
 
@@ -19,6 +20,79 @@ class PluginManager:
         self.backends:list[BackendBase] = []
         self.loaded_plugin_ids: set[str] = set()
         self._action_index_lock = threading.RLock()
+        self._deferred_services_lock = threading.Lock()
+        self._plugin_folder_resolution_cache: dict[str, str | None] = {}
+        self._daemon_only_mode = gl.argparser.parse_args().daemon_only
+
+    @staticmethod
+    def _normalize_plugin_identifier(value: str) -> str:
+        if not isinstance(value, str):
+            return ""
+        return re.sub(r"[^a-z0-9]+", "", value.lower())
+
+    def _resolve_plugin_folder_id(self, plugin_id: str) -> str | None:
+        if not plugin_id:
+            return None
+        if plugin_id in self._plugin_folder_resolution_cache:
+            return self._plugin_folder_resolution_cache[plugin_id]
+        if os.path.isdir(os.path.join(gl.PLUGIN_DIR, plugin_id)):
+            self._plugin_folder_resolution_cache[plugin_id] = plugin_id
+            return plugin_id
+
+        normalized_target = self._normalize_plugin_identifier(plugin_id)
+        if not normalized_target:
+            self._plugin_folder_resolution_cache[plugin_id] = None
+            return None
+
+        try:
+            folders = os.listdir(gl.PLUGIN_DIR)
+        except Exception:
+            return plugin_id
+
+        matches = [
+            folder for folder in folders
+            if self._normalize_plugin_identifier(folder) == normalized_target
+        ]
+        if len(matches) == 1:
+            log.debug(f"Resolved action plugin id '{plugin_id}' to plugin folder '{matches[0]}'")
+            self._plugin_folder_resolution_cache[plugin_id] = matches[0]
+            return matches[0]
+
+        return plugin_id
+
+    def _ensure_deferred_services_for_daemon_plugin_load(self) -> None:
+        if not self._daemon_only_mode:
+            return
+
+        with self._deferred_services_lock:
+            if (
+                gl.asset_manager_backend is not None and
+                gl.icon_pack_manager is not None and
+                gl.wallpaper_pack_manager is not None and
+                gl.sd_plus_bar_wallpaper_pack_manager is not None and
+                gl.store_backend is not None
+            ):
+                return
+
+            # Some plugins assume these managers exist during plugin init. In
+            # daemon-only mode they are intentionally deferred, so initialize them
+            # lazily when we first need to load a plugin on demand.
+            from src.backend.AssetManagerBackend import AssetManagerBackend
+            from src.backend.IconPackManagement.IconPackManager import IconPackManager
+            from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
+            from src.backend.SDPlusBarWallpaperPackManagement.SDPlusBarWallpaperPackManager import SDPlusBarWallpaperPackManager
+            from src.backend.Store.StoreBackend import StoreBackend
+
+            if gl.asset_manager_backend is None:
+                gl.asset_manager_backend = AssetManagerBackend()
+            if gl.icon_pack_manager is None:
+                gl.icon_pack_manager = IconPackManager()
+            if gl.wallpaper_pack_manager is None:
+                gl.wallpaper_pack_manager = WallpaperPackManager()
+            if gl.sd_plus_bar_wallpaper_pack_manager is None:
+                gl.sd_plus_bar_wallpaper_pack_manager = SDPlusBarWallpaperPackManager()
+            if gl.store_backend is None:
+                gl.store_backend = StoreBackend()
 
     def load_plugins(self, show_notification: bool = False, plugin_ids: set[str] | None = None):
         # get all folders in plugins folder
@@ -139,13 +213,18 @@ class PluginManager:
         plugin_id = self.get_plugin_id_from_action_id(action_id)
         if not plugin_id:
             return None
+        plugin_folder_id = self._resolve_plugin_folder_id(plugin_id)
+        self._ensure_deferred_services_for_daemon_plugin_load()
 
         with self._action_index_lock:
             action_holder = self.action_index.get(action_id)
             if action_holder is not None:
                 return action_holder
 
-            self.load_plugins(plugin_ids={plugin_id})
+            if plugin_folder_id:
+                self.load_plugins(plugin_ids={plugin_folder_id})
+            else:
+                self.load_plugins(plugin_ids={plugin_id})
             self.generate_action_index()
             return self.action_index.get(action_id)
             

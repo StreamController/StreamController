@@ -16,6 +16,8 @@ import globals as gl
 
 VID_CACHE = os.path.join(gl.DATA_PATH, "cache", "videos")
 os.makedirs(VID_CACHE, exist_ok=True)
+_VIDEO_HASH_CACHE: dict[tuple[str, int, int], str] = {}
+_VIDEO_HASH_CACHE_LOCK = threading.Lock()
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -44,12 +46,6 @@ class BackgroundVideoCache:
 
         self.cache_stored = False
         self._closed = False
-        self.max_cached_frames = int(
-            gl.settings_manager.get_app_settings()
-            .get("performance", {})
-            .get("background-max-cached-frames", 180)
-        )
-
         thread = threading.Thread(target=self.load_cache, name="load_video_cache")
         thread.daemon = True
         thread.start()
@@ -108,7 +104,6 @@ class BackgroundVideoCache:
 
                 if self.do_caching and self.cache is not None:
                     self.cache[self.last_frame_index] = tiles
-                    self._trim_cache_to_limit()
                 self.last_tiles = tiles
                 
 
@@ -170,13 +165,30 @@ class BackgroundVideoCache:
         return segment
 
     def get_video_hash(self) -> str:
+        try:
+            stat = os.stat(self.video_path)
+            cache_key = (self.video_path, int(stat.st_mtime_ns), int(stat.st_size))
+        except Exception:
+            cache_key = None
+
+        if cache_key is not None:
+            with _VIDEO_HASH_CACHE_LOCK:
+                cached_hash = _VIDEO_HASH_CACHE.get(cache_key)
+            if cached_hash is not None:
+                return cached_hash
+
         sha1sum = hashlib.md5()
         with open(self.video_path, 'rb') as video:
             block = video.read(2**16)
             while len(block) != 0:
                 sha1sum.update(block)
                 block = video.read(2**16)
-            return sha1sum.hexdigest()
+            digest = sha1sum.hexdigest()
+
+        if cache_key is not None:
+            with _VIDEO_HASH_CACHE_LOCK:
+                _VIDEO_HASH_CACHE[cache_key] = digest
+        return digest
         
     def save_cache_threaded(self):
         t = threading.Thread(target=self.save_cache, name="save_video_cache")
@@ -225,7 +237,6 @@ class BackgroundVideoCache:
                 if self._closed:
                     return
                 self.cache = OrderedDict(sorted(loaded_cache.items(), key=lambda x: x[0]))
-                self._trim_cache_to_limit()
             del loaded_cache
             log.success(f"Loaded cache in {time.time() - _time:.2f} seconds")
         except Exception as e:
@@ -244,17 +255,6 @@ class BackgroundVideoCache:
                 return False
 
         return True
-
-    def _trim_cache_to_limit(self) -> None:
-        if self.cache is None:
-            return
-        if self.max_cached_frames <= 0:
-            return
-        while len(self.cache) > self.max_cached_frames:
-            _, stale_tiles = self.cache.popitem(last=False)
-            for tile in stale_tiles:
-                if tile is not None:
-                    tile.close()
 
     def close(self) -> None:
         import gc

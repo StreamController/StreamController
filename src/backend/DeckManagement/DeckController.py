@@ -998,6 +998,13 @@ class DeckController:
             self.media_player.stop()
         if hasattr(self, "input_load_executor"):
             self.input_load_executor.shutdown(wait=False, cancel_futures=True)
+        if hasattr(self, "background"):
+            if getattr(self.background, "video", None) is not None:
+                self.background.video.close()
+                self.background.video = None
+            if getattr(self.background, "standby_video", None) is not None:
+                self.background.standby_video.close()
+                self.background.standby_video = None
 
         self.keep_actions_ticking = False
         self.deck.run_read_thread = False
@@ -1015,15 +1022,23 @@ class Background:
 
         self.image = None
         self.video = None
+        self.standby_video: "BackgroundVideo" | None = None
 
         self.tiles: list[Image.Image] = [None] * deck_controller.deck.key_count()
+
+    def _park_video(self, video: "BackgroundVideo" | None) -> None:
+        if video is None:
+            return
+        if self.standby_video is not None and self.standby_video is not video:
+            self.standby_video.close()
+        self.standby_video = video
 
     def set_image(self, image: "BackgroundImage", update: bool = True) -> None:
         if self.image is not None:
             self.image.close()
         self.image = image
         if self.video is not None:
-            self.video.close()
+            self._park_video(self.video)
         self.video = None
         gc.collect()
 
@@ -1034,10 +1049,12 @@ class Background:
     def set_video(self, video: "BackgroundVideo", update: bool = True) -> None:
         if self.image is not None:
             self.image.close()
-        if self.video is not None:
-            self.video.close()
+        if self.video is not None and self.video is not video:
+            self._park_video(self.video)
         self.image = None
         self.video = video
+        if self.standby_video is video:
+            self.standby_video = None
         gc.collect()
 
         self.update_tiles()
@@ -1060,6 +1077,12 @@ class Background:
                     self.video.page = self.deck_controller.active_page
                     self.video.fps = fps
                     self.video.loop = loop
+                    return
+                if self.video is None and self.standby_video is not None and self.standby_video.video_path == path:
+                    self.standby_video.page = self.deck_controller.active_page
+                    self.standby_video.fps = fps
+                    self.standby_video.loop = loop
+                    self.set_video(self.standby_video, update=update)
                     return
             self.set_video(BackgroundVideo(self.deck_controller, path, loop=loop, fps=fps), update=update)
         else:

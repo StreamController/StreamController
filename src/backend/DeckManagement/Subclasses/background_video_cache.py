@@ -122,13 +122,17 @@ class BackgroundVideoCache:
         return tiles
     
     def create_full_deck_sized_image(self, frame: Image.Image) -> Image.Image:
-        key_width *= self.key_layout[0]
-        key_height *= self.key_layout[1]
+        key_rows, key_cols = self.key_layout
+        key_width, key_height = self.key_size
+        spacing_x, spacing_y = self.spacing
+
+        key_width *= key_cols
+        key_height *= key_rows
 
         # Compute the total number of extra non-visible pixels that are obscured by
         # the bezel of the StreamDeck.
-        spacing_x *= self.key_layout[0] - 1
-        spacing_y *= self.key_layout[1] - 1
+        spacing_x *= key_cols - 1
+        spacing_y *= key_rows - 1
 
         # Compute final full deck image size, based on the number of buttons and
         # obscured pixels.

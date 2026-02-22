@@ -208,8 +208,11 @@ class MediaPlayerThread(threading.Thread):
             self.append_fps(1 / (end - start))
             self.update_low_fps_warning()
             wait = max(0, 1/target_fps - (end - start))
-            self._wake_event.wait(wait)
-            self._wake_event.clear()
+            if animated:
+                time.sleep(wait)
+            else:
+                self._wake_event.wait(wait)
+                self._wake_event.clear()
 
             if self._stop:
                 break

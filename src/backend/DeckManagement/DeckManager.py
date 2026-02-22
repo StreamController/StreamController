@@ -292,12 +292,35 @@ class DeckManager:
             new_device = self.get_device_by_serial(deck_controller.serial_number())
             if new_device:
                 log.info(f"Replacing deck")
-                deck_controller.deck = new_device
-                deck_controller.update_all_inputs()
+                rotation = 0
+                if hasattr(deck_controller.deck, "get_rotation"):
+                    try:
+                        rotation = deck_controller.deck.get_rotation()
+                    except Exception:
+                        rotation = 0
+
+                # Re-wrap the reconnected device to preserve BetterDeck behavior.
+                deck_controller.deck = BetterDeck(new_device, rotation)
 
                 deck_controller.deck.set_key_callback(deck_controller.key_event_callback)
                 deck_controller.deck.set_dial_callback(deck_controller.dial_event_callback)
                 deck_controller.deck.set_touchscreen_callback(deck_controller.touchscreen_event_callback)
+
+                # Reset cached signatures so resume always refreshes media/background state.
+                if hasattr(deck_controller, "_last_background_signature"):
+                    deck_controller._last_background_signature = None
+                if hasattr(deck_controller, "_last_screensaver_signature"):
+                    deck_controller._last_screensaver_signature = None
+
+                # Force reload of current page to restore backgrounds/screensaver/media on device.
+                if deck_controller.active_page is not None:
+                    deck_controller.load_page(
+                        deck_controller.active_page,
+                        allow_reload=True,
+                        force_background_reload=True,
+                    )
+                else:
+                    deck_controller.load_default_page()
 
                 # deck_controller.deck._setup_reader(deck_controller.deck._read)
 

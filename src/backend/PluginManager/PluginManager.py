@@ -18,6 +18,7 @@ class PluginManager:
         self.initialized_plugin_classes = list[PluginBase]()
         self.backends:list[BackendBase] = []
         self.loaded_plugin_ids: set[str] = set()
+        self._action_index_lock = threading.RLock()
 
     def load_plugins(self, show_notification: bool = False, plugin_ids: set[str] | None = None):
         # get all folders in plugins folder
@@ -79,11 +80,12 @@ class PluginManager:
             self.initialized_plugin_classes.append(subclass)
 
     def generate_action_index(self):
-        self.action_index.clear()
-        plugins = self.get_plugins()
-        for plugin in plugins.values():
-            plugin_base = plugin["object"]
-            self.action_index.update(plugin_base.action_holders)
+        with self._action_index_lock:
+            self.action_index.clear()
+            plugins = self.get_plugins()
+            for plugin in plugins.values():
+                plugin_base = plugin["object"]
+                self.action_index.update(plugin_base.action_holders)
 
         return
         plugins = self.get_plugins()
@@ -116,7 +118,8 @@ class PluginManager:
         Example string: dev_core447_MediaPlugin::Pause
         """
         try:
-            return self.action_index[action_id]
+            with self._action_index_lock:
+                return self.action_index[action_id]
         except KeyError:
             log.warning(f"Requested action {action_id} not found, skipping...")
             return None
@@ -128,17 +131,23 @@ class PluginManager:
         deferred and a page references an action from a plugin that has not been
         loaded yet.
         """
-        action_holder = self.action_index.get(action_id)
-        if action_holder is not None:
-            return action_holder
+        with self._action_index_lock:
+            action_holder = self.action_index.get(action_id)
+            if action_holder is not None:
+                return action_holder
 
         plugin_id = self.get_plugin_id_from_action_id(action_id)
         if not plugin_id:
             return None
 
-        self.load_plugins(plugin_ids={plugin_id})
-        self.generate_action_index()
-        return self.action_index.get(action_id)
+        with self._action_index_lock:
+            action_holder = self.action_index.get(action_id)
+            if action_holder is not None:
+                return action_holder
+
+            self.load_plugins(plugin_ids={plugin_id})
+            self.generate_action_index()
+            return self.action_index.get(action_id)
             
     def get_plugin_by_id(self, plugin_id:str, include_disabled: bool = True) -> PluginBase:
         return self.get_plugins(include_disabled).get(plugin_id, {}).get("object", None)

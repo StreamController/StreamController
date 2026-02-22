@@ -46,4 +46,9 @@ class InputVideo(SingleKeyAsset):
     
     def get_raw_image(self) -> Image.Image:
         return self.get_next_frame()
+
+    def close(self) -> None:
+        if getattr(self, "video_cache", None) is not None:
+            self.video_cache.close()
+            self.video_cache = None
      

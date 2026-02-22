@@ -13,7 +13,6 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from functools import lru_cache
 import hashlib
 import os
 import sys
@@ -43,7 +42,6 @@ class VideoFrameCache:
         self.load_cache()
 
         self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
-        self.do_caching = True
 
 
         if self.is_cache_complete():
@@ -154,6 +152,17 @@ class VideoFrameCache:
 
             log.info(f"Loaded cache in {time.time() - start:.2f} seconds")
 
-    @lru_cache(maxsize=None)
     def is_cache_complete(self) -> bool:
         return len(self.cache) == self.n_frames
+
+    def close(self) -> None:
+        with self.lock:
+            self.cap.release()
+
+        if self.cache is not None:
+            for frame in self.cache.values():
+                if frame is not None:
+                    frame.close()
+            self.cache.clear()
+        self.cache = None
+        self.last_decoded_frame = None

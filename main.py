@@ -81,7 +81,7 @@ main_path = os.path.abspath(os.path.dirname(__file__))
 gl.MAIN_PATH = main_path
 
 def write_logs(record):
-    gl.logs.append(record)
+    gl.logs.append(str(record))
 
 @log.catch
 def config_logger():

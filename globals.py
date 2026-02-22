@@ -1,6 +1,7 @@
 import json
 import Pyro5.api
 import os
+from collections import deque
 from typing import TYPE_CHECKING
 import argparse
 import sys
@@ -134,7 +135,7 @@ loggers: dict[str, "Logger"] = {}
 
 app_version: str = "1.5.0-beta.13"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
-logs: list[str] = []
+logs = deque(maxlen=5000)
 
 release_notes: str = """
 <p>Features:</p>

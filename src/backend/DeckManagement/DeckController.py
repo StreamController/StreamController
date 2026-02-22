@@ -1167,6 +1167,10 @@ class LabelManager:
         self.scroll_wait = 25
 
         self.init_labels()
+        self._scroll_cache_dirty = True
+        self._has_scroll_labels_cache = False
+        self._has_any_text_cache_dirty = True
+        self._has_any_text_cache = False
         self.frames: dict[str, dict[str, int]] = {
             "top": {
                 "position": 0,
@@ -1186,9 +1190,15 @@ class LabelManager:
         for position in ["top", "center", "bottom"]:
             self.page_labels[position] = KeyLabel(self.controller_input)
             self.action_labels[position] = KeyLabel(self.controller_input)
+        self.invalidate_label_caches()
  
     def clear_labels(self):
         self.init_labels()
+        self.invalidate_label_caches()
+
+    def invalidate_label_caches(self):
+        self._scroll_cache_dirty = True
+        self._has_any_text_cache_dirty = True
 
     def set_page_label(self, position: str, label: "KeyLabel", update: bool = True):
         if label is None:
@@ -1196,6 +1206,7 @@ class LabelManager:
             label.clear_values()
         else:
             self.page_labels[position] = label
+        self.invalidate_label_caches()
         
         if update:
             self.update_label(position)
@@ -1206,6 +1217,7 @@ class LabelManager:
             label.clear_values()
         else:
             self.action_labels[position] = label
+        self.invalidate_label_caches()
 
         self.update_label_editor()
         if update:
@@ -1322,14 +1334,37 @@ class LabelManager:
         return self.controller_input.get_image_size()[0]
 
     def get_has_scroll_labels(self) -> bool:
+        if not self._scroll_cache_dirty:
+            return self._has_scroll_labels_cache
         labels = self.get_composed_labels()
+        has_scroll = False
         for label in labels:
             if labels[label].text is not None and labels[label].text != "":
                 _, _, w, _ = labels[label].get_font().getbbox(labels[label].text)
                 if w > self.get_available_width():
-                    return True
-        return False
+                    has_scroll = True
+                    break
+        self._has_scroll_labels_cache = has_scroll
+        self._scroll_cache_dirty = False
+        return has_scroll
 
+    def has_any_text(self) -> bool:
+        if not self._has_any_text_cache_dirty:
+            return self._has_any_text_cache
+        for position in ["top", "center", "bottom"]:
+            page_label = self.page_labels.get(position)
+            action_label = self.action_labels.get(position)
+            if page_label is not None and page_label.text not in [None, ""]:
+                self._has_any_text_cache = True
+                self._has_any_text_cache_dirty = False
+                return True
+            if action_label is not None and action_label.text not in [None, ""]:
+                self._has_any_text_cache = True
+                self._has_any_text_cache_dirty = False
+                return True
+        self._has_any_text_cache = False
+        self._has_any_text_cache_dirty = False
+        return False
     def add_labels_to_image(self, image: Image.Image) -> Image.Image:
         # image = image.rotate(self.deck.get_rotation()*-1)
         draw = ImageDraw.Draw(image)
@@ -2759,6 +2794,8 @@ class ControllerKeyState(ControllerInputState):
     def set_image(self, key_image: "InputImage", update: bool = True) -> None:
         if self.key_image is not None:
             self.key_image.close()
+        if self.key_video is not None:
+            self.key_video.close()
 
         self.key_image = key_image
         self.key_video = None
@@ -2767,12 +2804,18 @@ class ControllerKeyState(ControllerInputState):
             self.update()
 
     def set_video(self, key_video: "InputVideo") -> None:
+        if self.key_video is not None:
+            self.key_video.close()
         self.key_video = key_video
         if self.key_image is not None:
             self.key_image.close()
         self.key_image = None
 
     def clear(self):
+        if self.key_image is not None:
+            self.key_image.close()
+        if self.key_video is not None:
+            self.key_video.close()
         self.key_image = None
         self.key_video = None
         self.label_manager.clear_labels()

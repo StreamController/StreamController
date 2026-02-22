@@ -59,6 +59,8 @@ if TYPE_CHECKING:
     from src.backend.DeckManagement.DeckController import ControllerInput, ControllerInputState
 
 class ActionCore(rpyc.Service):
+    backend_spawn_count = 0
+
     # Change to match your action
     def __init__(self, action_id: str, action_name: str,
                  deck_controller: "DeckController", page: "Page", plugin_base: "PluginBase", state: int,
@@ -66,6 +68,7 @@ class ActionCore(rpyc.Service):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
+        self.backend_process: subprocess.Popen | None = None
         
         self.deck_controller = deck_controller
         self.page = page
@@ -524,9 +527,17 @@ class ActionCore(rpyc.Service):
             self.server.close()
         if self.backend_connection is not None:
             self.backend_connection.close()
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            log.info(f"[backend] stopping action backend pid={self.backend_process.pid} action={self.action_id}")
+            self.backend_process.terminate()
         self.backend = None
+        self.backend_process = None
     
     def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            log.info("Backend process already running, skipping launch.")
+            return
+
         self.start_server()
         port = self.server.port
 
@@ -550,7 +561,12 @@ class ActionCore(rpyc.Service):
             command += f"python3 {backend_path} --port={port}"
 
         log.info(f"Launching backend: {command}")
-        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        self.backend_process = subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        ActionCore.backend_spawn_count += 1
+        log.info(
+            f"[backend] started action backend pid={self.backend_process.pid} "
+            f"action={self.action_id} spawns={ActionCore.backend_spawn_count}"
+        )
 
         self.wait_for_backend()
 
@@ -575,8 +591,7 @@ class ActionCore(rpyc.Service):
         return True
     
     def on_removed_from_cache(self) -> None:
-        #TODO: Fully implement
-        pass
+        self.on_disconnect()
 
     def on_remove(self) -> None:
         #TODO: Fully implement

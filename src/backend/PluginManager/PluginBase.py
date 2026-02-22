@@ -42,11 +42,13 @@ class PluginBase(rpyc.Service):
 
     plugins = {}
     disabled_plugins = {}
+    backend_spawn_count = 0
 
     def __init__(self, use_legacy_locale: bool = True, legacy_dir: str = "locales"):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
+        self.backend_process: subprocess.Popen | None = None
 
         self.logger = gl.loggers.get("plugins", None)
 
@@ -601,7 +603,12 @@ class PluginBase(rpyc.Service):
             self.server.close()
         if self.backend_connection is not None:
             self.backend_connection.close()
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            plugin_id = self.get_plugin_id_from_folder_name()
+            log.info(f"[backend] stopping plugin backend pid={self.backend_process.pid} plugin={plugin_id}")
+            self.backend_process.terminate()
         self.backend_connection = None
+        self.backend_process = None
 
     def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False) -> None:
         """
@@ -618,6 +625,10 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            log.info("Backend process already running, skipping launch.")
+            return
+
         self.start_server()
         port = self.server.port
 
@@ -634,7 +645,13 @@ class PluginBase(rpyc.Service):
             command += f"python3 {backend_path} --port={port}"
 
         log.info(f"Launching backend: {command}")
-        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        self.backend_process = subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        PluginBase.backend_spawn_count += 1
+        plugin_id = self.get_plugin_id_from_folder_name()
+        log.info(
+            f"[backend] started plugin backend pid={self.backend_process.pid} "
+            f"plugin={plugin_id} spawns={PluginBase.backend_spawn_count}"
+        )
 
         self.wait_for_backend()
 

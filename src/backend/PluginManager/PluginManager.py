@@ -17,21 +17,27 @@ class PluginManager:
     def __init__(self):
         self.initialized_plugin_classes = list[PluginBase]()
         self.backends:list[BackendBase] = []
+        self.loaded_plugin_ids: set[str] = set()
 
-    def load_plugins(self, show_notification: bool = False):
+    def load_plugins(self, show_notification: bool = False, plugin_ids: set[str] | None = None):
         # get all folders in plugins folder
         if not os.path.exists(gl.PLUGIN_DIR):
             os.mkdir(gl.PLUGIN_DIR)
         folders = os.listdir(gl.PLUGIN_DIR)
         for folder in folders:
+            if plugin_ids is not None and folder not in plugin_ids:
+                continue
             # Import main module
             import_string = f"plugins.{folder}.main"
             if import_string not in sys.modules.keys():
                 # Import module only if it's not already imported
                 try:
                     importlib.import_module(f"plugins.{folder}.main")
+                    self.loaded_plugin_ids.add(folder)
                 except Exception as e:
                     log.error(f"Error importing plugin {folder}: {e}")
+            else:
+                self.loaded_plugin_ids.add(folder)
 
         # Get all classes inheriting from PluginBase and generate objects for them
         self.init_plugins()
@@ -114,6 +120,19 @@ class PluginManager:
         except KeyError:
             log.warning(f"Requested action {action_id} not found, skipping...")
             return None
+
+    def ensure_action_holder_loaded(self, action_id: str) -> ActionHolder | None:
+        action_holder = self.action_index.get(action_id)
+        if action_holder is not None:
+            return action_holder
+
+        plugin_id = self.get_plugin_id_from_action_id(action_id)
+        if not plugin_id:
+            return None
+
+        self.load_plugins(plugin_ids={plugin_id})
+        self.generate_action_index()
+        return self.action_index.get(action_id)
             
     def get_plugin_by_id(self, plugin_id:str, include_disabled: bool = True) -> PluginBase:
         return self.get_plugins(include_disabled).get(plugin_id, {}).get("object", None)

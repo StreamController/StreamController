@@ -146,6 +146,7 @@ class MediaPlayerThread(threading.Thread):
         super().__init__(name="MediaPlayerThread", daemon=True)
         self.deck_controller: DeckController = deck_controller
         self.FPS = 30 # Max refresh rate of the internal displays
+        self.idle_fps = 8 if gl.argparser.parse_args().daemon_only else self.FPS
 
         self.running = False
         self.media_ticks = 0
@@ -168,6 +169,8 @@ class MediaPlayerThread(threading.Thread):
 
         while True:
             start = time.time()
+            animated = self.has_animated_media()
+            target_fps = self.FPS if animated else self.idle_fps
 
             # self.check_connection()
 
@@ -179,13 +182,14 @@ class MediaPlayerThread(threading.Thread):
                         if self.media_ticks % video_each_nth_frame == 0:
                             self.deck_controller.background.update_tiles()
 
-                #TODO: generalize
-                for key in self.deck_controller.inputs[Input.Key]:
-                    cast("ControllerKey", key).on_media_player_tick()
+                if animated:
+                    #TODO: generalize
+                    for key in self.deck_controller.inputs[Input.Key]:
+                        cast("ControllerKey", key).on_media_player_tick()
 
-                for dial in self.deck_controller.inputs[Input.Dial]:
-                    cast("ControllerDial", dial).on_media_player_tick()
-                # self.deck_controller.update_all_inputs()
+                    for dial in self.deck_controller.inputs[Input.Dial]:
+                        cast("ControllerDial", dial).on_media_player_tick()
+                    # self.deck_controller.update_all_inputs()
 
                 # Perform media player tasks
                 self.perform_media_player_tasks()
@@ -197,7 +201,7 @@ class MediaPlayerThread(threading.Thread):
             # print(f"possible FPS: {1 / (end - start)}")
             self.append_fps(1 / (end - start))
             self.update_low_fps_warning()
-            wait = max(0, 1/self.FPS - (end - start))
+            wait = max(0, 1/target_fps - (end - start))
             time.sleep(wait)
 
             if self._stop:
@@ -291,6 +295,26 @@ class MediaPlayerThread(threading.Thread):
             self.touchscreen_task.run()
             del self.touchscreen_task
             self.touchscreen_task = None
+
+    def has_animated_media(self) -> bool:
+        if self.tasks or self.image_tasks or self.touchscreen_task is not None:
+            return True
+
+        background_video = self.deck_controller.background.video
+        if background_video is not None and background_video.page is self.deck_controller.active_page:
+            return True
+
+        for key in self.deck_controller.inputs[Input.Key]:
+            state = cast("ControllerKey", key).get_active_state()
+            if state.key_video or state.label_manager.get_has_scroll_labels():
+                return True
+
+        for dial in self.deck_controller.inputs[Input.Dial]:
+            state = cast("ControllerDial", dial).get_active_state()
+            if state.video or state.label_manager.get_has_scroll_labels():
+                return True
+
+        return False
     def check_connection(self):
         try:
             self.deck_controller.deck.get_firmware_version()
@@ -1889,6 +1913,8 @@ class ControllerInput:
         gl.signal_manager.trigger_signal(Signals.RemoveState, state, state_map)
 
     def update_state_switcher(self):
+        if not recursive_hasattr(gl, "app.main_win.sidebar.active_identifier"):
+            return
         if gl.app.main_win.sidebar.active_identifier != self.identifier:
             return
 
@@ -1912,6 +1938,8 @@ class ControllerInput:
             self.reload_sidebar()
 
     def reload_sidebar(self) -> None:
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
             return
@@ -2304,7 +2332,7 @@ class ControllerKey(ControllerInput):
         
         x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)
 
-        if self.deck_controller.get_own_key_grid() is None or not gl.app.main_win.get_mapped():
+        if self.deck_controller.get_own_key_grid() is None or not recursive_hasattr(gl, "app.main_win.get_mapped") or not gl.app.main_win.get_mapped():
             # Save to use later
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image # The ui key coords are in reverse order
         else:
@@ -2380,7 +2408,7 @@ class ControllerTouchScreen(ControllerInput):
         return Image.new("RGBA", (screen_width // n_dials, screen_height), (0, 0, 0, 0))
 
     def set_ui_image(self, image: Image.Image) -> None:
-        if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
+        if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and recursive_hasattr(gl, "app.main_win.get_mapped") and gl.app.main_win.get_mapped():
             screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
             screenbar.image.set_image(image)
         else:

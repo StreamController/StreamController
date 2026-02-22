@@ -28,6 +28,7 @@ import os
 import time
 import asyncio
 import threading
+import json
 
 import usb.core
 import usb.util
@@ -134,7 +135,66 @@ def load():
 def create_cache_folder():
     os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
 
+def get_referenced_plugin_ids_from_pages() -> set[str]:
+    plugin_ids: set[str] = set()
+    pages_dir = os.path.join(gl.DATA_PATH, "pages")
+    page_settings_path = os.path.join(gl.DATA_PATH, "settings", "pages.json")
+
+    selected_pages: set[str] = set()
+    if os.path.isfile(page_settings_path):
+        try:
+            with open(page_settings_path, "r") as f:
+                settings = json.load(f)
+            for page_path in settings.get("default-pages", {}).values():
+                if isinstance(page_path, str) and page_path.endswith(".json"):
+                    if os.path.isabs(page_path):
+                        selected_pages.add(page_path)
+                    else:
+                        selected_pages.add(os.path.join(pages_dir, os.path.basename(page_path)))
+        except Exception as e:
+            log.warning(f"Failed to parse default pages for plugin preload: {e}")
+
+    if not selected_pages and os.path.isdir(pages_dir):
+        for name in os.listdir(pages_dir):
+            if name.endswith(".json"):
+                selected_pages.add(os.path.join(pages_dir, name))
+
+    for page_path in selected_pages:
+        if not os.path.isfile(page_path):
+            continue
+        try:
+            with open(page_path, "r") as f:
+                page_data = json.load(f)
+        except Exception:
+            continue
+
+        for input_type in ("keys", "dials", "touchscreens"):
+            for input_cfg in page_data.get(input_type, {}).values():
+                for state_cfg in input_cfg.get("states", {}).values():
+                    for action in state_cfg.get("actions", []):
+                        if not isinstance(action, dict):
+                            continue
+                        action_id = action.get("id")
+                        if isinstance(action_id, str) and "::" in action_id:
+                            plugin_ids.add(action_id.split("::")[0])
+
+    return plugin_ids
+
+def initialize_deferred_services():
+    if gl.asset_manager_backend is None:
+        gl.asset_manager_backend = AssetManagerBackend()
+    if gl.icon_pack_manager is None:
+        gl.icon_pack_manager = IconPackManager()
+    if gl.wallpaper_pack_manager is None:
+        gl.wallpaper_pack_manager = WallpaperPackManager()
+    if gl.sd_plus_bar_wallpaper_pack_manager is None:
+        gl.sd_plus_bar_wallpaper_pack_manager = SDPlusBarWallpaperPackManager()
+    if gl.store_backend is None:
+        gl.store_backend = StoreBackend()
+
 def create_global_objects():
+    args = gl.argparser.parse_args()
+
     # Setup locales
     gl.tray_icon = TrayIcon()
     # gl.tray_icon.run_detached()
@@ -152,20 +212,22 @@ def create_global_objects():
     gl.signal_manager = SignalManager()
 
     gl.media_manager = MediaManager()
-    gl.asset_manager_backend = AssetManagerBackend()
     gl.page_manager = PageManagerBackend(gl.settings_manager)
     gl.page_manager.remove_old_backups()
     gl.page_manager.backup_pages()
-    gl.icon_pack_manager = IconPackManager()
-    gl.wallpaper_pack_manager = WallpaperPackManager()
-    gl.sd_plus_bar_wallpaper_pack_manager = SDPlusBarWallpaperPackManager()
-
-    # Store
-    gl.store_backend = StoreBackend()
+    if args.daemon_only:
+        gl.page_manager.set_pages_to_cache(0)
+    else:
+        initialize_deferred_services()
 
     # Plugin Manager
     gl.plugin_manager = PluginManager()
-    gl.plugin_manager.load_plugins(show_notification=True)
+    if args.daemon_only:
+        plugin_ids = get_referenced_plugin_ids_from_pages()
+        gl.plugin_manager.load_plugins(show_notification=False, plugin_ids=plugin_ids)
+        log.info(f"Daemon-only plugin preload: loaded {len(plugin_ids)} referenced plugin(s)")
+    else:
+        gl.plugin_manager.load_plugins(show_notification=True)
     gl.plugin_manager.generate_action_index()
 
     gl.window_grabber = WindowGrabber()
@@ -535,6 +597,8 @@ def make_api_calls():
     
 @log.catch
 def main():
+    args = gl.argparser.parse_args()
+
     # Handle listing commands first (they don't need full initialization)
     if handle_listing_commands():
         return
@@ -570,7 +634,10 @@ def main():
     setup_autostart(auto_start)
     
     create_cache_folder()
-    threading.Thread(target=update_assets, name="update_assets").start()
+    if args.daemon_only:
+        log.info("Skipping startup store update thread in daemon-only mode")
+    else:
+        threading.Thread(target=update_assets, name="update_assets").start()
     load()
 
 if __name__ == "__main__":

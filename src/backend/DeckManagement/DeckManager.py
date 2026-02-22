@@ -85,6 +85,9 @@ class DeckManager:
         if gl.settings_manager.get_app_settings().get("dev", {}).get("n-remote-decks", 0) > 0:
             self.load_remote_decks()
 
+    def check_for_errors_if_window_ready(self):
+        if recursive_hasattr(gl, "app.main_win.check_for_errors"):
+            gl.app.main_win.check_for_errors()
 
     def load_remote_decks(self):
         print(" load remote decks")
@@ -102,13 +105,12 @@ class DeckManager:
         if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
             GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
 
-        if recursive_hasattr(gl, "app.main_win"):
-            gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
 
     def remove_remote_decks(self):
         for controller in self.remote_deck_manager.deck_controllers:
             self.remove_controller(controller)
-        gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
         self.remote_deck_manager.stop()
 
     def load_decks(self):
@@ -158,15 +160,15 @@ class DeckManager:
                 # Remove controller from main list
                 self.deck_controller.remove(controller)
                 # Remove deck page on stack
-                gl.app.main_win.leftArea.deck_stack.remove_page(controller)
+                if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+                    gl.app.main_win.leftArea.deck_stack.remove_page(controller)
 
             # Update header deck switcher if there are no more decks
             if len(self.deck_controller) == 0 and False:
                 # Check if ui is loaded - if not it will grab the controller automatically
                 if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
                     gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(False)
-        if hasattr(gl.app, "main_win"):
-            gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
 
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
@@ -188,7 +190,7 @@ class DeckManager:
             # Add deck
             self.add_newly_connected_deck(deck)
 
-        gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
 
 
     def on_disconnect(self, device_id, device_info):
@@ -200,7 +202,7 @@ class DeckManager:
             if not controller.deck.connected():
                 self.remove_controller(controller)
 
-        gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
 
     def remove_controller(self, deck_controller: DeckController) -> None:
         self.deck_controller.remove(deck_controller)
@@ -233,7 +235,7 @@ class DeckManager:
 
         if not recursive_hasattr(gl, "app.main_win."):
             return
-        gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
 
     def close_all(self):
         log.info("Closing all decks")
@@ -324,7 +326,7 @@ class FlatpakDeckDisconnectThread(threading.Thread):
             for controller in self.deck_manager.deck_controller:
                 if not controller.deck.connected():
                     self.deck_manager.remove_controller(controller)
-                    gl.app.main_win.check_for_errors()
+                    self.deck_manager.check_for_errors_if_window_ready()
 
 class DetectResumeThread(threading.Thread):
     def __init__(self, deck_manager: DeckManager):

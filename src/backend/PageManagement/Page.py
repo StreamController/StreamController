@@ -177,6 +177,8 @@ class Page:
     def get_new_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, input_ident):
         
         action_holder = gl.plugin_manager.get_action_holder_from_id(action_id)
+        if action_holder is None and gl.argparser.parse_args().daemon_only:
+            action_holder = gl.plugin_manager.ensure_action_holder_loaded(action_id)
 
         ## No action holder found
         if action_holder is None:

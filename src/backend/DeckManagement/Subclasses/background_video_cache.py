@@ -221,10 +221,11 @@ class BackgroundVideoCache:
         try:
             with ibz2.open(cache_path, parallelization=os.cpu_count()) as f:
                 loaded_cache = pickle.load(f)
-            if self._closed:
-                return
-            self.cache = OrderedDict(sorted(loaded_cache.items(), key=lambda x: x[0]))
-            self._trim_cache_to_limit()
+            with self.lock:
+                if self._closed:
+                    return
+                self.cache = OrderedDict(sorted(loaded_cache.items(), key=lambda x: x[0]))
+                self._trim_cache_to_limit()
             del loaded_cache
             log.success(f"Loaded cache in {time.time() - _time:.2f} seconds")
         except Exception as e:

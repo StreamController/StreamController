@@ -122,6 +122,12 @@ class PluginManager:
             return None
 
     def ensure_action_holder_loaded(self, action_id: str) -> ActionHolder | None:
+        """Return an action holder, lazily loading its plugin when needed.
+
+        This is primarily used in daemon-only mode where plugin loading may be
+        deferred and a page references an action from a plugin that has not been
+        loaded yet.
+        """
         action_holder = self.action_index.get(action_id)
         if action_holder is not None:
             return action_holder

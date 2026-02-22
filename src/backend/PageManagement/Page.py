@@ -574,10 +574,9 @@ class Page:
                 for state in self.action_objects[input_type][input_identifier]:
                     for i, action in list(self.action_objects[input_type][input_identifier][state].items()):
                         if action is not None:
-                            action.page = None
                             if isinstance(action, ActionCore) and hasattr(action, "on_removed_from_cache"):
                                 action.on_removed_from_cache()
-                        self.action_objects[input_type][input_identifier][state][i] = None
+                            action.page = None
                         del self.action_objects[input_type][input_identifier][state][i]
             self.action_objects[input_type] = {}
 

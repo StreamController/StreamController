@@ -1022,11 +1022,11 @@ class Background:
 
         self.image = None
         self.video = None
-        self.standby_video: "BackgroundVideo" | None = None
+        self.standby_video: "BackgroundVideo | None" = None
 
         self.tiles: list[Image.Image] = [None] * deck_controller.deck.key_count()
 
-    def _park_video(self, video: "BackgroundVideo" | None) -> None:
+    def _park_video(self, video: "BackgroundVideo | None") -> None:
         if video is None:
             return
         if self.standby_video is not None and self.standby_video is not video:

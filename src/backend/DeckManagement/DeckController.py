@@ -157,7 +157,7 @@ class MediaPlayerThread(threading.Thread):
         self.media_ticks = 0
 
         self.pause = False
-        self._stop = False
+        self._stop_requested = False
         self._wake_event = threading.Event()
 
         self.tasks: list[MediaPlayerTask] = []
@@ -214,7 +214,7 @@ class MediaPlayerThread(threading.Thread):
                 self._wake_event.wait(wait)
                 self._wake_event.clear()
 
-            if self._stop:
+            if self._stop_requested:
                 break
 
         self.running = False
@@ -256,7 +256,7 @@ class MediaPlayerThread(threading.Thread):
 
 
     def stop(self) -> None:
-        self._stop = True
+        self._stop_requested = True
         self._wake_event.set()
         while self.running:
             time.sleep(0.1)

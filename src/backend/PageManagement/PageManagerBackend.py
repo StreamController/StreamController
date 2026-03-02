@@ -456,6 +456,11 @@ class PageManagerBackend:
     def remove_old_backups(self) -> None:
         backup_dir = os.path.join(self.PAGE_PATH, "backups")
 
+        # early return if backup directory doesn't exist yet
+        # otherwise os.listdir will throw a FileNotFoundError
+        if not os.path.exists(backup_dir):
+            return
+
         # List all zip files in the backup directory
         backup_files = [file for file in os.listdir(backup_dir) if file.endswith(".zip")]
 

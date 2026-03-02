@@ -177,6 +177,8 @@ class Page:
     def get_new_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, input_ident):
         
         action_holder = gl.plugin_manager.get_action_holder_from_id(action_id)
+        if action_holder is None and gl.argparser.parse_args().daemon_only:
+            action_holder = gl.plugin_manager.ensure_action_holder_loaded(action_id)
 
         ## No action holder found
         if action_holder is None:
@@ -570,13 +572,11 @@ class Page:
         for input_type in self.action_objects:
             for input_identifier in self.action_objects[input_type]:
                 for state in self.action_objects[input_type][input_identifier]:
-                    for i, action in enumerate(list(self.action_objects[input_type][input_identifier][state].values())):
-                        self.action_objects[input_type][input_identifier][state][i].page = None
-                        self.action_objects[input_type][input_identifier][state][i] = None
-                        if isinstance(self.action_objects[input_type][input_identifier][state][i], ActionCore):
-                            if hasattr(self.action_objects[input_type][input_identifier][state][i], "on_removed_from_cache"):
-                                self.action_objects[input_type][input_identifier][state][i].on_removed_from_cache()
-                        self.action_objects[input_type][input_identifier][state][i] = None
+                    for i, action in list(self.action_objects[input_type][input_identifier][state].items()):
+                        if action is not None:
+                            if isinstance(action, ActionCore) and hasattr(action, "on_removed_from_cache"):
+                                action.on_removed_from_cache()
+                            action.page = None
                         del self.action_objects[input_type][input_identifier][state][i]
             self.action_objects[input_type] = {}
 

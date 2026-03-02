@@ -58,6 +58,8 @@ class App(Adw.Application):
     def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
         self.deck_manager = deck_manager
+        self.daemon_only = gl.argparser.parse_args().daemon_only
+        self.daemon_hold = False
 
         self.register_sigint_handler()
 
@@ -87,17 +89,18 @@ class App(Adw.Application):
 
     def on_activate(self, app):
         log.trace("running: on_activate")
-        self.main_win = MainWindow(application=app, deck_manager=self.deck_manager)
-        if not gl.argparser.parse_args().b:
-            self.main_win.present()
+        if self.daemon_only:
+            log.info("Starting in daemon-only mode (UI is created lazily on reopen)")
+            # Keep the GTK application alive without an initial window.
+            self.hold()
+            self.daemon_hold = True
+        else:
+            self.ensure_main_window(present=not gl.argparser.parse_args().b)
 
-        self.show_onboarding()
-        # self.show_donate()
-        self.main_win.on_finished.append(self.show_donate())
-        # self.show_permissions()
-
-        self.shortcuts = ShortcutsWindow(app=app, application=app)
-        # self.shortcuts.present()
+            self.show_onboarding()
+            # self.show_donate()
+            self.main_win.on_finished.append(self.show_donate())
+            # self.show_permissions()
 
         on_reopen_action = Gio.SimpleAction.new("reopen", None)
         on_reopen_action.connect("activate", self.on_reopen)
@@ -125,17 +128,52 @@ class App(Adw.Application):
         log.success("Finished loading app")
 
     def on_reopen(self, *args, **kwargs):
-        self.main_win.present()
+        self.ensure_main_window(present=True)
         log.info("awake")
 
         self.show_donate(ignore_background_launch=True)
 
+    def ensure_ui_services(self):
+        from src.backend.AssetManagerBackend import AssetManagerBackend
+        from src.backend.IconPackManagement.IconPackManager import IconPackManager
+        from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
+        from src.backend.SDPlusBarWallpaperPackManagement.SDPlusBarWallpaperPackManager import SDPlusBarWallpaperPackManager
+        from src.backend.Store.StoreBackend import StoreBackend
+
+        if gl.asset_manager_backend is None:
+            gl.asset_manager_backend = AssetManagerBackend()
+        if gl.icon_pack_manager is None:
+            gl.icon_pack_manager = IconPackManager()
+        if gl.wallpaper_pack_manager is None:
+            gl.wallpaper_pack_manager = WallpaperPackManager()
+        if gl.sd_plus_bar_wallpaper_pack_manager is None:
+            gl.sd_plus_bar_wallpaper_pack_manager = SDPlusBarWallpaperPackManager()
+        if gl.store_backend is None:
+            gl.store_backend = StoreBackend()
+
+        # Load remaining plugins when opening the full UI.
+        gl.plugin_manager.load_plugins(show_notification=False)
+        gl.plugin_manager.generate_action_index()
+
+    def ensure_main_window(self, present: bool = False):
+        self.ensure_ui_services()
+        if not hasattr(self, "main_win"):
+            self.main_win = MainWindow(application=self, deck_manager=self.deck_manager)
+            self.shortcuts = ShortcutsWindow(app=self, application=self)
+        if present:
+            self.main_win.present()
+        return self.main_win
+
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
+        if not hasattr(self, "main_win"):
+            self.ensure_main_window(present=True)
         self.asset_manager = AssetManager(application=self, main_window=self.main_win)
         gl.asset_manager = self.asset_manager
         self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)
 
     def show_donate(self, ignore_background_launch: bool = False):
+        if not hasattr(self, "main_win"):
+            return
         if not ignore_background_launch and gl.argparser.parse_args().b:
             return
         if gl.showed_donate_window:
@@ -150,6 +188,8 @@ class App(Adw.Application):
         self.donate.present(self.main_win)
 
     def show_onboarding(self):
+        if self.daemon_only:
+            return
         if gl.argparser.parse_args().b:
             return
         if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-onboarding")):
@@ -179,7 +219,8 @@ class App(Adw.Application):
     def on_quit(self, *args):
         log.info("Quitting...")
 
-        self.main_win.destroy()
+        if hasattr(self, "main_win"):
+            self.main_win.destroy()
 
         gl.signal_manager.trigger_signal(Signals.AppQuit)
 
@@ -209,6 +250,10 @@ class App(Adw.Application):
 
         gl.tray_icon.stop()
 
+        if self.daemon_hold:
+            self.release()
+            self.daemon_hold = False
+
         # Close all decks
         gl.deck_manager.close_all()
         # Stop timer
@@ -237,6 +282,7 @@ class App(Adw.Application):
 
     @log.catch
     def _update_all_assets(self):
+        self.ensure_ui_services()
         self.set_working(True)
 
         asyncio.run(gl.store_backend.update_everything())
@@ -251,6 +297,7 @@ class App(Adw.Application):
 
     @log.catch
     def _install_plugin(self, plugin_id: str):
+        self.ensure_ui_services()
         plugin = asyncio.run(gl.store_backend.get_plugin_for_id(plugin_id=plugin_id))
 
         self.set_working(True)
@@ -274,10 +321,12 @@ class App(Adw.Application):
     def set_working(self, working: bool) -> None:
         if working:
             GLib.idle_add(gl.app.mark_busy)
-            GLib.idle_add(gl.app.main_win.set_cursor_from_name, "wait")
+            if hasattr(gl.app, "main_win"):
+                GLib.idle_add(gl.app.main_win.set_cursor_from_name, "wait")
         else:
             GLib.idle_add(gl.app.unmark_busy)
-            GLib.idle_add(gl.app.main_win.set_cursor_from_name, "default")
+            if hasattr(gl.app, "main_win"):
+                GLib.idle_add(gl.app.main_win.set_cursor_from_name, "default")
 
     def send_notification(self,
                           icon_name: str,

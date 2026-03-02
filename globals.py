@@ -1,6 +1,7 @@
 import json
 import Pyro5.api
 import os
+from collections import deque
 from typing import TYPE_CHECKING
 import argparse
 import sys
@@ -13,6 +14,7 @@ IS_MAC = sys.platform == "darwin"
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-b", help="Open in background", action="store_true")
+argparser.add_argument("--daemon-only", help="Run without creating the main window until reopened", action="store_true")
 argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
 argparser.add_argument("--skip-load-hardware-decks", help="Skips initilization/use of hardware decks", action="store_true")
 argparser.add_argument("--close-running", help="Close running", action="store_true")
@@ -134,7 +136,7 @@ loggers: dict[str, "Logger"] = {}
 
 app_version: str = "1.5.0-beta.13"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
-logs: list[str] = []
+logs = deque(maxlen=5000)
 
 release_notes: str = """
 <p>Features:</p>

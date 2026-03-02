@@ -83,6 +83,9 @@ class PageManagerBackend:
             page_object = page["page"]
             self.page_number += 1
 
+        if gl.argparser.parse_args().daemon_only:
+            self.clear_old_cached_pages()
+
         return page_object
 
     def get_pages(self, add_custom_pages: bool = True, sort: bool = True) -> list[str]:

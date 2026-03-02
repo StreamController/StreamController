@@ -5,6 +5,7 @@ import pickle
 import sys
 import threading
 import time
+from collections import OrderedDict
 from PIL import Image, ImageOps
 import cv2
 from StreamDeck.ImageHelpers import PILHelper
@@ -15,6 +16,8 @@ import globals as gl
 
 VID_CACHE = os.path.join(gl.DATA_PATH, "cache", "videos")
 os.makedirs(VID_CACHE, exist_ok=True)
+_VIDEO_HASH_CACHE: dict[tuple[str, int, int], str] = {}
+_VIDEO_HASH_CACHE_LOCK = threading.Lock()
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -29,7 +32,7 @@ class BackgroundVideoCache:
         self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)
         self.n_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.cache = {}
+        self.cache = OrderedDict()
         self.last_decoded_frame = None
         self.last_frame_index = -1
 
@@ -42,8 +45,9 @@ class BackgroundVideoCache:
         self.spacing = self.deck_controller.key_spacing
 
         self.cache_stored = False
-
+        self._closed = False
         thread = threading.Thread(target=self.load_cache, name="load_video_cache")
+        thread.daemon = True
         thread.start()
 
         if self.is_cache_complete():
@@ -57,6 +61,8 @@ class BackgroundVideoCache:
         self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
 
     def get_tiles(self, n):
+        if self._closed:
+            return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
         # Check if cache is available (video may have been closed)
         if not hasattr(self, 'cache') or self.cache is None:
             return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
@@ -96,10 +102,6 @@ class BackgroundVideoCache:
                     current_tiles = self.crop_key_image_from_deck_sized_image(full_sized, key)
                     tiles.append(current_tiles)
 
-                    if n >= self.n_frames - 1:
-                        if not self.is_cache_complete():
-                            self.save_cache_threaded()
-
                 if self.do_caching and self.cache is not None:
                     self.cache[self.last_frame_index] = tiles
                 self.last_tiles = tiles
@@ -120,13 +122,17 @@ class BackgroundVideoCache:
         return tiles
     
     def create_full_deck_sized_image(self, frame: Image.Image) -> Image.Image:
-        key_width *= self.key_layout[0]
-        key_height *= self.key_layout[1]
+        key_rows, key_cols = self.key_layout
+        key_width, key_height = self.key_size
+        spacing_x, spacing_y = self.spacing
+
+        key_width *= key_cols
+        key_height *= key_rows
 
         # Compute the total number of extra non-visible pixels that are obscured by
         # the bezel of the StreamDeck.
-        spacing_x *= self.key_layout[0] - 1
-        spacing_y *= self.key_layout[1] - 1
+        spacing_x *= key_cols - 1
+        spacing_y *= key_rows - 1
 
         # Compute final full deck image size, based on the number of buttons and
         # obscured pixels.
@@ -163,13 +169,30 @@ class BackgroundVideoCache:
         return segment
 
     def get_video_hash(self) -> str:
+        try:
+            stat = os.stat(self.video_path)
+            cache_key = (self.video_path, int(stat.st_mtime_ns), int(stat.st_size))
+        except Exception:
+            cache_key = None
+
+        if cache_key is not None:
+            with _VIDEO_HASH_CACHE_LOCK:
+                cached_hash = _VIDEO_HASH_CACHE.get(cache_key)
+            if cached_hash is not None:
+                return cached_hash
+
         sha1sum = hashlib.md5()
         with open(self.video_path, 'rb') as video:
             block = video.read(2**16)
             while len(block) != 0:
                 sha1sum.update(block)
                 block = video.read(2**16)
-            return sha1sum.hexdigest()
+            digest = sha1sum.hexdigest()
+
+        if cache_key is not None:
+            with _VIDEO_HASH_CACHE_LOCK:
+                _VIDEO_HASH_CACHE[cache_key] = digest
+        return digest
         
     def save_cache_threaded(self):
         t = threading.Thread(target=self.save_cache, name="save_video_cache")
@@ -200,6 +223,8 @@ class BackgroundVideoCache:
 
     @log.catch
     def load_cache(self, key_index: int = None):
+        if self._closed:
+            return
         cache_path = os.path.join(VID_CACHE, self.key_layout_str, f"{self.video_md5}.cache")
         if not os.path.exists(cache_path):
             return
@@ -211,7 +236,12 @@ class BackgroundVideoCache:
         _time = time.time()
         try:
             with ibz2.open(cache_path, parallelization=os.cpu_count()) as f:
-                self.cache = pickle.load(f)
+                loaded_cache = pickle.load(f)
+            with self.lock:
+                if self._closed:
+                    return
+                self.cache = OrderedDict(sorted(loaded_cache.items(), key=lambda x: x[0]))
+            del loaded_cache
             log.success(f"Loaded cache in {time.time() - _time:.2f} seconds")
         except Exception as e:
             os.remove(cache_path)
@@ -229,18 +259,24 @@ class BackgroundVideoCache:
                 return False
 
         return True
-    
+
     def close(self) -> None:
         import gc
+        self._closed = True
         with self.lock:
             self.cap.release()
 
         if hasattr(self, 'cache') and self.cache is not None:
-            for n in self.cache:
+            for n in list(self.cache.keys()):
                 for f in self.cache[n]:
                     if f is not None:
                         f.close()
 
             self.cache.clear()
+        if hasattr(self, "last_tiles") and self.last_tiles is not None:
+            for tile in self.last_tiles:
+                if tile is not None:
+                    tile.close()
+            self.last_tiles = []
         self.cache = None
         gc.collect()

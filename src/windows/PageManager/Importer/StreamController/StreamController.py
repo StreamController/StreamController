@@ -20,21 +20,23 @@ class StreamControllerImporter:
         self.json_export_path = json_export_path
 
     
-    def save_json(self, json_path: str, data: dict):
+    def save_json(self, json_path: str, data: dict, _retries: int = 3):
         with open(json_path, "w") as f:
             json.dump(data, f, indent=4)
 
         loaded = None
         try:
-            # Verify data
             with open(json_path) as f:
                 loaded = json.load(f)
         except Exception as e:
             pass
 
         if loaded != data:
-            log.error(f"Failed to save {json_path}, trying again")
-            self.save_json(json_path, data)
+            if _retries > 0:
+                log.error(f"Failed to save {json_path}, trying again ({_retries} retries left)")
+                self.save_json(json_path, data, _retries=_retries - 1)
+            else:
+                log.error(f"Failed to save {json_path} after all retries, giving up")
             
     def perform_import(self):
         with open(self.json_export_path) as f:

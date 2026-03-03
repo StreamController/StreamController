@@ -1207,7 +1207,7 @@ class LabelManager:
         else:
             self.action_labels[position] = label
 
-        self.update_label_editor()
+        GLib.idle_add(self.update_label_editor)
         if update:
             self.update_label(position)
 
@@ -1471,7 +1471,7 @@ class LayoutManager:
 
     def update(self):
         self.controller_input.update()
-        self.update_layout_editor()
+        GLib.idle_add(self.update_layout_editor)
 
     def update_layout_editor(self):
         if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
@@ -1548,7 +1548,7 @@ class BackgroundManager:
     def update(self, ui: bool = True):
         self.controller_input.update()
         if ui:
-            self.update_background_editor()
+            GLib.idle_add(self.update_background_editor)
 
     def update_background_editor(self):
         if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):

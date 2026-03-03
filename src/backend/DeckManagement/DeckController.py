@@ -2274,7 +2274,7 @@ class ControllerKey(ControllerInput):
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image # The ui key coords are in reverse order
         else:
             try:
-                self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
+                GLib.idle_add(self.deck_controller.get_own_key_grid().buttons[x][y].set_image, image)
             except:
                 print(f"Failed to set ui key image for {self.identifier}")
         
@@ -2347,7 +2347,7 @@ class ControllerTouchScreen(ControllerInput):
     def set_ui_image(self, image: Image.Image) -> None:
         if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
             screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
-            screenbar.image.set_image(image)
+            GLib.idle_add(screenbar.image.set_image, image)
         else:
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
 

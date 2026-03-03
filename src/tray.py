@@ -20,7 +20,8 @@ class TrayIcon(DBusTrayIcon):
         self.menu.add_menu_item(6, menu_type="separator")
         self.menu.add_menu_item(7, "Quit", callback=self.on_quit)
         super().__init__(self.menu, self.MenuPath, self.IndicatorPath, self.AppId, "StreamController")
-        self.set_icon("com.core447.StreamController")
+        icon_theme_path = os.path.join(gl.MAIN_PATH, "Assets", "icons")
+        self.set_icon("com.core447.StreamController", path=icon_theme_path)
         self.set_tooltip("StreamController")
         self.set_label("StreamController")
 

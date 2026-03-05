@@ -194,3 +194,9 @@ vid_cache/
 ## Semrel temporary stuff
 .semrel/
 semantic-release
+
+
+## UV
+.python-version
+uv.lock
+pyproject.toml

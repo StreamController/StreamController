@@ -323,7 +323,7 @@ class PageManagerBackend:
 
         return list(pages_set)
 
-    def reload_pages_with_path(self, path: str):
+    def reload_pages_with_path(self, path: str, brightness: bool = True, screensaver: bool = True, background: bool = True, inputs: bool = True):
         pages = self.get_pages_with_path(path)
 
         for page in pages:
@@ -332,7 +332,11 @@ class PageManagerBackend:
             if page.deck_controller.active_page != page:
                 continue
 
-            page.deck_controller.load_page(page, allow_relaod=True)
+            page.deck_controller.load_page(page, allow_relaod=True,
+                                           load_brightness=brightness,
+                                           load_screensaver=screensaver,
+                                           load_background=background,
+                                           load_inputs=inputs)
 
     @staticmethod
     def reload_all_pages() -> None:
@@ -360,6 +364,16 @@ class PageManagerBackend:
             path = backup_path
 
         return self.settings_manager.load_settings_from_file(path)
+
+    def set_page_data(self, path: str, data: dict, reload_brightness: bool = True, reload_screensaver: bool = True, reload_background: bool = True, reload_inputs: bool = True):
+        self.settings_manager.save_settings_to_file(path, data)
+        self.update_dict_of_pages_with_path(path)
+        if any([reload_brightness, reload_screensaver, reload_background, reload_inputs]):
+            self.reload_pages_with_path(path,
+                                        brightness=reload_brightness,
+                                        screensaver=reload_screensaver,
+                                        background=reload_background,
+                                        inputs=reload_inputs)
 
     def remove_asset_from_all_pages(self, path: str):
         # Validate input path; reject empty or None

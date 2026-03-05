@@ -67,12 +67,11 @@ class PageManager(Adw.ApplicationWindow):
         self.split.set_sidebar(self.page_selector)
 
     def add_page_from_name(self, page_name: str) -> None:
-        page_path = os.path.join(gl.DATA_PATH, "pages", f"{page_name}.json")
-        if os.path.exists(page_path):
+        try:
+            page_path = gl.page_manager.add_page(page_name)
+        except FileExistsError:
             return
-        
-        gl.page_manager.add_page(page_name)
-        
+
         self.page_selector.add_row_by_path(page_path)
 
         # Emit signal

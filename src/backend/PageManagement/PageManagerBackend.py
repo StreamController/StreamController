@@ -276,13 +276,18 @@ class PageManagerBackend:
 
         #self.update_auto_change_info()
 
-    def add_page(self, page_name: str, page_dict: dict = None):
+    def add_page(self, page_name: str, page_dict: dict = None) -> str:
         page_dict = page_dict or {}
 
-        with open(os.path.join(self.PAGE_PATH, f"{page_name}.json"), "w") as f:
+        path = os.path.join(self.PAGE_PATH, f"{page_name}.json")
+        if os.path.exists(path):
+            raise FileExistsError(f"A page with the name '{page_name}' already exists.")
+        
+        with open(path, "w") as f:
             json.dump(page_dict, f)
 
         #self.update_auto_change_info()
+        return path
 
     def register_page(self, path: str):
         if not os.path.isfile(path):

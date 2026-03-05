@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+from curses import window
 import json
 import os
 import re
@@ -30,6 +31,7 @@ from src.backend.WindowGrabber.Integrations.Gnome import Gnome
 from src.backend.WindowGrabber.Integrations.Sway import Sway
 from src.backend.WindowGrabber.Integrations.X11 import X11
 from src.backend.WindowGrabber.Integrations.KDE import KDE
+from src.api import notify_foreground_window_changed
 
 class WindowGrabber:
     def __init__(self):
@@ -105,6 +107,10 @@ class WindowGrabber:
 
     def on_active_window_changed(self, window: Window) -> None:
         # log.info(f"Active window changed to: {window}")
+
+        # Notify DBus API of the foreground window change
+        notify_foreground_window_changed(window.title, window.wm_class)
+
         for deck_controller in gl.deck_manager.deck_controller:
             found_page = False
             for page_path in gl.page_manager.get_pages():

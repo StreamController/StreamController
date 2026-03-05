@@ -290,7 +290,8 @@ class DeckManager:
             new_device = self.get_device_by_serial(deck_controller.serial_number())
             if new_device:
                 log.info(f"Replacing deck")
-                deck_controller.deck = new_device
+                current_rotation = deck_controller.deck.get_rotation()
+                deck_controller.deck = BetterDeck(new_device, current_rotation)
                 deck_controller.update_all_inputs()
 
                 deck_controller.deck.set_key_callback(deck_controller.key_event_callback)

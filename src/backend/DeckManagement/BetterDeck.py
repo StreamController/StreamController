@@ -5,6 +5,13 @@ class BetterDeck():
         self.deck: StreamDeck = deck
         self.rotation: int = rotation # [0, 90, 180, 270]
 
+    def __enter__(self):
+        self.deck.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return self.deck.__exit__(exc_type, exc_val, exc_tb)
+
 
     def open(self):
         """

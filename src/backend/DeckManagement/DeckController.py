@@ -2582,6 +2582,8 @@ class ControllerTouchScreen(ControllerInput):
         super().__init__(deck_controller, ControllerTouchScreenState, ident)
 
         self.enable_states = False
+        self._pending_ui_image: Image.Image = None
+        self._ui_image_update_scheduled = False
 
     @staticmethod
     def Available_Identifiers(deck):
@@ -2657,11 +2659,35 @@ class ControllerTouchScreen(ControllerInput):
         return Image.new("RGBA", (screen_width // n_dials, screen_height), (0, 0, 0, 0))
 
     def set_ui_image(self, image: Image.Image) -> None:
+        if not recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") or not gl.app.main_win.get_mapped():
+            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
+            return
+
+        if self._pending_ui_image is not None:
+            self._pending_ui_image.close()
+
+        self._pending_ui_image = image
+        if self._ui_image_update_scheduled:
+            return
+
+        self._ui_image_update_scheduled = True
+        GLib.idle_add(self._flush_ui_image)
+
+    def _flush_ui_image(self):
+        self._ui_image_update_scheduled = False
+        image = self._pending_ui_image
+        self._pending_ui_image = None
+
+        if image is None:
+            return False
+
         if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
             screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
-            GLib.idle_add(screenbar.image.set_image, image)
+            screenbar.image.set_image(image)
         else:
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
+
+        return False
 
     def get_current_image(self) -> Image.Image:
         active_state = self.get_active_state()

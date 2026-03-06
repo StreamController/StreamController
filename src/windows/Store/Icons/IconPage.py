@@ -135,3 +135,4 @@ class IconPreview(StorePreview):
         self.icon_page.info_page.set_copyright(self.icon_data.copyright)
         self.icon_page.info_page.set_original_url(self.icon_data.original_url)
         self.icon_page.info_page.set_license_description(self.icon_data.license_descriptions)
+        self.icon_page.info_page.clear_plugin_data()

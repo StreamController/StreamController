@@ -522,7 +522,7 @@ class DeckController:
             state = state_request["state"]
             
             # Get the page path for the specified page
-            requested_page_path = gl.page_manager.get_best_page_path_match_from_name(page_name)
+            requested_page_path = gl.page_manager.find_matching_page_path(page_name)
             
             if requested_page_path is None:
                 # Page not found - log available pages

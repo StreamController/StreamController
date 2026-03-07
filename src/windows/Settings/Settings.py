@@ -318,13 +318,18 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         self.hold_time_row.set_range(0.1, 3)
         self.add(self.hold_time_row)
 
+        self.rolling_labels = Adw.SwitchRow(title="Rolling labels", subtitle="Enable automatic rolling/scrolling of too long labels")
+        self.add(self.rolling_labels)
+
         self.load_defaults()
 
         # Connect signals
         self.hold_time_row.connect("changed", self.on_n_fake_decks_row_changed)
+        self.rolling_labels.connect("notify::active", self.on_rolling_labels_changed)
 
     def load_defaults(self):
         self.hold_time_row.set_value(self.settings.settings_json.get("general", {}).get("hold-time", 0.5))
+        self.rolling_labels.set_active(self.settings.settings_json.get("general", {}).get("rolling-labels", True))
 
     def on_n_fake_decks_row_changed(self, *args):
         self.settings.settings_json.setdefault("general", {})
@@ -338,6 +343,17 @@ class GeneralPageGroup(Adw.PreferencesGroup):
 
         # Reload decks
         gl.deck_manager.load_fake_decks()
+
+    def on_rolling_labels_changed(self, *args):
+        self.settings.settings_json.setdefault("general", {})
+        self.settings.settings_json["general"]["rolling-labels"] = self.rolling_labels.get_active()
+
+        # Save
+        self.settings.save_json()
+
+        # Reload all pages - TODO: might not be necessary
+        for controller in gl.deck_manager.deck_controller:
+            controller.reload_page()
 
 class FontPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):

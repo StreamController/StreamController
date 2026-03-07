@@ -735,6 +735,12 @@ class DeckController:
         log.info(f"Loaded page {page.get_name()} on deck {self.deck.get_serial_number()}")
         gc.collect()
 
+    def reload_page(self):
+        self.load_page(
+            page=self.active_page,
+            allow_reload=True
+        )
+
     def set_brightness(self, value):
         value = min(100, max(0, value))
         if not self.get_alive(): return
@@ -1378,7 +1384,9 @@ class LabelManager:
                 x_position = image.width / 2
                 anchor_x = "m"
 
-            if image.width < w:
+            rolling_labels_enabled = gl.settings_manager.get_app_settings().get("general", {}).get("rolling-labels", True)
+            if rolling_labels_enabled and image.width < w:
+                print("scroll")
                 # Need to scroll - always use center anchor for scrolling
                 start = image.width / 2 - (image.width - w) / 2 + 10
                 stop = image.width / 2 + (image.width - w) / 2 - 10

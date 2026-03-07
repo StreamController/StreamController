@@ -1386,7 +1386,6 @@ class LabelManager:
 
             rolling_labels_enabled = gl.settings_manager.get_app_settings().get("general", {}).get("rolling-labels", True)
             if rolling_labels_enabled and image.width < w:
-                print("scroll")
                 # Need to scroll - always use center anchor for scrolling
                 start = image.width / 2 - (image.width - w) / 2 + 10
                 stop = image.width / 2 + (image.width - w) / 2 - 10

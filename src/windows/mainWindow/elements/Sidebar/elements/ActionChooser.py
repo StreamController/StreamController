@@ -71,7 +71,7 @@ class ActionChooser(Gtk.Box):
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
 
-        self.header = Gtk.Label(label=gl.lm.get("action-chooser.header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
+        self.header = Gtk.Label(label=gl.lm.get("action-chooser.header"), xalign=0, css_classes=["page-header"], margin_top=30)
         self.main_box.append(self.header)
 
         self.search_entry = Gtk.SearchEntry(margin_top=10,

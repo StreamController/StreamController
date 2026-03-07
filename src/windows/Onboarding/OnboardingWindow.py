@@ -235,7 +235,7 @@ class ExtensionOnboardingScreen(Gtk.Box):
         self.install_button.connect("clicked", self.on_install_button_click)
         self.append(self.install_button)
 
-        self.hint_label = Gtk.Label(label=gl.lm.get("onboarding.extension.hint"), sensitive=False, margin_top=20)
+        self.hint_label = Gtk.Label(label=gl.lm.get("onboarding.extension.hint"), sensitive=False, margin_top=20, use_markup=True)
         self.append(self.hint_label)
 
     def update_button_status(self) -> None:

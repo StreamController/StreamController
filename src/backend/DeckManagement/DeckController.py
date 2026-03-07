@@ -2610,13 +2610,13 @@ class ControllerTouchScreen(ControllerInput):
         if active_state is None:
             return
 
-        area = active_state.update_dial_region(identifier)
-        if area is None:
+        updated_region = active_state.update_dial_region(identifier)
+        if updated_region is None:
             self.update()
             return
 
+        area, region = updated_region
         x1, y1, x2, y2 = area
-        region = active_state.get_current_image().crop(area)
         self.deck_controller.media_player.add_touchscreen_task(
             region,
             x_pos=x1,
@@ -2626,7 +2626,7 @@ class ControllerTouchScreen(ControllerInput):
             priority=priority,
             identifier=identifier,
         )
-        self.set_ui_image(active_state.get_current_image().copy())
+        self.set_ui_region(identifier, area, active_state.get_current_image())
 
     def generate_empty_image(self) -> Image.Image:
         return Image.new("RGBA", self.get_screen_dimensions(), (0, 0, 0, 0))
@@ -2660,7 +2660,7 @@ class ControllerTouchScreen(ControllerInput):
 
     def set_ui_image(self, image: Image.Image) -> None:
         if not recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") or not gl.app.main_win.get_mapped():
-            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
+            self._store_ui_image_while_hidden(image)
             return
 
         if self._pending_ui_image is not None:
@@ -2685,9 +2685,29 @@ class ControllerTouchScreen(ControllerInput):
             screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
             screenbar.image.set_image(image)
         else:
-            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
+            self._store_ui_image_while_hidden(image)
 
         return False
+
+    def set_ui_region(self, identifier: Input.Dial, area: tuple[int, int, int, int], image: Image.Image) -> None:
+        if self._ui_image_update_scheduled or self._pending_ui_image is not None:
+            self.set_ui_image(image.copy())
+            return
+
+        if not recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") or not gl.app.main_win.get_mapped():
+            self._store_ui_image_while_hidden(image.copy())
+            return
+
+        x1, y1, _, _ = area
+        region = image.crop(area)
+        screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
+        GLib.idle_add(screenbar.image.update_region, region, x1, y1, identifier)
+
+    def _store_ui_image_while_hidden(self, image: Image.Image) -> None:
+        previous = self.deck_controller.ui_image_changes_while_hidden.get(self.identifier)
+        if previous is not None:
+            previous.close()
+        self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
 
     def get_current_image(self) -> Image.Image:
         active_state = self.get_active_state()
@@ -3003,7 +3023,7 @@ class ControllerTouchScreenState(ControllerInputState):
         self.ensure_cached_image()
         return self.current_image
 
-    def update_dial_region(self, identifier: Input.Dial) -> tuple[int, int, int, int] | None:
+    def update_dial_region(self, identifier: Input.Dial) -> tuple[tuple[int, int, int, int], Image.Image] | None:
         self.ensure_cached_image()
 
         dial = self.controller_touch.deck_controller.get_input(identifier)
@@ -3020,7 +3040,7 @@ class ControllerTouchScreenState(ControllerInputState):
         # Replace the whole dial slot so transparent pixels clear stale content.
         self.current_image.paste(region, (x1, y1))
 
-        return area
+        return area, region
 
 
     def update(self):

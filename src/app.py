@@ -143,7 +143,14 @@ class App(Adw.Application):
         gl.showed_donate_window = True
 
         app_settings = gl.settings_manager.get_app_settings()
-        if not app_settings.get("general", {}).get("show-donate-window", True) or app_settings.get("general", {}).get("app-launches", 0) < 3 or hasattr(self, "onboarding") or hasattr(self, "permissions"):
+        
+        if not app_settings.get("general", {}).get("show-donate-window", True):
+            return
+        if app_settings.get("general", {}).get("app-launches", 0) < 4:
+            return
+        if hasattr(self, "onboarding"):
+            return
+        if hasattr(self, "permissions"):
             return
 
         self.donate = DonateWindow()

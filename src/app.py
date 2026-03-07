@@ -349,7 +349,7 @@ class App(Adw.Application):
             return
 
         # Find the requested page
-        page_path = gl.page_manager.get_best_page_path_match_from_name(page_name)
+        page_path = gl.page_manager.find_matching_page_path(page_name)
         if page_path is None:
             # Page not found - provide helpful suggestions
             available_pages = [os.path.splitext(os.path.basename(p))[0] for p in gl.page_manager.get_pages()]

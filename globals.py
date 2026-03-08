@@ -163,5 +163,6 @@ release_notes: str = """
         <li>Font stylings not loading correctly</li>
         <li>Localization problems</li>
         <li>--change-state argument not working</li>
+        <li>Media plugin not showing artworks from some sources</li>
     </ul>
 """

@@ -139,6 +139,7 @@ class PluginPreview(StorePreview):
         self.plugin_page.info_page.set_copyright(self.plugin_data.copyright)
         self.plugin_page.info_page.set_original_url(self.plugin_data.original_url)
         self.plugin_page.info_page.set_license_description(gl.lm.get_custom_translation(self.plugin_data.license_descriptions))
+        self.plugin_page.info_page.set_plugin_data(self.plugin_data)
 
     def check_required_version(self, app_version_to_check: str):
         if app_version_to_check is None:

@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import threading
 import time
 import gi
-from loguru import logger as log
 
 from PIL import Image
 
@@ -34,7 +33,7 @@ gi.require_version("Adw", "1")
 
 import globals as gl
 
-from gi.repository import Gtk, Adw, Gdk, GLib, Gio
+from gi.repository import Gtk, Adw, Gdk, GLib, Gio, GdkPixbuf
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -219,18 +218,46 @@ class ScreenBar(Gtk.Frame):
         gl.app.main_win.sidebar.load_for_identifier(self.identifier, screen.state)
 
 class ScreenBarImage(Gtk.Picture):
+    PREVIEW_MAX_WIDTH = 385
+    PREVIEW_MAX_HEIGHT = 49
+
     def __init__(self, screenbar: ScreenBar, **kwargs):
-        super().__init__(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
-                         halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
-                         valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
-                         **kwargs)
+        settings = gl.settings_manager.get_app_settings()
+        self.use_real_size = settings.get("ui", {}).get("real-button-size", False)
+        self.preview_width = 80
+        self.preview_height = 10
+
+        if self.use_real_size:
+            touchscreen_size = screenbar.deck_controller.get_touchscreen_image_size()
+            if touchscreen_size:
+                screen_width, screen_height = touchscreen_size
+                scale_factor = 600.0 / screen_width if screen_width > 0 else 0.75
+                ui_width = int(screen_width * scale_factor)
+                ui_height = int(screen_height * scale_factor)
+            else:
+                ui_width, ui_height = 600, 75
+            self.preview_width = ui_width
+            self.preview_height = ui_height
+            super().__init__(keep_aspect_ratio=True, can_shrink=False, content_fit=Gtk.ContentFit.FILL,
+                             halign=Gtk.Align.CENTER, hexpand=True, width_request=ui_width, height_request=ui_height,
+                             valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
+                             **kwargs)
+        else:
+            super().__init__(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
+                             halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
+                             valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
+                             **kwargs)
         
         self.screenbar = screenbar
+        self.full_image: Image.Image = None
+        self.thumbnail_image: Image.Image = None
+        self.thumbnail_pixbuf: GdkPixbuf.Pixbuf = None
 
         self.on_map_tasks: list[callable] = []
         self.connect("map", self.on_map)
 
-        self.latest_task_id: int = None
+        self._preview_update_scheduled = False
+        self._pending_dial_preview: Image.Image = None
 
 
         # screen_image = self.get_controller_touch_screen().get_current_image()
@@ -249,44 +276,146 @@ class ScreenBarImage(Gtk.Picture):
         controller = gl.app.main_win.get_active_controller()
         return controller.get_input(identifier)
     
-    def get_new_task_id(self):
-        if self.latest_task_id is None:
-            return 0
-
-        return self.latest_task_id + 1
-        
     def set_image(self, image: Image.Image):
         if not self.get_mapped():
-            self.on_map_tasks = [lambda: self.set_image(image)]
+            self.on_map_tasks = [lambda image=image: self.set_image(image)]
             return
 
-        width = 385 #TODO: Find a better way to do this
-        thumbnail = image.copy()
-        thumbnail.thumbnail((width, width/8))
+        if self.full_image is not None:
+            self.full_image.close()
+        self.full_image = image
+        self._rebuild_thumbnail()
 
-        pixbuf = image2pixbuf(thumbnail.convert("RGBA"), force_transparency=True)
-        self.latest_task_id = self.get_new_task_id()
-        GLib.idle_add(self.set_pixbuf_and_del, pixbuf, self.latest_task_id, priority=GLib.PRIORITY_HIGH)
+        self.refresh_preview()
 
-        thumbnail.close()
-        del thumbnail
-        
+    def update_region(self, region: Image.Image, x_pos: int, y_pos: int, identifier: InputIdentifier = None):
+        if not self.get_mapped():
+            region.close()
+            return False
+
+        if self.full_image is None:
+            region.close()
+            return False
+
+        self.full_image.paste(region, (x_pos, y_pos))
+        self._update_thumbnail_region(region, x_pos, y_pos)
+
+        dial_preview = None
+        if recursive_hasattr(gl, "app.main_win.sidebar") and gl.app.main_win.sidebar.active_identifier == identifier:
+            dial_preview = region.copy()
+
+        region.close()
+        self.refresh_preview(dial_preview=dial_preview)
+        return False
+
+    def _get_preview_size(self) -> tuple[int, int]:
+        if self.full_image is None:
+            return self.preview_width, self.preview_height
+
+        width, height = self.full_image.size
+        max_width = self.preview_width if self.use_real_size else self.PREVIEW_MAX_WIDTH
+        max_height = self.preview_height if self.use_real_size else self.PREVIEW_MAX_HEIGHT
+        scale = min(max_width / width, max_height / height)
+        preview_width = max(1, int(width * scale))
+        preview_height = max(1, int(height * scale))
+        return preview_width, preview_height
+
+    def _rebuild_thumbnail(self) -> None:
+        if self.thumbnail_image is not None:
+            self.thumbnail_image.close()
+        preview_size = self._get_preview_size()
+        self.thumbnail_image = self.full_image.resize(preview_size, Image.Resampling.LANCZOS)
+        self._rebuild_thumbnail_pixbuf()
+
+    def _rebuild_thumbnail_pixbuf(self) -> None:
+        source_pixbuf = image2pixbuf(self.thumbnail_image, force_transparency=True)
+        self.thumbnail_pixbuf = GdkPixbuf.Pixbuf.new(
+            GdkPixbuf.Colorspace.RGB,
+            True,
+            8,
+            source_pixbuf.get_width(),
+            source_pixbuf.get_height(),
+        )
+        source_pixbuf.copy_area(
+            0,
+            0,
+            source_pixbuf.get_width(),
+            source_pixbuf.get_height(),
+            self.thumbnail_pixbuf,
+            0,
+            0,
+        )
+
+    def _update_thumbnail_region(self, region: Image.Image, x_pos: int, y_pos: int) -> None:
+        if self.thumbnail_image is None or self.thumbnail_pixbuf is None:
+            self._rebuild_thumbnail()
+            return
+
+        full_width, full_height = self.full_image.size
+        thumb_width, thumb_height = self.thumbnail_image.size
+
+        x2 = x_pos + region.width
+        y2 = y_pos + region.height
+
+        thumb_x1 = int(x_pos * thumb_width / full_width)
+        thumb_y1 = int(y_pos * thumb_height / full_height)
+        thumb_x2 = max(thumb_x1 + 1, int((x2 * thumb_width + full_width - 1) / full_width))
+        thumb_y2 = max(thumb_y1 + 1, int((y2 * thumb_height + full_height - 1) / full_height))
+
+        resized_region = region.resize((thumb_x2 - thumb_x1, thumb_y2 - thumb_y1), Image.Resampling.LANCZOS)
+        self.thumbnail_image.paste(resized_region, (thumb_x1, thumb_y1))
+        region_pixbuf = image2pixbuf(resized_region, force_transparency=True)
+        region_pixbuf.copy_area(
+            0,
+            0,
+            region_pixbuf.get_width(),
+            region_pixbuf.get_height(),
+            self.thumbnail_pixbuf,
+            thumb_x1,
+            thumb_y1,
+        )
+        resized_region.close()
+
+    def refresh_preview(self, dial_preview: Image.Image = None):
+        if self._pending_dial_preview is not None:
+            self._pending_dial_preview.close()
+            self._pending_dial_preview = None
+
+        if dial_preview is not None:
+            self._pending_dial_preview = dial_preview
+
+        if self._preview_update_scheduled:
+            return
+
+        self._preview_update_scheduled = True
+        GLib.idle_add(self._flush_preview, priority=GLib.PRIORITY_HIGH)
+
+    def _flush_preview(self):
+        self._preview_update_scheduled = False
+
+        if self.thumbnail_pixbuf is not None:
+            self.set_pixbuf(self.thumbnail_pixbuf)
+
+        dial_preview = self._pending_dial_preview
+        self._pending_dial_preview = None
+
         if not recursive_hasattr(gl, "app.main_win.sidebar"):
-            return
+            if dial_preview is not None:
+                dial_preview.close()
+            return False
 
-        
         identifier = gl.app.main_win.sidebar.active_identifier
-        if isinstance(identifier, Input.Dial):
+        if not isinstance(identifier, Input.Dial):
+            if dial_preview is not None:
+                dial_preview.close()
+            return False
+
+        if dial_preview is None:
+            if self.full_image is None:
+                return False
             dial_image_area = self.get_controller_touch_screen().get_dial_image_area(identifier)
+            dial_preview = self.full_image.crop(dial_image_area)
 
-            dial_image = image.crop(dial_image_area)
-
-            GLib.idle_add(gl.app.main_win.sidebar.key_editor.icon_selector.set_image, dial_image)
-
-    def set_pixbuf_and_del(self, pixbuf, task_id: int = None):
-        if task_id is not None:
-            if task_id != self.latest_task_id:
-                log.debug("Screenbar: Abort task")
-                return
-        self.set_pixbuf(pixbuf)
-        del pixbuf
+        gl.app.main_win.sidebar.key_editor.icon_selector.set_image(dial_preview)
+        dial_preview.close()
+        return False

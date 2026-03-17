@@ -162,6 +162,27 @@ class MediaPlayerThread(threading.Thread):
 
         self.show_fps_warnings = gl.settings_manager.get_app_settings().get("warnings", {}).get("enable-fps-warnings", True)
 
+    IDLE_FPS = 2  # Tick rate when no animated content needs rendering
+
+    def _has_animated_content(self) -> bool:
+        """Check if any content requires high-frequency rendering."""
+        # Background video playing
+        if self.deck_controller.background.video is not None:
+            if self.deck_controller.background.video.page is self.deck_controller.active_page:
+                return True
+
+        # Any key with video or scrolling labels
+        for key in self.deck_controller.inputs.get(Input.Key, []):
+            state = key.get_active_state()
+            if state is not None and any([state.key_video, state.label_manager.get_has_scroll_labels()]):
+                return True
+
+        return False
+
+    def _has_pending_tasks(self) -> bool:
+        """Check if there are queued image/touchscreen tasks to process."""
+        return bool(self.tasks or self.image_tasks or self.touchscreen_task)
+
     # @log.catch
     def run(self):
         self.running = True
@@ -170,6 +191,10 @@ class MediaPlayerThread(threading.Thread):
             start = time.time()
 
             # self.check_connection()
+
+            # Determine effective tick rate: full FPS only when needed
+            needs_animation = not self.pause and (self._has_animated_content() or self._has_pending_tasks())
+            effective_fps = self.FPS if needs_animation else self.IDLE_FPS
 
             if not self.pause:
                 if self.deck_controller.background.video is not None:
@@ -192,12 +217,10 @@ class MediaPlayerThread(threading.Thread):
 
             self.media_ticks += 1
 
-            # Wait for approximately 1/30th of a second before the next call
             end = time.time()
-            # print(f"possible FPS: {1 / (end - start)}")
             self.append_fps(1 / (end - start))
             self.update_low_fps_warning()
-            wait = max(0, 1/self.FPS - (end - start))
+            wait = max(0, 1/effective_fps - (end - start))
             time.sleep(wait)
 
             if self._stop:

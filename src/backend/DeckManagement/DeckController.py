@@ -156,6 +156,7 @@ class MediaPlayerThread(threading.Thread):
         self.tasks: list[MediaPlayerTask] = []
         self.image_tasks = {}
         self.touchscreen_task = None
+        self._wake_event = threading.Event()
 
         self.fps: list[float] = []
         self.old_warning_state = False
@@ -172,38 +173,66 @@ class MediaPlayerThread(threading.Thread):
             # self.check_connection()
 
             if not self.pause:
+                has_bg_video = False
+
                 if self.deck_controller.background.video is not None:
                     if self.deck_controller.background.video.page is self.deck_controller.active_page:
+                        has_bg_video = True
                         # There is a background video
                         video_each_nth_frame = self.FPS // self.deck_controller.background.video.fps
                         if self.media_ticks % video_each_nth_frame == 0:
                             self.deck_controller.background.update_tiles()
 
-                #TODO: generalize
-                for key in self.deck_controller.inputs[Input.Key]:
-                    cast("ControllerKey", key).on_media_player_tick()
+                # Only iterate keys if there is animated content to update
+                if has_bg_video or self._needs_key_ticks():
+                    #TODO: generalize
+                    for key in self.deck_controller.inputs[Input.Key]:
+                        cast("ControllerKey", key).on_media_player_tick()
 
-                for dial in self.deck_controller.inputs[Input.Dial]:
-                    cast("ControllerDial", dial).on_media_player_tick()
-                # self.deck_controller.update_all_inputs()
+                    for dial in self.deck_controller.inputs[Input.Dial]:
+                        cast("ControllerDial", dial).on_media_player_tick()
+                    # self.deck_controller.update_all_inputs()
 
                 # Perform media player tasks
                 self.perform_media_player_tasks()
 
             self.media_ticks += 1
 
-            # Wait for approximately 1/30th of a second before the next call
             end = time.time()
-            # print(f"possible FPS: {1 / (end - start)}")
+
+            # Use low FPS when idle (no animated content, no pending tasks)
+            has_pending = bool(self.tasks or self.image_tasks or self.touchscreen_task)
+            if has_pending or has_bg_video or getattr(self, '_cached_needs_ticks', False):
+                target_fps = self.FPS
+            else:
+                target_fps = 2  # Idle: just check for new tasks occasionally
+
             self.append_fps(1 / (end - start))
             self.update_low_fps_warning()
-            wait = max(0, 1/self.FPS - (end - start))
-            time.sleep(wait)
+            wait = max(0, 1/target_fps - (end - start))
+            if target_fps < self.FPS:
+                self._wake_event.wait(wait)
+                self._wake_event.clear()
+            else:
+                time.sleep(wait)
 
             if self._stop:
                 break
 
         self.running = False
+
+    def _needs_key_ticks(self) -> bool:
+        # Check once per second whether any key has animated content
+        if self.media_ticks % self.FPS != 0:
+            return getattr(self, '_cached_needs_ticks', False)
+        needs = False
+        for key in self.deck_controller.inputs.get(Input.Key, []):
+            state = key.get_active_state()
+            if state.key_video is not None:
+                needs = True
+                break
+        self._cached_needs_ticks = needs
+        return needs
 
     def append_fps(self, fps: float) -> None:
         self.fps.append(fps)
@@ -254,6 +283,7 @@ class MediaPlayerThread(threading.Thread):
             args=args,
             kwargs=kwargs
         ))
+        self._wake_event.set()
 
     def add_touchscreen_task(self, native_image: bytes):
         self.touchscreen_task = MediaPlayerSetTouchscreenImageTask(
@@ -261,6 +291,7 @@ class MediaPlayerThread(threading.Thread):
             page=self.deck_controller.active_page,
             native_image=native_image
         )
+        self._wake_event.set()
 
     def add_image_task(self, key_index: int, native_image: bytes):
         self.image_tasks[key_index] = MediaPlayerSetImageTask(
@@ -269,6 +300,7 @@ class MediaPlayerThread(threading.Thread):
             key_index=key_index,
             native_image=native_image
         )
+        self._wake_event.set()
 
     def perform_media_player_tasks(self):
         for task in self.tasks.copy():
@@ -331,6 +363,7 @@ class DeckController:
 
         self.screen_saver = ScreenSaver(deck_controller=self)
         self.allow_interaction = True
+        self.has_animated_keys = False
 
         self.key_spacing = (36, 36)
 
@@ -1227,11 +1260,23 @@ class LabelManager:
         if update:
             self.update_label(position)
 
+    @staticmethod
+    def _label_equals(a: "KeyLabel", b: "KeyLabel") -> bool:
+        return (a.text == b.text and a.font_size == b.font_size
+                and a.font_name == b.font_name and a.color == b.color
+                and a.font_weight == b.font_weight and a.style == b.style
+                and a.outline_width == b.outline_width
+                and a.outline_color == b.outline_color
+                and a.alignment == b.alignment)
+
     def set_action_label(self, position: str, label: "KeyLabel", update: bool = True):
         if label is None:
             label = self.action_labels[position]
             label.clear_values()
         else:
+            old = self.action_labels.get(position)
+            if old is not None and self._label_equals(old, label):
+                return
             self.action_labels[position] = label
 
         self._has_scroll_labels_cache = None
@@ -2007,9 +2052,16 @@ class ControllerKey(ControllerInput):
         rows, cols = deck.key_layout()
         return y * cols + x
 
-    def update(self):
+    def update(self, force: bool = False):
         image = self.get_current_image()
-        
+
+        # Quick hash check - skip expensive conversion if image unchanged
+        img_hash = hash(image.tobytes())
+        if not force and img_hash == getattr(self, '_last_img_hash', None):
+            image.close()
+            return
+        self._last_img_hash = img_hash
+
         # Handle transparency properly - composite RGBA onto RGB to preserve smooth edges
         if image.mode == "RGBA":
             rgb_background = Image.new("RGB", image.size, (0, 0, 0))

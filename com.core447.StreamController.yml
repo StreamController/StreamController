@@ -13,6 +13,7 @@ finish-args:
   - --share=network
   - --socket=pulseaudio
   - --device=all                              # Needed to communicate with the decks
+  - --filesystem=xdg-run/hypr:ro              # Hyprland IPC socket for event-driven window tracking
   - --talk-name=org.freedesktop.Flatpak       # Allow plugins to run system commands
   - --talk-name=org.mpris.MediaPlayer2.*      # Media control
   - --talk-name=org.kde.kdeconnect            # Access to KDEConnect

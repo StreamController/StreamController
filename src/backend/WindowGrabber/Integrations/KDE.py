@@ -99,7 +99,7 @@ class KDE(Integration):
         return windows
 
     @log.catch
-    def get_active_window(self) -> Window:
+    def get_active_window_id(self) -> Optional[str]:
         try:
             kdotool = self._run_command(["kdotool", "getactivewindow"])
             if kdotool is None:
@@ -108,11 +108,16 @@ class KDE(Integration):
             window_id = stdout.decode().strip()
             if len(window_id) == 0:
                 return
-
-            return self.get_window(window_id)
-
+            return window_id
         except CalledProcessError as e:
             log.error(f"An error occurred while running kdotool: {e}")
+
+    @log.catch
+    def get_active_window(self) -> Window:
+        window_id = self.get_active_window_id()
+        if window_id is None:
+            return
+        return self.get_window(window_id)
 
     @log.catch
     def get_window(self, window_id: str) -> Optional[Window]:
@@ -154,13 +159,26 @@ class WatchForActiveWindowChange(threading.Thread):
         super().__init__(name="WatchForActiveWindowChange", daemon=True)
         self.kde = kde
 
-        self.last_active_window = self.kde.get_active_window()
+        self.last_window_id: Optional[str] = None
+        self.last_active_window: Optional[Window] = None
+
+        window_id = self.kde.get_active_window_id()
+        if window_id is not None:
+            self.last_window_id = window_id
+            self.last_active_window = self.kde.get_window(window_id)
 
     @log.catch
     def run(self) -> None:
         while gl.threads_running:
             time.sleep(0.2)
-            new_active_window = self.kde.get_active_window()
+            window_id = self.kde.get_active_window_id()
+            if window_id is None:
+                continue
+            if window_id == self.last_window_id:
+                continue
+
+            self.last_window_id = window_id
+            new_active_window = self.kde.get_window(window_id)
             if new_active_window is None:
                 continue
             if new_active_window == self.last_active_window:

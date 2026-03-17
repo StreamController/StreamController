@@ -1189,6 +1189,7 @@ class LabelManager:
         self.page_labels = {}
         self.action_labels = {}
         self.scroll_wait = 25
+        self._has_scroll_labels_cache: bool = None
 
         self.init_labels()
         self.frames: dict[str, dict[str, int]] = {
@@ -1213,6 +1214,7 @@ class LabelManager:
  
     def clear_labels(self):
         self.init_labels()
+        self._has_scroll_labels_cache = None
 
     def set_page_label(self, position: str, label: "KeyLabel", update: bool = True):
         if label is None:
@@ -1220,7 +1222,8 @@ class LabelManager:
             label.clear_values()
         else:
             self.page_labels[position] = label
-        
+
+        self._has_scroll_labels_cache = None
         if update:
             self.update_label(position)
 
@@ -1231,6 +1234,7 @@ class LabelManager:
         else:
             self.action_labels[position] = label
 
+        self._has_scroll_labels_cache = None
         GLib.idle_add(self.update_label_editor)
         if update:
             self.update_label(position)
@@ -1346,12 +1350,17 @@ class LabelManager:
         return self.controller_input.get_image_size()[0]
 
     def get_has_scroll_labels(self) -> bool:
+        if self._has_scroll_labels_cache is not None:
+            return self._has_scroll_labels_cache
+
         labels = self.get_composed_labels()
         for label in labels:
             if labels[label].text is not None and labels[label].text != "":
                 _, _, w, _ = labels[label].get_font().getbbox(labels[label].text)
                 if w > self.get_available_width():
+                    self._has_scroll_labels_cache = True
                     return True
+        self._has_scroll_labels_cache = False
         return False
 
     def add_labels_to_image(self, image: Image.Image) -> Image.Image:

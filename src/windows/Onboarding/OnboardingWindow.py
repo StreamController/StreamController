@@ -12,32 +12,44 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-# Import gtk modules
-from asyncio import wrap_future
-import asyncio
 import os
-import threading
-import gi
 import subprocess
-from packaging import version
-import webbrowser as web
+from typing import TYPE_CHECKING
 
-from GtkHelper.GtkHelper import LoadingScreen
+import gi
+from packaging import version
+
+import globals as gl
 from autostart import is_flatpak
-from src.backend.DeckManagement.HelperMethods import open_web, run_command
+from GtkHelper.GtkHelper import LoadingScreen
 from src.windows.Onboarding.PluginRecommendations import PluginRecommendations
+from src.windows.Onboarding.Screens.DiscordOnboardingScreen import DiscordOnboardingScreen
+from src.windows.Onboarding.Screens.ExtensionOnboardingScreen import ExtensionOnboardingScreen
+from src.windows.Onboarding.Screens.IconOnboardingScreen import IconOnboardingScreen
+from src.windows.Onboarding.Screens.ImageOnboardingScreen import ImageOnboardingScreen
+from src.windows.Onboarding.Screens.OnboardingScreen5 import OnboardingScreen5
+from src.windows.Onboarding.Screens.SupportAppOnboardingScreen import (
+    SupportAppOnboardingScreen,
+)
+from src.windows.Onboarding.Screens.UdevOnboardingScreen import UdevOnboardingScreen
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Pango, GLib
+from gi.repository import Adw, Gtk
 
-# Import globals
-import globals as gl
-
-# Import typing
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from windows.mainWindow.mainWindow import MainWindow
+
+__all__ = [
+    "DiscordOnboardingScreen",
+    "ExtensionOnboardingScreen",
+    "IconOnboardingScreen",
+    "ImageOnboardingScreen",
+    "OnboardingScreen5",
+    "OnboardingWindow",
+    "SupportAppOnboardingScreen",
+    "UdevOnboardingScreen",
+]
 
 
 class OnboardingWindow(Adw.Dialog):
@@ -169,241 +181,3 @@ class OnboardingWindow(Adw.Dialog):
             return subprocess.check_output(command, shell=True).decode("utf-8").strip()
         except subprocess.CalledProcessError:
             return None
-
-class ImageOnboardingScreen(Gtk.Box):
-    def __init__(self, image_path: str, label: str, detail: str):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        self.image_path = image_path
-        self.label = label
-        self.detail = detail
-
-        self.build()
-
-    def build(self):
-        self.image = Gtk.Image(file=self.image_path, css_classes=["onboarding-image"], margin_top=70)
-        self.append(self.image)
-
-        self.label = Gtk.Label(label=self.label, css_classes=["onboarding-welcome-label"],
-                               margin_top=20)
-        self.append(self.label)
-
-        self.detail = Gtk.Label(label=self.detail, css_classes=["onboarding-welcome-detail-label"],
-                                margin_top=8)
-        self.append(self.detail)
-
-class IconOnboardingScreen(Gtk.Box):
-    def __init__(self, icon_name: str, label: str, detail: str):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        self.icon_name = icon_name
-        self.label = label
-        self.detail = detail
-
-        self.build()
-
-    def build(self):
-        self.image = Gtk.Image(icon_name=self.icon_name, pixel_size=350, margin_top=20)
-        self.append(self.image)
-
-        self.label = Gtk.Label(label=self.label, css_classes=["onboarding-welcome-label"],
-                               margin_top=0)
-        self.append(self.label)
-
-        self.detail = Gtk.Label(label=self.detail, css_classes=["onboarding-welcome-detail-label"],
-                                margin_top=8)
-        self.append(self.detail)
-
-
-class ExtensionOnboardingScreen(Gtk.Box):
-    def __init__(self):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-
-        self.build()
-
-    def build(self):
-        self.image = Gtk.Image(icon_name="folder-download-symbolic", pixel_size=250, margin_top=70)
-        self.append(self.image)
-
-        self.label = Gtk.Label(label=gl.lm.get("onboarding.extension.header"), css_classes=["onboarding-welcome-label"], margin_top=50)
-        self.append(self.label)
-
-        self.detail = Gtk.Label(label=gl.lm.get("onboarding.extension.detail"), css_classes=["onboarding-welcome-detail-label"],
-                                width_request=600, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
-        self.append(self.detail)
-
-        self.install_button = Gtk.Button(label=gl.lm.get("onboarding.extension.install-button"), margin_top=20, halign=Gtk.Align.CENTER)
-        self.update_button_status()
-        self.install_button.connect("clicked", self.on_install_button_click)
-        self.append(self.install_button)
-
-        self.hint_label = Gtk.Label(label=gl.lm.get("onboarding.extension.hint"), sensitive=False, margin_top=20, use_markup=True)
-        self.append(self.hint_label)
-
-    def update_button_status(self) -> None:
-        installed_extensions = gl.gnome_extensions.get_installed_extensions()
-        installed = "streamcontroller@core447.com" in installed_extensions
-        if installed:
-            self.set_button_status("installed")
-        else:
-            self.set_button_status("uninstalled")
-
-    def set_button_status(self, status: str) -> None:
-        """
-        uninstalled, installed, failed
-        """
-        self.install_button.set_css_classes(["pill"])
-        if status == "uninstalled":
-            self.install_button.add_css_class("suggested-action")
-            self.install_button.set_label(gl.lm.get("onboarding.extension.button.install"))
-            self.install_button.set_sensitive(True)
-        elif status == "installed":
-            self.install_button.add_css_class("success")
-            self.install_button.set_label(gl.lm.get("onboarding.extension.button.installed"))
-            self.install_button.set_sensitive(False)
-        elif status == "failed":
-            self.install_button.add_css_class("destructive-action")
-            self.install_button.set_label(gl.lm.get("onboarding.extension.button.failed"))
-            self.install_button.set_sensitive(False)
-            # Allow retry after 1 second
-            GLib.timeout_add(1000, self.set_button_status, "uninstalled")
-            
-        # To stop potential GLib.timeout_add
-        return False
-
-
-    def on_install_button_click(self, button):
-        result = gl.gnome_extensions.request_installation("streamcontroller@core447.com")
-        if result:
-            self.set_button_status("installed")
-        else:
-            self.set_button_status("failed")
-        gl.window_grabber.init_integration()
-
-
-class UdevOnboardingScreen(Gtk.Box):
-    def __init__(self):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-
-        self.build()
-
-    def build(self):
-        self.image = Gtk.Image(icon_name="dialog-error-symbolic", pixel_size=250, margin_top=70)
-        self.append(self.image)
-
-        self.label = Gtk.Label(label=gl.lm.get("onboarding.udev.header"), css_classes=["onboarding-welcome-label"], margin_top=50)
-        self.append(self.label)
-
-        self.detail = Gtk.Label(label=gl.lm.get("onboarding.udev.detail"), css_classes=["onboarding-welcome-detail-label"],
-                                width_request=600, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
-        self.append(self.detail)
-
-        self.open_wiki_button = Gtk.Button(label=gl.lm.get("onboarding.udev.button"), margin_top=20, halign=Gtk.Align.CENTER, css_classes=["pill", "suggested-action"])
-        self.open_wiki_button.connect("clicked", self.on_button_click)
-        self.append(self.open_wiki_button)
-
-    def on_button_click(self, button):
-        open_web("https://streamcontroller.github.io/docs/latest/installation/#udev")
-
-class OnboardingScreen5(Gtk.Box):
-    def __init__(self, onboarding_window: OnboardingWindow):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
-                         halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-        self.onboarding_window = onboarding_window
-
-        self.build()
-
-    def build(self):
-        self.label = Gtk.Label(label=gl.lm.get("onboarding.ready.header"), css_classes=["onboarding-welcome-label"],
-                               margin_top=0)
-        self.append(self.label)
-
-        self.start_button = Gtk.Button(label=gl.lm.get("onboarding.ready.button"), css_classes=["pill", "suggested-action"], margin_top=20)
-        self.start_button.connect("clicked", self.on_start_button_click)
-        self.append(self.start_button)
-
-    def on_start_button_click(self, button):
-        threading.Thread(target=self._on_start_button_click).start()
-
-    def _on_start_button_click(self):
-        GLib.idle_add(self.onboarding_window.stack.set_visible_child_name, "loading")
-        GLib.idle_add(self.onboarding_window.loading_box.loading_label.set_label, "Installing plugins")
-        GLib.idle_add(self.onboarding_window.loading_box.set_spinning, True)
-
-        plugins = self.onboarding_window.recommendations.get_selected_plugins()
-
-        GLib.idle_add(self.onboarding_window.loading_box.progress_bar.set_visible, len(plugins) > 0)
-
-        for i, plugin_data in enumerate(plugins):
-            GLib.idle_add(self.onboarding_window.loading_box.progress_bar.set_text, f"Installing {plugin_data.plugin_name}")
-            GLib.idle_add(self.onboarding_window.loading_box.progress_bar.set_fraction, i / len(plugins))
-            plugin = asyncio.run(gl.store_backend.get_plugin_for_id(plugin_data.plugin_id))
-            if plugin is None:
-                continue
-            asyncio.run(gl.store_backend.install_plugin(plugin))
-
-        GLib.idle_add(self.onboarding_window.loading_box.set_spinning, False)
-        GLib.idle_add(self.onboarding_window.close)
-        GLib.idle_add(self.onboarding_window.on_close)
-        GLib.idle_add(gl.app.main_win.show)
-
-
-class DiscordOnboardingScreen(Gtk.Box):
-    def __init__(self, onboarding_window: OnboardingWindow):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
-                            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-                            margin_start=50, margin_end=50, margin_top=50, margin_bottom=50)
-        self.onboarding_window = onboarding_window
-
-        self.build()
-
-    def build(self):
-        self.label = Gtk.Label(label="Join our Discord", css_classes=["onboarding-welcome-label"],
-                                margin_top=20)
-        self.append(self.label)
-
-        self.detail = Gtk.Label(label="Join our discord to ask questions, get help and request new features!", css_classes=["onboarding-welcome-detail-label"],
-                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER)
-        self.append(self.detail)
-
-        self.join_button = Gtk.Button(label="Join", css_classes=["pill", "suggested-action"], margin_top=20, hexpand=False, halign=Gtk.Align.CENTER)
-        self.join_button.connect("clicked", self.on_join_button_clicked)
-        self.append(self.join_button)
-
-    def on_join_button_clicked(self, button):
-        open_web("https://discord.gg/MSyHM8TN3u")
-
-
-class SupportAppOnboardingScreen(Gtk.Box):
-    def __init__(self):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
-                         halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-                         margin_start=50, margin_end=50, margin_top=50, margin_bottom=50)
-
-        self.build()
-
-    def build(self):
-        self.label = Gtk.Label(label="Support the app\ndevelopment", css_classes=["onboarding-welcome-label"],
-                               margin_bottom=70, use_markup=True, justify=Gtk.Justification.CENTER)
-        self.append(self.label)
-
-        self.detail = Gtk.Label(label="Creating this app was a lot of work, and your support helps me continue to further improve it. Consider donating to enable me to dedicate more time to new features and enhancements.", css_classes=["onboarding-welcome-detail-label"],
-                                width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER, use_markup=True)
-        self.append(self.detail)
-
-        self.support_button = Gtk.Button(label="Donate", css_classes=["pill", "suggested-action"], margin_top=90, hexpand=False, halign=Gtk.Align.CENTER)
-        self.support_button.connect("clicked", self.on_support_button_clicked)
-        self.append(self.support_button)
-
-    def on_support_button_clicked(self, button):
-        run_command("xdg-open https://ko-fi.com/core447")
-        # portal = Xdp.Portal.new()
-        # portal.open_uri(
-        #     parent=XdpGtk4.parent_new_gtk(gl.app.get_active_window()),
-        #     uri="https://ko-fi.com/core447",
-        #     flags=Xdp.OpenUriFlags.ASK,
-        #     cancellable=None,
-        #     callback=self.callback
-        # )
-
-    def callback(self, source, res):
-        print(source)
-        print(res)

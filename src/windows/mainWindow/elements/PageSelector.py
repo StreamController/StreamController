@@ -147,7 +147,7 @@ class PageSelector(Gtk.Box):
     def disconnect_change_signal(self):
         try:
             self.drop_down.disconnect_by_func(self.on_change_page)
-        except:
+        except Exception:
             pass
 
     def connect_change_signal(self):

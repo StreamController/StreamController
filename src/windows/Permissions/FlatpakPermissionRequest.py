@@ -113,7 +113,7 @@ class FlatpakPermissionRequestWindow(Gtk.ApplicationWindow):
     def on_copy(self, button):
         try:
             pyclip.copy(self.command)
-        except:
+        except Exception:
             #TODO: Show toast
             pass
 

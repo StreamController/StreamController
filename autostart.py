@@ -59,7 +59,7 @@ def setup_autostart_flatpak(enable: bool = True):
     def request_background_callback(portal, result, user_data):
         try:
             success = portal.request_background_finish(result)
-        except:
+        except Exception:
             success = False
         log.info(f"request_background success={success}")
         if not success:
@@ -80,7 +80,7 @@ def setup_autostart_flatpak(enable: bool = True):
             request_background_callback,
             None,  # user_data
         )
-    except:
+    except Exception:
         log.error(f"request_background failed")
         setup_autostart_desktop_entry(enable)
 

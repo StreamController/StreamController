@@ -90,7 +90,7 @@ class FileDialogRow(Adw.ActionRow):
 
             if self._callback:
                 self._callback(self.selected_file)
-        except:
+        except Exception:
             pass
 
     def load_from_path(self, path: str):

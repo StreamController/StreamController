@@ -124,7 +124,7 @@ class ColorRow(Adw.PreferencesRow):
     def disconnect_signals(self):
         try:
             self.button.button.disconnect_by_func(self.on_change_color)
-        except:
+        except Exception:
             pass
 
     def set_color(self, color_values: list):

@@ -641,7 +641,7 @@ class Page:
 
             try:
                 value = value.get(key, fallback)
-            except:
+            except Exception:
                 return
         return value
     

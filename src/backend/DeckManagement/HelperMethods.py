@@ -271,7 +271,7 @@ def find_fallback_font(fallback="DejaVu Sans"):
             font_names.append(font_name)
             if font_name == fallback:
                 break
-        except:
+        except Exception:
             pass
 
     # Check for fallback font

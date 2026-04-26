@@ -23,15 +23,48 @@ class PluginManager:
         if not os.path.exists(gl.PLUGIN_DIR):
             os.mkdir(gl.PLUGIN_DIR)
         folders = os.listdir(gl.PLUGIN_DIR)
+
+        # Import each plugin's main module on a daemon worker thread with a join
+        # timeout so a single hanging plugin (e.g. blocking on a network/socket
+        # at module import time) can't block app startup. Configurable via
+        # STREAMCONTROLLER_PLUGIN_IMPORT_TIMEOUT (seconds, default 15).
+        try:
+            import_timeout = float(os.environ.get("STREAMCONTROLLER_PLUGIN_IMPORT_TIMEOUT", "15"))
+        except ValueError:
+            import_timeout = 15.0
+
         for folder in folders:
             # Import main module
             import_string = f"plugins.{folder}.main"
-            if import_string not in sys.modules.keys():
-                # Import module only if it's not already imported
+            if import_string in sys.modules.keys():
+                continue
+
+            result: dict = {"error": None}
+
+            def _worker(folder=folder, result=result):
                 try:
                     importlib.import_module(f"plugins.{folder}.main")
                 except Exception as e:
-                    log.error(f"Error importing plugin {folder}: {e}")
+                    result["error"] = e
+
+            worker = threading.Thread(
+                target=_worker,
+                name=f"plugin-import:{folder}",
+                daemon=True,
+            )
+            worker.start()
+            worker.join(timeout=import_timeout)
+
+            if worker.is_alive():
+                log.error(
+                    f"Timeout importing plugin {folder} after {import_timeout}s. "
+                    "The plugin's main module is blocking; skipping it so app startup can continue. "
+                    "The worker thread keeps running but is daemon, so it will exit with the process."
+                )
+                continue
+
+            if result["error"] is not None:
+                log.error(f"Error importing plugin {folder}: {result['error']}")
 
         # Get all classes inheriting from PluginBase and generate objects for them
         self.init_plugins()

@@ -32,11 +32,7 @@ from loguru import logger as log
 import globals as gl
 from src.backend.DeckManagement.BetterDeck import BetterDeck
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
-from src.backend.DeckManagement.InputIdentifier import (
-    Input,
-    InputEvent,
-    InputIdentifier,
-)
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 from src.backend.DeckManagement.Subclasses.Background import (
     Background,
     BackgroundImage,

@@ -21,7 +21,6 @@ from PIL import Image
 from gi.repository import GLib
 from loguru import logger as log
 
-from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 from src.backend.DeckManagement.InputIdentifier import InputEvent, InputIdentifier
 from src.backend.DeckManagement.Subclasses.ActionPermissionManager import ActionPermissionManager
 from src.backend.DeckManagement.Subclasses.InputStateManagers import (

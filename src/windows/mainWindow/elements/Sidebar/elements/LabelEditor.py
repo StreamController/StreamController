@@ -14,7 +14,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import gi
 
-from src.backend.DeckManagement.DeckController import KeyLabel
 from src.backend.DeckManagement.InputIdentifier import InputIdentifier
 from src.windows.mainWindow.elements.Sidebar.elements.LabelEditorParts.LabelExpanderRow import (
     LabelExpanderRow,

@@ -91,7 +91,6 @@ def create_cache_folder():
 def create_global_objects(main_path: str):
     # Setup locales
     gl.tray_icon = TrayIcon()
-    # gl.tray_icon.run_detached()
 
     gl.lm = LocaleManager(csv_path=os.path.join(main_path, "locales", "locales.csv"))
     gl.lm.set_to_os_default()

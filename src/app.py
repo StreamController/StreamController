@@ -92,9 +92,7 @@ class App(Adw.Application):
             self.main_win.present()
 
         self.show_onboarding()
-        # self.show_donate()
         self.main_win.on_finished.append(self.show_donate())
-        # self.show_permissions()
 
         self.shortcuts = ShortcutsWindow(app=app, application=app)
         # self.shortcuts.present()

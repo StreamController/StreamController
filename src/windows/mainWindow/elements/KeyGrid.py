@@ -12,8 +12,6 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-from typing import TYPE_CHECKING
-
 import gi
 from loguru import logger as log
 
@@ -24,9 +22,6 @@ from src.windows.mainWindow.elements.KeyButtonContextMenu import KeyButtonContex
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import GLib, Gtk
-
-if TYPE_CHECKING:
-    from src.backend.DeckManagement.DeckController import ControllerKey
 
 __all__ = [
     "KeyButton",

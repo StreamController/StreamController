@@ -295,7 +295,6 @@ class LabelManager:
         del draw
 
         return image.copy()
-        # return image.copy().rotate(self.deck.get_rotation())
 
 
 class LayoutManager:

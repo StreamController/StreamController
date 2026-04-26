@@ -16,7 +16,6 @@ import gi
 
 import globals as gl
 from GtkHelper.GtkHelper import ErrorPage
-from src.backend.DeckManagement.DeckController import ControllerKey, DeckController
 from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
 from src.windows.mainWindow.elements.PageSelector import PageSelector
 from src.windows.mainWindow.elements.Sidebar.elements.ActionChooser import ActionChooser

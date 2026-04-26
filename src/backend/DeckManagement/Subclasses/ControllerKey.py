@@ -416,7 +416,7 @@ class ControllerKey(ControllerInput):
         else:
             try:
                 GLib.idle_add(self.deck_controller.get_own_key_grid().buttons[x][y].set_image, image)
-            except:
+            except Exception:
                 print(f"Failed to set ui key image for {self.identifier}")
         
     def get_own_ui_key(self) -> "KeyButton":

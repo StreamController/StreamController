@@ -125,7 +125,7 @@ class DeckManager:
             try:
                 if not deck.is_open():
                     deck.open(self.beta_resume_mode)
-            except:
+            except Exception:
                 log.error("Failed to open deck. Maybe it's already connected to another instance?")
                 continue
             deck_controller = DeckController(self, deck)
@@ -269,7 +269,7 @@ class DeckManager:
                     # Reset deck
                     usb.util.dispose_resources(device)
                     device.reset()
-            except:
+            except Exception:
                 log.error("Failed to reset deck, maybe it's already connected to another instance? Skipping...")
 
     def get_device_by_serial(self, serial: str):
@@ -277,7 +277,7 @@ class DeckManager:
             if not deck.is_open():
                 try:
                     deck.open()
-                except:
+                except Exception:
                     return
             if deck.get_serial_number() == serial:
                 return deck

@@ -185,7 +185,7 @@ class BackgroundVideo(BackgroundVideoCache):
         tiles =  self.get_tiles(self.active_frame)
         try:
             copied_tiles = [tile.copy() for tile in tiles]
-        except:
+        except Exception:
             copied_tiles = [None for _ in range(len(tiles))]
         return copied_tiles
 

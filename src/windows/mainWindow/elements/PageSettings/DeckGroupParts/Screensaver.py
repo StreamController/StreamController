@@ -145,7 +145,7 @@ class Screensaver(Adw.PreferencesRow):
             self.loop_switch.disconnect_by_func(self.on_toggle_loop)
             self.fps_spinner.disconnect_by_func(self.on_change_fps)
             self.scale.disconnect_by_func(self.on_change_brightness)
-        except:
+        except Exception:
             pass
 
     def load_defaults_from_page(self):

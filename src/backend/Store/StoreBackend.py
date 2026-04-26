@@ -639,13 +639,13 @@ class StoreBackend:
     async def get_web_image(self, url: str, path: str, branch: str = "main") -> Image:
         try:
             result = await self.get_remote_file(url, path, branch, data_type="content")
-        except:
+        except Exception:
             return
         if isinstance(result, NoConnectionError):
             return result
         try:
             return Image.open(BytesIO(result))
-        except:
+        except Exception:
             return
     
     async def get_stargazers(self, repo_url: str) -> int:

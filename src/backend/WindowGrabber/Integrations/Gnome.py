@@ -80,7 +80,7 @@ class Gnome(Integration):
         
         try:
             answer = json.loads(self.interface.GetAllWindows())
-        except:
+        except Exception:
             return []
         windows: list[Window] = []
         
@@ -96,7 +96,7 @@ class Gnome(Integration):
             return None
         try:
             answer = json.loads(self.interface.GetFocusedWindow())
-        except:
+        except Exception:
             return None
         wm_class = answer.get("wm_class")
         title = answer.get("title") 

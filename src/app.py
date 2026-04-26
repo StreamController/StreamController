@@ -314,6 +314,8 @@ class App(Adw.Application):
         for controller in self.deck_manager.deck_controller:
             if controller.serial_number() == serial_number:
                 page_path = gl.page_manager.find_matching_page_path(page_name)
+                if page_path is None:
+                    continue
 
                 if controller is not None:
                     if controller.active_page is not None:
@@ -321,8 +323,6 @@ class App(Adw.Application):
                             continue
 
                 page = gl.page_manager.get_page(page_path, controller)
-                if page_path is None:
-                    continue
 
                 controller.load_page(page)
 

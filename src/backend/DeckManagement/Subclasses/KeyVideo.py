@@ -29,7 +29,7 @@ class InputVideo(SingleKeyAsset):
         self.fps = fps
         self.loop = loop
 
-        self.video_cache = VideoFrameCache(video_path, size=self.controller_input.get_image_size())
+        self.video_cache = VideoFrameCache.get_or_create(video_path, size=self.controller_input.get_image_size())
 
         self.active_frame: int = -1
 

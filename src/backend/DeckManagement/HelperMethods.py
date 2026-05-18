@@ -16,7 +16,6 @@ from datetime import datetime
 from functools import lru_cache
 import hashlib
 from io import BytesIO
-import multiprocessing
 import os
 import subprocess
 import matplotlib.font_manager
@@ -362,9 +361,8 @@ def run_command(command):
     if is_flatpak():
         command = "flatpak-spawn --host " + command
 
-    p = multiprocessing.Process(target=subprocess.Popen, args=[command], kwargs={
-                                "shell": True, "start_new_session": True, "stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL, "cwd": os.path.expanduser("~")})
-    p.start()
+    subprocess.Popen(command, shell=True, start_new_session=True, stdin=subprocess.DEVNULL,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=os.path.expanduser("~"))
 
 def open_web(url):
     if not url.startswith("http"):

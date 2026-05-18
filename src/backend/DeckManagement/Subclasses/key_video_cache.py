@@ -32,15 +32,41 @@ class VideoFrameCache:
     _registry: dict[tuple, "VideoFrameCache"] = {}
     _registry_lock = threading.Lock()
 
+    # Per-key locks: ensure only one thread runs __init__ for a given key.
+    # This prevents two threads from writing to the same cache files
+    # simultaneously (which would corrupt PNGs and cause segfaults in PIL).
+    _init_locks: dict[tuple, threading.Lock] = {}
+    _init_locks_lock = threading.Lock()
+
     @classmethod
     def get_or_create(cls, video_path: str, size: tuple[int, int]) -> "VideoFrameCache":
         key = (os.path.abspath(video_path), size)
+
+        # Fast path: already in registry (no I/O needed).
         with cls._registry_lock:
             existing = cls._registry.get(key)
             if existing is not None:
                 return existing
+
+        # Acquire a per-key lock so that only one thread runs __init__ for
+        # this (path, size) at a time.  The global _registry_lock is NOT
+        # held during __init__, so other keys are never blocked.
+        with cls._init_locks_lock:
+            if key not in cls._init_locks:
+                cls._init_locks[key] = threading.Lock()
+            key_lock = cls._init_locks[key]
+
+        with key_lock:
+            # Re-check: another thread may have completed init while we waited.
+            with cls._registry_lock:
+                existing = cls._registry.get(key)
+                if existing is not None:
+                    return existing
+
             instance = cls(video_path, size)
-            cls._registry[key] = instance
+
+            with cls._registry_lock:
+                cls._registry[key] = instance
             return instance
 
     def __init__(self, video_path: str, size: tuple[int, int]):

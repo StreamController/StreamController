@@ -34,6 +34,7 @@ from gi.repository import Gdk, Pango
 
 # Import globals
 from autostart import is_flatpak
+from loguru import logger as log
 import globals as gl
 
 
@@ -359,8 +360,11 @@ def open_web(url):
     argv = ["xdg-open", url]
     if is_flatpak():
         argv = ["flatpak-spawn", "--host"] + argv
-    subprocess.Popen(argv, start_new_session=True, stdin=subprocess.DEVNULL,
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=os.path.expanduser("~"))
+    try:
+        subprocess.Popen(argv, start_new_session=True, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=os.path.expanduser("~"))
+    except (FileNotFoundError, OSError) as e:
+        log.error(f"Failed to open URL {url}: {e}")
 
 def svg_string_to_pil(svg_string, width: int = 96, height: int = 96):
     """

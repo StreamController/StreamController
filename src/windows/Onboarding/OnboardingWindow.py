@@ -12,19 +12,16 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-# Import gtk modules
-from asyncio import wrap_future
 import asyncio
 import os
 import threading
 import gi
 import subprocess
 from packaging import version
-import webbrowser as web
 
 from GtkHelper.GtkHelper import LoadingScreen
 from autostart import is_flatpak
-from src.backend.DeckManagement.HelperMethods import open_web, run_command
+from src.backend.DeckManagement.HelperMethods import open_web
 from src.windows.Onboarding.PluginRecommendations import PluginRecommendations
 
 gi.require_version("Gtk", "4.0")
@@ -51,7 +48,7 @@ class OnboardingWindow(Adw.Dialog):
         self.set_follows_content_size(False)
 
         self.connect("close-attempt", self.on_close)
-        
+
         self.build()
 
     def build(self):
@@ -265,7 +262,7 @@ class ExtensionOnboardingScreen(Gtk.Box):
             self.install_button.set_sensitive(False)
             # Allow retry after 1 second
             GLib.timeout_add(1000, self.set_button_status, "uninstalled")
-            
+
         # To stop potential GLib.timeout_add
         return False
 
@@ -394,7 +391,7 @@ class SupportAppOnboardingScreen(Gtk.Box):
         self.append(self.support_button)
 
     def on_support_button_clicked(self, button):
-        run_command("xdg-open https://ko-fi.com/core447")
+        open_web("https://ko-fi.com/core447")
         # portal = Xdp.Portal.new()
         # portal.open_uri(
         #     parent=XdpGtk4.parent_new_gtk(gl.app.get_active_window()),

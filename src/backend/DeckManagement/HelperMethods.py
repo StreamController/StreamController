@@ -353,17 +353,6 @@ def sort_times(time_list):
     """
     return sorted(time_list, key=lambda x: datetime.fromisoformat(x))
 
-
-def run_command(command):
-    if command is None:
-        return
-
-    if is_flatpak():
-        command = "flatpak-spawn --host " + command
-
-    subprocess.Popen(command, shell=True, start_new_session=True, stdin=subprocess.DEVNULL,
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=os.path.expanduser("~"))
-
 def open_web(url):
     if not url.startswith("http"):
         url = f"https://{url}"

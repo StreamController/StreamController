@@ -367,7 +367,11 @@ def run_command(command):
 def open_web(url):
     if not url.startswith("http"):
         url = f"https://{url}"
-    run_command(f"xdg-open {url}")
+    argv = ["xdg-open", url]
+    if is_flatpak():
+        argv = ["flatpak-spawn", "--host"] + argv
+    subprocess.Popen(argv, start_new_session=True, stdin=subprocess.DEVNULL,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=os.path.expanduser("~"))
 
 def svg_string_to_pil(svg_string, width: int = 96, height: int = 96):
     """

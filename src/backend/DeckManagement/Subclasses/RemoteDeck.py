@@ -96,18 +96,35 @@ class RemoteDeck:
         return True
     
     def is_touch(self) -> bool:
-        return self.is_touch
-    
+        return self._is_touch
+
     def dial_count(self) -> int:
         return self._dial_count
-    
+
+    def touch_key_count(self) -> int:
+        return 0
+
     def touchscreen_image_format(self) -> dict:
-        return{
+        return {
             "size": (800, 100),
             "format": "JPEG",
             "flip": (False, False),
             "rotation": 0
         }
-    
+
+    def screen_image_format(self) -> dict:
+        return {
+            "size": (0, 0),
+            "format": "JPEG",
+            "flip": (False, False),
+            "rotation": 0
+        }
+
     def set_touchscreen_image(self, *args, **kwargs):
+        return
+
+    def set_screen_image(self, *args, **kwargs):
+        return
+
+    def set_key_color(self, *args, **kwargs):
         return

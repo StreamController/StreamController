@@ -2023,7 +2023,7 @@ class ControllerKey(ControllerInput):
         self.press_state: bool = self.deck_controller.deck.key_states()[self.index]
 
         self.down_start_time: float = None
-        
+         
         # GIF timing tracking
         self.last_gif_update_time: float = 0
 

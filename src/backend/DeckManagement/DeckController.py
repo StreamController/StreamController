@@ -2174,7 +2174,14 @@ class ControllerKey(ControllerInput):
 
         if state._overlay:
             height = round(self.deck_controller.get_key_image_size()[1]*0.75)
-            img = state._overlay.resize((height, height))
+
+            # Prevent Assertion Error
+            try:
+                img = state._overlay.resize((height, height))
+            except(AssertionError) as error:
+                print(f"Failed to process media player image: {error}")
+                img = Image.new("RGBA", (height, height), (0, 0, 0, 0))  # Fallback Image
+
             background.paste(img, (int((self.deck_controller.get_key_image_size()[0] - height) // 2), int((self.deck_controller.get_key_image_size()[1] - height) // 2)), img)
             return background
 

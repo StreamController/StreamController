@@ -9,3 +9,11 @@ SUBSYSTEM=="usb", ATTRS{idVendor}=="0fd9", ATTRS{idProduct}=="0084", TAG+="uacce
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0fd9", ATTRS{idProduct}=="0086", TAG+="uaccess"
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0fd9", ATTRS{idProduct}=="009a", TAG+="uaccess"
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0fd9", ATTRS{idProduct}=="00a5", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0554", ATTRS{idProduct}=="6670", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="6603", ATTRS{idProduct}=="1007", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="6602", ATTRS{idProduct}=="1001", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="5548", ATTRS{idProduct}=="1008", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="5548", ATTRS{idProduct}=="1021", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0300", ATTRS{idProduct}=="3004", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0300", ATTRS{idProduct}=="5001", TAG+="uaccess"
+

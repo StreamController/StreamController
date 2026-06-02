@@ -48,7 +48,7 @@ if not gl.IS_MAC:
     gi.require_version("Xdp", "1.0")
     from gi.repository import Xdp
 
-ELGATO_VENDOR_ID = "0fd9"
+SUPPORTED_VENDOR_IDS = {"0fd9", "5548", "6602", "6603", "0300"}
 
 
 class DeckManager:
@@ -171,7 +171,7 @@ class DeckManager:
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
         # Check if it is a supported device
-        if device_info["ID_VENDOR_ID"] != ELGATO_VENDOR_ID:
+        if device_info["ID_VENDOR_ID"] not in SUPPORTED_VENDOR_IDS:
             return
 
         self.connect_new_decks()
@@ -193,7 +193,7 @@ class DeckManager:
 
     def on_disconnect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} disconnected")
-        if device_info["ID_VENDOR_ID"] != ELGATO_VENDOR_ID:
+        if device_info["ID_VENDOR_ID"] not in SUPPORTED_VENDOR_IDS:
             return
 
         for controller in self.deck_controller:

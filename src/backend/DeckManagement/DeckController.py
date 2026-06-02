@@ -28,6 +28,8 @@ from PIL import Image, ImageDraw, ImageFont, ImageSequence
 from StreamDeck.Devices import StreamDeck
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
+from StreamDeck.Devices.MiraboxN4 import MiraboxN4
+from StreamDeck.Devices.MiraboxN4Pro import MiraboxN4Pro
 from loguru import logger as log
 
 # Import own modules
@@ -367,7 +369,7 @@ class DeckController:
 
         self.key_spacing = (36, 36)
 
-        if isinstance(self.deck, StreamDeckPlus) or (isinstance(self.deck, FakeDeck) and self.deck.key_layout() == [2, 4]):
+        if isinstance(self.deck, StreamDeckPlus) or isinstance(self.deck, MiraboxN4) or isinstance(self.deck, MiraboxN4Pro) or (isinstance(self.deck, FakeDeck) and self.deck.key_layout() == [2, 4]):
             log.error("Deck recognized as StreamDeckPlus")
             self.key_spacing = (52, 36)
 
@@ -497,21 +499,25 @@ class DeckController:
     
     @lru_cache(maxsize=None)
     def get_key_image_size(self) -> tuple[int]:
-        if not self.get_alive(): return
-        size = self.deck.key_image_format()["size"]
-        if size is None:
+        try:
+            size = self.deck.key_image_format()["size"]
+            if size is None:
+                return (72, 72)
+            size = max(size[0], 72), max(size[1], 72)
+            return size
+        except Exception:
             return (72, 72)
-        size = max(size[0], 72), max(size[1], 72)
-        return size
-    
+
     @lru_cache(maxsize=None)
     def get_touchscreen_image_size(self) -> tuple[int]:
-        if not self.get_alive(): return
-        size = self.deck.touchscreen_image_format()["size"]
-        if size is None:
+        try:
+            size = self.deck.touchscreen_image_format()["size"]
+            if size is None:
+                return (800, 100)
+            size = max(size[0], 800), max(size[1], 100)
+            return size
+        except Exception:
             return (800, 100)
-        size = max(size[0], 800), max(size[1], 100)
-        return size
 
     # ------------ #
     # Page Loading #
@@ -1705,7 +1711,7 @@ class ControllerInputState:
         self.update()
 
     def show_error(self, duration: int = -1):
-        error_img = Image.open(os.path.join("Assets", "images", "error.png"))
+        error_img = Image.open(os.path.join(gl.INSTALL_DIR, "Assets", "images", "error.png"))
         self.show_overlay(error_img, duration=duration)
 
     def hide_error(self):
@@ -2347,7 +2353,10 @@ class ControllerKey(ControllerInput):
 
             elif len(state.get_own_actions()) > 1 and False: # Disabled for now - we might reuse it later
                 if state_dict.get("image-control-action") is None:
-                    with Image.open(os.path.join("Assets", "images", "multi_action.png")) as image:
+                    try:
+                        with Image.open(os.path.join(gl.INSTALL_DIR, "Assets", "images", "multi_action.png")) as image:
+                            img.paste(image, (0, 0), image)
+                    except Exception as e:
                         self.set_key_image(InputImage(
                             controller_input=self,
                             image=image.copy(),

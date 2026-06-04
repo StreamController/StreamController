@@ -1003,7 +1003,8 @@ class Background:
             
         bg_format = self.deck_controller.deck.background_image_format()
         width = bg_format['size'][0]
-        height = 350
+        touchbar_height = getattr(self.deck_controller.deck, "TOUCHBAR_BG_PIXEL_HEIGHT", 130)
+        height = bg_format['size'][1] - touchbar_height
         
         bg_image = ImageOps.fit(image, (width, height), Image.Resampling.LANCZOS)
         
@@ -2839,7 +2840,7 @@ class ControllerTouchScreenState(ControllerInputState):
                 bg_format = deck.background_image_format()
                 
                 touchbar_width = 800
-                touchbar_height = 130
+                touchbar_height = getattr(deck, "TOUCHBAR_BG_PIXEL_HEIGHT", 130)
                 
                 bg_image = ImageOps.fit(background, (touchbar_width, touchbar_height), Image.Resampling.LANCZOS)
                 if bg_format.get('rotation'):
@@ -2855,7 +2856,7 @@ class ControllerTouchScreenState(ControllerInputState):
                     jpeg_data = buf.getvalue()
                     
                 phys_x = 0
-                phys_y = 350
+                phys_y = bg_format['size'][1] - touchbar_height
                 if bg_format.get('rotation') == 180:
                     phys_y = 0
                     

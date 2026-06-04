@@ -35,7 +35,7 @@ class ChooserPage(Gtk.Stack):
         self.nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=False, margin_bottom=15)
         self.main_box.append(self.nav_box)
 
-        self.search_entry = Gtk.SearchEntry(placeholder_text="Search", hexpand=True)
+        self.search_entry = Gtk.SearchEntry(placeholder_text=gl.lm.get("action-chooser.search-entry.placeholder", "Search..."), hexpand=True)
         self.search_entry.connect("search-changed", self.on_search_changed)
         self.nav_box.append(self.search_entry)
 

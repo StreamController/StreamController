@@ -29,16 +29,16 @@ class DeckSettingsButton(Gtk.Button):
         self.icon = Gtk.Image(icon_name=self.deck_settings_icon)
         self.main_box.append(self.icon)
 
-        self.label = Gtk.Label(label="Deck Settings")
+        self.label = Gtk.Label(label=gl.lm.get("page-settings-deck-heading", "Deck Settings"))
         self.main_box.append(self.label)
 
     def set_state(self, state: str):
         if state == "page-settings":
             self.icon.set_from_icon_name(self.deck_settings_icon)
-            self.label.set_label("Deck Settings")
+            self.label.set_label(gl.lm.get("page-settings-deck-heading", "Deck Settings"))
         else:
             self.icon.set_from_icon_name(self.page_settings_icon)
-            self.label.set_label("Key Grid")
+            self.label.set_label(gl.lm.get("settings-ui-settings-key-grid-header", "Key Grid"))
 
     def update_state(self):
         deck_stack_child = self.main_window.leftArea.deck_stack.get_visible_child()

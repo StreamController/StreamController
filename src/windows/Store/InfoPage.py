@@ -46,7 +46,7 @@ class InfoPage(Gtk.Box):
         self.clamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.clamp_box)
 
-        self.about_group = Adw.PreferencesGroup(title="About")
+        self.about_group = Adw.PreferencesGroup(title=gl.lm.get("about", "About"))
         self.clamp_box.append(self.about_group)
 
         self.name_row = AttributeRow(title="Name:", attr="Error")

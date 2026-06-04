@@ -79,7 +79,7 @@ class KeyGrid(Gtk.Grid):
                 self.buttons[x][y] = button
         return
         log.debug(self.deck_controller.deck.key_layout())
-        l = Gtk.Label(label="Key Grid")
+        l = Gtk.Label(label=gl.lm.get("settings-ui-settings-key-grid-header", "Key Grid"))
         self.attach(l, 0, 0, 1, 1)
 
     def load_from_changes(self):

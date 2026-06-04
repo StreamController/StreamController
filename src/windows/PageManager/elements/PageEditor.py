@@ -260,13 +260,13 @@ class AutoChangeGroup(PageEditorGroup):
         self.enable_toggle = Adw.SwitchRow(title=gl.lm.get("page-manager.page-editor.change-group.enable"))
         self.add(self.enable_toggle)
 
-        self.stay_on_page_toggle = Adw.SwitchRow(title="Stay on page", subtitle="Stay on the page until another page matches")
+        self.stay_on_page_toggle = Adw.SwitchRow(title=gl.lm.get("page-manager.page-editor.stay-on-page", "Stay on page"), subtitle=gl.lm.get("page-manager.page-editor.stay-on-page-subtitle", "Stay on the page until another page matches"))
         self.add(self.stay_on_page_toggle)
 
         self.deck_selector = MultiDeckSelectorRow(
             source_window=self.page_editor.page_manager,
-            title="Decks",
-            subtitle="Decks on which the page should be loaded",
+            title=gl.lm.get("page-manager.page-editor.decks", "Decks"),
+            subtitle=gl.lm.get("page-manager.page-editor.decks-subtitle", "Decks on which the page should be loaded"),
             callback=self.on_deck_changed,
             selected_deck_serials=gl.page_manager.get_serial_numbers_from_page(self.page_editor.active_page_path)
         )
@@ -346,18 +346,18 @@ class AutoChangeGroup(PageEditorGroup):
 
 class BrightnessGroup(PageEditorGroup):
     def __init__(self, page_editor: PageEditor):
-        super().__init__(page_editor, title="Brightness Override")
+        super().__init__(page_editor, title=gl.lm.get("page-manager.page-editor.brightness-override", "Brightness Override"))
 
     def build(self):
         self.enable_expander = BetterExpander(
-            title="Overwrite Brightness",
-            subtitle="Overrides the Deck Brightness",
+            title=gl.lm.get("page-manager.page-editor.overwrite-brightness", "Overwrite Brightness"),
+            subtitle=gl.lm.get("page-manager.page-editor.overwrite-brightness-subtitle", "Overrides the Deck Brightness"),
             expanded=False,
             show_enable_switch=True
         )
         self.add(self.enable_expander)
 
-        self.brightness_scale = ScaleRow(0, 0, 100, digits=0, draw_value=True, draw_side_values=False, title="Brightness")
+        self.brightness_scale = ScaleRow(0, 0, 100, digits=0, draw_value=True, draw_side_values=False, title=gl.lm.get("brightness", "Brightness"))
         self.enable_expander.add_row(self.brightness_scale)
 
     def connect_events(self):
@@ -400,12 +400,12 @@ class BrightnessGroup(PageEditorGroup):
 
 class BackgroundGroup(PageEditorGroup):
     def __init__(self, page_editor: PageEditor):
-        super().__init__(page_editor, title="Background Override")
+        super().__init__(page_editor, title=gl.lm.get("page-manager.page-editor.background-override", "Background Override"))
 
     def build(self):
         self.enable_expander = BetterExpander(
-            title="Overwrite Background",
-            subtitle="Overrides the Deck Background",
+            title=gl.lm.get("page-manager.page-editor.overwrite-background", "Overwrite Background"),
+            subtitle=gl.lm.get("page-manager.page-editor.overwrite-background-subtitle", "Overrides the Deck Background"),
             expanded=False,
             show_enable_switch=True
         )
@@ -417,21 +417,21 @@ class BackgroundGroup(PageEditorGroup):
         self.media_settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, valign=Gtk.Align.CENTER)
         self.media_main_box.append(self.media_settings_box)
 
-        self.show_background_toggle = Adw.SwitchRow(title="Show Background")
+        self.show_background_toggle = Adw.SwitchRow(title=gl.lm.get("page-settings-deck-show-background", "Show Background"))
         self.media_settings_box.append(self.show_background_toggle)
 
-        self.loop_toggle = Adw.SwitchRow(title="Loop")
+        self.loop_toggle = Adw.SwitchRow(title=gl.lm.get("media-loop", "Loop"))
         self.media_settings_box.append(self.loop_toggle)
 
         self.fps_spin = Adw.SpinRow.new_with_range(0, 30, 1)
-        self.fps_spin.set_title("FPS")
+        self.fps_spin.set_title(gl.lm.get("fps", "FPS"))
         self.media_settings_box.append(self.fps_spin)
 
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, valign=Gtk.Align.CENTER)
         self.media_main_box.append(self.button_box)
 
         self.media_selector_button = Gtk.Button(
-            label="Select",
+            label=gl.lm.get("select", "Select"),
             css_classes=["page-settings-media-selector"],
             halign=Gtk.Align.CENTER,
         )
@@ -531,12 +531,12 @@ class BackgroundGroup(PageEditorGroup):
 
 class ScreensaverGroup(PageEditorGroup):
     def __init__(self, page_editor: PageEditor):
-        super().__init__(page_editor, title="Screensaver Overwrite")
+        super().__init__(page_editor, title=gl.lm.get("page-manager.page-editor.screensaver-override", "Screensaver Overwrite"))
 
     def build(self):
         self.overwrite_expander = BetterExpander(
-            title="Overwrite Screensaver",
-            subtitle="Overrides the Deck Screensaver",
+            title=gl.lm.get("page-manager.page-editor.overwrite-screensaver", "Overwrite Screensaver"),
+            subtitle=gl.lm.get("page-manager.page-editor.overwrite-screensaver-subtitle", "Overrides the Deck Screensaver"),
             expanded=False,
             show_enable_switch=True
         )
@@ -548,22 +548,22 @@ class ScreensaverGroup(PageEditorGroup):
         self.media_settings_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, valign=Gtk.Align.CENTER)
         self.media_main_box.append(self.media_settings_box)
 
-        self.enable_screensaver_toggle = Adw.SwitchRow(title="Enable Screensaver")
+        self.enable_screensaver_toggle = Adw.SwitchRow(title=gl.lm.get("page-manager.page-editor.enable-screensaver", "Enable Screensaver"))
         self.media_settings_box.append(self.enable_screensaver_toggle)
 
         self.delay_spin = Adw.SpinRow.new_with_range(1, 60, 1)
-        self.delay_spin.set_title("Delay (min)")
+        self.delay_spin.set_title(gl.lm.get("screensaver-delay", "Delay (min)"))
         self.media_settings_box.append(self.delay_spin)
 
-        self.loop_toggle = Adw.SwitchRow(title="Loop")
+        self.loop_toggle = Adw.SwitchRow(title=gl.lm.get("media-loop", "Loop"))
         self.media_settings_box.append(self.loop_toggle)
 
         self.fps_spin = Adw.SpinRow.new_with_range(0, 30, 1)
-        self.fps_spin.set_title("FPS")
+        self.fps_spin.set_title(gl.lm.get("fps", "FPS"))
         self.media_settings_box.append(self.fps_spin)
 
         self.brightness_scale = ScaleRow(
-            0, 0, 100,draw_side_values=False, draw_value=True, digits=0, title="Brightness"
+            0, 0, 100,draw_side_values=False, draw_value=True, digits=0, title=gl.lm.get("brightness", "Brightness")
         )
         self.media_settings_box.append(self.brightness_scale)
 
@@ -571,7 +571,7 @@ class ScreensaverGroup(PageEditorGroup):
         self.media_main_box.append(self.button_box)
 
         self.media_selector_button = Gtk.Button(
-            label="Select",
+            label=gl.lm.get("select", "Select"),
             css_classes=["page-settings-media-selector"],
             halign=Gtk.Align.CENTER,
         )

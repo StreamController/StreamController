@@ -222,11 +222,11 @@ class FakeDecksGroup(Adw.PreferencesGroup):
 class RemoteDecksGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):
         self.settings = settings
-        super().__init__(title="Remote Decks")
+        super().__init__(title=gl.lm.get("settings.remote-decks", "Remote Decks"))
 
         self.n_remote_decks_row = Adw.SpinRow.new_with_range(min=0, max=1, step=1)
-        self.n_remote_decks_row.set_title("Number of remote decks")
-        self.n_remote_decks_row.set_subtitle("Use remote.sc.core447.com to connect (beta)")
+        self.n_remote_decks_row.set_title(gl.lm.get("settings.n-remote-decks", "Number of remote decks"))
+        self.n_remote_decks_row.set_subtitle(gl.lm.get("settings.n-remote-decks-subtitle", "Use remote.sc.core447.com to connect (beta)"))
         self.n_remote_decks_row.set_range(0, 1)
         self.add(self.n_remote_decks_row)
 
@@ -261,12 +261,12 @@ class RemoteDecksGroup(Adw.PreferencesGroup):
 class DataPathGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):
         self.settings = settings
-        super().__init__(title="Data path")
+        super().__init__(title=gl.lm.get("settings.data-path", "Data path"))
 
-        self.data_path = Adw.EntryRow(title="Data path (requires restart)")
+        self.data_path = Adw.EntryRow(title=gl.lm.get("settings.data-path-subtitle", "Data path (requires restart)"))
         self.add(self.data_path)
 
-        self.open_data_path_button = Gtk.Button(label="Open", valign=Gtk.Align.CENTER)
+        self.open_data_path_button = Gtk.Button(label=gl.lm.get("settings.open", "Open"), valign=Gtk.Align.CENTER)
         self.open_data_path_button.connect("clicked", self.on_open_data_path_button_clicked)
         self.data_path.add_suffix(self.open_data_path_button)
 
@@ -313,12 +313,12 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         super().__init__(title=gl.lm.get("General app settings"))
 
         self.hold_time_row = Adw.SpinRow.new_with_range(min=0.1, max=3, step=0.1)
-        self.hold_time_row.set_title("Minimum hold duration (s)")
-        self.hold_time_row.set_subtitle("Minimum hold duration for keys and dials")
+        self.hold_time_row.set_title(gl.lm.get("settings.hold-duration", "Minimum hold duration (s)"))
+        self.hold_time_row.set_subtitle(gl.lm.get("settings.hold-duration-subtitle", "Minimum hold duration for keys and dials"))
         self.hold_time_row.set_range(0.1, 3)
         self.add(self.hold_time_row)
 
-        self.rolling_labels = Adw.SwitchRow(title="Rolling labels", subtitle="Enable automatic rolling/scrolling of too long labels")
+        self.rolling_labels = Adw.SwitchRow(title=gl.lm.get("settings.rolling-labels", "Rolling labels"), subtitle=gl.lm.get("settings.rolling-labels-subtitle", "Enable automatic rolling/scrolling of too long labels"))
         self.add(self.rolling_labels)
 
         self.load_defaults()
@@ -606,11 +606,11 @@ class CustomContentEntry(Adw.PreferencesRow):
         self.entry_grid = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True)
         self.main_box.append(self.entry_grid)
 
-        self.url = Adw.EntryRow(title="Repository URL", valign=Gtk.Align.CENTER, text=url or "")
+        self.url = Adw.EntryRow(title=gl.lm.get("settings.repository-url", "Repository URL"), valign=Gtk.Align.CENTER, text=url or "")
         self.url.connect("changed", self.on_value_changed)
         self.entry_grid.append(self.url)
 
-        self.branch = Adw.EntryRow(title="Branch", valign=Gtk.Align.CENTER, text=branch or "")
+        self.branch = Adw.EntryRow(title=gl.lm.get("settings.branch", "Branch"), valign=Gtk.Align.CENTER, text=branch or "")
         self.branch.connect("changed", self.on_value_changed)
         self.entry_grid.append(self.branch)
 
@@ -719,10 +719,10 @@ class SystemGroup(Adw.PreferencesGroup):
         self.autostart = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-autostart"), subtitle=gl.lm.get("settings-system-settings-autostart-subtitle"), active=True)
         self.add(self.autostart)
 
-        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Works on Gnome, KDE, Cinnamon and Hyprland", active=True)
+        self.lock_on_lock_screen = Adw.SwitchRow(title=gl.lm.get("settings.lock-decks", "Lock decks when screen is locked"), subtitle=gl.lm.get("settings.lock-decks-subtitle", "Works on Gnome, KDE, Cinnamon and Hyprland"), active=True)
         self.add(self.lock_on_lock_screen)
 
-        self.beta_resume_mode = Adw.SwitchRow(title="Use new resume mode (beta)", subtitle="Use new way to resume after suspends - requires restart", active=False)
+        self.beta_resume_mode = Adw.SwitchRow(title=gl.lm.get("settings.resume-mode", "Use new resume mode (beta)"), subtitle=gl.lm.get("settings.resume-mode-subtitle", "Use new way to resume after suspends - requires restart"), active=False)
         self.add(self.beta_resume_mode)
 
         self.load_defaults()

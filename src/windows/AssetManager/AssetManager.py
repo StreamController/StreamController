@@ -139,16 +139,16 @@ class AssetChooser(Gtk.Stack):
 
     def build(self):
         self.custom_asset_chooser = CustomAssetChooser(self.asset_manager)
-        self.add_titled(self.custom_asset_chooser, "custom-assets", "Custom Assets")
+        self.add_titled(self.custom_asset_chooser, "custom-assets", gl.lm.get("asset-manager.custom-assets", "Custom Assets"))
 
         self.icon_pack_chooser = IconPackChooserStack(self.asset_manager)
-        self.add_titled(self.icon_pack_chooser, "icon-packs", "Icon Packs")
+        self.add_titled(self.icon_pack_chooser, "icon-packs", gl.lm.get("asset-manager.icon-packs", "Icon Packs"))
 
         self.wallpaper_pack_chooser = WallpaperPackChooserStack(self.asset_manager)
-        self.add_titled(self.wallpaper_pack_chooser, "wallpaper-packs", "Wallpaper Packs")
+        self.add_titled(self.wallpaper_pack_chooser, "wallpaper-packs", gl.lm.get("asset-manager.wallpaper-packs", "Wallpaper Packs"))
 
         self.sd_plus_bar_wallpaper_pack_chooser = SDPlusBarWallpaperPackChooserStack(self.asset_manager)
-        self.add_titled(self.sd_plus_bar_wallpaper_pack_chooser, "sd-plus-bar-wallpaper-packs", "SD+ Bar Wallpapers")
+        self.add_titled(self.sd_plus_bar_wallpaper_pack_chooser, "sd-plus-bar-wallpaper-packs", gl.lm.get("asset-manager.sd-plus-bar-wallpapers", "SD+ Bar Wallpapers"))
 
         self.connect("notify::visible-child-name", self.on_switch)
 

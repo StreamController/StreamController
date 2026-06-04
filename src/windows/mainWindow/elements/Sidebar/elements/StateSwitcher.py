@@ -60,7 +60,7 @@ class StateSwitcher(Gtk.ScrolledWindow):
         self.clear_stack()
 
         for i in range(n):
-            self.stack.add_titled(Gtk.Box(), str(i+1), f"State {i+1}")
+            self.stack.add_titled(Gtk.Box(), str(i+1), f"{gl.lm.get('state', 'State')} {i+1}")
 
         self._connect_signal()
 
@@ -86,7 +86,7 @@ class StateSwitcher(Gtk.ScrolledWindow):
                 return
 
         n_states = self.get_n_states()
-        self.stack.add_titled(Gtk.Box(), str(n_states + 1), f"State {n_states + 1}")
+        self.stack.add_titled(Gtk.Box(), str(n_states + 1), f"{gl.lm.get('state', 'State')} {n_states + 1}")
 
         for callback in self.add_new_callbacks:
             if callable(callback):

@@ -246,7 +246,41 @@ page-manager.page-editor.haptic-feedback-override.subtitle;Überschreibt das hap
 page-manager.page-editor.rgb-leds-override.title;RGB-LEDs-Override;RGB LEDs Override;Surcharge des LED RVB;Anular LEDs RGB;Substituição de LEDs RGB
 page-manager.page-editor.rgb-leds-override.overwrite;RGB-LEDs überschreiben;Overwrite RGB LEDs;Remplacer les LED RVB;Sobrescribir LEDs RGB;Substituir LEDs RGB
 page-manager.page-editor.rgb-leds-override.subtitle;Überschreibt die RGB-LEDs des Decks;Overrides the Deck RGB LEDs;Remplace les LED RVB du Deck;Anula los LEDs RGB del deck;Substitui os LEDs RGB do Deck
-
-
-
-
+page-manager.page-editor.stay-on-page;Auf der Seite bleiben;Stay on page;Rester sur la page;Mantenerse en la página;Ficar na página
+page-manager.page-editor.stay-on-page-subtitle;Auf der Seite bleiben, bis eine andere Seite übereinstimmt;Stay on the page until another page matches;Rester sur la page jusqu'à ce qu'une autre page corresponde;Mantenerse en la página hasta que otra coincida;Fique na página até que outra página corresponda
+page-manager.page-editor.decks;Decks;Decks;Decks;Decks;Decks
+page-manager.page-editor.decks-subtitle;Decks, auf denen die Seite geladen werden soll;Decks on which the page should be loaded;Decks sur lesquels la page doit être chargée;Decks en los que se debe cargar la página;Decks nos quais a página deve ser carregada
+page-manager.page-editor.brightness-override;Helligkeitsüberschreibung;Brightness Override;Remplacement de la luminosité;Sobrescribir brillo;Substituição de Brilho
+page-manager.page-editor.overwrite-brightness;Helligkeit überschreiben;Overwrite Brightness;Écraser la luminosité;Sobrescribir brillo;Sobrescrever Brilho
+page-manager.page-editor.overwrite-brightness-subtitle;Überschreibt die Deck-Helligkeit;Overrides the Deck Brightness;Écrase la luminosité du Deck;Sobrescribe el brillo del deck;Substitui o Brilho do Deck
+page-manager.page-editor.background-override;Hintergrundüberschreibung;Background Override;Remplacement du fond;Sobrescribir fondo;Substituição de Fundo
+page-manager.page-editor.overwrite-background;Hintergrund überschreiben;Overwrite Background;Écraser le fond;Sobrescribir fondo;Sobrescrever Fundo
+page-manager.page-editor.overwrite-background-subtitle;Überschreibt den Deck-Hintergrund;Overrides the Deck Background;Écrase le fond du Deck;Sobrescribe el fondo del deck;Substitui o Fundo do Deck
+page-manager.page-editor.screensaver-override;Bildschirmschonerüberschreibung;Screensaver Overwrite;Remplacement de l'écran de veille;Sobrescribir salvapantallas;Substituição do Protetor de Tela
+page-manager.page-editor.overwrite-screensaver;Bildschirmschoner überschreiben;Overwrite Screensaver;Écraser l'écran de veille;Sobrescribir salvapantallas;Sobrescrever Protetor de Tela
+page-manager.page-editor.overwrite-screensaver-subtitle;Überschreibt den Deck-Bildschirmschoner;Overrides the Deck Screensaver;Écrase l'écran de veille du Deck;Sobrescribe el salvapantallas del deck;Substitui o Protetor de Tela do Deck
+page-manager.page-editor.enable-screensaver;Bildschirmschoner aktivieren;Enable Screensaver;Activer l'écran de veille;Activar salvapantallas;Ativar Protetor de Tela
+settings.remote-decks;Remote Decks;Remote Decks;Decks à distance;Decks remotos;Decks Remotos
+settings.n-remote-decks;Anzahl der Remote-Decks;Number of remote decks;Nombre de decks à distance;Número de decks remotos;Número de decks remotos
+settings.n-remote-decks-subtitle;Verwenden Sie remote.sc.core447.com, um eine Verbindung herzustellen (Beta);Use remote.sc.core447.com to connect (beta);Utilisez remote.sc.core447.com pour vous connecter (bêta);Usa remote.sc.core447.com para conectarte (beta);Use remote.sc.core447.com para conectar (beta)
+settings.data-path;Datenpfad;Data path;Chemin des données;Ruta de datos;Caminho dos dados
+settings.data-path-subtitle;Datenpfad (erfordert Neustart);Data path (requires restart);Chemin des données (nécessite un redémarrage);Ruta de datos (requiere reinicio);Caminho dos dados (requer reinício)
+settings.open;Öffnen;Open;Ouvrir;Abrir;Abrir
+settings.general-app-settings;Allgemeine App-Einstellungen;General app settings;Paramètres généraux de l'application;Ajustes generales de la aplicación;Configurações generales do aplicativo
+settings.hold-duration;Minimale Haltedauer (s);Minimum hold duration (s);Durée minimale de maintien (s);Tiempo mínimo de pulsación (s);Duração mínima de espera (s)
+settings.hold-duration-subtitle;Minimale Haltedauer für Tasten und Regler;Minimum hold duration for keys and dials;Durée minimale de maintien pour les touches et les cadrans;Tiempo mínimo de pulsación para botones y diales;Duração mínima de retenção para teclas e mostradores
+settings.rolling-labels;Rollende Etiketten;Rolling labels;Étiquettes défilantes;Etiquetas en movimiento;Rótulos em movimento
+settings.rolling-labels-subtitle;Aktivieren Sie das automatische Rollen/Scrollen von zu langen Etiketten;Enable automatic rolling/scrolling of too long labels;Activer le défilement automatique des étiquettes trop longues;Activar desplazamiento automático de etiquetas largas;Ativar rolagem automática de rótulos muito longos
+settings.lock-decks;Decks sperren, wenn der Bildschirm gesperrt ist;Lock decks when screen is locked;Verrouiller les decks lorsque l'écran est verrouillé;Bloquear decks al bloquear la pantalla;Bloquear decks quando a tela estiver bloqueada
+settings.lock-decks-subtitle;Funktioniert unter Gnome, KDE, Cinnamon und Hyprland;Works on Gnome, KDE, Cinnamon and Hyprland;Fonctionne sur Gnome, KDE, Cinnamon et Hyprland;Funciona en Gnome, KDE, Cinnamon e Hyprland;Funciona no Gnome, KDE, Cinnamon e Hyprland
+settings.resume-mode;Neuen Fortsetzungsmodus verwenden (Beta);Use new resume mode (beta);Utiliser le nouveau mode de reprise (bêta);Usar nuevo modo de reanudación (beta);Usar novo modo de retomada (beta)
+settings.resume-mode-subtitle;Neue Methode zur Fortsetzung nach dem Suspendieren verwenden - erfordert einen Neustart;Use new way to resume after suspends - requires restart;Utiliser une nouvelle façon de reprendre après les suspensions - nécessite un redémarrage;Usar una nueva forma de reanudar tras suspender (requiere reinicio);Use uma nova maneira de retomar após a suspensão - requer reinicialização
+settings.repository-url;Repository-URL;Repository URL;URL du référentiel;URL del repositorio;URL do repositório
+settings.branch;Branch;Branch;Branche;Rama;Ramo
+asset-manager.custom-assets;Benutzerdefinierte Assets;Custom Assets;Actifs personnalisés;Recursos personalizados;Recursos Personalizados
+asset-manager.icon-packs;Icon-Packs;Icon Packs;Packs d'icônes;Paquetes de iconos;Pacotes de Ícones
+asset-manager.wallpaper-packs;Wallpaper-Packs;Wallpaper Packs;Packs de fonds d'écran;Paquetes de fondos de pantalla;Pacotes de Papéis de Parede
+asset-manager.sd-plus-bar-wallpapers;SD+ Bar Wallpapers;SD+ Bar Wallpapers;Fonds d'écran SD+ Bar;Fondos de pantalla de barra SD+;Papéis de Parede da Barra SD+
+asset-manager.plugins;Plugins;Plugins;Plugins;Plugins;Plugins
+store.plugins.section;Plugins;Plugins;Plugins;Plugins;Plugins
+about;Über;About;A propos;Acerca de;Sobre

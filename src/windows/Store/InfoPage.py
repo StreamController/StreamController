@@ -49,35 +49,35 @@ class InfoPage(Gtk.Box):
         self.about_group = Adw.PreferencesGroup(title=gl.lm.get("about", "About"))
         self.clamp_box.append(self.about_group)
 
-        self.name_row = AttributeRow(title="Name:", attr="Error")
+        self.name_row = AttributeRow(title=gl.lm.get("name", "Name:"), attr="Error")
         self.about_group.add(self.name_row)
 
-        self.author_row = AttributeRow(title="Author:", attr="Error")
+        self.author_row = AttributeRow(title=gl.lm.get("author", "Author:"), attr="Error")
         self.about_group.add(self.author_row)
 
-        self.version_row = AttributeRow(title="Version:", attr="Error")
+        self.version_row = AttributeRow(title=gl.lm.get("version", "Version:"), attr="Error")
         self.about_group.add(self.version_row)
 
         # TODO: Enable in the future
         #self.stargazer_row = AttributeRow(title="Stargazers:", attr="0")
         #self.about_group.add(self.stargazer_row)
 
-        self.description_row = DescriptionRow(title="Description:", desc="N/A")
+        self.description_row = DescriptionRow(title=gl.lm.get("description", "Description:"), desc="N/A")
         self.about_group.add(self.description_row)
 
-        self.legal_group = Adw.PreferencesGroup(title="Legal")
+        self.legal_group = Adw.PreferencesGroup(title=gl.lm.get("legal", "Legal"))
         self.clamp_box.append(self.legal_group)
 
-        self.license_row = AttributeRow(title="License:", attr="Error")
+        self.license_row = AttributeRow(title=gl.lm.get("license", "License:"), attr="Error")
         self.legal_group.add(self.license_row)
 
-        self.copyright_row = AttributeRow(title="Copyright:", attr="Error")
+        self.copyright_row = AttributeRow(title=gl.lm.get("copyright", "Copyright:"), attr="Error")
         self.legal_group.add(self.copyright_row)
 
         self.original_url = OriginalURL()
         self.legal_group.add(self.original_url)
 
-        self.license_description = DescriptionRow(title="License Description:", desc="N/A")
+        self.license_description = DescriptionRow(title=gl.lm.get("license-description", "License Description:"), desc="N/A")
         self.legal_group.add(self.license_description)
 
     def set_name(self, name:str):

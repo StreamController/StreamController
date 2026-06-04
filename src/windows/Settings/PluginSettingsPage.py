@@ -34,7 +34,7 @@ class PluginSettingsPage(Adw.PreferencesPage):
 
 class PluginSettingsGroup(Adw.PreferencesGroup):
     def __init__(self, plugin_page: PluginSettingsPage):
-        super().__init__(title="Plugin Settings")
+        super().__init__(title=gl.lm.get("plugin-settings", "Plugin Settings"))
         for plugin_id in gl.plugin_manager.get_plugins():
             plugin_base = gl.plugin_manager.get_plugin_by_id(plugin_id)
             self.add(PluginExpander(plugin_page=plugin_page, plugin_base=plugin_base))

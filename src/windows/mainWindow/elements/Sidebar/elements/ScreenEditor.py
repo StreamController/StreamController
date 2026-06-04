@@ -47,7 +47,7 @@ class ScreenEditor(Gtk.ScrolledWindow):
         self.action_manager = ActionManager(self.sidebar)
         self.action_manager_group.add(self.action_manager)
 
-        self.remove_state_button = Gtk.Button(label="Remove State", css_classes=["destructive-action"], margin_top=15, margin_bottom=15, margin_start=15, margin_end=15)
+        self.remove_state_button = Gtk.Button(label=gl.lm.get("remove-state", "Remove State"), css_classes=["destructive-action"], margin_top=15, margin_bottom=15, margin_start=15, margin_end=15)
         self.remove_state_button.connect("clicked", self.on_remove_state)
         self.main_box.append(self.remove_state_button)
 

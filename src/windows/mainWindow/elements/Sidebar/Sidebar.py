@@ -239,7 +239,7 @@ class KeyEditor(Gtk.Box):
         self.action_editor = ActionManager(sidebar, margin_top=25, width_request=400)
         self.main_box.append(self.action_editor)
 
-        self.remove_state_button = Gtk.Button(label="Remove State", css_classes=["destructive-action"], margin_top=15, margin_bottom=15, margin_start=15, margin_end=15)
+        self.remove_state_button = Gtk.Button(label=gl.lm.get("remove-state", "Remove State"), css_classes=["destructive-action"], margin_top=15, margin_bottom=15, margin_start=15, margin_end=15)
         self.remove_state_button.connect("clicked", self.on_remove_state)
         self.append(self.remove_state_button)
 

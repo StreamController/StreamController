@@ -16,6 +16,7 @@ import gi
 from gi.repository import Gtk, Adw
 
 from fuzzywuzzy import fuzz
+import globals as gl
 
 class StorePageSection(Gtk.Stack):
     def __init__(self, *args, **kwargs):
@@ -53,7 +54,7 @@ class StorePageSection(Gtk.Stack):
         self.nothing_here = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
                                         halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
         self.nothing_here = Adw.StatusPage(
-            title="Nothing here",
+            title=gl.lm.get("nothing-here", "Nothing here"),
             icon_name="face-sad-symbolic"
         )
         self.add_named(self.nothing_here, "nothing")

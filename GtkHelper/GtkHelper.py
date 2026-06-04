@@ -374,7 +374,7 @@ class ErrorPage(Gtk.Box):
 
 class OriginalURL(Adw.ActionRow):
     def __init__(self):
-        super().__init__(title="Original URL:", subtitle="N/A")
+        super().__init__(title=gl.lm.get("original-url", "Original URL:"), subtitle="N/A")
         self.set_activatable(False)
 
         self.suffix_box = Gtk.Box(valign=Gtk.Align.CENTER)

@@ -16,6 +16,7 @@ import gc
 import statistics
 import threading
 import time
+import cv2
 # Import Python modules
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
@@ -974,6 +975,9 @@ class Background:
             self.image = None
             # self.video = None
             self.set_video(None, update=False)
+            if hasattr(self.deck_controller.deck, "has_background_image") and self.deck_controller.deck.has_background_image():
+                if hasattr(self.deck_controller.deck, "clear_background_image"):
+                    self.deck_controller.deck.clear_background_image(layer=0x03)
             self.update_tiles()
             if update:
                 self.deck_controller.update_all_inputs()
@@ -993,14 +997,53 @@ class Background:
             with Image.open(path) as image:
                 self.set_image(BackgroundImage(self.deck_controller, image.copy()), update=update)
 
+    def _send_native_background(self, image: Image.Image) -> None:
+        if not hasattr(self.deck_controller.deck, "has_background_image") or not self.deck_controller.deck.has_background_image():
+            return
+            
+        bg_format = self.deck_controller.deck.background_image_format()
+        width = bg_format['size'][0]
+        height = 350
+        
+        bg_image = ImageOps.fit(image, (width, height), Image.Resampling.LANCZOS)
+        
+        if bg_format.get('rotation'):
+            bg_image = bg_image.rotate(bg_format['rotation'], expand=True)
+        if bg_format.get('flip', (False, False))[0]:
+            bg_image = bg_image.transpose(Image.FLIP_LEFT_RIGHT)
+        if bg_format.get('flip', (False, False))[1]:
+            bg_image = bg_image.transpose(Image.FLIP_TOP_BOTTOM)
+            
+        import io
+        with io.BytesIO() as buf:
+            bg_image.convert("RGB").save(buf, format="JPEG", quality=90)
+            jpeg_data = buf.getvalue()
+            
+        phys_x = 0
+        phys_y = 0
+        if bg_format.get('rotation') == 180:
+            phys_y = bg_format['size'][1] - height
+            
+        self.deck_controller.deck.set_background_image(jpeg_data, x=phys_x, y=phys_y, width=width, height=height, layer=0x00)
+
     def update_tiles(self) -> None:
         old_tiles = self.tiles # Why store them and close them later? So that there is not key error if the media threads fetches them during the update
-        if self.image is not None:
-            self.tiles = self.image.get_tiles()
-        elif self.video is not None:
-            self.tiles = self.video.get_next_tiles()
-        else:
+
+        has_bgpic = hasattr(self.deck_controller.deck, "has_background_image") and self.deck_controller.deck.has_background_image()
+        
+        if has_bgpic:
+            if self.image is not None:
+                self._send_native_background(self.image.image)
+            elif self.video is not None:
+                self._send_native_background(self.video.get_next_frame())
             self.tiles = [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
+        else:
+            if self.image is not None:
+                self.tiles = self.image.get_tiles()
+            elif self.video is not None:
+                self.tiles = self.video.get_next_tiles()
+            else:
+                self.tiles = [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
 
         for tile in old_tiles:
             if tile is not None:
@@ -1116,6 +1159,38 @@ class BackgroundVideo(BackgroundVideoCache):
                 self.active_frame = 0
         
         return self.get_frame(self.active_frame)
+
+
+    def get_frame(self, n: int) -> Image.Image:
+        n = min(n, self.n_frames - 1)
+        with self.lock:
+            if n < self.last_frame_index or self.last_frame_index == -1:
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
+                self.last_frame_index = n - 1
+            frame = None
+            while self.last_frame_index < n:
+                success, decoded_frame = self.cap.read()
+                if not success:
+                    break
+                self.last_frame_index += 1
+                frame = decoded_frame
+            if frame is None:
+                if self.last_decoded_frame is not None:
+                    return self.last_decoded_frame.copy()
+                return Image.new("RGB", (800, 480), (0, 0, 0))
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(frame_rgb)
+            
+            if self.last_decoded_frame is not None:
+                self.last_decoded_frame.close()
+            self.last_decoded_frame = pil_image.copy()
+            
+            return pil_image
+    def close(self) -> None:
+        super().close()
+        if hasattr(self, 'last_decoded_frame') and self.last_decoded_frame is not None:
+            self.last_decoded_frame.close()
+            self.last_decoded_frame = None
     
     def create_full_deck_sized_image(self, frame: Image.Image) -> Image.Image:
         key_rows, key_cols = self.deck_controller.deck.key_layout()
@@ -2068,11 +2143,16 @@ class ControllerKey(ControllerInput):
             return
         self._last_img_hash = img_hash
 
+        img_format = self.deck_controller.deck.key_image_format().get('format', 'JPEG')
+
         # Handle transparency properly - composite RGBA onto RGB to preserve smooth edges
-        if image.mode == "RGBA":
+        # unless the device supports PNG format natively
+        if image.mode == "RGBA" and img_format != "PNG":
             rgb_background = Image.new("RGB", image.size, (0, 0, 0))
             rgb_background.paste(image, (0, 0), image)
             rgb_image = rgb_background.rotate(self.deck_controller.deck.get_rotation())
+        elif image.mode == "RGBA" and img_format == "PNG":
+            rgb_image = image.rotate(self.deck_controller.deck.get_rotation())
         else:
             rgb_image = image.convert("RGB").rotate(self.deck_controller.deck.get_rotation())
 
@@ -2160,11 +2240,14 @@ class ControllerKey(ControllerInput):
 
         background_color = self.get_active_state().background_manager.get_composed_color()
 
-        background: Image.Image = None
-        # Only load the background image if it's not gonna be hidden by the background color
-        if background_color[-1] < 255:
-            background = copy(self.deck_controller.background.tiles[self.index])
+        has_bgpic = hasattr(self.deck_controller.deck, "has_background_image") and self.deck_controller.deck.has_background_image()
 
+        background: Image.Image = None
+
+        # Only load the background image if it's not gonna be hidden by the background color
+        # and we are not using a native background (BGPIC) that handles this for us
+        if background_color[-1] < 255 and not has_bgpic:
+            background = copy(self.deck_controller.background.tiles[self.index])
         if background_color[-1] > 0:
             background_color_img = Image.new("RGBA", self.deck_controller.get_key_image_size(), color=tuple(background_color))
             
@@ -2421,8 +2504,11 @@ class ControllerTouchScreen(ControllerInput):
     def update(self) -> None:
         image = self.get_current_image()
         
-        # Touchscreen only supports JPEG, so composite RGBA onto background
-        if image.mode == "RGBA":
+        img_format = self.deck_controller.deck.touchscreen_image_format().get('format', 'JPEG')
+        
+        # Touchscreen usually supports only JPEG, so composite RGBA onto background
+        # unless the device supports PNG natively
+        if image.mode == "RGBA" and img_format != "PNG":
             # Create a background image (black by default)
             background = Image.new("RGB", image.size, (0, 0, 0))
             # Composite the RGBA image onto the RGB background
@@ -2431,7 +2517,6 @@ class ControllerTouchScreen(ControllerInput):
         
         native_image = PILHelper.to_native_touchscreen_format(self.deck_controller.deck, image)
         self.deck_controller.media_player.add_touchscreen_task(native_image)
-
         self.set_ui_image(self.get_current_image())
 
     def generate_empty_image(self) -> Image.Image:
@@ -2692,14 +2777,10 @@ class ControllerDial(ControllerInput):
 class ControllerTouchScreenState(ControllerInputState):
     def __init__(self, controller_touch: "ControllerTouchScreen", state: int):
         super().__init__(controller_touch, state)
-
         self.controller_touch = controller_touch
-
     def set_current_image(self, image: Image.Image):
         self.current_image = image
-
         self.update()
-
     def get_current_image(self) -> Image.Image:
         screen_width, screen_height = self.controller_touch.get_screen_dimensions()
         
@@ -2749,16 +2830,46 @@ class ControllerTouchScreenState(ControllerInputState):
                 background_color_img = Image.new("RGBA", (screen_width, screen_height), color=tuple(background_color))
                 # Blend color over image
                 background = Image.alpha_composite(background, background_color_img)
-
+        has_bgpic = hasattr(self.controller_touch.deck_controller.deck, "has_background_image") and self.controller_touch.deck_controller.deck.has_background_image()
+        if has_bgpic:
+            bg_hash = hash(background.tobytes())
+            if not hasattr(self, "_last_bgpic_hash") or self._last_bgpic_hash != bg_hash:
+                self._last_bgpic_hash = bg_hash
+                deck = self.controller_touch.deck_controller.deck
+                bg_format = deck.background_image_format()
+                
+                touchbar_width = 800
+                touchbar_height = 130
+                
+                bg_image = ImageOps.fit(background, (touchbar_width, touchbar_height), Image.Resampling.LANCZOS)
+                if bg_format.get('rotation'):
+                    bg_image = bg_image.rotate(bg_format['rotation'], expand=True)
+                if bg_format.get('flip', (False, False))[0]:
+                    bg_image = bg_image.transpose(Image.FLIP_LEFT_RIGHT)
+                if bg_format.get('flip', (False, False))[1]:
+                    bg_image = bg_image.transpose(Image.FLIP_TOP_BOTTOM)
+                    
+                import io
+                with io.BytesIO() as buf:
+                    bg_image.convert("RGB").save(buf, format="JPEG", quality=90)
+                    jpeg_data = buf.getvalue()
+                    
+                phys_x = 0
+                phys_y = 350
+                if bg_format.get('rotation') == 180:
+                    phys_y = 0
+                    
+                deck.set_background_image(jpeg_data, x=phys_x, y=phys_y, width=touchbar_width, height=touchbar_height, layer=0x01)
+                
+            background = self.controller_touch.generate_empty_image()
         # Paste dial images on top of the background
         for dial in self.controller_touch.deck_controller.inputs[Input.Dial]:
             state = dial.get_active_state()
             image_area = self.controller_touch.get_dial_image_area(dial.identifier)
             dial_image = state.get_rendered_touch_image()
-
             background.paste(dial_image, image_area, dial_image)
-
         return background
+
 
 
     def update(self):

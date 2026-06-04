@@ -481,3 +481,24 @@ class BetterDeck():
         
     def get_rotation(self):
         return self.rotation
+
+    def has_background_image(self) -> bool:
+        return hasattr(self.deck, "has_background_image") and self.deck.has_background_image()
+
+    def background_image_format(self):
+        if hasattr(self.deck, "background_image_format"):
+            return self.deck.background_image_format()
+        return None
+
+    def set_background_image(self, image_data, x=0, y=0, width=0, height=0, layer=0x00):
+        if hasattr(self.deck, "set_background_image"):
+            self.deck.set_background_image(image_data, x=x, y=y, width=width, height=height, layer=layer)
+
+    def clear_background_image(self, layer=0x03):
+        if hasattr(self.deck, "clear_background_image"):
+            self.deck.clear_background_image(layer=layer)
+
+    def __getattr__(self, name):
+        if name == "deck":
+            raise AttributeError()
+        return getattr(self.deck, name)

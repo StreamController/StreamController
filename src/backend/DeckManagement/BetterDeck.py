@@ -498,7 +498,15 @@ class BetterDeck():
         if hasattr(self.deck, "clear_background_image"):
             self.deck.clear_background_image(layer=layer)
 
+    def has_haptic_feedback(self) -> bool:
+        return hasattr(self.deck, "has_haptic_feedback") and self.deck.has_haptic_feedback()
+
+    def set_haptic_feedback(self, enabled: bool) -> None:
+        if hasattr(self.deck, "set_haptic_feedback"):
+            self.deck.set_haptic_feedback(enabled)
+
     def __getattr__(self, name):
+
         if name == "deck":
             raise AttributeError()
         return getattr(self.deck, name)

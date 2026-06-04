@@ -47,6 +47,11 @@ class DeckGroup(Adw.PreferencesGroup):
         self.add(self.screensaver)
         self.add(self.rotation)
 
+        deck_controller = settings_page.deck_controller
+        if deck_controller.deck.has_haptic_feedback():
+            self.haptic = HapticFeedback(settings_page, self.deck_serial_number)
+            self.add(self.haptic)
+
 
 class Rotation(Adw.PreferencesRow):
     def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
@@ -404,3 +409,51 @@ class Screensaver(Adw.PreferencesRow):
 
         deck_controller = self.settings_page.deck_controller
         deck_controller.load_screensaver(deck_controller.active_page)
+
+
+class HapticFeedback(Adw.PreferencesRow):
+    def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
+        super().__init__()
+        self.settings_page = settings_page
+        self.deck_serial_number = deck_serial_number
+        self.build()
+
+        self.load_default()
+        self.connect("map", self.load_default)
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.label = Gtk.Label(label=gl.lm.get("deck.deck-group.haptic-feedback"), hexpand=True, xalign=0)
+        self.main_box.append(self.label)
+
+        self.enable_switch = Gtk.Switch()
+        self.main_box.append(self.enable_switch)
+
+        self.enable_switch.connect("state-set", self.on_toggle_enable)
+
+    def on_toggle_enable(self, toggle_switch, state):
+        GLib.idle_add(self.on_toggle_enable_idle, state)
+
+    def on_toggle_enable_idle(self, state):
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("haptic_feedback", {})
+        config["haptic_feedback"]["value"] = state
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        self.settings_page.deck_controller.set_haptic_feedback(state)
+
+    def load_default(self, *args):
+        self.enable_switch.disconnect_by_func(self.on_toggle_enable)
+
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("haptic_feedback", {})
+        enabled = config["haptic_feedback"].setdefault("value", True)
+
+        if config != gl.settings_manager.get_deck_settings(self.deck_serial_number):
+            gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        self.enable_switch.set_active(enabled)
+        self.enable_switch.connect("state-set", self.on_toggle_enable)

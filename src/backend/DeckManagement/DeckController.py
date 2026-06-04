@@ -410,6 +410,10 @@ class DeckController:
         brightness = deck_settings.get("brightness", {}).get("value", self.brightness)
         self.set_brightness(brightness)
 
+        if self.deck.has_haptic_feedback():
+            haptic_enabled = deck_settings.get("haptic_feedback", {}).get("value", True)
+            self.set_haptic_feedback(haptic_enabled)
+
         # self.rotation = 270
         # rotation = deck_settings.get("rotation", {}).get("value", self.rotation)
         # self.set_rotation(rotation)
@@ -786,6 +790,10 @@ class DeckController:
         if not self.get_alive(): return
         self.deck.set_brightness(int(value))
         self.brightness = value
+
+    def set_haptic_feedback(self, enabled):
+        if not self.get_alive(): return
+        self.deck.set_haptic_feedback(enabled)
 
     def set_rotation(self, value):
         self.deck.set_rotation(value)

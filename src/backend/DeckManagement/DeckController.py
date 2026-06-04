@@ -414,6 +414,13 @@ class DeckController:
             haptic_enabled = deck_settings.get("haptic_feedback", {}).get("value", True)
             self.set_haptic_feedback(haptic_enabled)
 
+        if self.deck.has_rgb_leds():
+            led_enabled = deck_settings.get("rgb_leds", {}).get("enabled", True)
+            led_brightness = deck_settings.get("rgb_leds", {}).get("brightness", 100)
+            led_color = deck_settings.get("rgb_leds", {}).get("color", [255, 255, 255])
+            self.set_led_color(led_color[0], led_color[1], led_color[2])
+            self.set_led_brightness(led_brightness if led_enabled else 0)
+
         # self.rotation = 270
         # rotation = deck_settings.get("rotation", {}).get("value", self.rotation)
         # self.set_rotation(rotation)
@@ -794,6 +801,18 @@ class DeckController:
     def set_haptic_feedback(self, enabled):
         if not self.get_alive(): return
         self.deck.set_haptic_feedback(enabled)
+
+    def set_led_brightness(self, percent):
+        if not self.get_alive(): return
+        self.deck.set_led_brightness(percent)
+
+    def set_led_color(self, r, g, b):
+        if not self.get_alive(): return
+        self.deck.set_led_color(r, g, b)
+
+    def set_led_colors(self, colors):
+        if not self.get_alive(): return
+        self.deck.set_led_colors(colors)
 
     def set_rotation(self, value):
         self.deck.set_rotation(value)

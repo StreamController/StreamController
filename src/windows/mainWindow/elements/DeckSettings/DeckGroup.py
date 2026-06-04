@@ -33,6 +33,7 @@ import globals as gl
 
 # Import own modules
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf, is_transparent
+from GtkHelper.ColorButtonRow import ColorButtonRow
 
 class DeckGroup(Adw.PreferencesGroup):
     def __init__(self, settings_page):
@@ -51,6 +52,15 @@ class DeckGroup(Adw.PreferencesGroup):
         if deck_controller.deck.has_haptic_feedback():
             self.haptic = HapticFeedback(settings_page, self.deck_serial_number)
             self.add(self.haptic)
+
+        if deck_controller.deck.has_rgb_leds():
+            self.rgb_led_enabled = RgbLedEnabled(settings_page, self.deck_serial_number)
+            self.rgb_led_brightness = RgbLedBrightness(settings_page, self.deck_serial_number)
+            self.rgb_led_color = RgbLedColor(settings_page, self.deck_serial_number)
+            self.add(self.rgb_led_enabled)
+            self.add(self.rgb_led_brightness)
+            self.add(self.rgb_led_color)
+
 
 
 class Rotation(Adw.PreferencesRow):
@@ -457,3 +467,155 @@ class HapticFeedback(Adw.PreferencesRow):
 
         self.enable_switch.set_active(enabled)
         self.enable_switch.connect("state-set", self.on_toggle_enable)
+
+
+class RgbLedEnabled(Adw.PreferencesRow):
+    def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
+        super().__init__()
+        self.settings_page = settings_page
+        self.deck_serial_number = deck_serial_number
+        self.build()
+
+        self.load_default()
+        self.connect("map", self.load_default)
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.label = Gtk.Label(label=gl.lm.get("deck.deck-group.rgb-leds-enabled"), hexpand=True, xalign=0)
+        self.main_box.append(self.label)
+
+        self.enable_switch = Gtk.Switch()
+        self.main_box.append(self.enable_switch)
+
+        self.enable_switch.connect("state-set", self.on_toggle_enable)
+
+    def on_toggle_enable(self, toggle_switch, state):
+        GLib.idle_add(self.on_toggle_enable_idle, state)
+
+    def on_toggle_enable_idle(self, state):
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("rgb_leds", {})
+        config["rgb_leds"]["enabled"] = state
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        # Apply brightness: if enabled, use slider value; otherwise 0.
+        brightness = config["rgb_leds"].get("brightness", 100)
+        self.settings_page.deck_controller.set_led_brightness(brightness if state else 0)
+
+    def load_default(self, *args):
+        self.enable_switch.disconnect_by_func(self.on_toggle_enable)
+
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("rgb_leds", {})
+        enabled = config["rgb_leds"].setdefault("enabled", True)
+
+        if config != gl.settings_manager.get_deck_settings(self.deck_serial_number):
+            gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        self.enable_switch.set_active(enabled)
+        self.enable_switch.connect("state-set", self.on_toggle_enable)
+
+
+class RgbLedBrightness(Adw.PreferencesRow):
+    def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
+        super().__init__()
+        self.settings_page = settings_page
+        self.deck_serial_number = deck_serial_number
+        self.build()
+
+        self.on_map_tasks: list = []
+        self.connect("map", self.on_map)
+
+        self.load_default()
+        self.scale.connect("value-changed", self.on_value_changed)
+
+    def on_map(self, widget):
+        for f in self.on_map_tasks:
+            f()
+        self.on_map_tasks.clear()
+
+    def build(self):
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
+                                margin_start=15, margin_end=15, margin_top=15, margin_bottom=15)
+        self.set_child(self.main_box)
+
+        self.label = Gtk.Label(label=gl.lm.get("deck.deck-group.rgb-leds-brightness"), hexpand=True, xalign=0)
+        self.main_box.append(self.label)
+
+        self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min=0, max=100, step=1)
+        self.scale.set_draw_value(True)
+        self.main_box.append(self.scale)
+
+    def on_value_changed(self, scale):
+        GLib.idle_add(self.on_value_changed_idle, scale)
+
+    def on_value_changed_idle(self, scale):
+        value = round(scale.get_value())
+
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("rgb_leds", {})
+        config["rgb_leds"]["brightness"] = value
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        enabled = config["rgb_leds"].get("enabled", True)
+        if enabled:
+            self.settings_page.deck_controller.set_led_brightness(value)
+
+    def load_default(self):
+        if not self.get_mapped():
+            self.on_map_tasks.clear()
+            self.on_map_tasks.append(lambda: self.load_default())
+            return
+
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("rgb_leds", {})
+        brightness = config["rgb_leds"].setdefault("brightness", 100)
+
+        if config != gl.settings_manager.get_deck_settings(self.deck_serial_number):
+            gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        self.scale.set_value(brightness)
+
+
+class RgbLedColor(ColorButtonRow):
+    def __init__(self, settings_page: "PageSettings", deck_serial_number, **kwargs):
+        super().__init__(
+            title=gl.lm.get("deck.deck-group.rgb-leds-color"),
+            default_color=(255, 255, 255, 255)
+        )
+        self.settings_page = settings_page
+        self.deck_serial_number = deck_serial_number
+
+        self.color_button.connect("color-set", self.on_color_set)
+        self.load_default()
+        self.connect("map", self.load_default)
+
+    def on_color_set(self, button):
+        rgba = button.get_rgba()
+        r, g, b, _ = self.normalize_to_255((rgba.red, rgba.green, rgba.blue, rgba.alpha))
+
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("rgb_leds", {})
+        config["rgb_leds"]["color"] = [r, g, b]
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        self.settings_page.deck_controller.set_led_color(r, g, b)
+
+    def load_default(self, *args):
+        try:
+            self.color_button.disconnect_by_func(self.on_color_set)
+        except TypeError:
+            pass
+
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("rgb_leds", {})
+        color = config["rgb_leds"].setdefault("color", [255, 255, 255])
+
+        if config != gl.settings_manager.get_deck_settings(self.deck_serial_number):
+            gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        self.color = (color[0], color[1], color[2], 255)
+        self.color_button.connect("color-set", self.on_color_set)

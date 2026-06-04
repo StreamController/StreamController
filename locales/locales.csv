@@ -237,4 +237,9 @@ settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of 
 settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline;Taille par défaut du contour;Ancho predeterminado del contorno;Largura padrão do contorno
 support;Unterstützen;Donate;Faites un don;Donar;Doar
 deck.deck-group.haptic-feedback;Haptisches Feedback;Enable Haptic Feedback;Retour haptique;Activar vibración;Feedback háptico
+deck.deck-group.rgb-leds-enabled;RGB-LEDs aktivieren;Enable RGB LEDs;Activer les LED RVB;Activar Leds RGB;Habilitar LEDs RGB
+deck.deck-group.rgb-leds-brightness;RGB-LED Helligkeit;RGB LED Brightness;Luminosité des LED RVB;Brillo de Leds RGB;Brilho do LED RGB
+deck.deck-group.rgb-leds-color;RGB-LED Farbe;RGB LED Color;Couleur des LED RVB;Color de Leds RGB;Cor do LED RGB
+
+
 

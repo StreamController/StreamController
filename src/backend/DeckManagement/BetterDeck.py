@@ -505,6 +505,21 @@ class BetterDeck():
         if hasattr(self.deck, "set_haptic_feedback"):
             self.deck.set_haptic_feedback(enabled)
 
+    def has_rgb_leds(self) -> bool:
+        return hasattr(self.deck, "has_rgb_leds") and self.deck.has_rgb_leds()
+
+    def set_led_brightness(self, percent: int | float) -> None:
+        if hasattr(self.deck, "set_led_brightness"):
+            self.deck.set_led_brightness(percent)
+
+    def set_led_color(self, r: int, g: int, b: int) -> None:
+        if hasattr(self.deck, "set_led_color"):
+            self.deck.set_led_color(r, g, b)
+
+    def set_led_colors(self, colors: list[tuple[int, int, int]]) -> None:
+        if hasattr(self.deck, "set_led_colors"):
+            self.deck.set_led_colors(colors)
+
     def __getattr__(self, name):
 
         if name == "deck":

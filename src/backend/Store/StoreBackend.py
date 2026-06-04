@@ -144,6 +144,8 @@ class StoreBackend:
         Returns:
             str: The constructed URL for the specified file path in the repository's branch.
         """
+        if not repo_url or not isinstance(repo_url, str):
+            return ""
         repo_url = repo_url.replace("github.com", "raw.githubusercontent.com")
         return f"{repo_url}/{branch_name}/{file_path}"
 
@@ -165,6 +167,9 @@ class StoreBackend:
             - If the file is located in a different domain than github.com, the function will replace the domain
               with raw.githubusercontent.com.
         """
+        if not repo_url or not isinstance(repo_url, str):
+            return NoConnectionError()
+
         byte_suffix = ""
         if data_type == "content":
             byte_suffix = "b"
@@ -225,6 +230,9 @@ class StoreBackend:
         return authors_json
     
     async def fetch_and_parse_store_json(self, url: str, filename: str, branch: str, n_stores_with_errors: int = 0):
+        if not url or not isinstance(url, str):
+            n_stores_with_errors += 1
+            return None, n_stores_with_errors
         try:
             store_file_json = await self.get_remote_file(url, filename, branch, force_refetch=True)
             if isinstance(store_file_json, NoConnectionError):
@@ -686,16 +694,23 @@ class StoreBackend:
         return self.api_cache[api_call_url]["answer"]
 
     def get_user_name(self, repo_url:str) -> str:
+        if not repo_url or not isinstance(repo_url, str) or "github.com" not in repo_url:
+            return ""
         splitted =  repo_url.split("/")
-        return splitted[splitted.index("github.com")+1]
+        try:
+            return splitted[splitted.index("github.com")+1]
+        except:
+            return ""
     
     def get_repo_name(self, repo_url:str) -> str:
+        if not repo_url or not isinstance(repo_url, str):
+            return ""
         github_split = repo_url.split("github")
         if len(github_split) < 2:
-            return
+            return ""
         split = github_split[1].split("/")
         if len(split) < 3:
-            return
+            return ""
         return split[2]
     
     def get_all_plugins(self, include_images: bool = True) -> list[PluginData]:

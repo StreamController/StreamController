@@ -2009,11 +2009,14 @@ class ControllerInput:
             if len(self.states) >= 1:
                 return
             
-        d = self.identifier.get_config(self.deck_controller.active_page)
+        page = self.deck_controller.active_page
+        page.dict.setdefault(self.identifier.input_type, {})
+        d = page.dict[self.identifier.input_type].setdefault(self.identifier.json_identifier, {})
 
         # Add new state
         self.states[len(self.states)] = self.ControllerStateClass(self, len(self.states))
         # Write to json
+        d.setdefault("states", {})
         for state in self.states.keys():
             d["states"].setdefault(str(state), {})
 
@@ -2027,8 +2030,11 @@ class ControllerInput:
             self.set_state(len(self.states)-1)
 
     def remove_state(self, state: int):
-        d = self.identifier.get_config(self.deck_controller.active_page)
+        page = self.deck_controller.active_page
+        page.dict.setdefault(self.identifier.input_type, {})
+        d = page.dict[self.identifier.input_type].setdefault(self.identifier.json_identifier, {})
 
+        d.setdefault("states", {})
         if str(state) in d["states"]:
             d["states"].pop(str(state))
 

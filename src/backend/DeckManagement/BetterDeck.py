@@ -510,7 +510,7 @@ class BetterDeck():
 
     def set_led_brightness(self, percent: int | float) -> None:
         if hasattr(self.deck, "set_led_brightness"):
-            self.deck.set_led_brightness(percent)
+            self.deck.set_led_brightness(int(percent))
 
     def set_led_color(self, r: int, g: int, b: int) -> None:
         if hasattr(self.deck, "set_led_color"):

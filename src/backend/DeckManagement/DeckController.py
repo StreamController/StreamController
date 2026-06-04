@@ -658,6 +658,41 @@ class DeckController:
         self.set_brightness(value)
 
     @log.catch
+    def load_haptic_feedback(self, page: Page):
+        if not self.get_alive() or not self.deck.has_haptic_feedback():
+            return
+
+        deck_settings = self.get_deck_settings()
+        page_haptic = page.dict.get("settings", {}).get("haptic_feedback", {})
+
+        if page_haptic.get("overwrite", False):
+            enabled = page_haptic.get("value", True)
+        else:
+            enabled = deck_settings.get("haptic_feedback", {}).get("value", True)
+
+        self.set_haptic_feedback(enabled)
+
+    @log.catch
+    def load_rgb_leds(self, page: Page):
+        if not self.get_alive() or not self.deck.has_rgb_leds():
+            return
+
+        deck_settings = self.get_deck_settings()
+        page_rgb = page.dict.get("settings", {}).get("rgb_leds", {})
+
+        if page_rgb.get("overwrite", False):
+            enabled = page_rgb.get("enabled", True)
+            brightness = page_rgb.get("brightness", 100)
+            color = page_rgb.get("color", [255, 255, 255])
+        else:
+            enabled = deck_settings.get("rgb_leds", {}).get("enabled", True)
+            brightness = deck_settings.get("rgb_leds", {}).get("brightness", 100)
+            color = deck_settings.get("rgb_leds", {}).get("color", [255, 255, 255])
+
+        self.set_led_color(color[0], color[1], color[2])
+        self.set_led_brightness(brightness if enabled else 0)
+
+    @log.catch
     def load_screensaver(self, page: Page):
         deck_settings = self.get_deck_settings()
         deck_screensaver_settings = deck_settings.get("screensaver", {})
@@ -770,6 +805,8 @@ class DeckController:
             self.media_player.add_task(self.load_background, page, update=False)
         if load_brightness:
             self.load_brightness(page)
+            self.load_haptic_feedback(page)
+            self.load_rgb_leds(page)
         if load_screensaver:
             self.load_screensaver(page)
         if load_inputs:
@@ -804,7 +841,7 @@ class DeckController:
 
     def set_led_brightness(self, percent):
         if not self.get_alive(): return
-        self.deck.set_led_brightness(percent)
+        self.deck.set_led_brightness(int(percent))
 
     def set_led_color(self, r, g, b):
         if not self.get_alive(): return

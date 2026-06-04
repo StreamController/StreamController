@@ -240,6 +240,13 @@ deck.deck-group.haptic-feedback;Haptisches Feedback;Enable Haptic Feedback;Retou
 deck.deck-group.rgb-leds-enabled;RGB-LEDs aktivieren;Enable RGB LEDs;Activer les LED RVB;Activar Leds RGB;Habilitar LEDs RGB
 deck.deck-group.rgb-leds-brightness;RGB-LED Helligkeit;RGB LED Brightness;Luminosité des LED RVB;Brillo de Leds RGB;Brilho do LED RGB
 deck.deck-group.rgb-leds-color;RGB-LED Farbe;RGB LED Color;Couleur des LED RVB;Color de Leds RGB;Cor do LED RGB
+page-manager.page-editor.haptic-feedback-override.title;Vibrations-Override;Haptic Feedback Override;Surcharge du retour haptique;Sobrescribir vibración;Substituição de feedback háptico
+page-manager.page-editor.haptic-feedback-override.overwrite;Vibration überschreiben;Overwrite Haptic Feedback;Remplacer le retour haptique;Sobrescribir vibración;Substituir feedback háptico
+page-manager.page-editor.haptic-feedback-override.subtitle;Überschreibt das haptische Feedback des Decks;Overrides the Deck Haptic Feedback;Remplace le retour haptique du Deck;Sobrescribe la vibración del Deck;Substitui o feedback háptico do Deck
+page-manager.page-editor.rgb-leds-override.title;RGB-LEDs-Override;RGB LEDs Override;Surcharge des LED RVB;Sobrescribir Leds RGB;Substituição de LEDs RGB
+page-manager.page-editor.rgb-leds-override.overwrite;RGB-LEDs überschreiben;Overwrite RGB LEDs;Remplacer les LED RVB;Sobrescribir Leds RGB;Substituir LEDs RGB
+page-manager.page-editor.rgb-leds-override.subtitle;Überschreibt die RGB-LEDs des Decks;Overrides the Deck RGB LEDs;Remplace les LED RVB du Deck;Sobrescribe los Leds RGB del Deck;Substitui os LEDs RGB do Deck
+
 
 
 

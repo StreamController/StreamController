@@ -19,6 +19,7 @@ import gi
 
 from GtkHelper.ScaleRow import ScaleRow
 from GtkHelper.ToggleRow import ToggleRow
+from GtkHelper.ColorButtonRow import ColorButtonRow
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.windows.MultiDeckSelector.MultiDeckSelectorRow import MultiDeckSelectorRow
 gi.require_version("Gtk", "4.0")
@@ -111,6 +112,14 @@ class PageEditor(Adw.NavigationPage):
         self.screensaver_group = ScreensaverGroup(page_editor=self)
         self.editor_main_box.append(self.screensaver_group)
 
+        # Haptic Feedback Group
+        self.haptic_feedback_group = HapticFeedbackGroup(page_editor=self)
+        self.editor_main_box.append(self.haptic_feedback_group)
+
+        # RGB LEDs Group
+        self.rgb_led_group = RgbLedOverrideGroup(page_editor=self)
+        self.editor_main_box.append(self.rgb_led_group)
+
         # No page page
         self.no_page_box = Gtk.Box(hexpand=True, vexpand=True)
         self.main_stack.add_titled(self.no_page_box, "no-page", "No Page")
@@ -128,6 +137,8 @@ class PageEditor(Adw.NavigationPage):
         self.brightness_group.load_for_page(page_path=page_path)
         self.background_group.load_for_page(page_path=page_path)
         self.screensaver_group.load_for_page(page_path=page_path)
+        self.haptic_feedback_group.load_for_page(page_path=page_path)
+        self.rgb_led_group.load_for_page(page_path=page_path)
 
         self.main_stack.set_visible_child_name("editor")
         self.menu_button.set_page_specific_actions_enabled(True)
@@ -705,3 +716,164 @@ class MatchingWindowExpander(BetterExpander):
 
         matching_windows = gl.window_grabber.get_all_matching_windows(class_regex=class_regex, title_regex=title_regex)
         self.load_windows(windows=matching_windows)
+
+
+class HapticFeedbackGroup(PageEditorGroup):
+    def __init__(self, page_editor: PageEditor):
+        super().__init__(page_editor, title=gl.lm.get("page-manager.page-editor.haptic-feedback-override.title"))
+
+    def build(self):
+        self.enable_expander = BetterExpander(
+            title=gl.lm.get("page-manager.page-editor.haptic-feedback-override.overwrite"),
+            subtitle=gl.lm.get("page-manager.page-editor.haptic-feedback-override.subtitle"),
+            expanded=False,
+            show_enable_switch=True
+        )
+        self.add(self.enable_expander)
+
+        self.haptic_switch = Adw.SwitchRow(title=gl.lm.get("deck.deck-group.haptic-feedback"))
+        self.enable_expander.add_row(self.haptic_switch)
+
+    def connect_events(self):
+        self.enable_expander.connect("notify::enable-expansion", self.on_enable_changed)
+        self.haptic_switch.connect("notify::active", self.on_haptic_changed)
+
+    def disconnect_events(self):
+        better_disconnect(self.enable_expander, self.on_enable_changed)
+        better_disconnect(self.haptic_switch, self.on_haptic_changed)
+
+    def load_config_settings(self, page_path: str):
+        settings = gl.page_manager.get_haptic_feedback_settings(page_path)
+
+        self.enable_expander.set_enable_expansion(settings.get("overwrite", False))
+        self.enable_expander.set_expanded(settings.get("overwrite", False))
+
+        self.haptic_switch.set_active(settings.get("value", True))
+
+    def on_enable_changed(self, *args):
+        gl.page_manager.overwrite_haptic_feedback_settings(
+            path=self.page_editor.active_page_path,
+            overwrite=self.enable_expander.get_enable_expansion()
+        )
+        self.update_haptic_feedback()
+
+    def on_haptic_changed(self, *args):
+        gl.page_manager.overwrite_haptic_feedback_settings(
+            path=self.page_editor.active_page_path,
+            value=self.haptic_switch.get_active()
+        )
+        self.update_haptic_feedback()
+
+    def update_haptic_feedback(self):
+        def on_idle():
+            for controller in gl.deck_manager.deck_controller:
+                if controller.active_page.json_path == self.page_editor.active_page_path:
+                    controller.load_haptic_feedback(controller.active_page)
+
+        GLib.idle_add(on_idle)
+
+
+class RgbLedColorRow(ColorButtonRow):
+    def __init__(self, page_editor: PageEditor):
+        super().__init__(
+            title=gl.lm.get("deck.deck-group.rgb-leds-color"),
+            default_color=(255, 255, 255, 255)
+        )
+        self.page_editor = page_editor
+        self.color_button.connect("color-set", self.on_color_set)
+
+    def on_color_set(self, button):
+        rgba = button.get_rgba()
+        r, g, b, _ = self.normalize_to_255((rgba.red, rgba.green, rgba.blue, rgba.alpha))
+        gl.page_manager.overwrite_rgb_leds_settings(
+            path=self.page_editor.active_page_path,
+            color=[r, g, b]
+        )
+        self.update_rgb_leds()
+
+    def update_rgb_leds(self):
+        def on_idle():
+            for controller in gl.deck_manager.deck_controller:
+                if controller.active_page.json_path == self.page_editor.active_page_path:
+                    controller.load_rgb_leds(controller.active_page)
+
+        GLib.idle_add(on_idle)
+
+
+class RgbLedOverrideGroup(PageEditorGroup):
+    def __init__(self, page_editor: PageEditor):
+        super().__init__(page_editor, title=gl.lm.get("page-manager.page-editor.rgb-leds-override.title"))
+
+    def build(self):
+        self.enable_expander = BetterExpander(
+            title=gl.lm.get("page-manager.page-editor.rgb-leds-override.overwrite"),
+            subtitle=gl.lm.get("page-manager.page-editor.rgb-leds-override.subtitle"),
+            expanded=False,
+            show_enable_switch=True
+        )
+        self.add(self.enable_expander)
+
+        self.led_enabled_switch = Adw.SwitchRow(title=gl.lm.get("deck.deck-group.rgb-leds-enabled"))
+        self.enable_expander.add_row(self.led_enabled_switch)
+
+        self.led_brightness_scale = ScaleRow(100, 0, 100, digits=0, draw_value=True, draw_side_values=False, title=gl.lm.get("deck.deck-group.rgb-leds-brightness"))
+        self.enable_expander.add_row(self.led_brightness_scale)
+
+        self.led_color_row = RgbLedColorRow(page_editor=self.page_editor)
+        self.enable_expander.add_row(self.led_color_row)
+
+    def connect_events(self):
+        self.enable_expander.connect("notify::enable-expansion", self.on_enable_changed)
+        self.led_enabled_switch.connect("notify::active", self.on_led_enabled_changed)
+        self.led_brightness_scale.scale.connect("value-changed", self.on_led_brightness_changed)
+
+    def disconnect_events(self):
+        better_disconnect(self.enable_expander, self.on_enable_changed)
+        better_disconnect(self.led_enabled_switch, self.on_led_enabled_changed)
+        better_disconnect(self.led_brightness_scale.scale, self.on_led_brightness_changed)
+
+    def load_config_settings(self, page_path: str):
+        settings = gl.page_manager.get_rgb_leds_settings(page_path)
+
+        self.enable_expander.set_enable_expansion(settings.get("overwrite", False))
+        self.enable_expander.set_expanded(settings.get("overwrite", False))
+
+        self.led_enabled_switch.set_active(settings.get("enabled", True))
+        self.led_brightness_scale.set_value(settings.get("brightness", 100))
+
+        color = settings.get("color", [255, 255, 255])
+        try:
+            self.led_color_row.color_button.disconnect_by_func(self.led_color_row.on_color_set)
+        except TypeError:
+            pass
+        self.led_color_row.color = (color[0], color[1], color[2], 255)
+        self.led_color_row.color_button.connect("color-set", self.led_color_row.on_color_set)
+
+    def on_enable_changed(self, *args):
+        gl.page_manager.overwrite_rgb_leds_settings(
+            path=self.page_editor.active_page_path,
+            overwrite=self.enable_expander.get_enable_expansion()
+        )
+        self.update_rgb_leds()
+
+    def on_led_enabled_changed(self, *args):
+        gl.page_manager.overwrite_rgb_leds_settings(
+            path=self.page_editor.active_page_path,
+            enabled=self.led_enabled_switch.get_active()
+        )
+        self.update_rgb_leds()
+
+    def on_led_brightness_changed(self, *args):
+        gl.page_manager.overwrite_rgb_leds_settings(
+            path=self.page_editor.active_page_path,
+            brightness=self.led_brightness_scale.get_value()
+        )
+        self.update_rgb_leds()
+
+    def update_rgb_leds(self):
+        def on_idle():
+            for controller in gl.deck_manager.deck_controller:
+                if controller.active_page.json_path == self.page_editor.active_page_path:
+                    controller.load_rgb_leds(controller.active_page)
+
+        GLib.idle_add(on_idle)

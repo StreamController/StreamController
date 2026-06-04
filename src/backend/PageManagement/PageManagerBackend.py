@@ -665,3 +665,63 @@ class PageManagerBackend:
 
         settings["background"] = background_settings
         self.set_page_settings(path, settings)
+
+    def get_haptic_feedback_settings(self, path: str):
+        page_settings = self.get_page_settings(path)
+        return page_settings.get("haptic_feedback", {})
+
+    def set_haptic_feedback_settings(self, path: str, overwrite: bool = False, value: bool = True):
+        settings = self.get_page_settings(path)
+
+        settings["haptic_feedback"] = {
+            "overwrite": overwrite,
+            "value": value
+        }
+
+        self.set_page_settings(path, settings)
+
+    def overwrite_haptic_feedback_settings(self, path: str, overwrite: bool = None, value: bool = None):
+        settings = self.get_page_settings(path)
+        haptic_settings = settings.get("haptic_feedback", {})
+
+        if overwrite is not None:
+            haptic_settings["overwrite"] = overwrite
+        if value is not None:
+            haptic_settings["value"] = value
+
+        settings["haptic_feedback"] = haptic_settings
+        self.set_page_settings(path, settings)
+
+    def get_rgb_leds_settings(self, path: str):
+        page_settings = self.get_page_settings(path)
+        return page_settings.get("rgb_leds", {})
+
+    def set_rgb_leds_settings(self, path: str, overwrite: bool = False, enabled: bool = True, brightness: float = 100, color: list[int] = None):
+        settings = self.get_page_settings(path)
+        if color is None:
+            color = [255, 255, 255]
+
+        settings["rgb_leds"] = {
+            "overwrite": overwrite,
+            "enabled": enabled,
+            "brightness": brightness,
+            "color": color
+        }
+
+        self.set_page_settings(path, settings)
+
+    def overwrite_rgb_leds_settings(self, path: str, overwrite: bool = None, enabled: bool = None, brightness: float = None, color: list[int] = None):
+        settings = self.get_page_settings(path)
+        rgb_settings = settings.get("rgb_leds", {})
+
+        if overwrite is not None:
+            rgb_settings["overwrite"] = overwrite
+        if enabled is not None:
+            rgb_settings["enabled"] = enabled
+        if brightness is not None:
+            rgb_settings["brightness"] = brightness
+        if color is not None:
+            rgb_settings["color"] = color
+
+        settings["rgb_leds"] = rgb_settings
+        self.set_page_settings(path, settings)

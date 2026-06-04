@@ -977,7 +977,7 @@ class Background:
             self.set_video(None, update=False)
             if hasattr(self.deck_controller.deck, "has_background_image") and self.deck_controller.deck.has_background_image():
                 if hasattr(self.deck_controller.deck, "clear_background_image"):
-                    self.deck_controller.deck.clear_background_image(layer=0x03)
+                    self.deck_controller.deck.clear_background_image(layer=0x01)
             self.update_tiles()
             if update:
                 self.deck_controller.update_all_inputs()

@@ -123,15 +123,43 @@ class Input:
             self.index = str(json_identifier)
             super().__init__(self.input_type, json_identifier, self.controller_class_name)
 
-    All = (Key, Dial, Touchscreen)
+    class TouchKey(InputIdentifier):
+        input_type = "touch_keys"
+        controller_class_name = "ControllerTouchKey"
+
+        class Events(InputEvent):
+            DOWN = "Touch Key Down"
+            UP = "Touch Key Up"
+            SHORT_UP = "Touch Key Short Up"
+            HOLD_START = "Touch Key Hold Start"
+            HOLD_STOP = "Touch Key Hold Stop"
+
+        def __init__(self, json_identifier: str):
+            self.index = int(json_identifier)
+            super().__init__(self.input_type, json_identifier, self.controller_class_name)
+
+    class Screen(InputIdentifier):
+        input_type = "screens"
+        controller_class_name = "ControllerScreen"
+
+        class Events(InputEvent):
+            UPDATE = "Screen Update"
+
+        def __init__(self, json_identifier: str):
+            self.index = str(json_identifier)
+            super().__init__(self.input_type, json_identifier, self.controller_class_name)
+
+    All = (Key, Dial, Touchscreen, TouchKey, Screen)
     KeyTypes = [key_type.input_type for key_type in All]
-    
+
     @staticmethod
     def FromTypeIdentifier(input_type: str, json_identifier: str):
         input_map = {
             "keys": Input.Key,
             "dials": Input.Dial,
-            "touchscreens": Input.Touchscreen
+            "touchscreens": Input.Touchscreen,
+            "touch_keys": Input.TouchKey,
+            "screens": Input.Screen,
         }
         if input_type in input_map:
             return input_map[input_type](json_identifier)

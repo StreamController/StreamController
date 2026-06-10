@@ -44,6 +44,10 @@
   min-height: calc(175px /2);
   min-width: 175px;
 }
+.icon-selector-image-screen {
+  min-height: 41px;
+  min-width: 175px;
+}
 
 
 .icon-selector-hint-label-visible {

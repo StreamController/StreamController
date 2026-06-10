@@ -161,11 +161,13 @@ class IconSelector(Gtk.Box):
         self.active_state = state
 
         ## Set aspect ratio
+        for cls in ("icon-selector-image-key", "icon-selector-image-dial", "icon-selector-image-screen"):
+            self.image.remove_css_class(cls)
         if isinstance(identifier, Input.Dial):
-            self.image.remove_css_class("icon-selector-image-key")
             self.image.add_css_class("icon-selector-image-dial")
+        elif isinstance(identifier, Input.Screen):
+            self.image.add_css_class("icon-selector-image-screen")
         else:
-            self.image.remove_css_class("icon-selector-image-dial")
             self.image.add_css_class("icon-selector-image-key")
 
         self.remove_button.set_visible(self.has_image_to_remove())

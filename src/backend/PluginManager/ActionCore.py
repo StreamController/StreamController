@@ -148,7 +148,7 @@ class ActionCore(rpyc.Service):
     def set_media(self, image = None, media_path=None, size: float = None, valign: float = None, halign: float = None, fps: int = 30, loop: bool = True, update: bool = True):
         self.raise_error_if_not_ready()
 
-        if type(self.input_ident) not in [Input.Key, Input.Dial]:
+        if type(self.input_ident) not in [Input.Key, Input.Dial, Input.Screen]:
             return
 
         if not self.get_is_present(): return
@@ -259,9 +259,9 @@ class ActionCore(rpyc.Service):
                   update: bool=True):
         self.raise_error_if_not_ready()
 
-        if type(self.input_ident) not in [Input.Key, Input.Dial]:
+        if type(self.input_ident) not in [Input.Key, Input.Dial, Input.Screen]:
             return
-        
+
         if self.get_state() is None:
             log.error(f"Could not find state, action: {self.action_id}, state: {self.state}")
             return

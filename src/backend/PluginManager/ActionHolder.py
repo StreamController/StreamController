@@ -55,7 +55,9 @@ class ActionHolder:
         action_support = {
             Input.Key: ActionInputSupport.UNTESTED,
             Input.Dial: ActionInputSupport.UNTESTED,
-            Input.Touchscreen: ActionInputSupport.UNTESTED
+            Input.Touchscreen: ActionInputSupport.UNTESTED,
+            Input.TouchKey: ActionInputSupport.UNTESTED,
+            Input.Screen: ActionInputSupport.UNTESTED,
         },
         *args, **kwargs):
         
@@ -100,4 +102,13 @@ class ActionHolder:
         )
     
     def get_input_compatibility(self, identifier: InputIdentifier) -> ActionInputSupport:
-        return self.action_support.get(type(identifier), ActionInputSupport.UNSUPPORTED)
+        ident_type = type(identifier)
+        if ident_type in self.action_support:
+            return self.action_support[ident_type]
+        # TouchKeys behave like regular keys
+        if ident_type == Input.TouchKey and Input.Key in self.action_support:
+            return self.action_support[Input.Key]
+        # Neo Screen falls back to Key support since it renders images/labels like keys
+        if ident_type == Input.Screen and Input.Key in self.action_support:
+            return self.action_support[Input.Key]
+        return ActionInputSupport.UNSUPPORTED

@@ -16,6 +16,7 @@ import gc
 import statistics
 import threading
 import time
+from datetime import datetime
 # Import Python modules
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
@@ -28,6 +29,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageSequence
 from StreamDeck.Devices import StreamDeck
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
+from StreamDeck.Devices.StreamDeckNeo import StreamDeckNeo
 from loguru import logger as log
 
 # Import own modules
@@ -109,6 +111,38 @@ class MediaPlayerSetTouchscreenImageTask:
                 gl.deck_manager.connect_new_decks()
 
 @dataclass
+class MediaPlayerSetScreenImageTask:
+    deck_controller: "DeckController"
+    page: Page
+    native_image: bytes
+
+    n_failed_in_row: ClassVar[dict] = {}
+
+    def run(self):
+        try:
+            self.deck_controller.deck.set_screen_image(self.native_image)
+            self.native_image = None
+            del self.native_image
+            MediaPlayerSetScreenImageTask.n_failed_in_row[self.deck_controller.serial_number()] = 0
+        except StreamDeck.TransportError as e:
+            log.error(f"Failed to set deck screen image. Error: {e}")
+
+            beta_resume = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
+            if beta_resume:
+                return
+
+            MediaPlayerSetScreenImageTask.n_failed_in_row.setdefault(self.deck_controller.serial_number(), 0)
+            MediaPlayerSetScreenImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
+            if MediaPlayerSetScreenImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
+                log.debug(f"Failed to set screen image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
+
+                self.deck_controller.deck.close()
+                self.deck_controller.media_player.running = False
+                gl.deck_manager.remove_controller(self.deck_controller)
+
+                gl.deck_manager.connect_new_decks()
+
+@dataclass
 class MediaPlayerSetImageTask:
     deck_controller: "DeckController"
     page: Page
@@ -157,6 +191,7 @@ class MediaPlayerThread(threading.Thread):
         self.tasks: list[MediaPlayerTask] = []
         self.image_tasks = {}
         self.touchscreen_task = None
+        self.screen_task = None
         self._wake_event = threading.Event()
 
         self.fps: list[float] = []
@@ -202,7 +237,7 @@ class MediaPlayerThread(threading.Thread):
             end = time.time()
 
             # Use low FPS when idle (no animated content, no pending tasks)
-            has_pending = bool(self.tasks or self.image_tasks or self.touchscreen_task)
+            has_pending = bool(self.tasks or self.image_tasks or self.touchscreen_task or self.screen_task)
             if has_pending or has_bg_video or getattr(self, '_cached_needs_ticks', False):
                 target_fps = self.FPS
             else:
@@ -294,6 +329,14 @@ class MediaPlayerThread(threading.Thread):
         )
         self._wake_event.set()
 
+    def add_screen_task(self, native_image: bytes):
+        self.screen_task = MediaPlayerSetScreenImageTask(
+            deck_controller=self.deck_controller,
+            page=self.deck_controller.active_page,
+            native_image=native_image
+        )
+        self._wake_event.set()
+
     def add_image_task(self, key_index: int, native_image: bytes):
         self.image_tasks[key_index] = MediaPlayerSetImageTask(
             deck_controller=self.deck_controller,
@@ -324,6 +367,11 @@ class MediaPlayerThread(threading.Thread):
             self.touchscreen_task.run()
             del self.touchscreen_task
             self.touchscreen_task = None
+
+        if self.screen_task is not None:
+            self.screen_task.run()
+            del self.screen_task
+            self.screen_task = None
     def check_connection(self):
         try:
             self.deck_controller.deck.get_firmware_version()
@@ -371,6 +419,8 @@ class DeckController:
         if isinstance(self.deck, StreamDeckPlus) or (isinstance(self.deck, FakeDeck) and self.deck.key_layout() == [2, 4]):
             log.error("Deck recognized as StreamDeckPlus")
             self.key_spacing = (52, 36)
+        elif isinstance(self.deck.deck, StreamDeckNeo):
+            self.key_spacing = (32, 36)
 
         # Tasks
         self.media_player_tasks: Queue[MediaPlayerTask] = Queue()
@@ -477,6 +527,11 @@ class DeckController:
         i.event_callback(*args, **kwargs)
 
     def key_event_callback(self, deck, key, *args, **kwargs):
+        if key >= deck.key_count():
+            touch_key_index = key - deck.key_count()
+            ident = Input.TouchKey(str(touch_key_index))
+            self.event_callback(ident, *args, **kwargs)
+            return
         coords = ControllerKey.Index_To_Coords(deck, key)
         if self.deck.rotation % 180 != 0:
             coords = (coords[1], coords[0])
@@ -512,6 +567,18 @@ class DeckController:
         if size is None:
             return (800, 100)
         size = max(size[0], 800), max(size[1], 100)
+        return size
+
+    def has_screen(self) -> bool:
+        fmt = self.deck.screen_image_format()
+        return fmt.get("size", (0, 0)) != (0, 0)
+
+    @lru_cache(maxsize=None)
+    def get_screen_image_size(self) -> tuple[int]:
+        if not self.get_alive(): return
+        size = self.deck.screen_image_format()["size"]
+        if size is None or size == (0, 0):
+            return None
         return size
 
     # ------------ #
@@ -886,6 +953,13 @@ class DeckController:
 
             self.deck.set_touchscreen_image(native_image, x_pos=0, y_pos=0, width=touchscreen_size[0], height=touchscreen_size[1])
 
+        if self.has_screen():
+            screen_size = self.get_screen_image_size()
+            if screen_size is not None:
+                empty = Image.new("RGB", screen_size, (0, 0, 0))
+                native_image = PILHelper.to_native_screen_format(self.deck, empty)
+                self.deck.set_screen_image(native_image)
+
     def get_own_key_grid(self) -> KeyGrid:
         # Why not just lru_cache this? Because this would also cache the None that gets returned while the ui is still loading
         if self.own_key_grid is not None:
@@ -902,6 +976,7 @@ class DeckController:
         ticks = self.media_player.media_ticks
         self.media_player.tasks.clear()
         self.media_player.image_tasks.clear()
+        self.media_player.screen_task = None
 
         # Wait until tick is over
         while self.media_player.media_ticks <= ticks:
@@ -2903,3 +2978,457 @@ class ControllerKeyState(ControllerInputState):
         self.label_manager.clear_labels()
         self.layout_manager.clear()
         self.background_manager.set_page_color(None)
+
+
+class ControllerTouchKey(ControllerInput):
+    def __init__(self, deck_controller: DeckController, ident: InputIdentifier):
+        super().__init__(deck_controller, ControllerTouchKeyState, ident)
+        self.down_start_time: float = None
+
+    @staticmethod
+    def Available_Identifiers(deck):
+        return map(str, range(deck.touch_key_count()))
+
+    def on_hold_timer_end(self):
+        state = self.get_active_state()
+        state.own_actions_event_callback_threaded(
+            event=Input.TouchKey.Events.HOLD_START
+        )
+
+    def event_callback(self, state, *args, **kwargs):
+        screensaver_was_showing = self.deck_controller.screen_saver.showing
+        if state:
+            self.deck_controller.screen_saver.on_key_change()
+        if screensaver_was_showing:
+            return
+
+        active_state = self.get_active_state()
+        if state:
+            self.down_start_time = time.time()
+            self.start_hold_timer()
+            active_state.own_actions_event_callback_threaded(
+                event=Input.TouchKey.Events.DOWN,
+                show_notifications=True
+            )
+        elif self.down_start_time is not None:
+            self.stop_hold_timer()
+            if time.time() >= self.down_start_time + self.deck_controller.hold_time:
+                active_state.own_actions_event_callback_threaded(
+                    event=Input.TouchKey.Events.HOLD_STOP
+                )
+            else:
+                active_state.own_actions_event_callback_threaded(
+                    event=Input.TouchKey.Events.SHORT_UP
+                )
+            self.down_start_time = None
+            active_state.own_actions_event_callback_threaded(
+                event=Input.TouchKey.Events.UP
+            )
+
+    def set_color(self, r: int, g: int, b: int):
+        key_index = self.deck_controller.deck.key_count() + self.identifier.index
+        self.deck_controller.deck.set_key_color(key_index, r, g, b)
+
+    def update(self) -> None:
+        active_state = self.get_active_state()
+        color = active_state.background_manager.get_composed_color()
+        r, g, b = color[0], color[1], color[2]
+        self.set_color(r, g, b)
+
+    def get_image_size(self) -> tuple[int, int]:
+        return (0, 0)
+
+    def load_from_input_dict(self, page_dict, update: bool = True):
+        n_states = len(page_dict.get("states", {}))
+        self.create_n_states(max(1, n_states))
+
+        old_state_index = self.state
+        self.state = 0
+
+        for state in page_dict.get("states", {}):
+            state_obj: ControllerTouchKeyState = self.states.get(int(state))
+            if state_obj is None:
+                continue
+            state_dict = page_dict["states"][str(state_obj.state)]
+            state_obj.background_manager.set_page_color(
+                state_dict.get("background", {}).get("color", [0, 0, 0, 0]), update=False
+            )
+            state_obj.own_actions_update()
+
+        if update:
+            self.set_state(old_state_index)
+            self.update()
+
+
+class ControllerTouchKeyState(ControllerInputState):
+    def __init__(self, controller_touch_key: "ControllerTouchKey", state: int):
+        super().__init__(controller_touch_key, state)
+
+    def clear(self):
+        pass
+
+    def close_resources(self) -> None:
+        pass
+
+
+class ControllerScreen(ControllerInput):
+    def __init__(self, deck_controller: DeckController, ident: InputIdentifier):
+        super().__init__(deck_controller, ControllerScreenState, ident)
+        self.enable_states = False
+        self._clock_timer: Timer = None
+        self._clock_running = False
+
+    @staticmethod
+    def Available_Identifiers(deck):
+        fmt = deck.screen_image_format()
+        if fmt.get("size", (0, 0)) != (0, 0):
+            return ["sd-neo"]
+        return []
+
+    def update(self) -> None:
+        image = self.get_current_image()
+        ui_image = image.copy()
+
+        if image.mode == "RGBA":
+            background = Image.new("RGB", image.size, (0, 0, 0))
+            background.paste(image, (0, 0), image)
+            image = background
+
+        native_image = PILHelper.to_native_screen_format(self.deck_controller.deck, image)
+        self.deck_controller.media_player.add_screen_task(native_image)
+
+        self.set_ui_image(ui_image)
+
+        self.start_clock_timer()
+
+    def generate_empty_image(self) -> Image.Image:
+        return Image.new("RGBA", self.get_screen_dimensions(), (0, 0, 0, 0))
+
+    def set_ui_image(self, image: Image.Image) -> None:
+        if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
+            screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
+            GLib.idle_add(screenbar.image.set_image, image)
+        else:
+            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
+
+    def get_current_image(self) -> Image.Image:
+        active_state = self.get_active_state()
+        return active_state.get_current_image()
+
+    def event_callback(self, *args, **kwargs):
+        pass
+
+    def get_screen_dimensions(self) -> tuple[int, int]:
+        return self.deck_controller.get_screen_image_size()
+
+    def get_image_size(self) -> tuple[int, int]:
+        return self.get_screen_dimensions()
+
+    def _clock_tick(self):
+        if not self._clock_running:
+            return
+        try:
+            self.update()
+        except Exception as e:
+            log.error(f"Clock tick error: {e}")
+        if self._clock_running:
+            active_state = self.get_active_state()
+            interval = 1.0 if active_state.clock_config.get("show-seconds", False) else 60.0
+            self._clock_timer = Timer(interval, self._clock_tick)
+            self._clock_timer.daemon = True
+            self._clock_timer.start()
+
+    def start_clock_timer(self):
+        if self._clock_running:
+            return
+        active_state = self.get_active_state()
+        if not active_state.clock_config.get("enabled", False):
+            return
+        self._clock_running = True
+        interval = 1.0 if active_state.clock_config.get("show-seconds", False) else 60.0
+        self._clock_timer = Timer(interval, self._clock_tick)
+        self._clock_timer.daemon = True
+        self._clock_timer.start()
+
+
+    def stop_clock_timer(self):
+        self._clock_running = False
+        if self._clock_timer is not None:
+            self._clock_timer.cancel()
+            self._clock_timer = None
+
+    def restart_clock_timer(self):
+        self.stop_clock_timer()
+        self.start_clock_timer()
+
+    def load_from_input_dict(self, page_dict, update: bool = True):
+        n_states = len(page_dict.get("states", {}))
+        self.create_n_states(max(1, n_states))
+
+        old_state_index = self.state
+        self.state = 0
+
+        for state in page_dict.get("states", {}):
+            state_obj: ControllerScreenState = self.states.get(int(state))
+            if state_obj is None:
+                continue
+
+            state_dict = page_dict["states"][str(state_obj.state)]
+
+            state_obj.key_image = None
+            state_obj.key_video = None
+
+            layout = ImageLayout()
+            state_obj.layout_manager.set_action_layout(layout, update=False)
+            state_obj.own_actions_update()
+            state_obj.background_manager.set_page_color(state_dict.get("background", {}).get("color", [0, 0, 0, 0]), update=False)
+            state_obj.scale_factor = state_dict.get("screen-scale", 1.0)
+
+            clock_dict = state_dict.get("screen-clock", {})
+            state_obj.clock_config = {**DEFAULT_CLOCK_CONFIG, **clock_dict}
+
+            path = state_dict.get("media", {}).get("path", None)
+            if path not in ["", None]:
+                if is_image(path):
+                    with Image.open(path) as image:
+                        state_obj.set_image(InputImage(
+                            controller_input=self,
+                            image=image.copy()
+                        ), update=False)
+                elif is_svg(path):
+                    img = svg_to_pil(path, 192)
+                    state_obj.set_image(InputImage(
+                        controller_input=self,
+                        image=img
+                    ), update=False)
+                elif is_video(path):
+                    if os.path.splitext(path)[1].lower() == ".gif":
+                        state_obj.set_video(KeyGIF(
+                            controller_key=self,
+                            gif_path=path,
+                            loop=state_dict.get("media", {}).get("loop", True),
+                            fps=state_dict.get("media", {}).get("fps", 30)
+                        ))
+                    else:
+                        state_obj.set_video(InputVideo(
+                            controller_input=self,
+                            video_path=path,
+                            loop=state_dict.get("media", {}).get("loop", True),
+                            fps=state_dict.get("media", {}).get("fps", 30),
+                        ))
+
+            page_layout = ImageLayout(
+                fill_mode=state_dict.get("media", {}).get("fill-mode"),
+                size=state_dict.get("media", {}).get("size"),
+                valign=state_dict.get("media", {}).get("valign"),
+                halign=state_dict.get("media", {}).get("halign"),
+            )
+            state_obj.layout_manager.set_page_layout(page_layout, update=False)
+
+        self.stop_clock_timer()
+
+        if update:
+            self.set_state(old_state_index)
+            self.update()
+
+
+DEFAULT_CLOCK_CONFIG = {
+    "enabled": False,
+    "show-date": True,
+    "show-seconds": False,
+    "use-24h": False,
+    "date-format": "MM/DD/YY",
+    "color": [255, 255, 255, 255],
+}
+
+
+class ControllerScreenState(ControllerInputState):
+    def __init__(self, controller_screen: "ControllerScreen", state: int):
+        super().__init__(controller_screen, state)
+        self.controller_screen = controller_screen
+        self.key_image: InputImage = None
+        self.key_video: InputVideo = None
+        self.scale_factor: float = 1.0
+        self.clock_config: dict = dict(DEFAULT_CLOCK_CONFIG)
+
+    def set_image(self, key_image: "InputImage", update: bool = True) -> None:
+        if self.key_image is not None:
+            self.key_image.close()
+        self.key_image = key_image
+        self.key_video = None
+        if update:
+            self.update()
+
+    def set_video(self, key_video: "InputVideo") -> None:
+        self.key_video = key_video
+        if self.key_image is not None:
+            self.key_image.close()
+        self.key_image = None
+
+    _clock_font_cache: dict = {}
+    _clock_font_path: str = None
+
+    def _get_clock_font(self, size: int) -> ImageFont.FreeTypeFont:
+        if size in self._clock_font_cache:
+            return self._clock_font_cache[size]
+
+        if ControllerScreenState._clock_font_path is None:
+            font_name = gl.fallback_font or "DejaVu Sans"
+            try:
+                import matplotlib.font_manager
+                ControllerScreenState._clock_font_path = matplotlib.font_manager.findfont(
+                    matplotlib.font_manager.FontProperties(family=font_name, weight="bold")
+                )
+            except Exception:
+                ControllerScreenState._clock_font_path = ""
+
+        try:
+            if ControllerScreenState._clock_font_path:
+                font = ImageFont.truetype(ControllerScreenState._clock_font_path, size)
+            else:
+                font = ImageFont.load_default()
+        except Exception:
+            font = ImageFont.load_default()
+
+        self._clock_font_cache[size] = font
+        return font
+
+    def _draw_clock_overlay(self, image: Image.Image) -> Image.Image:
+        cfg = self.clock_config
+        if not cfg.get("enabled", False):
+            return image
+
+        now = datetime.now()
+        color = tuple(cfg.get("color", [255, 255, 255, 255])[:4])
+        outline_color = (0, 0, 0, 255)
+        outline_width = 1
+
+        w, h = image.size
+        draw = ImageDraw.Draw(image)
+
+        show_date = cfg.get("show-date", True)
+        show_seconds = cfg.get("show-seconds", False)
+        use_24h = cfg.get("use-24h", False)
+        date_fmt = cfg.get("date-format", "MM/DD/YY")
+
+        # Build time string
+        if use_24h:
+            time_str = now.strftime("%H:%M:%S") if show_seconds else now.strftime("%H:%M")
+        else:
+            time_str = now.strftime("%-I:%M:%S %p") if show_seconds else now.strftime("%-I:%M %p")
+
+        if show_date:
+            # Split layout: left half = date, right half = time
+            day_str = now.strftime("%A").upper()
+            if date_fmt == "DD/MM/YY":
+                date_str = now.strftime("%d/%m/%y")
+            elif date_fmt == "YYYY-MM-DD":
+                date_str = now.strftime("%Y-%m-%d")
+            else:
+                date_str = now.strftime("%m/%d/%y")
+
+            mid_x = w // 2
+            left_cx = mid_x // 2
+            right_cx = mid_x + (w - mid_x) // 2 - 5
+
+            day_font = self._get_clock_font(12)
+            date_font = self._get_clock_font(11)
+            time_font = self._get_clock_font(18)
+
+            draw.text((left_cx, h // 2 - 8), day_str, font=day_font, fill=color,
+                       anchor="mm", stroke_width=outline_width, stroke_fill=outline_color)
+            draw.text((left_cx, h // 2 + 12), date_str, font=date_font, fill=color,
+                       anchor="mm", stroke_width=outline_width, stroke_fill=outline_color)
+            draw.text((right_cx, h // 2), time_str, font=time_font, fill=color,
+                       anchor="mm", stroke_width=outline_width, stroke_fill=outline_color)
+        else:
+            # Time only — centered
+            time_font = self._get_clock_font(24)
+            draw.text((w // 2, h // 2), time_str, font=time_font, fill=color,
+                       anchor="mm", stroke_width=outline_width, stroke_fill=outline_color)
+
+        del draw
+        return image
+
+    def get_current_image(self) -> Image.Image:
+        screen_width, screen_height = self.controller_screen.get_screen_dimensions()
+        scale = self.scale_factor
+        render_width = max(1, int(screen_width / scale))
+        render_height = max(1, int(screen_height / scale))
+
+        background: Image.Image = None
+        active_page = self.controller_screen.deck_controller.active_page
+        if active_page is not None:
+            background_image_path = active_page.get_background_image(
+                identifier=self.controller_screen.identifier,
+                state=self.state
+            )
+
+            if background_image_path and os.path.isfile(background_image_path):
+                try:
+                    with Image.open(background_image_path) as img:
+                        background = ImageOps.fit(img, (render_width, render_height), Image.Resampling.LANCZOS).convert("RGBA")
+                except Exception as e:
+                    log.error(f"Error loading screen background image: {e}")
+                    background = None
+
+        background_color = self.background_manager.get_composed_color()
+
+        if background is None:
+            if background_color[-1] < 255:
+                background = Image.new("RGBA", (render_width, render_height), (0, 0, 0, 0))
+            if background_color[-1] > 0:
+                background_color_img = Image.new("RGBA", (render_width, render_height), color=tuple(background_color))
+                if background is None:
+                    background = background_color_img
+                else:
+                    background.paste(background_color_img, (0, 0), background_color_img)
+            if background is None:
+                background = Image.new("RGBA", (render_width, render_height), (0, 0, 0, 0))
+        else:
+            if background_color[-1] > 0:
+                background_color_img = Image.new("RGBA", (render_width, render_height), color=tuple(background_color))
+                background = Image.alpha_composite(background, background_color_img)
+
+        screen_image = background
+        if self.key_image is not None:
+            image = self.key_image.get_raw_image()
+            screen_image = self.layout_manager.add_image_to_background(
+                image=image,
+                background=background
+            )
+        elif self.key_video is not None:
+            image = self.key_video.get_raw_image()
+            screen_image = self.layout_manager.add_image_to_background(
+                image=image,
+                background=background
+            )
+
+        labeled_image = self.label_manager.add_labels_to_image(screen_image)
+
+        labeled_image = self._draw_clock_overlay(labeled_image)
+
+        if scale != 1.0:
+            labeled_image = labeled_image.resize((screen_width, screen_height), Image.Resampling.LANCZOS)
+
+        return labeled_image
+
+    def update(self):
+        if self.controller_screen.get_active_state() is self:
+            self.controller_screen.update()
+
+    def clear(self):
+        self.key_image = None
+        self.key_video = None
+        self.label_manager.clear_labels()
+        self.layout_manager.clear()
+        self.background_manager.set_page_color(None)
+        self.controller_screen.update()
+
+    def close_resources(self) -> None:
+        if self.key_image is not None:
+            self.key_image.close()
+            self.key_image = None
+        if self.key_video is not None:
+            self.key_video.close()
+            self.key_video = None

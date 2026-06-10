@@ -13,11 +13,13 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import json
 import sys
 import threading
 import gi
 import webbrowser as web
 
+import urllib.request
 from src.backend.DeckManagement.HelperMethods import open_web
 
 gi.require_version("Gtk", "4.0")
@@ -98,6 +100,21 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
     def on_support(self, action, parameter):
         open_web("https://ko-fi.com/core447")
 
+    def get_contributer_list(self):
+        try:
+            contents = urllib.request.urlopen("https://api.github.com/repos/StreamController/StreamController/contributors").read().decode()
+            data = json.loads(contents)
+            
+            contributors = []
+            for contributor in data:
+                if contributor["login"] in ["dependabot[bot]"]:
+                    continue
+                contributors.append(f"{contributor["login"]} {contributor["html_url"]}")
+
+            return contributors
+        except:
+            return []
+
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutDialog()
         self.about.set_application_name("StreamController")
@@ -113,38 +130,9 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.set_website("https://github.com/StreamController/StreamController")
         self.about.set_issue_url("https://github.com/StreamController/StreamController/issues")
         # self.about.set_support_url("https://discord.com/invite/MSyHM8TN3u")
-        self.about.add_credit_section("Contributors", ["Core447 https://github.com/Core447"] + 
-                                                       sorted(set(["coolapso https://github.com/coolapso",
-                                                       "G4PLS https://github.com/G4PLS",
-                                                       "gensyn https://github.com/gensyn",
-                                                       "GsakuL https://github.com/GsakuL",
-                                                       "mrintrepide https://github.com/mrintrepide",
-                                                       "Sorunome https://github.com/Sorunome",
-                                                       "ulrikstrid https://github.com/ulrikstrid",
-                                                       "yakushabb https://github.com/yakushabb",
-                                                       "3urobeat https://github.com/3urobeat",
-                                                       "NeoMorfeo https://github.com/NeoMorfeo",
-                                                       "ImDevinC https://github.com/ImDevinC",
-                                                       "axolotlmaid https://github.com/axolotlmaid",
-                                                       "nosduco https://github.com/nosduco",
-                                                       "pniedzielski https://github.com/pniedzielski",
-                                                       "Qalthos https://github.com/Qalthos",
-                                                       "jfbauer432 https://github.com/jfbauer432",
-                                                       "wanderboessenkool https://github.com/wanderboessenkool",
-                                                       "AdiHarif https://github.com/AdiHarif",
-                                                       "sifmelcara https://github.com/sifmelcara",
-                                                       "zeridon https://github.com/zeridon",
-                                                       "etiennebrateau https://github.com/etiennebrateau",
-                                                       "etienne02 https://github.com/etienne02",
-                                                       "Celestial04 https://github.com/Celestial04",
-                                                       "jgoett154 https://github.com/jgoett154",
-                                                       "dixonte https://github.com/dixonte",
-                                                       "NeoMorfeo https://github.com/NeoMorfeo",
-                                                       "fliflooo https://github.com/fliflooo",
-                                                       "eumario https://github.com/eumario",
-                                                       "SilentSwordmaiden https://github.com/SilentSwordmaiden",
-                                                       "Kekemui https://github.com/Kekemui",
-                                                       "dennisrijsdijk https://github.com/dennisrijsdijk",]),
+
+        contributors = self.get_contributer_list()
+        self.about.add_credit_section(f"Contributors ({len(contributors)})", sorted(set(contributors),
                                                        key=str.casefold))
         
         self.about.set_copyright("Copyright (C) 2024 Core447")

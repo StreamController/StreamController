@@ -166,14 +166,24 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         )
 
         supporter_names = [
-            "frank", "Marv", "Jun Iyama", "Just_Don", "Grimmnebulin",
-            "YvesCB", "jonathan-cloudless", "Dennis", "Myrik Lord", "RandomLegend", "Julien",
-            "joshferrara", "mitteltritt", "Phanatik", "Frieder", "Matthias Reißner",
-            "Matt", "Graysorrel", "Chronoes", "Rix", "Ritchie", "Bill W.", "Alex H.", "Jesse",
-            "ADIOP", "mysterious lutin", "timo", "JesúsRíoBarrigón", "CodeFaux", "HorstRohrweck",
-            "Karit", "Aniel", "Siphoned Anomaly", "Logan", "Tobbe", "Skelmy", "Nathan Pyle",
-            "Calm Wiz", "GAPLS", "John Fegan", "Based Supporter", "MelanX", "Fredrik",
-            "ChristianSchulz", "Tomasu", "Daisuke88", "bäcky"
+            "ADIOP", "Alex", "Alex H.", "AndrewLawrence", "Andy Hopper", "Aniel",
+            "Based Supporter", "Ben", "Bill W.", "BKM", "Bottswana", "Brodie Robertson",
+            "bäcky", "Calm Wiz", "Chris McGee", "ChristianSchulz", "Chronoes", "CodeFaux",
+            "Daisuke88", "Deadlinux", "Dennis", "doc.brown", "dpronk1959", "Eric", "fabi",
+            "FearsNONE", "fernandomema", "frank", "Fredrik", "Frieder", "gaensepuemchen",
+            "GAPLS", "Graysorrel", "GregoryHelding", "Grimmnebulin", "HannesMC",
+            "HorstRohrweck", "Jazzy2040", "Jesse", "JesúsRíoBarrigón", "Joe W", "JofSpad3s",
+            "John Fegan", "Jonathan Cremin", "Jonathan Hirschman", "Jonathan Leaders",
+            "joshferrara", "JulianARCVT", "Julien", "Jun Iyama", "Just_Don", "Karit", "Kaue",
+            "Khalid Al-Baloushi", "kirchou", "lilacjasminetea", "linuxnext", "Logan",
+            "loganomar", "Lord_Darkaham", "Lorith", "LukasDominikusAlbert", "lutin mystere",
+            "Marcus", "Martin", "Marv", "Matt", "Matthias", "Matthias Reißner", "Matz",
+            "MelanX", "mitteltritt", "Myrik Lord", "nasi", "Nathan Pyle", "Nicholas", "nvll",
+            "Opnyouri", "Pedro", "Phanatik", "Pommes", "potential_ad4169", "PSF", "pturn3",
+            "quintuple-lained", "RandomLegend", "Ricardo", "Ritchie", "Rix", "schlaggi",
+            "Siphoned Anomaly", "Skelmy", "steveo", "StuckSouls", "ted", "timo", "Tobbe",
+            "Tomasu", "tonygair", "Ty Smith", "veya", "Violet", "Wilbert", "Will Rivera",
+            "William Pietri", "YvesCB", "zoolie"
         ]
 
         self.about.add_acknowledgement_section(

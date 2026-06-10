@@ -27,6 +27,8 @@ import types
 
 
 # Import own modules
+from src.backend.DeckManagement.Subclasses.RemoteDeckManager import RemoteDeckManager
+from src.backend.DeckManagement.Subclasses.RemoteDeck import RemoteDeck
 from src.backend.DeckManagement.BetterDeck import BetterDeck
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
@@ -79,12 +81,42 @@ class DeckManager:
         if not self.beta_resume_mode:
             resume_thread.start()
 
+        self.remote_deck_manager = RemoteDeckManager(self)
+        if gl.settings_manager.get_app_settings().get("dev", {}).get("n-remote-decks", 0) > 0:
+            self.load_remote_decks()
+
+
+    def load_remote_decks(self):
+        print(" load remote decks")
+        self.remote_deck_manager.start()
+        for controller in self.remote_deck_manager.deck_controllers:
+            if controller in self.deck_controller:
+                continue
+
+            self.deck_controller.append(controller)
+            if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+                # Add to deck stack
+                for controller in self.remote_deck_manager.deck_controllers:
+                    GLib.idle_add(gl.app.main_win.leftArea.deck_stack.add_page, controller)
+
+        if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
+            GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
+
+        if recursive_hasattr(gl, "app.main_win"):
+            gl.app.main_win.check_for_errors()
+
+    def remove_remote_decks(self):
+        for controller in self.remote_deck_manager.deck_controllers:
+            self.remove_controller(controller)
+        gl.app.main_win.check_for_errors()
+        self.remote_deck_manager.stop()
+
     def load_decks(self):
         if not gl.argparser.parse_args().skip_load_hardware_decks:
             self.load_hardware_decks()
 
         self.load_fake_decks()
-
+    
     def load_hardware_decks(self):
         if gl.IS_MAC:
             return
@@ -258,7 +290,8 @@ class DeckManager:
             new_device = self.get_device_by_serial(deck_controller.serial_number())
             if new_device:
                 log.info(f"Replacing deck")
-                deck_controller.deck = new_device
+                current_rotation = deck_controller.deck.get_rotation()
+                deck_controller.deck = BetterDeck(new_device, current_rotation)
                 deck_controller.update_all_inputs()
 
                 deck_controller.deck.set_key_callback(deck_controller.key_event_callback)

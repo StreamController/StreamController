@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gi
+import json
 import os
 import threading
 import gi
@@ -47,8 +48,10 @@ class Importer(Adw.ApplicationWindow):
         self.progess_bar = Gtk.ProgressBar(margin_start=20, margin_end=20, margin_top=20, margin_bottom=20, show_text=True)
         self.main_box.append(self.progess_bar)
 
-    def show_error(self):
-        pass
+    def show_error(self, message: str = "Import failed"):
+        GLib.idle_add(self.progess_bar.set_text, message)
+        GLib.idle_add(self.progess_bar.set_fraction, 0)
+        GLib.timeout_add(3000, self.close)
 
     def import_pages(self, path: str, app: str, on_finished: callable = None) -> None:
         self.progess_bar.set_text("Importing...")
@@ -66,10 +69,13 @@ class Importer(Adw.ApplicationWindow):
     @log.catch
     def import_from_streamdeck_ui(self, path: str, on_finished: callable) -> None:
         if not os.path.exists(path):
-            self.show_error()
+            self.show_error("File not found")
             return
-        if not os.path.splitext(os.path.basename(path))[1] == ".json":
-            self.show_error()
+        try:
+            with open(path) as f:
+                json.load(f)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self.show_error("File is not valid JSON")
             return
 
         ui_importer = StreamDeckUIImporter(path)
@@ -86,10 +92,13 @@ class Importer(Adw.ApplicationWindow):
     @log.catch
     def import_from_streamcontroller(self, path: str, on_finished: callable) -> None:
         if not os.path.exists(path):
-            self.show_error()
+            self.show_error("File not found")
             return
-        if not os.path.splitext(os.path.basename(path))[1] == ".json":
-            self.show_error()
+        try:
+            with open(path) as f:
+                json.load(f)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self.show_error("File is not valid JSON")
             return
 
         ui_importer = StreamControllerImporter(path)

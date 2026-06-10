@@ -132,24 +132,36 @@ showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.13"  # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.14"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs: list[str] = []
 
 release_notes: str = """
 <p>Features:</p>
     <ul>
-        <li>Add way to set alignments for labels</li>
-        <li>Add localization for Brazilian Portuguese</li>
+        <li>Add support for remote decks (beta)</li>
+        <li>Support webdings fonts</li>
+        <li>Add option to disable label scrolling</li>
     </ul>
 <p>Improvements:</p>
     <ul>
-        <li>Improve shutdown speed</li>
-        <li>Updated store badges</li>
+        <li>Reworked page settings UI</li>
+        <li>Auto hide compatible/incompatible switcher in store</li>
+        <li>Better handling of transparent images</li>
+        <li>Improve SD+ Dial interaction through the UI</li>
+        <li>Streamdeck-UI Importer</li>
+        <li>Overall stability</li>
+        <li>Respect GIF frame delays</li>
+        <li>Respect Adwaita accent color</li>
     </ul>
 <p>Fixes:</p>
     <ul>
-        <li>Long startup time when started without internet connection</li>
-        <li>Too small preview images for keys in the UI</li>
+        <li>Tray icon not getting loaded on some desktops</li>
+        <li>SD+ bar images not always respecting aspect ratio</li>
+        <li>Auto page switching not working on some KDE and Sway installations</li>
+        <li>App not starting when backup dir does not exist</li>
+        <li>Font stylings not loading correctly</li>
+        <li>Localization problems</li>
+        <li>--change-state argument not working</li>
     </ul>
 """

@@ -24,7 +24,7 @@ from queue import Queue
 from threading import Thread, Timer
 
 import psutil
-from PIL import ImageDraw, ImageFont, ImageSequence
+from PIL import Image, ImageDraw, ImageFont, ImageSequence
 from StreamDeck.Devices import StreamDeck
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
@@ -157,6 +157,7 @@ class MediaPlayerThread(threading.Thread):
         self.tasks: list[MediaPlayerTask] = []
         self.image_tasks = {}
         self.touchscreen_task = None
+        self._wake_event = threading.Event()
 
         self.fps: list[float] = []
         self.old_warning_state = False
@@ -173,38 +174,66 @@ class MediaPlayerThread(threading.Thread):
             # self.check_connection()
 
             if not self.pause:
+                has_bg_video = False
+
                 if self.deck_controller.background.video is not None:
                     if self.deck_controller.background.video.page is self.deck_controller.active_page:
+                        has_bg_video = True
                         # There is a background video
                         video_each_nth_frame = self.FPS // self.deck_controller.background.video.fps
                         if self.media_ticks % video_each_nth_frame == 0:
                             self.deck_controller.background.update_tiles()
 
-                #TODO: generalize
-                for key in self.deck_controller.inputs[Input.Key]:
-                    cast("ControllerKey", key).on_media_player_tick()
+                # Only iterate keys if there is animated content to update
+                if has_bg_video or self._needs_key_ticks():
+                    #TODO: generalize
+                    for key in self.deck_controller.inputs[Input.Key]:
+                        cast("ControllerKey", key).on_media_player_tick()
 
-                for dial in self.deck_controller.inputs[Input.Dial]:
-                    cast("ControllerDial", dial).on_media_player_tick()
-                # self.deck_controller.update_all_inputs()
+                    for dial in self.deck_controller.inputs[Input.Dial]:
+                        cast("ControllerDial", dial).on_media_player_tick()
+                    # self.deck_controller.update_all_inputs()
 
                 # Perform media player tasks
                 self.perform_media_player_tasks()
 
             self.media_ticks += 1
 
-            # Wait for approximately 1/30th of a second before the next call
             end = time.time()
-            # print(f"possible FPS: {1 / (end - start)}")
+
+            # Use low FPS when idle (no animated content, no pending tasks)
+            has_pending = bool(self.tasks or self.image_tasks or self.touchscreen_task)
+            if has_pending or has_bg_video or getattr(self, '_cached_needs_ticks', False):
+                target_fps = self.FPS
+            else:
+                target_fps = 2  # Idle: just check for new tasks occasionally
+
             self.append_fps(1 / (end - start))
             self.update_low_fps_warning()
-            wait = max(0, 1/self.FPS - (end - start))
-            time.sleep(wait)
+            wait = max(0, 1/target_fps - (end - start))
+            if target_fps < self.FPS:
+                self._wake_event.wait(wait)
+                self._wake_event.clear()
+            else:
+                time.sleep(wait)
 
             if self._stop:
                 break
 
         self.running = False
+
+    def _needs_key_ticks(self) -> bool:
+        # Check once per second whether any key has animated content
+        if self.media_ticks % self.FPS != 0:
+            return getattr(self, '_cached_needs_ticks', False)
+        needs = False
+        for key in self.deck_controller.inputs.get(Input.Key, []):
+            state = key.get_active_state()
+            if state.key_video is not None:
+                needs = True
+                break
+        self._cached_needs_ticks = needs
+        return needs
 
     def append_fps(self, fps: float) -> None:
         self.fps.append(fps)
@@ -255,6 +284,7 @@ class MediaPlayerThread(threading.Thread):
             args=args,
             kwargs=kwargs
         ))
+        self._wake_event.set()
 
     def add_touchscreen_task(self, native_image: bytes):
         self.touchscreen_task = MediaPlayerSetTouchscreenImageTask(
@@ -262,6 +292,7 @@ class MediaPlayerThread(threading.Thread):
             page=self.deck_controller.active_page,
             native_image=native_image
         )
+        self._wake_event.set()
 
     def add_image_task(self, key_index: int, native_image: bytes):
         self.image_tasks[key_index] = MediaPlayerSetImageTask(
@@ -270,6 +301,7 @@ class MediaPlayerThread(threading.Thread):
             key_index=key_index,
             native_image=native_image
         )
+        self._wake_event.set()
 
     def perform_media_player_tasks(self):
         for task in self.tasks.copy():
@@ -332,6 +364,7 @@ class DeckController:
 
         self.screen_saver = ScreenSaver(deck_controller=self)
         self.allow_interaction = True
+        self.has_animated_keys = False
 
         self.key_spacing = (36, 36)
 
@@ -523,7 +556,7 @@ class DeckController:
             state = state_request["state"]
             
             # Get the page path for the specified page
-            requested_page_path = gl.page_manager.get_best_page_path_match_from_name(page_name)
+            requested_page_path = gl.page_manager.find_matching_page_path(page_name)
             
             if requested_page_path is None:
                 # Page not found - log available pages
@@ -738,6 +771,12 @@ class DeckController:
 
         log.info(f"Loaded page {page.get_name()} on deck {self.deck.get_serial_number()}")
         gc.collect()
+
+    def reload_page(self):
+        self.load_page(
+            page=self.active_page,
+            allow_reload=True
+        )
 
     def set_brightness(self, value):
         value = min(100, max(0, value))
@@ -1138,8 +1177,19 @@ class KeyGIF(SingleKeyAsset):
         self.active_frame: int = -1
 
         self.gif = Image.open(self.gif_path)
-        self.gif = ImageSequence.Iterator(self.gif)
-        self.frames = [frame.convert("RGBA") for frame in self.gif]
+        self.frames = []
+        self.frame_delays = []
+        
+        # Extract frames and their delays
+        for frame in ImageSequence.Iterator(self.gif):
+            self.frames.append(frame.convert("RGBA"))
+            # Get frame delay from GIF metadata (in milliseconds)
+            # Default to 100ms (10fps) if no delay specified
+            delay = self.gif.info.get('duration', 100)
+            # Some GIFs use delay in centiseconds, convert to milliseconds
+            if delay < 50:
+                delay *= 10
+            self.frame_delays.append(delay)
 
     def get_next_frame(self) -> Image.Image:
         self.active_frame += 1
@@ -1151,7 +1201,12 @@ class KeyGIF(SingleKeyAsset):
                 self.active_frame = len(self.frames) - 1
 
         return self.frames[self.active_frame]
-        self.gif.convert("RGBA")
+    
+    def get_frame_delay(self) -> float:
+        """Get delay for current frame in seconds"""
+        if self.active_frame < 0 or self.active_frame >= len(self.frame_delays):
+            return 1.0 / self.fps  # Fallback to fps-based timing
+        return self.frame_delays[self.active_frame] / 1000.0  # Convert ms to seconds
     
     def get_raw_image(self) -> Image.Image:
         return self.get_next_frame()
@@ -1159,8 +1214,10 @@ class KeyGIF(SingleKeyAsset):
     def close(self) -> None:
         self.gif = None
         self.frames = None
+        self.frame_delays = None
         del self.gif
         del self.frames
+        del self.frame_delays
 
 class LabelManager:
     def __init__(self, controller_input: "ControllerInput"):
@@ -1169,6 +1226,7 @@ class LabelManager:
         self.page_labels = {}
         self.action_labels = {}
         self.scroll_wait = 25
+        self._has_scroll_labels_cache: bool = None
 
         self.init_labels()
         self.frames: dict[str, dict[str, int]] = {
@@ -1193,6 +1251,7 @@ class LabelManager:
  
     def clear_labels(self):
         self.init_labels()
+        self._has_scroll_labels_cache = None
 
     def set_page_label(self, position: str, label: "KeyLabel", update: bool = True):
         if label is None:
@@ -1200,18 +1259,32 @@ class LabelManager:
             label.clear_values()
         else:
             self.page_labels[position] = label
-        
+
+        self._has_scroll_labels_cache = None
         if update:
             self.update_label(position)
+
+    @staticmethod
+    def _label_equals(a: "KeyLabel", b: "KeyLabel") -> bool:
+        return (a.text == b.text and a.font_size == b.font_size
+                and a.font_name == b.font_name and a.color == b.color
+                and a.font_weight == b.font_weight and a.style == b.style
+                and a.outline_width == b.outline_width
+                and a.outline_color == b.outline_color
+                and a.alignment == b.alignment)
 
     def set_action_label(self, position: str, label: "KeyLabel", update: bool = True):
         if label is None:
             label = self.action_labels[position]
             label.clear_values()
         else:
+            old = self.action_labels.get(position)
+            if old is not None and self._label_equals(old, label):
+                return
             self.action_labels[position] = label
 
-        self.update_label_editor()
+        self._has_scroll_labels_cache = None
+        GLib.idle_add(self.update_label_editor)
         if update:
             self.update_label(position)
 
@@ -1326,12 +1399,17 @@ class LabelManager:
         return self.controller_input.get_image_size()[0]
 
     def get_has_scroll_labels(self) -> bool:
+        if self._has_scroll_labels_cache is not None:
+            return self._has_scroll_labels_cache
+
         labels = self.get_composed_labels()
         for label in labels:
             if labels[label].text is not None and labels[label].text != "":
                 _, _, w, _ = labels[label].get_font().getbbox(labels[label].text)
                 if w > self.get_available_width():
+                    self._has_scroll_labels_cache = True
                     return True
+        self._has_scroll_labels_cache = False
         return False
 
     def add_labels_to_image(self, image: Image.Image) -> Image.Image:
@@ -1364,7 +1442,8 @@ class LabelManager:
                 x_position = image.width / 2
                 anchor_x = "m"
 
-            if image.width < w:
+            rolling_labels_enabled = gl.settings_manager.get_app_settings().get("general", {}).get("rolling-labels", True)
+            if rolling_labels_enabled and image.width < w:
                 # Need to scroll - always use center anchor for scrolling
                 start = image.width / 2 - (image.width - w) / 2 + 10
                 stop = image.width / 2 + (image.width - w) / 2 - 10
@@ -1475,7 +1554,7 @@ class LayoutManager:
 
     def update(self):
         self.controller_input.update()
-        self.update_layout_editor()
+        GLib.idle_add(self.update_layout_editor)
 
     def update_layout_editor(self):
         if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
@@ -1552,7 +1631,7 @@ class BackgroundManager:
     def update(self, ui: bool = True):
         self.controller_input.update()
         if ui:
-            self.update_background_editor()
+            GLib.idle_add(self.update_background_editor)
 
     def update_background_editor(self):
         if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
@@ -1948,6 +2027,9 @@ class ControllerKey(ControllerInput):
         self.press_state: bool = self.deck_controller.deck.key_states()[self.index]
 
         self.down_start_time: float = None
+         
+        # GIF timing tracking
+        self.last_gif_update_time: float = 0
 
     def on_hold_timer_end(self):
         state = self.get_active_state()
@@ -1974,9 +2056,16 @@ class ControllerKey(ControllerInput):
         rows, cols = deck.key_layout()
         return y * cols + x
 
-    def update(self):
+    def update(self, force: bool = False):
         image = self.get_current_image()
-        
+
+        # Quick hash check - skip expensive conversion if image unchanged
+        img_hash = hash(image.tobytes())
+        if not force and img_hash == getattr(self, '_last_img_hash', None):
+            image.close()
+            return
+        self._last_img_hash = img_hash
+
         # Handle transparency properly - composite RGBA onto RGB to preserve smooth edges
         if image.mode == "RGBA":
             rgb_background = Image.new("RGB", image.size, (0, 0, 0))
@@ -1998,12 +2087,32 @@ class ControllerKey(ControllerInput):
 
     def on_media_player_tick(self) -> None:
         self.media_ticks += 1
+        current_time = time.time()
 
         state = self.get_active_state()
-        if not any([state.key_video, self.deck_controller.background.video, state.label_manager.get_has_scroll_labels()]):
-            return
+        needs_update = False
+        
+        # Check if we need to update based on content type
+        if state.key_video is not None:
+            if isinstance(state.key_video, KeyGIF):
+                # Use GIF frame delay timing
+                if self.last_gif_update_time == 0:
+                    self.last_gif_update_time = current_time
+                    needs_update = True
+                else:
+                    frame_delay = state.key_video.get_frame_delay()
+                    if current_time - self.last_gif_update_time >= frame_delay:
+                        self.last_gif_update_time = current_time
+                        needs_update = True
+            else:
+                # For non-GIF videos, use the original FPS-based logic
+                needs_update = True
+        elif self.deck_controller.background.video is not None or state.label_manager.get_has_scroll_labels():
+            # Other content types
+            needs_update = True
 
-        self.update()
+        if needs_update:
+            self.update()
 
     def event_callback(self, press_state):
         screensaver_was_showing = self.deck_controller.screen_saver.showing
@@ -2188,6 +2297,8 @@ class ControllerKey(ControllerInput):
                         text=state_dict["labels"][label].get("text"),
                         font_size=state_dict["labels"][label].get("font-size"),
                         font_name=state_dict["labels"][label].get("font-family"),
+                        font_weight=state_dict["labels"][label].get("font-weight"),
+                        style=state_dict["labels"][label].get("style"),
                         color=state_dict["labels"][label].get("color"),
                         outline_width=state_dict["labels"][label].get("outline_width"),
                         outline_color=state_dict["labels"][label].get("outline_color"),
@@ -2278,7 +2389,7 @@ class ControllerKey(ControllerInput):
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image # The ui key coords are in reverse order
         else:
             try:
-                self.deck_controller.get_own_key_grid().buttons[x][y].set_image(image)
+                GLib.idle_add(self.deck_controller.get_own_key_grid().buttons[x][y].set_image, image)
             except:
                 print(f"Failed to set ui key image for {self.identifier}")
         
@@ -2351,7 +2462,7 @@ class ControllerTouchScreen(ControllerInput):
     def set_ui_image(self, image: Image.Image) -> None:
         if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
             screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
-            screenbar.image.set_image(image)
+            GLib.idle_add(screenbar.image.set_image, image)
         else:
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
 
@@ -2497,6 +2608,8 @@ class ControllerDial(ControllerInput):
                     text=state_dict["labels"][label].get("text"),
                     font_size=state_dict["labels"][label].get("font-size"),
                     font_name=state_dict["labels"][label].get("font-family"),
+                    font_weight=state_dict["labels"][label].get("font-weight"),
+                    style=state_dict["labels"][label].get("style"),
                     color=state_dict["labels"][label].get("color"),
                     alignment=state_dict["labels"][label].get("alignment"),
                 )
@@ -2759,6 +2872,10 @@ class ControllerKeyState(ControllerInputState):
         if self.key_video is not None:
             self.key_video.close()
             self.key_video = None
+            
+        # Reset GIF timing
+        if isinstance(self.controller_input, ControllerKey):
+            self.controller_input.last_gif_update_time = 0
     
     def set_image(self, key_image: "InputImage", update: bool = True) -> None:
         if self.key_image is not None:
@@ -2775,6 +2892,10 @@ class ControllerKeyState(ControllerInputState):
         if self.key_image is not None:
             self.key_image.close()
         self.key_image = None
+        
+        # Reset GIF timing for new video
+        if isinstance(self.controller_input, ControllerKey):
+            self.controller_input.last_gif_update_time = 0
 
     def clear(self):
         self.key_image = None

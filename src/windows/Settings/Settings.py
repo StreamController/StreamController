@@ -184,9 +184,11 @@ class DevPage(Adw.PreferencesPage):
         self.set_title(gl.lm.get("settings-dev-settings-title"))
         self.set_icon_name("text-editor-symbolic")
 
-        self.add(DevPageGroup(settings=settings))
+        self.add(FakeDecksGroup(settings=settings))
+        self.add(RemoteDecksGroup(settings=settings))
+        self.add(DataPathGroup(settings=settings))
 
-class DevPageGroup(Adw.PreferencesGroup):
+class FakeDecksGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):
         self.settings = settings
         super().__init__(title=gl.lm.get("settings-fake-decks-header"))
@@ -197,24 +199,13 @@ class DevPageGroup(Adw.PreferencesGroup):
         self.n_fake_decks_row.set_range(0, 3)
         self.add(self.n_fake_decks_row)
 
-        self.data_path = Adw.EntryRow(title="Data path (requires restart)")
-        self.add(self.data_path)
-
-        self.open_data_path_button = Gtk.Button(label="Open", valign=Gtk.Align.CENTER)
-        self.open_data_path_button.connect("clicked", self.on_open_data_path_button_clicked)
-        self.data_path.add_suffix(self.open_data_path_button)
-
         self.load_defaults()
 
         # Connect signals
         self.n_fake_decks_row.connect("changed", self.on_n_fake_decks_row_changed)
-        self.data_path.connect("notify::text", self.on_data_path_changed)
 
     def load_defaults(self):
         self.n_fake_decks_row.set_value(self.settings.settings_json.get("dev", {}).get("n-fake-decks", 0))
-
-        static_settings = gl.settings_manager.get_static_settings()
-        self.data_path.set_text(static_settings.get("data-path", gl.DATA_PATH))
 
     def on_n_fake_decks_row_changed(self, *args):
         #FIXME: For some reason this gets called twice
@@ -226,6 +217,67 @@ class DevPageGroup(Adw.PreferencesGroup):
 
         # Reload decks
         gl.deck_manager.load_fake_decks()
+
+
+class RemoteDecksGroup(Adw.PreferencesGroup):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__(title="Remote Decks")
+
+        self.n_remote_decks_row = Adw.SpinRow.new_with_range(min=0, max=1, step=1)
+        self.n_remote_decks_row.set_title("Number of remote decks")
+        self.n_remote_decks_row.set_subtitle("Use remote.sc.core447.com to connect (beta)")
+        self.n_remote_decks_row.set_range(0, 1)
+        self.add(self.n_remote_decks_row)
+
+        self.load_defaults()
+
+        # Connect signals
+        self.n_remote_decks_row.connect("changed", self.on_row_changed)
+
+    def load_defaults(self):
+        n_decks = gl.settings_manager.get_app_settings().get("dev", {}).get("n-remote-decks", 0)
+        self.n_remote_decks_row.set_value(n_decks)
+
+    def on_row_changed(self, *args):
+        #FIXME: For some reason this gets called twice
+        n_decks = self.n_remote_decks_row.get_value()
+        app_settings = gl.settings_manager.get_app_settings() 
+        print(app_settings)
+
+
+        app_settings.setdefault("dev", {})
+        app_settings["dev"]["n-remote-decks"] = n_decks
+
+        # Save
+        gl.settings_manager.save_app_settings(app_settings)
+
+        if n_decks > 0:
+            gl.deck_manager.load_remote_decks()
+        else:
+            gl.deck_manager.remove_remote_decks()
+
+
+class DataPathGroup(Adw.PreferencesGroup):
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        super().__init__(title="Data path")
+
+        self.data_path = Adw.EntryRow(title="Data path (requires restart)")
+        self.add(self.data_path)
+
+        self.open_data_path_button = Gtk.Button(label="Open", valign=Gtk.Align.CENTER)
+        self.open_data_path_button.connect("clicked", self.on_open_data_path_button_clicked)
+        self.data_path.add_suffix(self.open_data_path_button)
+
+        self.load_defaults()
+
+        # Connect signals
+        self.data_path.connect("notify::text", self.on_data_path_changed)
+
+    def load_defaults(self):
+        static_settings = gl.settings_manager.get_static_settings()
+        self.data_path.set_text(static_settings.get("data-path", gl.DATA_PATH))
 
     def on_data_path_changed(self, *args):
         static_settings = gl.settings_manager.get_static_settings()
@@ -266,13 +318,18 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         self.hold_time_row.set_range(0.1, 3)
         self.add(self.hold_time_row)
 
+        self.rolling_labels = Adw.SwitchRow(title="Rolling labels", subtitle="Enable automatic rolling/scrolling of too long labels")
+        self.add(self.rolling_labels)
+
         self.load_defaults()
 
         # Connect signals
         self.hold_time_row.connect("changed", self.on_n_fake_decks_row_changed)
+        self.rolling_labels.connect("notify::active", self.on_rolling_labels_changed)
 
     def load_defaults(self):
         self.hold_time_row.set_value(self.settings.settings_json.get("general", {}).get("hold-time", 0.5))
+        self.rolling_labels.set_active(self.settings.settings_json.get("general", {}).get("rolling-labels", True))
 
     def on_n_fake_decks_row_changed(self, *args):
         self.settings.settings_json.setdefault("general", {})
@@ -286,6 +343,17 @@ class GeneralPageGroup(Adw.PreferencesGroup):
 
         # Reload decks
         gl.deck_manager.load_fake_decks()
+
+    def on_rolling_labels_changed(self, *args):
+        self.settings.settings_json.setdefault("general", {})
+        self.settings.settings_json["general"]["rolling-labels"] = self.rolling_labels.get_active()
+
+        # Save
+        self.settings.save_json()
+
+        # Reload all pages - TODO: might not be necessary
+        for controller in gl.deck_manager.deck_controller:
+            controller.reload_page()
 
 class FontPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):

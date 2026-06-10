@@ -105,7 +105,7 @@ class ActionExpanderRow(BetterExpander):
         self.build()
 
     def build(self):
-        self.add_action_button = AddActionButtonRow(self)
+        self.add_action_button = AddActionButtonRow(self).button
         self.add_row(self.add_action_button)
 
     def add_action_row(self, action_name: str, action_id: str, action_category, action_object, comment: str, index: int, total_rows: int, controls_image: bool = False, controls_labels: list[bool] = [False, False, False], controls_background: bool = False):
@@ -558,9 +558,9 @@ class ActionRow(Adw.ActionRow):
 
     def on_click_up(self, button):
         one_up_child = self.expander.get_rows()[self.index - 1]
-        if isinstance(one_up_child, AddActionButtonRow):
+        if isinstance(one_up_child, AddActionButtonRow.button):
             return
-        self.expander.reorder_child_after(self, one_up_child)
+        self.expander.reorder_child_after(self, one_up_child.button)
         self.expander.reorder_actions(self.index - 1, self.index)
 
         # self.expander.update_indices()
@@ -568,9 +568,9 @@ class ActionRow(Adw.ActionRow):
 
     def on_click_down(self, button):
         one_down_child = self.expander.get_rows()[self.index + 1]
-        if isinstance(one_down_child, AddActionButtonRow):
+        if isinstance(one_down_child, AddActionButtonRow.button):
             return
-        self.expander.reorder_child_after(self, one_down_child)
+        self.expander.reorder_child_after(self, one_down_child.button)
         self.expander.reorder_actions(self.index, self.index + 1)
 
         # self.expander.update_indices()
@@ -677,18 +677,18 @@ class ActionRow(Adw.ActionRow):
 
         self.comment_row.set_text(comment)
 
-class AddActionButtonRow(Adw.PreferencesRow):
+class AddActionButtonRow:
     def __init__(self, expander: ActionExpanderRow, **kwargs):
-        super().__init__(**kwargs, css_classes=["no-padding", "add-button"])
+        # super().__init__(**kwargs, css_classes=["no-padding"])
         self.expander: ActionExpanderRow = expander
-
-        self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN,
-                                 css_classes=["no-margin", "invisible"],
-                                 label=gl.lm.get("action-editor-add-new-action"),
-                                 margin_bottom=5, margin_top=5)
-        self.button.connect("clicked", self.on_click)
+        self.button = Adw.ButtonRow(title=gl.lm.get("action-editor-add-new-action"), css_classes=["suggested-action", "add-action-button"])
+        # self.button = Gtk.Button(hexpand=True, vexpand=True, overflow=Gtk.Overflow.HIDDEN,
+        #                          css_classes=["no-margin", "suggested-action"],
+        #                          label=gl.lm.get("action-editor-add-new-action"),
+        #                          margin_bottom=5, margin_top=5)
+        self.button.connect("activated", self.on_click)
         self.action_name = "Add Action"
-        self.set_child(self.button)
+        # self.set_child(self.button)
 
     def on_click(self, button):
         self.expander.action_group.sidebar.let_user_select_action(callback_function=self.add_action, identifier=self.expander.active_identifier)

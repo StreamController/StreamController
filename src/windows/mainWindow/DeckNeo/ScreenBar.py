@@ -1,0 +1,175 @@
+import gi
+
+from PIL import Image
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.backend.DeckManagement.DeckController import ControllerScreen
+from src.backend.DeckManagement.InputIdentifier import Input, InputIdentifier
+from src.backend.DeckManagement.ImageHelpers import image2pixbuf
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+
+import globals as gl
+
+from gi.repository import Gtk, Adw, Gdk, GLib, Gio
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
+
+class ScreenBar(Gtk.Frame):
+    def __init__(self, page_settings_page: "PageSettingsPage", identifier: Input.Screen, **kwargs):
+        self.page_settings_page = page_settings_page
+        self.deck_controller = page_settings_page.deck_controller
+        self.identifier = identifier
+
+        super().__init__(**kwargs)
+        self.set_css_classes(["key-button-frame-hidden"])
+        self.set_halign(Gtk.Align.CENTER)
+        self.set_hexpand(True)
+
+        self.pixbuf = None
+
+        self.image = ScreenBarImage(self)
+        self.image.set_image(Image.new("RGBA", (248, 58), (0, 0, 0, 0)))
+        self.set_child(self.image)
+
+        focus_controller = Gtk.EventControllerFocus()
+        self.image.add_controller(focus_controller)
+        focus_controller.connect("enter", self.on_focus_in)
+
+        self.click_ctrl = Gtk.GestureClick().new()
+        self.click_ctrl.connect("pressed", self.on_click)
+        self.click_ctrl.set_button(0)
+        self.image.add_controller(self.click_ctrl)
+
+        self.set_focus_child(self.image)
+        self.image.set_focusable(True)
+
+        ## Actions
+        self.action_group = Gio.SimpleActionGroup()
+        self.insert_action_group("screen", self.action_group)
+
+        self.remove_action = Gio.SimpleAction.new("remove", None)
+        self.remove_action.connect("activate", self.on_remove)
+        self.action_group.add_action(self.remove_action)
+
+        ## Shortcuts
+        self.shortcut_controller = Gtk.ShortcutController()
+        self.add_controller(self.shortcut_controller)
+
+        remove_shortcut_action = Gtk.CallbackAction.new(self.on_remove)
+        self.remove_shortcut = Gtk.Shortcut.new(Gtk.ShortcutTrigger.parse_string("Delete"), remove_shortcut_action)
+        self.shortcut_controller.add_shortcut(self.remove_shortcut)
+
+        self.connect("map", self.on_map)
+        self.load_from_changes()
+
+    def on_map(self, widget):
+        self.load_from_changes()
+
+    def load_from_changes(self) -> None:
+        if not hasattr(self.deck_controller, "ui_image_changes_while_hidden"):
+            return
+        tasks = self.deck_controller.ui_image_changes_while_hidden
+        if self.identifier in tasks:
+            self.image.set_image(tasks[self.identifier])
+            tasks.pop(self.identifier)
+
+    def on_click(self, gesture, n_press, x, y):
+        if gesture.get_current_button() == 1 and n_press == 1:
+            self.image.grab_focus()
+
+            controller_input = self.page_settings_page.deck_controller.get_input(self.identifier)
+            state = controller_input.get_active_state().state
+            gl.app.main_win.sidebar.load_for_identifier(self.identifier, state)
+
+    def on_focus_in(self, *args):
+        self.set_border_active(True)
+
+    def set_border_active(self, active: bool):
+        if active:
+            if self.page_settings_page.deck_config.active_widget not in [self, None]:
+                self.page_settings_page.deck_config.active_widget.set_border_active(False)
+            self.page_settings_page.deck_config.active_widget = self
+            self.set_css_classes(["key-button-frame"])
+        else:
+            self.set_css_classes(["key-button-frame-hidden"])
+            self.page_settings_page.deck_config.active_widget = None
+
+    def on_remove(self, *args) -> None:
+        controller = gl.app.main_win.get_active_controller()
+        if controller is None:
+            return
+
+        active_page = controller.active_page
+        if active_page is None:
+            return
+
+        screen = controller.get_input(self.identifier)
+
+        if str(screen.state) not in active_page.dict.get(self.identifier.input_type, {}).get(self.identifier.json_identifier, {}).get("states", {}):
+            return
+
+        del active_page.dict[self.identifier.input_type][self.identifier.json_identifier]["states"][str(screen.state)]
+        active_page.save()
+        active_page.load()
+
+        active_page.reload_similar_pages(identifier=self.identifier, reload_self=True)
+
+        gl.app.main_win.sidebar.load_for_identifier(self.identifier, screen.state)
+
+
+class ScreenBarImage(Gtk.Picture):
+    def __init__(self, screenbar: ScreenBar, **kwargs):
+        super().__init__(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
+                         halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
+                         valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
+                         **kwargs)
+
+        self.screenbar = screenbar
+
+        self.on_map_tasks: list[callable] = []
+        self.connect("map", self.on_map)
+
+        self.latest_task_id: int = None
+
+    def on_map(self, *args):
+        for task in self.on_map_tasks:
+            task()
+        self.on_map_tasks.clear()
+
+    def get_controller_screen(self) -> "ControllerScreen":
+        controller = gl.app.main_win.get_active_controller()
+        return controller.get_input(Input.Screen("sd-neo"))
+
+    def get_new_task_id(self):
+        if self.latest_task_id is None:
+            return 0
+        return self.latest_task_id + 1
+
+    def set_image(self, image: Image.Image):
+        if not self.get_mapped():
+            self.on_map_tasks = [lambda: self.set_image(image)]
+            return
+
+        width = 385
+        thumbnail = image.copy()
+        thumbnail.thumbnail((width, int(width * 58 / 248)))
+
+        pixbuf = image2pixbuf(thumbnail.convert("RGBA"), force_transparency=True)
+        self.latest_task_id = self.get_new_task_id()
+        GLib.idle_add(self.set_pixbuf_and_del, pixbuf, self.latest_task_id, priority=GLib.PRIORITY_HIGH)
+
+        thumbnail.close()
+        del thumbnail
+
+    def set_pixbuf_and_del(self, pixbuf, task_id: int = None):
+        if task_id is not None:
+            if task_id != self.latest_task_id:
+                return
+        self.set_pixbuf(pixbuf)
+        del pixbuf

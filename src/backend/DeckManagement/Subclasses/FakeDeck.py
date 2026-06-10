@@ -27,8 +27,9 @@ class FakeDeck:
         self._key_layout = gl.settings_manager.get_deck_settings(self.serial_number).get("key-layout", [3, 5])
         self._key_layout = [2, 4]
 
-        self._is_touch = True
-        self._dial_count = 4
+        self._is_touch = False
+        self._dial_count = 0
+        self._touch_key_count = 2
 
     def deck_type(self):
         return self._deck_type
@@ -91,7 +92,7 @@ class FakeDeck:
         return self._dial_count
 
     def touch_key_count(self) -> int:
-        return 0
+        return self._touch_key_count
 
     def touchscreen_image_format(self) -> dict:
         return{
@@ -103,7 +104,7 @@ class FakeDeck:
 
     def screen_image_format(self) -> dict:
         return {
-            "size": (0, 0),
+            "size": (248, 58),
             "format": "JPEG",
             "flip": (False, False),
             "rotation": 0

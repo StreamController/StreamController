@@ -128,4 +128,5 @@ class SDPlusBarWallpaperPreview(StorePreview):
         self.wallpaper_page.info_page.set_copyright(self.wallpaper_data.copyright)
         self.wallpaper_page.info_page.set_original_url(self.wallpaper_data.original_url)
         self.wallpaper_page.info_page.set_license_description(self.wallpaper_data.license_descriptions)
+        self.wallpaper_page.info_page.clear_plugin_data()
 

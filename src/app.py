@@ -58,6 +58,20 @@ import globals as gl
 class App(Adw.Application):
     def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
+        # Hold the application when running with keep-running enabled:
+        # closing the main window only hides it, and without a hold
+        # Gio.Application's lifecycle can idle-quit the process silently.
+        self._held = False
+        try:
+            _keep_running = gl.settings_manager.get_app_settings().get("system", {}).get("keep-running")
+            if _keep_running:
+                self.hold()
+                self._held = True
+        except Exception:
+            # If settings aren't ready yet, default to holding; the worst
+            # case is the app stays alive until explicit on_quit().
+            self.hold()
+            self._held = True
         self.deck_manager = deck_manager
 
         self.register_sigint_handler()
@@ -228,6 +242,12 @@ class App(Adw.Application):
         # Close all decks
         gl.deck_manager.close_all()
         # Stop timer
+        # Balance the self.hold() from __init__ so Gio.Application can clean up.
+        if getattr(self, "_held", False):
+            try:
+                self.release()
+            except Exception:
+                pass
         log.success("Stopped StreamController. Have a nice day!")
         log.stop()
         sys.exit(0)

@@ -39,4 +39,3 @@ class KDELockScreenDetector(LockScreenDetector):
             interface="org.freedesktop.ScreenSaver",
             path="/org/freedesktop/ScreenSaver"
         )
-        

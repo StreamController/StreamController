@@ -739,6 +739,11 @@ class SystemGroup(Adw.PreferencesGroup):
         # Save
         self.settings.save_json()
 
+        # Keep the Gio.Application hold in sync so the change applies
+        # immediately, without requiring an app restart.
+        if hasattr(gl, "app"):
+            gl.app.set_keep_running_hold(self.keep_running.get_active())
+
     def on_autostart_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})
         self.settings.settings_json["system"]["autostart"] = self.autostart.get_active()

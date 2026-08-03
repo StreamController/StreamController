@@ -47,7 +47,7 @@ class InfoPage(Gtk.Box):
     def build(self):
         self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True, margin_bottom=10)
         self.append(self.scrolled_window)
-        
+
         self.clamp = Adw.Clamp(hexpand=True)
         self.scrolled_window.set_child(self.clamp)
 
@@ -230,7 +230,7 @@ class SourceGroup(Adw.PreferencesGroup):
         """Update the source group for a specific plugin."""
         self.current_plugin_data = plugin_data
         
-        if plugin_data is None:
+        if plugin_data is None or plugin_data.is_custom_plugin:
             self.set_visible(False)
             return
         

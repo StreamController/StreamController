@@ -328,13 +328,14 @@ class StoreBackend:
         if n_stores_with_errors >= len(stores):
             return NoConnectionError()
 
-        prepare_tasks = [process_func(data, include_images, True) for data in data_list]
+        prepare_tasks = [process_func({"custom": False, **data}, include_images, True) for data in data_list]
 
         if get_custom_func is not None:
             for url, branch in get_custom_func():
                 asset = {
                     "url": url,
-                    "branch": branch
+                    "branch": branch,
+                    "custom": True
                 }
                 prepare_tasks.append(process_func(asset, include_images, False))
 
@@ -493,7 +494,8 @@ class StoreBackend:
 
             is_compatible=compatible,
             verified=verified,
-            using_git_override=using_git_override
+            using_git_override=using_git_override,
+            is_custom_plugin=plugin.get("custom", False)
         )
     
     def get_current_git_commit_hash_without_git(self, repo_path: str) -> str:

@@ -40,6 +40,7 @@ import os
 from GtkHelper.GtkHelper import BetterExpander, better_disconnect
 from src.backend.WindowGrabber.Window import Window
 from src.windows.PageManager.elements.MenuButton import MenuButton
+from src.backend.PageManagement.Page import Page
 
 class PageEditor(Adw.NavigationPage):
     def __init__(self, page_manager: "PageManager"):
@@ -47,6 +48,12 @@ class PageEditor(Adw.NavigationPage):
         self.page_manager = page_manager
         self.active_page_path: str = None
         self.build()
+
+    def get_page_data(self) -> dict:
+        return gl.page_manager.get_page_data(self.active_page_path, use_backup=False)
+
+    def set_page_data(self, data: dict, reload_brightness: bool = True, reload_screensaver: bool = True, reload_background: bool = True, reload_inputs: bool = True):
+        gl.page_manager.set_page_data(self.active_page_path, data, reload_brightness=reload_brightness, reload_screensaver=reload_screensaver, reload_background=reload_background, reload_inputs=reload_inputs)
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)

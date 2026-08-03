@@ -13,11 +13,13 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 # Import gtk modules
+import json
 import sys
 import threading
 import gi
 import webbrowser as web
 
+import urllib.request
 from src.backend.DeckManagement.HelperMethods import open_web
 
 gi.require_version("Gtk", "4.0")
@@ -98,6 +100,21 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
     def on_support(self, action, parameter):
         open_web("https://ko-fi.com/core447")
 
+    def get_contributer_list(self):
+        try:
+            contents = urllib.request.urlopen("https://api.github.com/repos/StreamController/StreamController/contributors").read().decode()
+            data = json.loads(contents)
+            
+            contributors = []
+            for contributor in data:
+                if contributor["login"] in ["dependabot[bot]"]:
+                    continue
+                contributors.append(f"{contributor["login"]} {contributor["html_url"]}")
+
+            return contributors
+        except:
+            return []
+
     def on_open_about(self, action, parameter):
         self.about = Adw.AboutDialog()
         self.about.set_application_name("StreamController")
@@ -113,38 +130,9 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         self.about.set_website("https://github.com/StreamController/StreamController")
         self.about.set_issue_url("https://github.com/StreamController/StreamController/issues")
         # self.about.set_support_url("https://discord.com/invite/MSyHM8TN3u")
-        self.about.add_credit_section("Contributors", ["Core447 https://github.com/Core447"] + 
-                                                       sorted(set(["coolapso https://github.com/coolapso",
-                                                       "G4PLS https://github.com/G4PLS",
-                                                       "gensyn https://github.com/gensyn",
-                                                       "GsakuL https://github.com/GsakuL",
-                                                       "mrintrepide https://github.com/mrintrepide",
-                                                       "Sorunome https://github.com/Sorunome",
-                                                       "ulrikstrid https://github.com/ulrikstrid",
-                                                       "yakushabb https://github.com/yakushabb",
-                                                       "3urobeat https://github.com/3urobeat",
-                                                       "NeoMorfeo https://github.com/NeoMorfeo",
-                                                       "ImDevinC https://github.com/ImDevinC",
-                                                       "axolotlmaid https://github.com/axolotlmaid",
-                                                       "nosduco https://github.com/nosduco",
-                                                       "pniedzielski https://github.com/pniedzielski",
-                                                       "Qalthos https://github.com/Qalthos",
-                                                       "jfbauer432 https://github.com/jfbauer432",
-                                                       "wanderboessenkool https://github.com/wanderboessenkool",
-                                                       "AdiHarif https://github.com/AdiHarif",
-                                                       "sifmelcara https://github.com/sifmelcara",
-                                                       "zeridon https://github.com/zeridon",
-                                                       "etiennebrateau https://github.com/etiennebrateau",
-                                                       "etienne02 https://github.com/etienne02",
-                                                       "Celestial04 https://github.com/Celestial04",
-                                                       "jgoett154 https://github.com/jgoett154",
-                                                       "dixonte https://github.com/dixonte",
-                                                       "NeoMorfeo https://github.com/NeoMorfeo",
-                                                       "fliflooo https://github.com/fliflooo",
-                                                       "eumario https://github.com/eumario",
-                                                       "SilentSwordmaiden https://github.com/SilentSwordmaiden",
-                                                       "Kekemui https://github.com/Kekemui",
-                                                       "dennisrijsdijk https://github.com/dennisrijsdijk",]),
+
+        contributors = self.get_contributer_list()
+        self.about.add_credit_section(f"Contributors ({len(contributors)})", sorted(set(contributors),
                                                        key=str.casefold))
         
         self.about.set_copyright("Copyright (C) 2024 Core447")
@@ -166,14 +154,24 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
         )
 
         supporter_names = [
-            "frank", "Marv", "Jun Iyama", "Just_Don", "Grimmnebulin",
-            "YvesCB", "jonathan-cloudless", "Dennis", "Myrik Lord", "RandomLegend", "Julien",
-            "joshferrara", "mitteltritt", "Phanatik", "Frieder", "Matthias Reißner",
-            "Matt", "Graysorrel", "Chronoes", "Rix", "Ritchie", "Bill W.", "Alex H.", "Jesse",
-            "ADIOP", "mysterious lutin", "timo", "JesúsRíoBarrigón", "CodeFaux", "HorstRohrweck",
-            "Karit", "Aniel", "Siphoned Anomaly", "Logan", "Tobbe", "Skelmy", "Nathan Pyle",
-            "Calm Wiz", "GAPLS", "John Fegan", "Based Supporter", "MelanX", "Fredrik",
-            "ChristianSchulz", "Tomasu", "Daisuke88", "bäcky"
+            "ADIOP", "Alex", "Alex H.", "AndrewLawrence", "Andy Hopper", "Aniel",
+            "Based Supporter", "Ben", "Bill W.", "BKM", "Bottswana", "Brodie Robertson",
+            "bäcky", "Calm Wiz", "Chris McGee", "ChristianSchulz", "Chronoes", "CodeFaux",
+            "Daisuke88", "Deadlinux", "Dennis", "doc.brown", "dpronk1959", "Eric", "fabi",
+            "FearsNONE", "fernandomema", "frank", "Fredrik", "Frieder", "gaensepuemchen",
+            "GAPLS", "Graysorrel", "GregoryHelding", "Grimmnebulin", "HannesMC",
+            "HorstRohrweck", "Jazzy2040", "Jesse", "JesúsRíoBarrigón", "Joe W", "JofSpad3s",
+            "John Fegan", "Jonathan Cremin", "Jonathan Hirschman", "Jonathan Leaders",
+            "joshferrara", "JulianARCVT", "Julien", "Jun Iyama", "Just_Don", "Karit", "Kaue",
+            "Khalid Al-Baloushi", "kirchou", "lilacjasminetea", "linuxnext", "Logan",
+            "loganomar", "Lord_Darkaham", "Lorith", "LukasDominikusAlbert", "lutin mystere",
+            "Marcus", "Martin", "Marv", "Matt", "Matthias", "Matthias Reißner", "Matz",
+            "MelanX", "mitteltritt", "Myrik Lord", "nasi", "Nathan Pyle", "Nicholas", "nvll",
+            "Opnyouri", "Pedro", "Phanatik", "Pommes", "potential_ad4169", "PSF", "pturn3",
+            "quintuple-lained", "RandomLegend", "Ricardo", "Ritchie", "Rix", "schlaggi",
+            "Siphoned Anomaly", "Skelmy", "steveo", "StuckSouls", "ted", "timo", "Tobbe",
+            "Tomasu", "tonygair", "Ty Smith", "veya", "Violet", "Wilbert", "Will Rivera",
+            "William Pietri", "YvesCB", "zoolie"
         ]
 
         self.about.add_acknowledgement_section(

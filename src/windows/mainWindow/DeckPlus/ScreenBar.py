@@ -281,7 +281,7 @@ class ScreenBarImage(Gtk.Picture):
 
             dial_image = image.crop(dial_image_area)
 
-            gl.app.main_win.sidebar.key_editor.icon_selector.set_image(dial_image)
+            GLib.idle_add(gl.app.main_win.sidebar.key_editor.icon_selector.set_image, dial_image)
 
     def set_pixbuf_and_del(self, pixbuf, task_id: int = None):
         if task_id is not None:

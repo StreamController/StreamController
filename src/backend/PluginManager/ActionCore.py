@@ -26,7 +26,7 @@ from src.backend.PluginManager.EventManager import EventManager
 from src.backend.PluginManager.EventAssigner import EventAssigner
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 import rpyc
 from rpyc.utils.server import ThreadedServer
@@ -505,6 +505,9 @@ class ActionCore(rpyc.Service):
         return widgets
 
     def load_initial_generative_ui(self):
+        GLib.idle_add(self._do_load_initial_generative_ui)
+
+    def _do_load_initial_generative_ui(self):
         for generative_object in self.generative_ui_objects:
             generative_object.load_initial_ui()
     

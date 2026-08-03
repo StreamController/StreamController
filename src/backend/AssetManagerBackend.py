@@ -142,10 +142,11 @@ class AssetManagerBackend(list):
             dst_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets", file_name)
         else:
             log.warning(f"File with same name already exists but sha256 does not match, renaming: {asset_path}")
+            original_base, ext = os.path.splitext(os.path.basename(asset_path))
             index = 2
             while file_in_dir(file_name, os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets")):
-                base, ext = os.path.splitext(file_name)
-                file_name = f"{base}-{str(index).zfill(2)}.{ext.replace('.', '')}"
+                file_name = f"{original_base}-{str(index).zfill(2)}{ext}"
+                index += 1
             dst_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets", file_name)
 
         if asset_path == dst_path:

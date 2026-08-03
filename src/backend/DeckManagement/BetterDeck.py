@@ -2,7 +2,7 @@ from StreamDeck.Devices import StreamDeck
 
 class BetterDeck():
     def __init__(self, deck: StreamDeck, rotation: int = 0):
-        self.deck = deck
+        self.deck: StreamDeck = deck
         self.rotation: int = rotation # [0, 90, 180, 270]
 
 

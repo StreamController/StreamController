@@ -33,6 +33,10 @@ import globals as gl
 # Import own modules
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf, is_transparent
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.windows.PageManager.elements.PageEditor import PageEditor
+
 class BackgroundGroup(Adw.PreferencesGroup):
     def __init__(self, settings_page):
         super().__init__(title=gl.lm.get("background"), description=gl.lm.get("page-settings-only-current-page-hint"), margin_top=15)
@@ -42,9 +46,9 @@ class BackgroundGroup(Adw.PreferencesGroup):
 
 
 class BackgroundMediaRow(Adw.PreferencesRow):
-    def __init__(self, settings_page, **kwargs):
+    def __init__(self, page_editor: "PageEditor", **kwargs):
         super().__init__()
-        self.settings_page = settings_page
+        self.page_editor: "PageEditor" = page_editor
 
         """
         To save performance and memory, we only load the thumbnail when the user sees the row
@@ -135,6 +139,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         except TypeError as e:
             log.error(f"Don't panic, getting this error is normal: {e}")
 
+
     def load_defaults_from_page(self):
         if not self.get_mapped():
             self.on_map_tasks.clear()
@@ -142,14 +147,7 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             return
         self.disconnect_signals()
 
-        if not hasattr(self.settings_page.deck_page.deck_controller, "active_page"):
-            self.connect_signals()
-            return
-        if self.settings_page.deck_page.deck_controller.active_page == None:
-            self.connect_signals()
-            return
-        
-        page_dict = self.settings_page.deck_page.deck_controller.active_page.dict
+        page_dict = self.page_editor.get_page_data()
 
         overwrite = page_dict.get("background", {}).get("overwrite", False)
         show = page_dict.get("background", {}).get("show", False)
@@ -170,48 +168,46 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.connect_signals()
 
     def on_toggle_enable(self, toggle_switch, state):
-        # Change setting in the active deck page
-        deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("background", {})
-        deck_controller.active_page.dict["background"]["show"] = state
-        deck_controller.active_page.save()
-
-        deck_controller.active_page.reload_similar_pages(reload_self=True,
-                                                         load_brightness=False, load_screensaver=False, load_inputs=False)
+        dict_data = self.page_editor.get_page_data()
+        dict_data["background"]["show"] = state
+        self.page_editor.set_page_data(dict_data,
+                                        reload_brightness=False,
+                                        reload_screensaver=False,
+                                        reload_background=True,
+                                        reload_inputs=False)
 
     def on_toggle_loop(self, toggle_switch, state):
-        deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("background", {})
-        deck_controller.active_page.dict["background"]["loop"] = state
-        deck_controller.active_page.save()
+        dict_data = self.page_editor.get_page_data()
+        dict_data["background"]["loop"] = state
+        self.page_editor.set_page_data(dict_data,
+                                        reload_brightness=False,
+                                        reload_screensaver=False,
+                                        reload_background=True,
+                                        reload_inputs=False)
 
-        deck_controller.active_page.reload_similar_pages(reload_self=True,
-                                                         load_brightness=False, load_screensaver=False, load_inputs=False)
-        
     def on_change_fps(self, spinner):
-        deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("background", {})
-        deck_controller.active_page.dict["background"]["fps"] = spinner.get_value_as_int()
-        deck_controller.active_page.save()
-
-        deck_controller.active_page.reload_similar_pages(reload_self=True,
-                                                         load_brightness=False, load_screensaver=False, load_inputs=False)
+        dict_data = self.page_editor.get_page_data()
+        dict_data["background"]["fps"] = spinner.get_value_as_int()
+        self.page_editor.set_page_data(dict_data,
+                                        reload_brightness=False,
+                                        reload_screensaver=False,
+                                        reload_background=True,
+                                        reload_inputs=False)
 
     def on_toggle_overwrite(self, toggle_switch, state):
         self.config_box.set_visible(state)
         # Update page
-        deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.dict.setdefault("background", {})
-        deck_controller.active_page.dict["background"]["overwrite"] = state
-        # Save
-        deck_controller.active_page.save()
-        deck_controller.load_background(page=deck_controller.active_page)
-
-        deck_controller.active_page.reload_similar_pages()
+        dict_data = self.page_editor.get_page_data()
+        dict_data["background"]["overwrite"] = state
+        self.page_editor.set_page_data(dict_data,
+                                        reload_brightness=False,
+                                        reload_screensaver=False,
+                                        reload_background=True,
+                                        reload_inputs=False)
 
     def on_choose_image(self, button):
-        self.settings_page.deck_page.deck_controller.active_page.dict.setdefault("background", {})
-        media_path = self.settings_page.deck_page.deck_controller.active_page.dict["background"].setdefault("path", None)
+        dict_data = self.page_editor.get_page_data()
+        media_path = dict_data.get("background", {}).get("path", None)
 
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.set_deck_background)
 
@@ -247,10 +243,10 @@ class BackgroundMediaRow(Adw.PreferencesRow):
             self.set_background_to_page(file_path)
 
     def set_background_to_page(self, file_path):
-        deck_controller = self.settings_page.deck_page.deck_controller
-        deck_controller.active_page.set_background(file_path)
-
-        show = self.show_switch.get_active() and self.overwrite_switch.get_active()
-        if show:
-            deck_controller.load_background(page=deck_controller.active_page)
-            deck_controller.active_page.reload_similar_pages()
+        dict_data = self.page_editor.get_page_data()
+        dict_data["background"]["path"] = file_path
+        self.page_editor.set_page_data(dict_data,
+                                        reload_brightness=False,
+                                        reload_screensaver=False,
+                                        reload_background=True,
+                                        reload_inputs=False)

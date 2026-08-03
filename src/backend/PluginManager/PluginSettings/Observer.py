@@ -30,6 +30,8 @@ class Observer:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             loop.run_until_complete(self._notify(*args, **kwargs))
+        finally:
+            loop.close()
 
     async def _notify(self, *args, **kwargs):
         coroutines = [self._ensure_coroutine(observer, *args, **kwargs) for observer in self.observers]

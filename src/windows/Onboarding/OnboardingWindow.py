@@ -12,19 +12,16 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-# Import gtk modules
-from asyncio import wrap_future
 import asyncio
 import os
 import threading
 import gi
 import subprocess
 from packaging import version
-import webbrowser as web
 
 from GtkHelper.GtkHelper import LoadingScreen
 from autostart import is_flatpak
-from src.backend.DeckManagement.HelperMethods import open_web, run_command
+from src.backend.DeckManagement.HelperMethods import open_web
 from src.windows.Onboarding.PluginRecommendations import PluginRecommendations
 
 gi.require_version("Gtk", "4.0")
@@ -51,7 +48,7 @@ class OnboardingWindow(Adw.Dialog):
         self.set_follows_content_size(False)
 
         self.connect("close-attempt", self.on_close)
-        
+
         self.build()
 
     def build(self):
@@ -235,7 +232,7 @@ class ExtensionOnboardingScreen(Gtk.Box):
         self.install_button.connect("clicked", self.on_install_button_click)
         self.append(self.install_button)
 
-        self.hint_label = Gtk.Label(label=gl.lm.get("onboarding.extension.hint"), sensitive=False, margin_top=20)
+        self.hint_label = Gtk.Label(label=gl.lm.get("onboarding.extension.hint"), sensitive=False, margin_top=20, use_markup=True)
         self.append(self.hint_label)
 
     def update_button_status(self) -> None:
@@ -265,7 +262,7 @@ class ExtensionOnboardingScreen(Gtk.Box):
             self.install_button.set_sensitive(False)
             # Allow retry after 1 second
             GLib.timeout_add(1000, self.set_button_status, "uninstalled")
-            
+
         # To stop potential GLib.timeout_add
         return False
 
@@ -382,19 +379,19 @@ class SupportAppOnboardingScreen(Gtk.Box):
 
     def build(self):
         self.label = Gtk.Label(label="Support the app\ndevelopment", css_classes=["onboarding-welcome-label"],
-                               margin_bottom=40, use_markup=True, justify=Gtk.Justification.CENTER)
+                               margin_bottom=70, use_markup=True, justify=Gtk.Justification.CENTER)
         self.append(self.label)
 
-        self.detail = Gtk.Label(label="Creating this app was a lot of work, and your support helps me continue to further improve it. Consider donating to enable me to dedicate more time to new features and enhancements.\nYou can also request custom plugins and page creation for your needs", css_classes=["onboarding-welcome-detail-label"],
+        self.detail = Gtk.Label(label="Creating this app was a lot of work, and your support helps me continue to further improve it. Consider donating to enable me to dedicate more time to new features and enhancements.", css_classes=["onboarding-welcome-detail-label"],
                                 width_request=300, halign=Gtk.Align.CENTER, wrap_mode=Pango.WrapMode.WORD_CHAR, wrap=True, justify=Gtk.Justification.CENTER, use_markup=True)
         self.append(self.detail)
 
-        self.support_button = Gtk.Button(label="Donate", css_classes=["pill", "suggested-action"], margin_top=40, hexpand=False, halign=Gtk.Align.CENTER)
+        self.support_button = Gtk.Button(label="Donate", css_classes=["pill", "suggested-action"], margin_top=90, hexpand=False, halign=Gtk.Align.CENTER)
         self.support_button.connect("clicked", self.on_support_button_clicked)
         self.append(self.support_button)
 
     def on_support_button_clicked(self, button):
-        run_command("xdg-open https://ko-fi.com/core447")
+        open_web("https://ko-fi.com/core447")
         # portal = Xdp.Portal.new()
         # portal.open_uri(
         #     parent=XdpGtk4.parent_new_gtk(gl.app.get_active_window()),

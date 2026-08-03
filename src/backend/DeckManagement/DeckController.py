@@ -94,14 +94,20 @@ class MediaPlayerSetTouchscreenImageTask:
             self.deck_controller.deck.set_touchscreen_image(self.native_image, x_pos=0, y_pos=0, width=touchscreen_size[0], height=touchscreen_size[1]) # Maybe avoid to always merge the dial images before applying it
             self.native_image = None
             del self.native_image
-            MediaPlayerSetTouchscreenImageTask.n_failed_in_row = 0
+            MediaPlayerSetTouchscreenImageTask.n_failed_in_row[self.deck_controller.serial_number()] = 0
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck touchscreen image. Error: {e}")
-            MediaPlayerSetTouchscreenImageTask.n_failed_in_row += 1
-            if MediaPlayerSetTouchscreenImageTask.n_failed_in_row > 5:
-                log.debug(f"Failed to set touchscreen image for 5 times in a row for deck {self.deck_controller.serial_number()}. Removing controller")
-                
-                
+
+            beta_resume = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
+            if beta_resume:
+                # Transient HID failures are expected right after resume - keep the controller alive and retry
+                return
+
+            serial = self.deck_controller.serial_number()
+            MediaPlayerSetTouchscreenImageTask.n_failed_in_row[serial] = MediaPlayerSetTouchscreenImageTask.n_failed_in_row.get(serial, 0) + 1
+            if MediaPlayerSetTouchscreenImageTask.n_failed_in_row[serial] > 10:
+                log.debug(f"Failed to set touchscreen image for 10 times in a row for deck {serial}. Removing controller")
+
                 self.deck_controller.deck.close()
                 self.deck_controller.media_player.running = False # Set stop flag - otherwise remove_controller will wait until this task is done, which it never will because it waits
                 gl.deck_manager.remove_controller(self.deck_controller)
@@ -482,6 +488,8 @@ class DeckController:
     @log.catch
     def update_all_inputs(self):
         start = time.time()
+        if self.active_page is None:
+            return
         if not self.get_alive(): return
         if self.background.video is not None:
             log.debug("Skipping update_all_inputs because there is a background video -- we will only update the dials (if exists) so as not to effect the video.")
@@ -848,6 +856,9 @@ class DeckController:
         time.sleep(self.TICK_DELAY)
         while self.keep_actions_ticking:
             start = time.time()
+            if self.active_page is None:
+                time.sleep(0.1)
+                continue
             self.mark_page_ready_to_clear(False)
             if not self.screen_saver.showing and True:
                 for t in self.inputs:

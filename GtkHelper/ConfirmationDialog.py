@@ -17,6 +17,7 @@ class ConfirmationDialog(Adw.MessageDialog):
         self.set_close_response("cancel")
         self.set_response_appearance("confirm", Adw.ResponseAppearance.DESTRUCTIVE)
         self.set_body(body)
+        self.set_body_use_markup(True)
 
         self.connect("response", self.on_response)
 

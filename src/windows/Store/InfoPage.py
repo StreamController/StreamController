@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from src.windows.Store.StoreData import PluginData
 
 from GtkHelper.GtkHelper import AttributeRow, OriginalURL
+from GtkHelper.ConfirmationDialog import ConfirmationDialog
 
 # Import globals
 import globals as gl
@@ -173,20 +174,22 @@ class SourceGroup(Adw.PreferencesGroup):
         self.branches_cache: dict[str, list[str]] = {}
         self.tags_cache: dict[str, list[str]] = {}
         self.is_loading_refs = False
-        
+        self.is_applying = False
+        self.previous_selected_index = 0
+
         self.set_margin_top(12)
-        
+
         self.build()
-    
+
     def build(self):
-        self.set_description(gl.lm.get("store.info.source.description") or 
+        self.set_description(gl.lm.get("store.info.source.description") or
                            "Choose to use the store version, a git branch, or a git tag")
-        
+
         self.branch_row = Adw.ComboRow(
             title=gl.lm.get("store.info.source.branch-row.title") or "Source",
             subtitle=gl.lm.get("store.info.source.branch-row.subtitle") or "Select store version, branch, or tag"
         )
-        
+
         self.refresh_button = Gtk.Button(
             icon_name="view-refresh-symbolic",
             valign=Gtk.Align.CENTER,
@@ -195,36 +198,17 @@ class SourceGroup(Adw.PreferencesGroup):
         )
         self.refresh_button.connect("clicked", self.on_refresh_clicked)
         self.refresh_spinner = Gtk.Spinner(spinning=False, visible=False)
-        
+        self.applying_spinner = Gtk.Spinner(spinning=False, visible=False)
+
+        self.branch_row.add_suffix(self.applying_spinner)
         self.branch_row.add_suffix(self.refresh_spinner)
         self.branch_row.add_suffix(self.refresh_button)
         self.add(self.branch_row)
-        
+
         self.branch_model = Gtk.StringList()
         self.branch_row.set_model(self.branch_model)
-        
+
         self.branch_row.connect("notify::selected", self.on_branch_selected)
-        
-        self.status_row = Adw.ActionRow(
-            title=gl.lm.get("store.info.source.status.title") or "Current Status",
-            subtitle=""
-        )
-        self.add(self.status_row)
-        
-        self.apply_row = Adw.ActionRow(
-            title=gl.lm.get("store.info.source.apply.title") or "Apply Now",
-            subtitle=gl.lm.get("store.info.source.apply.subtitle") or "Reinstall plugin with the selected source",
-            activatable=True
-        )
-        self.apply_row.connect("activated", self.on_apply_clicked)
-        
-        self.apply_spinner = Gtk.Spinner(spinning=False)
-        self.apply_icon = Gtk.Image(icon_name="emblem-synchronizing-symbolic")
-        self.apply_row.add_suffix(self.apply_icon)
-        self.apply_row.add_suffix(self.apply_spinner)
-        self.add(self.apply_row)
-        
-        self.is_applying = False
     
     def update_for_plugin(self, plugin_data: "PluginData"):
         """Update the source group for a specific plugin."""
@@ -267,50 +251,62 @@ class SourceGroup(Adw.PreferencesGroup):
                     found_index = self.branch_model.get_n_items() - 1
                 
                 self.branch_row.set_selected(found_index)
-                self.update_status(using_override=True, ref=override_ref)
+                self.previous_selected_index = found_index
             else:
                 self.branch_row.set_selected(0)
-                self.update_status(using_override=False)
+                self.previous_selected_index = 0
         finally:
             self.branch_row.handler_unblock_by_func(self.on_branch_selected)
-        
+
         self.fetch_refs_async()
-    
-    def update_status(self, using_override: bool, ref: str = None):
-        """Update the status row to reflect current state."""
-        if using_override and ref:
-            status = (gl.lm.get("store.info.source.status.using-ref") or 
-                     "Using git ref: {ref}").format(ref=ref)
-            self.status_row.add_css_class("warning")
-        else:
-            status = gl.lm.get("store.info.source.status.using-store") or "Using store version"
-            self.status_row.remove_css_class("warning")
-        
-        self.status_row.set_subtitle(status)
-    
+
     def on_branch_selected(self, combo_row, param):
         """Handle branch selection change."""
         if self.current_plugin_data is None:
             return
-        
+
         plugin_id = self.current_plugin_data.plugin_id
         if plugin_id is None:
             return
-        
+
         selected_index = combo_row.get_selected()
-        if selected_index == Gtk.INVALID_LIST_POSITION:
+        if selected_index == Gtk.INVALID_LIST_POSITION or selected_index == self.previous_selected_index:
             return
-        
+
         selected_text = self.branch_model.get_string(selected_index)
         store_label = gl.lm.get("store.info.source.store-version") or "Store Version (Recommended)"
-        
+
         if selected_index == 0 or selected_text == store_label:
+            self.previous_selected_index = selected_index
             gl.store_backend.remove_plugin_git_override(plugin_id)
-            self.update_status(using_override=False)
+            self.apply_source_change()
         else:
             ref = selected_text
-            gl.store_backend.set_plugin_git_override(plugin_id, ref)
-            self.update_status(using_override=True, ref=ref)
+            dialog = ConfirmationDialog(
+                title=gl.lm.get("store.info.source.confirm.title") or "Switch Source?",
+                body=(gl.lm.get("store.info.source.confirm.body") or
+                     'You are switching to "{ref}". Everything besides the official store version is '
+                     'unverified and can be unsafe. Use at your own risk.').format(ref=ref),
+                confirm=gl.lm.get("store.info.source.confirm.confirm") or "Switch Anyway",
+                transient_for=self.info_page.store_page.store,
+                on_confirm=lambda: self.confirm_branch_switch(plugin_id, ref, selected_index),
+                on_cancel=self.revert_branch_selection
+            )
+            dialog.show()
+
+    def confirm_branch_switch(self, plugin_id: str, ref: str, selected_index: int):
+        """Called when the user confirms switching to an unverified branch/tag."""
+        self.previous_selected_index = selected_index
+        gl.store_backend.set_plugin_git_override(plugin_id, ref)
+        self.apply_source_change()
+
+    def revert_branch_selection(self):
+        """Called when the user cancels the source switch - revert the combo selection."""
+        self.branch_row.handler_block_by_func(self.on_branch_selected)
+        try:
+            self.branch_row.set_selected(self.previous_selected_index)
+        finally:
+            self.branch_row.handler_unblock_by_func(self.on_branch_selected)
     
     def on_refresh_clicked(self, *args):
         """Handle refresh button click."""
@@ -384,9 +380,10 @@ class SourceGroup(Adw.PreferencesGroup):
                         break
             
             self.branch_row.set_selected(new_index)
+            self.previous_selected_index = new_index
         finally:
             self.branch_row.handler_unblock_by_func(self.on_branch_selected)
-    
+
     def show_loading(self, loading: bool):
         """Show or hide the loading spinner."""
         self.refresh_spinner.set_spinning(loading)
@@ -394,11 +391,11 @@ class SourceGroup(Adw.PreferencesGroup):
         self.refresh_button.set_visible(not loading)
         self.refresh_button.set_sensitive(not loading)
     
-    def on_apply_clicked(self, *args):
-        """Handle apply button click - reinstall plugin with selected source."""
+    def apply_source_change(self):
+        """Reinstall the plugin with the newly selected source."""
         if self.is_applying or self.current_plugin_data is None:
             return
-        
+
         if self.current_plugin_data.local_sha is None:
             return
         
@@ -442,9 +439,7 @@ class SourceGroup(Adw.PreferencesGroup):
     
     def show_applying(self, applying: bool):
         """Show or hide the applying spinner."""
-        self.apply_spinner.set_spinning(applying)
-        self.apply_spinner.set_visible(applying)
-        self.apply_icon.set_visible(not applying)
-        self.apply_row.set_sensitive(not applying)
+        self.applying_spinner.set_spinning(applying)
+        self.applying_spinner.set_visible(applying)
         self.branch_row.set_sensitive(not applying)
         self.refresh_button.set_sensitive(not applying)

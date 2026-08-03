@@ -19,6 +19,8 @@ class StoreData:
     is_compatible: bool | None = None
     branch: str = None
     verified: bool = False
+    using_git_override: bool = False # Whether this plugin is using a git branch override
+    is_custom_plugin: bool = False
 
 @dataclass
 class ImageData:

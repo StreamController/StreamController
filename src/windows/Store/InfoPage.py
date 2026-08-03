@@ -45,8 +45,11 @@ class InfoPage(Gtk.Box):
         self.build()
 
     def build(self):
+        self.scrolled_window = Gtk.ScrolledWindow(hexpand=True, vexpand=True, margin_bottom=10)
+        self.append(self.scrolled_window)
+        
         self.clamp = Adw.Clamp(hexpand=True)
-        self.append(self.clamp)
+        self.scrolled_window.set_child(self.clamp)
 
         self.clamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.clamp_box)

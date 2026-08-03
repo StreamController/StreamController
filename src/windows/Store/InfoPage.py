@@ -258,7 +258,11 @@ class SourceGroup(Adw.PreferencesGroup):
         finally:
             self.branch_row.handler_unblock_by_func(self.on_branch_selected)
 
-        self.fetch_refs_async()
+        # Only hit the GitHub API if we haven't already fetched refs for this plugin this
+        # session - avoids burning through GitHub's unauthenticated rate limit (60/hr per IP)
+        # every time this page is opened. Use the refresh button to force an update.
+        if plugin_data.plugin_id not in self.branches_cache or plugin_data.plugin_id not in self.tags_cache:
+            self.fetch_refs_async()
 
     def on_branch_selected(self, combo_row, param):
         """Handle branch selection change."""

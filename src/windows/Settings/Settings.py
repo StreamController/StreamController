@@ -285,16 +285,9 @@ class DataPathGroup(Adw.PreferencesGroup):
         gl.settings_manager.save_static_settings(static_settings)
 
     def on_open_data_path_button_clicked(self, *args):
-        command = ""
-        if is_flatpak():
-            command += "flatpak-spawn --host "
-
-        command += f"xdg-open {self.data_path.get_text()}"
-
-        try:
-            subprocess.check_output(command, shell=True)
-        except subprocess.CalledProcessError:
-            pass
+        path = self.data_path.get_text().strip()
+        uri = Gio.File.new_for_path(path).get_uri()
+        Gio.AppInfo.launch_default_for_uri(uri, None)
 
 
 class GeneralPage(Adw.PreferencesPage):

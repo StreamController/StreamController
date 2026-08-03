@@ -64,14 +64,11 @@ class App(Adw.Application):
         self._held = False
         try:
             _keep_running = gl.settings_manager.get_app_settings().get("system", {}).get("keep-running")
-            if _keep_running:
-                self.hold()
-                self._held = True
+            self.set_keep_running_hold(bool(_keep_running))
         except Exception:
             # If settings aren't ready yet, default to holding; the worst
             # case is the app stays alive until explicit on_quit().
-            self.hold()
-            self._held = True
+            self.set_keep_running_hold(True)
         self.deck_manager = deck_manager
 
         self.register_sigint_handler()
@@ -99,6 +96,17 @@ class App(Adw.Application):
             self.style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
         else:
             self.style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK) # Not everything looks good in light mode at the moment #TODO
+
+    def set_keep_running_hold(self, keep_running: bool) -> None:
+        # Keeps the Gio.Application hold in sync with the keep-running
+        # setting, including when it is toggled while the app is already
+        # running (e.g. from the settings page or the KeepRunningDialog).
+        if keep_running and not self._held:
+            self.hold()
+            self._held = True
+        elif not keep_running and self._held:
+            self.release()
+            self._held = False
 
     def on_activate(self, app):
         log.trace("running: on_activate")
@@ -242,12 +250,8 @@ class App(Adw.Application):
         # Close all decks
         gl.deck_manager.close_all()
         # Stop timer
-        # Balance the self.hold() from __init__ so Gio.Application can clean up.
-        if getattr(self, "_held", False):
-            try:
-                self.release()
-            except Exception:
-                pass
+        # Balance any outstanding hold so Gio.Application can clean up.
+        self.set_keep_running_hold(False)
         log.success("Stopped StreamController. Have a nice day!")
         log.stop()
         sys.exit(0)

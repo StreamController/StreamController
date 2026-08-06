@@ -337,7 +337,7 @@ class PageManagerBackend:
             if page.deck_controller.active_page != page:
                 continue
 
-            page.deck_controller.load_page(page, allow_relaod=True,
+            page.deck_controller.load_page(page, allow_reload=True,
                                            load_brightness=brightness,
                                            load_screensaver=screensaver,
                                            load_background=background,

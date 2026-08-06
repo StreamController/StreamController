@@ -285,16 +285,9 @@ class DataPathGroup(Adw.PreferencesGroup):
         gl.settings_manager.save_static_settings(static_settings)
 
     def on_open_data_path_button_clicked(self, *args):
-        command = ""
-        if is_flatpak():
-            command += "flatpak-spawn --host "
-
-        command += f"xdg-open {self.data_path.get_text()}"
-
-        try:
-            subprocess.check_output(command, shell=True)
-        except subprocess.CalledProcessError:
-            pass
+        path = self.data_path.get_text().strip()
+        uri = Gio.File.new_for_path(path).get_uri()
+        Gio.AppInfo.launch_default_for_uri(uri, None)
 
 
 class GeneralPage(Adw.PreferencesPage):
@@ -719,7 +712,7 @@ class SystemGroup(Adw.PreferencesGroup):
         self.autostart = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-autostart"), subtitle=gl.lm.get("settings-system-settings-autostart-subtitle"), active=True)
         self.add(self.autostart)
 
-        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Works on Gnome, KDE, Cinnamon and Hyprland", active=True)
+        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Works on Gnome, KDE, Cinnamon, Hyprland, and Niri", active=True)
         self.add(self.lock_on_lock_screen)
 
         self.beta_resume_mode = Adw.SwitchRow(title="Use new resume mode (beta)", subtitle="Use new way to resume after suspends - requires restart", active=False)
@@ -745,6 +738,11 @@ class SystemGroup(Adw.PreferencesGroup):
 
         # Save
         self.settings.save_json()
+
+        # Keep the Gio.Application hold in sync so the change applies
+        # immediately, without requiring an app restart.
+        if hasattr(gl, "app"):
+            gl.app.set_keep_running_hold(self.keep_running.get_active())
 
     def on_autostart_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})

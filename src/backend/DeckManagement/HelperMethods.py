@@ -16,7 +16,6 @@ from datetime import datetime
 from functools import lru_cache
 import hashlib
 from io import BytesIO
-import multiprocessing
 import os
 import subprocess
 import matplotlib.font_manager
@@ -35,6 +34,7 @@ from gi.repository import Gdk, Pango
 
 # Import globals
 from autostart import is_flatpak
+from loguru import logger as log
 import globals as gl
 
 
@@ -354,17 +354,18 @@ def sort_times(time_list):
     """
     return sorted(time_list, key=lambda x: datetime.fromisoformat(x))
 
-
-def run_command(command):
+def run_command(command: str):
     if command is None:
         return
 
+    argv = command.split(" ")
     if is_flatpak():
-        command = "flatpak-spawn --host " + command
-
-    p = multiprocessing.Process(target=subprocess.Popen, args=[command], kwargs={
-                                "shell": True, "start_new_session": True, "stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL, "cwd": os.path.expanduser("~")})
-    p.start()
+        argv = ["flatpak-spawn", "--host"] + argv
+    try:
+        subprocess.Popen(argv, start_new_session=True, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=os.path.expanduser("~"))
+    except (FileNotFoundError, OSError) as e:
+        log.error(f"Failed to run command {" ".join(argv)}: {e}")
 
 def open_web(url):
     if not url.startswith("http"):

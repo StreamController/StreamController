@@ -152,7 +152,7 @@ class MenuButton(Gtk.MenuButton):
 
         self.selected_file = None
 
-        page_name = os.path.splitext(os.path.basename(page_path))[0]
+        page_name = name
         try:
             page_path = gl.page_manager.add_page(page_name, import_dict)
         except FileExistsError:

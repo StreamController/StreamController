@@ -37,9 +37,12 @@ from StreamDeck.DeviceManager import DeviceManager
 import globals as gl
 
 if not gl.IS_MAC:
+    # dbus-python is used for blocking method calls only, so its GLib main loop
+    # is deliberately never installed. Attaching a connection to the main loop
+    # makes dbus-python rebuild that connection's GSources from whichever thread
+    # sends a message, which corrupts them once anything calls D-Bus off the
+    # main thread. Use GDBus (Gio) for signals and exported objects instead.
     import dbus
-    import dbus.service
-    from dbus.mainloop.glib import DBusGMainLoop
 
 # Import own modules
 from src.app import App
@@ -548,7 +551,6 @@ def main():
                     'GSK_RENDERER=ngl to your "/etc/environment" file')
 
     if not gl.IS_MAC:
-        DBusGMainLoop(set_as_default=True)
         # Dbus
         quit_running()
 

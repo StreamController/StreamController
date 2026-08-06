@@ -116,7 +116,9 @@ class VideoFrameCache:
 
     def _fast_cache_key(self) -> str:
         stat = os.stat(self.video_path)
-        return hashlib.md5(f"{stat.st_mtime_ns}_{stat.st_size}".encode()).hexdigest()
+        return hashlib.md5(
+            f"{os.path.abspath(self.video_path)}_{stat.st_mtime_ns}_{stat.st_size}".encode()
+        ).hexdigest()
 
     def _is_gif(self) -> bool:
         return os.path.splitext(self.video_path)[1].lower() == ".gif"

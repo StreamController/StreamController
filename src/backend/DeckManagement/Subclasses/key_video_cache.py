@@ -19,6 +19,7 @@ import os
 import sys
 import threading
 import time
+import weakref
 from PIL import Image, ImageOps
 import cv2
 from loguru import logger as log
@@ -29,7 +30,10 @@ VID_CACHE = os.path.join(gl.DATA_PATH, "cache", "videos")
 
 class VideoFrameCache:
     # Registry: same (video_path, size) → same instance, no double-loading.
-    _registry: dict[tuple, "VideoFrameCache"] = {}
+    # Weak-valued so an entry is freed once no InputVideo/KeyVideo still
+    # references it, instead of caching every video ever shown for the
+    # life of the process.
+    _registry: "weakref.WeakValueDictionary[tuple, VideoFrameCache]" = weakref.WeakValueDictionary()
     _registry_lock = threading.Lock()
 
     # Per-key locks: ensure only one thread runs __init__ for a given key.

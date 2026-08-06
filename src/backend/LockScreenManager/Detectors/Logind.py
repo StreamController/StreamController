@@ -6,6 +6,8 @@ if TYPE_CHECKING:
 
 import os
 
+from gi.repository import Gio
+
 # Import globals first to get IS_MAC
 import globals as gl
 
@@ -20,20 +22,18 @@ class LogindLockScreenDetector(LockScreenDetector):
 
         self.setup_dbus()
 
-    def on_lock(self):
+    def on_lock(self, *_args):
         self.lock_screen_manager.lock(True)
 
-    def on_unlock(self):
+    def on_unlock(self, *_args):
         self.lock_screen_manager.lock(False)
 
     def setup_dbus(self):
         if gl.IS_MAC:
             return
 
-        # Use the D-Bus MainLoop with glib integration
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
-        # Connect to the System Bus
+        # Resolving the session path only needs blocking calls, which
+        # dbus-python supports without a main loop attached.
         bus = dbus.SystemBus()
 
         # Resolve the session path for the current user session
@@ -41,14 +41,28 @@ class LogindLockScreenDetector(LockScreenDetector):
 
         log.info(f"Logind lock detector active ({session_path})")
 
-        session_obj = bus.get_object("org.freedesktop.login1", session_path)
-        session_obj.connect_to_signal(
-            "Lock", self.on_lock,
-            dbus_interface="org.freedesktop.login1.Session"
+        # This runs on the LockScreenManager setup thread, and dbus-python's
+        # GLib main loop integration is not thread safe, so signals are
+        # subscribed to via GDBus (Gio) instead of connect_to_signal(), which
+        # would require installing that main loop.
+        self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+        self.lock_subscription_id = self.bus.signal_subscribe(
+            "org.freedesktop.login1",
+            "org.freedesktop.login1.Session",
+            "Lock",
+            session_path,
+            None,
+            Gio.DBusSignalFlags.NONE,
+            self.on_lock
         )
-        session_obj.connect_to_signal(
-            "Unlock", self.on_unlock,
-            dbus_interface="org.freedesktop.login1.Session"
+        self.unlock_subscription_id = self.bus.signal_subscribe(
+            "org.freedesktop.login1",
+            "org.freedesktop.login1.Session",
+            "Unlock",
+            session_path,
+            None,
+            Gio.DBusSignalFlags.NONE,
+            self.on_unlock
         )
 
     def _resolve_session_path(self, bus) -> str:

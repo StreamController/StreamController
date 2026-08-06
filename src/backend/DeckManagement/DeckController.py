@@ -1156,12 +1156,11 @@ class BackgroundVideo(BackgroundVideoCache):
         region = (start_x, start_y, start_x + key_width, start_y + key_height)
         segment = image.crop(region)
 
-        # Create a new key-sized image, and paste in the cropped section of the
-        # larger image.
-        key_image = PILHelper.create_key_image(deck)
-        key_image.paste(segment)
-
-        return key_image
+        # Return the cropped segment directly, preserving alpha (matches
+        # BackgroundImage.crop_key_image_from_deck_sized_image above) instead
+        # of pasting onto an opaque RGB key image, which silently dropped
+        # transparency for GIF backgrounds.
+        return segment.convert("RGBA")
 
 class KeyGIF(SingleKeyAsset):
     def __init__(self, controller_key: "ControllerKey", gif_path: str, fps: int = 30, loop: bool = True):

@@ -95,6 +95,21 @@ class WindowGrabber:
 
         return matching_windows
 
+    def recheck_active_window(self) -> None:
+        """
+        Re-evaluates the currently active window against the auto-change settings.
+        Used to immediately apply changes made in the page editor without waiting
+        for the next real window focus-change event.
+        """
+        if self.integration is None:
+            return
+
+        window = self.integration.get_active_window()
+        if window is None:
+            return
+
+        self.on_active_window_changed(window)
+
     def get_is_window_matching(self, window: Window, class_regex: str, title_regex: str) -> bool:
         if None in (window.wm_class, window.title, class_regex, title_regex):
             return False
@@ -115,8 +130,8 @@ class WindowGrabber:
             found_page = False
             for page_path in gl.page_manager.get_pages():
                 info = gl.page_manager.get_auto_change_settings(page_path)
-                wm_regex = info.get("wm-class")
-                title_regex = info.get("title")
+                wm_regex = info.get("wm-class", ".*")
+                title_regex = info.get("title", ".*")
                 enabled = info.get("enable", False)
                 decks = info.get("decks", [])
                 if not enabled:
@@ -124,7 +139,7 @@ class WindowGrabber:
 
                 if self.get_is_window_matching(window, wm_regex, title_regex):
                     if not deck_controller.deck.is_open():
-                        return
+                        continue
                     if deck_controller.serial_number() not in decks:
                         continue
 

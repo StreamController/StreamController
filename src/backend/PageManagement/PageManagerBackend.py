@@ -536,7 +536,7 @@ class PageManagerBackend:
         page_settings = self.get_page_settings(path)
         return page_settings.get("auto-change", {})
 
-    def set_auto_change_settings(self, path: str, enable: bool = False, wm_class: str = "", regex_title: str = "", stay_on_page: bool = False, decks: list[str] = None):
+    def set_auto_change_settings(self, path: str, enable: bool = False, wm_class: str = ".*", regex_title: str = ".*", stay_on_page: bool = False, decks: list[str] = None):
         settings = self.get_page_settings(path)
 
         decks = decks or []

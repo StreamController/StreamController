@@ -95,12 +95,17 @@ class ActionGroup(Adw.PreferencesGroup):
 class ActionExpanderRow(BetterExpander):
     def __init__(self, action_group):
         super().__init__(title=gl.lm.get("action-editor-header"), subtitle=gl.lm.get("action-editor-expander-subtitle"))
+        # Scopes the drop indicator styling to this expander's rows
+        self.add_css_class("action-expander")
         self.set_expanded(True)
         self.active_identifier = None
         self.action_group = action_group
         self.active_state = None
 
-        self.preview = None
+        # Bumped on every drop indicator change to invalidate pending clear requests
+        self.drop_indicator_token = 0
+        # Row the pointer was last over, so a stale "leave" cannot clear a newer indicator
+        self.drop_indicator_owner = None
 
         self.build()
 
@@ -166,22 +171,6 @@ class ActionExpanderRow(BetterExpander):
             if action == child:
                 return i
             
-    def add_drop_preview(self, index):
-        #TODO: Fix this function, it does not work
-        # return
-        if hasattr(self, "preview"):
-            if self.preview != None:
-                # self.reorder_child_after(self.preview, self.get_rows()[index])
-                GLib.idle_add(self.reorder_child_after, self.preview, self.get_rows()[index])
-                return
-
-
-        self.preview = Adw.PreferencesRow(title="Preview", height_request=100)
-        self.preview.set_sensitive(False)
-        self.add_row(self.preview)
-
-        self.reorder_child_after(self.preview, self.get_rows()[index])
-
     def reorder_child_after(self, child, after):
         super().reorder_child_after(child, after)
         # Reordering happens in place, so the rows keep whatever index they were
@@ -197,21 +186,94 @@ class ActionExpanderRow(BetterExpander):
             row.index = index
             index += 1
 
-    def reorder_index_after(self, lst, move_index, after_index):
-        if move_index < 0 or move_index >= len(lst):
-            raise ValueError("Move index out of range.")
-        
-        if after_index < 0 or after_index >= len(lst):
-            raise ValueError("After index out of range.")
+    def get_reorderable_rows(self) -> list:
+        """Every row that holds an action, in display order. Indices match row.index."""
+        return [row for row in self.get_rows() or [] if row is not self.add_action_button]
 
-        move_item = lst.pop(move_index)
-        lst.insert(after_index + 1 if move_index > after_index else after_index, move_item)
-        
+    def show_drop_indicator(self, slot: int, hovered_row = None) -> None:
+        """Draw a single line in the gap at `slot`.
+
+        A gap is identified by the position an action would be inserted at, so gap 0 is
+        above the first row and gap n is below the last one. Each gap gets exactly one
+        line, no matter which of the two adjacent rows the pointer happens to be over.
+        """
+        self.drop_indicator_token += 1
+        self.drop_indicator_owner = hovered_row
+
+        rows = self.get_reorderable_rows()
+        if len(rows) == 0:
+            return
+
+        slot = max(0, min(slot, len(rows)))
+
+        for row in rows:
+            row.remove_css_class("drop-above")
+            row.remove_css_class("drop-below")
+
+        if slot == 0:
+            rows[0].add_css_class("drop-above")
+        else:
+            rows[slot - 1].add_css_class("drop-below")
+
+    def clear_drop_indicators(self) -> None:
+        self.drop_indicator_token += 1
+        self.drop_indicator_owner = None
+        for row in self.get_reorderable_rows():
+            row.remove_css_class("drop-above")
+            row.remove_css_class("drop-below")
+
+    def request_clear_drop_indicators(self, leaving_row) -> None:
+        """Clear the indicator once the pointer really has left the list.
+
+        Dragging from row A onto row B fires A's "leave" and B's "motion", and GTK does
+        not promise an order. Both are handled: a leave from a row that no longer owns
+        the indicator is ignored outright, and a leave that arrives first is deferred to
+        an idle callback, which runs below event priority so a following motion cancels
+        it by bumping the token.
+        """
+        if self.drop_indicator_owner is not leaving_row:
+            return
+
+        self.drop_indicator_token += 1
+        token = self.drop_indicator_token
+        GLib.idle_add(self.clear_drop_indicators_if_unchanged, token)
+
+    def clear_drop_indicators_if_unchanged(self, token: int) -> bool:
+        if token == self.drop_indicator_token:
+            self.clear_drop_indicators()
+        return False
+
+    def reorder_child_to_index(self, from_index: int, to_index: int) -> None:
+        """Move the row at from_index to to_index, keeping the add button last."""
+        rows = [row for row in self.get_rows() or [] if row is not self.add_action_button]
+
+        if not 0 <= from_index < len(rows) or not 0 <= to_index < len(rows):
+            log.warning(f"Cannot move row {from_index} to {to_index}, only {len(rows)} rows present")
+            return
+
+        self.move_index_to(rows, from_index, to_index)
+
+        self.clear()
+        for row in rows:
+            self.add_row(row)
+        self.add_row(self.add_action_button)
+
+        self.update_indices()
+
+    def move_index_to(self, lst, from_index, to_index):
+        if from_index < 0 or from_index >= len(lst):
+            raise ValueError("From index out of range.")
+
+        if to_index < 0 or to_index >= len(lst):
+            raise ValueError("To index out of range.")
+
+        lst.insert(to_index, lst.pop(from_index))
+
         return lst
-    
-    def reorder_action_objects(self, action_objects, move_index, after_index):
+
+    def reorder_action_objects(self, action_objects, from_index, to_index):
         objects = list(action_objects.values())
-        reordered = self.reorder_index_after(objects, move_index, after_index)
+        reordered = self.move_index_to(objects, from_index, to_index)
 
         new = {}
         for i, obj in enumerate(reordered):
@@ -219,29 +281,27 @@ class ActionExpanderRow(BetterExpander):
 
         return new
 
+    def apply_drop(self, from_index: int, to_index: int) -> bool:
+        """Deferred handler for a completed drag and drop. Runs as a one shot idle callback."""
+        self.reorder_child_to_index(from_index, to_index)
+        self.reorder_actions(from_index, to_index)
+        return False
 
-    def update_action_objects_order(self) -> None:
-        new_objects = {}
-        for i, row in enumerate(self.get_rows()):
-            if not isinstance(row, ActionRow):
-                continue
-            new_objects[i] = row.action_object
-
-
-    def reorder_actions(self, move_index, after_index):
+    def reorder_actions(self, from_index, to_index):
         controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
 
-        actions = controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)]["actions"]
-        reordered = self.reorder_index_after(copy(actions), move_index, after_index)
+        state_dict = controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)]
+
+        reordered = self.move_index_to(copy(state_dict["actions"]), from_index, to_index)
 
         action_objects = controller.active_page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state]
-        reordered_action_objects = self.reorder_action_objects(action_objects, move_index, after_index)
+        reordered_action_objects = self.reorder_action_objects(action_objects, from_index, to_index)
 
 
         # Reorder in page dict
-        controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)]["actions"] = reordered
+        state_dict["actions"] = reordered
 
         # Reorder in action objects
         controller.active_page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state] = reordered_action_objects
@@ -254,18 +314,21 @@ class ActionExpanderRow(BetterExpander):
             action_order_map[i] = list(reordered_action_objects.values()).index(action)
 
 
-        image_control_action_index = controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)].get("image-control-action")
-        controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)]["image-control-action"] = action_order_map.get(image_control_action_index, None)
+        image_control_action_index = state_dict.get("image-control-action")
+        state_dict["image-control-action"] = action_order_map.get(image_control_action_index, None)
 
-        label_control_actions = controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)].get("label-control-actions")
+        background_control_action_index = state_dict.get("background-control-action")
+        state_dict["background-control-action"] = action_order_map.get(background_control_action_index, None)
+
+        label_control_actions = state_dict.get("label-control-actions") or []
         for i, label_control_action in enumerate(label_control_actions):
             label_control_actions[i] = action_order_map.get(label_control_action)
-        controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)]["label-control-actions"] = label_control_actions
-        
+        state_dict["label-control-actions"] = label_control_actions
+
         controller.active_page.save()
 
         controller.load_page(controller.active_page)
- 
+
     def update_comment_for_index(self, action_index):
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
@@ -382,7 +445,7 @@ class ActionRow(Adw.ActionRow):
         self.expander = expander
         self.build()
         self.update_allow_box_visibility()
-        # self.init_dnd() #FIXME: Add drag and drop
+        self.init_dnd()
 
     def build(self):
         # self.overlay = Gtk.Overlay()
@@ -438,21 +501,14 @@ class ActionRow(Adw.ActionRow):
             # self.left_top_box.set_
 
         ## Edit buttons
-        self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.END, valign=Gtk.Align.CENTER, css_classes=["linked"])
+        self.button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.END, valign=Gtk.Align.CENTER)
         self.main_box.append(self.button_box)
         # self.overlay.add_overlay(self.button_box)
 
-        self.up_button = Gtk.Button(icon_name="go-up-symbolic")
-        self.up_button.connect("clicked", self.on_click_up)
-        self.button_box.append(self.up_button)
-
-        self.down_button = Gtk.Button(icon_name="go-down-symbolic")
-        self.down_button.connect("clicked", self.on_click_down)
-        self.button_box.append(self.down_button)
-
-        self.remove_button = Gtk.Button(icon_name="user-trash-symbolic", css_classes=["destructive-action"])
-        # self.button_box.append(self.remove_button) #TODO
-        # self.remove_button.connect("clicked", self.on_click_remove)
+        self.drag_handle = Gtk.Image(icon_name="list-drag-handle-symbolic", css_classes=["dim-label", "action-row-drag-handle"],
+                                     tooltip_text="Drag to reorder this action")
+        self.drag_handle.set_cursor(Gdk.Cursor.new_from_name("grab"))
+        self.button_box.append(self.drag_handle)
 
     def update_allow_box_visibility(self):
         self.allow_box.set_visible(True) #TODO
@@ -564,30 +620,6 @@ class ActionRow(Adw.ActionRow):
 
         self.allow_label_toggle.connect("toggled", self.on_allow_label_toggled)
         
-    def on_click_up(self, button):
-        index = self.index
-        if index <= 0:
-            return
-
-        one_up_child = self.expander.get_rows()[index - 1]
-        if one_up_child is self.expander.add_action_button:
-            return
-        self.expander.reorder_child_after(self, one_up_child)
-        self.expander.reorder_actions(index - 1, index)
-
-
-    def on_click_down(self, button):
-        index = self.index
-        rows = self.expander.get_rows()
-        if index + 1 >= len(rows):
-            return
-
-        one_down_child = rows[index + 1]
-        if one_down_child is self.expander.add_action_button:
-            return
-        self.expander.reorder_child_after(self, one_down_child)
-        self.expander.reorder_actions(index, index + 1)
-
     def on_click_remove(self, button):
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
@@ -618,62 +650,66 @@ class ActionRow(Adw.ActionRow):
             
         
     def init_dnd(self):
-        if self.index == None:
-            return
-        # DnD Source
-        dnd_source = Gtk.DragSource()
-        dnd_source.set_actions(Gdk.DragAction.MOVE)
-        dnd_source.connect("prepare", self.on_dnd_prepare)
-        dnd_source.connect("drag-begin", self.on_dnd_begin)
-        dnd_source.connect("drag-end", self.on_dnd_end)
+        # The drag source sits on the handle only, otherwise it would compete with
+        # the row's own "activated" signal that opens the action configurator.
+        drag_source = Gtk.DragSource(actions=Gdk.DragAction.MOVE)
+        drag_source.connect("prepare", self.on_drag_prepare)
+        drag_source.connect("drag-begin", self.on_drag_begin)
+        drag_source.connect("drag-end", self.on_drag_end)
+        self.drag_handle.add_controller(drag_source)
 
-        self.add_controller(dnd_source)
+        # The drop target covers the whole row, so any part of it is a valid drop zone.
+        drop_target = Gtk.DropTarget.new(ActionRow, Gdk.DragAction.MOVE)
+        drop_target.connect("motion", self.on_drop_motion)
+        drop_target.connect("leave", self.on_drop_leave)
+        drop_target.connect("drop", self.on_drop)
+        self.add_controller(drop_target)
 
-        # DnD Target
-        dnd_target = Gtk.DropTarget.new(self, Gdk.DragAction.MOVE)
-        dnd_target.set_gtypes([ActionRow])
-        dnd_target.connect("drop", self.on_dnd_drop)
-        dnd_target.connect("motion", self.on_dnd_motion)
-
-        self.add_controller(dnd_target)
-
-    def on_dnd_begin(self, drag_source, data):
-        content = data.get_content()
-
-    def on_dnd_end(self, drag_source, data, flag):
-        pass
-
-    def on_dnd_prepare(self, drag_source, x, y):
+    def on_drag_prepare(self, drag_source, x, y):
         drag_source.set_icon(
             Gtk.WidgetPaintable.new(self),
             self.get_width() / 2, self.get_height() / 2
         )
-        content = Gdk.ContentProvider.new_for_value(self)
-        return content
+        return Gdk.ContentProvider.new_for_value(self)
 
-    def on_dnd_drop(self, drop_target, value, x, y):
-        if not isinstance(value, ActionRow):
+    def on_drag_begin(self, drag_source, drag):
+        self.add_css_class("action-row-dragging")
+
+    def on_drag_end(self, drag_source, drag, delete_data):
+        self.remove_css_class("action-row-dragging")
+        self.expander.clear_drop_indicators()
+
+    def get_drop_slot(self, y) -> int:
+        """The gap the pointer is in: above this row, or below it."""
+        return self.index if y < self.get_height() / 2 else self.index + 1
+
+    def on_drop_motion(self, drop_target, x, y):
+        self.expander.show_drop_indicator(self.get_drop_slot(y), self)
+        return Gdk.DragAction.MOVE
+
+    def on_drop_leave(self, drop_target):
+        self.expander.request_clear_drop_indicators(self)
+
+    def on_drop(self, drop_target, value, x, y):
+        self.expander.clear_drop_indicators()
+
+        if not isinstance(value, ActionRow) or value.expander is not self.expander:
             return False
-        
-        self.sidebar.key_editor.action_editor.action_group.expander.reorder_child_after(value, self)
+
+        from_index = value.index
+        # First an insertion slot, then compensated for the row that gets removed
+        # ahead of it when dragging downwards.
+        to_index = self.get_drop_slot(y)
+        if from_index < to_index:
+            to_index -= 1
+
+        if to_index == from_index:
+            return True
+
+        # reorder_actions() tears down and rebuilds this very widget tree, which must
+        # not happen while the drop signal is still being emitted.
+        GLib.idle_add(self.expander.apply_drop, from_index, to_index)
         return True
-        # Remove preview
-        index = self.sidebar.key_editor.action_editor.action_group.expander.get_index_of_child(self.sidebar.key_editor.action_editor.action_group.expander.preview)
-        self.sidebar.key_editor.action_editor.action_group.expander.remove(self.sidebar.key_editor.action_editor.action_group.expander.preview)
-        self.sidebar.key_editor.action_editor.action_group.expander.actions.pop(index)
-        return True
-    
-    def on_dnd_motion(self, drop_target, x, y):
-        if y > self.get_height() / 2:
-            self.sidebar.key_editor.action_editor.action_group.expander.add_drop_preview(self.index-1)
-        else:
-            self.sidebar.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
-        return Gdk.DragAction.MOVE
-
-
-        self.sidebar.key_editor.action_editor.action_group.expander.add_drop_preview(self.index)
-
-        return Gdk.DragAction.MOVE
 
     def on_click(self, button):
         self.sidebar.action_configurator.load_for_action(self.action_object, self.index)

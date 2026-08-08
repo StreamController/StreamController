@@ -304,6 +304,30 @@
 .action-row-button {
   min-height: 75px;
 }
+
+/* Drag and drop reordering of action rows */
+.action-row-drag-handle {
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
+row.action-row-dragging {
+  opacity: 0.35;
+}
+
+/* libadwaita outlines the whole hovered row on :drop(active), which reads as a second
+   snap line right next to ours. We draw a single line in the target gap instead. */
+.action-expander row:drop(active) {
+  box-shadow: none;
+}
+
+.action-expander row.drop-above {
+  box-shadow: inset 0 3px 0 0 var(--accent-color);
+}
+
+.action-expander row.drop-below {
+  box-shadow: inset 0 -3px 0 0 var(--accent-color);
+}
 .sidebar-color {
   /* background-color: sidebar_bg_color; */
   background-color: #303030;

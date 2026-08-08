@@ -182,9 +182,20 @@ class ActionExpanderRow(BetterExpander):
 
         self.reorder_child_after(self.preview, self.get_rows()[index])
 
+    def reorder_child_after(self, child, after):
+        super().reorder_child_after(child, after)
+        # Reordering happens in place, so the rows keep whatever index they were
+        # built with. Refresh them here to keep self.index the single source of
+        # truth for every row's position.
+        self.update_indices()
+
     def update_indices(self):
-        for i, row in enumerate(self.get_rows()):
-            row.index = i
+        index = 0
+        for row in self.get_rows() or []:
+            if row is self.add_action_button:
+                continue
+            row.index = index
+            index += 1
 
     def reorder_index_after(self, lst, move_index, after_index):
         if move_index < 0 or move_index >= len(lst):
@@ -553,28 +564,30 @@ class ActionRow(Adw.ActionRow):
 
         self.allow_label_toggle.connect("toggled", self.on_allow_label_toggled)
         
-    def get_own_index(self) -> int:
-        return self.expander.get_index_of_child(self)
-
     def on_click_up(self, button):
-        one_up_child = self.expander.get_rows()[self.index - 1]
-        if isinstance(one_up_child, AddActionButtonRow.button):
+        index = self.index
+        if index <= 0:
             return
-        self.expander.reorder_child_after(self, one_up_child.button)
-        self.expander.reorder_actions(self.index - 1, self.index)
 
-        # self.expander.update_indices()
+        one_up_child = self.expander.get_rows()[index - 1]
+        if one_up_child is self.expander.add_action_button:
+            return
+        self.expander.reorder_child_after(self, one_up_child)
+        self.expander.reorder_actions(index - 1, index)
 
 
     def on_click_down(self, button):
-        one_down_child = self.expander.get_rows()[self.index + 1]
-        if isinstance(one_down_child, AddActionButtonRow.button):
+        index = self.index
+        rows = self.expander.get_rows()
+        if index + 1 >= len(rows):
             return
-        self.expander.reorder_child_after(self, one_down_child.button)
-        self.expander.reorder_actions(self.index, self.index + 1)
 
-        # self.expander.update_indices()
-        
+        one_down_child = rows[index + 1]
+        if one_down_child is self.expander.add_action_button:
+            return
+        self.expander.reorder_child_after(self, one_down_child)
+        self.expander.reorder_actions(index, index + 1)
+
     def on_click_remove(self, button):
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:

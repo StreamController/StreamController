@@ -1311,6 +1311,38 @@ class DeckController:
             kwargs={},
         ))
 
+    def stop_reader(self, timeout: float = 2) -> None:
+        """
+        Stop the reader thread of the StreamDeck library and wait for it to exit.
+
+        This has to happen before the device is closed. A reader that is still
+        running reads a closed handle, ends up in its TransportError handler and -
+        because the deck is still plugged in - reopens the device as if we had just
+        resumed from suspend. The process then exits with an open HID device, which
+        makes libusb abort in usbi_mutex_destroy() (see issue #631).
+
+        Note that self.deck is a BetterDeck, so the device itself has to be
+        unwrapped - the wrapper does not forward attribute assignments.
+        """
+        device = getattr(self.deck, "deck", self.deck)
+        if not hasattr(device, "read_thread"):
+            # Fake and remote decks have no reader thread
+            return
+
+        # Don't let the reader bring the device back up while we are closing it
+        device.reconnect_after_suspend = False
+        device.run_read_thread = False
+
+        read_thread = device.read_thread
+        if read_thread is None or read_thread is threading.current_thread():
+            return
+
+        read_thread.join(timeout=timeout)
+        if read_thread.is_alive():
+            # device.id() is the cached device path - unlike the serial number it
+            # does not talk to a deck we are about to close
+            log.error(f"Reader thread of deck {device.id()} did not exit in time")
+
     def delete(self):
         if hasattr(self, "active_page"):
             if self.active_page is not None:
@@ -1320,7 +1352,7 @@ class DeckController:
             self.media_player.stop()
 
         self.keep_actions_ticking = False
-        self.deck.run_read_thread = False
+        self.stop_reader()
 
     def get_alive(self) -> bool:
         try:

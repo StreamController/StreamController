@@ -211,6 +211,16 @@ class DeckManager:
             # add_page().
             GLib.idle_add(gl.app.main_win.leftArea.deck_stack.remove_page, deck_controller)
         deck_controller.delete()
+
+        # delete() stops the reader thread, which up to now was the only thing that
+        # ever closed the device on a disconnect. A device left open makes libusb
+        # abort once the process exits (see issue #631)
+        try:
+            if deck_controller.deck is not None and deck_controller.deck.is_open():
+                deck_controller.deck.close()
+        except Exception as e:
+            log.error(f"Failed to close deck of removed controller. Error: {e}")
+
         del deck_controller
 
     def get_controller_for_deck(self, deck: StreamDeck) -> DeckController | None:
@@ -242,14 +252,32 @@ class DeckManager:
     def close_all(self):
         log.info("Closing all decks")
         for controller in self.deck_controller:
+            # continue, not return - one deck that is already gone must not keep
+            # the remaining ones open. An open HID device at interpreter exit makes
+            # libusb abort (see issue #631)
             if controller.deck is None:
-                return
+                continue
             if not controller.deck.is_open():
-                return
-            
-            log.info(f"Closing deck: {controller.deck.get_serial_number()}")
-            controller.clear()
-            controller.deck.close()
+                continue
+
+            try:
+                log.info(f"Closing deck: {controller.deck.get_serial_number()}")
+            except Exception as e:
+                log.error(f"Failed to get serial number of deck to close. Error: {e}")
+
+            # The reader thread has to be gone before the device is closed,
+            # see DeckController.stop_reader()
+            controller.stop_reader()
+
+            try:
+                controller.clear()
+            except Exception as e:
+                log.error(f"Failed to clear deck before closing it. Error: {e}")
+
+            try:
+                controller.deck.close()
+            except Exception as e:
+                log.error(f"Failed to close deck. Error: {e}")
 
     def stop_usb_monitoring(self):
         self.usb_monitor.stop_monitoring(timeout=2)

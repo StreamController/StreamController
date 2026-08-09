@@ -2216,6 +2216,19 @@ class ControllerInput:
         # final state gets rendered once via update_all_inputs
         self._suppress_render: bool = False
 
+        # Renders are serialized per input. get_current_image() samples state that
+        # other threads mutate while it runs - most notably press_state, which the
+        # deck read thread flips in event_callback while the media player thread is
+        # rendering the page that the very same press just loaded. Without this an
+        # older render can finish last and overwrite the newer one in the media
+        # player queue, leaving e.g. the pressed (shrunk) image of a key that has
+        # already been released.
+        self._render_lock = threading.RLock()
+
+        # An update that arrived while renders were suppressed, to be replayed once
+        # the suppression window closes
+        self._render_pending: bool = False
+
         self.states: dict[int, ControllerInputState] = {
             0: self.ControllerStateClass(self, 0),
         }
@@ -2228,6 +2241,12 @@ class ControllerInput:
 
     def update(self) -> None:
         pass
+
+    def _flush_suppressed_render(self) -> None:
+        """Replay an update that got dropped while renders were suppressed."""
+        if not self._render_pending:
+            return
+        self.update()
 
     def event_callback(self) -> None:
         pass
@@ -2465,35 +2484,45 @@ class ControllerKey(ControllerInput):
 
     def update(self, force: bool = False, priority: int = TASK_PRIORITY_NORMAL):
         if self._suppress_render:
+            # Remember it so a press/release that lands in the suppression window
+            # isn't lost - see _flush_suppressed_render()
+            self._render_pending = True
             return
-        image = self.get_current_image()
 
-        # Quick hash check - skip expensive conversion if image unchanged
-        img_hash = hash(image.tobytes())
-        if not force and img_hash == getattr(self, '_last_img_hash', None):
-            image.close()
-            return
-        self._last_img_hash = img_hash
+        # Held across render and hand off, so that a render started earlier can never
+        # win over one started later - see _render_lock
+        with self._render_lock:
+            self._render_pending = False
 
-        # Handle transparency properly - composite RGBA onto RGB to preserve smooth edges
-        if image.mode == "RGBA":
-            rgb_background = Image.new("RGB", image.size, (0, 0, 0))
-            rgb_background.paste(image, (0, 0), image)
-            rgb_image = rgb_background.rotate(self.deck_controller.deck.get_rotation())
-        else:
-            rgb_image = image.convert("RGB").rotate(self.deck_controller.deck.get_rotation())
+            image = self.get_current_image()
 
-        if self.deck_controller.is_visual():
-            native_image = PILHelper.to_native_key_format(self.deck_controller.deck, rgb_image)
-            rgb_image.close()
-            self.deck_controller.media_player.add_image_task(
-                self.index,
-                native_image,
-                priority=priority,
-                identifier=self.identifier,
-            )
+            # Quick hash check - skip expensive conversion if image unchanged
+            img_hash = hash(image.tobytes())
+            if not force and img_hash == getattr(self, '_last_img_hash', None):
+                image.close()
+                return
+            self._last_img_hash = img_hash
 
-        del rgb_image
+            # Handle transparency properly - composite RGBA onto RGB to preserve smooth edges
+            if image.mode == "RGBA":
+                rgb_background = Image.new("RGB", image.size, (0, 0, 0))
+                rgb_background.paste(image, (0, 0), image)
+                rgb_image = rgb_background.rotate(self.deck_controller.deck.get_rotation())
+            else:
+                rgb_image = image.convert("RGB").rotate(self.deck_controller.deck.get_rotation())
+
+            if self.deck_controller.is_visual():
+                native_image = PILHelper.to_native_key_format(self.deck_controller.deck, rgb_image)
+                rgb_image.close()
+                self.deck_controller.media_player.add_image_task(
+                    self.index,
+                    native_image,
+                    priority=priority,
+                    identifier=self.identifier,
+                )
+
+            del rgb_image
+
         self.set_ui_key_image(image)
 
     def get_active_state(self) -> "ControllerKeyState":
@@ -2540,7 +2569,11 @@ class ControllerKey(ControllerInput):
         self.press_state = press_state
         self.deck_controller.media_player.boost_input_priority(self.identifier)
 
-        self.update()
+        # force, because _last_img_hash only tracks what was rendered, not what the
+        # deck actually received - a render whose image task got dropped (page load,
+        # clear_media_player_tasks) would otherwise make this one a no-op and leave
+        # the key showing the wrong press state
+        self.update(force=True)
 
         active_state = self.get_active_state()
         if press_state: # Key down
@@ -2788,6 +2821,10 @@ class ControllerKey(ControllerInput):
         if update:
             self.set_state(old_state_index)
             self.update()
+        else:
+            # A key press or release that landed inside a suppression window above
+            # never got drawn - draw it now that the state is fully loaded
+            self._flush_suppressed_render()
 
     def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False) -> None:
         old_state = self.state

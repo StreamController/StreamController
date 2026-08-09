@@ -221,7 +221,9 @@ class BetterDeck():
         """
         def remapper_callback(deck, key, state):
             logical_key = self.get_logical_index(key)
-            callback(deck, logical_key, state)
+            # Pass self and not the raw deck so that callers always see the
+            # rotation aware layout
+            callback(self, logical_key, state)
 
         self.deck.set_key_callback(remapper_callback)
 
@@ -243,7 +245,7 @@ class BetterDeck():
         """
         async def remapper_callback(deck, key, state):
             logical_key = self.get_logical_index(key)
-            await async_callback(deck, logical_key, state)
+            await async_callback(self, logical_key, state)
 
         self.set_key_callback_async(remapper_callback, loop)
 
@@ -264,7 +266,10 @@ class BetterDeck():
         :param function callback: Callback function to fire each time a button
                                 state changes.
         """
-        self.deck.set_dial_callback(callback)
+        def remapper_callback(deck, dial, *args, **kwargs):
+            callback(self, self.get_logical_dial_index(dial), *args, **kwargs)
+
+        self.deck.set_dial_callback(remapper_callback)
 
     def set_dial_callback_async(self, async_callback, loop=None):
         """
@@ -344,7 +349,10 @@ class BetterDeck():
                  the device (`True` if the dial is being pressed, `False`
                  otherwise).
         """
-        return self.deck.dial_states()
+        states = self.deck.dial_states()
+        if self._dials_are_reversed():
+            return list(reversed(states))
+        return states
 
     def reset(self):
         """
@@ -475,16 +483,105 @@ class BetterDeck():
             return None
     
     def reorder_physical_for_rotation(self, original_list):
-        pysical_rows, physical_cols = self.deck.key_layout()
-        total = pysical_rows * physical_cols
+        """Turn a physically indexed list into a logically indexed one."""
+        physical_rows, physical_cols = self.deck.key_layout()
+        total = physical_rows * physical_cols
         reordered = [None] * total
-        
+
         for physical_index in range(total):
             logical_index = self.get_logical_index(physical_index)
             if logical_index is not None and 0 <= logical_index < total:
-                reordered[physical_index] = original_list[logical_index]
-        
+                reordered[logical_index] = original_list[physical_index]
+
         return reordered
         
     def get_rotation(self):
         return self.rotation
+
+    # ------------------------------------------------------------------ #
+    # Touchscreen                                                         #
+    # ------------------------------------------------------------------ #
+    # The rotation convention is the same one the keys use: the physical image
+    # is the logical one rotated counter clockwise by self.rotation (which is
+    # what PIL's Image.rotate does), i.e. rotation == 90 means the user turned
+    # the device 90 degrees clockwise.
+    #
+    # touchscreen_image_format() deliberately keeps reporting the *physical*
+    # format, because that is what PILHelper uses to encode for the wire. Use
+    # logical_touchscreen_size() for anything that renders.
+
+    def physical_touchscreen_size(self):
+        try:
+            size = self.deck.touchscreen_image_format().get("size")
+        except AttributeError:
+            # Decks without a touchscreen do not define the format constants
+            return None
+        if size is None or None in size:
+            return None
+        return tuple(size)
+
+    def logical_touchscreen_size(self):
+        size = self.physical_touchscreen_size()
+        if size is None:
+            return None
+        if self.rotation in [90, 270]:
+            return size[1], size[0]
+        return size
+
+    def logical_touch_rect_to_physical(self, x: int, y: int, width: int, height: int):
+        """Map a rect on the logical (rendered) touchscreen onto the device."""
+        size = self.physical_touchscreen_size()
+        if size is None or self.rotation == 0:
+            return x, y, width, height
+        phys_width, phys_height = size
+
+        if self.rotation == 90:
+            return y, phys_height - x - width, height, width
+        if self.rotation == 180:
+            return phys_width - x - width, phys_height - y - height, width, height
+        # 270
+        return phys_width - y - height, x, height, width
+
+    def physical_touch_point_to_logical(self, x: int, y: int):
+        """Map a touch position reported by the device onto the logical screen."""
+        size = self.physical_touchscreen_size()
+        if size is None or self.rotation == 0:
+            return x, y
+        phys_width, phys_height = size
+
+        if self.rotation == 90:
+            return phys_height - 1 - y, x
+        if self.rotation == 180:
+            return phys_width - 1 - x, phys_height - 1 - y
+        # 270
+        return y, phys_width - 1 - x
+
+    def touch_value_to_logical(self, value):
+        """Map the x/y (and drag end x_out/y_out) of a touch event to logical coords."""
+        if self.rotation == 0 or not isinstance(value, dict):
+            return value
+
+        mapped = dict(value)
+        if "x" in mapped and "y" in mapped:
+            mapped["x"], mapped["y"] = self.physical_touch_point_to_logical(mapped["x"], mapped["y"])
+        if "x_out" in mapped and "y_out" in mapped:
+            mapped["x_out"], mapped["y_out"] = self.physical_touch_point_to_logical(mapped["x_out"], mapped["y_out"])
+        return mapped
+
+    # ------------------------------------------------------------------ #
+    # Dials                                                               #
+    # ------------------------------------------------------------------ #
+    # The dials sit along the touchscreen, so they keep their order at 0 and 90
+    # and run the other way round at 180 and 270.
+
+    def _dials_are_reversed(self) -> bool:
+        return self.rotation in [180, 270]
+
+    def get_logical_dial_index(self, physical_index: int) -> int:
+        if not self._dials_are_reversed():
+            return physical_index
+        return self.dial_count() - 1 - physical_index
+
+    def get_physical_dial_index(self, logical_index: int) -> int:
+        # The mapping is its own inverse
+        return self.get_logical_dial_index(logical_index)

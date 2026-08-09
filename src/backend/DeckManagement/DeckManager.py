@@ -296,6 +296,9 @@ class DeckManager:
                 log.info(f"Replacing deck")
                 current_rotation = deck_controller.deck.get_rotation()
                 deck_controller.deck = BetterDeck(new_device, current_rotation)
+                # The device was just reset, so what we believe is on it is stale -
+                # without this update_all_inputs skips every key whose image is unchanged
+                deck_controller.invalidate_render_caches()
                 deck_controller.update_all_inputs()
 
                 deck_controller.deck.set_key_callback(deck_controller.key_event_callback)

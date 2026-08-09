@@ -150,23 +150,41 @@ class MediaPlayerSetTouchscreenImageTask:
 
     def _get_native_image(self) -> bytes:
         image = self.image
+        temporaries = []
+
         if image.mode == "RGBA":
             background = Image.new("RGB", image.size, (0, 0, 0))
             background.paste(image, (0, 0), image)
             image = background
-        return PILHelper.to_native_touchscreen_format(self.deck_controller.deck, image)
+            temporaries.append(background)
+
+        # The image is rendered in logical orientation - turn it into what the
+        # device expects. expand=True because, unlike keys, the strip is not square.
+        rotation = self.deck_controller.deck.get_rotation()
+        if rotation:
+            image = image.rotate(rotation, expand=True)
+            temporaries.append(image)
+
+        try:
+            return PILHelper.to_native_touchscreen_format(self.deck_controller.deck, image)
+        finally:
+            for temporary in temporaries:
+                temporary.close()
 
     def run(self):
         if not self.deck_controller.deck.is_touch():
             self.close()
             return
         try:
+            x_pos, y_pos, width, height = self.deck_controller.deck.logical_touch_rect_to_physical(
+                self.x_pos, self.y_pos, self.width, self.height
+            )
             self.deck_controller.deck.set_touchscreen_image(
                 self._get_native_image(),
-                x_pos=self.x_pos,
-                y_pos=self.y_pos,
-                width=self.width,
-                height=self.height,
+                x_pos=x_pos,
+                y_pos=y_pos,
+                width=width,
+                height=height,
             )
             MediaPlayerSetTouchscreenImageTask.n_failed_in_row[self.deck_controller.serial_number()] = 0
         except StreamDeck.TransportError as e:
@@ -269,9 +287,9 @@ class MediaPlayerThread(threading.Thread):
 
             # self.check_connection()
 
-            if not self.pause:
-                has_bg_video = False
+            has_bg_video = False
 
+            if not self.pause:
                 if self.deck_controller.background.video is not None:
                     if self.deck_controller.background.video.page is self.deck_controller.active_page:
                         has_bg_video = True
@@ -638,10 +656,7 @@ class DeckController:
         self.has_animated_keys = False
 
         self.key_spacing = (36, 36)
-
-        if isinstance(self.deck, StreamDeckPlus) or (isinstance(self.deck, FakeDeck) and self.deck.key_layout() == [2, 4]):
-            log.error("Deck recognized as StreamDeckPlus")
-            self.key_spacing = (52, 36)
+        self.update_key_spacing()
 
         # Tasks
         self.media_player_tasks: Queue[MediaPlayerTask] = Queue()
@@ -693,6 +708,31 @@ class DeckController:
             self.screen_saver.show()
         else:
             self.load_default_page()
+
+    def update_key_spacing(self):
+        """
+        Bezel size between the keys, used to crop deck sized backgrounds.
+
+        Note that self.deck is a BetterDeck, so the device itself has to be unwrapped
+        for the isinstance checks.
+        """
+        device = getattr(self.deck, "deck", self.deck)
+
+        is_plus = isinstance(device, StreamDeckPlus) or (
+            isinstance(device, FakeDeck) and list(device.key_layout()) == [2, 4]
+        )
+
+        if not is_plus:
+            self.key_spacing = (36, 36)
+            return
+
+        log.debug("Deck recognized as StreamDeckPlus")
+        # The gap is wider between columns - which becomes the gap between rows
+        # once the deck is turned onto its side
+        if self.deck.get_rotation() % 180 == 0:
+            self.key_spacing = (52, 36)
+        else:
+            self.key_spacing = (36, 52)
 
     def init_inputs(self):
         for i in Input.All:
@@ -753,9 +793,10 @@ class DeckController:
         i.event_callback(*args, **kwargs)
 
     def key_event_callback(self, deck, key, *args, **kwargs):
-        coords = ControllerKey.Index_To_Coords(deck, key)
-        if self.deck.rotation % 180 != 0:
-            coords = (coords[1], coords[0])
+        # key is already a logical index (BetterDeck.set_key_callback maps it),
+        # so it has to be resolved against the rotation aware layout of
+        # self.deck - the very same math Available_Identifiers uses.
+        coords = ControllerKey.Index_To_Coords(self.deck, key)
         ident = Input.Key(f"{coords[0]}x{coords[1]}")
         self.event_callback(ident,*args, **kwargs)
 
@@ -763,9 +804,11 @@ class DeckController:
         ident = Input.Dial(str(dial))
         self.event_callback(ident, *args, **kwargs)
 
-    def touchscreen_event_callback(self, deck, *args, **kwargs):
+    def touchscreen_event_callback(self, deck, event_type, value, *args, **kwargs):
+        # The device reports physical positions - everything above works in logical ones
+        value = self.deck.touch_value_to_logical(value)
         ident = Input.Touchscreen("sd-plus")
-        self.event_callback(ident, *args, **kwargs)
+        self.event_callback(ident, event_type, value, *args, **kwargs)
 
 
     ### Helper methods
@@ -783,12 +826,14 @@ class DeckController:
     
     @lru_cache(maxsize=None)
     def get_touchscreen_image_size(self) -> tuple[int]:
+        """Size of the touchscreen as we render it, i.e. rotation applied."""
         if not self.get_alive(): return
-        size = self.deck.touchscreen_image_format()["size"]
+        size = self.deck.logical_touchscreen_size()
         if size is None:
-            return (800, 100)
-        size = max(size[0], 800), max(size[1], 100)
-        return size
+            size = (800, 100)
+        if self.deck.get_rotation() in [90, 270]:
+            return max(size[0], 100), max(size[1], 800)
+        return max(size[0], 800), max(size[1], 100)
 
     # ------------ #
     # Page Loading #
@@ -1072,26 +1117,80 @@ class DeckController:
         self.brightness = value
 
     def set_rotation(self, value):
+        if value == self.deck.get_rotation():
+            return
+
+        if not self.get_alive():
+            # Nothing to re-render - remember it for whenever the deck comes back
+            self.deck.set_rotation(value)
+            return
+
+        page = self.active_page
+
+        # Keep the media player off the inputs while they are being swapped out
+        self.media_player.pause = True
+        try:
+            self._apply_rotation(value)
+        finally:
+            self.media_player.pause = False
+
+        self.load_page(page, allow_reload=True)
+
+    def _apply_rotation(self, value):
+        # Everything below is layout dependent, so tear it down before the layout changes
+        self.clear_media_player_tasks()
+        self.close_image_ressources()
+
         self.deck.set_rotation(value)
 
+        # These derive from the rotation aware layout, so they have to be re-computed
+        DeckController.get_key_image_size.cache_clear()
+        DeckController.get_touchscreen_image_size.cache_clear()
+        self.update_key_spacing()
+
+        # The key identifiers and indices are derived from the (rotation aware) key
+        # layout, so the inputs have to be rebuilt for the new one. As a welcome side
+        # effect the fresh ControllerKeys carry no stale _last_img_hash, which would
+        # otherwise make update() skip re-rendering (the hash is of the unrotated image,
+        # which does not change when only the rotation does).
+        self.inputs = {}
+        self.init_inputs()
+
+        # Nothing that is currently on the device can be trusted anymore: the render
+        # caches are keyed by logical index/region, but the logical -> physical mapping
+        # just changed underneath them.
+        self.invalidate_render_caches()
+        self.ui_image_changes_while_hidden.clear()
+        self.clear()
+
+        self.rebuild_ui_for_rotation()
+
+    def invalidate_render_caches(self):
+        """
+        Forget everything we believe is currently displayed on the device.
+
+        Both the per input image hash and the media player hashes exist to skip
+        redundant writes to the hardware. They have to be dropped whenever the device
+        content changed behind our back (reconnect) or the logical -> physical mapping
+        changed (rotation), because otherwise an unchanged image is never re-sent.
+        """
+        for t in self.inputs:
+            for i in self.inputs[t]:
+                i._last_img_hash = None
+
+        self.media_player.last_key_image_hashes.clear()
+        self.media_player.last_touchscreen_hashes.clear()
+
+    def rebuild_ui_for_rotation(self):
+        """Re-create the key grid, screen bar and dials for the new layout."""
         self.own_key_grid = None
 
+        deck_stack_child = self.get_own_deck_stack_child()
+        if deck_stack_child is None:
+            # Ui not built yet - it will be created with the new layout anyway
+            return
 
-        if recursive_hasattr(gl, "app.main_win"):
-            # self.get_own_key_grid().regenerate_buttons()
-
-            # Re-generate key grid
-            deck_stack_child = self.get_own_deck_stack_child()
-            deck_config = deck_stack_child.page_settings.deck_config
-            key_grid = deck_config.grid
-            deck_config.remove(key_grid)
-
-            deck_config.grid = KeyGrid(self, key_grid.page_settings_page)
-            deck_config.prepend(deck_config.grid)
-
-        if not self.get_alive(): return
-        self.load_page(self.active_page)
-        # self.update_all_inputs()
+        deck_stack_child.page_settings.deck_config.rebuild_for_rotation()
 
 
     def tick_actions(self) -> None:
@@ -1170,7 +1269,8 @@ class DeckController:
             self.deck.set_key_image(i, native_image)
 
         if self.deck.is_touch():
-            touchscreen_size = self.get_touchscreen_image_size()
+            # Uniform black, so build it in physical orientation and skip the mapping
+            touchscreen_size = self.deck.physical_touchscreen_size() or (800, 100)
             empty = Image.new("RGB", touchscreen_size, (0, 0, 0))
             native_image = PILHelper.to_native_touchscreen_format(self.deck, empty)
 
@@ -1306,6 +1406,11 @@ class BackgroundImage:
     def __init__(self, deck_controller: DeckController, image: Image) -> None:
         self.deck_controller = deck_controller
         self.image = image
+
+    def close(self) -> None:
+        if self.image is not None:
+            self.image.close()
+            self.image = None
 
     def create_full_deck_sized_image(self) -> Image:
         key_rows, key_cols = self.deck_controller.deck.key_layout()
@@ -2127,6 +2232,10 @@ class ControllerInput:
     def event_callback(self) -> None:
         pass
 
+    def close_resources(self) -> None:
+        for state in self.states.values():
+            state.close_resources()
+
     def start_hold_timer(self):
         self.stop_hold_timer()
 
@@ -2765,32 +2874,44 @@ class ControllerTouchScreen(ControllerInput):
     def generate_empty_image(self) -> Image.Image:
         return Image.new("RGBA", self.get_screen_dimensions(), (0, 0, 0, 0))
     
+    def dials_stack_vertically(self) -> bool:
+        # When the deck is rotated onto its side the strip runs vertically, so the
+        # dial slots stack along y instead of along x
+        return self.deck_controller.deck.get_rotation() % 180 != 0
+
     def get_dial_image_area(self, identifier: Input.Dial) -> tuple[int, int, int, int]:
         width, height = self.get_screen_dimensions()
 
         n_dials = len(self.deck_controller.inputs[Input.Dial])
         dial_index = identifier.index
 
-        start_x = int((dial_index / n_dials) * width)
-        start_y = 0
-        end_x = int(((dial_index + 1) / n_dials) * width)
-        end_y = height
+        if self.dials_stack_vertically():
+            return (
+                0,
+                int((dial_index / n_dials) * height),
+                width,
+                int(((dial_index + 1) / n_dials) * height),
+            )
 
-        return start_x, start_y, end_x, end_y
-    
+        return (
+            int((dial_index / n_dials) * width),
+            0,
+            int(((dial_index + 1) / n_dials) * width),
+            height,
+        )
+
     def get_dial_image_area_size(self) -> tuple[int, int]:
         width, height = self.get_screen_dimensions()
 
         n_dials = len(self.deck_controller.inputs[Input.Dial])
 
+        if self.dials_stack_vertically():
+            return width, int(height / n_dials)
+
         return int(width / n_dials), height
-    
+
     def get_empty_dial_image(self) -> Image.Image:
-        screen_width, screen_height = self.get_screen_dimensions()
-
-        n_dials = len(self.deck_controller.inputs[Input.Dial])
-
-        return Image.new("RGBA", (screen_width // n_dials, screen_height), (0, 0, 0, 0))
+        return Image.new("RGBA", self.get_dial_image_area_size(), (0, 0, 0, 0))
 
     def set_ui_image(self, image: Image.Image) -> None:
         if not recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") or not gl.app.main_win.get_mapped():
@@ -2856,8 +2977,14 @@ class ControllerTouchScreen(ControllerInput):
         
         active_state = self.get_active_state()
         if event_type == TouchscreenEventType.DRAG:
-            # Check if from left to right or the other way
-            if value['x'] > value['x_out']:
+            # Along the long axis of the strip - which is y once the deck is rotated
+            # onto its side. "Left" is towards the start of the strip either way.
+            if self.dials_stack_vertically():
+                towards_start = value['y'] > value['y_out']
+            else:
+                towards_start = value['x'] > value['x_out']
+
+            if towards_start:
                 active_state.own_actions_event_callback_threaded(
                     Input.Touchscreen.Events.DRAG_LEFT
                 )
@@ -2869,7 +2996,7 @@ class ControllerTouchScreen(ControllerInput):
 
         #TODO get matching actions from the dials
         elif event_type in (TouchscreenEventType.SHORT, TouchscreenEventType.LONG):
-            dial = self.get_dial_for_touch_x(value['x'])
+            dial = self.get_dial_for_touch(value['x'], value['y'])
             if dial is not None:
                 dial_active_state = dial.get_active_state()
                 if dial_active_state is not None:
@@ -2885,12 +3012,24 @@ class ControllerTouchScreen(ControllerInput):
                         show_notifications=True
                     )
 
-    def get_dial_for_touch_x(self, touch_x: float) -> "ControllerDial":
-        screen_width = self.deck_controller.get_touchscreen_image_size()[0]
+    def get_dial_for_touch(self, touch_x: float, touch_y: float = 0) -> "ControllerDial":
         n_dials = len(self.deck_controller.inputs[Input.Dial])
-        dial_index = int((touch_x / screen_width) * n_dials)
+        if n_dials == 0:
+            return None
+
+        screen_width, screen_height = self.get_screen_dimensions()
+        if self.dials_stack_vertically():
+            dial_index = int((touch_y / screen_height) * n_dials)
+        else:
+            dial_index = int((touch_x / screen_width) * n_dials)
+
+        # A touch right on the far edge would otherwise land one slot past the end
+        dial_index = max(0, min(n_dials - 1, dial_index))
 
         return self.deck_controller.get_input(Input.Dial(str(dial_index)))
+
+    def get_dial_for_touch_x(self, touch_x: float) -> "ControllerDial":
+        return self.get_dial_for_touch(touch_x)
     
     def get_screen_dimensions(self) -> tuple[int, int]:
         return self.deck_controller.get_touchscreen_image_size()
@@ -3221,10 +3360,10 @@ class ControllerTouchScreenState(ControllerInputState):
     def close_resources(self) -> None:
         if self.current_image is not None:
             self.current_image.close()
-            del self.current_image
+            self.current_image = None
         if self.base_image is not None:
             self.base_image.close()
-            del self.base_image
+            self.base_image = None
 
 class ControllerDialState(ControllerInputState):
     def __init__(self, dial: "ControllerDial", state: int):

@@ -58,7 +58,7 @@ class ScreenBar(Gtk.Frame):
         # self.image.set_from_file("Assets/800_100.png")
 
         self.image = ScreenBarImage(self)
-        self.image.set_image(Image.new("RGBA", (800, 100), (0, 0, 0, 0)))
+        self.image.set_image(Image.new("RGBA", self.get_screen_size(), (0, 0, 0, 0)))
         self.set_child(self.image)
 
         # self.set_child(self.image)
@@ -168,15 +168,23 @@ class ScreenBar(Gtk.Frame):
         else:
             controller.event_callback(self.identifier, TouchscreenEventType.SHORT, {"x": x, "y": y})
 
+    def get_screen_size(self) -> tuple[int, int]:
+        # Rotation aware, so this is 100x800 when the deck sits on its side
+        return self.deck_controller.get_touchscreen_image_size() or (800, 100)
+
     def parse_xy(self, x, y) -> tuple[int, int]:
         width = self.image.get_width()
         height = self.image.get_height()
+        if not width or not height:
+            return 0, 0
 
-        # Map xy to 800x100
-        x, y = int(x * 800 / width), int(y * 100 / height)
+        screen_width, screen_height = self.get_screen_size()
 
-        x = max(0, min(x, 800))
-        y = max(0, min(y, 100))
+        # Map the widget coords onto the logical screen
+        x, y = int(x * screen_width / width), int(y * screen_height / height)
+
+        x = max(0, min(x, screen_width - 1))
+        y = max(0, min(y, screen_height - 1))
 
         return x, y
 
@@ -231,7 +239,8 @@ class ScreenBarImage(Gtk.Picture):
             touchscreen_size = screenbar.deck_controller.get_touchscreen_image_size()
             if touchscreen_size:
                 screen_width, screen_height = touchscreen_size
-                scale_factor = 600.0 / screen_width if screen_width > 0 else 0.75
+                # Cap both axes, otherwise a rotated (tall) strip grows off screen
+                scale_factor = min(600.0 / screen_width, 600.0 / screen_height) if min(screen_width, screen_height) > 0 else 0.75
                 ui_width = int(screen_width * scale_factor)
                 ui_height = int(screen_height * scale_factor)
             else:

@@ -102,7 +102,7 @@ class HeaderHamburgerMenuButton(Gtk.MenuButton):
 
     def get_contributer_list(self):
         try:
-            contents = urllib.request.urlopen("https://api.github.com/repos/StreamController/StreamController/contributors").read().decode()
+            contents = urllib.request.urlopen("https://api.github.com/repos/StreamController/StreamController/contributors", timeout=10).read().decode()
             data = json.loads(contents)
             
             contributors = []

@@ -29,7 +29,6 @@ import os
 import uuid
 import shutil
 from packaging import version
-import urllib.request
 import threading
 
 # Import GLib
@@ -58,6 +57,12 @@ class StoreBackend:
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
     STORE_BRANCH = "1.5.0"
+
+    # (connect timeout, read timeout) in seconds. A slow/lossy connection must
+    # fail fast instead of hanging on the OS-level TCP retry for minutes -
+    # see https://github.com/StreamController/StreamController/issues/467
+    REQUEST_TIMEOUT = (10, 15)
+    DOWNLOAD_TIMEOUT = (10, 30)
 
     WALLPAPERS_FILE = "Wallpapers.json"
     PLUGIN_FILE = "Plugins.json"
@@ -154,8 +159,8 @@ class StoreBackend:
             user_name = self.get_user_name(repo_url)
             repo_name = self.get_repo_name(repo_url)
             url = f"https://api.github.com/repos/{user_name}/{repo_name}/branches?per_page=100"
-            response = requests.get(url)
-            
+            response = requests.get(url, timeout=self.REQUEST_TIMEOUT)
+
             if response.status_code != 200:
                 log.error(f"Failed to fetch branches for {repo_url}: {response.status_code}")
                 return None
@@ -175,8 +180,8 @@ class StoreBackend:
             user_name = self.get_user_name(repo_url)
             repo_name = self.get_repo_name(repo_url)
             url = f"https://api.github.com/repos/{user_name}/{repo_name}/tags?per_page=100"
-            response = requests.get(url)
-            
+            response = requests.get(url, timeout=self.REQUEST_TIMEOUT)
+
             if response.status_code != 200:
                 log.error(f"Failed to fetch tags for {repo_url}: {response.status_code}")
                 return None
@@ -200,12 +205,14 @@ class StoreBackend:
 
     async def request_from_url(self, url: str) -> requests.Response:
         try:
-            req = requests.get(url, stream=True)
+            req = requests.get(url, stream=True, timeout=self.DOWNLOAD_TIMEOUT)
             if req.status_code == 200:
                 return req
             log.error(f"Request to {url} failed with status code {req.status_code}")
             return NoConnectionError()
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.RequestException as e:
+            # Covers connection errors as well as connect/read timeouts, so a
+            # dead or lossy connection fails fast instead of hanging.
             log.error(e)
             return NoConnectionError()
     
@@ -284,11 +291,15 @@ class StoreBackend:
         
     async def get_last_commit(self, repo_url: str, branch_name: str = "main") -> str:
         url = f"https://api.github.com/repos/{self.get_user_name(repo_url)}/{self.get_repo_name(repo_url)}/commits?sha={branch_name}&per_page=1"
-        response = requests.get(url)
+        try:
+            response = requests.get(url, timeout=self.REQUEST_TIMEOUT)
+        except requests.exceptions.RequestException as e:
+            log.error(e)
+            return
 
         if response.status_code != 200:
             return
-        
+
         commits = response.json()
         if len(commits) == 0:
             return
@@ -873,15 +884,22 @@ class StoreBackend:
         sha = commit_sha
         if commit_sha is None and branch_name is not None:
             # Used to write the version
-            sha = self.get_last_commit(repo_url, branch_name)
+            sha = await self.get_last_commit(repo_url, branch_name)
         zip_url = f"https://github.com/{username}/{projectname}/archive/{sha}.zip"
-        
+
         # Download
         try:
             # Create cache dir
             os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
-            urllib.request.urlretrieve(zip_url, os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
-        except TypeError as e:
+            zip_path = os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip")
+            with requests.get(zip_url, stream=True, timeout=self.DOWNLOAD_TIMEOUT) as resp:
+                if resp.status_code != 200:
+                    log.error(f"Failed to download {zip_url}: {resp.status_code}")
+                    return NoConnectionError()
+                with open(zip_path, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=1024 * 64):
+                        f.write(chunk)
+        except (requests.exceptions.RequestException, TypeError) as e:
             log.error(e)
             return NoConnectionError()
         

@@ -220,7 +220,7 @@ def download_file(url: str, path: str = "", file_name: str = None) -> str:
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
     with open(path, "wb") as f:
-        f.write(requests.get(url).content)
+        f.write(requests.get(url, timeout=(10, 30)).content)
 
     return path
 

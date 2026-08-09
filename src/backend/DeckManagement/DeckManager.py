@@ -17,6 +17,7 @@ import threading
 import time
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.Devices import StreamDeck
+from StreamDeck.ProductIDs import USBProductIDs, USBVendorIDs
 from StreamDeck.ImageHelpers import PILHelper
 from loguru import logger as log
 from usbmonitor import USBMonitor
@@ -288,15 +289,15 @@ class DeckManager:
         for device in devices:
             try:
                 # Check if it's a StreamDeck
-                if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in [
-                    DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
-                    DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
-                    DeviceManager.USB_PID_STREAMDECK_MINI,
-                    DeviceManager.USB_PID_STREAMDECK_XL,
-                    DeviceManager.USB_PID_STREAMDECK_MK2,
-                    DeviceManager.USB_PID_STREAMDECK_PEDAL,
-                    DeviceManager.USB_PID_STREAMDECK_PLUS,
-                    DeviceManager.USB_PID_STREAMDECK_NEO
+                if device.idVendor == USBVendorIDs.USB_VID_ELGATO and device.idProduct in [
+                    USBProductIDs.USB_PID_STREAMDECK_ORIGINAL,
+                    USBProductIDs.USB_PID_STREAMDECK_ORIGINAL_V2,
+                    USBProductIDs.USB_PID_STREAMDECK_MINI,
+                    USBProductIDs.USB_PID_STREAMDECK_XL,
+                    USBProductIDs.USB_PID_STREAMDECK_MK2,
+                    USBProductIDs.USB_PID_STREAMDECK_PEDAL,
+                    USBProductIDs.USB_PID_STREAMDECK_PLUS,
+                    USBProductIDs.USB_PID_STREAMDECK_NEO
                 ]:
                     # Reset deck
                     usb.util.dispose_resources(device)

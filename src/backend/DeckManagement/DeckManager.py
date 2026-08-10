@@ -37,6 +37,7 @@ from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recurs
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
 
 from src.backend.DeckManagement.beta_resume import patch_read_thread
+from src.backend.DeckManagement.hid_enumeration import patch_connected
 
 # Import globals first to get IS_MAC
 import globals as gl
@@ -59,6 +60,10 @@ class DeckManager:
         self.settings_manager = SettingsManager()
         self.page_manager = gl.page_manager
         # self.page_manager.load_pages()
+
+        # Has to happen before anything asks a deck whether it is still connected -
+        # an unfiltered enumeration resets other people's usb devices (issue #396)
+        patch_connected()
 
         # USB monitor to detect connections and disconnections
         self.usb_monitor = USBMonitor()

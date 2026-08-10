@@ -4,6 +4,10 @@
 import gi
 gi.require_version("Gtk","4.0")
 from gi.repository import Gio, GLib
+from loguru import logger as log
+
+WATCHER_BUS_NAME = "org.kde.StatusNotifierWatcher"
+WATCHER_OBJECT_PATH = "/StatusNotifierWatcher"
 
 SNI_NODE_INFO = Gio.DBusNodeInfo.new_for_xml("""
 <?xml version="1.0" encoding="UTF-8"?>
@@ -337,6 +341,8 @@ class StatusNotifierItemService(DBusService):
 
         self.bus = session_bus
         self.dbus_path = path
+        self.watcher_name_id = None
+        self.registered = False
 
         if menu_path == "":
             self._menu = DBusMenuService(session_bus, menu_items)
@@ -345,24 +351,60 @@ class StatusNotifierItemService(DBusService):
         self.Menu = self._menu.dbus_path
 
     def register(self):
+        if self.registered:
+            return
+
         self._menu.register()
         super().register()
+        self.registered = True
 
-        watcher = Gio.DBusProxy.new_sync(
-            connection=self.bus,
-            flags=Gio.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES,
-            info=None,
-            name='org.kde.StatusNotifierWatcher',
-            object_path='/StatusNotifierWatcher',
-            interface_name='org.kde.StatusNotifierWatcher',
-            cancellable=None
+        # A StatusNotifierWatcher only exists if the desktop actually hosts tray icons;
+        # on GNOME for example it comes from the AppIndicator extension. Watching the name
+        # instead of calling it right away keeps us from failing on desktops without one
+        # and re-registers the item if the host is restarted.
+        self.watcher_name_id = Gio.bus_watch_name_on_connection(
+            self.bus,
+            WATCHER_BUS_NAME,
+            Gio.BusNameWatcherFlags.NONE,
+            self.on_watcher_appeared,
+            self.on_watcher_vanished
         )
 
-        watcher.RegisterStatusNotifierItem('(s)', self.dbus_path)
+    def on_watcher_appeared(self, connection, name, name_owner):
+        connection.call(
+            bus_name=name,
+            object_path=WATCHER_OBJECT_PATH,
+            interface_name=WATCHER_BUS_NAME,
+            method_name="RegisterStatusNotifierItem",
+            parameters=GLib.Variant("(s)", (self.dbus_path,)),
+            reply_type=None,
+            flags=Gio.DBusCallFlags.NONE,
+            timeout_msec=-1,
+            cancellable=None,
+            callback=self.on_register_finished
+        )
+
+    def on_watcher_vanished(self, connection, name):
+        log.info(f"No {name} on the session bus, the tray icon stays hidden until one appears")
+
+    def on_register_finished(self, connection, result, *_):
+        try:
+            connection.call_finish(result)
+            log.info(f"Registered tray icon {self.dbus_path} with {WATCHER_BUS_NAME}")
+        except GLib.Error as e:
+            log.error(f"Failed to register tray icon with {WATCHER_BUS_NAME}: {e.message}")
 
     def unregister(self):
+        if self.watcher_name_id is not None:
+            Gio.bus_unwatch_name(self.watcher_name_id)
+            self.watcher_name_id = None
+
+        if not self.registered:
+            return
+
         super().unregister()
         self._menu.unregister()
+        self.registered = False
 
     def set_items(self, items):
         self._menu.set_items(items)

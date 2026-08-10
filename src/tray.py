@@ -1,6 +1,8 @@
 import os
 import sys
+import glob
 import subprocess
+from gi.repository import GLib
 from loguru import logger as log
 import globals as gl
 from src.backend.trayicon import DBusTrayIcon, DBusMenu
@@ -9,6 +11,7 @@ class TrayIcon(DBusTrayIcon):
     MenuPath = "/com/core447/StreamController/Menu"
     IndicatorPath = "/org/ayatana/NotificationItem/com_core447_StreamController_TrayIcon"
     AppId = "com.core447.StreamController.TrayIcon"
+    IconName = "com.core447.StreamController"
 
     def __init__(self):
         if gl.IS_MAC:
@@ -22,11 +25,9 @@ class TrayIcon(DBusTrayIcon):
         self.menu.add_menu_item(6, menu_type="separator")
         self.menu.add_menu_item(7, "Quit", callback=self.on_quit)
         self.menu.add_menu_item(8, "Quit and Restart", callback=self.on_restart)
-        super().__init__(self.menu, self.MenuPath, self.IndicatorPath, self.AppId, "StreamController")
-        icon_theme_path = os.path.join(gl.MAIN_PATH, "Assets", "icons")
-        self.set_icon("com.core447.StreamController", path=icon_theme_path)
+        super().__init__(self.menu, self.IndicatorPath, self.MenuPath, self.AppId, "StreamController")
+        self.set_icon(self.IconName, path=self.get_icon_theme_path())
         self.set_tooltip("StreamController")
-        self.set_label("StreamController")
 
         self.main_win = None
         self.show_about_action = None
@@ -34,6 +35,22 @@ class TrayIcon(DBusTrayIcon):
         self.show_settings_action = None
         self.quit_app_action = None
         self.activate_id = -1
+
+    def get_icon_theme_path(self) -> str:
+        """
+        The tray host resolves the icon on its own side, so IconThemePath is only useful if it
+        points somewhere the host can actually read. Inside a Flatpak it never can - and it
+        doesn't have to, because Flatpak exports our icon into the host's icon theme. Hosts
+        like the GNOME AppIndicator extension show a placeholder instead of falling back to
+        the theme once a path is set, so only hand out a path if the icon is missing from the
+        installed theme, which is the case when running from source.
+        """
+        for data_dir in [GLib.get_user_data_dir(), *GLib.get_system_data_dirs()]:
+            if glob.glob(os.path.join(data_dir, "icons", "*", "*", "apps", f"{self.IconName}.*")):
+                return ""
+
+        log.info(f"{self.IconName} is not in an installed icon theme, pointing the tray at our own assets")
+        return os.path.join(gl.MAIN_PATH, "Assets", "icons")
 
     @log.catch
     def initialize(self, main_win):

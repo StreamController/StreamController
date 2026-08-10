@@ -54,6 +54,7 @@ from src.backend.AssetManagerBackend import AssetManagerBackend
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
+from src.backend.PluginManager.StreamDeckSDK.StreamDeckSDKManager import StreamDeckSDKManager
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
 from src.backend.SDPlusBarWallpaperPackManagement.SDPlusBarWallpaperPackManager import SDPlusBarWallpaperPackManager
@@ -132,6 +133,12 @@ def load():
     log.info("Loading app")
     gl.deck_manager = DeckManager()
     gl.deck_manager.load_decks()
+
+    # Stream Deck SDK plugins are handed the list of connected devices when they are
+    # launched, so they start once the decks are known
+    if gl.sd_sdk_manager is not None:
+        gl.sd_sdk_manager.start_plugins()
+
     gl.main = Main(application_id="com.core447.StreamController", deck_manager=gl.deck_manager)
 
 @log.catch
@@ -170,6 +177,12 @@ def create_global_objects():
     # Plugin Manager
     gl.plugin_manager = PluginManager()
     gl.plugin_manager.load_plugins(show_notification=True)
+
+    # Elgato Stream Deck SDK plugins register themselves as regular plugins, so they
+    # have to be loaded before the action index is built
+    gl.sd_sdk_manager = StreamDeckSDKManager()
+    gl.sd_sdk_manager.init()
+
     gl.plugin_manager.generate_action_index()
 
     gl.window_grabber = WindowGrabber()

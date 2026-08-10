@@ -65,6 +65,10 @@ class PluginManager:
             if subclass in self.initialized_plugin_classes:
                 log.info(f"Skipping {subclass} because it's already initialized")
                 continue
+            if not getattr(subclass, "AUTO_INIT", True):
+                # Base classes that are instantiated by another manager, e.g. the
+                # bridge for Elgato Stream Deck SDK plugins
+                continue
             try:
                 obj = subclass()
             except Exception as e:

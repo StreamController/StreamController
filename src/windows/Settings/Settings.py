@@ -21,6 +21,7 @@ from GtkHelper.GtkHelper import BetterPreferencesGroup
 from autostart import is_flatpak, setup_autostart
 from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
 from src.windows.Settings.PluginSettingsPage import PluginSettingsPage
+from src.windows.Settings.StreamDeckPluginsPage import StreamDeckPluginsPage
 
 # Import globals first to get IS_MAC
 import globals as gl
@@ -53,6 +54,7 @@ class Settings(Adw.PreferencesWindow):
         self.dev_page = DevPage(settings=self)
         self.system_page = SystemPage(settings=self)
         self.plugin_page = PluginSettingsPage(settings=self)
+        self.stream_deck_plugin_page = StreamDeckPluginsPage(settings=self)
 
         self.add(self.general_page)
         self.add(self.ui_page)
@@ -61,6 +63,7 @@ class Settings(Adw.PreferencesWindow):
         self.add(self.system_page)
         self.add(self.dev_page)
         self.add(self.plugin_page)
+        self.add(self.stream_deck_plugin_page)
 
     def load_json(self):
         # Load settings from file

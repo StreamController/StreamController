@@ -44,6 +44,9 @@ class PluginSettingsGroup(BetterPreferencesGroup):
         self.clear()
         for plugin_id in gl.plugin_manager.get_plugins():
             plugin_base = gl.plugin_manager.get_plugin_by_id(plugin_id)
+            if getattr(plugin_base, "sd_manifest", None) is not None:
+                # Elgato Stream Deck SDK plugins are managed on their own page
+                continue
             self.add(PluginExpander(settings_group=self, plugin_base=plugin_base))
 
 

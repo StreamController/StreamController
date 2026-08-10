@@ -82,6 +82,7 @@ if TYPE_CHECKING:
     from src.backend.SettingsManager import SettingsManager
     from src.backend.DeckManagement.DeckManager import DeckManager
     from src.backend.PluginManager.PluginManager import PluginManager
+    from src.backend.PluginManager.StreamDeckSDK.StreamDeckSDKManager import StreamDeckSDKManager
     from src.backend.IconPackManagement.IconPackManager import IconPackManager
     from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
     from src.backend.SDPlusBarWallpaperPackManagement.SDPlusBarWallpaperPackManager import SDPlusBarWallpaperPackManager
@@ -109,6 +110,7 @@ settings_manager:"SettingsManager" = None #SettingsManager
 app:"App" = None #App
 deck_manager:"DeckManager" = None #DeckManager
 plugin_manager:"PluginManager" = None #PluginManager
+sd_sdk_manager:"StreamDeckSDKManager" = None # Runs plugins made for the Elgato Stream Deck SDK
 video_extensions = ["mp4", "mov", "MP4", "MOV", "mkv", "MKV", "webm", "WEBM", "gif", "GIF"]
 image_extensions = ["png", "jpg", "jpeg"]
 svg_extensions = ["svg", "SVG"]
@@ -139,6 +141,7 @@ logs: list[str] = []
 release_notes: str = """
 <p>Features:</p>
     <ul>
+        <li>Support for plugins made for the Elgato Stream Deck SDK</li>
         <li>Add uninstall button to plugin settings page</li>
     </ul>
 <p>Improvements:</p>

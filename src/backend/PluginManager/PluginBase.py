@@ -35,6 +35,22 @@ from locales.LegacyLocaleManager import LegacyLocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.EventHolder import EventHolder
 
+class NoLocaleManager:
+    """Stand-in for plugins that do not ship StreamController translations."""
+
+    def set_to_os_default(self) -> None:
+        pass
+
+    def set_language(self, language: str) -> None:
+        pass
+
+    def set_fallback_language(self, language: str) -> None:
+        pass
+
+    def get(self, key: str, fallback: str = None) -> str:
+        return fallback if fallback is not None else key
+
+
 class PluginBase(rpyc.Service):
     """
     The base class for all plugins.
@@ -42,6 +58,10 @@ class PluginBase(rpyc.Service):
 
     plugins = {}
     disabled_plugins = {}
+
+    # Set to False by plugins that have no locale files of their own, e.g. the ones
+    # made for the Elgato Stream Deck SDK
+    HAS_LOCALES = True
 
     def __init__(self, use_legacy_locale: bool = True, legacy_dir: str = "locales"):
         self.backend_connection: Connection = None
@@ -53,7 +73,9 @@ class PluginBase(rpyc.Service):
         self.PATH = os.path.dirname(inspect.getfile(self.__class__))
         self.settings_path: str = os.path.join(gl.DATA_PATH, "settings", "plugins", self.get_plugin_id_from_folder_name(), "settings.json") #TODO: Retrive from the manifest as well
 
-        if use_legacy_locale:
+        if not self.HAS_LOCALES:
+            self.locale_manager = NoLocaleManager()
+        elif use_legacy_locale:
             self.locale_manager = LegacyLocaleManager(os.path.join(self.PATH, legacy_dir))
         else:
             self.locale_manager = LocaleManager(os.path.join(self.PATH, "locales.csv"))

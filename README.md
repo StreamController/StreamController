@@ -35,6 +35,31 @@ StreamController supports the following Elgato Stream Deck models:
 
 StreamController features plugin support with a built-in store to download your favorite actions. You can also publish your own plugins. For more details, visit the [Wiki](https://streamcontroller.github.io/docs).
 
+### Stream Deck SDK Plugins
+
+StreamController also runs plugins built for Elgato's own Stream Deck software. Download a `.streamDeckPlugin` file, for example from the [Elgato Marketplace](https://marketplace.elgato.com/stream-deck), and install it under *Settings → Stream Deck Plugins*. Their actions then appear in the action chooser next to the native ones, and their settings interfaces (property inspectors) open right in the sidebar.
+
+Depending on how a plugin is built, it may need extra software on your system:
+
+| Plugin type | Requirement |
+| --- | --- |
+| JavaScript (most modern plugins, including Elgato's own) | Node.js 20 or newer |
+| Compiled for Linux | nothing |
+| Compiled for Windows only | Wine |
+| HTML based | nothing (uses the built-in WebView) |
+
+Under Flatpak, Node.js and Wine have to be installed on the host system rather than as Flatpaks. The *Stream Deck Plugins* settings page shows which of them were found.
+
+#### Where to get plugins
+
+Files downloaded from the **Elgato Marketplace** are increasingly shipped with an encrypted manifest that only Elgato's own software can read. Those cannot be installed by any third-party software, OpenDeck included, and StreamController will say so plainly when you try one.
+
+Working plugins come from:
+
+- the plugin author's own releases, usually on GitHub — these are plain `.streamDeckPlugin` or `.zip` files
+- the [OpenAction Marketplace](https://marketplace.tacto.live), a catalogue of open-source plugins built for exactly this ecosystem
+- archives of the old Elgato App Store, which predates the encryption
+
 ### Wallpapers
 
 Customize your Stream Deck pages with cool wallpapers and videos to make them more engaging.

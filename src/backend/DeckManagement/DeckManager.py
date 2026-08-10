@@ -24,7 +24,6 @@ from usbmonitor import USBMonitor
 import usb.core
 import usb.util
 import os
-import types
 
 
 # Import own modules
@@ -37,7 +36,7 @@ from src.backend.SettingsManager import SettingsManager
 from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
 
-from src.backend.DeckManagement.beta_resume import _read as beta_read
+from src.backend.DeckManagement.beta_resume import patch_read_thread
 
 # Import globals first to get IS_MAC
 import globals as gl
@@ -77,6 +76,9 @@ class DeckManager:
 
         self.beta_resume_mode = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
         log.info(f"Beta resume mode: {self.beta_resume_mode}")
+
+        # Has to happen before the first deck is opened
+        patch_read_thread()
 
         resume_thread = DetectResumeThread(self)
         if not self.beta_resume_mode:

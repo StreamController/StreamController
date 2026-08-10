@@ -530,15 +530,17 @@ class ActionCore(rpyc.Service):
         self.backend = None
     
     def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
-        self.start_server()
-        port = self.server.port
-
         if venv_path is not None:
             if not os.path.exists(venv_path):
                 raise ValueError(f"Venv path does not exist: {venv_path}")
-        if backend_path is None:
-            if  not os.path.exists(backend_path):
-                raise ValueError(f"Backend path does not exist: {backend_path}")
+            if not self.plugin_base.is_backend_venv_healthy(venv_path):
+                log.info(f"Recreating venv for action {self.action_id} - This may take a while...")
+                self.plugin_base.recreate_venv(plugin_path=self.plugin_base.PATH)
+
+        self.start_server()
+        port = self.server.port
+        if not os.path.exists(backend_path):
+            raise ValueError(f"Backend path does not exist: {backend_path}")
 
         ## Launch
         if open_in_terminal:
@@ -561,6 +563,8 @@ class ActionCore(rpyc.Service):
         while tries > 0 and self.backend_connection is None:
             time.sleep(0.1)
             tries -= 1
+        if not self.backend_connection:
+            log.error(f"{self.action_id} - Could not connect to action backend")
 
     def register_backend(self, port: int):
         """

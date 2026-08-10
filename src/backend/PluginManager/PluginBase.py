@@ -1,8 +1,10 @@
+import configparser
 from functools import lru_cache
 import importlib
 import os
 import inspect
 import json
+import sys
 import threading
 import time
 import subprocess
@@ -603,6 +605,27 @@ class PluginBase(rpyc.Service):
             self.backend_connection.close()
         self.backend_connection = None
 
+    def is_backend_venv_healthy(self, venv_path: str) -> bool:
+        # Get python version of venv
+        pyvenv_path = os.path.join(venv_path, "pyvenv.cfg")
+        if not os.path.exists(pyvenv_path):
+            return False
+
+        pyvenv = configparser.ConfigParser()
+        with open(pyvenv_path, "r") as f:
+            # Prepend a dummy section header in memory - otherwise configparser raises an error
+            pyvenv.read_string("[root]\n" + f.read())
+
+        pyvenv_version = pyvenv["root"]["version"]
+        system_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+        return pyvenv_version == system_version
+
+    def recreate_venv(self, plugin_path: str):
+        if os.path.isfile(os.path.join(plugin_path, "__install__.py")):
+            subprocess.run(f"{sys.executable} {os.path.join(plugin_path, '__install__.py')}", shell=True, start_new_session=True)
+
+
     def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False) -> None:
         """
         Launches the backend process for the plugin.
@@ -618,6 +641,10 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
+        if venv_path is not None and not self.is_backend_venv_healthy(venv_path):
+            log.info(f"Recreating venv for plugin {self.PATH} - This may take a while...")
+            self.recreate_venv(plugin_path=self.PATH)
+
         self.start_server()
         port = self.server.port
 
@@ -653,6 +680,9 @@ class PluginBase(rpyc.Service):
         while tries > 0 and self.backend_connection is None:
             time.sleep(0.1)
             tries -= 1
+
+        if not self.backend_connection:
+            log.error(f"{self.plugin_id} - Could not connect to plugin backend")
 
     def register_backend(self, port: int) -> None:
         """

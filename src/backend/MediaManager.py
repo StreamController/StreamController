@@ -16,7 +16,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 from copy import copy
 import os
 import cv2
-import imageio
 import cairosvg
 from PIL import Image, ImageSequence
 

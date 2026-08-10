@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 
 # Import python modules
 from PIL import Image
-from videoprops import get_video_properties
 
 # Import own modules
 from GtkHelper.GtkHelper import AttributeRow, OriginalURL
@@ -55,19 +54,6 @@ class InfoPage(Gtk.Box):
         self.img_aspect_ratio_row = AttributeRow(title="Aspect Ratio:", attr="Error")
         self.image_group.add(self.img_aspect_ratio_row)
 
-        # Video
-        self.video_group = Adw.PreferencesGroup(title="Video")
-        self.clamp_box.append(self.video_group)
-
-        self.video_resolution_row = AttributeRow(title="Resolution:", attr="Error")
-        self.video_group.add(self.video_resolution_row)
-
-        self.aspect_ratio_row = AttributeRow(title="Aspect Ratio:", attr="Error")
-        self.video_group.add(self.aspect_ratio_row)
-
-        self.video_framerate_row = AttributeRow(title="Framerate:", attr="Error")
-        self.video_group.add(self.video_framerate_row)
-
         # License
         self.license_group = Adw.PreferencesGroup(title="License")
         self.clamp_box.append(self.license_group)
@@ -89,11 +75,8 @@ class InfoPage(Gtk.Box):
 
     def show_info(self, internal_path:str = None, licence_name: str = None, license_url: str = None, author: str = None, license_comment: str = None,
                   original_url: str = None):
-        if internal_path is None:
+        if internal_path is None or is_video(internal_path):
             self.image_group.set_visible(False)
-            self.video_group.set_visible(False)
-        elif is_video(internal_path):
-            self.show_for_vid(internal_path)
         else:
             self.show_for_img(internal_path)
 
@@ -106,7 +89,7 @@ class InfoPage(Gtk.Box):
 
     def show_for_asset(self, asset:dict):
         if is_video(asset["internal-path"]):
-            self.show_for_vid(asset["internal-path"])
+            self.image_group.set_visible(False)
         else:
             self.show_for_img(asset["internal-path"])
 
@@ -120,21 +103,8 @@ class InfoPage(Gtk.Box):
     def show_for_img(self, path:str):
         # Update ui vis
         self.image_group.set_visible(True)
-        self.video_group.set_visible(False)
 
         # Update ui content
         with Image.open(path) as img:
             self.img_resolution_row.set_url(f"{img.width}x{img.height}")
             self.img_aspect_ratio_row.set_url(f"{get_image_aspect_ratio(img)}")
-
-    def show_for_vid(self, path:str):
-        props = get_video_properties(path)
-
-        # Update ui vis
-        self.image_group.set_visible(False)
-        self.video_group.set_visible(True)
-
-        # Update ui content
-        self.video_resolution_row.set_url(f"{props['width']}x{props['height']}")
-        self.aspect_ratio_row.set_url(f"{props['display_aspect_ratio']}")
-        self.video_framerate_row.set_url(f"{eval(props['avg_frame_rate']):.2f} fps")

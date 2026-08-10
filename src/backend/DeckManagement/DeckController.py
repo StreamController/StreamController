@@ -32,7 +32,7 @@ from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
 from loguru import logger as log
 
 # Import own modules
-from src.backend.DeckManagement.BetterDeck import BetterDeck
+from StreamDeck.Devices.RotatedDeck import RotatedDeck
 from src.backend.DeckManagement.HelperMethods import *
 from src.backend.DeckManagement.ImageHelpers import *
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
@@ -636,7 +636,7 @@ class DeckController:
         self.deck.open(self.deck_manager.beta_resume_mode)
 
         rotation = self.get_deck_settings().get("rotation", 0)
-        self.deck: BetterDeck = BetterDeck(deck, rotation)
+        self.deck: RotatedDeck = RotatedDeck(deck, rotation)
 
         try:
             # Clear the deck
@@ -713,7 +713,7 @@ class DeckController:
         """
         Bezel size between the keys, used to crop deck sized backgrounds.
 
-        Note that self.deck is a BetterDeck, so the device itself has to be unwrapped
+        Note that self.deck is a RotatedDeck, so the device itself has to be unwrapped
         for the isinstance checks.
         """
         device = getattr(self.deck, "deck", self.deck)
@@ -793,7 +793,7 @@ class DeckController:
         i.event_callback(*args, **kwargs)
 
     def key_event_callback(self, deck, key, *args, **kwargs):
-        # key is already a logical index (BetterDeck.set_key_callback maps it),
+        # key is already a logical index (RotatedDeck.set_key_callback maps it),
         # so it has to be resolved against the rotation aware layout of
         # self.deck - the very same math Available_Identifiers uses.
         coords = ControllerKey.Index_To_Coords(self.deck, key)
@@ -1321,7 +1321,7 @@ class DeckController:
         resumed from suspend. The process then exits with an open HID device, which
         makes libusb abort in usbi_mutex_destroy() (see issue #631).
 
-        Note that self.deck is a BetterDeck, so the device itself has to be
+        Note that self.deck is a RotatedDeck, so the device itself has to be
         unwrapped - the wrapper does not forward attribute assignments.
         """
         device = getattr(self.deck, "deck", self.deck)

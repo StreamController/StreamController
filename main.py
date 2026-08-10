@@ -66,7 +66,7 @@ from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPer
 from src.backend.Wayland.Wayland import Wayland
 from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
 from src.tray import TrayIcon
-from src.backend.Logger import Logger, LoggerConfig, Loglevel
+from src.backend.Logger import Logger, LoggerConfig, Loglevel, intercept_stdlib_logging
 
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
@@ -95,6 +95,10 @@ def config_logger():
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
     log.add(write_logs, level="TRACE")
+
+    # The streamdeck library logs its deck reconnect diagnostics through the
+    # standard logging module, which loguru does not pick up on its own
+    intercept_stdlib_logging()
 
     plugin_logger = Logger(
         LoggerConfig(

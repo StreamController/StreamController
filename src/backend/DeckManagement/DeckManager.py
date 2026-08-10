@@ -29,15 +29,12 @@ import os
 # Import own modules
 from src.backend.DeckManagement.Subclasses.RemoteDeckManager import RemoteDeckManager
 from src.backend.DeckManagement.Subclasses.RemoteDeck import RemoteDeck
-from src.backend.DeckManagement.BetterDeck import BetterDeck
+from StreamDeck.Devices.RotatedDeck import RotatedDeck
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
-
-from src.backend.DeckManagement.beta_resume import patch_read_thread
-from src.backend.DeckManagement.hid_enumeration import patch_connected
 
 # Import globals first to get IS_MAC
 import globals as gl
@@ -61,10 +58,6 @@ class DeckManager:
         self.page_manager = gl.page_manager
         # self.page_manager.load_pages()
 
-        # Has to happen before anything asks a deck whether it is still connected -
-        # an unfiltered enumeration resets other people's usb devices (issue #396)
-        patch_connected()
-
         # USB monitor to detect connections and disconnections
         self.usb_monitor = USBMonitor()
         self.usb_monitor.start_monitoring(on_connect=self.on_connect, on_disconnect=self.on_disconnect)
@@ -81,9 +74,6 @@ class DeckManager:
 
         self.beta_resume_mode = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
         log.info(f"Beta resume mode: {self.beta_resume_mode}")
-
-        # Has to happen before the first deck is opened
-        patch_read_thread()
 
         resume_thread = DetectResumeThread(self)
         if not self.beta_resume_mode:
@@ -331,7 +321,7 @@ class DeckManager:
             if new_device:
                 log.info(f"Replacing deck")
                 current_rotation = deck_controller.deck.get_rotation()
-                deck_controller.deck = BetterDeck(new_device, current_rotation)
+                deck_controller.deck = RotatedDeck(new_device, current_rotation)
                 # The device was just reset, so what we believe is on it is stale -
                 # without this update_all_inputs skips every key whose image is unchanged
                 deck_controller.invalidate_render_caches()

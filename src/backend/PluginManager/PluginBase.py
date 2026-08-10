@@ -45,10 +45,20 @@ class PluginBase(rpyc.Service):
     plugins = {}
     disabled_plugins = {}
 
+    # How long to keep retrying an RPyC backend connection before giving up
+    BACKEND_CONNECT_TIMEOUT: float = 30.0
+    # How long a physical/UI event may sit queued waiting for the backend before it is dropped
+    PENDING_EVENT_TIMEOUT: float = 30.0
+
     def __init__(self, use_legacy_locale: bool = True, legacy_dir: str = "locales"):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
+
+        # True while a backend has been launched but hasn't connected back yet
+        self.backend_launch_pending: bool = False
+        self._pending_action_events: list[tuple[float, callable]] = []
+        self._pending_action_events_lock = threading.Lock()
 
         self.logger = gl.loggers.get("plugins", None)
 
@@ -604,6 +614,8 @@ class PluginBase(rpyc.Service):
         if self.backend_connection is not None:
             self.backend_connection.close()
         self.backend_connection = None
+        self.backend = None
+        self.backend_launch_pending = False
 
     def is_backend_venv_healthy(self, venv_path: str) -> bool:
         # Get python version of venv
@@ -661,28 +673,37 @@ class PluginBase(rpyc.Service):
             command += f"python3 {backend_path} --port={port}"
 
         log.info(f"Launching backend: {command}")
+        self.backend_launch_pending = True
         subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
 
-        self.wait_for_backend()
+        threading.Thread(target=self.wait_for_backend, name="wait_for_backend", daemon=True).start()
 
-    def wait_for_backend(self, tries: int = 3) -> None:
+    def wait_for_backend(self, timeout: float = None) -> None:
         """
         Waits for the backend to establish a connection.
 
-        This method repeatedly checks if the backend connection is established within the given number of tries.
+        This method repeatedly polls for the backend connection to be established, for up to `timeout`
+        seconds. It is run in a background thread by `launch_backend` so it never blocks plugin loading -
+        events that arrive for this plugin while the connection is still pending are queued instead of
+        silently dropped (see `queue_action_event`/`_flush_pending_action_events`).
 
         Args:
-            tries (int, optional): The number of attempts to wait for the backend connection. Defaults to 3.
+            timeout (float, optional): How long to keep retrying. Defaults to `BACKEND_CONNECT_TIMEOUT`.
 
         Returns:
             None
         """
-        while tries > 0 and self.backend_connection is None:
-            time.sleep(0.1)
-            tries -= 1
+        if timeout is None:
+            timeout = self.BACKEND_CONNECT_TIMEOUT
 
-        if not self.backend_connection:
-            log.error(f"{self.plugin_id} - Could not connect to plugin backend")
+        deadline = time.monotonic() + timeout
+        while self.backend_connection is None and time.monotonic() < deadline:
+            time.sleep(0.1)
+
+        if self.backend_connection is None:
+            log.error(f"{self.plugin_id} - Could not connect to plugin backend within {timeout}s")
+            self.backend_launch_pending = False
+            self._flush_pending_action_events()
 
     def register_backend(self, port: int) -> None:
         """
@@ -701,6 +722,50 @@ class PluginBase(rpyc.Service):
         self.backend = self.backend_connection.root
 
         gl.plugin_manager.backends.append(self.backend_connection)
+
+        self.backend_launch_pending = False
+        self._flush_pending_action_events()
+
+    def queue_action_event(self, retry: callable) -> bool:
+        """
+        Queues an action event to be replayed once the backend finishes connecting, instead of letting it
+        silently no-op because `self.backend` is still None.
+
+        Only queues while a backend launch is actually in progress - plugins that never call
+        `launch_backend` are unaffected and events are dispatched immediately as before.
+
+        Args:
+            retry (callable): A zero-argument callable that re-dispatches the event once called.
+
+        Returns:
+            bool: True if the event was queued (caller should not dispatch it now), False if there is
+            nothing pending and the caller should dispatch it immediately.
+        """
+        if not self.backend_launch_pending:
+            return False
+
+        with self._pending_action_events_lock:
+            # Re-check under the lock in case the backend connected between the check above and here
+            if not self.backend_launch_pending:
+                return False
+            self._pending_action_events.append((time.monotonic(), retry))
+        return True
+
+    def _flush_pending_action_events(self) -> None:
+        with self._pending_action_events_lock:
+            pending = self._pending_action_events
+            self._pending_action_events = []
+
+        now = time.monotonic()
+        for queued_at, retry in pending:
+            age = now - queued_at
+            if age > self.PENDING_EVENT_TIMEOUT:
+                log.warning(f"{self.plugin_id} - Dropping queued action event that waited {age:.1f}s for the backend")
+                continue
+            try:
+                retry()
+            except Exception as e:
+                log.error(f"{self.plugin_id} - Error replaying queued action event: {e}")
 
     def ping(self) -> bool:
         """

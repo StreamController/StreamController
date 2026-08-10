@@ -128,7 +128,11 @@ class ScreenSaver:
         self.deck_controller.clear() # Ensures that the first image visable is from the page not the screensaver if the brightness on the saver is 0
         self.showing = False
         if self.deck_controller.active_page:
-            self.deck_controller.load_page(self.deck_controller.active_page, allow_reload=True)
+            self.deck_controller.load_page(
+                self.deck_controller.active_page,
+                allow_reload=True,
+                force_background_reload=True,
+            )
         else:
             self.deck_controller.load_default_page()
         self.set_time(self.time_delay)

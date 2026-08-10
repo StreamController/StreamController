@@ -14,6 +14,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 import gc
 import hashlib
+import os
 import statistics
 import threading
 import time
@@ -88,8 +89,12 @@ class MediaPlayerTask:
     _callable: callable
     args: tuple
     kwargs: dict
+    task_label: str = ""
+    created_at: float = 0.0
 
     def run(self):
+        if self.created_at == 0.0:
+            self.created_at = time.time()
         self._callable(*self.args, **self.kwargs)
 
 @dataclass
@@ -262,7 +267,8 @@ class MediaPlayerThread(threading.Thread):
         self.media_ticks = 0
 
         self.pause = False
-        self._stop = False
+        self._stop_requested = False
+        self._wake_event = threading.Event()
 
         self.tasks: list[MediaPlayerTask] = []
         self.image_tasks = {}
@@ -298,7 +304,7 @@ class MediaPlayerThread(threading.Thread):
                         if self.media_ticks % video_each_nth_frame == 0:
                             self.deck_controller.background.update_tiles()
 
-                # Only iterate keys if there is animated content to update
+                # Only iterate keys/dials if there is animated content to update
                 if has_bg_video or self._needs_key_ticks():
                     #TODO: generalize
                     for key in self.deck_controller.inputs[Input.Key]:
@@ -331,21 +337,28 @@ class MediaPlayerThread(threading.Thread):
             else:
                 time.sleep(wait)
 
-            if self._stop:
+            if self._stop_requested:
                 break
 
         self.running = False
 
     def _needs_key_ticks(self) -> bool:
-        # Check once per second whether any key has animated content
+        # Check once per second whether any key/dial has animated content
+        # (video or scrolling text) that on_media_player_tick needs to advance.
         if self.media_ticks % self.FPS != 0:
             return getattr(self, '_cached_needs_ticks', False)
         needs = False
         for key in self.deck_controller.inputs.get(Input.Key, []):
             state = key.get_active_state()
-            if state.key_video is not None:
+            if state.key_video is not None or state.label_manager.get_has_scroll_labels():
                 needs = True
                 break
+        if not needs:
+            for dial in self.deck_controller.inputs.get(Input.Dial, []):
+                state = dial.get_active_state()
+                if state.video is not None or state.label_manager.get_has_scroll_labels():
+                    needs = True
+                    break
         self._cached_needs_ticks = needs
         return needs
 
@@ -386,7 +399,8 @@ class MediaPlayerThread(threading.Thread):
 
 
     def stop(self) -> None:
-        self._stop = True
+        self._stop_requested = True
+        self._wake_event.set()
         while self.running:
             time.sleep(0.1)
 
@@ -407,13 +421,15 @@ class MediaPlayerThread(threading.Thread):
 
         return max(priority, TASK_PRIORITY_HIGH)
 
-    def add_task(self, method: callable, *args, **kwargs):
+    def add_task(self, method: callable, *args, task_label: str = "", **kwargs):
         self.tasks.append(MediaPlayerTask(
             deck_controller=self.deck_controller,
             page=self.deck_controller.active_page,
             _callable=method,
             args=args,
-            kwargs=kwargs
+            kwargs=kwargs,
+            task_label=task_label,
+            created_at=time.time(),
         ))
         self._wake_event.set()
 
@@ -458,6 +474,7 @@ class MediaPlayerThread(threading.Thread):
             x_pos == 0 and y_pos == 0 and
             width == touchscreen_size[0] and height == touchscreen_size[1]
         )
+        self._wake_event.set()
 
         if is_full_screen:
             self._discard_touchscreen_task(self.touchscreen_task)
@@ -521,7 +538,12 @@ class MediaPlayerThread(threading.Thread):
     def perform_media_player_tasks(self):
         for task in self.tasks.copy():
             if task.page is self.deck_controller.active_page:
+                task_start = time.time()
                 task.run()
+                task_runtime = (time.time() - task_start) * 1000
+                queue_wait = (task_start - task.created_at) * 1000 if task.created_at else 0
+                if task_runtime > 60:
+                    log.debug(f"[media-task] deck={self.deck_controller.safe_serial_number()} label={task.task_label or task._callable.__name__} queue_wait_ms={queue_wait:.1f} run_ms={task_runtime:.1f}")
 
             try:
                 self.tasks.remove(task)
@@ -590,6 +612,7 @@ class MediaPlayerThread(threading.Thread):
                 for task in sorted(valid_region_tasks, key=lambda t: (-t.priority, t.y_pos, t.x_pos)):
                     task.run()
                     self.last_touchscreen_hashes[task.region_key()] = task.image_hash
+
     def check_connection(self):
         try:
             self.deck_controller.deck.get_firmware_version()
@@ -681,6 +704,7 @@ class DeckController:
         # Start media player thread
         self.media_player = MediaPlayerThread(deck_controller=self)
         self.media_player.start()
+        self.input_load_executor = ThreadPoolExecutor(max_workers=max(2, min(8, os.cpu_count() or 4)))
 
         self.keep_actions_ticking = True
         self.TICK_DELAY = 1
@@ -689,6 +713,8 @@ class DeckController:
 
         self.page_auto_loaded: bool = False
         self.last_manual_loaded_page_path: str = None
+        self._last_background_signature: tuple | None = None
+        self._last_screensaver_signature: tuple | None = None
 
         deck_settings = self.get_deck_settings()
 
@@ -757,6 +783,12 @@ class DeckController:
     @lru_cache(maxsize=None)
     def serial_number(self) -> str:
         return self.deck.get_serial_number()
+
+    def safe_serial_number(self) -> str:
+        try:
+            return self.serial_number()
+        except Exception:
+            return "unknown"
     
     def is_visual(self) -> bool:
         return self.deck.is_visual()
@@ -923,7 +955,8 @@ class DeckController:
             del gl.api_state_requests[self.serial_number()]
 
     @log.catch
-    def load_background(self, page: Page, update: bool = True):
+    def load_background(self, page: Page, update: bool = True, force_reload: bool = False):
+        start = time.time()
         deck_settings = self.get_deck_settings()
 
         deck_background_settings = deck_settings.get("background", {})
@@ -937,12 +970,24 @@ class DeckController:
         else:
             config = {}
 
+        background_signature = (
+            bool(config.get("media-path")),
+            config.get("media-path"),
+            bool(config.get("loop", False)),
+            int(config.get("fps", 30)),
+        )
+        if not force_reload and background_signature == self._last_background_signature:
+            log.debug(f"[page-switch-phase] deck={self.safe_serial_number()} phase=background skip=unchanged")
+            return
+        self._last_background_signature = background_signature
+
         self.background.set_from_path(
             path=config.get("media-path"),
             update=update,
             loop=config.get("loop", False),
             fps=config.get("fps", 30),
         )
+        log.debug(f"[page-switch-phase] deck={self.safe_serial_number()} phase=background ms={(time.time() - start) * 1000:.1f}")
 
     @log.catch
     def load_brightness(self, page: Page):
@@ -963,6 +1008,7 @@ class DeckController:
 
     @log.catch
     def load_screensaver(self, page: Page):
+        start = time.time()
         deck_settings = self.get_deck_settings()
         deck_screensaver_settings = deck_settings.get("screensaver", {})
         page_screensaver_settings = page.dict.get("settings", {}).get("screensaver", {})
@@ -975,21 +1021,38 @@ class DeckController:
         else:
             config = {}
 
+        screensaver_signature = (
+            bool(config.get("enable", False)),
+            config.get("media-path"),
+            int(config.get("time-delay", 5)),
+            bool(config.get("loop", False)),
+            int(config.get("fps", 30)),
+            int(config.get("brightness", 30)),
+        )
+        if screensaver_signature == self._last_screensaver_signature:
+            log.debug(f"[page-switch-phase] deck={self.safe_serial_number()} phase=screensaver skip=unchanged")
+            return
+        self._last_screensaver_signature = screensaver_signature
+
         self.screen_saver.set_media_path(config.get("media-path"))
         self.screen_saver.set_enable(config.get("enable", False))
         self.screen_saver.set_time(config.get("time-delay", 5))
         self.screen_saver.set_loop(config.get("loop", False))
         self.screen_saver.set_fps(config.get("fps", 30))
         self.screen_saver.set_brightness(config.get("brightness", 30))
+        log.debug(f"[page-switch-phase] deck={self.safe_serial_number()} phase=screensaver ms={(time.time() - start) * 1000:.1f}")
 
     @log.catch
     def load_all_inputs(self, page: Page, update: bool = True):
         start = time.time()
-        with ThreadPoolExecutor() as executor:
-            futures = []
-            for t in self.inputs:
-                for controller_input in self.inputs[t]:
-                    futures.append(executor.submit(self.load_input, controller_input, page, update))
+        controller_inputs = [controller_input for t in self.inputs for controller_input in self.inputs[t]]
+
+        # Avoid dispatch overhead for small decks/pages.
+        if len(controller_inputs) <= 16:
+            for controller_input in controller_inputs:
+                self.load_input(controller_input, page, update)
+        else:
+            futures = [self.input_load_executor.submit(self.load_input, controller_input, page, update) for controller_input in controller_inputs]
             for future in futures:
                 future.result()
         log.info(f"Loading all inputs took {time.time() - start} seconds")
@@ -1034,7 +1097,7 @@ class DeckController:
             self.background.image = None
 
     @log.catch
-    def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_inputs: bool = True, allow_reload: bool = True):
+    def load_page(self, page: Page, load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_inputs: bool = True, allow_reload: bool = True, force_background_reload: bool = False):
         if not self.get_alive(): return
 
         start = time.time()
@@ -1056,7 +1119,7 @@ class DeckController:
             self.clear()
             return
 
-        log.info(f"Loading page {page.get_name()} on deck {self.deck.get_serial_number()}")
+        log.info(f"Loading page {page.get_name()} on deck {self.safe_serial_number()}")
 
         # Stop queued tasks. Also waits out any in-flight media tick, so we don't
         # need a second wait here anymore.
@@ -1067,18 +1130,34 @@ class DeckController:
 
         if load_background:
             # self.load_background(page, update=False)
-            self.media_player.add_task(self.load_background, page, update=False)
+            self.media_player.add_task(
+                self.load_background,
+                page,
+                update=False,
+                force_reload=force_background_reload,
+                task_label=f"load_background:{page.get_name()}",
+            )
         if load_brightness:
+            t_brightness = time.time()
             self.load_brightness(page)
+            brightness_ms = (time.time() - t_brightness) * 1000
+        else:
+            brightness_ms = 0.0
         if load_screensaver:
+            t_screensaver = time.time()
             self.load_screensaver(page)
+            screensaver_ms = (time.time() - t_screensaver) * 1000
+        else:
+            screensaver_ms = 0.0
         if load_inputs:
-            self.media_player.add_task(self.load_all_inputs, page, update=False)
+            self.media_player.add_task(self.load_all_inputs, page, update=False, task_label=f"load_all_inputs:{page.get_name()}")
 
+        t_initialize_actions = time.time()
         self.active_page.initialize_actions()
+        initialize_actions_ms = (time.time() - t_initialize_actions) * 1000
 
         # Load page onto deck
-        self.media_player.add_task(self.update_all_inputs)
+        self.media_player.add_task(self.update_all_inputs, task_label=f"update_all_inputs:{page.get_name()}")
 
         # Notify plugin actions
         gl.signal_manager.trigger_signal(Signals.ChangePage, self, old_path, self.active_page.json_path)
@@ -1086,7 +1165,10 @@ class DeckController:
         # Notify DBus API of the page change
         notify_active_page_changed(self.serial_number(), page.get_name())
 
-        log.info(f"Loaded page {page.get_name()} on deck {self.deck.get_serial_number()}")
+        total_ms = (time.time() - start) * 1000
+        log.info(f"Loaded page {page.get_name()} on deck {self.safe_serial_number()}")
+        log.info(f"[page-switch] deck={self.safe_serial_number()} page={page.get_name()} total_ms={total_ms:.1f}")
+        log.debug(f"[page-switch-phase] deck={self.safe_serial_number()} page={page.get_name()} brightness_ms={brightness_ms:.1f} screensaver_ms={screensaver_ms:.1f} initialize_actions_ms={initialize_actions_ms:.1f}")
         self.maybe_collect_garbage()
 
     # Minimum seconds between post-load garbage collections, so rapid page
@@ -1350,6 +1432,15 @@ class DeckController:
 
         if hasattr(self, "media_player"):
             self.media_player.stop()
+        if hasattr(self, "input_load_executor"):
+            self.input_load_executor.shutdown(wait=False, cancel_futures=True)
+        if hasattr(self, "background"):
+            if getattr(self.background, "video", None) is not None:
+                self.background.video.close()
+                self.background.video = None
+            if getattr(self.background, "standby_video", None) is not None:
+                self.background.standby_video.close()
+                self.background.standby_video = None
 
         self.keep_actions_ticking = False
         self.stop_reader()
@@ -1367,13 +1458,23 @@ class Background:
 
         self.image = None
         self.video = None
+        self.standby_video: "BackgroundVideo | None" = None
 
         self.tiles: list[Image.Image] = [None] * deck_controller.deck.key_count()
 
+    def _park_video(self, video: "BackgroundVideo | None") -> None:
+        if video is None:
+            return
+        if self.standby_video is not None and self.standby_video is not video:
+            self.standby_video.close()
+        self.standby_video = video
+
     def set_image(self, image: "BackgroundImage", update: bool = True) -> None:
+        if self.image is not None:
+            self.image.close()
         self.image = image
         if self.video is not None:
-            self.video.close()
+            self._park_video(self.video)
         self.video = None
         gc.collect()
 
@@ -1382,10 +1483,14 @@ class Background:
             self.deck_controller.update_all_inputs()
 
     def set_video(self, video: "BackgroundVideo", update: bool = True) -> None:
-        if self.video is not None:
-            self.video.close()
+        if self.image is not None:
+            self.image.close()
+        if self.video is not None and self.video is not video:
+            self._park_video(self.video)
         self.image = None
         self.video = video
+        if self.standby_video is video:
+            self.standby_video = None
         gc.collect()
 
         self.update_tiles()
@@ -1408,6 +1513,12 @@ class Background:
                     self.video.page = self.deck_controller.active_page
                     self.video.fps = fps
                     self.video.loop = loop
+                    return
+                if self.video is None and self.standby_video is not None and self.standby_video.video_path == path:
+                    self.standby_video.page = self.deck_controller.active_page
+                    self.standby_video.fps = fps
+                    self.standby_video.loop = loop
+                    self.set_video(self.standby_video, update=update)
                     return
             self.set_video(BackgroundVideo(self.deck_controller, path, loop=loop, fps=fps), update=update)
         else:
@@ -1497,8 +1608,15 @@ class BackgroundImage:
         for key in range(self.deck_controller.deck.key_count()):
             key_image = self.crop_key_image_from_deck_sized_image(full_deck_sized_image, key)
             tiles.append(key_image)
+        full_deck_sized_image.close()
 
         return tiles
+
+    def close(self) -> None:
+        if self.image is None:
+            return
+        self.image.close()
+        self.image = None
 
 class BackgroundVideo(BackgroundVideoCache):
     def __init__(self, deck_controller: DeckController, video_path: str, loop: bool = True, fps: int = 30) -> None:
@@ -1679,7 +1797,7 @@ class LabelManager:
         for position in ["top", "center", "bottom"]:
             self.page_labels[position] = KeyLabel(self.controller_input)
             self.action_labels[position] = KeyLabel(self.controller_input)
- 
+
     def clear_labels(self):
         self.init_labels()
         self._has_scroll_labels_cache = None
@@ -2395,6 +2513,8 @@ class ControllerInput:
         gl.signal_manager.trigger_signal(Signals.RemoveState, state, state_map)
 
     def update_state_switcher(self):
+        if not recursive_hasattr(gl, "app.main_win.sidebar.active_identifier"):
+            return
         if gl.app.main_win.sidebar.active_identifier != self.identifier:
             return
 
@@ -2418,6 +2538,8 @@ class ControllerInput:
             self.reload_sidebar()
 
     def reload_sidebar(self) -> None:
+        if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+            return
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
             return
@@ -2872,7 +2994,7 @@ class ControllerKey(ControllerInput):
         
         x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)
 
-        if self.deck_controller.get_own_key_grid() is None or not gl.app.main_win.get_mapped():
+        if self.deck_controller.get_own_key_grid() is None or not recursive_hasattr(gl, "app.main_win.get_mapped") or not gl.app.main_win.get_mapped():
             # Save to use later
             self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image # The ui key coords are in reverse order
         else:
@@ -2983,7 +3105,11 @@ class ControllerTouchScreen(ControllerInput):
         return Image.new("RGBA", self.get_dial_image_area_size(), (0, 0, 0, 0))
 
     def set_ui_image(self, image: Image.Image) -> None:
-        if not recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") or not gl.app.main_win.get_mapped():
+        if (
+            not recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image")
+            or not recursive_hasattr(gl, "app.main_win.get_mapped")
+            or not gl.app.main_win.get_mapped()
+        ):
             self._store_ui_image_while_hidden(image)
             return
 
@@ -3005,7 +3131,11 @@ class ControllerTouchScreen(ControllerInput):
         if image is None:
             return False
 
-        if recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image") and gl.app.main_win.get_mapped():
+        if (
+            recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar.image")
+            and recursive_hasattr(gl, "app.main_win.get_mapped")
+            and gl.app.main_win.get_mapped()
+        ):
             screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
             screenbar.image.set_image(image)
         else:
@@ -3515,6 +3645,8 @@ class ControllerKeyState(ControllerInputState):
     def set_image(self, key_image: "InputImage", update: bool = True) -> None:
         if self.key_image is not None:
             self.key_image.close()
+        if self.key_video is not None:
+            self.key_video.close()
 
         self.key_image = key_image
         self.key_video = None
@@ -3523,6 +3655,8 @@ class ControllerKeyState(ControllerInputState):
             self.update()
 
     def set_video(self, key_video: "InputVideo") -> None:
+        if self.key_video is not None:
+            self.key_video.close()
         self.key_video = key_video
         if self.key_image is not None:
             self.key_image.close()
@@ -3533,6 +3667,10 @@ class ControllerKeyState(ControllerInputState):
             self.controller_input.last_gif_update_time = 0
 
     def clear(self):
+        if self.key_image is not None:
+            self.key_image.close()
+        if self.key_video is not None:
+            self.key_video.close()
         self.key_image = None
         self.key_video = None
         self.label_manager.clear_labels()

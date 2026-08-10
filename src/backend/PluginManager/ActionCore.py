@@ -59,6 +59,7 @@ if TYPE_CHECKING:
     from src.backend.DeckManagement.DeckController import ControllerInput, ControllerInputState
 
 class ActionCore(rpyc.Service):
+    backend_spawn_count = 0
     # How long to keep retrying an RPyC backend connection before giving up
     BACKEND_CONNECT_TIMEOUT: float = 30.0
     # How long a physical/UI event may sit queued waiting for the backend before it is dropped
@@ -71,6 +72,7 @@ class ActionCore(rpyc.Service):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
+        self.backend_process: subprocess.Popen | None = None
 
         # True while this action's own backend has been launched but hasn't connected back yet
         self.backend_launch_pending: bool = False
@@ -547,10 +549,18 @@ class ActionCore(rpyc.Service):
             self.server.close()
         if self.backend_connection is not None:
             self.backend_connection.close()
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            log.info(f"[backend] stopping action backend pid={self.backend_process.pid} action={self.action_id}")
+            self.backend_process.terminate()
         self.backend = None
+        self.backend_process = None
         self.backend_launch_pending = False
 
     def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            log.info("Backend process already running, skipping launch.")
+            return
+
         if venv_path is not None:
             if not os.path.exists(venv_path):
                 raise ValueError(f"Venv path does not exist: {venv_path}")
@@ -577,7 +587,12 @@ class ActionCore(rpyc.Service):
 
         log.info(f"Launching backend: {command}")
         self.backend_launch_pending = True
-        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        self.backend_process = subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        ActionCore.backend_spawn_count += 1
+        log.info(
+            f"[backend] started action backend pid={self.backend_process.pid} "
+            f"action={self.action_id} spawns={ActionCore.backend_spawn_count}"
+        )
 
         threading.Thread(target=self.wait_for_backend, name="wait_for_backend", daemon=True).start()
 
@@ -658,8 +673,7 @@ class ActionCore(rpyc.Service):
         return True
     
     def on_removed_from_cache(self) -> None:
-        #TODO: Fully implement
-        pass
+        self.on_disconnect()
 
     def on_remove(self) -> None:
         #TODO: Fully implement

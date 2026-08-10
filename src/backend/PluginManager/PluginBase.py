@@ -44,6 +44,7 @@ class PluginBase(rpyc.Service):
 
     plugins = {}
     disabled_plugins = {}
+    backend_spawn_count = 0
 
     # How long to keep retrying an RPyC backend connection before giving up
     BACKEND_CONNECT_TIMEOUT: float = 30.0
@@ -54,6 +55,7 @@ class PluginBase(rpyc.Service):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
+        self.backend_process: subprocess.Popen | None = None
 
         # True while a backend has been launched but hasn't connected back yet
         self.backend_launch_pending: bool = False
@@ -613,7 +615,12 @@ class PluginBase(rpyc.Service):
             self.server.close()
         if self.backend_connection is not None:
             self.backend_connection.close()
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            plugin_id = self.get_plugin_id_from_folder_name()
+            log.info(f"[backend] stopping plugin backend pid={self.backend_process.pid} plugin={plugin_id}")
+            self.backend_process.terminate()
         self.backend_connection = None
+        self.backend_process = None
         self.backend = None
         self.backend_launch_pending = False
 
@@ -637,7 +644,6 @@ class PluginBase(rpyc.Service):
         if os.path.isfile(os.path.join(plugin_path, "__install__.py")):
             subprocess.run(f"{sys.executable} {os.path.join(plugin_path, '__install__.py')}", shell=True, start_new_session=True)
 
-
     def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False) -> None:
         """
         Launches the backend process for the plugin.
@@ -653,6 +659,10 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            log.info("Backend process already running, skipping launch.")
+            return
+
         if venv_path is not None and not self.is_backend_venv_healthy(venv_path):
             log.info(f"Recreating venv for plugin {self.PATH} - This may take a while...")
             self.recreate_venv(plugin_path=self.PATH)
@@ -674,7 +684,13 @@ class PluginBase(rpyc.Service):
 
         log.info(f"Launching backend: {command}")
         self.backend_launch_pending = True
-        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        self.backend_process = subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        PluginBase.backend_spawn_count += 1
+        plugin_id = self.get_plugin_id_from_folder_name()
+        log.info(
+            f"[backend] started plugin backend pid={self.backend_process.pid} "
+            f"plugin={plugin_id} spawns={PluginBase.backend_spawn_count}"
+        )
 
         threading.Thread(target=self.wait_for_backend, name="wait_for_backend", daemon=True).start()
 

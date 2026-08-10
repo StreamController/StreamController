@@ -88,7 +88,6 @@ class VideoFrameCache:
         self.lock = threading.Lock()  # guards cv2 capture only
 
         self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
-        self.do_caching = True
 
         # O(1) cache key — just a stat() call, no file read.
         self.video_md5 = self._fast_cache_key()

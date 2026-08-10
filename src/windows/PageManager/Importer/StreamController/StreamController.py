@@ -4,6 +4,7 @@ import json
 import time
 
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 from src.windows.PageManager.Importer.StreamDeckUI.helper import font_family_from_path, hex_to_rgba255
 from src.windows.PageManager.Importer.StreamDeckUI.code_conv import parse_keys_as_keycodes
 
@@ -21,8 +22,7 @@ class StreamControllerImporter:
 
     
     def save_json(self, json_path: str, data: dict, _retries: int = 3):
-        with open(json_path, "w") as f:
-            json.dump(data, f, indent=4)
+        atomic_save_json(json_path, data, indent=4)
 
         loaded = None
         try:

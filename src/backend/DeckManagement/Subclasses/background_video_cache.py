@@ -13,6 +13,7 @@ import indexed_bzip2 as ibz2
 from loguru import logger as log
 
 import globals as gl
+from src.backend.Utils.AtomicSaveUtils import atomic_write
 
 VID_CACHE = os.path.join(gl.DATA_PATH, "cache", "videos")
 os.makedirs(VID_CACHE, exist_ok=True)
@@ -229,8 +230,9 @@ class BackgroundVideoCache:
 
         data = self.cache.copy()
 
-        with bz2.open(cache_path, "wb") as f:
-            pickle.dump(data, f)
+        with atomic_write(cache_path, "wb") as raw_f:
+            with bz2.open(raw_f, "wb") as f:
+                pickle.dump(data, f)
 
         log.success(f"Saved cache in {time.time() - start:.2f} seconds")
         self.last_save = time.time()

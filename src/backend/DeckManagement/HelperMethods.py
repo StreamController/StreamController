@@ -21,7 +21,6 @@ import subprocess
 import matplotlib.font_manager
 import sys
 import math
-import json
 import requests
 import cairosvg
 import re
@@ -36,6 +35,7 @@ from gi.repository import Gdk, Pango
 from autostart import is_flatpak
 from loguru import logger as log
 import globals as gl
+from src.backend.Utils.AtomicSaveUtils import atomic_write, atomic_save_json
 
 
 def sha256(text: str) -> str:
@@ -172,15 +172,11 @@ def get_image_aspect_ratio(img: Image) -> str:
 
 
 def create_empty_json(path: str, ignore_present: bool = False):
-    # Create all dirs
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-
     if not ignore_present and os.path.exists(path):
         return
 
     # Write empty json
-    with open(path, "w") as f:
-        json.dump({}, f, indent=4)
+    atomic_save_json(path, {})
 
 
 def get_file_name_from_url(url: str):
@@ -216,10 +212,7 @@ def download_file(url: str, path: str = "", file_name: str = None) -> str:
 
     path = os.path.join(path, file_name)
 
-    if os.path.dirname(path) != "":
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-
-    with open(path, "wb") as f:
+    with atomic_write(path, "wb") as f:
         f.write(requests.get(url, timeout=(10, 30)).content)
 
     return path

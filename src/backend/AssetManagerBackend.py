@@ -28,6 +28,7 @@ from PIL import Image
 
 # Import own modules
 from src.backend.DeckManagement.HelperMethods import is_video, is_image, sha256, file_in_dir, create_empty_json, download_file, is_svg
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 
 # Import globals
 import globals as gl
@@ -52,8 +53,7 @@ class AssetManagerBackend(list):
             self.extend(content)
 
     def save_json(self):
-        with open(self.JSON_PATH, "w") as f:
-            json.dump(self, f, indent=4)
+        atomic_save_json(self.JSON_PATH, self, indent=4)
 
     def add(self, asset_path: str, licence_name: str = None, licence_url: str = None, author: str = None) -> str:
         if not os.path.exists(asset_path):

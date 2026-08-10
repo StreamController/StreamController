@@ -40,6 +40,7 @@ from autostart import is_flatpak
 from src.backend.Store.StoreCache import StoreCache
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+from src.backend.Utils.AtomicSaveUtils import atomic_write, atomic_save_json
 
 # Import signals
 from src.Signals import Signals
@@ -786,8 +787,7 @@ class StoreBackend:
             self.api_cache[api_call_url] = {}
             self.api_cache[api_call_url]["answer"] = resp.json()
             self.api_cache[api_call_url]["time-code"] = datetime.now().strftime("%d-%m-%y-%H-%M")
-            with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json"), "w") as f:
-                json.dump(self.api_cache, f, indent=4)
+            atomic_save_json(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json"), self.api_cache, indent=4)
             return resp.json()
 
         if api_call_url not in self.api_cache:
@@ -896,7 +896,7 @@ class StoreBackend:
                 if resp.status_code != 200:
                     log.error(f"Failed to download {zip_url}: {resp.status_code}")
                     return NoConnectionError()
-                with open(zip_path, "wb") as f:
+                with atomic_write(zip_path, "wb") as f:
                     for chunk in resp.iter_content(chunk_size=1024 * 64):
                         f.write(chunk)
         except (requests.exceptions.RequestException, TypeError) as e:
@@ -932,7 +932,7 @@ class StoreBackend:
         
         ## Write version
         path = os.path.join(directory, "VERSION")
-        with open(path, "w") as f:
+        with atomic_write(path, "w") as f:
             f.write(sha)
         
         return 200
@@ -968,7 +968,7 @@ class StoreBackend:
 
         ## Write version
         path = os.path.join(local_path, "VERSION")
-        with open(path, "w") as f:
+        with atomic_write(path, "w") as f:
             f.write(commit_sha or branch_name)
 
         # Set repository to the given commit_sha

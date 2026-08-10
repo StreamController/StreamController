@@ -24,6 +24,7 @@ from PIL import Image, ImageOps
 import cv2
 from loguru import logger as log
 import globals as gl
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 
 VID_CACHE = os.path.join(gl.DATA_PATH, "cache", "videos")
 
@@ -169,9 +170,7 @@ class VideoFrameCache:
                 self.frame_delays = self._read_gif_delays(n)
                 if self.do_caching:
                     try:
-                        os.makedirs(os.path.dirname(delays_path), exist_ok=True)
-                        with open(delays_path, "w") as f:
-                            json.dump(self.frame_delays, f)
+                        atomic_save_json(delays_path, self.frame_delays, indent=None)
                     except Exception as e:
                         log.warning(f"Could not save delays cache: {e}")
 

@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 from src.backend.Migration.Migrator import Migrator
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 import json
 import os
 
@@ -62,8 +63,7 @@ class Migrator_1_5_0(Migrator):
             if "Core447::Pixabay Favorites" in screensaver_path:
                 deck["screensaver"]["path"] = deck["screensaver"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
 
-            with open(deck_path, "w") as f:
-                json.dump(deck, f, indent=4)
+            atomic_save_json(deck_path, deck, indent=4)
 
     def migrate_pages(self):
         pages_dir = os.path.join(gl.DATA_PATH, "pages")
@@ -116,5 +116,4 @@ class Migrator_1_5_0(Migrator):
                 if "Core447::Pixabay Favorites" in media_path:
                     page["keys"][key]["media"]["path"] = page["keys"][key]["media"]["path"].replace("Core447::Pixabay Favorites", "com_core447_PixabayFavorites")
 
-            with open(page_path, "w") as f:
-                json.dump(page, f, indent=4)
+            atomic_save_json(page_path, page, indent=4)

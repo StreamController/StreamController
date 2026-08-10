@@ -51,6 +51,7 @@ from src.backend.DeckManagement.InputIdentifier import Input
 
 from src.Signals import Signals
 from src.api import start_dbus_service, stop_dbus_service
+from src.backend.Utils.AtomicSaveUtils import atomic_write
 
 # Import globals
 import globals as gl
@@ -233,7 +234,7 @@ class App(Adw.Application):
         self.onboarding.present(self.main_win)
 
         # Disable onboarding for future sessions
-        with open(os.path.join(gl.DATA_PATH, ".skip-onboarding"), "w") as f:
+        with atomic_write(os.path.join(gl.DATA_PATH, ".skip-onboarding"), "w") as f:
             f.write("")
 
     def show_permissions(self):

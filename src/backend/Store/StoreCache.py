@@ -5,6 +5,7 @@ import time
 from loguru import logger as log
 
 import globals as gl
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 
 class StoreCache:
     def __init__(self):
@@ -33,9 +34,7 @@ class StoreCache:
         
     def set_files(self, files: dict):
         with self.write_lock:
-            os.makedirs(os.path.dirname(self.files_json), exist_ok=True)
-            with open(self.files_json, "w") as f:
-                json.dump(files.copy(), f, indent=4)
+            atomic_save_json(self.files_json, files.copy(), indent=4)
 
     def remove_old_cache_files(self):
         DAYS_TO_KEEP = 3
@@ -61,10 +60,8 @@ class StoreCache:
         files = [self.files_json]
 
         for file in files:
-            os.makedirs(os.path.dirname(file), exist_ok=True)
             if not os.path.exists(file):
-                with open(file, "w") as f:
-                    json.dump({}, f, indent=4)
+                atomic_save_json(file, {}, indent=4)
 
     def get_user_name(self, repo_url:str) -> str:
         splitted =  repo_url.split("/")

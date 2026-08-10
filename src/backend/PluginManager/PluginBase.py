@@ -36,6 +36,7 @@ import globals as gl
 from locales.LegacyLocaleManager import LegacyLocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.EventHolder import EventHolder
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 
 class PluginBase(rpyc.Service):
     """
@@ -411,8 +412,7 @@ class PluginBase(rpyc.Service):
                     "file-version": "2.0",
                     "settings": settings
                 }
-                with open(self.settings_path, "w") as f:
-                    json.dump(new_settings, f, indent=4)
+                atomic_save_json(self.settings_path, new_settings, indent=4)
 
                 return settings
                 
@@ -451,28 +451,21 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
-        os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
+        content = {}
+        if os.path.isfile(self.settings_path):
+            with open(self.settings_path, "r") as f:
+                content = json.load(f)
 
-        if not os.path.isfile(self.settings_path):
-            with open(self.settings_path, "w") as f:
-                json.dump({}, f)
-
-        with open(self.settings_path, "r+") as f:
-            content = json.load(f)
-
+        if content.get("file-version") == "2.0":
             new_content = content.copy()
+            new_content["settings"] = settings
+        else:
+            new_content = {
+                "file-version": "2.0",
+                "settings": settings
+            }
 
-            if content.get("file-version") == "2.0":
-                new_content["settings"] = settings
-            else:
-                new_content = {
-                    "file-version": "2.0",
-                    "settings": settings
-                }
-
-            f.seek(0)
-            json.dump(new_content, f, indent=4)
-            f.truncate()
+        atomic_save_json(self.settings_path, new_content, indent=4)
 
 
     def add_css_stylesheet(self, path):

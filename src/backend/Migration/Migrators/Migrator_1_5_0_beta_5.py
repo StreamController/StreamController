@@ -13,6 +13,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 from src.backend.Migration.Migrator import Migrator
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 import json
 import os
 
@@ -53,8 +54,7 @@ class Migrator_1_5_0_beta_5(Migrator):
                 page["keys"][key]["states"]["0"].setdefault("image-control-action", 0)
                 page["keys"][key]["states"]["0"].setdefault("label-control-actions", [0, 0, 0])
 
-            with open(page_path, "w") as f:
-                json.dump(page, f, indent=4)
+            atomic_save_json(page_path, page, indent=4)
 
     def migrate_plugin_settings(self):
         if not os.path.exists(gl.PLUGIN_DIR):
@@ -71,8 +71,7 @@ class Migrator_1_5_0_beta_5(Migrator):
 
             new_settings_path = os.path.join(gl.DATA_PATH, "settings", "plugins", plugin_dir_name, "settings.json")
             if os.path.exists(new_settings_path):
-                with open(new_settings_path, "w") as f:
-                    json.dump(settings, f, indent=4)
+                atomic_save_json(new_settings_path, settings, indent=4)
             
             # Remove old settings
             os.remove(old_settings_path)

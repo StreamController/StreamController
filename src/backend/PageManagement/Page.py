@@ -35,6 +35,7 @@ from numpy import isin
 # Import globals
 from src.backend.PluginManager.EventAssigner import EventAssigner
 from src.backend.DeckManagement.ImageHelpers import crop_key_image_from_deck_sized_image
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 import globals as gl
 
 from src.backend.PluginManager.ActionCore import ActionCore
@@ -94,8 +95,7 @@ class Page:
         # Make keys last element
         for type in Input.KeyTypes:
             self.move_key_to_end(without_objects, type)
-        with open(self.json_path, "w") as f:
-            json.dump(without_objects, f, indent=4)
+        atomic_save_json(self.json_path, without_objects, indent=4)
         self.file_access_semaphore.release()
 
     def make_backup(self):

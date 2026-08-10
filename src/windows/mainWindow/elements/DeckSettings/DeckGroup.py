@@ -97,7 +97,9 @@ class Rotation(Adw.PreferencesRow):
         self.settings_page.deck_controller.set_rotation(rot)
 
     def load_default(self, *args):
-        better_disconnect(self.toggle_group, "notify::active")
+        # better_disconnect takes the handler, not the signal name - passing the name
+        # silently did nothing, so this stacked up another connection on every map
+        better_disconnect(self.toggle_group, self.on_value_changed)
 
         rot = gl.settings_manager.get_deck_settings(self.deck_serial_number).get("rotation", 0)
         self.toggle_group.set_active_name(str(rot))

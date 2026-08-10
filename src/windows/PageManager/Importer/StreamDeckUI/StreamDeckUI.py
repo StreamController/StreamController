@@ -31,21 +31,23 @@ class StreamDeckUIImporter:
         x = index % cols
         return f"{x}x{y}"
     
-    def save_json(self, json_path: str, data: dict):
+    def save_json(self, json_path: str, data: dict, _retries: int = 3):
         with open(json_path, "w") as f:
             json.dump(data, f, indent=4)
 
         loaded = None
         try:
-            # Verify data
             with open(json_path) as f:
                 loaded = json.load(f)
         except Exception as e:
             pass
 
         if loaded != data:
-            log.error(f"Failed to save {json_path}, trying again")
-            self.save_json(json_path, data)
+            if _retries > 0:
+                log.error(f"Failed to save {json_path}, trying again ({_retries} retries left)")
+                self.save_json(json_path, data, _retries=_retries - 1)
+            else:
+                log.error(f"Failed to save {json_path} after all retries, giving up")
             
     def get_state_map(self, available_states: list[str]):
         available_states = [int(state) for state in available_states]
@@ -83,33 +85,42 @@ class StreamDeckUIImporter:
                     coords = self.index_to_page_coords(int(button), deck)
                     page["keys"][coords] = {}
 
-                    # Choose first state
-                    states = self.export["state"][deck]["buttons"][page_name][button].get("states", {})
+                    button_data = self.export["state"][deck]["buttons"][page_name][button]
+
+                    # Support both formats: with explicit "states" dict, or
+                    # flat format where properties are directly on the button
+                    if "states" in button_data and button_data["states"]:
+                        states = button_data["states"]
+                    else:
+                        states = {"0": button_data}
+
                     state_map = self.get_state_map(available_states=list(states.keys()))
                     for page_state, export_state in state_map.items():
+                        state_data = states[export_state]
+
                         page["keys"][coords].setdefault("states", {})
                         page["keys"][coords]["states"].setdefault(page_state, {})
 
                         ## Text
-                        font_color_hex = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("font_color")
+                        font_color_hex = state_data.get("font_color")
                         if font_color_hex in [None, ""]:
                             font_color_hex = "#FFFFFFFF"
                         page["keys"][coords]["states"][page_state]["labels"] = {}
                         page["keys"][coords]["states"][page_state]["labels"]["bottom"] = {
-                            "text": self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("text", None),
+                            "text": state_data.get("text", None),
                             "color": hex_to_rgba255(font_color_hex),
                             "font_size": None,
-                            "font_family": font_family_from_path(self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("font"))
+                            "font_family": font_family_from_path(state_data.get("font"))
                         }
-                        
+
                         page["keys"][coords]["states"][page_state]["background"] = {}
-                        color_hex = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("background_color")
+                        color_hex = state_data.get("background_color")
                         if color_hex not in [None, ""]:
                             page["keys"][coords]["states"][page_state]["background"]["color"] = hex_to_rgba255(color_hex)
 
                         ## Icon
                         page["keys"][coords]["states"][page_state]["media"] = {}
-                        export_icon = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("icon")
+                        export_icon = state_data.get("icon")
                         if export_icon not in [None, ""]:
                             if os.path.exists(export_icon):
                                 asset_id = gl.asset_manager_backend.add(asset_path=export_icon)
@@ -122,7 +133,7 @@ class StreamDeckUIImporter:
                         page["keys"][coords]["states"][page_state]["actions"] = []
 
                         # Switch page
-                        export_switch_page = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("switch_page")
+                        export_switch_page = state_data.get("switch_page")
                         if str(export_switch_page) != str(int(page_name)+1) and export_switch_page not in [0, "0", None, ""]:
                             if export_switch_page not in [None, ""]:
                                 page_path = os.path.join(gl.DATA_PATH, "pages", f"ui_{deck}_{export_switch_page}.json")
@@ -136,12 +147,12 @@ class StreamDeckUIImporter:
                                 page["keys"][coords]["states"][page_state]["actions"].append(action)
 
                         # Hotkey
-                        if self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("keys") not in [None, ""]:
+                        if state_data.get("keys") not in [None, ""]:
                             parsed = ""
                             try:
-                                parsed = parse_keys_as_keycodes(self.export["state"][deck]["buttons"][page_name][button]["states"][export_state]["keys"])[0]
+                                parsed = parse_keys_as_keycodes(state_data["keys"])[0]
                             except Exception as e:
-                                log.error(f"Failed to parse keys: {self.export['state'][deck]['buttons'][page_name][button]['states'][export_state]['keys']}. Error: {e}")
+                                log.error(f"Failed to parse keys: {state_data['keys']}. Error: {e}")
 
                             if parsed not in [None, ""]:
                                 action = {
@@ -159,7 +170,7 @@ class StreamDeckUIImporter:
                                 page["keys"][coords]["states"][page_state]["actions"].append(action)
 
                         # Write text
-                        export_write = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("write")
+                        export_write = state_data.get("write")
                         if export_write not in [None, ""]:
                             action = {
                                 "id": "com_core447_OSPlugin::WriteText",
@@ -170,7 +181,7 @@ class StreamDeckUIImporter:
                             page["keys"][coords]["states"][page_state]["actions"].append(action)
 
                         # Command
-                        export_command = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("command")
+                        export_command = state_data.get("command")
                         if export_command not in [None, ""]:
                             action = {
                                 "id": "com_core447_OSPlugin::RunCommand",
@@ -181,7 +192,7 @@ class StreamDeckUIImporter:
                             page["keys"][coords]["states"][page_state]["actions"].append(action)
 
                         # Brightness
-                        export_brightness_change = self.export["state"][deck]["buttons"][page_name][button]["states"][export_state].get("brightness_change")
+                        export_brightness_change = state_data.get("brightness_change")
                         if export_brightness_change not in [None, "", 0]:
                             action = None
                             if export_brightness_change > 0:

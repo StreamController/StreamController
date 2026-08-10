@@ -40,6 +40,7 @@ import os
 from GtkHelper.GtkHelper import BetterExpander, better_disconnect
 from src.backend.WindowGrabber.Window import Window
 from src.windows.PageManager.elements.MenuButton import MenuButton
+from src.backend.PageManagement.Page import Page
 
 class PageEditor(Adw.NavigationPage):
     def __init__(self, page_manager: "PageManager"):
@@ -47,6 +48,12 @@ class PageEditor(Adw.NavigationPage):
         self.page_manager = page_manager
         self.active_page_path: str = None
         self.build()
+
+    def get_page_data(self) -> dict:
+        return gl.page_manager.get_page_data(self.active_page_path, use_backup=False)
+
+    def set_page_data(self, data: dict, reload_brightness: bool = True, reload_screensaver: bool = True, reload_background: bool = True, reload_inputs: bool = True):
+        gl.page_manager.set_page_data(self.active_page_path, data, reload_brightness=reload_brightness, reload_screensaver=reload_screensaver, reload_background=reload_background, reload_inputs=reload_inputs)
 
     def build(self):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
@@ -254,11 +261,15 @@ class AutoChangeGroup(PageEditorGroup):
         )
         self.add(self.deck_selector)
 
-        self.title_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.title-regex"), text="", show_apply_button=True)
+        self.title_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.title-regex"), text=".*", show_apply_button=True)
         self.add(self.title_entry)
+        self.title_focus_ctrl = Gtk.EventControllerFocus()
+        self.title_entry.add_controller(self.title_focus_ctrl)
 
-        self.wm_class_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.wm-class-regex"), text="", show_apply_button=True)
+        self.wm_class_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.wm-class-regex"), text=".*", show_apply_button=True)
         self.add(self.wm_class_entry)
+        self.wm_class_focus_ctrl = Gtk.EventControllerFocus()
+        self.wm_class_entry.add_controller(self.wm_class_focus_ctrl)
 
         self.matching_window_expander = MatchingWindowExpander(auto_change_group=self)
         self.add(self.matching_window_expander)
@@ -268,20 +279,24 @@ class AutoChangeGroup(PageEditorGroup):
         self.stay_on_page_toggle.connect("notify::active", self.on_stay_on_page_changed)
         self.title_entry.connect("apply", self.on_title_entry_applied)
         self.wm_class_entry.connect("apply", self.on_wm_class_entry_applied)
+        self.title_focus_ctrl.connect("leave", self.on_title_entry_focus_leave)
+        self.wm_class_focus_ctrl.connect("leave", self.on_wm_class_entry_focus_leave)
 
     def disconnect_events(self):
         better_disconnect(self.enable_toggle, self.on_enable_changed)
         better_disconnect(self.stay_on_page_toggle, self.on_stay_on_page_changed)
         better_disconnect(self.title_entry, self.on_title_entry_applied)
         better_disconnect(self.wm_class_entry, self.on_wm_class_entry_applied)
+        better_disconnect(self.title_focus_ctrl, self.on_title_entry_focus_leave)
+        better_disconnect(self.wm_class_focus_ctrl, self.on_wm_class_entry_focus_leave)
 
     def load_config_settings(self, page_path: str):
         auto_change = gl.page_manager.get_auto_change_settings(self.page_editor.active_page_path)
 
         self.enable_toggle.set_active(auto_change.get("enable", False))
         self.stay_on_page_toggle.set_active(auto_change.get("stay-on-page", True))
-        self.wm_class_entry.set_text(auto_change.get("wm-class", ""))
-        self.title_entry.set_text(auto_change.get("title", ""))
+        self.wm_class_entry.set_text(auto_change.get("wm-class", ".*"))
+        self.title_entry.set_text(auto_change.get("title", ".*"))
         self.deck_selector.set_selected_deck_serials(auto_change.get("decks", []).copy())
 
     def on_enable_changed(self, *args):
@@ -289,6 +304,7 @@ class AutoChangeGroup(PageEditorGroup):
             path=self.page_editor.active_page_path,
             enable=self.enable_toggle.get_active()
         )
+        gl.window_grabber.recheck_active_window()
 
     def on_stay_on_page_changed(self, *args):
         gl.page_manager.overwrite_auto_change_settings(
@@ -303,6 +319,7 @@ class AutoChangeGroup(PageEditorGroup):
             path=self.page_editor.active_page_path,
             regex_title=self.title_entry.get_text()
         )
+        gl.window_grabber.recheck_active_window()
 
     def on_wm_class_entry_applied(self, *args):
         self.matching_window_expander.update_matching_windows()
@@ -311,6 +328,17 @@ class AutoChangeGroup(PageEditorGroup):
             path=self.page_editor.active_page_path,
             wm_class=self.wm_class_entry.get_text()
         )
+        gl.window_grabber.recheck_active_window()
+
+    def on_title_entry_focus_leave(self, *args):
+        saved = gl.page_manager.get_auto_change_settings(self.page_editor.active_page_path).get("title", ".*")
+        if self.title_entry.get_text() != saved:
+            self.on_title_entry_applied()
+
+    def on_wm_class_entry_focus_leave(self, *args):
+        saved = gl.page_manager.get_auto_change_settings(self.page_editor.active_page_path).get("wm-class", ".*")
+        if self.wm_class_entry.get_text() != saved:
+            self.on_wm_class_entry_applied()
 
     def on_deck_changed(self, serial_number: str, state: bool):
         path = self.page_editor.active_page_path
@@ -325,6 +353,7 @@ class AutoChangeGroup(PageEditorGroup):
             return
 
         gl.page_manager.overwrite_auto_change_settings(path, decks=decks)
+        gl.window_grabber.recheck_active_window()
 
 class BrightnessGroup(PageEditorGroup):
     def __init__(self, page_editor: PageEditor):

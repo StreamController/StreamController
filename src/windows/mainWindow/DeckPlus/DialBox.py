@@ -48,6 +48,12 @@ class DialBox(Gtk.Box):
 
 
     def build(self):
+        # The dials sit along the touchscreen, so they stack the same way it does
+        if self.deck_controller.deck.get_rotation() % 180 == 0:
+            self.set_orientation(Gtk.Orientation.HORIZONTAL)
+        else:
+            self.set_orientation(Gtk.Orientation.VERTICAL)
+
         for i in range(self.deck_controller.deck.dial_count()):
             dial = Dial(self, Input.Dial(str(i)))
             self.dials.append(dial)

@@ -33,14 +33,18 @@ import json
 import usb.core
 import usb.util
 from StreamDeck.DeviceManager import DeviceManager
+from StreamDeck.ProductIDs import USBProductIDs, USBVendorIDs
 
 # Import globals first to get IS_MAC
 import globals as gl
 
 if not gl.IS_MAC:
+    # dbus-python is used for blocking method calls only, so its GLib main loop
+    # is deliberately never installed. Attaching a connection to the main loop
+    # makes dbus-python rebuild that connection's GSources from whichever thread
+    # sends a message, which corrupts them once anything calls D-Bus off the
+    # main thread. Use GDBus (Gio) for signals and exported objects instead.
     import dbus
-    import dbus.service
-    from dbus.mainloop.glib import DBusGMainLoop
 
 # Import own modules
 from src.app import App
@@ -63,7 +67,7 @@ from src.backend.PermissionManagement.FlatpakPermissionManager import FlatpakPer
 from src.backend.Wayland.Wayland import Wayland
 from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
 from src.tray import TrayIcon
-from src.backend.Logger import Logger, LoggerConfig, Loglevel
+from src.backend.Logger import Logger, LoggerConfig, Loglevel, intercept_stdlib_logging
 
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
@@ -92,6 +96,10 @@ def config_logger():
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
     log.add(write_logs, level="TRACE")
+
+    # The streamdeck library logs its deck reconnect diagnostics through the
+    # standard logging module, which loguru does not pick up on its own
+    intercept_stdlib_logging()
 
     plugin_logger = Logger(
         LoggerConfig(
@@ -272,22 +280,22 @@ def update_assets():
 @log.catch
 def reset_all_decks():
     # Find all USB devices
-    devices = usb.core.find(find_all=True, idVendor=DeviceManager.USB_VID_ELGATO)
+    devices = usb.core.find(find_all=True, idVendor=USBVendorIDs.USB_VID_ELGATO)
     for device in devices:
         try:
             # Check if it's a StreamDeck
             if device.idProduct in [
-                DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
-                DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
-                DeviceManager.USB_PID_STREAMDECK_MINI,
-                DeviceManager.USB_PID_STREAMDECK_XL,
-                DeviceManager.USB_PID_STREAMDECK_MK2,
-                DeviceManager.USB_PID_STREAMDECK_PEDAL,
-                DeviceManager.USB_PID_STREAMDECK_PLUS,
-                DeviceManager.USB_PID_STREAMDECK_MK2_SCISSOR,
-                DeviceManager.USB_PID_STREAMDECK_MK2_MODULE,
-                DeviceManager.USB_PID_STREAMDECK_MINI_MK2_MODULE,
-                DeviceManager.USB_PID_STREAMDECK_XL_V2_MODULE,
+                USBProductIDs.USB_PID_STREAMDECK_ORIGINAL,
+                USBProductIDs.USB_PID_STREAMDECK_ORIGINAL_V2,
+                USBProductIDs.USB_PID_STREAMDECK_MINI,
+                USBProductIDs.USB_PID_STREAMDECK_XL,
+                USBProductIDs.USB_PID_STREAMDECK_MK2,
+                USBProductIDs.USB_PID_STREAMDECK_PEDAL,
+                USBProductIDs.USB_PID_STREAMDECK_PLUS,
+                USBProductIDs.USB_PID_STREAMDECK_MK2_SCISSOR,
+                USBProductIDs.USB_PID_STREAMDECK_MK2_MODULE,
+                USBProductIDs.USB_PID_STREAMDECK_MINI_MK2_MODULE,
+                USBProductIDs.USB_PID_STREAMDECK_XL_V2_MODULE,
             ]:
                 # Reset deck
                 usb.util.dispose_resources(device)
@@ -612,7 +620,6 @@ def main():
                     'GSK_RENDERER=ngl to your "/etc/environment" file')
 
     if not gl.IS_MAC:
-        DBusGMainLoop(set_as_default=True)
         # Dbus
         quit_running()
 

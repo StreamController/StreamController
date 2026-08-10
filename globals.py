@@ -134,24 +134,23 @@ showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.13"  # In breaking.feature.fix-state format
+app_version: str = "1.5.0-beta.15"  # In breaking.feature.fix-state format
 exact_app_version_check: bool = False
 logs = deque(maxlen=5000)
 
 release_notes: str = """
 <p>Features:</p>
     <ul>
-        <li>Add way to set alignments for labels</li>
-        <li>Add localization for Brazilian Portuguese</li>
+        <li>Add uninstall button to plugin settings page</li>
     </ul>
 <p>Improvements:</p>
     <ul>
-        <li>Improve shutdown speed</li>
-        <li>Updated store badges</li>
+        <li>Improved page switch speed</li>
+        <li>Reduce idle CPU usage</li>
+        <li>Improve Hyprland active window detection</li>
+        <li>Switch to new GNOME runtime</li>
     </ul>
 <p>Fixes:</p>
     <ul>
-        <li>Long startup time when started without internet connection</li>
-        <li>Too small preview images for keys in the UI</li>
     </ul>
 """

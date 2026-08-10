@@ -21,11 +21,6 @@ if TYPE_CHECKING:
 # Import globals first to get IS_MAC
 import globals as gl
 
-if not gl.IS_MAC:
-    import dbus
-
-from loguru import logger as log
-
 class CinnamonLockScreenDetector(LockScreenDetector):
     def __init__(self, lock_screen_manager: "LockScreenManager"):
         self.lock_screen_manager: "LockScreenManager" = lock_screen_manager
@@ -40,19 +35,7 @@ class CinnamonLockScreenDetector(LockScreenDetector):
     def setup_dbus(self):
         if gl.IS_MAC:
             return
-        try:
-            # Use the D-Bus MainLoop with glib integration
-            dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
-            # Connect to the Session Bus
-            bus = dbus.SessionBus()
-
-            # Define the signal to listen to
-            bus.add_signal_receiver(
-                self.screen_saver_active_changed,
-                dbus_interface="org.cinnamon.ScreenSaver",
-                signal_name="ActiveChanged",
-                path="/org/cinnamon/ScreenSaver"
-            )
-        except Exception as e:
-            log.error(f"Failed to connect to D-Bus: {e}")
+        self.subscribe_to_screen_saver(
+            interface="org.cinnamon.ScreenSaver",
+            path="/org/cinnamon/ScreenSaver"
+        )

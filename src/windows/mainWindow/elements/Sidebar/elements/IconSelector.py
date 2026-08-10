@@ -24,9 +24,6 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
-# Import Python modules
-from loguru import logger as log
-
 # Import own modules
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 
@@ -40,7 +37,8 @@ class IconSelector(Gtk.Box):
         self.active_identifier: InputIdentifier = None
         self.active_state: int = None
 
-        self.latest_task_id: int = None
+        self._pending_pixbuf = None
+        self._pixbuf_update_scheduled = False
         self.build()
 
     def build(self):
@@ -83,22 +81,24 @@ class IconSelector(Gtk.Box):
         self.overlay.set_clip_overlay(self.remove_button, True)
 
 
-    def get_new_task_id(self):
-        if self.latest_task_id is None:
-            return 0
-
-        return self.latest_task_id + 1
-
     def set_image(self, image):
         pixbuf = image2pixbuf(image.convert("RGBA"), force_transparency=True)
-        self.latest_task_id = self.get_new_task_id()
-        GLib.idle_add(self.set_pixbuf_and_del, pixbuf, self.latest_task_id, priority=GLib.PRIORITY_HIGH)
+        self._pending_pixbuf = pixbuf
+        if self._pixbuf_update_scheduled:
+            return
+        self._pixbuf_update_scheduled = True
+        GLib.idle_add(self._flush_pending_pixbuf, priority=GLib.PRIORITY_HIGH)
+
+    def _flush_pending_pixbuf(self):
+        self._pixbuf_update_scheduled = False
+        pixbuf = self._pending_pixbuf
+        self._pending_pixbuf = None
+        if pixbuf is None:
+            return False
+        self.set_pixbuf_and_del(pixbuf)
+        return False
 
     def set_pixbuf_and_del(self, pixbuf, task_id: int = None):
-        if task_id is not None:
-            if task_id != self.latest_task_id:
-                log.debug("IconSelector: Abort task")
-                return
         self.image.set_pixbuf(pixbuf)
         pixbuf = None
         del pixbuf

@@ -59,8 +59,17 @@ class AssetManagerBackend(list):
         if not os.path.exists(asset_path):
             log.warning(f"File {asset_path} not found.")
             return
-        
-        
+
+        if not self.is_decodable(asset_path):
+            log.warning(f"File {asset_path} is not a valid/decodable image, gif, svg or video. Refusing to add it.")
+            dial = Gtk.AlertDialog(
+                message="The file is invalid.",
+                detail="The file could not be read as an image, gif, svg or video.",
+                modal=True
+            )
+            GLib.idle_add(dial.show)
+            return
+
         hash = sha256(asset_path)
         if self.has_by_sha256(hash):
             #TODO: It is possible that the some image has the same sha but not the name because it got renamed
@@ -103,6 +112,16 @@ class AssetManagerBackend(list):
         # Return id of added asset
         return asset["id"]
     
+    def is_decodable(self, asset_path: str) -> bool:
+        """Attempt to actually decode a file (not just check its extension) to make sure it's a valid asset."""
+        try:
+            thumbnail = gl.media_manager.generate_thumbnail(asset_path)
+            thumbnail.load()
+        except Exception as e:
+            log.warning(f"Failed to decode {asset_path}: {e}")
+            return False
+        return True
+
     def save_thumbnail(self, asset_path, asset_hash):
         thumbnail_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "thumbnails", f"{asset_hash}.png")
 
@@ -142,10 +161,11 @@ class AssetManagerBackend(list):
             dst_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets", file_name)
         else:
             log.warning(f"File with same name already exists but sha256 does not match, renaming: {asset_path}")
+            original_base, ext = os.path.splitext(os.path.basename(asset_path))
             index = 2
             while file_in_dir(file_name, os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets")):
-                base, ext = os.path.splitext(file_name)
-                file_name = f"{base}-{str(index).zfill(2)}.{ext.replace('.', '')}"
+                file_name = f"{original_base}-{str(index).zfill(2)}{ext}"
+                index += 1
             dst_path = os.path.join(gl.DATA_PATH, "Assets", "AssetManager", "Assets", file_name)
 
         if asset_path == dst_path:
@@ -214,7 +234,11 @@ class AssetManagerBackend(list):
                         continue
 
                 # Create thumbnail
-                thumbnail_path = self.save_thumbnail(asset["internal-path"], asset["sha256"])
+                try:
+                    thumbnail_path = self.save_thumbnail(asset["internal-path"], asset["sha256"])
+                except Exception as e:
+                    log.warning(f"Failed to generate thumbnail for {asset.get('internal-path')}: {e}")
+                    continue
 
                 asset["thumbnail"] = thumbnail_path
 
@@ -226,10 +250,22 @@ class AssetManagerBackend(list):
         self.save_json()
 
     def remove_invalid_data(self):
-        ## Remove assets that have been delted internally
-        for asset in self:
-            if not os.path.exists(asset["internal-path"]):
-                self.remove(asset)
+        ## Remove assets that have been deleted internally or are no longer decodable
+        for asset in list(self):
+            internal_path = asset.get("internal-path")
+            if internal_path and os.path.exists(internal_path) and self.is_decodable(internal_path):
+                continue
+
+            log.warning(f"Removing invalid asset from Assets.json: {asset}")
+
+            for path in {internal_path, asset.get("thumbnail")}:
+                if path and os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except OSError as e:
+                        log.warning(f"Failed to remove {path}: {e}")
+
+            self.remove(asset)
         self.save_json()
 
     def add_custom_media_set_by_ui(self, url: str, path: str):

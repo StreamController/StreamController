@@ -18,6 +18,7 @@ from src.backend.LockScreenManager.Detectors.Gnome import GnomeLockScreenDetecto
 from src.backend.LockScreenManager.Detectors.Cinnamon import CinnamonLockScreenDetector
 from src.backend.LockScreenManager.Detectors.KDE import KDELockScreenDetector
 from src.backend.LockScreenManager.Detectors.Hyprland import HyprlandLockScreenDetector
+from src.backend.LockScreenManager.Detectors.Logind import LogindLockScreenDetector
 from src.backend.LockScreenManager.LockScreenDetector import LockScreenDetector
 from loguru import logger as log
 
@@ -32,14 +33,26 @@ class LockScreenManager:
     @log.catch
     def setup(self):
         env = self.get_active_environment()
+
+        # Hyprland uses the Wayland lock notifier protocol directly
+        if env == "hyprland":
+            self.detector = HyprlandLockScreenDetector(self)
+            return
+
+        # Try logind
+        try:
+            self.detector = LogindLockScreenDetector(self)
+            return
+        except Exception as e:
+            log.debug(f"Logind lock detection not available: {e}")
+
+        # Fall back to DE-specific DBus detectors
         if env == "gnome":
             self.detector = GnomeLockScreenDetector(self)
         elif env == "x-cinnamon":
             self.detector = CinnamonLockScreenDetector(self)
         elif env == "kde":
             self.detector = KDELockScreenDetector(self)
-        elif env == "hyprland":
-            self.detector = HyprlandLockScreenDetector(self)
 
     @log.catch
     def get_active_environment(self) -> str:

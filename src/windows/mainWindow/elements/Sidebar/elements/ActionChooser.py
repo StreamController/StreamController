@@ -71,7 +71,7 @@ class ActionChooser(Gtk.Box):
         self.back_button.connect("clicked", self.on_back_button_click)
         self.nav_box.append(self.back_button)
 
-        self.header = Gtk.Label(label=gl.lm.get("action-chooser.header"), xalign=0, css_classes=["page-header"], margin_start=20, margin_top=30)
+        self.header = Gtk.Label(label=gl.lm.get("action-chooser.header"), xalign=0, css_classes=["page-header"], margin_top=30)
         self.main_box.append(self.header)
 
         self.search_entry = Gtk.SearchEntry(margin_top=10,
@@ -116,7 +116,7 @@ class ActionChooser(Gtk.Box):
 
 class OpenStoreButton(Gtk.Button):
     def __init__(self, *args, **kwargs):
-        super().__init__(label=gl.lm.get("asset-chooser.add-more-button.label"), css_classes=["open-store-button"],
+        super().__init__(label=gl.lm.get("asset-chooser.add-more-button.label"), css_classes=["suggested-action"],
                          *args, **kwargs)
         self.connect("clicked", self.on_click)
 

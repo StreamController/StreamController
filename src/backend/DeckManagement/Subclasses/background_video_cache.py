@@ -30,11 +30,16 @@ class BackgroundVideoCache:
         self.lock = threading.Lock()
 
         self.video_path = video_path
-        self.cap = cv2.VideoCapture(video_path)
-        self.n_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.cache = OrderedDict()
         self.last_decoded_frame = None
         self.last_frame_index = -1
+
+        if self._is_gif():
+            self.gif = Image.open(video_path)
+            self.n_frames = getattr(self.gif, "n_frames", 1)
+        else:
+            self.cap = cv2.VideoCapture(video_path)
+            self.n_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         self.video_md5 = self.get_video_hash()
 
@@ -60,39 +65,50 @@ class BackgroundVideoCache:
 
         self.do_caching = gl.settings_manager.get_app_settings().get("performance", {}).get("cache-videos", True)
 
+    def _is_gif(self) -> bool:
+        return os.path.splitext(self.video_path)[1].lower() == ".gif"
+
     def get_tiles(self, n):
         if self._closed:
             return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
         # Check if cache is available (video may have been closed)
         if not hasattr(self, 'cache') or self.cache is None:
             return [self.deck_controller.generate_alpha_key() for _ in range(self.deck_controller.deck.key_count())]
-        
+
         n = min(n, self.n_frames - 1)
         tiles = None
         with self.lock:
             if self.is_cache_complete():
-                self.cap.release()
+                if not self._is_gif():
+                    self.cap.release()
                 return self.cache.get(n, None)
-            
+
             # Otherwise, continue with video capture
             # Check if the frame is already decoded
             if n in self.cache:
                 return self.cache[n]
-            
+
             # If the requested frame is before the last decoded one, reset the capture
             if n < self.last_frame_index:
-                self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
+                if not self._is_gif():
+                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
                 self.last_frame_index = n - 1
 
             # Decode frames until the nth frame
             while self.last_frame_index < n:
-                success, frame = self.cap.read()
-                if not success:
-                    break  # Reached the end of the video
+                if self._is_gif():
+                    try:
+                        self.gif.seek(self.last_frame_index + 1)
+                    except EOFError:
+                        break  # Reached the end of the GIF
+                    pil_image = self.gif.convert("RGBA")
+                else:
+                    success, frame = self.cap.read()
+                    if not success:
+                        break  # Reached the end of the video
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    pil_image = Image.fromarray(frame_rgb)
                 self.last_frame_index += 1
-                
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  
-                pil_image = Image.fromarray(frame_rgb)
 
                 # Resize the image
                 full_sized = self.create_full_deck_sized_image(pil_image)
@@ -264,7 +280,11 @@ class BackgroundVideoCache:
         import gc
         self._closed = True
         with self.lock:
-            self.cap.release()
+            if self._is_gif():
+                if hasattr(self, "gif") and self.gif is not None:
+                    self.gif.close()
+            else:
+                self.cap.release()
 
         if hasattr(self, 'cache') and self.cache is not None:
             for n in list(self.cache.keys()):

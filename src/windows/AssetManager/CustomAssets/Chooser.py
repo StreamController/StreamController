@@ -50,16 +50,17 @@ class CustomAssetChooser(ChooserPage):
     @log.catch
     def build(self):
         self.build_finished = False
-        self.asset_chooser = CustomAssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
-        GLib.idle_add(self.scrolled_box.prepend, self.asset_chooser)
+        try:
+            self.asset_chooser = CustomAssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
+            GLib.idle_add(self.scrolled_box.prepend, self.asset_chooser)
 
-        self.browse_files_button = Gtk.Button(label=gl.lm.get("asset-chooser.custom.browse-files"), margin_top=15)
-        self.browse_files_button.connect("clicked", self.on_browse_files_clicked)
-        GLib.idle_add(self.main_box.append, self.browse_files_button)
+            self.browse_files_button = Gtk.Button(label=gl.lm.get("asset-chooser.custom.browse-files"), margin_top=15)
+            self.browse_files_button.connect("clicked", self.on_browse_files_clicked)
+            GLib.idle_add(self.main_box.append, self.browse_files_button)
 
-        self.load_defaults()
-
-        self.set_loading(False)
+            self.load_defaults()
+        finally:
+            self.set_loading(False)
 
         self.build_finished = True
         for task in self.build_task_finished_tasks:

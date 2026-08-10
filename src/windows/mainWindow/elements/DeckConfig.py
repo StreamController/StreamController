@@ -39,6 +39,7 @@ class DeckConfig(Gtk.Box):
         self.page_settings_page = page_settings_page
 
         self.active_widget = None
+        self.screenbar = None
         self.build()
 
     def build(self):
@@ -52,3 +53,46 @@ class DeckConfig(Gtk.Box):
 
         self.dial_box = DialBox(self.page_settings_page.deck_controller, self.page_settings_page)
         self.append(self.dial_box)
+
+        self.apply_rotation_layout()
+
+    def rebuild_for_rotation(self):
+        """Re-create the parts whose size depends on the rotation, then re-lay them out."""
+        # Whatever was selected is about to be destroyed
+        self.active_widget = None
+
+        for child in [self.grid, self.screenbar, self.dial_box]:
+            if child is not None:
+                self.remove(child)
+
+        self.screenbar = None
+        self.build()
+
+    def apply_rotation_layout(self):
+        """
+        Lay the parts out the way the deck is physically oriented.
+
+        Unrotated the order top to bottom is grid, screenbar, dials. Turning the deck
+        clockwise (90) moves the top to the right, turning it the other way (270)
+        moves it to the left.
+        """
+        rotation = self.page_settings_page.deck_controller.deck.get_rotation()
+
+        children = [self.grid]
+        if self.screenbar is not None:
+            children.append(self.screenbar)
+        children.append(self.dial_box)
+
+        if rotation % 180 == 0:
+            self.set_orientation(Gtk.Orientation.VERTICAL)
+            if rotation == 180:
+                children.reverse()
+        else:
+            self.set_orientation(Gtk.Orientation.HORIZONTAL)
+            if rotation == 90:
+                children.reverse()
+
+        previous = None
+        for child in children:
+            self.reorder_child_after(child, previous)
+            previous = child

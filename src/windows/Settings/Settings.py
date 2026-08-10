@@ -285,16 +285,9 @@ class DataPathGroup(Adw.PreferencesGroup):
         gl.settings_manager.save_static_settings(static_settings)
 
     def on_open_data_path_button_clicked(self, *args):
-        command = ""
-        if is_flatpak():
-            command += "flatpak-spawn --host "
-
-        command += f"xdg-open {self.data_path.get_text()}"
-
-        try:
-            subprocess.check_output(command, shell=True)
-        except subprocess.CalledProcessError:
-            pass
+        path = self.data_path.get_text().strip()
+        uri = Gio.File.new_for_path(path).get_uri()
+        Gio.AppInfo.launch_default_for_uri(uri, None)
 
 
 class GeneralPage(Adw.PreferencesPage):
@@ -318,13 +311,18 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         self.hold_time_row.set_range(0.1, 3)
         self.add(self.hold_time_row)
 
+        self.rolling_labels = Adw.SwitchRow(title="Rolling labels", subtitle="Enable automatic rolling/scrolling of too long labels")
+        self.add(self.rolling_labels)
+
         self.load_defaults()
 
         # Connect signals
         self.hold_time_row.connect("changed", self.on_n_fake_decks_row_changed)
+        self.rolling_labels.connect("notify::active", self.on_rolling_labels_changed)
 
     def load_defaults(self):
         self.hold_time_row.set_value(self.settings.settings_json.get("general", {}).get("hold-time", 0.5))
+        self.rolling_labels.set_active(self.settings.settings_json.get("general", {}).get("rolling-labels", True))
 
     def on_n_fake_decks_row_changed(self, *args):
         self.settings.settings_json.setdefault("general", {})
@@ -338,6 +336,17 @@ class GeneralPageGroup(Adw.PreferencesGroup):
 
         # Reload decks
         gl.deck_manager.load_fake_decks()
+
+    def on_rolling_labels_changed(self, *args):
+        self.settings.settings_json.setdefault("general", {})
+        self.settings.settings_json["general"]["rolling-labels"] = self.rolling_labels.get_active()
+
+        # Save
+        self.settings.save_json()
+
+        # Reload all pages - TODO: might not be necessary
+        for controller in gl.deck_manager.deck_controller:
+            controller.reload_page()
 
 class FontPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):
@@ -703,7 +712,7 @@ class SystemGroup(Adw.PreferencesGroup):
         self.autostart = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-autostart"), subtitle=gl.lm.get("settings-system-settings-autostart-subtitle"), active=True)
         self.add(self.autostart)
 
-        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Works on Gnome, KDE, Cinnamon and Hyprland", active=True)
+        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Works on Gnome, KDE, Cinnamon, Hyprland, and Niri", active=True)
         self.add(self.lock_on_lock_screen)
 
         self.beta_resume_mode = Adw.SwitchRow(title="Use new resume mode (beta)", subtitle="Use new way to resume after suspends - requires restart", active=False)
@@ -729,6 +738,11 @@ class SystemGroup(Adw.PreferencesGroup):
 
         # Save
         self.settings.save_json()
+
+        # Keep the Gio.Application hold in sync so the change applies
+        # immediately, without requiring an app restart.
+        if hasattr(gl, "app"):
+            gl.app.set_keep_running_hold(self.keep_running.get_active())
 
     def on_autostart_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})

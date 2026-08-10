@@ -17,26 +17,24 @@ import threading
 import time
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.Devices import StreamDeck
+from StreamDeck.ProductIDs import USBProductIDs, USBVendorIDs
 from StreamDeck.ImageHelpers import PILHelper
 from loguru import logger as log
 from usbmonitor import USBMonitor
 import usb.core
 import usb.util
 import os
-import types
 
 
 # Import own modules
 from src.backend.DeckManagement.Subclasses.RemoteDeckManager import RemoteDeckManager
 from src.backend.DeckManagement.Subclasses.RemoteDeck import RemoteDeck
-from src.backend.DeckManagement.BetterDeck import BetterDeck
+from StreamDeck.Devices.RotatedDeck import RotatedDeck
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
-
-from src.backend.DeckManagement.beta_resume import _read as beta_read
 
 # Import globals first to get IS_MAC
 import globals as gl
@@ -207,8 +205,22 @@ class DeckManager:
     def remove_controller(self, deck_controller: DeckController) -> None:
         self.deck_controller.remove(deck_controller)
         if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
-            gl.app.main_win.leftArea.deck_stack.remove_page(deck_controller)
+            # remove_controller() is called from non-GTK threads (e.g.
+            # FlatpakDeckDisconnectThread, udev callbacks); route the GTK call
+            # through the main loop like add_newly_connected_deck() does for
+            # add_page().
+            GLib.idle_add(gl.app.main_win.leftArea.deck_stack.remove_page, deck_controller)
         deck_controller.delete()
+
+        # delete() stops the reader thread, which up to now was the only thing that
+        # ever closed the device on a disconnect. A device left open makes libusb
+        # abort once the process exits (see issue #631)
+        try:
+            if deck_controller.deck is not None and deck_controller.deck.is_open():
+                deck_controller.deck.close()
+        except Exception as e:
+            log.error(f"Failed to close deck of removed controller. Error: {e}")
+
         del deck_controller
 
     def get_controller_for_deck(self, deck: StreamDeck) -> DeckController | None:
@@ -240,14 +252,32 @@ class DeckManager:
     def close_all(self):
         log.info("Closing all decks")
         for controller in self.deck_controller:
+            # continue, not return - one deck that is already gone must not keep
+            # the remaining ones open. An open HID device at interpreter exit makes
+            # libusb abort (see issue #631)
             if controller.deck is None:
-                return
+                continue
             if not controller.deck.is_open():
-                return
-            
-            log.info(f"Closing deck: {controller.deck.get_serial_number()}")
-            controller.clear()
-            controller.deck.close()
+                continue
+
+            try:
+                log.info(f"Closing deck: {controller.deck.get_serial_number()}")
+            except Exception as e:
+                log.error(f"Failed to get serial number of deck to close. Error: {e}")
+
+            # The reader thread has to be gone before the device is closed,
+            # see DeckController.stop_reader()
+            controller.stop_reader()
+
+            try:
+                controller.clear()
+            except Exception as e:
+                log.error(f"Failed to clear deck before closing it. Error: {e}")
+
+            try:
+                controller.deck.close()
+            except Exception as e:
+                log.error(f"Failed to close deck. Error: {e}")
 
     def stop_usb_monitoring(self):
         self.usb_monitor.stop_monitoring(timeout=2)
@@ -258,15 +288,15 @@ class DeckManager:
         for device in devices:
             try:
                 # Check if it's a StreamDeck
-                if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in [
-                    DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
-                    DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
-                    DeviceManager.USB_PID_STREAMDECK_MINI,
-                    DeviceManager.USB_PID_STREAMDECK_XL,
-                    DeviceManager.USB_PID_STREAMDECK_MK2,
-                    DeviceManager.USB_PID_STREAMDECK_PEDAL,
-                    DeviceManager.USB_PID_STREAMDECK_PLUS,
-                    DeviceManager.USB_PID_STREAMDECK_NEO
+                if device.idVendor == USBVendorIDs.USB_VID_ELGATO and device.idProduct in [
+                    USBProductIDs.USB_PID_STREAMDECK_ORIGINAL,
+                    USBProductIDs.USB_PID_STREAMDECK_ORIGINAL_V2,
+                    USBProductIDs.USB_PID_STREAMDECK_MINI,
+                    USBProductIDs.USB_PID_STREAMDECK_XL,
+                    USBProductIDs.USB_PID_STREAMDECK_MK2,
+                    USBProductIDs.USB_PID_STREAMDECK_PEDAL,
+                    USBProductIDs.USB_PID_STREAMDECK_PLUS,
+                    USBProductIDs.USB_PID_STREAMDECK_NEO
                 ]:
                     # Reset deck
                     usb.util.dispose_resources(device)
@@ -292,15 +322,11 @@ class DeckManager:
             new_device = self.get_device_by_serial(deck_controller.serial_number())
             if new_device:
                 log.info(f"Replacing deck")
-                rotation = 0
-                if hasattr(deck_controller.deck, "get_rotation"):
-                    try:
-                        rotation = deck_controller.deck.get_rotation()
-                    except Exception:
-                        rotation = 0
-
-                # Re-wrap the reconnected device to preserve BetterDeck behavior.
-                deck_controller.deck = BetterDeck(new_device, rotation)
+                current_rotation = deck_controller.deck.get_rotation()
+                deck_controller.deck = RotatedDeck(new_device, current_rotation)
+                # The device was just reset, so what we believe is on it is stale -
+                # without this, the page reload below skips every key whose image is unchanged
+                deck_controller.invalidate_render_caches()
 
                 deck_controller.deck.set_key_callback(deck_controller.key_event_callback)
                 deck_controller.deck.set_dial_callback(deck_controller.dial_event_callback)

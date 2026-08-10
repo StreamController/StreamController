@@ -279,13 +279,18 @@ class PageManagerBackend:
 
         #self.update_auto_change_info()
 
-    def add_page(self, page_name: str, page_dict: dict = None):
+    def add_page(self, page_name: str, page_dict: dict = None) -> str:
         page_dict = page_dict or {}
 
-        with open(os.path.join(self.PAGE_PATH, f"{page_name}.json"), "w") as f:
+        path = os.path.join(self.PAGE_PATH, f"{page_name}.json")
+        if os.path.exists(path):
+            raise FileExistsError(f"A page with the name '{page_name}' already exists.")
+        
+        with open(path, "w") as f:
             json.dump(page_dict, f)
 
         #self.update_auto_change_info()
+        return path
 
     def register_page(self, path: str):
         if not os.path.isfile(path):
@@ -326,7 +331,7 @@ class PageManagerBackend:
 
         return list(pages_set)
 
-    def reload_pages_with_path(self, path: str):
+    def reload_pages_with_path(self, path: str, brightness: bool = True, screensaver: bool = True, background: bool = True, inputs: bool = True):
         pages = self.get_pages_with_path(path)
 
         for page in pages:
@@ -335,7 +340,11 @@ class PageManagerBackend:
             if page.deck_controller.active_page != page:
                 continue
 
-            page.deck_controller.load_page(page, allow_relaod=True)
+            page.deck_controller.load_page(page, allow_reload=True,
+                                           load_brightness=brightness,
+                                           load_screensaver=screensaver,
+                                           load_background=background,
+                                           load_inputs=inputs)
 
     @staticmethod
     def reload_all_pages() -> None:
@@ -363,6 +372,16 @@ class PageManagerBackend:
             path = backup_path
 
         return self.settings_manager.load_settings_from_file(path)
+
+    def set_page_data(self, path: str, data: dict, reload_brightness: bool = True, reload_screensaver: bool = True, reload_background: bool = True, reload_inputs: bool = True):
+        self.settings_manager.save_settings_to_file(path, data)
+        self.update_dict_of_pages_with_path(path)
+        if any([reload_brightness, reload_screensaver, reload_background, reload_inputs]):
+            self.reload_pages_with_path(path,
+                                        brightness=reload_brightness,
+                                        screensaver=reload_screensaver,
+                                        background=reload_background,
+                                        inputs=reload_inputs)
 
     def remove_asset_from_all_pages(self, path: str):
         # Validate input path; reject empty or None
@@ -459,6 +478,11 @@ class PageManagerBackend:
     def remove_old_backups(self) -> None:
         backup_dir = os.path.join(self.PAGE_PATH, "backups")
 
+        # early return if backup directory doesn't exist yet
+        # otherwise os.listdir will throw a FileNotFoundError
+        if not os.path.exists(backup_dir):
+            return
+
         # List all zip files in the backup directory
         backup_files = [file for file in os.listdir(backup_dir) if file.endswith(".zip")]
 
@@ -515,7 +539,7 @@ class PageManagerBackend:
         page_settings = self.get_page_settings(path)
         return page_settings.get("auto-change", {})
 
-    def set_auto_change_settings(self, path: str, enable: bool = False, wm_class: str = "", regex_title: str = "", stay_on_page: bool = False, decks: list[str] = None):
+    def set_auto_change_settings(self, path: str, enable: bool = False, wm_class: str = ".*", regex_title: str = ".*", stay_on_page: bool = False, decks: list[str] = None):
         settings = self.get_page_settings(path)
 
         decks = decks or []

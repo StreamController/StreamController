@@ -1129,7 +1129,19 @@ class StoreBackend:
         for plugin in plugins:
             if plugin.plugin_id == plugin_id:
                 return plugin
-            
+
+    async def get_icon_for_id(self, icon_id):
+        icons = await self.get_all_icons()
+        for icon in icons:
+            if icon.icon_id == icon_id:
+                return icon
+
+    async def get_wallpaper_for_id(self, wallpaper_id):
+        wallpapers = await self.get_all_wallpapers()
+        for wallpaper in wallpapers:
+            if wallpaper.wallpaper_id == wallpaper_id:
+                return wallpaper
+
     ## Updates
     async def get_plugins_to_update(self):
         plugins =  await self.get_all_plugins_async()

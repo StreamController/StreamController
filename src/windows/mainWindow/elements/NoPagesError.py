@@ -109,9 +109,14 @@ class Popover(Gtk.PopoverMenu):
         self.streamdeck_ui_action = Gio.SimpleAction.new("streamdeck-ui", None)
         self.streamdeck_ui_action.connect("activate", self.on_import_streamdeck_ui)
 
+        self.streamcontroller_action = Gio.SimpleAction.new("streamcontroller", None)
+        self.streamcontroller_action.connect("activate", self.on_import_streamcontroller)
+
         self.action_group.add_action(self.streamdeck_ui_action)
+        self.action_group.add_action(self.streamcontroller_action)
 
         self.menu = Gio.Menu.new()
+        self.menu.append("StreamController", "import.streamcontroller")
         self.menu.append("StreamDeck UI", "import.streamdeck-ui")
         self.set_menu_model(self.menu)
 
@@ -119,10 +124,21 @@ class Popover(Gtk.PopoverMenu):
         ChooseFileDialog(self, self.streamdeck_ui_callback)
 
     def streamdeck_ui_callback(self, selected_file):
+        self.start_import(selected_file, "streamdeck-ui")
+
+    def on_import_streamcontroller(self, *args):
+        ChooseFileDialog(self, self.streamcontroller_callback)
+
+    def streamcontroller_callback(self, selected_file):
+        self.start_import(selected_file, "streamcontroller")
+
+    def start_import(self, selected_file, app: str):
+        if selected_file in [None, ""]:
+            return
         importer = Importer(gl.app, window=gl.app.main_win)
         # GLib.idle_add(importer.present)
         importer.present()
-        importer.import_pages(selected_file.get_path(), "streamdeck-ui", gl.app.main_win.check_for_errors)
+        importer.import_pages(selected_file.get_path(), app, gl.app.main_win.check_for_errors)
 
 class ChooseFileDialog(Gtk.FileDialog):
     def __init__(self, menu_button: Gtk.MenuButton, callback: callable = None):

@@ -28,6 +28,7 @@ import os
 
 from loguru import logger as log
 from src.windows.PageManager.Importer.Importer import Importer
+from src.backend.PageManagement import PageBundle
 from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 # Import typing
 from typing import TYPE_CHECKING
@@ -110,16 +111,22 @@ class MenuButton(Gtk.MenuButton):
         path = self.pageEditor.active_page_path
         if path in [None, ""]:
             return
-        
-        initial_name = os.path.basename(path)
+
+        initial_name = os.path.splitext(os.path.basename(path))[0] + PageBundle.PAGE_EXTENSION
         ChooseExportFileDialog(self, self.export_page_callback, initial_name=initial_name)
 
     def export_page_callback(self, selected_file):
-        page_json = {}
-        with open(self.pageEditor.active_page_path, "r") as f:
-            page_json = json.load(f)
+        if selected_file in [None, ""]:
+            return
+        selected_path = selected_file.get_path()
+        page_path = self.pageEditor.active_page_path
 
-        atomic_save_json(selected_file.get_path(), page_json, indent=4)
+        if selected_path.lower().endswith(".json"):
+            # Plain page without its assets
+            atomic_save_json(selected_path, gl.page_manager.get_page_data(page_path), indent=4)
+            return
+
+        PageBundle.export_page(page_path, selected_path)
 
     def on_import_page(self, *args):
         ChooseImportFileDialog(self, self.import_page_callback)
@@ -127,7 +134,18 @@ class MenuButton(Gtk.MenuButton):
     def import_page_callback(self, selected_file):
         if selected_file in [None, ""]:
             return
-        page_name = os.path.splitext(os.path.basename(selected_file.get_path()))[0]
+        path = selected_file.get_path()
+        page_name = os.path.splitext(os.path.basename(path))[0]
+
+        manifest = PageBundle.read_manifest(path)
+        if manifest is not None:
+            bundled_pages = manifest.get("pages") or []
+            if len(bundled_pages) != 1:
+                # A bundle with multiple pages has to go through the full importer
+                self.import_streamcontroller_callback(selected_file)
+                return
+            page_name = bundled_pages[0]
+
         self.selected_file = selected_file
         if page_name in gl.page_manager.get_page_names():
             dial = EntryDialog(parent_window=self.pageEditor.page_manager,
@@ -146,11 +164,19 @@ class MenuButton(Gtk.MenuButton):
 
 
     def import_page_name_selected_callback(self, name):
-        import_dict = {}
-        with open(self.selected_file.get_path(), "r") as f:
-            import_dict = json.load(f)
-
+        import_path = self.selected_file.get_path()
         self.selected_file = None
+
+        if PageBundle.is_bundle(import_path):
+            # Bundles can require downloads and asset imports, so they run in the importer
+            importer = Importer(gl.app, self.pageEditor.page_manager)
+            importer.present()
+            importer.import_pages(import_path, "streamcontroller", rename_to=name)
+            return
+
+        import_dict = {}
+        with open(import_path, "r") as f:
+            import_dict = json.load(f)
 
         page_name = name
         try:
@@ -172,7 +198,7 @@ class MenuButton(Gtk.MenuButton):
         self.import_page_callback(file)
 
     def on_export_all_pages(self, *args):
-        initial_name = f"StreamController_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.json"
+        initial_name = f"StreamController_{datetime.now().strftime('%Y-%m-%d_%H-%M')}{PageBundle.PAGES_EXTENSION}"
         ChooseExportFileDialog(self, self.export_all_pages_callback, initial_name=initial_name)
 
     def export_all_pages_callback(self, selected_file):
@@ -180,13 +206,17 @@ class MenuButton(Gtk.MenuButton):
             return
         selected_path = selected_file.get_path()
 
-        pages = {}
+        page_paths = gl.page_manager.get_pages(add_custom_pages=False)
 
-        for path in gl.page_manager.get_pages(add_custom_pages=False):
-            js = gl.page_manager.get_page_data(path)
-            pages[os.path.basename(path)] = js
+        if selected_path.lower().endswith(".json"):
+            # Plain pages without their assets
+            pages = {}
+            for path in page_paths:
+                pages[os.path.basename(path)] = gl.page_manager.get_page_data(path)
+            atomic_save_json(selected_path, pages, indent=4)
+            return
 
-        atomic_save_json(selected_path, pages, indent=4)
+        PageBundle.export_pages(page_paths, selected_path)
 
     def on_import_streamcontroller(self, *args):
         ChooseImportFileDialog(self, self.import_streamcontroller_callback)

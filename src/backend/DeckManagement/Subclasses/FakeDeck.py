@@ -25,10 +25,10 @@ class FakeDeck:
         self.is_fake = True
 
         self._key_layout = gl.settings_manager.get_deck_settings(self.serial_number).get("key-layout", [3, 5])
-        self._key_layout = [4, 9]
+        self._key_layout = [2, 4]
 
         self._is_touch = True
-        self._dial_count = 6
+        self._dial_count = 4
 
     def deck_type(self):
         return self._deck_type

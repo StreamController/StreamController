@@ -2894,26 +2894,39 @@ class ControllerKey(ControllerInput):
             return background
 
 
+        # If the background should stay full size while pressed, the image and the labels
+        # are composed onto a transparent canvas instead, so that only that layer gets
+        # shrunk and can be pasted back onto the untouched background
+        compose_base = background
+        if self.is_pressed() and not gl.settings_manager.get_app_settings().get("general", {}).get("shrink-background-on-press", True):
+            compose_base = Image.new("RGBA", background.size, (0, 0, 0, 0))
+
         key_image: Image.Image = None
         # rotation = self.deck_controller.get_deck_settings().get("rotation", {}).get("value", 0)
         if state.key_image is not None:
             image = state.key_image.get_raw_image()
             key_image = state.layout_manager.add_image_to_background(
                 image=image,
-                background=background
+                background=compose_base
             )
         elif state.key_video is not None:
             image = state.key_video.get_raw_image()
             key_image = state.layout_manager.add_image_to_background(
                 image=image,
-                background=background)
+                background=compose_base)
         else:
-            key_image = background
+            key_image = compose_base
 
         labeled_image = state.label_manager.add_labels_to_image(key_image)
 
         if self.is_pressed():
             labeled_image = self.shrink_image(labeled_image)
+
+            if compose_base is not background:
+                composed_image = background.copy()
+                composed_image.alpha_composite(labeled_image)
+                labeled_image.close()
+                labeled_image = composed_image
 
         if self.has_unavailable_action() and not self.deck_controller.screen_saver.showing:
             labeled_image = self.add_warning_point(labeled_image)

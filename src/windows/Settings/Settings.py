@@ -388,17 +388,22 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         self.persistent_states = Adw.SwitchRow(title="Persistent states", subtitle="Remember the active state of each key and dial across restarts")
         self.add(self.persistent_states)
 
+        self.shrink_background = Adw.SwitchRow(title="Shrink background on press", subtitle="Scale the background down together with the icon when a key is pressed")
+        self.add(self.shrink_background)
+
         self.load_defaults()
 
         # Connect signals
         self.hold_time_row.connect("changed", self.on_n_fake_decks_row_changed)
         self.rolling_labels.connect("notify::active", self.on_rolling_labels_changed)
         self.persistent_states.connect("notify::active", self.on_persistent_states_changed)
+        self.shrink_background.connect("notify::active", self.on_shrink_background_changed)
 
     def load_defaults(self):
         self.hold_time_row.set_value(self.settings.settings_json.get("general", {}).get("hold-time", 0.5))
         self.rolling_labels.set_active(self.settings.settings_json.get("general", {}).get("rolling-labels", True))
         self.persistent_states.set_active(self.settings.settings_json.get("general", {}).get("persistent-states", False))
+        self.shrink_background.set_active(self.settings.settings_json.get("general", {}).get("shrink-background-on-press", True))
 
     def on_n_fake_decks_row_changed(self, *args):
         self.settings.settings_json.setdefault("general", {})
@@ -442,6 +447,13 @@ class GeneralPageGroup(Adw.PreferencesGroup):
                         if not controller_input.enable_states:
                             continue
                         controller.active_page.set_active_state(controller_input.identifier, controller.safe_serial_number(), controller_input.state)
+
+    def on_shrink_background_changed(self, *args):
+        self.settings.settings_json.setdefault("general", {})
+        self.settings.settings_json["general"]["shrink-background-on-press"] = self.shrink_background.get_active()
+
+        # Save
+        self.settings.save_json()
 
 class FontPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):

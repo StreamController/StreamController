@@ -226,38 +226,34 @@ class ScreenBar(Gtk.Frame):
         gl.app.main_win.sidebar.load_for_identifier(self.identifier, screen.state)
 
 class ScreenBarImage(Gtk.Picture):
-    PREVIEW_MAX_WIDTH = 385
-    PREVIEW_MAX_HEIGHT = 49
+    # The keys and the screenbar sit in the same frame (.key-button-frame in
+    # style.css), which adds this much on each side of whatever it wraps
+    FRAME_INSET = 4 + 3 + 6  # padding + border + margin
+    # How much width one key of the grid takes up: its image plus that frame
+    KEY_FOOTPRINT = 75 + 2 * FRAME_INSET
 
     def __init__(self, screenbar: ScreenBar, **kwargs):
         settings = gl.settings_manager.get_app_settings()
         self.use_real_size = settings.get("ui", {}).get("real-button-size", False)
-        self.preview_width = 80
-        self.preview_height = 10
+        self.screenbar = screenbar
+
+        self.grid_extent = self._get_grid_extent()
+        self.preview_width, self.preview_height = self._get_preview_bounds()
 
         if self.use_real_size:
-            touchscreen_size = screenbar.deck_controller.get_touchscreen_image_size()
-            if touchscreen_size:
-                screen_width, screen_height = touchscreen_size
-                # Cap both axes, otherwise a rotated (tall) strip grows off screen
-                scale_factor = min(600.0 / screen_width, 600.0 / screen_height) if min(screen_width, screen_height) > 0 else 0.75
-                ui_width = int(screen_width * scale_factor)
-                ui_height = int(screen_height * scale_factor)
-            else:
-                ui_width, ui_height = 600, 75
-            self.preview_width = ui_width
-            self.preview_height = ui_height
             super().__init__(keep_aspect_ratio=True, can_shrink=False, content_fit=Gtk.ContentFit.FILL,
-                             halign=Gtk.Align.CENTER, hexpand=True, width_request=ui_width, height_request=ui_height,
+                             halign=Gtk.Align.CENTER, hexpand=True,
+                             width_request=self.preview_width, height_request=self.preview_height,
                              valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
                              **kwargs)
         else:
+            # The request is only a floor so the strip can still shrink with the window
             super().__init__(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
-                             halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
+                             halign=Gtk.Align.CENTER, hexpand=False,
+                             width_request=min(80, self.preview_width), height_request=min(10, self.preview_height),
                              valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
                              **kwargs)
-        
-        self.screenbar = screenbar
+
         self.full_image: Image.Image = None
         self.thumbnail_image: Image.Image = None
         self.thumbnail_pixbuf: GdkPixbuf.Pixbuf = None
@@ -317,17 +313,38 @@ class ScreenBarImage(Gtk.Picture):
         self.refresh_preview(dial_preview=dial_preview)
         return False
 
+    def _get_grid_extent(self) -> int:
+        """
+        How long the key grid is along the axis the strip runs on.
+
+        The strip sits next to the grid on the device and spans its full length,
+        so the preview should do the same instead of being tied to a deck sized
+        constant - a Plus XL grid is more than twice as long as a Plus one.
+        """
+        deck = self.screenbar.deck_controller.deck
+        rows, columns = deck.key_layout()
+        # Turned onto its side the strip runs vertically, i.e. along the rows
+        keys_along_strip = rows if deck.get_rotation() % 180 else columns
+        # The strip has to leave room for its own frame to end up as long as the grid
+        return max(self.KEY_FOOTPRINT, keys_along_strip * self.KEY_FOOTPRINT - 2 * self.FRAME_INSET)
+
+    def _get_preview_bounds(self) -> tuple[int, int]:
+        """The strip scaled down to the length of the grid."""
+        return self._fit_into(self.screenbar.get_screen_size(), self.grid_extent, self.grid_extent)
+
+    @staticmethod
+    def _fit_into(size: tuple[int, int], max_width: int, max_height: int) -> tuple[int, int]:
+        width, height = size
+        if width <= 0 or height <= 0:
+            return max(1, max_width), max(1, max_height)
+        scale = min(max_width / width, max_height / height)
+        return max(1, int(width * scale)), max(1, int(height * scale))
+
     def _get_preview_size(self) -> tuple[int, int]:
         if self.full_image is None:
             return self.preview_width, self.preview_height
 
-        width, height = self.full_image.size
-        max_width = self.preview_width if self.use_real_size else self.PREVIEW_MAX_WIDTH
-        max_height = self.preview_height if self.use_real_size else self.PREVIEW_MAX_HEIGHT
-        scale = min(max_width / width, max_height / height)
-        preview_width = max(1, int(width * scale))
-        preview_height = max(1, int(height * scale))
-        return preview_width, preview_height
+        return self._fit_into(self.full_image.size, self.grid_extent, self.grid_extent)
 
     def _rebuild_thumbnail(self) -> None:
         if self.thumbnail_image is not None:

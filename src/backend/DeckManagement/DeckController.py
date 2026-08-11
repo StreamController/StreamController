@@ -758,6 +758,7 @@ class DeckController:
         """
         device = getattr(self.deck, "deck", self.deck)
 
+        # Only the Plus needs this - the Plus XL is spaced like the other decks
         is_plus = isinstance(device, StreamDeckPlus) or (
             isinstance(device, FakeDeck) and list(device.key_layout()) == [2, 4]
         )
@@ -910,10 +911,10 @@ class DeckController:
         if not self.get_alive(): return
         size = self.deck.logical_touchscreen_size()
         if size is None:
-            size = (800, 100)
-        if self.deck.get_rotation() in [90, 270]:
-            return max(size[0], 100), max(size[1], 800)
-        return max(size[0], 800), max(size[1], 100)
+            # Deck without a touchscreen, or one that does not report its size -
+            # fall back to the size of the Plus
+            size = (100, 800) if self.deck.get_rotation() in [90, 270] else (800, 100)
+        return size
 
     # ------------ #
     # Page Loading #

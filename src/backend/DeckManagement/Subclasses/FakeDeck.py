@@ -25,10 +25,10 @@ class FakeDeck:
         self.is_fake = True
 
         self._key_layout = gl.settings_manager.get_deck_settings(self.serial_number).get("key-layout", [3, 5])
-        self._key_layout = [2, 4]
+        self._key_layout = [4, 9]
 
         self._is_touch = True
-        self._dial_count = 4
+        self._dial_count = 6
 
     def deck_type(self):
         return self._deck_type
@@ -85,14 +85,16 @@ class FakeDeck:
         return True
     
     def is_touch(self) -> bool:
-        return self.is_touch
-    
+        return self._is_touch
+
     def dial_count(self) -> int:
         return self._dial_count
-    
+
     def touchscreen_image_format(self) -> dict:
+        # Both the Plus and the Plus XL give each dial a 200px wide slot of the
+        # strip (4 dials -> 800px, 6 dials -> 1200px)
         return{
-            "size": (800, 100),
+            "size": (max(1, self._dial_count) * 200, 100),
             "format": "JPEG",
             "flip": (False, False),
             "rotation": 0

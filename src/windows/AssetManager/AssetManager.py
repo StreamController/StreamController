@@ -17,11 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GLib, Gio, Gdk, GObject, GdkPixbuf
-
-# Import Python modules
-from loguru import logger as log
-import os
+from gi.repository import Gtk
 
 # Import typing
 from typing import TYPE_CHECKING
@@ -35,6 +31,7 @@ import globals as gl
 from src.windows.AssetManager.InfoPage import InfoPage
 from src.windows.AssetManager.CustomAssets.Chooser import CustomAssetChooser
 from src.windows.AssetManager.IconPacks.Stack import IconPackChooserStack
+from src.windows.AssetManager.MaterialDesignIconAssets.Chooser import MaterialDesignIconAssetChooser
 from src.windows.AssetManager.WallpaperPacks.Stack import WallpaperPackChooserStack
 from src.windows.AssetManager.SDPlusBarWallpaperPacks.Stack import SDPlusBarWallpaperPackChooserStack
 
@@ -143,6 +140,9 @@ class AssetChooser(Gtk.Stack):
 
         self.icon_pack_chooser = IconPackChooserStack(self.asset_manager)
         self.add_titled(self.icon_pack_chooser, "icon-packs", "Icon Packs")
+
+        self.material_design_icon_chooser = MaterialDesignIconAssetChooser(self.asset_manager)
+        self.add_titled(self.material_design_icon_chooser, "material-design-icons", "Material Design Icons")
 
         self.wallpaper_pack_chooser = WallpaperPackChooserStack(self.asset_manager)
         self.add_titled(self.wallpaper_pack_chooser, "wallpaper-packs", "Wallpaper Packs")

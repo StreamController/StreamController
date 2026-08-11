@@ -13,22 +13,100 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import importlib
+import pkgutil
 import uuid
+from functools import lru_cache
+
+from loguru import logger as log
+
+import StreamDeck.Devices as StreamDeckDevices
+from StreamDeck.Devices.StreamDeck import StreamDeck
+from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
 
 import globals as gl
 
+DEFAULT_FAKE_DECK_TYPE = StreamDeckPlus.DECK_TYPE
+
+
+def _all_subclasses(cls: type) -> list[type]:
+    subclasses = []
+    for subclass in cls.__subclasses__():
+        subclasses.append(subclass)
+        subclasses.extend(_all_subclasses(subclass))
+    return subclasses
+
+
+@lru_cache(maxsize=None)
+def get_supported_deck_classes() -> tuple[type[StreamDeck], ...]:
+    """
+    Every deck model the StreamDeck library knows about, i.e. everything a fake
+    deck can emulate. The modules of the library are imported here because the
+    device classes only register themselves as subclasses once their module was
+    imported.
+    """
+    for module in pkgutil.iter_modules(StreamDeckDevices.__path__):
+        try:
+            importlib.import_module(f"{StreamDeckDevices.__name__}.{module.name}")
+        except Exception as e:
+            log.error(f"Failed to import deck module {module.name}. Error: {e}")
+
+    # Some models share a deck type (eg. the original and its v2) - one entry per
+    # model name is enough for a fake deck
+    classes: dict[str, type[StreamDeck]] = {}
+    for deck_class in _all_subclasses(StreamDeck):
+        if not deck_class.DECK_TYPE:
+            continue
+        classes.setdefault(deck_class.DECK_TYPE, deck_class)
+
+    return tuple(sorted(classes.values(), key=lambda deck_class: deck_class.DECK_TYPE))
+
+
+def get_supported_deck_types() -> list[str]:
+    return [deck_class.DECK_TYPE for deck_class in get_supported_deck_classes()]
+
+
+def get_deck_class_for_type(deck_type: str) -> type[StreamDeck] | None:
+    for deck_class in get_supported_deck_classes():
+        if deck_class.DECK_TYPE == deck_type:
+            return deck_class
+    return None
+
+
 class FakeDeck:
+    """
+    Emulates one of the supported deck models without any hardware attached.
+    All properties are taken from the emulated model, so a fake deck behaves
+    like the real thing everywhere in the app.
+    """
     def __init__(self, serial_number = None, deck_type = None):
         self.serial_number = serial_number
-        self._deck_type = deck_type
+
+        self.emulated_class: type[StreamDeck] = get_deck_class_for_type(deck_type)
+        if self.emulated_class is None:
+            if deck_type is not None:
+                log.warning(f"Unknown deck type for fake deck: {deck_type}. Falling back to {DEFAULT_FAKE_DECK_TYPE}")
+            self.emulated_class = get_deck_class_for_type(DEFAULT_FAKE_DECK_TYPE)
+
+        self.model_name: str = self.emulated_class.DECK_TYPE
+        self._deck_type = f"Fake {self.model_name}"
 
         self.is_fake = True
 
-        self._key_layout = gl.settings_manager.get_deck_settings(self.serial_number).get("key-layout", [3, 5])
-        self._key_layout = [2, 4]
+        self._key_layout = self.load_key_layout()
 
-        self._is_touch = True
-        self._dial_count = 4
+    def load_key_layout(self) -> list[int]:
+        """
+        Layout of the emulated model, unless the user set a custom one for this
+        model (see set_key_layout)
+        """
+        settings = gl.settings_manager.get_deck_settings(self.serial_number)
+        if settings.get("fake-deck-type") == self.model_name:
+            layout = settings.get("key-layout")
+            if layout:
+                return list(layout)
+
+        return [self.emulated_class.KEY_ROWS, self.emulated_class.KEY_COLS]
 
     def deck_type(self):
         return self._deck_type
@@ -42,6 +120,8 @@ class FakeDeck:
         return
     def key_count(self):
         return self.key_layout()[0] * self.key_layout()[1]
+    def touch_key_count(self):
+        return self.emulated_class.TOUCH_KEY_COUNT
     def set_key_callback(self, *args, **kwargs):
         return
     def set_dial_callback(self, *args, **kwargs):
@@ -52,10 +132,17 @@ class FakeDeck:
         return
     def set_key_image(self, *args, **kwargs):
         return
+    def set_key_color(self, *args, **kwargs):
+        return
     def key_states(self):
-        return [False] * self.key_count()
+        return [False] * (self.key_count() + self.touch_key_count())
     def key_image_format(self):
-        return {'size': (72, 72), 'format': 'JPEG', 'flip': (True, True), 'rotation': 0}
+        return {
+            "size": (self.emulated_class.KEY_PIXEL_WIDTH, self.emulated_class.KEY_PIXEL_HEIGHT),
+            "format": self.emulated_class.KEY_IMAGE_FORMAT,
+            "flip": self.emulated_class.KEY_FLIP,
+            "rotation": self.emulated_class.KEY_ROTATION
+        }
     def id(self):
         return str(uuid.uuid4())
     def connected(self):
@@ -64,7 +151,7 @@ class FakeDeck:
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         return True
-    
+
     def set_key_layout(self, layout: list[int]):
         """
         Sets and saves a new key layout
@@ -73,32 +160,44 @@ class FakeDeck:
 
         settings = gl.settings_manager.get_deck_settings(self.serial_number)
         settings["key-layout"] = layout
+        # The layout only applies to the model it was set for - switching the
+        # emulated model has to bring its own layout with it
+        settings["fake-deck-type"] = self.model_name
         gl.settings_manager.save_deck_settings(self.serial_number, settings)
 
     def open(self, *args, **kwargs):
         return
-    
+
     def close(self):
         return
-    
+
     def is_visual(self) -> bool:
-        return True
-    
+        return self.emulated_class.DECK_VISUAL
+
     def is_touch(self) -> bool:
-        return self._is_touch
+        return self.emulated_class.DECK_TOUCH
 
     def dial_count(self) -> int:
-        return self._dial_count
+        return self.emulated_class.DIAL_COUNT
 
     def touchscreen_image_format(self) -> dict:
-        # Both the Plus and the Plus XL give each dial a 200px wide slot of the
-        # strip (4 dials -> 800px, 6 dials -> 1200px)
-        return{
-            "size": (max(1, self._dial_count) * 200, 100),
-            "format": "JPEG",
-            "flip": (False, False),
-            "rotation": 0
+        return {
+            "size": (self.emulated_class.TOUCHSCREEN_PIXEL_WIDTH, self.emulated_class.TOUCHSCREEN_PIXEL_HEIGHT),
+            "format": self.emulated_class.TOUCHSCREEN_IMAGE_FORMAT,
+            "flip": self.emulated_class.TOUCHSCREEN_FLIP,
+            "rotation": self.emulated_class.TOUCHSCREEN_ROTATION
         }
-    
+
     def set_touchscreen_image(self, *args, **kwargs):
+        return
+
+    def screen_image_format(self) -> dict:
+        return {
+            "size": (self.emulated_class.SCREEN_PIXEL_WIDTH, self.emulated_class.SCREEN_PIXEL_HEIGHT),
+            "format": self.emulated_class.SCREEN_IMAGE_FORMAT,
+            "flip": self.emulated_class.SCREEN_FLIP,
+            "rotation": self.emulated_class.SCREEN_ROTATION
+        }
+
+    def set_screen_image(self, *args, **kwargs):
         return

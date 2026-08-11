@@ -34,7 +34,7 @@ from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
-from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
+from src.backend.DeckManagement.Subclasses.FakeDeck import DEFAULT_FAKE_DECK_TYPE, FakeDeck
 
 # Import globals first to get IS_MAC
 import globals as gl
@@ -131,41 +131,57 @@ class DeckManager:
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)
 
+    def get_fake_deck_types(self) -> list[str]:
+        """
+        One deck type per configured fake deck. Decks without a configured type
+        (eg. right after the number of fake decks was increased) fall back to
+        the default model.
+        """
+        dev_settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json")).get("dev", {})
+        n_fake_decks = int(dev_settings.get("n-fake-decks", 0))
+        configured_types = dev_settings.get("fake-deck-types", [])
+
+        types: list[str] = []
+        for i in range(n_fake_decks):
+            deck_type = configured_types[i] if i < len(configured_types) else None
+            types.append(deck_type or DEFAULT_FAKE_DECK_TYPE)
+
+        return types
+
     def load_fake_decks(self):
-        old_n_fake_decks = len(self.fake_deck_controller)
-        n_fake_decks = int(gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json")).get("dev", {}).get("n-fake-decks", 0))
+        """
+        Syncs the loaded fake decks with the settings - both their number and
+        their deck types. Called whenever one of those settings changes, so no
+        restart is needed.
+        """
+        types = self.get_fake_deck_types()
 
-        if n_fake_decks > old_n_fake_decks:
-            log.info(f"Loading {n_fake_decks - old_n_fake_decks} fake deck(s)")
-            # Load difference in number of fake decks
-            for controller in range(n_fake_decks - old_n_fake_decks):
-                a = f"Fake Deck {len(self.fake_deck_controller)+1}"
-                fake_deck = FakeDeck(serial_number = f"fake-deck-{len(self.fake_deck_controller)+1}", deck_type=f"Fake Deck {len(self.fake_deck_controller)+1}")
-                self.add_newly_connected_deck(fake_deck, is_fake=True)
+        # Everything up to the first deck whose type changed can stay - the ones
+        # behind it have to be rebuilt because the serial numbers are tied to the
+        # position in the list
+        n_keep = min(len(types), len(self.fake_deck_controller))
+        for i, controller in enumerate(self.fake_deck_controller):
+            # controller.deck is a RotatedDeck, the fake deck itself sits behind it
+            fake_deck = getattr(controller.deck, "deck", controller.deck)
+            if i >= len(types) or fake_deck.model_name != types[i]:
+                n_keep = i
+                break
 
-            # Update header deck switcher if the new deck is the only one
-            if len(self.deck_controller) == 1 and False:
-                # Check if ui is loaded - if not it will grab the controller automatically
-                if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
-                    gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(True)
+        for controller in self.fake_deck_controller[n_keep:]:
+            log.info(f"Removing fake deck {controller.deck.get_serial_number()}")
+            # Remove controller from fake_decks
+            self.fake_deck_controller.remove(controller)
+            # Remove controller from main list
+            self.deck_controller.remove(controller)
+            # Remove deck page on stack
+            if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
+                gl.app.main_win.leftArea.deck_stack.remove_page(controller)
 
-        elif n_fake_decks < old_n_fake_decks:
-            # Remove difference in number of fake decks
-            log.info(f"Removing {old_n_fake_decks - n_fake_decks} fake deck(s)")
-            for controller in self.fake_deck_controller[-(old_n_fake_decks - n_fake_decks):]:
-                # Remove controller from fake_decks
-                self.fake_deck_controller.remove(controller)
-                # Remove controller from main list
-                self.deck_controller.remove(controller)
-                # Remove deck page on stack
-                if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
-                    gl.app.main_win.leftArea.deck_stack.remove_page(controller)
+        for i in range(n_keep, len(types)):
+            log.info(f"Loading fake deck {i+1} of type {types[i]}")
+            fake_deck = FakeDeck(serial_number=f"fake-deck-{i+1}", deck_type=types[i])
+            self.add_newly_connected_deck(fake_deck, is_fake=True)
 
-            # Update header deck switcher if there are no more decks
-            if len(self.deck_controller) == 0 and False:
-                # Check if ui is loaded - if not it will grab the controller automatically
-                if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
-                    gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(False)
         self.check_for_errors_if_window_ready()
 
     def on_connect(self, device_id, device_info):

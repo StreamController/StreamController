@@ -76,6 +76,7 @@ settings-dev-settings-title;Entwickler;Developer;Développeur;Desarrollador;Dese
 settings-fake-decks-header;Fake Decks;Fake Decks;Faux Decks;Mazos falsos;Decks Falsos
 settings-number-of-fake-decks;Anzahl der Fake Decks;Number of fake decks;Nombre de Faux Decks;Número de barajas falsas;Número de decks falsos
 settings-number-of-fake-decks-hint;Für Testzwecke (App muss mölicherweise neugestartet werden);For testing purposes (might require restart of the app);À des fins de test (peut nécessiter un redémarrage de l'application);Para pruebas (puede ser necesario reiniciar la aplicación);Para fins de teste (pode exigir a reinicialização do aplicativo)
+settings-fake-deck-type;Typ von Fake Deck {number};Type of fake deck {number};;;
 settings-store-settings-title;Store;Store;Magasin;Tienda;Loja
 settings-store-settings-header;Store;Store;Magasin;Tienda;Loja
 settings-store-settings-auto-update;Automatische Aktualisierung der Assets;Auto-update assets;Mise à jour automatique des ressources;Actualización automática de activos;Atualizar ativos automaticamente

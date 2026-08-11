@@ -760,7 +760,7 @@ class DeckController:
 
         # Only the Plus needs this - the Plus XL is spaced like the other decks
         is_plus = isinstance(device, StreamDeckPlus) or (
-            isinstance(device, FakeDeck) and list(device.key_layout()) == [2, 4]
+            isinstance(device, FakeDeck) and issubclass(device.emulated_class, StreamDeckPlus)
         )
 
         if not is_plus:

@@ -47,7 +47,6 @@ from src.windows.Store.Store import Store
 from src.windows.Shortcuts.Shortcuts import ShortcutsWindow
 from src.windows.Onboarding.OnboardingWindow import OnboardingWindow
 from src.windows.Permissions.FlatpakPermissionRequest import FlatpakPermissionRequestWindow
-from src.backend.DeckManagement.InputIdentifier import Input
 
 from src.Signals import Signals
 from src.api import start_dbus_service, stop_dbus_service
@@ -141,17 +140,10 @@ class App(Adw.Application):
         for task in gl.app_loading_finished_tasks:
             if callable(task):
                 task()
-        change_page_action = Gio.SimpleAction.new("change_page", GLib.VariantType("as")) # as = array of strings
-        change_page_action.connect("activate", self.on_change_page)
-        self.add_action(change_page_action)
-
-        change_state_action = Gio.SimpleAction.new("change_state", GLib.VariantType("as")) # as = array of strings
-        change_state_action.connect("activate", self.on_change_state)
-        self.add_action(change_state_action)
-
-        trigger_action_action = Gio.SimpleAction.new("trigger_action", GLib.VariantType("as")) # as = array of strings
-        trigger_action_action.connect("activate", self.on_trigger_action)
-        self.add_action(trigger_action_action)
+        # change_page/change_state/trigger_action used to be Gio.SimpleActions here;
+        # they're now ChangePage/ChangeState/EmulateInput on the DBus API in src/api.py,
+        # which main.py's CLI dispatch calls directly instead of going through
+        # org.gtk.Actions.
 
         # Start DBus API service
         if not gl.IS_MAC:
@@ -392,141 +384,6 @@ class App(Adw.Application):
             notif.add_button_with_target(button[0], button[1], button[2])
 
         GLib.idle_add(super().send_notification, "com.core447.StreamController", notif)
-    def on_change_page(self, action, data: GLib.Variant, *args):
-        """
-        page_name can be either the name or the path of the page
-        """
-        serial_number, page_name = data.unpack()
-
-        for controller in self.deck_manager.deck_controller:
-            if controller.serial_number() == serial_number:
-                page_path = gl.page_manager.find_matching_page_path(page_name)
-
-                if controller is not None:
-                    if controller.active_page is not None:
-                        if os.path.abspath(page_path) == os.path.abspath(controller.active_page.json_path):
-                            continue
-
-                page = gl.page_manager.get_page(page_path, controller)
-                if page_path is None:
-                    continue
-
-                controller.load_page(page)
-
-    def on_change_state(self, action, data: GLib.Variant, *args):
-        """
-        Change the state of a specific StreamDeck item
-        """
-        serial_number, page_name, coords, state_number = data.unpack()
-        
-        # Find the controller with matching serial number
-        target_controller = None
-        for controller in self.deck_manager.deck_controller:
-            if controller.serial_number() == serial_number:
-                target_controller = controller
-                break
-        
-        if target_controller is None:
-            # Serial number not found - provide helpful suggestions
-            available_serials = [c.serial_number() for c in self.deck_manager.deck_controller]
-            if available_serials:
-                log.error(f"StreamDeck with serial '{serial_number}' not found. Available devices: {', '.join(available_serials)}")
-            else:
-                log.error("No StreamDeck devices connected")
-            return
-
-        # Find the requested page
-        page_path = gl.page_manager.find_matching_page_path(page_name)
-        if page_path is None:
-            # Page not found - provide helpful suggestions
-            available_pages = [os.path.splitext(os.path.basename(p))[0] for p in gl.page_manager.get_pages()]
-            log.error(f"Page '{page_name}' not found. Available pages: {', '.join(available_pages)}")
-            return
-
-        # Load the page if not already active
-        if target_controller.active_page is None or os.path.abspath(page_path) != os.path.abspath(target_controller.active_page.json_path):
-            page = gl.page_manager.get_page(page_path, target_controller)
-            target_controller.load_page(page)
-
-        # Parse and validate coordinates
-        try:
-            x, y = map(int, coords.split(','))
-        except (ValueError, AttributeError):
-            log.error(f"Invalid coordinate format '{coords}'. Expected format: 'x,y' (e.g., '0,0')")
-            return
-
-        # Validate coordinates are within deck bounds
-        rows, cols = target_controller.deck.key_layout()
-        if x < 0 or x >= cols or y < 0 or y >= rows:
-            log.error(f"Coordinates ({x},{y}) are out of bounds for this device. Valid range: x=0-{cols-1}, y=0-{rows-1}")
-            return
-
-        # Create the input identifier for the key
-        identifier = Input.Key(f"{x}x{y}")
-        c_input = target_controller.get_input(identifier)
-        
-        if c_input is None:
-            log.error(f"Could not find input at coordinates ({x},{y})")
-            return
-
-        # Validate state number
-        try:
-            state_num = int(state_number)
-        except ValueError:
-            log.error(f"Invalid state number '{state_number}'. Must be an integer")
-            return
-
-        # Check if the requested state exists
-        if state_num < 0 or state_num >= len(c_input.states):
-            max_state = len(c_input.states) - 1
-            if max_state == 0:
-                log.error(f"Position ({x},{y}) only has 1 state (state 0). Requested state {state_num} does not exist")
-            else:
-                log.error(f"Position ({x},{y}) has {len(c_input.states)} states (0-{max_state}). Requested state {state_num} does not exist")
-            return
-
-        # Successfully change to the specified state
-        c_input.set_state(state_num)
-        log.info(f"Successfully changed state of ({x},{y}) to state {state_num} on device {serial_number}")
-
-    def on_trigger_action(self, action, data: GLib.Variant, *args):
-        """
-        Simulate a key press/long-press, triggering the same actions a physical press would
-        """
-        event, serial_number, page_name, coords = data.unpack()
-
-        # Find the controller with matching serial number
-        target_controller = None
-        for controller in self.deck_manager.deck_controller:
-            if controller.serial_number() == serial_number:
-                target_controller = controller
-                break
-
-        if target_controller is None:
-            available_serials = [c.serial_number() for c in self.deck_manager.deck_controller]
-            if available_serials:
-                log.error(f"StreamDeck with serial '{serial_number}' not found. Available devices: {', '.join(available_serials)}")
-            else:
-                log.error("No StreamDeck devices connected")
-            return
-
-        # Find the requested page
-        page_path = gl.page_manager.find_matching_page_path(page_name)
-        if page_path is None:
-            available_pages = [os.path.splitext(os.path.basename(p))[0] for p in gl.page_manager.get_pages()]
-            log.error(f"Page '{page_name}' not found. Available pages: {', '.join(available_pages)}")
-            return
-
-        # Load the page if not already active
-        if target_controller.active_page is None or os.path.abspath(page_path) != os.path.abspath(target_controller.active_page.json_path):
-            page = gl.page_manager.get_page(page_path, target_controller)
-            target_controller.load_page(page)
-
-        success, message = target_controller.trigger_action(coords, event)
-        if success:
-            log.info(message)
-        else:
-            log.error(message)
 
     def send_outdated_plugin_notification(self, plugin_id: str) -> None:
         self.send_notification(

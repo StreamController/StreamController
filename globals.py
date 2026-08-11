@@ -3,49 +3,16 @@ import Pyro5.api
 import os
 from collections import deque
 from typing import TYPE_CHECKING
-import argparse
 import sys
 from loguru import logger as log
 
+from src.CLI import build_argparser
 from src.backend.DeckManagement.HelperMethods import find_fallback_font
 
 # Automatically detect macOS
 IS_MAC = sys.platform == "darwin"
 
-argparser = argparse.ArgumentParser()
-argparser.add_argument("-b", help="Open in background", action="store_true")
-argparser.add_argument("--daemon-only", help="Run without creating the main window until reopened", action="store_true")
-argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
-argparser.add_argument("--skip-load-hardware-decks", help="Skips initilization/use of hardware decks", action="store_true")
-argparser.add_argument("--close-running", help="Close running", action="store_true")
-argparser.add_argument("--data", help="Data path", type=str)
-argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
-argparser.add_argument("--list-devices", help="List all connected StreamDeck devices and their properties", action="store_true")
-argparser.add_argument("--list-pages", help="List all available pages", action="store_true")
-argparser.add_argument("--change-state", action="append", nargs=4,
-                      help="Change the state of a StreamDeck item. Format: SERIAL PAGE COORDS STATE\n"
-                           "  SERIAL: Device serial number (e.g., CL123456789)\n"
-                           "  PAGE: Page name (e.g., Main, Soundboard) \n"
-                           "  COORDS: Position as x,y (e.g., 0,0 for top-left)\n"
-                           "  STATE: State number to change to (0, 1, 2, etc.)\n"
-                           "Example: --change-state CL123456789 Main 0,0 1",
-                      metavar=("SERIAL", "PAGE", "COORDS", "STATE"))
-argparser.add_argument("--action", action="append", nargs=4,
-                      help="Trigger a button action the same way a physical press would. Format: EVENT SERIAL PAGE COORDS\n"
-                           "  EVENT: press or long-press\n"
-                           "  SERIAL: Device serial number (e.g., CL123456789)\n"
-                           "  PAGE: Page name (e.g., Main, Soundboard)\n"
-                           "  COORDS: Position as x,y (e.g., 0,0 for top-left)\n"
-                           "Example: --action press CL123456789 Main 0,0",
-                      metavar=("EVENT", "SERIAL", "PAGE", "COORDS"))
-argparser.add_argument("--list-actions", action="append", nargs=3,
-                      help="List the actions configured on a StreamDeck item. Format: PAGE COORDS STATE\n"
-                           "  PAGE: Page name (e.g., Main, Soundboard)\n"
-                           "  COORDS: Position as x,y (e.g., 0,0 for top-left)\n"
-                           "  STATE: State number to inspect (0, 1, 2, etc.)\n"
-                           "Example: --list-actions Main 0,0 0",
-                      metavar=("PAGE", "COORDS", "STATE"))
-argparser.add_argument("app_args", nargs="*")
+argparser = build_argparser()
 
 MAIN_PATH: str
 VAR_APP_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")

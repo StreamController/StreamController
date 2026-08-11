@@ -691,6 +691,16 @@ class Page:
         inputs: list["ControllerInput"] = []
 
         for controller in gl.deck_manager.deck_controller:
+            # Only decks actually showing this page - their inputs are the ones
+            # holding this page's values. update_input() filters the same way;
+            # without this, writing to a page that is not on a deck (or that is
+            # only on one of several decks) pushes this page's labels/media/
+            # background into the live state of a key showing a different page,
+            # where it stays until that input is reloaded.
+            active_page = controller.active_page
+            if active_page is None or active_page.json_path != self.json_path:
+                continue
+
             for c_input in controller.get_inputs(identifier):
                 if c_input.identifier == identifier:
                     inputs.append(c_input)
@@ -742,6 +752,7 @@ class Page:
         label_manager = self.get_label_manager(identifier, state)
         if label_manager is not None:
             label_manager.page_labels[label_position].text = text
+            label_manager.update_label_editor()
 
         if update:
             self.update_input(identifier, state)
@@ -824,6 +835,9 @@ class Page:
         if update:
             self.update_input(identifier, state)
 
+    def get_label_font_color(self, identifier: InputIdentifier, state: int, label_position: str) -> list[int]:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "color"])
+
     def set_label_font_color(self, identifier: InputIdentifier, state: int, label_position: str, font_color: list[int], update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
             key_state.label_manager.page_labels[label_position].color = font_color
@@ -838,6 +852,9 @@ class Page:
         if update:
             self.update_input(identifier, state)
 
+    def get_label_outline_width(self, identifier: InputIdentifier, state: int, label_position: str) -> int:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "outline_width"])
+
     def set_label_outline_width(self, identifier: InputIdentifier, state: int, label_position: str, outline_width: list[int], update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
             key_state.label_manager.page_labels[label_position].outline_width = outline_width
@@ -851,6 +868,9 @@ class Page:
 
         if update:
             self.update_input(identifier, state)
+
+    def get_label_outline_color(self, identifier: InputIdentifier, state: int, label_position: str) -> list[int]:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "outline_color"])
 
     def set_label_outline_color(self, identifier: InputIdentifier, state: int, label_position: str, outline_color: list[int], update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
@@ -879,6 +899,9 @@ class Page:
 
         if update:
             self.update_input(identifier, state)
+
+    def get_label_alignment(self, identifier: InputIdentifier, state: int, label_position: str) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "alignment"])
 
     def set_label_alignment(self, identifier: InputIdentifier, state: int, label_position: str, alignment: str, update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
@@ -926,6 +949,18 @@ class Page:
             key_state.layout_manager.page_layout.halign = halign
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "halign"], halign)
+
+        if update:
+            self.update_input(identifier, state)
+
+    def get_media_fill_mode(self, identifier: InputIdentifier, state: int) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "fill-mode"])
+
+    def set_media_fill_mode(self, identifier: InputIdentifier, state: int, fill_mode: str, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
+            key_state.layout_manager.page_layout.fill_mode = fill_mode
+
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "fill-mode"], fill_mode)
 
         if update:
             self.update_input(identifier, state)

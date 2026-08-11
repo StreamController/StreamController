@@ -12,6 +12,15 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+# Answer the command from an already running instance before anything heavy is
+# imported - see src/CLI.py. Everything below costs ~2.4s to import, which
+# otherwise dwarfs the DBus call itself and makes the CLI unusable for scripting.
+import sys
+from src.CLI import run_against_running_instance
+
+if run_against_running_instance():
+    sys.exit(0)
+
 # Import Python modules
 import setproctitle
 
@@ -53,6 +62,9 @@ from locales.LocaleManager import LocaleManager
 from src.backend.MediaManager import MediaManager
 from src.backend.AssetManagerBackend import AssetManagerBackend
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
+from src.backend.PageManagement import HeadlessPageOps as ops
+from src.CLI import (print_get_results, print_emulate_input_usage, print_state_change_usage,
+                     validate_emulate_input_args, validate_state_change_args)
 from src.backend.SettingsManager import SettingsManager
 from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
@@ -80,8 +92,6 @@ import globals as gl
 
 # Define constants
 DEFAULT_DATA_PATH = os.path.expanduser("~/.var/app/com.core447.StreamController/data")
-MAX_REASONABLE_X = 10
-MAX_REASONABLE_Y = 10
 
 main_path = os.path.abspath(os.path.dirname(__file__))
 gl.MAIN_PATH = main_path
@@ -361,6 +371,12 @@ def find_page_file(pages_dir, page_name):
 
     return None
 
+def _headless_page_path(name: str) -> str:
+    path = ops.resolve_page_path(name)
+    if path is None:
+        raise ops.HeadlessOpError(f"Page '{name}' not found")
+    return path
+
 def handle_listing_commands():
     """
     Handle --list-devices, --list-pages and --list-actions commands
@@ -454,20 +470,31 @@ def handle_listing_commands():
         data_path = gl.DATA_PATH if hasattr(gl, 'DATA_PATH') else DEFAULT_DATA_PATH
         pages_dir = os.path.join(data_path, "pages")
 
+        json_results = []
+
         for page_name, coords, state_number in args.list_actions:
-            print(f"Actions for page '{page_name}', key {coords}, state {state_number}:")
+            entry = {"page": page_name, "coords": coords, "state": state_number}
+
+            if not args.json:
+                print(f"Actions for page '{page_name}', key {coords}, state {state_number}:")
 
             page_path = find_page_file(pages_dir, page_name)
             if page_path is None:
-                print(f"  Error: Page '{page_name}' not found in {pages_dir}")
-                print()
+                entry["error"] = f"Page '{page_name}' not found in {pages_dir}"
+                if not args.json:
+                    print(f"  Error: {entry['error']}")
+                    print()
+                json_results.append(entry)
                 continue
 
             try:
                 x, y = map(int, coords.split(','))
             except (ValueError, AttributeError):
-                print(f"  Invalid coordinate format '{coords}'. Expected format: 'x,y' (e.g., '0,0')")
-                print()
+                entry["error"] = f"Invalid coordinate format '{coords}'. Expected format: 'x,y' (e.g., '0,0')"
+                if not args.json:
+                    print(f"  {entry['error']}")
+                    print()
+                json_results.append(entry)
                 continue
             json_identifier = f"{x}x{y}"
 
@@ -475,278 +502,380 @@ def handle_listing_commands():
                 with open(page_path, 'r') as f:
                     page_data = json.load(f)
             except Exception as e:
-                print(f"  Error reading page: {e}")
-                print()
+                entry["error"] = f"Error reading page: {e}"
+                if not args.json:
+                    print(f"  {entry['error']}")
+                    print()
+                json_results.append(entry)
                 continue
 
             key_data = page_data.get("keys", {}).get(json_identifier)
             if key_data is None:
-                print(f"  No key configured at {coords}")
-                print()
+                entry["error"] = f"No key configured at {coords}"
+                if not args.json:
+                    print(f"  {entry['error']}")
+                    print()
+                json_results.append(entry)
                 continue
 
             state_data = key_data.get("states", {}).get(state_number)
             if state_data is None:
-                available_states = ", ".join(sorted(key_data.get("states", {}).keys(), key=int)) or "none"
-                print(f"  State {state_number} does not exist. Available states: {available_states}")
-                print()
+                available_states = sorted(key_data.get("states", {}).keys(), key=int)
+                entry["error"] = f"State {state_number} does not exist. Available states: {', '.join(available_states) or 'none'}"
+                entry["available_states"] = available_states
+                if not args.json:
+                    print(f"  {entry['error']}")
+                    print()
+                json_results.append(entry)
                 continue
 
             actions = state_data.get("actions", [])
-            if not actions:
-                print("  No actions configured")
-            else:
-                for i, action in enumerate(actions):
-                    print(f"  [{i}] {action.get('id', 'unknown')}")
+            entry["actions"] = [a.get("id", "unknown") for a in actions]
+            json_results.append(entry)
 
-            print()
+            if not args.json:
+                if not actions:
+                    print("  No actions configured")
+                else:
+                    for i, action in enumerate(actions):
+                        print(f"  [{i}] {action.get('id', 'unknown')}")
+                print()
 
-        print("Trigger one of these with, e.g.:")
-        print("  --action press SERIAL PAGE COORDS")
-        print("  --action long-press SERIAL PAGE COORDS")
+        if args.json:
+            print(json.dumps(json_results, indent=2))
+        else:
+            print("Trigger one of these with, e.g.:")
+            print("  --emulate-input press SERIAL PAGE COORDS")
+            print("  --emulate-input long-press SERIAL PAGE COORDS")
 
         return True
 
     if args.list_pages:
-        print("Scanning for available pages...")
-        print()
-        
-        try:
-            # Try to get pages from the file system
-            data_path = gl.DATA_PATH if hasattr(gl, 'DATA_PATH') else DEFAULT_DATA_PATH
-            pages_dir = os.path.join(data_path, "pages")
-            
-            if not os.path.exists(pages_dir):
+        data_path = gl.DATA_PATH if hasattr(gl, 'DATA_PATH') else DEFAULT_DATA_PATH
+        pages_dir = os.path.join(data_path, "pages")
+
+        if not os.path.exists(pages_dir):
+            if args.json:
+                print(json.dumps({"error": f"Pages directory not found: {pages_dir}", "pages": []}))
+            else:
                 print(f"Pages directory not found: {pages_dir}")
                 print("\nThis might mean StreamController hasn't been set up yet.")
-                return True
-            
-            page_files = [f for f in os.listdir(pages_dir) if f.endswith('.json') and not f.startswith('.')]
-            
-            if not page_files:
-                print("No pages found.")
-                print(f"\nPages should be located in: {pages_dir}")
-                return True
-            
-            print(f"Found {len(page_files)} page(s):")
+            return True
+
+        page_files = sorted(f for f in os.listdir(pages_dir) if f.endswith('.json') and not f.startswith('.'))
+
+        if args.json:
+            print(json.dumps({"pages": [os.path.splitext(f)[0] for f in page_files]}, indent=2))
+            return True
+
+        print("Scanning for available pages...")
+        print()
+
+        if not page_files:
+            print("No pages found.")
+            print(f"\nPages should be located in: {pages_dir}")
+            return True
+
+        print(f"Found {len(page_files)} page(s):")
+        print()
+
+        for page_file in page_files:
+            page_name = os.path.splitext(page_file)[0]
+            page_path = os.path.join(pages_dir, page_file)
+
+            try:
+                with open(page_path, 'r') as f:
+                    page_data = json.load(f)
+
+                print(f"  {page_name}")
+
+                items_with_states = 0
+                for input_type in ['keys', 'dials', 'touchscreens']:
+                    if input_type in page_data:
+                        for item_id, item_data in page_data[input_type].items():
+                            if 'states' in item_data and item_data['states']:
+                                states_count = len(item_data['states'])
+                                items_with_states += 1
+                                if states_count > 1:
+                                    print(f"    - {input_type[:-1]} {item_id}: {states_count} states")
+
+                if items_with_states == 0:
+                    print(f"    - No configured items")
+
+            except Exception as e:
+                print(f"    - Error reading page: {e}")
+
             print()
-            
-            for page_file in sorted(page_files):
-                page_name = os.path.splitext(page_file)[0]
-                page_path = os.path.join(pages_dir, page_file)
-                
-                try:
-                    # Try to read basic info from the page file
-                    with open(page_path, 'r') as f:
-                        page_data = json.load(f)
-                    
-                    print(f"  {page_name}")
-                    
-                    # Count items with states
-                    items_with_states = 0
-                    for input_type in ['keys', 'dials', 'touchscreens']:
-                        if input_type in page_data:
-                            for item_id, item_data in page_data[input_type].items():
-                                if 'states' in item_data and item_data['states']:
-                                    states_count = len(item_data['states'])
-                                    items_with_states += 1
-                                    if states_count > 1:
-                                        print(f"    - {input_type[:-1]} {item_id}: {states_count} states")
-                    
-                    if items_with_states == 0:
-                        print(f"    - No configured items")
-                    
-                except Exception as e:
-                    print(f"    - Error reading page: {e}")
-                
-                print()
-                    
-        except Exception as e:
-            print(f"Error scanning pages: {e}")
-        
+
         return True
-    
+
+    if args.get_label:
+        results = []
+        for page_name, coords, state_number, position, prop in args.get_label:
+            entry = {"page": page_name, "coords": coords, "state": state_number, "position": position, "property": prop}
+            try:
+                page_path = _headless_page_path(page_name)
+                entry["value"] = ops.format_value(ops.get_label(page_path, coords, int(state_number), position, prop))
+            except (ops.HeadlessOpError, ValueError) as e:
+                entry["error"] = str(e)
+            results.append(entry)
+        print_get_results(results, args.json)
+        return True
+
+    if args.get_background_color:
+        results = []
+        for page_name, coords, state_number in args.get_background_color:
+            entry = {"page": page_name, "coords": coords, "state": state_number}
+            try:
+                page_path = _headless_page_path(page_name)
+                entry["value"] = ops.format_value(ops.get_background_color(page_path, coords, int(state_number)))
+            except (ops.HeadlessOpError, ValueError) as e:
+                entry["error"] = str(e)
+            results.append(entry)
+        print_get_results(results, args.json)
+        return True
+
+    if args.get_icon:
+        results = []
+        for page_name, coords, state_number in args.get_icon:
+            entry = {"page": page_name, "coords": coords, "state": state_number}
+            try:
+                page_path = _headless_page_path(page_name)
+                entry["value"] = ops.format_value(ops.get_media(page_path, coords, int(state_number), "path"))
+            except (ops.HeadlessOpError, ValueError) as e:
+                entry["error"] = str(e)
+            results.append(entry)
+        print_get_results(results, args.json)
+        return True
+
+    if args.get_icon_layout:
+        results = []
+        for page_name, coords, state_number, prop in args.get_icon_layout:
+            entry = {"page": page_name, "coords": coords, "state": state_number, "property": prop}
+            try:
+                page_path = _headless_page_path(page_name)
+                entry["value"] = ops.format_value(ops.get_media(page_path, coords, int(state_number), prop))
+            except (ops.HeadlessOpError, ValueError) as e:
+                entry["error"] = str(e)
+            results.append(entry)
+        print_get_results(results, args.json)
+        return True
+
     return False
 
-def validate_state_change_args(args):
+def buffer_api_requests():
     """
-    Validate CLI arguments for --change-state
-    Returns (is_valid, error_message)
+    Stashes --change-page/--change-state/--emulate-input for the instance this
+    process is about to become, in gl.api_*_requests (applied once the decks are
+    loaded). When an instance is already running these never get here: src/CLI.py
+    calls it over DBus and exits long before main.py is imported. The exception
+    is --close-running, where the request is meant for the replacement instance.
     """
-    if not args.change_state:
-        return True, None
-    
-    for i, (serial_number, page_name, coords, state_number) in enumerate(args.change_state):
-        # Validate serial number format (basic check)
-        if not serial_number or not isinstance(serial_number, str):
-            return False, f"Invalid serial number in argument {i+1}: '{serial_number}'"
-        
-        # Validate page name
-        if not page_name or not isinstance(page_name, str):
-            return False, f"Invalid page name in argument {i+1}: '{page_name}'"
-        
-        # Validate coordinate format
-        if not coords or not isinstance(coords, str):
-            return False, f"Invalid coordinates in argument {i+1}: '{coords}'"
-        
-        if ',' not in coords:
-            return False, f"Invalid coordinate format in argument {i+1}: '{coords}'. Expected format: 'x,y' (e.g., '0,0')"
-        
-        try:
-            x, y = map(int, coords.split(','))
-            if x < 0 or y < 0:
-                return False, f"Coordinates must be non-negative in argument {i+1}: '{coords}'"
-            if x > MAX_REASONABLE_X or y > MAX_REASONABLE_Y:  # Reasonable bounds check
-                return False, f"Coordinates seem too large in argument {i+1}: '{coords}'. Most StreamDecks have coordinates 0-4"
-        except ValueError:
-            return False, f"Invalid coordinate format in argument {i+1}: '{coords}'. Expected integers like '0,0'"
-        
-        # Validate state number
-        try:
-            state_num = int(state_number)
-            if state_num < 0:
-                return False, f"State number must be non-negative in argument {i+1}: '{state_number}'"
-            if state_num > 20:  # Reasonable bounds check
-                return False, f"State number seems too large in argument {i+1}: '{state_number}'. Most items have 1-5 states"
-        except ValueError:
-            return False, f"Invalid state number in argument {i+1}: '{state_number}'. Must be an integer"
-    
-    return True, None
-
-VALID_ACTION_EVENTS = ("press", "long-press")
-
-def validate_action_args(args):
-    """
-    Validate CLI arguments for --action
-    Returns (is_valid, error_message)
-    """
-    if not args.action:
-        return True, None
-
-    for i, (event, serial_number, page_name, coords) in enumerate(args.action):
-        if event not in VALID_ACTION_EVENTS:
-            return False, f"Invalid event in argument {i+1}: '{event}'. Must be one of: {', '.join(VALID_ACTION_EVENTS)}"
-
-        if not serial_number or not isinstance(serial_number, str):
-            return False, f"Invalid serial number in argument {i+1}: '{serial_number}'"
-
-        if not page_name or not isinstance(page_name, str):
-            return False, f"Invalid page name in argument {i+1}: '{page_name}'"
-
-        if not coords or not isinstance(coords, str) or ',' not in coords:
-            return False, f"Invalid coordinate format in argument {i+1}: '{coords}'. Expected format: 'x,y' (e.g., '0,0')"
-
-        try:
-            x, y = map(int, coords.split(','))
-            if x < 0 or y < 0:
-                return False, f"Coordinates must be non-negative in argument {i+1}: '{coords}'"
-            if x > MAX_REASONABLE_X or y > MAX_REASONABLE_Y:
-                return False, f"Coordinates seem too large in argument {i+1}: '{coords}'. Most StreamDecks have coordinates 0-4"
-        except ValueError:
-            return False, f"Invalid coordinate format in argument {i+1}: '{coords}'. Expected integers like '0,0'"
-
-    return True, None
-
-def make_api_calls():
     if gl.IS_MAC:
         return False
 
     args = gl.argparser.parse_args()
-    has_page_requests = args.change_page
-    has_state_requests = args.change_state
-    has_action_requests = args.action
-
-    if not has_page_requests and not has_state_requests and not has_action_requests:
+    if not args.change_page and not args.change_state and not args.emulate_input:
         return False
 
-    # Validate state change arguments before proceeding
-    if has_state_requests:
-        is_valid, error_msg = validate_state_change_args(args)
-        if not is_valid:
-            print(f"Error: {error_msg}", file=sys.stderr)
-            print("\nUsage examples:", file=sys.stderr)
-            print("  --change-state CL123456789 Main 0,0 1", file=sys.stderr)
-            print("  --change-state CL123456789 Soundboard 2,1 0", file=sys.stderr)
-            print("\nParameters:", file=sys.stderr)
-            print("  SERIAL_NUMBER: Device serial (e.g., CL123456789)", file=sys.stderr)
-            print("  PAGE_NAME: Page name (e.g., Main, Soundboard)", file=sys.stderr)
-            print("  COORDINATES: Position as x,y (e.g., 0,0 for top-left)", file=sys.stderr)
-            print("  STATE_NUMBER: State to change to (e.g., 0, 1, 2)", file=sys.stderr)
+    is_valid, error_msg = validate_state_change_args(args)
+    if not is_valid:
+        print(f"Error: {error_msg}", file=sys.stderr)
+        print_state_change_usage()
+        sys.exit(1)
+
+    is_valid, error_msg = validate_emulate_input_args(args)
+    if not is_valid:
+        print(f"Error: {error_msg}", file=sys.stderr)
+        print_emulate_input_usage()
+        sys.exit(1)
+
+    for serial_number, page_name in args.change_page or []:
+        gl.api_page_requests[serial_number] = page_name
+
+    for serial_number, page_name, coords, state_number in args.change_state or []:
+        try:
+            state_num = int(state_number)
+        except ValueError:
+            print(f"Error: Invalid state number '{state_number}'. Must be an integer.", file=sys.stderr)
             sys.exit(1)
+        gl.api_state_requests[serial_number] = {
+            "page_name": page_name,
+            "coords": coords,
+            "state": state_num
+        }
 
-    # Validate action trigger arguments before proceeding
-    if has_action_requests:
-        is_valid, error_msg = validate_action_args(args)
-        if not is_valid:
-            print(f"Error: {error_msg}", file=sys.stderr)
-            print("\nUsage examples:", file=sys.stderr)
-            print("  --action press CL123456789 Main 0,0", file=sys.stderr)
-            print("  --action long-press CL123456789 Soundboard 2,1", file=sys.stderr)
-            print("\nParameters:", file=sys.stderr)
-            print(f"  EVENT: {' or '.join(VALID_ACTION_EVENTS)}", file=sys.stderr)
-            print("  SERIAL_NUMBER: Device serial (e.g., CL123456789)", file=sys.stderr)
-            print("  PAGE_NAME: Page name (e.g., Main, Soundboard)", file=sys.stderr)
-            print("  COORDINATES: Position as x,y (e.g., 0,0 for top-left)", file=sys.stderr)
-            sys.exit(1)
-
-    session_bus = dbus.SessionBus()
-    obj: dbus.BusObject = None
-    action_interface: dbus.Interface = None
-    try:
-        obj = session_bus.get_object("com.core447.StreamController", "/com/core447/StreamController")
-        action_interface = dbus.Interface(obj, "org.gtk.Actions")
-    except dbus.exceptions.DBusException as e:
-        obj = None
-    except ValueError as e:
-        obj = None
-
-    # Handle page change requests
-    if has_page_requests:
-        for serial_number, page_name in args.change_page:
-            if None in [obj, action_interface] or args.close_running:
-                gl.api_page_requests[serial_number] = page_name
-            else:
-                # Other instance is running - call dbus interfaces
-                action_interface.Activate("change_page", [[serial_number, page_name]], [])
-                return True
-
-    # Handle state change requests
-    if has_state_requests:
-        for serial_number, page_name, coords, state_number in args.change_state:
-            if None in [obj, action_interface] or args.close_running:
-                try:
-                    state_num = int(state_number)
-                    gl.api_state_requests[serial_number] = {
-                        "page_name": page_name,
-                        "coords": coords,
-                        "state": state_num
-                    }
-                except ValueError:
-                    print(f"Error: Invalid state number '{state_number}'. Must be an integer.", file=sys.stderr)
-                    sys.exit(1)
-            else:
-                # Other instance is running - call dbus interfaces
-                action_interface.Activate("change_state", [[serial_number, page_name, coords, state_number]], [])
-                return True
-
-    # Handle action trigger requests
-    if has_action_requests:
-        for event, serial_number, page_name, coords in args.action:
-            if None in [obj, action_interface] or args.close_running:
-                gl.api_action_requests[serial_number] = {
-                    "event": event,
-                    "page_name": page_name,
-                    "coords": coords,
-                }
-            else:
-                # Other instance is running - call dbus interfaces
-                action_interface.Activate("trigger_action", [[event, serial_number, page_name, coords]], [])
-                return True
+    for event, serial_number, page_name, coords in args.emulate_input or []:
+        gl.api_action_requests[serial_number] = {
+            "event": event,
+            "page_name": page_name,
+            "coords": coords,
+        }
 
     return False
 
 
-    
+def _report_error(e: Exception) -> None:
+    print(f"Error: {e}", file=sys.stderr)
+
+
+def handle_extended_commands():
+    """
+    Handles every mutation/read flag introduced alongside --change-page/
+    --change-state/--emulate-input: page CRUD, state add/remove, label,
+    background color, icon/media, icon layout, brightness, sleep/wake, export.
+
+    This is the no-instance-running path: it edits the page json directly
+    (HeadlessPageOps) and exits, without booting the app. When an instance *is*
+    running none of this executes - src/CLI.py answers the same flags over DBus
+    before main.py is even imported, so the running instance applies them live.
+    Brightness/sleep/wake have no meaningful offline equivalent beyond writing
+    the deck settings, since there is no deck to act on.
+    """
+    if gl.IS_MAC:
+        return False
+
+    args = gl.argparser.parse_args()
+
+    flags = (
+        args.create_page, args.delete_page, args.rename_page, args.duplicate_page,
+        args.export_page, args.export_all, args.add_state, args.remove_state,
+        args.set_label, args.set_background_color,
+        args.set_icon, args.set_icon_layout,
+        args.get_brightness, args.set_brightness, args.sleep, args.wake,
+    )
+    if not any(flags):
+        return False
+
+    had_error = False
+
+    def run(headless_call, live_needed=False):
+        nonlocal had_error
+        try:
+            if live_needed:
+                raise ops.HeadlessOpError("StreamController must be running for this command")
+            return headless_call()
+        except (ops.HeadlessOpError, ValueError) as e:
+            _report_error(e)
+            had_error = True
+            return None
+
+    # ── Page management ─────────────────────────────────────────────
+
+    for (name,) in args.create_page or []:
+        run(lambda name=name: ops.create_page(name))
+
+    for (name,) in args.delete_page or []:
+        run(lambda name=name: ops.delete_page(_headless_page_path(name)))
+
+    for name, new_name in args.rename_page or []:
+        run(lambda name=name, new_name=new_name: ops.rename_page(_headless_page_path(name), new_name))
+
+    for name, new_name in args.duplicate_page or []:
+        run(lambda name=name, new_name=new_name: ops.duplicate_page(_headless_page_path(name), new_name))
+
+    for name, dest_path in args.export_page or []:
+        dest_path = os.path.abspath(dest_path)
+        def _export(name=name, dest_path=dest_path):
+            from src.backend.PageManagement import PageBundle
+            ops.bootstrap()
+            PageBundle.export_page(_headless_page_path(name), dest_path)
+        run(_export)
+        if not had_error:
+            print(f"Exported '{name}' to {dest_path}")
+
+    for (dest_path,) in args.export_all or []:
+        dest_path = os.path.abspath(dest_path)
+        def _export_all(dest_path=dest_path):
+            from src.backend.PageManagement import PageBundle
+            from src.backend.Utils.AtomicSaveUtils import atomic_save_json
+            ops.bootstrap()
+            if dest_path.endswith(".json"):
+                pages = {os.path.basename(p): gl.page_manager.get_page_data(p) for p in gl.page_manager.get_pages(add_custom_pages=False)}
+                atomic_save_json(dest_path, pages)
+            else:
+                PageBundle.export_pages(gl.page_manager.get_pages(add_custom_pages=False), dest_path)
+        run(_export_all)
+        if not had_error:
+            print(f"Exported all pages to {dest_path}")
+
+    # ── States ───────────────────────────────────────────────────────
+
+    for name, coords in args.add_state or []:
+        new_index = run(lambda name=name, coords=coords: ops.add_state(_headless_page_path(name), coords))
+        if new_index is not None:
+            print(f"Added state {new_index} to {name} {coords}")
+
+    for name, coords, state in args.remove_state or []:
+        run(lambda name=name, coords=coords, state=state: ops.remove_state(_headless_page_path(name), coords, int(state)))
+
+    # ── Labels ───────────────────────────────────────────────────────
+    # Reads (--get-label & co) are handled in handle_listing_commands() -
+    # they're a plain disk read here, since every mutation below is persisted
+    # immediately either way.
+
+    for name, coords, state, position, prop, value in args.set_label or []:
+        run(lambda name=name, coords=coords, state=state, position=position, prop=prop, value=value:
+            ops.set_label(_headless_page_path(name), coords, int(state), position, prop, value))
+
+    # ── Background color ────────────────────────────────────────────
+
+    for name, coords, state, color in args.set_background_color or []:
+        run(lambda name=name, coords=coords, state=state, color=color:
+            ops.set_background_color(_headless_page_path(name), coords, int(state), color))
+
+    # ── Icon / media ─────────────────────────────────────────────────
+
+    for name, coords, state, path in args.set_icon or []:
+        path = os.path.abspath(path)
+        internal_path = run(lambda name=name, coords=coords, state=state, path=path:
+                            ops.set_icon(_headless_page_path(name), coords, int(state), path))
+        if internal_path is not None:
+            print(f"Set icon for {name} {coords} state {state}: {internal_path}")
+
+    for name, coords, state, prop, value in args.set_icon_layout or []:
+        run(lambda name=name, coords=coords, state=state, prop=prop, value=value:
+            ops.set_media(_headless_page_path(name), coords, int(state), prop, value))
+
+    # ── Brightness ───────────────────────────────────────────────────
+
+    for (serial,) in args.get_brightness or []:
+        def _get_brightness(serial=serial):
+            ops.bootstrap()
+            return gl.settings_manager.get_deck_settings(serial).get("brightness", {}).get("value", 75)
+        value = run(_get_brightness)
+        if value is not None:
+            print(value if args.json else str(value))
+
+    for serial, value in args.set_brightness or []:
+        try:
+            value_int = int(value)
+        except ValueError:
+            _report_error(f"Invalid brightness '{value}'. Must be an integer 0-100")
+            had_error = True
+            continue
+        def _set_brightness(serial=serial, value_int=value_int):
+            ops.bootstrap()
+            settings = gl.settings_manager.get_deck_settings(serial)
+            settings.setdefault("brightness", {})["value"] = value_int
+            gl.settings_manager.save_deck_settings(serial, settings)
+        run(_set_brightness)
+
+    # ── Sleep / wake ─────────────────────────────────────────────────
+    # These need a live render loop to actually show/hide the screensaver,
+    # so there is no offline equivalent at all.
+
+    for (serial,) in args.sleep or []:
+        run(None, live_needed=True)
+
+    for (serial,) in args.wake or []:
+        run(None, live_needed=True)
+
+    if had_error:
+        sys.exit(1)
+    return True
+
+
 @log.catch
 def main():
     args = gl.argparser.parse_args()
@@ -755,7 +884,10 @@ def main():
     if handle_listing_commands():
         return
     
-    if make_api_calls():
+    if buffer_api_requests():
+        return
+
+    if handle_extended_commands():
         return
 
     gsk_render_env_var = os.environ.get("GSK_RENDERER")
@@ -793,6 +925,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-log.trace("Reached end of main.py")

@@ -746,6 +746,30 @@ class Page:
         if update:
             self.update_input(identifier, state)
 
+    def get_active_states(self, identifier: InputIdentifier) -> dict:
+        """
+        The last active state per deck serial number. Keyed by serial because the
+        same page can be loaded on several decks at the same time, each on its own
+        state - and keying it by serial keeps working when the page is renamed.
+        """
+        states = self._get_dict_value([identifier.input_type, identifier.json_identifier, "active_state"])
+        if not isinstance(states, dict):
+            return {}
+        return states
+
+    def get_active_state(self, identifier: InputIdentifier, deck_serial_number: str) -> int | None:
+        return self.get_active_states(identifier).get(deck_serial_number)
+
+    def set_active_state(self, identifier: InputIdentifier, deck_serial_number: str, active_state: int):
+        states = self.get_active_states(identifier)
+        # _set_dict_value saves the whole page to disk - don't do that for a state
+        # switch that doesn't change anything, this runs on every key press
+        if states.get(deck_serial_number) == active_state:
+            return
+
+        states[deck_serial_number] = active_state
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "active_state"], states)
+
     def get_label_font_family(self, identifier: InputIdentifier, state: int, label_position: str) -> str:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-family"])
 

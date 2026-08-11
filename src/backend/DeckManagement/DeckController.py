@@ -2597,10 +2597,37 @@ class ControllerInput:
     def get_active_state(self) -> "ControllerInputState":
         return self.states.get(self.state, self.ControllerStateClass(self, -1))
 
-    def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False) -> None:
+    def states_are_persistent(self) -> bool:
+        """Whether the active state of this input is remembered in the page json."""
+        if not self.enable_states:
+            return False
+        if gl.settings_manager is None:
+            return False
+        return gl.settings_manager.get_app_settings().get("general", {}).get("persistent-states", False)
+
+    def get_state_to_load(self, input_dict: dict) -> int | None:
+        """
+        The state to activate when (re)loading this input from its page config.
+        None means: keep the state the input is currently on - the behaviour from
+        before persistent states existed.
+        """
+        if not self.states_are_persistent():
+            return None
+
+        states = input_dict.get("active_state")
+        if not isinstance(states, dict):
+            return None
+
+        state = states.get(self.deck_controller.safe_serial_number())
+        if not isinstance(state, int) or state not in self.states:
+            # Never written yet, or it points at a state that has since been removed
+            return None
+        return state
+
+    def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False, persist: bool = True) -> None:
         if state == self.state and not allow_reload:
             return
-        
+
         if state not in self.states:
             log.error(f"Invalid state: {state}, must be one of {list(self.states.keys())}")
             return
@@ -2610,6 +2637,14 @@ class ControllerInput:
 
         if update_sidebar:
             self.reload_sidebar()
+
+        # persist=False while loading a page: the page being loaded is not necessarily
+        # deck_controller.active_page (see reload_similar_pages), so writing here would
+        # push the loaded state into the wrong page - and overwrite the stored one
+        if persist and self.states_are_persistent():
+            page = self.deck_controller.active_page
+            if page is not None:
+                page.set_active_state(self.identifier, self.deck_controller.safe_serial_number(), state)
 
     def reload_sidebar(self) -> None:
         if not recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
@@ -2941,7 +2976,10 @@ class ControllerKey(ControllerInput):
 
         old_state_index = self.state
 
-        self.state = 0
+        # The state the input ends up on: the persisted one if there is one, otherwise
+        # state 0 while loading and back to the live state at the end (see below)
+        target_state = self.get_state_to_load(input_dict)
+        self.state = 0 if target_state is None else target_state
 
         #TODO: Reset states
         for state in input_dict.get("states", {}):
@@ -3047,18 +3085,21 @@ class ControllerKey(ControllerInput):
                 state.background_manager.set_page_color(state_dict.get("background", {}).get("color"), update=False)
 
         if update:
-            self.set_state(old_state_index)
+            if target_state is None:
+                self.set_state(old_state_index, persist=False)
+            else:
+                self.set_state(target_state, allow_reload=True, persist=False)
             self.update()
         else:
             # A key press or release that landed inside a suppression window above
             # never got drawn - draw it now that the state is fully loaded
             self._flush_suppressed_render()
 
-    def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False) -> None:
+    def set_state(self, state: int, update_sidebar: bool = True, allow_reload: bool = False, persist: bool = True) -> None:
         old_state = self.state
         if state == old_state and not allow_reload:
             return
-        super().set_state(state, False, allow_reload)
+        super().set_state(state, False, allow_reload, persist)
         if update_sidebar:
             self.reload_sidebar()
 
@@ -3377,7 +3418,8 @@ class ControllerDial(ControllerInput):
 
         old_state_index = self.state
 
-        self.state = 0
+        target_state = self.get_state_to_load(page_dict)
+        self.state = 0 if target_state is None else target_state
 
         for state in page_dict.get("states", {}):
             state: ControllerDialState = self.states.get(int(state))
@@ -3449,7 +3491,10 @@ class ControllerDial(ControllerInput):
             state.background_manager.set_page_color(state_dict.get("background", {}).get("color", [0, 0, 0, 0]), update=False)
 
         if update:
-            self.set_state(old_state_index)
+            if target_state is None:
+                self.set_state(old_state_index, persist=False)
+            else:
+                self.set_state(target_state, allow_reload=True, persist=False)
             self.update()
 
     def update(self, priority: int = TASK_PRIORITY_NORMAL):

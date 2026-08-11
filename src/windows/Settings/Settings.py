@@ -385,15 +385,20 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         self.rolling_labels = Adw.SwitchRow(title="Rolling labels", subtitle="Enable automatic rolling/scrolling of too long labels")
         self.add(self.rolling_labels)
 
+        self.persistent_states = Adw.SwitchRow(title="Persistent states", subtitle="Remember the active state of each key and dial across restarts")
+        self.add(self.persistent_states)
+
         self.load_defaults()
 
         # Connect signals
         self.hold_time_row.connect("changed", self.on_n_fake_decks_row_changed)
         self.rolling_labels.connect("notify::active", self.on_rolling_labels_changed)
+        self.persistent_states.connect("notify::active", self.on_persistent_states_changed)
 
     def load_defaults(self):
         self.hold_time_row.set_value(self.settings.settings_json.get("general", {}).get("hold-time", 0.5))
         self.rolling_labels.set_active(self.settings.settings_json.get("general", {}).get("rolling-labels", True))
+        self.persistent_states.set_active(self.settings.settings_json.get("general", {}).get("persistent-states", False))
 
     def on_n_fake_decks_row_changed(self, *args):
         self.settings.settings_json.setdefault("general", {})
@@ -418,6 +423,25 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         # Reload all pages - TODO: might not be necessary
         for controller in gl.deck_manager.deck_controller:
             controller.reload_page()
+
+    def on_persistent_states_changed(self, *args):
+        self.settings.settings_json.setdefault("general", {})
+        self.settings.settings_json["general"]["persistent-states"] = self.persistent_states.get_active()
+
+        # Save
+        self.settings.save_json()
+
+        # Write the states the inputs are on right now, so enabling it doesn't only
+        # start taking effect after the next state switch
+        if self.persistent_states.get_active():
+            for controller in gl.deck_manager.deck_controller:
+                if controller.active_page is None:
+                    continue
+                for input_type in controller.inputs:
+                    for controller_input in controller.inputs[input_type]:
+                        if not controller_input.enable_states:
+                            continue
+                        controller.active_page.set_active_state(controller_input.identifier, controller.safe_serial_number(), controller_input.state)
 
 class FontPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):

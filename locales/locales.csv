@@ -120,6 +120,9 @@ onboarding.multiple.header;Multi Deck Support;Multi Deck Support;Support Multi D
 onboarding.multiple.details;Support für mehrere Elgato Stream Decks;Support for multiple Elgato Stream Decks at once;Prise en charge de plusieurs Stream Decks à la fois;Soporte para múltiples Elgato Stream Decks a la vez;Suporte para vários Elgato Stream Decks ao mesmo tempo
 onboarding.ready.header;Bereit?;Ready?;Prêt ?;¿Preparado?;Pronto?
 onboarding.ready.button;Start;Start;Commencez;Iniciar;Começar
+deck.general-group.title;Allgemein;General;Général;General;Geral
+deck.general-group.description;Gilt für dieses Deck;Applies to this deck;S'applique à ce Deck;Se aplica a este deck;Aplica-se a este deck
+deck.general-group.name;Anzeigename;Display name;Nom affiché;Nombre visible;Nome de exibição
 deck.deck-group.title;Deck Einstellungen;Deck Settings;Paramètres du Deck;Configuración del deck;Configurações do Deck
 deck.deck-group.description;Betreffen das ganze Deck, sofern nicht überschrieben;Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire;Se aplica a todo el deck a menos que se sobrescriba;Aplica-se a todo o deck a menos que seja substituído
 deck.deck-group.brightness;Helligkeit;Brightness;Luminosité;Brillo;Brilho

@@ -96,6 +96,12 @@ class DeckStack(Gtk.Stack):
         self.deck_numbers.append(serial_number)
         deck_number = str(deck_controller.deck.get_serial_number())
 
+        custom_name = gl.settings_manager.get_deck_settings(serial_number).get("name")
+        if custom_name:
+            self.deck_names.append(custom_name)
+            self.deck_attributes[deck_controller] = deck_number, custom_name
+            return deck_number, custom_name
+
         if deck_type not in self.deck_names:
             self.deck_names.append(deck_type)
             self.deck_attributes[deck_controller] = deck_number, deck_type
@@ -112,6 +118,28 @@ class DeckStack(Gtk.Stack):
         self.deck_attributes[deck_controller] = deck_number, deck_type
 
         return deck_number, deck_type
+
+    def refresh_deck_name(self, deck_controller) -> str:
+        """
+        Recomputes the displayed name of a deck after its custom name was changed
+        in the deck settings and applies it to the stack page (header switcher).
+        Returns the new name.
+        """
+        old_attributes = self.deck_attributes.pop(deck_controller, None)
+        if old_attributes is not None and old_attributes[1] in self.deck_names:
+            self.deck_names.remove(old_attributes[1])
+
+        attributes = self.get_page_attributes(deck_controller)
+        if attributes is None:
+            return
+        name = attributes[1]
+
+        for page in self.get_pages():
+            if page.get_child().deck_controller == deck_controller:
+                page.set_title(name)
+                break
+
+        return name
 
     def remove_page(self, deck_controller) -> str:
         was_visible: bool = False

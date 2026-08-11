@@ -24,6 +24,7 @@ from gi.repository import Gtk, Adw
 from loguru import logger as log
 
 # Import own modules
+from src.windows.mainWindow.elements.DeckSettings.GeneralGroup import GeneralGroup
 from src.windows.mainWindow.elements.DeckSettings.DeckGroup import DeckGroup
 from src.windows.mainWindow.elements.DeckSettings.BackgroundGroup import BackgroundGroup
 from src.windows.mainWindow.elements.DeckSettings.FakeDeckGroup import FakeDeckGroup
@@ -59,6 +60,9 @@ class DeckSettingsPage(Gtk.Overlay):
         self.clamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.clamp_box)
         
+        self.general_group = GeneralGroup(self)
+        self.clamp_box.append(self.general_group)
+
         self.settings_group = DeckGroup(self)
         self.clamp_box.append(self.settings_group)
 

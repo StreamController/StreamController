@@ -149,6 +149,10 @@ class App(Adw.Application):
         change_state_action.connect("activate", self.on_change_state)
         self.add_action(change_state_action)
 
+        trigger_action_action = Gio.SimpleAction.new("trigger_action", GLib.VariantType("as")) # as = array of strings
+        trigger_action_action.connect("activate", self.on_trigger_action)
+        self.add_action(trigger_action_action)
+
         # Start DBus API service
         if not gl.IS_MAC:
             start_dbus_service()
@@ -484,6 +488,45 @@ class App(Adw.Application):
         # Successfully change to the specified state
         c_input.set_state(state_num)
         log.info(f"Successfully changed state of ({x},{y}) to state {state_num} on device {serial_number}")
+
+    def on_trigger_action(self, action, data: GLib.Variant, *args):
+        """
+        Simulate a key press/long-press, triggering the same actions a physical press would
+        """
+        event, serial_number, page_name, coords = data.unpack()
+
+        # Find the controller with matching serial number
+        target_controller = None
+        for controller in self.deck_manager.deck_controller:
+            if controller.serial_number() == serial_number:
+                target_controller = controller
+                break
+
+        if target_controller is None:
+            available_serials = [c.serial_number() for c in self.deck_manager.deck_controller]
+            if available_serials:
+                log.error(f"StreamDeck with serial '{serial_number}' not found. Available devices: {', '.join(available_serials)}")
+            else:
+                log.error("No StreamDeck devices connected")
+            return
+
+        # Find the requested page
+        page_path = gl.page_manager.find_matching_page_path(page_name)
+        if page_path is None:
+            available_pages = [os.path.splitext(os.path.basename(p))[0] for p in gl.page_manager.get_pages()]
+            log.error(f"Page '{page_name}' not found. Available pages: {', '.join(available_pages)}")
+            return
+
+        # Load the page if not already active
+        if target_controller.active_page is None or os.path.abspath(page_path) != os.path.abspath(target_controller.active_page.json_path):
+            page = gl.page_manager.get_page(page_path, target_controller)
+            target_controller.load_page(page)
+
+        success, message = target_controller.trigger_action(coords, event)
+        if success:
+            log.info(message)
+        else:
+            log.error(message)
 
     def send_outdated_plugin_notification(self, plugin_id: str) -> None:
         self.send_notification(

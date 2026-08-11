@@ -22,14 +22,29 @@ argparser.add_argument("--data", help="Data path", type=str)
 argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
 argparser.add_argument("--list-devices", help="List all connected StreamDeck devices and their properties", action="store_true")
 argparser.add_argument("--list-pages", help="List all available pages", action="store_true")
-argparser.add_argument("--change-state", action="append", nargs=4, 
+argparser.add_argument("--change-state", action="append", nargs=4,
                       help="Change the state of a StreamDeck item. Format: SERIAL PAGE COORDS STATE\n"
                            "  SERIAL: Device serial number (e.g., CL123456789)\n"
                            "  PAGE: Page name (e.g., Main, Soundboard) \n"
                            "  COORDS: Position as x,y (e.g., 0,0 for top-left)\n"
                            "  STATE: State number to change to (0, 1, 2, etc.)\n"
-                           "Example: --change-state CL123456789 Main 0,0 1", 
+                           "Example: --change-state CL123456789 Main 0,0 1",
                       metavar=("SERIAL", "PAGE", "COORDS", "STATE"))
+argparser.add_argument("--action", action="append", nargs=4,
+                      help="Trigger a button action the same way a physical press would. Format: EVENT SERIAL PAGE COORDS\n"
+                           "  EVENT: press or long-press\n"
+                           "  SERIAL: Device serial number (e.g., CL123456789)\n"
+                           "  PAGE: Page name (e.g., Main, Soundboard)\n"
+                           "  COORDS: Position as x,y (e.g., 0,0 for top-left)\n"
+                           "Example: --action press CL123456789 Main 0,0",
+                      metavar=("EVENT", "SERIAL", "PAGE", "COORDS"))
+argparser.add_argument("--list-actions", action="append", nargs=3,
+                      help="List the actions configured on a StreamDeck item. Format: PAGE COORDS STATE\n"
+                           "  PAGE: Page name (e.g., Main, Soundboard)\n"
+                           "  COORDS: Position as x,y (e.g., 0,0 for top-left)\n"
+                           "  STATE: State number to inspect (0, 1, 2, etc.)\n"
+                           "Example: --list-actions Main 0,0 0",
+                      metavar=("PAGE", "COORDS", "STATE"))
 argparser.add_argument("app_args", nargs="*")
 
 MAIN_PATH: str
@@ -128,6 +143,7 @@ threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 api_state_requests: dict[str, dict] = {} # Stores api state change requests made by --change-state
+api_action_requests: dict[str, dict] = {} # Stores api action trigger requests made by --action
 tray_icon: "TrayIcon" = None
 fallback_font: str = find_fallback_font()
 showed_donate_window: bool = False

@@ -856,6 +856,40 @@ class DeckController:
         ident = Input.Touchscreen("sd-plus")
         self.event_callback(ident, event_type, value, *args, **kwargs)
 
+    def trigger_action(self, coords: str, event: str) -> tuple[bool, str]:
+        """
+        Simulate a physical key press/release for CLI-driven automation (--action).
+        Reuses ControllerKey.event_callback so the same down/hold/up sequence and
+        plugin hooks fire as for a real press.
+        """
+        try:
+            x, y = map(int, coords.split(','))
+        except (ValueError, AttributeError):
+            return False, f"Invalid coordinate format '{coords}'. Expected format: 'x,y' (e.g., '0,0')"
+
+        rows, cols = self.deck.key_layout()
+        if x < 0 or x >= cols or y < 0 or y >= rows:
+            return False, f"Coordinates ({x},{y}) are out of bounds for this device. Valid range: x=0-{cols-1}, y=0-{rows-1}"
+
+        identifier = Input.Key(f"{x}x{y}")
+        c_input = self.get_input(identifier)
+        if c_input is None:
+            return False, f"Could not find input at coordinates ({x},{y})"
+
+        if event == "press":
+            release_delay = 0.05
+        elif event == "long-press":
+            release_delay = self.hold_time + 0.1
+        else:
+            return False, f"Unknown action event '{event}'. Supported events: press, long-press"
+
+        def _simulate_press():
+            c_input.event_callback(True)
+            time.sleep(release_delay)
+            c_input.event_callback(False)
+
+        threading.Thread(target=_simulate_press, name="cli-trigger-action", daemon=True).start()
+        return True, f"Triggered '{event}' at ({x},{y}) on device {self.serial_number()}"
 
     ### Helper methods
     def generate_alpha_key(self) -> Image.Image:
@@ -967,6 +1001,31 @@ class DeckController:
             
             # Remove the request after processing
             del gl.api_state_requests[self.serial_number()]
+
+        # Handle action trigger requests
+        if self.serial_number() in gl.api_action_requests:
+            action_request = gl.api_action_requests[self.serial_number()]
+            event = action_request["event"]
+            page_name = action_request["page_name"]
+            coords = action_request["coords"]
+
+            requested_page_path = gl.page_manager.find_matching_page_path(page_name)
+
+            if requested_page_path is None:
+                available_pages = [os.path.splitext(os.path.basename(p))[0] for p in gl.page_manager.get_pages()]
+                log.error(f"Action trigger failed: Page '{page_name}' not found for device {self.serial_number()}. Available pages: {', '.join(available_pages)}")
+            else:
+                if os.path.abspath(requested_page_path) != os.path.abspath(self.active_page.json_path):
+                    requested_page = gl.page_manager.get_page(requested_page_path, self)
+                    self.load_page(requested_page)
+
+                success, message = self.trigger_action(coords, event)
+                if success:
+                    log.info(message)
+                else:
+                    log.error(f"Action trigger failed: {message}")
+
+            del gl.api_action_requests[self.serial_number()]
 
     @log.catch
     def load_background(self, page: Page, update: bool = True, force_reload: bool = False):

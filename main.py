@@ -336,9 +336,30 @@ def quit_running():
             log.info("Already running, exiting")
             sys.exit(0)
 
+def find_page_file(pages_dir, page_name):
+    """
+    Resolve a page name to its json file path by scanning pages_dir directly,
+    without needing a fully initialized PageManagerBackend.
+    """
+    if os.path.isfile(page_name):
+        return page_name
+
+    if not os.path.exists(pages_dir):
+        return None
+
+    target_name = page_name.lower()
+    for page_file in os.listdir(pages_dir):
+        if not page_file.endswith(".json"):
+            continue
+        base_no_ext = os.path.splitext(page_file)[0]
+        if page_file.lower() == target_name or base_no_ext.lower() == target_name:
+            return os.path.join(pages_dir, page_file)
+
+    return None
+
 def handle_listing_commands():
     """
-    Handle --list-devices and --list-pages commands
+    Handle --list-devices, --list-pages and --list-actions commands
     Returns True if a listing command was handled, False otherwise
     """
     args = gl.argparser.parse_args()
@@ -425,13 +446,69 @@ def handle_listing_commands():
         
         return True
     
+    if args.list_actions:
+        data_path = gl.DATA_PATH if hasattr(gl, 'DATA_PATH') else DEFAULT_DATA_PATH
+        pages_dir = os.path.join(data_path, "pages")
+
+        for page_name, coords, state_number in args.list_actions:
+            print(f"Actions for page '{page_name}', key {coords}, state {state_number}:")
+
+            page_path = find_page_file(pages_dir, page_name)
+            if page_path is None:
+                print(f"  Error: Page '{page_name}' not found in {pages_dir}")
+                print()
+                continue
+
+            try:
+                x, y = map(int, coords.split(','))
+            except (ValueError, AttributeError):
+                print(f"  Invalid coordinate format '{coords}'. Expected format: 'x,y' (e.g., '0,0')")
+                print()
+                continue
+            json_identifier = f"{x}x{y}"
+
+            try:
+                with open(page_path, 'r') as f:
+                    page_data = json.load(f)
+            except Exception as e:
+                print(f"  Error reading page: {e}")
+                print()
+                continue
+
+            key_data = page_data.get("keys", {}).get(json_identifier)
+            if key_data is None:
+                print(f"  No key configured at {coords}")
+                print()
+                continue
+
+            state_data = key_data.get("states", {}).get(state_number)
+            if state_data is None:
+                available_states = ", ".join(sorted(key_data.get("states", {}).keys(), key=int)) or "none"
+                print(f"  State {state_number} does not exist. Available states: {available_states}")
+                print()
+                continue
+
+            actions = state_data.get("actions", [])
+            if not actions:
+                print("  No actions configured")
+            else:
+                for i, action in enumerate(actions):
+                    print(f"  [{i}] {action.get('id', 'unknown')}")
+
+            print()
+
+        print("Trigger one of these with, e.g.:")
+        print("  --action press SERIAL PAGE COORDS")
+        print("  --action long-press SERIAL PAGE COORDS")
+
+        return True
+
     if args.list_pages:
         print("Scanning for available pages...")
         print()
         
         try:
             # Try to get pages from the file system
-            import os
             data_path = gl.DATA_PATH if hasattr(gl, 'DATA_PATH') else DEFAULT_DATA_PATH
             pages_dir = os.path.join(data_path, "pages")
             
@@ -456,7 +533,6 @@ def handle_listing_commands():
                 
                 try:
                     # Try to read basic info from the page file
-                    import json
                     with open(page_path, 'r') as f:
                         page_data = json.load(f)
                     
@@ -533,17 +609,52 @@ def validate_state_change_args(args):
     
     return True, None
 
+VALID_ACTION_EVENTS = ("press", "long-press")
+
+def validate_action_args(args):
+    """
+    Validate CLI arguments for --action
+    Returns (is_valid, error_message)
+    """
+    if not args.action:
+        return True, None
+
+    for i, (event, serial_number, page_name, coords) in enumerate(args.action):
+        if event not in VALID_ACTION_EVENTS:
+            return False, f"Invalid event in argument {i+1}: '{event}'. Must be one of: {', '.join(VALID_ACTION_EVENTS)}"
+
+        if not serial_number or not isinstance(serial_number, str):
+            return False, f"Invalid serial number in argument {i+1}: '{serial_number}'"
+
+        if not page_name or not isinstance(page_name, str):
+            return False, f"Invalid page name in argument {i+1}: '{page_name}'"
+
+        if not coords or not isinstance(coords, str) or ',' not in coords:
+            return False, f"Invalid coordinate format in argument {i+1}: '{coords}'. Expected format: 'x,y' (e.g., '0,0')"
+
+        try:
+            x, y = map(int, coords.split(','))
+            if x < 0 or y < 0:
+                return False, f"Coordinates must be non-negative in argument {i+1}: '{coords}'"
+            if x > MAX_REASONABLE_X or y > MAX_REASONABLE_Y:
+                return False, f"Coordinates seem too large in argument {i+1}: '{coords}'. Most StreamDecks have coordinates 0-4"
+        except ValueError:
+            return False, f"Invalid coordinate format in argument {i+1}: '{coords}'. Expected integers like '0,0'"
+
+    return True, None
+
 def make_api_calls():
     if gl.IS_MAC:
         return False
-        
+
     args = gl.argparser.parse_args()
     has_page_requests = args.change_page
     has_state_requests = args.change_state
-    
-    if not has_page_requests and not has_state_requests:
+    has_action_requests = args.action
+
+    if not has_page_requests and not has_state_requests and not has_action_requests:
         return False
-    
+
     # Validate state change arguments before proceeding
     if has_state_requests:
         is_valid, error_msg = validate_state_change_args(args)
@@ -558,7 +669,22 @@ def make_api_calls():
             print("  COORDINATES: Position as x,y (e.g., 0,0 for top-left)", file=sys.stderr)
             print("  STATE_NUMBER: State to change to (e.g., 0, 1, 2)", file=sys.stderr)
             sys.exit(1)
-    
+
+    # Validate action trigger arguments before proceeding
+    if has_action_requests:
+        is_valid, error_msg = validate_action_args(args)
+        if not is_valid:
+            print(f"Error: {error_msg}", file=sys.stderr)
+            print("\nUsage examples:", file=sys.stderr)
+            print("  --action press CL123456789 Main 0,0", file=sys.stderr)
+            print("  --action long-press CL123456789 Soundboard 2,1", file=sys.stderr)
+            print("\nParameters:", file=sys.stderr)
+            print(f"  EVENT: {' or '.join(VALID_ACTION_EVENTS)}", file=sys.stderr)
+            print("  SERIAL_NUMBER: Device serial (e.g., CL123456789)", file=sys.stderr)
+            print("  PAGE_NAME: Page name (e.g., Main, Soundboard)", file=sys.stderr)
+            print("  COORDINATES: Position as x,y (e.g., 0,0 for top-left)", file=sys.stderr)
+            sys.exit(1)
+
     session_bus = dbus.SessionBus()
     obj: dbus.BusObject = None
     action_interface: dbus.Interface = None
@@ -597,6 +723,20 @@ def make_api_calls():
             else:
                 # Other instance is running - call dbus interfaces
                 action_interface.Activate("change_state", [[serial_number, page_name, coords, state_number]], [])
+                return True
+
+    # Handle action trigger requests
+    if has_action_requests:
+        for event, serial_number, page_name, coords in args.action:
+            if None in [obj, action_interface] or args.close_running:
+                gl.api_action_requests[serial_number] = {
+                    "event": event,
+                    "page_name": page_name,
+                    "coords": coords,
+                }
+            else:
+                # Other instance is running - call dbus interfaces
+                action_interface.Activate("trigger_action", [[event, serial_number, page_name, coords]], [])
                 return True
 
     return False

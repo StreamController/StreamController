@@ -28,7 +28,6 @@ import time
 import os
 import uuid
 import shutil
-from packaging import version
 import threading
 
 # Import GLib
@@ -404,22 +403,14 @@ class StoreBackend:
     async def prepare_plugin(self, plugin, include_image: bool = True, verified: bool = False):
         url = plugin["url"]
 
-        # Check if suitable version is available
-        compatible = True
         commit: str = None
         branch = plugin.get("branch")
         using_git_override = False
-        
+
         # First, try to get manifest to determine plugin_id for override check
         # We need to do a preliminary check to see if there's an override
-        temp_commit = None
-        if "commits" in plugin:
-            temp_version = self.get_newest_compatible_version(plugin["commits"])
-            if temp_version is None:
-                temp_version = self.get_newest_version(list(plugin["commits"].keys()))
-            if temp_version:
-                temp_commit = plugin["commits"][temp_version]
-        
+        temp_commit = plugin.get("hash")
+
         # Get manifest to find plugin_id
         temp_manifest = await self.get_manifest(url, temp_commit or branch or "main")
         plugin_id = None
@@ -436,14 +427,7 @@ class StoreBackend:
         
         # If no override, use normal logic
         if not using_git_override:
-            if "commits" in plugin:
-                version = self.get_newest_compatible_version(plugin["commits"])
-                if version is None:
-                    compatible = False
-                    version = self.get_newest_version(list(plugin["commits"].keys()))
-                    if version is None:
-                        return NoCompatibleVersion #TODO
-                commit = plugin["commits"][version]
+            commit = plugin.get("hash")
 
             if branch is not None:
                 commit = await self.get_last_commit(url, branch)
@@ -504,7 +488,7 @@ class StoreBackend:
             plugin_version=manifest.get("version") or None,
             plugin_id=manifest.get("id") or None,
 
-            is_compatible=compatible,
+            is_compatible=True,
             verified=verified,
             using_git_override=using_git_override,
             is_custom_plugin=plugin.get("custom", False)
@@ -556,15 +540,9 @@ class StoreBackend:
 
         url = icon["url"]
 
-        # Check if suitable version is available
-        compatible = True
-        version = self.get_newest_compatible_version(icon["commits"])
-        if version is None:
-            compatible = False
-            version = self.get_newest_version(list(icon["commits"].keys()))
-            if version is None:
-                return NoCompatibleVersion
-        commit = icon["commits"][version]
+        commit = icon.get("hash")
+        if commit is None:
+            return None
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -616,7 +594,7 @@ class StoreBackend:
             icon_version=manifest.get("version") or None,
             icon_id=manifest.get("id") or None,
 
-            is_compatible=compatible,
+            is_compatible=True,
             verified=verified
         )
 
@@ -629,15 +607,9 @@ class StoreBackend:
 
         url = wallpaper["url"]
 
-        # Check if suitable version is available
-        compatible = True
-        version = self.get_newest_compatible_version(wallpaper["commits"])
-        if version is None:
-            compatible = False
-            version = self.get_newest_version(list(wallpaper["commits"].keys()))
-            if version is None:
-                return NoCompatibleVersion
-        commit = wallpaper["commits"][version]
+        commit = wallpaper.get("hash")
+        if commit is None:
+            return None
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -685,7 +657,7 @@ class StoreBackend:
             wallpaper_version=manifest.get("version") or None,
             wallpaper_id=manifest.get("id") or None,
 
-            is_compatible=compatible,
+            is_compatible=True,
             verified=verified
         )
 
@@ -696,16 +668,11 @@ class StoreBackend:
             return None
 
         url = sd_plus_bar_wallpaper["url"]
-        
-        compatible = True
-        version = self.get_newest_compatible_version(sd_plus_bar_wallpaper["commits"])
-        if version is None:
-            compatible = False
-            version = self.get_newest_version(list(sd_plus_bar_wallpaper["commits"].keys()))
-            if version is None:
-                return NoCompatibleVersion
-        commit = sd_plus_bar_wallpaper["commits"][version]
-        
+
+        commit = sd_plus_bar_wallpaper.get("hash")
+        if commit is None:
+            return None
+
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
@@ -750,9 +717,9 @@ class StoreBackend:
 
             name=manifest.get("name") or None,
             version=manifest.get("version") or None,
-            id=manifest.get("id") or None,    
+            id=manifest.get("id") or None,
 
-            is_compatible=compatible,
+            is_compatible=True,
             verified=verified
         )
 
@@ -820,30 +787,6 @@ class StoreBackend:
     def get_all_plugins(self, include_images: bool = True) -> list[PluginData]:
         return asyncio.run(self.get_all_plugins_async(include_images))
     
-    def get_newest_compatible_version(self, available_versions: list[str]) -> str:
-        if gl.exact_app_version_check:
-            if gl.app_version in available_versions:
-                return gl.app_version
-            else:
-                return None
-            
-        current_major = version.parse(gl.app_version).major
-
-        compatible_versions = [v for v in available_versions if version.parse(v).major == current_major]
-        parsed_compatible_versions = [version.parse(v) for v in compatible_versions]
-
-        if compatible_versions:
-            max_index = parsed_compatible_versions.index(max(parsed_compatible_versions))
-            return compatible_versions[max_index]
-        else:
-            return None
-        
-    def get_newest_version(self, available_versions: list[str]) -> str:
-        parsed_versions = [version.parse(v) for v in available_versions]
-        
-        max_index = parsed_versions.index(max(parsed_versions))
-        return available_versions[max_index]
-
     ## Install
     async def subp_call(self, args):
         return subprocess.call(args)
@@ -1243,6 +1186,3 @@ class StoreBackend:
             return NoConnectionError()
 
         return n_plugins + n_icons + n_wallpapers
-
-class NoCompatibleVersion:
-    pass

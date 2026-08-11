@@ -117,8 +117,7 @@ showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.15"  # In breaking.feature.fix-state format
-exact_app_version_check: bool = False
+app_version: str = "1.5.0-beta.16"  # In breaking.feature.fix-state format
 logs = deque(maxlen=5000)
 
 release_notes: str = """

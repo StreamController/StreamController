@@ -68,6 +68,7 @@ from src.backend.Wayland.Wayland import Wayland
 from src.backend.LockScreenManager.LockScreenManager import LockScreenManager
 from src.tray import TrayIcon
 from src.backend.Logger import Logger, LoggerConfig, Loglevel, intercept_stdlib_logging
+from src.backend import LogRedaction
 
 # Migration
 from src.backend.Migration.MigrationManager import MigrationManager
@@ -91,6 +92,9 @@ def write_logs(record):
 @log.catch
 def config_logger():
     log.remove()
+    # Keep the user's username, hostname and the hosts plugins talk to out of
+    # the logs they paste into bug reports - covers every sink below at once
+    log.configure(patcher=LogRedaction.patch_record)
     # Create log files
     log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print

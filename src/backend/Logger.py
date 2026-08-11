@@ -95,7 +95,6 @@ class Logger:
     def add_sink(self):
         def log_filter(record):
             if record["level"].name.startswith(f"{self.config.name}_"):
-                print(record)
                 return True
             return False
 

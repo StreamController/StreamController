@@ -95,6 +95,9 @@ class Sidebar(Adw.NavigationPage):
         self.error_page = ErrorPage(self)
         self.main_stack.add_named(self.error_page, "error_page")
 
+        self.sticky_locked_page = StickyLockedPage(self)
+        self.main_stack.add_named(self.sticky_locked_page, "sticky_locked_page")
+
         self.page_selector = PageSelector(self.main_window, gl.page_manager, halign=Gtk.Align.CENTER)
         self.header.set_title_widget(self.page_selector)
 
@@ -193,11 +196,6 @@ class Sidebar(Adw.NavigationPage):
         self.screen_editor.load_for_identifier(identifier, state)
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
-        controller = self.main_window.get_active_controller()
-        if controller is not None and identifier is not None:
-            # Sticky inputs can only be configured in the sticky actions editor
-            self.main_stack.set_sensitive(controller.is_input_editable(identifier))
-
         if isinstance(identifier, Input.Key):
             self.load_for_key(identifier, state)
         elif isinstance(identifier, Input.Dial):
@@ -208,6 +206,14 @@ class Sidebar(Adw.NavigationPage):
             self.load_for_screen(identifier, state)
         elif isinstance(identifier, Input.TouchKey):
             self.load_for_touch_key(identifier, state)
+
+        # After the editors: they all switch the stack back to their own page
+        controller = self.main_window.get_active_controller()
+        if controller is not None and identifier is not None:
+            if not controller.is_input_editable(identifier):
+                # Sticky inputs are driven by the sticky page - configuring them here would
+                # write to a page that has no say in them, so send the user to their editor
+                self.main_stack.set_visible_child(self.sticky_locked_page)
 
     def show_error(self):
         if self.main_stack.get_visible_child() == self.error_page:
@@ -239,6 +245,45 @@ class Sidebar(Adw.NavigationPage):
                 state = c_input.state
 
         self.load_for_identifier(self.active_identifier, state)
+
+
+class StickyLockedPage(Gtk.Box):
+    """
+    Shown instead of the editors for inputs the sticky page has taken over: they are the
+    same on every page, so they can only be configured in the sticky actions editor.
+    """
+    def __init__(self, sidebar: Sidebar, **kwargs):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True,
+                         halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, spacing=15,
+                         margin_start=30, margin_end=30, **kwargs)
+        self.sidebar = sidebar
+        self.build()
+
+    def build(self):
+        self.icon = Gtk.Image(icon_name="view-pin-symbolic", pixel_size=64, css_classes=["dim-label"])
+        self.append(self.icon)
+
+        self.title_label = Gtk.Label(label=gl.lm.get("sidebar.sticky-locked.title"), wrap=True,
+                                     justify=Gtk.Justification.CENTER, css_classes=["title-2"])
+        self.append(self.title_label)
+
+        self.description_label = Gtk.Label(label=gl.lm.get("sidebar.sticky-locked.description"), wrap=True,
+                                           max_width_chars=30, justify=Gtk.Justification.CENTER,
+                                           css_classes=["dim-label"])
+        self.append(self.description_label)
+
+        self.open_button = Gtk.Button(css_classes=["suggested-action", "pill"], halign=Gtk.Align.CENTER,
+                                      margin_top=10)
+        self.open_button.set_child(Adw.ButtonContent(icon_name="view-pin-symbolic",
+                                                     label=gl.lm.get("deck.sticky-actions.button")))
+        self.open_button.connect("clicked", self.on_open_button_click)
+        self.append(self.open_button)
+
+    def on_open_button_click(self, button):
+        deck_stack_child = self.sidebar.main_window.leftArea.deck_stack.get_visible_child()
+        if deck_stack_child is None:
+            return
+        deck_stack_child.enter_sticky_mode()
 
 
 class KeyEditor(Gtk.Box):

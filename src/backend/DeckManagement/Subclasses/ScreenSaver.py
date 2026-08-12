@@ -172,7 +172,8 @@ class ScreenSaver:
         self.showing = True
 
         self.original_inputs = self.deck_controller.inputs
-        self.deck_controller.inputs = {}
+        # init_inputs() swaps in a fresh dict on its own - blanking it here first left
+        # the media player and tick threads reading an empty dict (issue #535)
         self.deck_controller.init_inputs()
 
         self.original_background = self.deck_controller.background

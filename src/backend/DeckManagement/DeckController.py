@@ -340,26 +340,32 @@ class MediaPlayerThread(threading.Thread):
             has_bg_video = False
 
             if not self.pause:
-                if self.deck_controller.background.video is not None:
-                    if self.deck_controller.background.video.page is self.deck_controller.active_page:
-                        has_bg_video = True
-                        # There is a background video
-                        video_each_nth_frame = self.FPS // self.deck_controller.background.video.fps
-                        if self.media_ticks % video_each_nth_frame == 0:
-                            self.deck_controller.background.update_tiles()
+                # An uncaught exception here would end the thread and leave the deck
+                # frozen until the app is restarted, so one bad tick is only logged
+                # (issue #535)
+                try:
+                    if self.deck_controller.background.video is not None:
+                        if self.deck_controller.background.video.page is self.deck_controller.active_page:
+                            has_bg_video = True
+                            # There is a background video
+                            video_each_nth_frame = self.FPS // self.deck_controller.background.video.fps
+                            if self.media_ticks % video_each_nth_frame == 0:
+                                self.deck_controller.background.update_tiles()
 
-                # Only iterate keys/dials if there is animated content to update
-                if has_bg_video or self._needs_key_ticks():
-                    #TODO: generalize
-                    for key in self.deck_controller.inputs[Input.Key]:
-                        cast("ControllerKey", key).on_media_player_tick()
+                    # Only iterate keys/dials if there is animated content to update
+                    if has_bg_video or self._needs_key_ticks():
+                        #TODO: generalize
+                        for key in self.deck_controller.inputs[Input.Key]:
+                            cast("ControllerKey", key).on_media_player_tick()
 
-                    for dial in self.deck_controller.inputs[Input.Dial]:
-                        cast("ControllerDial", dial).on_media_player_tick()
-                    # self.deck_controller.update_all_inputs()
+                        for dial in self.deck_controller.inputs[Input.Dial]:
+                            cast("ControllerDial", dial).on_media_player_tick()
+                        # self.deck_controller.update_all_inputs()
 
-                # Perform media player tasks
-                self.perform_media_player_tasks()
+                    # Perform media player tasks
+                    self.perform_media_player_tasks()
+                except Exception:
+                    log.exception("Error in media player tick")
 
             self.media_ticks += 1
 
@@ -863,12 +869,18 @@ class DeckController:
             self.key_spacing = (36, 52)
 
     def init_inputs(self):
+        # The media player and tick threads read self.inputs without a lock, so the
+        # new dict is built with all input types present and published in a single
+        # assignment. Filling it in place let those threads see a dict that was still
+        # missing input types, which killed them with a KeyError (issue #535).
+        inputs = {i: [] for i in Input.All}
+        self.inputs = inputs
+
         for i in Input.All:
-            self.inputs[i] = []
             input_class = getattr(sys.modules[__name__], i.controller_class_name)
 
             for k in input_class.Available_Identifiers(self.deck):
-                self.inputs[i].append(input_class(self, Input.FromTypeIdentifier(i.input_type, k)))
+                inputs[i].append(input_class(self, Input.FromTypeIdentifier(i.input_type, k)))
 
     def get_inputs(self, identifier: InputIdentifier) -> list["ControllerInput"]:
         input_type = type(identifier)
@@ -1467,7 +1479,6 @@ class DeckController:
         # effect the fresh ControllerKeys carry no stale _last_img_hash, which would
         # otherwise make update() skip re-rendering (the hash is of the unrotated image,
         # which does not change when only the rotation does).
-        self.inputs = {}
         self.init_inputs()
 
         # Nothing that is currently on the device can be trusted anymore: the render
@@ -1512,20 +1523,26 @@ class DeckController:
         time.sleep(self.TICK_DELAY)
         while self.keep_actions_ticking:
             start = time.time()
-            if self.active_page is None:
-                time.sleep(0.1)
-                continue
-            self.mark_page_ready_to_clear(False)
-            if not self.screen_saver.showing and True:
-                for t in self.inputs:
-                    for i in self.inputs[t]:
-                        i.get_active_state().own_actions_tick_threaded()
-            else:
-                for t in self.inputs:
-                    for i in self.inputs[t]:
-                        i.update()
+            # An uncaught exception here would end the thread and stop every action
+            # from ticking until the app is restarted, so one bad tick is only logged
+            # (issue #535)
+            try:
+                if self.active_page is None:
+                    time.sleep(0.1)
+                    continue
+                self.mark_page_ready_to_clear(False)
+                if not self.screen_saver.showing and True:
+                    for t in self.inputs:
+                        for i in self.inputs[t]:
+                            i.get_active_state().own_actions_tick_threaded()
+                else:
+                    for t in self.inputs:
+                        for i in self.inputs[t]:
+                            i.update()
 
-            self.mark_page_ready_to_clear(True)
+                self.mark_page_ready_to_clear(True)
+            except Exception:
+                log.exception("Error in action tick")
 
             end = time.time()
             wait = max(0.1, self.TICK_DELAY - (end - start))

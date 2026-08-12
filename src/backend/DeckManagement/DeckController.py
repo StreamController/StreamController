@@ -1296,6 +1296,15 @@ class DeckController:
         # sidebar refresh with it - leaving the sidebar on the config of the previous page
         gl.app.main_win.sidebar.update()
 
+    def update_sidebar_on_page_change(self):
+        # The sidebar editors (labels, states, image, background, actions) read their values
+        # off the live inputs, so the refresh above - queued before the inputs are loaded from
+        # the new page - still shows the previous page. Refresh again once they are loaded.
+        if not recursive_hasattr(gl, "app.main_win.sidebar"):
+            return
+
+        GLib.idle_add(gl.app.main_win.sidebar.update)
+
     def close_image_ressources(self):
         for t in self.inputs:
             for i in self.inputs[t]:
@@ -1378,6 +1387,9 @@ class DeckController:
 
         # Load page onto deck
         self.media_player.add_task(self.update_all_inputs, task_label=f"update_all_inputs:{page.get_name()}")
+
+        # Queued behind the input loading above so the sidebar sees the new page's inputs
+        self.media_player.add_task(self.update_sidebar_on_page_change, task_label=f"update_sidebar:{page.get_name()}")
 
         # Notify plugin actions
         gl.signal_manager.trigger_signal(Signals.ChangePage, self, old_path, self.active_page.json_path)

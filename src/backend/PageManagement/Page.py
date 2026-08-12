@@ -45,7 +45,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.backend.DeckManagement.DeckController import LabelManager
     from src.backend.PluginManager.ActionHolder import ActionHolder
-    from src.backend.DeckManagement.DeckController import ControllerKeyState, ControllerKey
+    from src.backend.DeckManagement.DeckController import ControllerKeyState, ControllerKey, DeckController
 
 
 class Page:
@@ -97,6 +97,10 @@ class Page:
             self.move_key_to_end(without_objects, type)
         atomic_save_json(self.json_path, without_objects, indent=4)
         self.file_access_semaphore.release()
+
+        if self.deck_controller is not None and self.deck_controller.sticky_page is self:
+            # Which inputs the sticky page takes over may have changed
+            self.deck_controller.on_sticky_page_saved()
 
     def make_backup(self):
         os.makedirs(os.path.join(gl.DATA_PATH, "pages","backups"), exist_ok=True)
@@ -168,7 +172,7 @@ class Page:
 
         self.action_objects = new_action_objects
 
-        if self.deck_controller.active_page == self:
+        if self.deck_controller.active_page == self or self.deck_controller.sticky_page is self:
             # if it's already loaded - this way it only triggers on newly added actions
             self.initialize_actions()
 
@@ -592,6 +596,11 @@ class Page:
                 continue
             if controller.active_page.json_path == self.json_path:
                 pages.append(controller.active_page)
+
+        # The sticky page is live on its deck without ever being the active page
+        if get_self and self.deck_controller.sticky_page is self and self not in pages:
+            pages.append(self)
+
         return pages
     
     def reload_similar_pages(self, identifier: InputIdentifier = None, reload_self: bool = False,
@@ -656,12 +665,23 @@ class Page:
         self.save()
         gl.page_manager.update_dict_of_pages_with_path(self.json_path)
 
+    def controls_input_on(self, controller: "DeckController", identifier: InputIdentifier) -> bool:
+        """
+        Whether this page is the one an input of a deck currently takes its config from.
+        That is the sticky page for sticky inputs and the deck's active page for all others,
+        so writes to a page never leak into an input that a different page controls.
+        """
+        page = controller.get_page_for_input(identifier)
+        if page is None:
+            return False
+        return page is self or page.json_path == self.json_path
+
     def update_key_image(self, coords: str | tuple[int, int], state: int) -> None:
         #TODO: Move to DeckController
         #TODO: Make input specific
         coords = self.get_tuple_coords(coords)
         for controller in gl.deck_manager.deck_controller:
-            if controller.active_page.json_path != self.json_path:
+            if not self.controls_input_on(controller, Input.Key(Input.Key.Coords_To_PageCoords(coords))):
                 continue
             key_index = controller.coords_to_index(coords)
             if key_index is None:
@@ -678,7 +698,7 @@ class Page:
                 if controller.screen_saver.showing:
                     controller.screen_saver.hide()
 
-            if controller.active_page.json_path != self.json_path:
+            if not self.controls_input_on(controller, identifier):
                 continue
             c_input = controller.get_input(identifier)
             if c_input is None:
@@ -697,8 +717,7 @@ class Page:
             # only on one of several decks) pushes this page's labels/media/
             # background into the live state of a key showing a different page,
             # where it stays until that input is reloaded.
-            active_page = controller.active_page
-            if active_page is None or active_page.json_path != self.json_path:
+            if not self.controls_input_on(controller, identifier):
                 continue
 
             for c_input in controller.get_inputs(identifier):

@@ -125,9 +125,9 @@ class ActionExpanderRow(BetterExpander):
 
         self.clear_actions(keep_add_button=True)
 
-        controller = gl.app.main_win.get_active_controller()
+        page = gl.app.main_win.get_page_for_identifier(identifier)
 
-        actions = controller.active_page.action_objects.get(identifier.input_type, {}).get(identifier.json_identifier, {}).get(state, {})
+        actions = page.action_objects.get(identifier.input_type, {}).get(identifier.json_identifier, {}).get(state, {})
         self.load_for_actions(actions.values())
 
     def load_for_actions(self, actions: list[ActionCore]):
@@ -292,11 +292,13 @@ class ActionExpanderRow(BetterExpander):
         if controller is None:
             return
 
-        state_dict = controller.active_page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)]
+        page = gl.app.main_win.get_page_for_identifier(self.active_identifier)
+
+        state_dict = page.dict[self.active_identifier.input_type][self.active_identifier.json_identifier]["states"][str(self.active_state)]
 
         reordered = self.move_index_to(copy(state_dict["actions"]), from_index, to_index)
 
-        action_objects = controller.active_page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state]
+        action_objects = page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state]
         reordered_action_objects = self.reorder_action_objects(action_objects, from_index, to_index)
 
 
@@ -304,7 +306,7 @@ class ActionExpanderRow(BetterExpander):
         state_dict["actions"] = reordered
 
         # Reorder in action objects
-        controller.active_page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state] = reordered_action_objects
+        page.action_objects[self.active_identifier.input_type][self.active_identifier.json_identifier][self.active_state] = reordered_action_objects
 
 
         ## Update control indices
@@ -325,7 +327,7 @@ class ActionExpanderRow(BetterExpander):
             label_control_actions[i] = action_order_map.get(label_control_action)
         state_dict["label-control-actions"] = label_control_actions
 
-        controller.active_page.save()
+        page.save()
 
         controller.load_page(controller.active_page)
 
@@ -336,7 +338,8 @@ class ActionExpanderRow(BetterExpander):
         controller = visible_child.deck_controller
         if controller is None:
             return
-        comment = controller.active_page.get_action_comment(identifier=self.active_identifier, index=action_index)
+        page = gl.app.main_win.get_page_for_identifier(self.active_identifier)
+        comment = page.get_action_comment(identifier=self.active_identifier, index=action_index)
         self.get_rows()[action_index].set_comment(comment)
 
 
@@ -528,10 +531,9 @@ class ActionRow(Adw.ActionRow):
             child.set_image_toggled(False)
 
 
-        controller = gl.app.main_win.get_active_controller()
-        if controller is None:
+        page = gl.app.main_win.get_page_for_identifier(self.action_object.input_ident)
+        if page is None:
             return
-        page = controller.active_page
 
         input_state = self.action_object.get_input().states.get(self.expander.active_state)
         if input_state is None:
@@ -551,10 +553,9 @@ class ActionRow(Adw.ActionRow):
                 continue
             child.set_background_toggled(False)
 
-        controller = gl.app.main_win.get_active_controller()
-        if controller is None:
+        page = gl.app.main_win.get_page_for_identifier(self.action_object.input_ident)
+        if page is None:
             return
-        page = controller.active_page
 
         input_state = self.action_object.get_input().states.get(self.expander.active_state)
         if input_state is None:
@@ -747,7 +748,7 @@ class AddActionButtonRow:
 
         # Gather data
         # action_string = gl.plugin_manager.get_action_string_from_action(action_class)
-        active_page = gl.app.main_win.get_active_page()
+        active_page = gl.app.main_win.get_page_for_identifier(self.expander.active_identifier)
         if active_page is None:
             return
         

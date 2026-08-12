@@ -234,7 +234,7 @@ class LabelRow(Adw.PreferencesRow):
         controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
-        page = controller.active_page
+        page = gl.app.main_win.get_page_for_identifier(identifier)
 
         if page == None:
             #TODO: Show error

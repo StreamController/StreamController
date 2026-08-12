@@ -68,15 +68,19 @@ class ActionPermissionManager:
         self.reload_pages(reload_pages, reload_self)
 
     ## Input dict
+    def get_own_page(self):
+        """The page this input takes its config from - the sticky page if it is sticky"""
+        return self.deck_controller.get_page_for_input(self.input_identifier)
+
     def get_input_dict(self) -> dict:
-        return self.input_identifier.get_dict(self.deck_controller.active_page.dict)
-    
+        return self.input_identifier.get_dict(self.get_own_page().dict)
+
     def set_input_dict(self, new_input_dict: dict):
         new_input_dict = new_input_dict.copy() # In case it's a reference to the original
         input_dict = self.get_input_dict()
         input_dict.clear()
         input_dict.update(new_input_dict)
-        self.deck_controller.active_page.save()
+        self.get_own_page().save()
 
     ## State dict
     def get_state_dict(self) -> dict:
@@ -87,10 +91,10 @@ class ActionPermissionManager:
         state_dict = self.get_state_dict()
         state_dict.clear()
         state_dict.update(new_state_dict)
-        self.deck_controller.active_page.save()
+        self.get_own_page().save()
 
     ## Helper
 
     def reload_pages(self, reload_pages: bool = True, reload_self: bool = True) -> None:
         if reload_pages:
-            threading.Thread(target=self.deck_controller.active_page.reload_similar_pages, kwargs={"identifier":self.input_identifier, "reload_self":reload_self}).start()
+            threading.Thread(target=self.get_own_page().reload_similar_pages, kwargs={"identifier":self.input_identifier, "reload_self":reload_self}).start()

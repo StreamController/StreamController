@@ -113,7 +113,7 @@ class ScreenBar(Gtk.Frame):
         if controller is None:
             return
 
-        active_page = controller.active_page
+        active_page = gl.app.main_win.get_page_for_identifier(self.identifier)
         if active_page is None:
             return
 

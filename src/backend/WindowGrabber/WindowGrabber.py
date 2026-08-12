@@ -127,6 +127,10 @@ class WindowGrabber:
         notify_foreground_window_changed(window.title, window.wm_class)
 
         for deck_controller in gl.deck_manager.deck_controller:
+            if deck_controller.is_sticky_editing():
+                # Don't pull the user out of the sticky actions editor
+                continue
+
             found_page = False
             for page_path in gl.page_manager.get_pages():
                 info = gl.page_manager.get_auto_change_settings(page_path)

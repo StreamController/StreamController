@@ -148,7 +148,7 @@ class IconSelector(Gtk.Box):
             return
 
         c_input = controller.get_input(self.sidebar.active_identifier)
-        c_input.load_from_page(controller.active_page)
+        c_input.load_from_page(gl.app.main_win.get_page_for_identifier(self.sidebar.active_identifier))
 
     def remove_media(self, *args):
         self.set_media_callback(None)

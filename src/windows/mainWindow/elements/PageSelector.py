@@ -129,6 +129,13 @@ class PageSelector(Gtk.Box):
         else:
             self.drop_down.set_sensitive(True)
         active_controller = child.deck_controller
+        if active_controller.is_sticky_editing():
+            # The sticky page is not one of the selectable pages
+            self.selected_page_path = None
+            self.list_box.unselect_all()
+            self.drop_down_label.set_label(gl.lm.get("deck.sticky-actions.button"))
+            return
+
         page = active_controller.active_page
         if page is None:
             return

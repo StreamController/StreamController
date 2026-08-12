@@ -122,7 +122,7 @@ class MissingRow(Adw.PreferencesRow):
 
     def on_remove_click(self, button):
         controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller
-        page = controller.active_page
+        page = gl.app.main_win.get_page_for_identifier(self.identifier)
 
         # Remove from action objects
         del page.action_objects[self.identifier.input_type][self.identifier.json_identifier]

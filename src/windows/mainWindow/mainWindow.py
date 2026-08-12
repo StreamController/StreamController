@@ -328,12 +328,26 @@ class MainWindow(Adw.ApplicationWindow):
             return
         return visible_child.deck_controller
     
-    def get_active_page(self) -> Page:
+    def get_page_for_identifier(self, identifier) -> Page:
+        """
+        The page an input is configured on: the sticky page if it is sticky, the active page
+        otherwise. Editing a sticky input has to hit the sticky page - it is the one driving
+        that input, so the active page's config for it is inert.
+        """
         controller = self.get_active_controller()
         if controller is None:
             return gl.page_manager.dummy_page
-        if hasattr(controller, "active_page"):
+        if identifier is None:
             return controller.active_page
+        return controller.get_page_for_input(identifier)
+
+    def get_active_page(self) -> Page:
+        # The sidebar always edits one specific input, which the sticky page may have taken over
+        identifier = None
+        if recursive_hasattr(self, "sidebar"):
+            identifier = self.sidebar.active_identifier
+
+        return self.get_page_for_identifier(identifier)
 
 
 class PageManagerNavPage(Adw.NavigationPage):

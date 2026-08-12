@@ -134,7 +134,7 @@ class CommentGroup(Adw.PreferencesGroup):
         controller = visible_child.deck_controller
         if controller is None:
             return
-        page = controller.active_page
+        page = gl.app.main_win.get_page_for_identifier(self.action.input_ident)
         if page is None:
             return
         return page.get_action_comment(self.index, self.action.state, self.action.input_ident)
@@ -146,7 +146,7 @@ class CommentGroup(Adw.PreferencesGroup):
         controller = visible_child.deck_controller
         if controller is None:
             return
-        page = controller.active_page
+        page = gl.app.main_win.get_page_for_identifier(self.action.input_ident)
         page.set_action_comment(self.index, comment, self.action.state, self.action.input_ident)
     
 
@@ -260,7 +260,7 @@ class RemoveButton(Gtk.Button):
         controller = visible_child.deck_controller
         if controller is None:
             return
-        page = controller.active_page
+        page = gl.app.main_win.get_page_for_identifier(self.action.input_ident)
 
         # Swtich to main editor page
         self.configurator.sidebar.main_stack.set_visible_child_name("configurator_stack")

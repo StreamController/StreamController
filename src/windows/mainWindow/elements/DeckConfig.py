@@ -62,6 +62,38 @@ class DeckConfig(Gtk.Box):
 
         self.apply_rotation_layout()
 
+        self.update_sticky_markers()
+
+    def get_input_widgets(self) -> list[Gtk.Widget]:
+        """All widgets standing for one input of the deck - each of them holds an identifier"""
+        widgets: list[Gtk.Widget] = []
+
+        for column in self.grid.buttons:
+            widgets.extend(button for button in column if button is not None)
+
+        if self.screenbar is not None:
+            widgets.append(self.screenbar)
+
+        if self.screen_row is not None:
+            widgets.extend(self.screen_row.touch_keys)
+
+        widgets.extend(self.dial_box.dials)
+
+        return widgets
+
+    def update_sticky_markers(self) -> None:
+        """
+        Dims the inputs that are not sticky while the sticky actions editor is open, so it's
+        obvious which of them are taken over on every page. Opacity instead of a css class
+        because the input widgets replace their whole class list when they get selected.
+        """
+        deck_controller = self.page_settings_page.deck_controller
+        editing = deck_controller.is_sticky_editing()
+
+        for widget in self.get_input_widgets():
+            dim = editing and not deck_controller.is_input_sticky(widget.identifier)
+            widget.set_opacity(0.35 if dim else 1)
+
     def get_screen_child(self) -> Gtk.Widget:
         """The child holding the screen - on the Neo it also holds the touch keys next to it"""
         if self.screen_row is not None:

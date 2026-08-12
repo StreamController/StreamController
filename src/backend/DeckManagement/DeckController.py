@@ -48,6 +48,7 @@ from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
 from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
 from src.backend.PageManagement.Page import ActionOutdated, Page, NoActionHolderFound
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 from src.api import notify_active_page_changed
 
 process = psutil.Process()
@@ -775,6 +776,12 @@ class DeckController:
 
         self.active_page: Page = None
 
+        # Sticky actions: inputs configured on this page are taken from it on every page
+        self.sticky_page: Page = None
+        self._sticky_identifiers: set[InputIdentifier] = set()
+        self._sticky_editing: bool = False
+        self._sticky_edit_backup: Page = None
+
         self.inputs = {}
         for i in Input.All:
             self.inputs[i] = []
@@ -813,6 +820,8 @@ class DeckController:
         # rotation = deck_settings.get("rotation", {}).get("value", self.rotation)
         # self.set_rotation(rotation)
 
+
+        self.load_sticky_page()
 
         # If screen is locked start the screensaver - this happens when the deck gets reconnected during the screensaver
         if gl.screen_locked and gl.settings_manager.get_app_settings().get("system", {}).get("lock-on-lock-screen", True):
@@ -1258,26 +1267,34 @@ class DeckController:
             self.load_input(controller_input, page, update)
 
     def load_input(self, controller_input: "ControllerInput", page: Page, update: bool = True):
+        # Sticky inputs come from the sticky page no matter which page is being loaded
+        if self.is_input_sticky(controller_input.identifier):
+            page = self.sticky_page
+
         input_dict = controller_input.identifier.get_config(page)
         controller_input.load_from_input_dict(input_dict, update)
 
     def update_ui_on_page_change(self):
         # Update ui
-        if recursive_hasattr(gl, "app.main_win.sidebar"):
-            try:
-                # gl.app.main_win.header_bar.page_selector.update_selected()
-                settings_page = gl.app.main_win.leftArea.deck_stack.get_visible_child().page_settings.settings_page
-                settings_group = settings_page.settings_group
-                background_group = settings_page.background_group
+        if not recursive_hasattr(gl, "app.main_win.sidebar"):
+            return
 
-                # Update ui
-                settings_group.brightness.load_defaults_from_page()
-                settings_group.screensaver.load_defaults_from_page()
-                background_group.media_row.load_defaults_from_page()
+        try:
+            # gl.app.main_win.header_bar.page_selector.update_selected()
+            settings_page = gl.app.main_win.leftArea.deck_stack.get_visible_child().page_settings.settings_page
+            settings_group = settings_page.settings_group
+            background_group = settings_page.background_group
 
-                gl.app.main_win.sidebar.update()
-            except AttributeError as e:
-                log.error(f"{e} -> This is okay if you just activated your first deck.")
+            # Update ui
+            settings_group.brightness.load_defaults_from_page()
+            settings_group.screensaver.load_defaults_from_page()
+            background_group.media_row.load_defaults_from_page()
+        except AttributeError as e:
+            log.error(f"{e} -> This is okay if you just activated your first deck.")
+
+        # Not in the try above: it raises for the current layout, which used to swallow the
+        # sidebar refresh with it - leaving the sidebar on the config of the previous page
+        gl.app.main_win.sidebar.update()
 
     def close_image_ressources(self):
         for t in self.inputs:
@@ -1300,7 +1317,15 @@ class DeckController:
         if not allow_reload:
             if self.active_page is page:
                 return
-        
+
+        if self._sticky_editing and page is not self.sticky_page:
+            # Someone else (page selector, api, auto change, ...) wants a different page while
+            # the sticky editor is open - honor it and leave the editor
+            self._sticky_editing = False
+            self._sticky_edit_backup = None
+            self.refresh_sticky_inputs()
+            GLib.idle_add(self.update_sticky_ui)
+
         old_path = self.active_page.json_path if self.active_page is not None else None
 
         if self.active_page is not None and False:
@@ -1522,7 +1547,129 @@ class DeckController:
         if not self.get_alive():
             return {}
         return gl.settings_manager.get_deck_settings(self.deck.get_serial_number())
-    
+
+    # -------------- #
+    # Sticky actions #
+    # -------------- #
+
+    def get_sticky_page_path(self) -> str:
+        """
+        The sticky page of this deck. It lives outside of <data>/pages, so it never shows
+        up in the page list - it can only be reached through the sticky actions editor.
+        """
+        return os.path.join(gl.DATA_PATH, "sticky", f"{self.safe_serial_number()}.json")
+
+    def load_sticky_page(self) -> None:
+        path = self.get_sticky_page_path()
+        if not os.path.isfile(path):
+            return
+
+        self.sticky_page = Page(json_path=path, deck_controller=self)
+        self.refresh_sticky_inputs()
+        self.sticky_page.initialize_actions()
+
+    def get_sticky_page(self) -> Page:
+        """Like sticky_page, but creates it if this deck doesn't have one yet"""
+        if self.sticky_page is None:
+            path = self.get_sticky_page_path()
+            if not os.path.isfile(path):
+                atomic_save_json(path, {})
+            self.load_sticky_page()
+        return self.sticky_page
+
+    @staticmethod
+    def input_is_configured(input_dict: dict) -> bool:
+        """
+        Whether an input holds any real config. An empty dict - which the editor leaves
+        behind for inputs the user only clicked on - does not make an input sticky.
+        """
+        for state_dict in input_dict.get("states", {}).values():
+            if state_dict.get("actions"):
+                return True
+            if (state_dict.get("media") or {}).get("path") is not None:
+                return True
+            if (state_dict.get("background") or {}).get("color") is not None:
+                return True
+            for label in (state_dict.get("labels") or {}).values():
+                # Resetting a label leaves all of its properties on None behind
+                if any(value is not None for value in (label or {}).values()):
+                    return True
+        return False
+
+    def refresh_sticky_inputs(self) -> None:
+        """Recomputes which inputs the sticky page takes over. Called whenever it is saved."""
+        identifiers: set[InputIdentifier] = set()
+
+        if self.sticky_page is not None:
+            for input_type in Input.All:
+                for json_identifier, input_dict in self.sticky_page.dict.get(input_type.input_type, {}).items():
+                    if not self.input_is_configured(input_dict):
+                        continue
+                    try:
+                        identifiers.add(Input.FromTypeIdentifier(input_type.input_type, json_identifier))
+                    except ValueError:
+                        log.warning(f"Skipping invalid sticky input: {input_type.input_type} {json_identifier}")
+
+        self._sticky_identifiers = identifiers
+
+    def is_input_sticky(self, identifier: InputIdentifier) -> bool:
+        return self.sticky_page is not None and identifier in self._sticky_identifiers
+
+    def get_page_for_input(self, identifier: InputIdentifier) -> Page:
+        """
+        The page an input takes its config and its actions from: the sticky page for sticky
+        inputs, the active page for all others. Sticky inputs are taken over completely,
+        the active page has no say in them.
+        """
+        if self.is_input_sticky(identifier):
+            return self.sticky_page
+        return self.active_page
+
+    def is_sticky_editing(self) -> bool:
+        return self._sticky_editing
+
+    def enter_sticky_edit(self) -> None:
+        """
+        Shows the sticky page on the deck so it can be edited like any other page - the key
+        grid mirrors the deck, so this is what makes the editor show the sticky config.
+        """
+        if self._sticky_editing:
+            return
+
+        sticky_page = self.get_sticky_page()
+        if sticky_page is None:
+            return
+
+        self._sticky_edit_backup = self.active_page
+        self._sticky_editing = True
+        self.load_page(sticky_page, allow_reload=True)
+        GLib.idle_add(self.update_sticky_ui)
+
+    def exit_sticky_edit(self) -> None:
+        if not self._sticky_editing:
+            return
+
+        page = self._sticky_edit_backup
+        self._sticky_editing = False
+        self._sticky_edit_backup = None
+        self.refresh_sticky_inputs()
+
+        if page is not None:
+            self.load_page(page, allow_reload=True)
+
+        GLib.idle_add(self.update_sticky_ui)
+
+    def update_sticky_ui(self) -> None:
+        deck_stack_child = self.get_own_deck_stack_child()
+        if deck_stack_child is None:
+            return
+        deck_stack_child.update_sticky_mode()
+
+    def on_sticky_page_saved(self) -> None:
+        """The sticky page was edited - which inputs it takes over may have changed"""
+        self.refresh_sticky_inputs()
+        GLib.idle_add(self.update_sticky_ui)
+
     def get_own_deck_stack_child(self) -> "DeckStackChild":
         # Why not just lru_cache this? Because this would also cache the None that gets returned while the ui is still loading
         if self.own_deck_stack_child is not None:
@@ -2556,13 +2703,12 @@ class ControllerInputState:
 
     def get_own_actions(self) -> list["ActionCore"]:
         if not self.deck_controller.get_alive(): return []
-        active_page = self.deck_controller.active_page
-        active_page = self.controller_input.deck_controller.active_page
-        if active_page is None:
+        page = self.deck_controller.get_page_for_input(self.controller_input.identifier)
+        if page is None:
             return []
-        if active_page.action_objects is None:
+        if page.action_objects is None:
             return []
-        actions = self.deck_controller.active_page.get_all_actions_for_input(self.controller_input.identifier, self.state)
+        actions = page.get_all_actions_for_input(self.controller_input.identifier, self.state)
 
         return actions
 
@@ -2626,7 +2772,7 @@ class ControllerInputState:
         threading.Thread(target=self.own_actions_event_callback, args=(event, data, show_notifications), name="own_actions_event_callback").start()
 
     def remove_media(self) -> None:
-        page = self.controller_input.deck_controller.active_page
+        page = self.controller_input.deck_controller.get_page_for_input(self.controller_input.identifier)
         if page is None:
             return
 
@@ -2725,11 +2871,15 @@ class ControllerInput:
     def load_from_input_dict(self, page_dict, update: bool = True):
         pass
 
+    def get_own_page(self) -> Page:
+        """The page this input takes its config from - the sticky page if it is sticky"""
+        return self.deck_controller.get_page_for_input(self.identifier)
+
     def get_page_input_dict(self) -> dict:
         """
-        Returns the dict of this input in the active page, creating it if the page does not contain it yet
+        Returns the dict of this input in its own page, creating it if the page does not contain it yet
         """
-        page_dict = self.deck_controller.active_page.dict
+        page_dict = self.get_own_page().dict
         page_dict.setdefault(self.identifier.input_type, {})
         input_dict = page_dict[self.identifier.input_type].setdefault(self.identifier.json_identifier, {})
         input_dict.setdefault("states", {})
@@ -2748,8 +2898,9 @@ class ControllerInput:
         for state in self.states.keys():
             d["states"].setdefault(str(state), {})
 
-        self.deck_controller.active_page.save()
-        gl.page_manager.update_dict_of_pages_with_path(self.deck_controller.active_page.json_path)
+        own_page = self.get_own_page()
+        own_page.save()
+        gl.page_manager.update_dict_of_pages_with_path(own_page.json_path)
 
         self.update_state_switcher()
 
@@ -2793,8 +2944,9 @@ class ControllerInput:
         d["states"] = new_states_dict
 
 
-        self.deck_controller.active_page.save()
-        gl.page_manager.update_dict_of_pages_with_path(self.deck_controller.active_page.json_path)
+        own_page = self.get_own_page()
+        own_page.save()
+        gl.page_manager.update_dict_of_pages_with_path(own_page.json_path)
 
         self.update_state_switcher()
 
@@ -2872,7 +3024,7 @@ class ControllerInput:
         # deck_controller.active_page (see reload_similar_pages), so writing here would
         # push the loaded state into the wrong page - and overwrite the stored one
         if persist and self.states_are_persistent():
-            page = self.deck_controller.active_page
+            page = self.get_own_page()
             if page is not None:
                 page.set_active_state(self.identifier, self.deck_controller.safe_serial_number(), state)
 

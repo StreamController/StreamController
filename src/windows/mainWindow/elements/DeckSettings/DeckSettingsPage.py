@@ -41,6 +41,7 @@ class DeckSettingsPage(Gtk.Overlay):
         self.deck_controller = deck_controller
         self.deck_serial_number = deck_controller.deck.get_serial_number()
         self.build()
+        self.add_sticky_actions_button()
         if self.deck_controller.active_page == None:
             # TODO: Fix: Error not showing up
             self.show_no_page_error()
@@ -83,6 +84,23 @@ class DeckSettingsPage(Gtk.Overlay):
 
         self.serial_number_label = Gtk.Label(label=f"Serial: {self.deck_controller.serial_number()}", margin_top=20, css_classes=["dim-label"], selectable=False, sensitive=False)
         self.clamp_box.append(self.serial_number_label)
+
+    def add_sticky_actions_button(self):
+        """
+        Floating pill button opening the sticky actions editor. Added outside of build()
+        because that one runs again when the page gets rebuilt.
+        """
+        self.sticky_actions_button = Gtk.Button(css_classes=["suggested-action", "pill"],
+                                                halign=Gtk.Align.END, valign=Gtk.Align.END,
+                                                margin_end=20, margin_bottom=20,
+                                                tooltip_text=gl.lm.get("deck.sticky-actions.button.tooltip"))
+        self.sticky_actions_button.set_child(Adw.ButtonContent(icon_name="view-pin-symbolic",
+                                                               label=gl.lm.get("deck.sticky-actions.button")))
+        self.sticky_actions_button.connect("clicked", self.on_sticky_actions_button_click)
+        self.add_overlay(self.sticky_actions_button)
+
+    def on_sticky_actions_button_click(self, button):
+        self.deck_stack_child.enter_sticky_mode()
 
     def on_open_page_settings_button_click(self, button):
         self.deck_stack_child.set_visible_child_name("page-settings")

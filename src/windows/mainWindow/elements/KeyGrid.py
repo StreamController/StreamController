@@ -250,7 +250,7 @@ class KeyButton(Gtk.Frame):
             return False
 
         # Set media to key
-        active_page = self.key_grid.deck_controller.active_page
+        active_page = gl.app.main_win.get_page_for_identifier(self.identifier)
 
         page_coords = f"{self.coords[0]}x{self.coords[1]}"
         
@@ -384,7 +384,7 @@ class KeyButton(Gtk.Frame):
 
     # Modifier
     def on_copy(self, *args):
-        active_page = self.key_grid.deck_controller.active_page
+        active_page = gl.app.main_win.get_page_for_identifier(self.identifier)
         if active_page is None:
             return
         key_dict = active_page.dict.get(self.identifier.input_type, {}).get(self.identifier.json_identifier, {})
@@ -405,7 +405,7 @@ class KeyButton(Gtk.Frame):
         # Remove the old action objects - useful in case the same action base is used across multiple actions because we would have no way to differentiate them
         self.on_remove()
         
-        active_page = self.key_grid.deck_controller.active_page
+        active_page = gl.app.main_win.get_page_for_identifier(self.identifier)
         if active_page is None:
             return
         active_page.dict.setdefault(self.identifier.input_type, {})
@@ -420,7 +420,7 @@ class KeyButton(Gtk.Frame):
         value = gl.app.main_win.key_clipboard.read_value_finish(result=data)
 
     def on_remove(self, *args):
-        active_page = self.key_grid.deck_controller.active_page
+        active_page = gl.app.main_win.get_page_for_identifier(self.identifier)
         if active_page is None:
             return
         x, y = self.coords

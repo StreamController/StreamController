@@ -185,11 +185,12 @@ class Sidebar(Adw.NavigationPage):
         self.screen_editor.load_for_identifier(identifier, state)
 
     def load_for_touch_key(self, identifier: Input.TouchKey, state: int):
+        # Touch keys can only show a color, so they use the screen editor instead of the key editor
         self.active_identifier = identifier
         self.active_state = state
         self.main_stack.set_visible_child(self.configurator_stack)
-        self.configurator_stack.set_visible_child(self.key_editor)
-        self.key_editor.load_for_identifier(identifier, state)
+        self.configurator_stack.set_visible_child(self.screen_editor)
+        self.screen_editor.load_for_identifier(identifier, state)
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
         if isinstance(identifier, Input.Key):

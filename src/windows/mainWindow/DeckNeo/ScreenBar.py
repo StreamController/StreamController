@@ -20,6 +20,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.windows.mainWindow.elements.PageSettingsPage import PageSettingsPage
 
+# Geometry of a single key in the KeyGrid - the screen has to line up with them
+KEY_IMAGE_SIZE = 75 # See KeyButton
+KEY_FRAME_INSET = 7 # Padding (4px) + border (3px) of .key-button-frame
+KEY_FRAME_MARGIN = 6 # Margin of .key-button-frame
+
+# On the real device the screen reaches from the left of the second to the right of the third key column
+SCREEN_UI_WIDTH = 2 * KEY_IMAGE_SIZE + 2 * KEY_FRAME_INSET + 2 * KEY_FRAME_MARGIN
+
 class ScreenBar(Gtk.Frame):
     def __init__(self, page_settings_page: "PageSettingsPage", identifier: Input.Screen, **kwargs):
         self.page_settings_page = page_settings_page
@@ -28,13 +36,13 @@ class ScreenBar(Gtk.Frame):
 
         super().__init__(**kwargs)
         self.set_css_classes(["key-button-frame-hidden"])
-        self.set_halign(Gtk.Align.CENTER)
-        self.set_hexpand(True)
 
         self.pixbuf = None
 
-        self.image = ScreenBarImage(self)
-        self.image.set_image(Image.new("RGBA", (248, 58), (0, 0, 0, 0)))
+        screen_size = self.deck_controller.get_screen_image_size()
+
+        self.image = ScreenBarImage(self, screen_size)
+        self.image.set_image(Image.new("RGBA", screen_size, (0, 0, 0, 0)))
         self.set_child(self.image)
 
         focus_controller = Gtk.EventControllerFocus()
@@ -124,9 +132,14 @@ class ScreenBar(Gtk.Frame):
 
 
 class ScreenBarImage(Gtk.Picture):
-    def __init__(self, screenbar: ScreenBar, **kwargs):
+    def __init__(self, screenbar: ScreenBar, screen_size: tuple[int, int], **kwargs):
+        # Keep the aspect ratio of the physical screen
+        self.ui_width = SCREEN_UI_WIDTH
+        self.ui_height = round(SCREEN_UI_WIDTH * screen_size[1] / screen_size[0])
+
         super().__init__(keep_aspect_ratio=True, can_shrink=True, content_fit=Gtk.ContentFit.SCALE_DOWN,
-                         halign=Gtk.Align.CENTER, hexpand=False, width_request=80, height_request=10,
+                         halign=Gtk.Align.CENTER, hexpand=False,
+                         width_request=self.ui_width, height_request=self.ui_height,
                          valign=Gtk.Align.CENTER, vexpand=False, css_classes=["plus-screenbar-image"],
                          **kwargs)
 
@@ -156,9 +169,8 @@ class ScreenBarImage(Gtk.Picture):
             self.on_map_tasks = [lambda: self.set_image(image)]
             return
 
-        width = 385
         thumbnail = image.copy()
-        thumbnail.thumbnail((width, int(width * 58 / 248)))
+        thumbnail.thumbnail((self.ui_width, self.ui_height))
 
         pixbuf = image2pixbuf(thumbnail.convert("RGBA"), force_transparency=True)
         self.latest_task_id = self.get_new_task_id()

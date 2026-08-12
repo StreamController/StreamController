@@ -213,6 +213,10 @@ class BetterDeck():
                                 state changes.
         """
         def remapper_callback(deck, key, state):
+            if key >= self.deck.key_count():
+                # Touch keys are indexed after the regular keys and are not part of the key grid
+                callback(deck, key, state)
+                return
             logical_key = self.get_logical_index(key)
             callback(deck, logical_key, state)
 
@@ -421,6 +425,10 @@ class BetterDeck():
         :param int b: Blue value
 
         """
+        if key >= self.deck.key_count():
+            # Touch keys are indexed after the regular keys and are not part of the key grid
+            self.deck.set_key_color(key, r, g, b)
+            return
         physical_key = self.get_physical_index(key)
         self.deck.set_key_color(physical_key, r, g, b)
 

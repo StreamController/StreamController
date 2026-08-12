@@ -127,16 +127,12 @@ class Input:
         input_type = "touch_keys"
         controller_class_name = "ControllerTouchKey"
 
-        class Events(InputEvent):
-            DOWN = "Touch Key Down"
-            UP = "Touch Key Up"
-            SHORT_UP = "Touch Key Short Up"
-            HOLD_START = "Touch Key Hold Start"
-            HOLD_STOP = "Touch Key Hold Stop"
-
         def __init__(self, json_identifier: str):
             self.index = int(json_identifier)
             super().__init__(self.input_type, json_identifier, self.controller_class_name)
+
+    # Touch keys are keys without a display, so actions written for keys work on them
+    TouchKey.Events = Key.Events
 
     class Screen(InputIdentifier):
         input_type = "screens"
@@ -170,9 +166,9 @@ class Input:
         events: list[InputEvent] = []
 
         for t in Input.All:
-            events.extend(list(t.Events))
-
-
+            for event in t.Events:
+                if event not in events:
+                    events.append(event)
 
         return events
         for attr in dir(Input):

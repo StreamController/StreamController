@@ -16,7 +16,6 @@ import gc
 import statistics
 import threading
 import time
-from datetime import datetime
 # Import Python modules
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
@@ -1715,7 +1714,14 @@ class BackgroundManager:
         if controller is not self.controller_input.deck_controller:
             return
 
-        gl.app.main_win.sidebar.key_editor.background_editor.load_for_identifier(self.controller_input.identifier, self.controller_input.state)
+        # Which editor is shown depends on the input type - keys and dials use the key editor,
+        # screens and touch keys the screen editor
+        editor = gl.app.main_win.sidebar.configurator_stack.get_visible_child()
+        background_editor = getattr(editor, "background_editor", None)
+        if background_editor is None:
+            return
+
+        background_editor.load_for_identifier(self.controller_input.identifier, self.controller_input.state)
 
     def get_color_is_set(self, color: list[int]) -> bool:
         return color not in [None, [None]*3, [None]*4]
@@ -1933,12 +1939,22 @@ class ControllerInput:
     def load_from_input_dict(self, page_dict, update: bool = True):
         pass
 
+    def get_page_input_dict(self) -> dict:
+        """
+        Returns the dict of this input in the active page, creating it if the page does not contain it yet
+        """
+        page_dict = self.deck_controller.active_page.dict
+        page_dict.setdefault(self.identifier.input_type, {})
+        input_dict = page_dict[self.identifier.input_type].setdefault(self.identifier.json_identifier, {})
+        input_dict.setdefault("states", {})
+        return input_dict
+
     def add_new_state(self, switch: bool = True):
         if not self.enable_states:
             if len(self.states) >= 1:
                 return
-            
-        d = self.identifier.get_config(self.deck_controller.active_page)
+
+        d = self.get_page_input_dict()
 
         # Add new state
         self.states[len(self.states)] = self.ControllerStateClass(self, len(self.states))
@@ -1956,7 +1972,7 @@ class ControllerInput:
             self.set_state(len(self.states)-1)
 
     def remove_state(self, state: int):
-        d = self.identifier.get_config(self.deck_controller.active_page)
+        d = self.get_page_input_dict()
 
         if str(state) in d["states"]:
             d["states"].pop(str(state))
@@ -2011,7 +2027,14 @@ class ControllerInput:
         if gl.app.main_win.sidebar.active_identifier != self.identifier:
             return
 
-        gl.app.main_win.sidebar.key_editor.state_switcher.set_n_states(len(self.states))
+        # Which editor is shown depends on the input type - keys and dials use the key editor,
+        # screens and touch keys the screen editor
+        editor = gl.app.main_win.sidebar.configurator_stack.get_visible_child()
+        state_switcher = getattr(editor, "state_switcher", None)
+        if state_switcher is None:
+            return
+
+        state_switcher.set_n_states(len(self.states))
 
     def get_active_state(self) -> "ControllerInputState":
         return self.states.get(self.state, self.ControllerStateClass(self, -1))
@@ -3030,6 +3053,13 @@ class ControllerTouchKey(ControllerInput):
         color = active_state.background_manager.get_composed_color()
         r, g, b = color[0], color[1], color[2]
         self.set_color(r, g, b)
+        self.set_ui_color((r, g, b))
+
+    def set_ui_color(self, color: tuple[int, int, int]) -> None:
+        if not recursive_hasattr(self, "deck_controller.own_deck_stack_child.page_settings.deck_config.screen_row"):
+            return
+        screen_row = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screen_row
+        GLib.idle_add(screen_row.set_touch_key_color, self.identifier.index, color)
 
     def get_image_size(self) -> tuple[int, int]:
         return (0, 0)
@@ -3071,8 +3101,6 @@ class ControllerScreen(ControllerInput):
     def __init__(self, deck_controller: DeckController, ident: InputIdentifier):
         super().__init__(deck_controller, ControllerScreenState, ident)
         self.enable_states = False
-        self._clock_timer: Timer = None
-        self._clock_running = False
 
     @staticmethod
     def Available_Identifiers(deck):
@@ -3094,8 +3122,6 @@ class ControllerScreen(ControllerInput):
         self.deck_controller.media_player.add_screen_task(native_image)
 
         self.set_ui_image(ui_image)
-
-        self.start_clock_timer()
 
     def generate_empty_image(self) -> Image.Image:
         return Image.new("RGBA", self.get_screen_dimensions(), (0, 0, 0, 0))
@@ -3120,43 +3146,6 @@ class ControllerScreen(ControllerInput):
     def get_image_size(self) -> tuple[int, int]:
         return self.get_screen_dimensions()
 
-    def _clock_tick(self):
-        if not self._clock_running:
-            return
-        try:
-            self.update()
-        except Exception as e:
-            log.error(f"Clock tick error: {e}")
-        if self._clock_running:
-            active_state = self.get_active_state()
-            interval = 1.0 if active_state.clock_config.get("show-seconds", False) else 60.0
-            self._clock_timer = Timer(interval, self._clock_tick)
-            self._clock_timer.daemon = True
-            self._clock_timer.start()
-
-    def start_clock_timer(self):
-        if self._clock_running:
-            return
-        active_state = self.get_active_state()
-        if not active_state.clock_config.get("enabled", False):
-            return
-        self._clock_running = True
-        interval = 1.0 if active_state.clock_config.get("show-seconds", False) else 60.0
-        self._clock_timer = Timer(interval, self._clock_tick)
-        self._clock_timer.daemon = True
-        self._clock_timer.start()
-
-
-    def stop_clock_timer(self):
-        self._clock_running = False
-        if self._clock_timer is not None:
-            self._clock_timer.cancel()
-            self._clock_timer = None
-
-    def restart_clock_timer(self):
-        self.stop_clock_timer()
-        self.start_clock_timer()
-
     def load_from_input_dict(self, page_dict, update: bool = True):
         n_states = len(page_dict.get("states", {}))
         self.create_n_states(max(1, n_states))
@@ -3178,10 +3167,6 @@ class ControllerScreen(ControllerInput):
             state_obj.layout_manager.set_action_layout(layout, update=False)
             state_obj.own_actions_update()
             state_obj.background_manager.set_page_color(state_dict.get("background", {}).get("color", [0, 0, 0, 0]), update=False)
-            state_obj.scale_factor = state_dict.get("screen-scale", 1.0)
-
-            clock_dict = state_dict.get("screen-clock", {})
-            state_obj.clock_config = {**DEFAULT_CLOCK_CONFIG, **clock_dict}
 
             path = state_dict.get("media", {}).get("path", None)
             if path not in ["", None]:
@@ -3221,21 +3206,9 @@ class ControllerScreen(ControllerInput):
             )
             state_obj.layout_manager.set_page_layout(page_layout, update=False)
 
-        self.stop_clock_timer()
-
         if update:
             self.set_state(old_state_index)
             self.update()
-
-
-DEFAULT_CLOCK_CONFIG = {
-    "enabled": False,
-    "show-date": True,
-    "show-seconds": False,
-    "use-24h": False,
-    "date-format": "MM/DD/YY",
-    "color": [255, 255, 255, 255],
-}
 
 
 class ControllerScreenState(ControllerInputState):
@@ -3244,8 +3217,6 @@ class ControllerScreenState(ControllerInputState):
         self.controller_screen = controller_screen
         self.key_image: InputImage = None
         self.key_video: InputVideo = None
-        self.scale_factor: float = 1.0
-        self.clock_config: dict = dict(DEFAULT_CLOCK_CONFIG)
 
     def set_image(self, key_image: "InputImage", update: bool = True) -> None:
         if self.key_image is not None:
@@ -3261,96 +3232,8 @@ class ControllerScreenState(ControllerInputState):
             self.key_image.close()
         self.key_image = None
 
-    _clock_font_cache: dict = {}
-    _clock_font_path: str = None
-
-    def _get_clock_font(self, size: int) -> ImageFont.FreeTypeFont:
-        if size in self._clock_font_cache:
-            return self._clock_font_cache[size]
-
-        if ControllerScreenState._clock_font_path is None:
-            font_name = gl.fallback_font or "DejaVu Sans"
-            try:
-                import matplotlib.font_manager
-                ControllerScreenState._clock_font_path = matplotlib.font_manager.findfont(
-                    matplotlib.font_manager.FontProperties(family=font_name, weight="bold")
-                )
-            except Exception:
-                ControllerScreenState._clock_font_path = ""
-
-        try:
-            if ControllerScreenState._clock_font_path:
-                font = ImageFont.truetype(ControllerScreenState._clock_font_path, size)
-            else:
-                font = ImageFont.load_default()
-        except Exception:
-            font = ImageFont.load_default()
-
-        self._clock_font_cache[size] = font
-        return font
-
-    def _draw_clock_overlay(self, image: Image.Image) -> Image.Image:
-        cfg = self.clock_config
-        if not cfg.get("enabled", False):
-            return image
-
-        now = datetime.now()
-        color = tuple(cfg.get("color", [255, 255, 255, 255])[:4])
-        outline_color = (0, 0, 0, 255)
-        outline_width = 1
-
-        w, h = image.size
-        draw = ImageDraw.Draw(image)
-
-        show_date = cfg.get("show-date", True)
-        show_seconds = cfg.get("show-seconds", False)
-        use_24h = cfg.get("use-24h", False)
-        date_fmt = cfg.get("date-format", "MM/DD/YY")
-
-        # Build time string
-        if use_24h:
-            time_str = now.strftime("%H:%M:%S") if show_seconds else now.strftime("%H:%M")
-        else:
-            time_str = now.strftime("%-I:%M:%S %p") if show_seconds else now.strftime("%-I:%M %p")
-
-        if show_date:
-            # Split layout: left half = date, right half = time
-            day_str = now.strftime("%A").upper()
-            if date_fmt == "DD/MM/YY":
-                date_str = now.strftime("%d/%m/%y")
-            elif date_fmt == "YYYY-MM-DD":
-                date_str = now.strftime("%Y-%m-%d")
-            else:
-                date_str = now.strftime("%m/%d/%y")
-
-            mid_x = w // 2
-            left_cx = mid_x // 2
-            right_cx = mid_x + (w - mid_x) // 2 - 5
-
-            day_font = self._get_clock_font(12)
-            date_font = self._get_clock_font(11)
-            time_font = self._get_clock_font(18)
-
-            draw.text((left_cx, h // 2 - 8), day_str, font=day_font, fill=color,
-                       anchor="mm", stroke_width=outline_width, stroke_fill=outline_color)
-            draw.text((left_cx, h // 2 + 12), date_str, font=date_font, fill=color,
-                       anchor="mm", stroke_width=outline_width, stroke_fill=outline_color)
-            draw.text((right_cx, h // 2), time_str, font=time_font, fill=color,
-                       anchor="mm", stroke_width=outline_width, stroke_fill=outline_color)
-        else:
-            # Time only — centered
-            time_font = self._get_clock_font(24)
-            draw.text((w // 2, h // 2), time_str, font=time_font, fill=color,
-                       anchor="mm", stroke_width=outline_width, stroke_fill=outline_color)
-
-        del draw
-        return image
-
     def get_current_image(self) -> Image.Image:
-        screen_width, screen_height = self.controller_screen.get_screen_dimensions()
-        scale = self.scale_factor
-        render_width = max(1, int(screen_width / scale))
-        render_height = max(1, int(screen_height / scale))
+        render_width, render_height = self.controller_screen.get_screen_dimensions()
 
         background: Image.Image = None
         active_page = self.controller_screen.deck_controller.active_page
@@ -3400,14 +3283,7 @@ class ControllerScreenState(ControllerInputState):
                 background=background
             )
 
-        labeled_image = self.label_manager.add_labels_to_image(screen_image)
-
-        labeled_image = self._draw_clock_overlay(labeled_image)
-
-        if scale != 1.0:
-            labeled_image = labeled_image.resize((screen_width, screen_height), Image.Resampling.LANCZOS)
-
-        return labeled_image
+        return self.label_manager.add_labels_to_image(screen_image)
 
     def update(self):
         if self.controller_screen.get_active_state() is self:

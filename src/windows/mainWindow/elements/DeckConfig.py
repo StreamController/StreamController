@@ -83,16 +83,21 @@ class DeckConfig(Gtk.Box):
 
     def update_sticky_markers(self) -> None:
         """
-        Dims the inputs that are not sticky while the sticky actions editor is open, so it's
-        obvious which of them are taken over on every page. Opacity instead of a css class
-        because the input widgets replace their whole class list when they get selected.
+        Dims the inputs that this screen is not about: the ones that are not sticky while the
+        sticky actions editor is open, and the sticky ones everywhere else. The latter are
+        also locked - they are driven by the sticky page, so a normal page can not configure
+        them. Opacity instead of a css class because the input widgets replace their whole
+        class list when they get selected.
         """
         deck_controller = self.page_settings_page.deck_controller
         editing = deck_controller.is_sticky_editing()
 
         for widget in self.get_input_widgets():
-            dim = editing and not deck_controller.is_input_sticky(widget.identifier)
-            widget.set_opacity(0.35 if dim else 1)
+            sticky = deck_controller.is_input_sticky(widget.identifier)
+
+            # In the editor the sticky inputs are the point, on a normal page they are locked
+            widget.set_opacity(1 if sticky == editing else 0.35)
+            widget.set_sensitive(editing or not sticky)
 
     def get_screen_child(self) -> Gtk.Widget:
         """The child holding the screen - on the Neo it also holds the touch keys next to it"""

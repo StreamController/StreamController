@@ -193,6 +193,11 @@ class Sidebar(Adw.NavigationPage):
         self.screen_editor.load_for_identifier(identifier, state)
 
     def load_for_identifier(self, identifier: InputIdentifier, state: int):
+        controller = self.main_window.get_active_controller()
+        if controller is not None and identifier is not None:
+            # Sticky inputs can only be configured in the sticky actions editor
+            self.main_stack.set_sensitive(controller.is_input_editable(identifier))
+
         if isinstance(identifier, Input.Key):
             self.load_for_key(identifier, state)
         elif isinstance(identifier, Input.Dial):

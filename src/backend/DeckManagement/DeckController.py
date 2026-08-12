@@ -1625,6 +1625,13 @@ class DeckController:
             return self.sticky_page
         return self.active_page
 
+    def is_input_editable(self, identifier: InputIdentifier) -> bool:
+        """
+        Sticky inputs are driven by the sticky page, so outside of its editor they can not be
+        configured - the page they are shown on has no say in them.
+        """
+        return self._sticky_editing or not self.is_input_sticky(identifier)
+
     def is_sticky_editing(self) -> bool:
         return self._sticky_editing
 

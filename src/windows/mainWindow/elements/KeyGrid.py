@@ -99,8 +99,23 @@ class KeyGrid(Gtk.Grid):
                 pass
         
     def select_key(self, x: int, y: int):
-        self.buttons[x][y].on_focus_in()
-        self.buttons[x][y].image.grab_focus()
+        button = self.buttons[x][y]
+
+        if not button.get_sensitive():
+            # Sticky keys can not be configured here - fall back to the first one that can
+            button = self.get_first_selectable_button()
+            if button is None:
+                return
+
+        button.on_focus_in()
+        button.image.grab_focus()
+
+    def get_first_selectable_button(self) -> "KeyButton":
+        for column in self.buttons:
+            for button in column:
+                if button is not None and button.get_sensitive():
+                    return button
+        return None
 
     def on_map(self, widget):
         self.load_from_changes()

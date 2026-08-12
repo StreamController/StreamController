@@ -158,7 +158,7 @@ class SizeRow(Adw.PreferencesRow):
         active_page = gl.app.main_win.get_active_page()
         active_page.set_media_size(identifier=self.active_identifier, state=self.active_state, size=widget.get_value()/100)
 
-        self.size_spinner.revert_button.set_visible(True)
+        self.size_spinner.revert_button.show_delayed()
 
     def on_size_reset(self, widget):
         active_page = gl.app.main_win.get_active_page()
@@ -168,6 +168,10 @@ class SizeRow(Adw.PreferencesRow):
         self.update_values()
 
     def connect_signals(self):
+        # load_for_identifier() connects twice (once through update_values()) and
+        # disconnect_by_func() only ever removes a single handler, so the leftover one
+        # would turn the set_value() of the next update_values() into a real size change
+        self.disconnect_signals()
         self.size_spinner.button.connect("value-changed", self.on_size_changed)
 
     def disconnect_signals(self):
@@ -234,7 +238,7 @@ class AlignmentRow(Adw.PreferencesRow):
         page_method = getattr(active_page, f"set_media_{self.property_name}")
         page_method(self.active_identifier, self.active_state, widget.get_value())
 
-        self.alignment_spinner.revert_button.set_visible(True)
+        self.alignment_spinner.revert_button.show_delayed()
 
     def on_alignment_reset(self, widget):
         active_page = gl.app.main_win.get_active_page()

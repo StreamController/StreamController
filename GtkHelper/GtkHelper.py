@@ -445,9 +445,40 @@ class BackButton(Gtk.Button):
         self.box.append(Gtk.Label(label=gl.lm.get("go-back")))
 
 class RevertButton(Gtk.Button):
+    SHOW_DELAY_MS = 200
+
     def __init__(self, **kwargs):
         super().__init__(icon_name="edit-undo-symbolic", **kwargs)
         self.set_tooltip_text("Revert to action defaults")
+
+        self.show_timeout_id: int = None
+
+    def show_delayed(self, delay_ms: int = SHOW_DELAY_MS):
+        """
+        Show the button once no further call happened for delay_ms. Showing it right away
+        would move the buttons next to it out from under the cursor while the user is still
+        clicking them (e.g. the + of a spin button).
+        """
+        if self.get_visible():
+            return
+
+        self.cancel_delayed_show()
+        self.show_timeout_id = GLib.timeout_add(delay_ms, self.on_show_timeout)
+
+    def cancel_delayed_show(self):
+        if self.show_timeout_id is not None:
+            GLib.source_remove(self.show_timeout_id)
+            self.show_timeout_id = None
+
+    def on_show_timeout(self):
+        self.show_timeout_id = None
+        super().set_visible(True)
+        return GLib.SOURCE_REMOVE
+
+    def set_visible(self, visible: bool):
+        # Drop a pending delayed show, otherwise it would pop up again after being hidden
+        self.cancel_delayed_show()
+        super().set_visible(visible)
 
 class LoadingScreen(Gtk.Box):
     def __init__(self):

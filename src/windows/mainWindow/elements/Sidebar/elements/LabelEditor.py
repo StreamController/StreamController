@@ -324,7 +324,7 @@ class LabelRow(Adw.PreferencesRow):
         active_page = gl.app.main_win.get_active_page()
         active_page.set_label_outline_width(identifier=self.active_identifier, state=self.state, label_position=self.key_name, outline_width=width)
 
-        self.outline_width.revert_button.set_visible(True)
+        self.outline_width.revert_button.show_delayed()
 
     def on_change_outline_color(self, _):
         color = self.outline_color_chooser_button.button.get_rgba()

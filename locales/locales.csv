@@ -142,6 +142,7 @@ background.processing;Verarbeiten...;Processing...;Traitement en cours…;Proces
 asset-chooser.custom.browse-files;Durchsuchen;Browse Files;Parcourir les fichiers;Examinar archivos;Procurar Arquivos
 asset-chooser.custom.browse-files.dialog.title;Dateien auswählen;Select Files;Sélectionner des fichiers;Seleccionar archivos;Selecionar Arquivos
 asset-chooser.custom.browse-files.dialog.select-button;Auswählen;Select;Sélectionner;Seleccione;Selecionar
+asset-chooser.custom.add-button.label;Hinzufügen;Add;Ajouter;Añadir;Adicionar
 background-editor.header;Hintergrund;Background;L'arrière-plan;Fondo;Fundo
 asset-chooser.add-more-button.label;Mehr hinzufügen;Add More;Ajouter plus;Añadir más;Adicionar Mais
 background-editor-expander.subtitle;Hintergrund für diese Taste;Background for this key;L'arrière-plan pour cette touche;Fondo para esta llave;Fundo para esta tecla

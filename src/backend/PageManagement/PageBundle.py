@@ -24,6 +24,7 @@ Layout:
     page.json               - the page (single page bundles only)
     pages/<name>.json       - the pages (multi page bundles only)
     assets/<sha256><ext>    - the referenced assets
+    custom-packs/<id>/...   - the custom icon packs the pages use
 
 Inside the bundle every media path is replaced by its "assets/..." archive name.
 On import the paths are rewritten to point to local copies: assets belonging to
@@ -32,12 +33,14 @@ added to the asset manager.
 
 The manifest also lists the plugins and packs the pages need, so only those can
 be installed from the store on import - never the whole setup of the exporting
-machine.
+machine. Custom icon packs are not in the store, so they travel inside the
+bundle itself and are restored on import.
 """
 import asyncio
 import copy
 import json
 import os
+import shutil
 import tempfile
 import zipfile
 from dataclasses import dataclass
@@ -49,6 +52,7 @@ from loguru import logger as log
 import globals as gl
 from src.backend.DeckManagement.HelperMethods import sha256
 from src.backend.DeckManagement.InputIdentifier import Input
+from src.backend.IconPackManagement.CustomIconPack import CUSTOM_PACK_DIR_NAME
 
 BUNDLE_VERSION = 1
 
@@ -62,16 +66,22 @@ MANIFEST_NAME = "manifest.json"
 SINGLE_PAGE_NAME = "page.json"
 ASSET_DIR = "assets"
 PAGE_DIR = "pages"
+CUSTOM_PACK_DIR = "custom-packs"
 
 PACK_TYPE_ICONS = "icons"
 PACK_TYPE_WALLPAPERS = "wallpapers"
-PACK_TYPES = (PACK_TYPE_ICONS, PACK_TYPE_WALLPAPERS)
+PACK_TYPE_CUSTOM_ICONS = CUSTOM_PACK_DIR_NAME
+PACK_TYPES = (PACK_TYPE_ICONS, PACK_TYPE_WALLPAPERS, PACK_TYPE_CUSTOM_ICONS)
+
+# Packs that come with the bundle instead of being installed from the store
+BUNDLED_PACK_TYPES = (PACK_TYPE_CUSTOM_ICONS,)
 
 
 REQUIREMENT_TYPE_LABELS = {
     "plugin": "Plugin",
     PACK_TYPE_ICONS: "Icon pack",
-    PACK_TYPE_WALLPAPERS: "Wallpaper pack"
+    PACK_TYPE_WALLPAPERS: "Wallpaper pack",
+    PACK_TYPE_CUSTOM_ICONS: "Custom asset pack"
 }
 
 
@@ -207,6 +217,50 @@ def _add_asset(zip_file: zipfile.ZipFile, assets: dict, path: str) -> str:
     return archive_name
 
 
+def _get_bundled_packs(assets: dict) -> dict[str, dict]:
+    """Returns {pack id: {...}} for every pack that has to travel inside the bundle."""
+    packs: dict[str, dict] = {}
+
+    for asset_info in assets.values():
+        origin = (asset_info or {}).get("origin")
+        if not isinstance(origin, dict) or origin.get("type") not in BUNDLED_PACK_TYPES:
+            continue
+
+        pack_id = origin.get("id")
+        if not pack_id or pack_id in packs:
+            continue
+        packs[pack_id] = {"type": origin["type"], "name": origin.get("name")}
+
+    return packs
+
+
+def _add_custom_packs(zip_file: zipfile.ZipFile, assets: dict) -> dict[str, dict]:
+    """
+    Adds every custom icon pack the pages use to the bundle. They are not in the
+    store, so the bundle is the only way to get them onto the other machine.
+    """
+    packs = _get_bundled_packs(assets)
+
+    for pack_id, pack_info in packs.items():
+        pack_path = os.path.join(gl.DATA_PATH, pack_info["type"], pack_id)
+        n_files = 0
+
+        for dir_path, _, file_names in os.walk(pack_path):
+            for file_name in file_names:
+                path = os.path.join(dir_path, file_name)
+                relative = os.path.relpath(path, pack_path).replace(os.sep, "/")
+                try:
+                    zip_file.write(path, f"{CUSTOM_PACK_DIR}/{pack_id}/{relative}")
+                except OSError as e:
+                    log.warning(f"Failed to add {path} to bundle: {e}")
+                    continue
+                n_files += 1
+
+        pack_info["files"] = n_files
+
+    return packs
+
+
 def _get_page_plugins(page_dict: dict) -> dict[str, dict]:
     """Returns {plugin id: {"name": ...}} for every plugin used by the page."""
     plugins: dict[str, dict] = {}
@@ -271,6 +325,8 @@ def _write_bundle(dst_path: str, format: str, pages: dict[str, dict]) -> None:
             for name, page_dict in bundled.items():
                 zip_file.writestr(f"{PAGE_DIR}/{name}.json", json.dumps(page_dict, indent=4))
 
+        custom_packs = _add_custom_packs(zip_file, assets)
+
         manifest = {
             "format": format,
             "version": BUNDLE_VERSION,
@@ -278,7 +334,8 @@ def _write_bundle(dst_path: str, format: str, pages: dict[str, dict]) -> None:
             "created": datetime.now().isoformat(timespec="seconds"),
             "pages": list(bundled.keys()),
             "plugins": plugins,
-            "assets": assets
+            "assets": assets,
+            "custom-packs": custom_packs
         }
         zip_file.writestr(MANIFEST_NAME, json.dumps(manifest, indent=4))
 
@@ -348,6 +405,9 @@ def get_missing_requirements(manifest: dict) -> list[Requirement]:
         pack_type, pack_id = origin.get("type"), origin.get("id")
         if pack_type not in PACK_TYPES or not pack_id:
             continue
+        if pack_type in BUNDLED_PACK_TYPES:
+            # Comes with the bundle, nothing to download
+            continue
         if (pack_type, pack_id) in seen:
             continue
         seen.add((pack_type, pack_id))
@@ -410,6 +470,49 @@ def _is_safe_archive_name(archive_name: str) -> bool:
     if not archive_name.startswith(f"{ASSET_DIR}/"):
         return False
     return ".." not in archive_name.split("/")
+
+
+def _import_custom_packs(zip_file: zipfile.ZipFile, manifest: dict) -> None:
+    """
+    Restores the custom icon packs that came with the bundle. Packs that already
+    exist locally are kept as they are, so nothing of the user is overwritten.
+    """
+    for pack_id, pack_info in (manifest.get("custom-packs") or {}).items():
+        pack_type = (pack_info or {}).get("type", PACK_TYPE_CUSTOM_ICONS)
+        if pack_type not in BUNDLED_PACK_TYPES:
+            continue
+        if not isinstance(pack_id, str) or pack_id in ("", ".", "..") or "/" in pack_id or os.sep in pack_id:
+            log.warning(f"Skipping unsafe pack name in bundle: {pack_id}")
+            continue
+
+        pack_path = os.path.join(gl.DATA_PATH, pack_type, pack_id)
+        if os.path.isdir(pack_path):
+            continue
+
+        prefix = f"{CUSTOM_PACK_DIR}/{pack_id}/"
+        members = [info for info in zip_file.infolist()
+                   if not info.is_dir() and info.filename.startswith(prefix)]
+        if not members:
+            continue
+
+        try:
+            for info in members:
+                relative = info.filename[len(prefix):]
+                parts = relative.split("/")
+                if not relative or ".." in parts or "" in parts:
+                    log.warning(f"Skipping unsafe pack entry in bundle: {info.filename}")
+                    continue
+
+                target_path = os.path.join(pack_path, *parts)
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                with zip_file.open(info) as src, open(target_path, "wb") as dst:
+                    dst.write(src.read())
+        except (OSError, KeyError, zipfile.BadZipFile) as e:
+            log.error(f"Failed to import custom pack {pack_id}: {e}")
+            shutil.rmtree(pack_path, ignore_errors=True)
+            continue
+
+        log.success(f"Imported custom pack {pack_id} from the bundle")
 
 
 def _get_local_pack_path(origin) -> str | None:
@@ -514,6 +617,10 @@ def load_bundle(path: str) -> dict[str, dict]:
 
         if not pages:
             raise ValueError("The bundle does not contain any pages")
+
+        # Has to happen before the assets are resolved so that icons of a custom
+        # pack are used from the restored pack instead of being duplicated
+        _import_custom_packs(zip_file, manifest)
 
         manifest_assets = manifest.get("assets") or {}
 

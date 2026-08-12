@@ -35,8 +35,10 @@ import globals as gl
 from src.windows.AssetManager.InfoPage import InfoPage
 from src.windows.AssetManager.CustomAssets.Chooser import CustomAssetChooser
 from src.windows.AssetManager.IconPacks.Stack import IconPackChooserStack
+from src.windows.AssetManager.CustomIconPacks.Stack import CustomIconPackChooserStack
 from src.windows.AssetManager.WallpaperPacks.Stack import WallpaperPackChooserStack
 from src.windows.AssetManager.SDPlusBarWallpaperPacks.Stack import SDPlusBarWallpaperPackChooserStack
+from src.backend.IconPackManagement import CustomIconPack
 
 
 class AssetManager(Gtk.ApplicationWindow):
@@ -117,6 +119,11 @@ class AssetManager(Gtk.ApplicationWindow):
                     # Switch from icon chooser to pack page
                     self.asset_chooser.icon_pack_chooser.set_visible_child_name("pack-chooser")
 
+            elif self.asset_chooser.get_visible_child_name() == "custom-asset-packs":
+                if self.asset_chooser.custom_icon_pack_chooser.get_visible_child_name() == "icon-chooser":
+                    # Switch from icon chooser to pack page
+                    self.asset_chooser.custom_icon_pack_chooser.set_visible_child_name("pack-chooser")
+
             elif self.asset_chooser.get_visible_child_name() == "wallpaper-packs":
                 if self.asset_chooser.wallpaper_pack_chooser.get_visible_child_name() == "wallpaper-chooser":
                     # Switch from pack chooser to icon chooser
@@ -141,6 +148,9 @@ class AssetChooser(Gtk.Stack):
         self.custom_asset_chooser = CustomAssetChooser(self.asset_manager)
         self.add_titled(self.custom_asset_chooser, "custom-assets", "Custom Assets")
 
+        self.custom_icon_pack_chooser = CustomIconPackChooserStack(self.asset_manager)
+        self.add_titled(self.custom_icon_pack_chooser, "custom-asset-packs", "Custom Asset Packs")
+
         self.icon_pack_chooser = IconPackChooserStack(self.asset_manager)
         self.add_titled(self.icon_pack_chooser, "icon-packs", "Icon Packs")
 
@@ -157,6 +167,8 @@ class AssetChooser(Gtk.Stack):
             # Is custom asset
             self.custom_asset_chooser.show_for_path(path)
             self.asset_manager.back_button.set_visible(False)
+        elif CustomIconPack.is_custom_pack_path(path):
+            self.custom_icon_pack_chooser.show_for_path(path)
         else:
             # Check if really is a icon pack
             # TODO
@@ -168,6 +180,9 @@ class AssetChooser(Gtk.Stack):
 
         if self.get_visible_child() is self.icon_pack_chooser:
             if self.icon_pack_chooser.get_visible_child_name() == "icon-chooser":
+                self.asset_manager.back_button.set_visible(True)
+        elif self.get_visible_child() is self.custom_icon_pack_chooser:
+            if self.custom_icon_pack_chooser.get_visible_child_name() == "icon-chooser":
                 self.asset_manager.back_button.set_visible(True)
         elif self.get_visible_child() is self.wallpaper_pack_chooser:
             if self.wallpaper_pack_chooser.get_visible_child_name() == "wallpaper-chooser":

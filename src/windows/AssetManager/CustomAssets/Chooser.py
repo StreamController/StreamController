@@ -54,9 +54,7 @@ class CustomAssetChooser(ChooserPage):
             self.asset_chooser = CustomAssetChooserFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
             GLib.idle_add(self.scrolled_box.prepend, self.asset_chooser)
 
-            self.browse_files_button = Gtk.Button(label=gl.lm.get("asset-chooser.custom.browse-files"), margin_top=15)
-            self.browse_files_button.connect("clicked", self.on_browse_files_clicked)
-            GLib.idle_add(self.main_box.append, self.browse_files_button)
+            GLib.idle_add(self.add_browse_files_button)
 
             self.load_defaults()
         finally:
@@ -66,9 +64,13 @@ class CustomAssetChooser(ChooserPage):
         for task in self.build_task_finished_tasks:
             task()
 
+    def add_browse_files_button(self):
+        self.browse_files_button = self.add_pill_button(gl.lm.get("asset-chooser.custom.add-button.label"))
+        self.browse_files_button.connect("clicked", self.on_browse_files_clicked)
+
     def on_dnd_accept(self, drop, user_data):
         return True
-    
+
     def on_dnd_drop(self, drop_target, value: Gdk.FileList, x, y):
         paths = value.get_files()
         self.add_files(paths)

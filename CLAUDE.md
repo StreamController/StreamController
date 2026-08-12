@@ -103,5 +103,5 @@ There is no linter or formatter configured.
 ## Conventions
 
 - Commit subjects follow `Feat: …`, `Fix: …`, `Fix(Component): …` (go-semantic-release consumes them).
-- Data path layout: `<data>/pages/`, `plugins/`, `settings/`, `Assets/`, `cache/`, `logs/`, `wallpapers/`, `icons/`.
+- Data path layout: `<data>/pages/`, `plugins/`, `settings/`, `Assets/`, `cache/`, `logs/`, `wallpapers/`, `icons/` (store icon packs), `custom_icons/` (locally created packs, see `src/backend/IconPackManagement/CustomIconPack.py`).
 - macOS is partially supported: `gl.IS_MAC` guards all D-Bus usage.

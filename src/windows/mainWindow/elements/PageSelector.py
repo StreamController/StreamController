@@ -146,7 +146,14 @@ class PageSelector(Gtk.Box):
         self.search_entry.set_text("")
         self.list_box.invalidate_filter()
         self.list_box.invalidate_sort()
-        GLib.idle_add(self.search_entry.grab_focus)
+        # Not idle_add(self.search_entry.grab_focus): grab_focus() returns True, which keeps
+        # the idle source alive - it would re-grab the focus forever, pulling the user out of
+        # every entry they click into for the rest of the session
+        GLib.idle_add(self.focus_search_entry)
+
+    def focus_search_entry(self) -> bool:
+        self.search_entry.grab_focus()
+        return GLib.SOURCE_REMOVE
 
     def on_search_changed(self, search_entry: Gtk.SearchEntry):
         self.list_box.invalidate_filter()

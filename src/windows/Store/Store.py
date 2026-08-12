@@ -37,6 +37,7 @@ import globals as gl
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.windows.Store.Plugins.PluginPage import PluginPage
 from src.windows.Store.Icons.IconPage import IconPage
+from src.windows.Store.Pages.PagesPage import PagesPage
 from src.windows.Store.StorePage import StorePage
 from src.windows.Store.Wallpapers.WallpaperPage import WallpaperPage
 
@@ -85,11 +86,13 @@ class Store(Gtk.ApplicationWindow):
         self.header.pack_start(self.back_button)
 
         self.plugin_page = PluginPage(store=self)
+        self.pages_page = PagesPage(store=self)
         self.icon_page = IconPage(store=self)
         self.wallpaper_page = WallpaperPage(store=self)
         self.sd_plus_bar_wallpaper_page = SDPlusBarWallpaperPage(store=self)
 
         self.main_stack.add_titled(self.plugin_page, "Plugins", gl.lm.get("store.plugins.section"))
+        self.main_stack.add_titled(self.pages_page, "Pages", gl.lm.get("store.pages.section"))
         self.main_stack.add_titled(self.icon_page, "Icons", gl.lm.get("store.icons.section"))
         self.main_stack.add_titled(self.wallpaper_page, "Wallpapers", gl.lm.get("store.wallpapers.section"))
         self.main_stack.add_titled(self.sd_plus_bar_wallpaper_page, "sdPlusBarWallpapers", gl.lm.get("store.sdPlusBarWallpapers.section"))

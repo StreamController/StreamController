@@ -92,12 +92,16 @@ store.plugins.section;Plugins;Plugins;Plugins;Plugins;Plugins
 store.icons.section;Icons;Icons;Icônes;Iconos;Ícones
 store.sdPlusBarWallpapers.section;SD+ Bar Wallpapers;SD+ Bar Wallpapers;SD+ Bar Wallpapers;SD+ Bar Wallpapers;SD+ Bar Wallpapers
 store.wallpapers.section;Hintergründe;Wallpapers;Fonds d'écrans;Fondos de pantalla;Papéis de Parede
+store.pages.section;Seiten;Pages;;;
 store.badges.label.warning;Warnung;Warning;Avertissement;Advertencia;Aviso
 store.badges.label.official;Offiziell;Official;Officiel;Oficial;Oficial
 store.badges.label.verified;Verifiziert;Verified;Vérifié;Verificado;Verificado
 store.badges.icon.warning;Dieses Icon-Pack wurde manuell hinzugefügt.\nSeien Sie vorsichtig mit Inhalten aus Drittquellen.;This icon pack was added manually.\nBe cautious with third-party content.;Ce pack d'icônes a été ajouté manuellement.\nSoyez prudent avec les sources tierces.;Este paquete de iconos se agregó manualmente.\nTenga cuidado con contenido de terceros.;Este pacote de ícones foi adicionado manualmente.\nTenha cuidado com conteúdo de terceiros.
 store.badges.icon.official;Dieses Icon-Pack wurde von den offiziellen Entwicklern der App erstellt.;This icon pack is made by the official developers of the app.;Ce pack d'icônes a été créé par les développeurs officiels de l'application.;Este paquete de iconos fue creado por los desarrolladores oficiales de la aplicación.;Este pacote de ícones foi feito pelos desenvolvedores oficiais do aplicativo.
 store.badges.icon.verified;Dieses Icon-Pack wurde vom Hauptentwickler der App überprüft und freigegeben.;This icon pack has been reviewed and approved by the main developer of the app.;Ce pack d'icônes a été vérifié et approuvé par le développeur principal de l'application.;Este paquete de iconos ha sido verificado y aprobado por el desarrollador principal de la aplicación.;Este pacote de ícones foi revisado e aprovado pelo desenvolvedor principal do aplicativo.
+store.badges.page.warning;Diese Seite wurde manuell hinzugefügt.\nSeien Sie vorsichtig mit Inhalten aus Drittquellen.;This page was added manually.\nBe cautious with third-party content.;;;
+store.badges.page.official;Diese Seite wurde von den offiziellen Entwicklern der App erstellt.;This page is made by the official developers of the app.;;;
+store.badges.page.verified;Diese Seite wurde vom Hauptentwickler der App überprüft und freigegeben.;This page has been reviewed and approved by the main developer of the app.;;;
 store.badges.plugin.warning;Dieses Plugin wurde manuell hinzugefügt.\nSeien Sie vorsichtig mit Plugins aus Drittquellen.\nÜberprüfen Sie stets deren Herkunft und Sicherheit.;This plugin was added manually.\nBe cautious with third-party plugins.\nAlways verify their origin and safety.;Ce plugin a été ajouté manuellement.\nSoyez prudent avec les plugins tiers.\nVérifiez toujours leur origine et leur sécurité.;Este plugin se agregó manualmente.\nTenga cuidado con los plugins de terceros.\nSiempre verifique su origen y seguridad.;Este plugin foi adicionado manualmente.\nTenha cuidado com plugins de terceiros.\nSempre verifique sua origem e segurança.
 store.badges.plugin.official;Dieses Plugin wurde von den offiziellen Entwicklern der App bereitgestellt.;This plugin is provided by the official developers of the app.;Ce plugin est fourni par les développeurs officiels de l'application.;Este plugin es proporcionado por los desarrolladores oficiales de la aplicación.;Este plugin é fornecido pelos desenvolvedores oficiais do aplicativo.
 store.badges.plugin.verified;Dieses Plugin wurde vom Hauptentwickler der App überprüft und freigegeben.;This plugin has been reviewed and approved by the main developer of the app.;Ce plugin a été vérifié et approuvé par le développeur principal de l'application.;Este plugin ha sido verificado y aprobado por el desarrollador principal de la aplicación.;Este plugin foi revisado e aprovado pelo desenvolvedor principal do aplicativo.
@@ -111,6 +115,18 @@ quit;Beenden;Quit;Quitter;Salir de;Sair
 store.plugins.search-placeholder;Nach Plugins suchen;Search for plugins;Recherchez des plugins;Buscar plugins;Buscar por plugins
 store.icons.search-placeholder;Nach Icons suchen;Search for icons;Recherchez des icônes;Buscar iconos;Buscar por ícones
 store.wallpapers.search-placeholder;Nach Hintergründen suchen;Search for wallpapers;Recherchez des fonds d'écran;Buscar fondos de pantalla;Buscar por papéis de parede
+store.pages.search-placeholder;Nach Seiten suchen;Search for pages;;;
+store.pages.uninstall-confirm.title;Seite löschen;Delete Page;;;
+store.pages.uninstall-confirm.body;Sind Sie sicher, dass Sie folgende Seite löschen wollen: ;Are you sure you want to delete the page: ;;;
+store.pages.uninstall-confirm.confirm;Löschen;Delete;;;
+store.pages.update-confirm.title;Seite aktualisieren;Update Page;;;
+store.pages.update-confirm.body;Die installierte Seite wird durch die Version aus dem Store ersetzt. Eigene Änderungen an dieser Seite gehen dabei verloren.;The installed page will be replaced by the version from the store. Your own changes to that page will be lost.;;;
+store.pages.update-confirm.confirm;Aktualisieren;Update;;;
+store.pages.cant-uninstall-last.title;Seite kann nicht gelöscht werden;Cannot Delete Page;;;
+store.pages.cant-uninstall-last.body;Dies ist Ihre letzte Seite. Legen Sie zuerst eine weitere Seite an.;This is your last page. Create another page first.;;;
+store.pages.confirm.cancel;Abbrechen;Cancel;;;
+store.pages.confirm.ok;OK;OK;;;
+store.info.deck-row.title;Gemacht für:;Made for:;;;
 onboarding.welcome.header;Willkommen bei StreamController!;Welcome To StreamController!;Bienvenue chez StreamController !;Bienvenido a StreamController;Bem-vindo ao StreamController!
 onboarding.welcome.details;Die Linux App für das Elgato Stream Deck;The Linux app for the Elgato Stream Deck;L'application Linux pour le Stream Deck d'Elgato;La aplicación Linux para Elgato Stream Deck;O aplicativo Linux para o Elgato Stream Deck
 onboarding.store.header;Asset Store;Asset Store;Magasin de ressources;Tienda;Loja de Ativos

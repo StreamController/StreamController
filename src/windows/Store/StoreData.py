@@ -53,6 +53,14 @@ class WallpaperData(StoreData, ImageData, LicenceData):
     wallpaper_id: str | None = None # Icon ID in the com.author.name format
 
 @dataclass
+class PageData(StoreData, ImageData, LicenceData):
+    page_name: str | None = None # Name of the page
+    page_version: str | None = None # Version of the page
+    page_id: str | None = None # Page ID in the com.author.name format
+    page_path: str | None = None # Path of the .scpage inside the repository
+    deck: dict | None = None # The deck the page was made for, only shown to the user
+
+@dataclass
 class SDPlusBarWallpaperData(StoreData, ImageData, LicenceData):
     name: str | None = None # Name of the SD+ Bar wallpaper
     version: str | None = None # Version of the SD+ Bar wallpaper

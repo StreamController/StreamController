@@ -67,6 +67,10 @@ class InfoPage(Gtk.Box):
         self.version_row = AttributeRow(title="Version:", attr="Error")
         self.about_group.add(self.version_row)
 
+        # Only used by content that is made for a specific deck layout
+        self.deck_row = AttributeRow(title=gl.lm.get("store.info.deck-row.title"), attr="N/A", visible=False)
+        self.about_group.add(self.deck_row)
+
         # TODO: Enable in the future
         #self.stargazer_row = AttributeRow(title="Stargazers:", attr="0")
         #self.about_group.add(self.stargazer_row)
@@ -114,6 +118,30 @@ class InfoPage(Gtk.Box):
 
     def set_version(self, version:str):
         self.version_row.set_url(version)
+
+    def set_deck_info(self, deck: dict):
+        """
+        Shows the deck layout the content was made for. Purely informational,
+        nothing is hidden or blocked because of it.
+        """
+        if not isinstance(deck, dict):
+            self.deck_row.set_visible(False)
+            return
+
+        parts = []
+        if deck.get("rows") and deck.get("columns"):
+            parts.append(f"{deck['rows']}×{deck['columns']} keys")
+        if deck.get("dials"):
+            parts.append(f"{deck['dials']} dials")
+        if deck.get("touchscreen"):
+            parts.append("touchscreen")
+
+        if not parts:
+            self.deck_row.set_visible(False)
+            return
+
+        self.deck_row.set_url(", ".join(parts))
+        self.deck_row.set_visible(True)
 
     def set_license(self, license:str):
         self.license_row.set_url(license)

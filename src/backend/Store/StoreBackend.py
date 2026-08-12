@@ -26,6 +26,7 @@ from datetime import datetime
 import subprocess
 import time
 import os
+import posixpath
 import uuid
 import shutil
 import threading
@@ -46,7 +47,9 @@ from src.Signals import Signals
 
 # Import globals
 import globals as gl
-from src.windows.Store.StoreData import PluginData, IconData, SDPlusBarWallpaperData, WallpaperData
+from src.windows.Store.StoreData import PageData, PluginData, IconData, SDPlusBarWallpaperData, WallpaperData
+from src.backend.PageManagement import StorePages
+from src.backend.PageManagement.PageBundle import PAGE_EXTENSION
 
 
 class NoConnectionError:
@@ -68,12 +71,16 @@ class StoreBackend:
     PLUGIN_FILE = "Plugins.json"
     ICON_FILE = "Icons.json"
     SDPLUSWALLPAPERS_FILE = "SDPlusBarWallpapers.json"
+    PAGES_FILE = "Pages.json"
 
 
     def __init__(self):
         self.store_cache = StoreCache()
 
         self.official_store_branch_cache: str = None
+
+        # {store id: installed commit}, refreshed by get_all_pages
+        self.installed_page_commits: dict[str, str] = {}
 
         # Set default fallback official authors
         self.official_authors = ["Core447", "StreamController"]
@@ -325,7 +332,7 @@ class StoreBackend:
             log.error(e)
             return None, n_stores_with_errors
 
-    async def process_store_data(self, filename: str, process_func: callable, get_custom_func: callable, data_class, include_images=True):
+    async def process_store_data(self, filename: str, process_func: callable, get_custom_func: callable, data_class, include_images=True, flatten_func: callable = None):
         n_stores_with_errors = 0
         data_list = []
 
@@ -338,6 +345,10 @@ class StoreBackend:
 
         if n_stores_with_errors >= len(stores):
             return NoConnectionError()
+
+        if flatten_func is not None:
+            # Not every store file has one asset per entry
+            data_list = flatten_func(data_list)
 
         prepare_tasks = [process_func({"custom": False, **data}, include_images, True) for data in data_list]
 
@@ -366,7 +377,35 @@ class StoreBackend:
     
     async def get_all_sd_plus_bar_wallpapers(self) -> int:
         return await self.process_store_data(self.SDPLUSWALLPAPERS_FILE, self.prepare_sd_plus_bar_wallpaper, None, SDPlusBarWallpaperData)
-    
+
+    async def get_all_pages(self) -> int:
+        # Scanned once instead of per entry, prepare_page would otherwise read every
+        # page of the user for every page in the store
+        self.installed_page_commits = StorePages.get_installed_commits()
+
+        return await self.process_store_data(self.PAGES_FILE, self.prepare_page, None, PageData,
+                                             flatten_func=self.flatten_page_entries)
+
+    @staticmethod
+    def flatten_page_entries(entries: list[dict]) -> list[dict]:
+        """
+        Pages.json groups the pages by repository because a repo can hold several of
+        them, each pinned to its own commit. The store works on single pages.
+        """
+        pages = []
+
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            url = entry.get("url")
+            for page in entry.get("pages") or []:
+                if not isinstance(page, dict):
+                    continue
+                pages.append({"url": url, **page})
+
+        return pages
+
+
     async def get_manifest(self, url:str, commit:str) -> dict:
         # url = self.build_url(url, "manifest.json", commit)
         manifest = await self.get_remote_file(url, "manifest.json", commit)
@@ -723,6 +762,107 @@ class StoreBackend:
             verified=verified
         )
 
+    def get_page_manifest_path(self, page_path: str) -> str:
+        """The manifest of a page sits next to it and carries the same name."""
+        return f"{os.path.splitext(page_path)[0]}.manifest.json"
+
+    async def get_page_manifest(self, url: str, page_path: str, commit: str) -> dict:
+        manifest = await self.get_remote_file(url, self.get_page_manifest_path(page_path), commit)
+        if isinstance(manifest, NoConnectionError):
+            return manifest
+        if manifest is None:
+            return
+        try:
+            return json.loads(manifest)
+        except (json.decoder.JSONDecodeError, TypeError) as e:
+            log.error(f"Failed to parse the manifest of {page_path}: {e}")
+            return
+
+    def resolve_page_thumbnail(self, page_path: str, thumbnail: str) -> str:
+        """
+        Thumbnails of a page are relative to the folder the page is in, because a repo
+        can hold many pages. A leading slash means relative to the repository root.
+        """
+        if thumbnail is None:
+            return
+        if thumbnail.startswith("/"):
+            return thumbnail.lstrip("/")
+
+        return posixpath.normpath(posixpath.join(posixpath.dirname(page_path), thumbnail))
+
+    async def prepare_page(self, page, include_image: bool = True, verified: bool = False):
+        if not include_image:
+            raise NotImplementedError("Not yet implemented") #TODO
+        if "url" not in page:
+            return None
+
+        url = page["url"]
+
+        page_path = page.get("path")
+        if not isinstance(page_path, str) or not page_path.endswith(PAGE_EXTENSION):
+            return None
+
+        commit = page.get("commit")
+        if commit is None:
+            return None
+
+        manifest = await self.get_page_manifest(url, page_path, commit)
+        if isinstance(manifest, NoConnectionError):
+            return manifest
+        if manifest is None:
+            return None
+
+        thumbnail_path = self.resolve_page_thumbnail(page_path, manifest.get("thumbnail"))
+        image = await self.get_web_image(url, thumbnail_path, commit)
+        if isinstance(image, NoConnectionError):
+            return image
+
+        # Pages do not have their own attribution, they use the one of the repository they live in
+        attribution = await self.get_attribution(url, commit)
+        if isinstance(attribution, NoConnectionError):
+            return attribution
+        attribution = attribution.get("generic", {})
+
+        author = self.get_user_name(url)
+
+        translated_description = gl.lm.get_custom_translation(manifest.get("descriptions", {}))
+        translated_short_description = gl.lm.get_custom_translation(manifest.get("short-descriptions", {}))
+
+        return PageData(
+            description=translated_description or manifest.get("description"),
+            short_description=translated_short_description or manifest.get("short-description"),
+
+            github=url or None,
+            descriptions=manifest.get("descriptions") or None,
+            short_descriptions=manifest.get("short-descriptions") or None,
+            author=author or None,
+            official=author in self.official_authors or False,
+            commit_sha=commit,
+            # Pages are not repositories, the installed commit is stored in the page itself
+            local_sha=self.installed_page_commits.get(manifest.get("id")),
+            minimum_app_version=manifest.get("minimum-app-version") or None,
+            app_version=manifest.get("app-version") or None,
+            repository_name=self.get_repo_name(url),
+            tags=manifest.get("tags") or None,
+
+            thumbnail=thumbnail_path or None,
+            image=image or None,
+
+            copyright=attribution.get("copyright") or None,
+            original_url=attribution.get("original-url") or None,
+            license=attribution.get("licence") or None,
+            license_descriptions=attribution.get("licence-descriptions", attribution.get("descriptions")) or None,
+
+            page_name=manifest.get("name") or None,
+            page_version=manifest.get("version") or None,
+            page_id=manifest.get("id") or None,
+            page_path=page_path,
+            deck=manifest.get("deck") or None,
+
+            is_compatible=True,
+            verified=verified
+        )
+
     async def get_web_image(self, url: str, path: str, branch: str = "main") -> Image:
         try:
             result = await self.get_remote_file(url, path, branch, data_type="content")
@@ -1030,6 +1170,35 @@ class StoreBackend:
                     # Load action objects
                     controller.active_page.load_action_objects()
                     controller.load_page(controller.active_page)
+
+    async def download_page(self, page_data:PageData) -> str:
+        """
+        Downloads the .scpage of the given store page and returns the local path.
+        A page is a single file, so there is no repository to clone - the caller
+        hands the bundle to the importer which unpacks it and installs what it needs.
+        """
+        url = self.build_url(page_data.github, page_data.page_path, page_data.commit_sha)
+
+        answer = await self.request_from_url(url)
+        if isinstance(answer, NoConnectionError) or answer is None:
+            log.error(f"Failed to download page {page_data.page_id}")
+            return
+
+        file_name = f"{page_data.page_id}-{page_data.commit_sha}{PAGE_EXTENSION}"
+        path = os.path.join(gl.DATA_PATH, "cache", file_name)
+
+        with atomic_write(path, mode="wb") as f:
+            f.write(answer.content)
+
+        return path
+
+    async def get_page_for_id(self, page_id):
+        pages = await self.get_all_pages()
+        if isinstance(pages, NoConnectionError):
+            return
+        for page in pages:
+            if page.page_id == page_id:
+                return page
 
     async def install_icon(self, icon_data:IconData):
         icon_path = os.path.join(gl.DATA_PATH, "icons", icon_data.icon_id)

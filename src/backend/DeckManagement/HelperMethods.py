@@ -155,6 +155,20 @@ def is_image(path: str) -> bool:
     return False
 
 
+def get_folder_media_paths(folder_path: str) -> list[str]:
+    """All images and videos directly inside folder_path, sorted by file name."""
+    if folder_path in [None, ""] or not os.path.isdir(folder_path):
+        return []
+
+    paths: list[str] = []
+    for name in sorted(os.listdir(folder_path)):
+        path = os.path.join(folder_path, name)
+        if is_image(path) or is_video(path):
+            paths.append(path)
+
+    return paths
+
+
 def is_svg(path: str) -> bool:
     if path is None:
         return False

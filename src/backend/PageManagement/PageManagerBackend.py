@@ -575,7 +575,7 @@ class PageManagerBackend:
         page_settings = self.get_page_settings(path)
         return page_settings.get("screensaver", {})
 
-    def set_screensaver_settings(self, path: str, overwrite: bool = False, enable: bool = False, time_delay: int = 5, loop: bool = False, fps: int = 30, brightness: float = 75, media_path: str = ""):
+    def set_screensaver_settings(self, path: str, overwrite: bool = False, enable: bool = False, time_delay: int = 5, loop: bool = False, fps: int = 30, brightness: float = 75, media_path: str = "", source: str = "file", folder_path: str = "", rotation_interval: int = 5):
         settings = self.get_page_settings(path)
 
         settings["screensaver"] = {
@@ -585,12 +585,15 @@ class PageManagerBackend:
             "loop": loop,
             "fps": fps,
             "brightness": brightness,
-            "media-path": media_path
+            "media-path": media_path,
+            "source": source,
+            "folder-path": folder_path,
+            "rotation-interval": rotation_interval
         }
 
         self.set_page_settings(path, settings)
 
-    def overwrite_screensaver_settings(self, path: str, overwrite: bool = None, enable: bool = None, time_delay: int = None, loop: bool = None, fps: int = None, brightness: float = None, media_path: str = None):
+    def overwrite_screensaver_settings(self, path: str, overwrite: bool = None, enable: bool = None, time_delay: int = None, loop: bool = None, fps: int = None, brightness: float = None, media_path: str = None, source: str = None, folder_path: str = None, rotation_interval: int = None):
         settings = self.get_page_settings(path)
         screensaver_settings = settings.get("screensaver", {})
 
@@ -608,6 +611,12 @@ class PageManagerBackend:
             screensaver_settings["brightness"] = brightness
         if media_path is not None:
             screensaver_settings["media-path"] = media_path
+        if source is not None:
+            screensaver_settings["source"] = source
+        if folder_path is not None:
+            screensaver_settings["folder-path"] = folder_path
+        if rotation_interval is not None:
+            screensaver_settings["rotation-interval"] = rotation_interval
 
         settings["screensaver"] = screensaver_settings
         self.set_page_settings(path, settings)
@@ -642,7 +651,7 @@ class PageManagerBackend:
         page_settings = self.get_page_settings(path)
         return page_settings.get("background", {})
 
-    def set_background_settings(self, path: str, overwrite: bool = False, show: bool = False, fps: int = 30, loop: bool = False, media_path: str = ""):
+    def set_background_settings(self, path: str, overwrite: bool = False, show: bool = False, fps: int = 30, loop: bool = False, media_path: str = "", source: str = "file", folder_path: str = "", rotation_interval: int = 5):
         settings = self.get_page_settings(path)
 
         settings["background"] = {
@@ -650,12 +659,15 @@ class PageManagerBackend:
             "show": show,
             "fps": fps,
             "loop": loop,
-            "media-path": media_path
+            "media-path": media_path,
+            "source": source,
+            "folder-path": folder_path,
+            "rotation-interval": rotation_interval
         }
 
         self.set_page_settings(path, settings)
 
-    def overwrite_background_settings(self, path: str, overwrite: bool = None, show: bool = None, fps: int = None, loop: bool = None, media_path: str = None):
+    def overwrite_background_settings(self, path: str, overwrite: bool = None, show: bool = None, fps: int = None, loop: bool = None, media_path: str = None, source: str = None, folder_path: str = None, rotation_interval: int = None):
         settings = self.get_page_settings(path)
         background_settings = settings.get("background", {})
 
@@ -669,6 +681,12 @@ class PageManagerBackend:
             background_settings["loop"] = loop
         if media_path is not None:
             background_settings["media-path"] = media_path
+        if source is not None:
+            background_settings["source"] = source
+        if folder_path is not None:
+            background_settings["folder-path"] = folder_path
+        if rotation_interval is not None:
+            background_settings["rotation-interval"] = rotation_interval
 
         settings["background"] = background_settings
         self.set_page_settings(path, settings)

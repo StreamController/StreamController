@@ -251,3 +251,9 @@ store.info.source.store-version;Store-Version (empfohlen);Store Version (Recomme
 store.info.source.confirm.title;Quelle wechseln?;Switch Source?;Changer de source ?;¿Cambiar fuente?;Mudar fonte?
 store.info.source.confirm.body;Du wechselst zu "{ref}". Alles außer der offiziellen Store-Version ist unverifiziert und kann unsicher sein. Nutzung auf eigene Gefahr.;You are switching to "{ref}". Everything besides the official store version is unverified and can be unsafe. Use at your own risk.;Vous passez à "{ref}". Tout ce qui n'est pas la version officielle du magasin est non vérifié et peut être dangereux. À utiliser à vos risques et périls.;Vas a cambiar a "{ref}". Todo lo que no sea la versión oficial de la tienda no está verificado y puede ser inseguro. Úselo bajo su propio riesgo.;Você está mudando para "{ref}". Tudo, exceto a versão oficial da loja, não é verificado e pode ser inseguro. Use por sua conta e risco.
 store.info.source.confirm.confirm;Trotzdem wechseln;Switch Anyway;Changer quand même;Cambiar de todos modos;Mudar mesmo assim
+media-source;Quelle;Source;Source;Fuente;Fonte
+media-source.single;Einzelnes Asset;Single Asset;Ressource unique;Recurso único;Ativo único
+media-source.folder;Ordner;Folder;Dossier;Carpeta;Pasta
+media-source.rotation-interval;Wechseln alle (Minuten);Change Every (Minutes);Changer toutes les (minutes);Cambiar cada (minutos);Mudar a cada (minutos)
+media-source.no-folder-selected;Kein Ordner ausgewählt;No folder selected;Aucun dossier sélectionné;Ninguna carpeta seleccionada;Nenhuma pasta selecionada
+media-source.media-count;{count} Dateien;{count} files;{count} fichiers;{count} archivos;{count} arquivos

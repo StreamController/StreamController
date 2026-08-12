@@ -710,6 +710,7 @@ class DeckController:
         self.init_inputs()
 
         self.background = Background(self)
+        self.background_rotation = BackgroundRotation(self)
 
         self.deck.set_key_callback(self.key_event_callback)
         self.deck.set_dial_callback(self.dial_event_callback)
@@ -1044,23 +1045,40 @@ class DeckController:
         else:
             config = {}
 
+        source = config.get("source", "file")
+        folder_path = config.get("folder-path")
+        rotation_interval = int(config.get("rotation-interval", 5))
+
         background_signature = (
             bool(config.get("media-path")),
             config.get("media-path"),
             bool(config.get("loop", False)),
             int(config.get("fps", 30)),
+            source,
+            folder_path,
+            rotation_interval,
         )
         if not force_reload and background_signature == self._last_background_signature:
             log.debug(f"[page-switch-phase] deck={self.safe_serial_number()} phase=background skip=unchanged")
             return
         self._last_background_signature = background_signature
 
-        self.background.set_from_path(
-            path=config.get("media-path"),
-            update=update,
-            loop=config.get("loop", False),
-            fps=config.get("fps", 30),
-        )
+        if source == "folder" and folder_path:
+            self.background_rotation.start(
+                folder_path=folder_path,
+                interval=rotation_interval,
+                loop=config.get("loop", False),
+                fps=config.get("fps", 30),
+                update=update,
+            )
+        else:
+            self.background_rotation.stop()
+            self.background.set_from_path(
+                path=config.get("media-path"),
+                update=update,
+                loop=config.get("loop", False),
+                fps=config.get("fps", 30),
+            )
         log.debug(f"[page-switch-phase] deck={self.safe_serial_number()} phase=background ms={(time.time() - start) * 1000:.1f}")
 
     @log.catch
@@ -1102,11 +1120,19 @@ class DeckController:
             bool(config.get("loop", False)),
             int(config.get("fps", 30)),
             int(config.get("brightness", 30)),
+            config.get("source", "file"),
+            config.get("folder-path"),
+            int(config.get("rotation-interval", 5)),
         )
         if screensaver_signature == self._last_screensaver_signature:
             log.debug(f"[page-switch-phase] deck={self.safe_serial_number()} phase=screensaver skip=unchanged")
             return
         self._last_screensaver_signature = screensaver_signature
+
+        # Before the media path, so a path change already applies the new source
+        self.screen_saver.set_source(config.get("source", "file"))
+        self.screen_saver.set_folder_path(config.get("folder-path"))
+        self.screen_saver.set_rotation_interval(config.get("rotation-interval", 5))
 
         self.screen_saver.set_media_path(config.get("media-path"))
         self.screen_saver.set_enable(config.get("enable", False))
@@ -1508,6 +1534,8 @@ class DeckController:
             self.media_player.stop()
         if hasattr(self, "input_load_executor"):
             self.input_load_executor.shutdown(wait=False, cancel_futures=True)
+        if hasattr(self, "background_rotation"):
+            self.background_rotation.stop()
         if hasattr(self, "background"):
             if getattr(self.background, "video", None) is not None:
                 self.background.video.close()
@@ -1525,6 +1553,80 @@ class DeckController:
         except Exception as e:
             log.debug(f"Cougth dead deck error. Error: {e}")
             return False
+
+class BackgroundRotation:
+    """
+    Cycles the background through the media files of a folder.
+
+    The switch itself is queued as a media player task so it happens on the same
+    thread as every other background change - the timer thread must not touch the
+    background on its own.
+    """
+    def __init__(self, deck_controller: DeckController):
+        self.deck_controller = deck_controller
+
+        self.folder_path: str = None
+        self.interval: int = 5 # In minutes
+        self.loop: bool = False
+        self.fps: int = 30
+
+        self.index: int = 0
+        self.timer: Timer = None
+        self.lock = threading.Lock()
+
+    def start(self, folder_path: str, interval: int, loop: bool = False, fps: int = 30, update: bool = True) -> None:
+        with self.lock:
+            if folder_path != self.folder_path:
+                self.index = 0
+            self.folder_path = folder_path
+            self.interval = max(1, int(interval))
+            self.loop = loop
+            self.fps = fps
+
+        self.show_current(update=update)
+        self.restart_timer()
+
+    def stop(self) -> None:
+        with self.lock:
+            self.folder_path = None
+            if self.timer is not None:
+                self.timer.cancel()
+                self.timer = None
+
+    def get_current_path(self) -> str:
+        paths = get_folder_media_paths(self.folder_path)
+        if len(paths) == 0:
+            return None
+        return paths[self.index % len(paths)]
+
+    def show_current(self, update: bool = True) -> None:
+        self.deck_controller.background.set_from_path(
+            path=self.get_current_path(),
+            update=update,
+            loop=self.loop,
+            fps=self.fps,
+        )
+
+    def restart_timer(self) -> None:
+        with self.lock:
+            if self.timer is not None:
+                self.timer.cancel()
+                self.timer = None
+            if self.folder_path is None:
+                return
+
+            self.timer = Timer(self.interval * 60, self.on_timer)
+            self.timer.daemon = True
+            self.timer.start()
+
+    def on_timer(self) -> None:
+        self.index += 1
+        # The screen saver owns the background while it is showing. Skipping keeps it
+        # from being painted over - hide() reloads the page and picks the new index up.
+        if not self.deck_controller.screen_saver.showing:
+            self.deck_controller.media_player.add_task(self.show_current, task_label="rotate_background")
+        self.restart_timer()
+
 
 class Background:
     def __init__(self, deck_controller: DeckController):

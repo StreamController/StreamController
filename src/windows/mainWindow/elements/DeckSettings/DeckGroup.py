@@ -16,7 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import os
 import gi
 
-from GtkHelper.GtkHelper import better_disconnect
+from GtkHelper.GtkHelper import better_disconnect, let_user_select_folder
+from GtkHelper.MediaSourceControls import DEFAULT_INTERVAL, SOURCE_FILE, SOURCE_FOLDER, PlainMediaSourceControls
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
@@ -228,14 +229,22 @@ class Screensaver(Adw.PreferencesRow):
         self.time_spinner = Gtk.SpinButton.new_with_range(1, 24*60, 1)
         self.time_box.append(self.time_spinner)
 
+        self.media_source = PlainMediaSourceControls()
+        self.media_source.source_widget.set_margin_top(15)
+        self.config_box.append(self.media_source.source_widget)
+
         self.media_selector_label = Gtk.Label(label=gl.lm.get("deck.deck-group.media-to-show"), hexpand=True, xalign=0)
         self.config_box.append(self.media_selector_label)
 
-        self.media_selector_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, halign=Gtk.Align.CENTER)
+        self.media_selector_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER)
         self.config_box.append(self.media_selector_box)
 
         self.media_selector_button = Gtk.Button(label=gl.lm.get("deck.deck-group.media-select-label"), css_classes=["page-settings-media-selector"])
         self.media_selector_box.append(self.media_selector_button)
+
+        self.media_selector_box.append(self.media_source.folder_label)
+
+        self.config_box.append(self.media_source.interval_widget)
 
         self.progress_bar = Gtk.ProgressBar(hexpand=True, margin_top=10, text=gl.lm.get("background.processing"), fraction=0, show_text=True, visible=False)
         self.config_box.append(self.progress_bar)
@@ -274,6 +283,7 @@ class Screensaver(Adw.PreferencesRow):
     def connect_signals(self) -> None:
         self.enable_switch.connect("state-set", self.on_toggle_enable)
         self.time_spinner.connect("value-changed", self.on_change_time)
+        self.media_source.connect_signals(self.on_change_source, self.on_change_interval)
         self.media_selector_button.connect("clicked", self.on_choose_image)
         self.loop_switch.connect("state-set", self.on_toggle_loop)
         self.fps_spinner.connect("value-changed", self.on_change_fps)
@@ -282,6 +292,7 @@ class Screensaver(Adw.PreferencesRow):
     def disconnect_signals(self) -> None:
         self.enable_switch.disconnect_by_func(self.on_toggle_enable)
         self.time_spinner.disconnect_by_func(self.on_change_time)
+        self.media_source.disconnect_signals(self.on_change_source, self.on_change_interval)
         self.media_selector_button.disconnect_by_func(self.on_choose_image)
         self.loop_switch.disconnect_by_func(self.on_toggle_loop)
         self.fps_spinner.disconnect_by_func(self.on_change_fps)
@@ -294,11 +305,14 @@ class Screensaver(Adw.PreferencesRow):
         # Set defaut values 
         original_values.setdefault("screensaver", {})
         enable = original_values["screensaver"].setdefault("enable", False)
-        path = original_values["screensaver"].setdefault("media-path", None)
+        original_values["screensaver"].setdefault("media-path", None)
         loop = original_values["screensaver"].setdefault("loop", False)
         fps = original_values["screensaver"].setdefault("fps", 30)
         time = original_values["screensaver"].setdefault("time-delay", 5)
         brightness = original_values["screensaver"].setdefault("brightness", 30)
+        source = original_values["screensaver"].setdefault("source", SOURCE_FILE)
+        original_values["screensaver"].setdefault("folder-path", "")
+        interval = original_values["screensaver"].setdefault("rotation-interval", DEFAULT_INTERVAL)
 
         # Save if changed
         if original_values != gl.settings_manager.get_deck_settings(self.deck_serial_number):
@@ -311,12 +325,57 @@ class Screensaver(Adw.PreferencesRow):
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
         self.scale.set_value(brightness)
-
-        if path is not None:
-            if os.path.isfile(path):
-                self.set_thumbnail(path)
+        self.media_source.set_interval(interval)
+        self.media_source.set_source(source)
+        self.update_source_ui()
 
         self.connect_signals()
+
+    def get_source(self) -> str:
+        return self.media_source.get_source()
+
+    def update_source_ui(self):
+        """Show the widgets belonging to the selected source and preview it."""
+        settings = gl.settings_manager.get_deck_settings(self.deck_serial_number).get("screensaver", {})
+
+        self.set_thumbnail(self.media_source.update_for(
+            source=self.get_source(),
+            folder_path=settings.get("folder-path", ""),
+            media_path=settings.get("media-path", None),
+        ))
+
+    def on_change_source(self, *args):
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
+        config["screensaver"]["source"] = self.get_source()
+        # Save
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        self.update_source_ui()
+        self.reload_screensaver()
+
+    def on_change_interval(self, *args):
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
+        config["screensaver"]["rotation-interval"] = self.media_source.get_interval()
+        # Save
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        self.reload_screensaver()
+
+    def update_folder(self, folder_path):
+        config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        config.setdefault("screensaver", {})
+        config["screensaver"]["folder-path"] = folder_path
+        # Save
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, config)
+
+        self.update_source_ui()
+        self.reload_screensaver()
+
+    def reload_screensaver(self):
+        deck_controller = self.settings_page.deck_controller
+        deck_controller.load_screensaver(deck_controller.active_page)
 
     def on_toggle_enable(self, toggle_switch, state):
         config = gl.settings_manager.get_deck_settings(self.deck_serial_number)
@@ -379,9 +438,8 @@ class Screensaver(Adw.PreferencesRow):
             self.settings_page.deck_controller.screen_saver.set_brightness(scale.get_value())
 
     def set_thumbnail(self, file_path):
-        if file_path == None:
-            return
-        if not os.path.isfile(file_path):
+        if file_path in [None, ""] or not os.path.isfile(file_path):
+            self.media_selector_button.set_label(gl.lm.get("deck.deck-group.media-select-label"))
             return
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)
@@ -393,6 +451,11 @@ class Screensaver(Adw.PreferencesRow):
     def on_choose_image(self, button):
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("screensaver", {})
+
+        if self.get_source() == SOURCE_FOLDER:
+            let_user_select_folder(callback=self.update_folder, initial_folder=settings["screensaver"].setdefault("folder-path", ""), parent=self.get_root())
+            return
+
         media_path = settings["screensaver"].get("media-path", None)
 
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.update_image)

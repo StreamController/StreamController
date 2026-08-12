@@ -59,8 +59,12 @@ class CustomAssetChooserFlowBox(Gtk.Box):
         GLib.idle_add(self.append, self.flow_box)
 
         for asset in gl.asset_manager_backend.get_all():
-            asset = AssetPreview(flow=self, asset=asset, width_request=100, height_request=100)
-            GLib.idle_add(self.flow_box.append, asset)
+            try:
+                preview = AssetPreview(flow=self, asset=asset, width_request=100, height_request=100)
+            except Exception as e:
+                log.warning(f"Failed to build asset preview for {asset.get('internal-path')}: {e}")
+                continue
+            GLib.idle_add(self.flow_box.append, preview)
 
     def show_for_path(self, path):
         i = 0

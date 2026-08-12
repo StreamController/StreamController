@@ -113,10 +113,12 @@ class MissingRow(Adw.PreferencesRow):
         threading.Timer(3, self.hide_install_error).start()
 
     def hide_install_error(self):
-        self.label.set_text(self.install_label)
-        self.remove_css_class("error")
-        self.set_sensitive(True)
-        self.main_button.set_sensitive(True)
+        # Runs on a threading.Timer thread; GTK calls must go through the
+        # main loop.
+        GLib.idle_add(self.label.set_text, self.install_label)
+        GLib.idle_add(self.remove_css_class, "error")
+        GLib.idle_add(self.set_sensitive, True)
+        GLib.idle_add(self.main_button.set_sensitive, True)
 
     def on_remove_click(self, button):
         controller = gl.app.main_win.leftArea.deck_stack.get_visible_child().deck_controller

@@ -16,13 +16,11 @@ from datetime import datetime
 from functools import lru_cache
 import hashlib
 from io import BytesIO
-import multiprocessing
 import os
 import subprocess
 import matplotlib.font_manager
 import sys
 import math
-import json
 import requests
 import cairosvg
 import re
@@ -35,7 +33,9 @@ from gi.repository import Gdk, Pango
 
 # Import globals
 from autostart import is_flatpak
+from loguru import logger as log
 import globals as gl
+from src.backend.Utils.AtomicSaveUtils import atomic_write, atomic_save_json
 
 
 def sha256(text: str) -> str:
@@ -155,6 +155,20 @@ def is_image(path: str) -> bool:
     return False
 
 
+def get_folder_media_paths(folder_path: str) -> list[str]:
+    """All images and videos directly inside folder_path, sorted by file name."""
+    if folder_path in [None, ""] or not os.path.isdir(folder_path):
+        return []
+
+    paths: list[str] = []
+    for name in sorted(os.listdir(folder_path)):
+        path = os.path.join(folder_path, name)
+        if is_image(path) or is_video(path):
+            paths.append(path)
+
+    return paths
+
+
 def is_svg(path: str) -> bool:
     if path is None:
         return False
@@ -172,15 +186,11 @@ def get_image_aspect_ratio(img: Image) -> str:
 
 
 def create_empty_json(path: str, ignore_present: bool = False):
-    # Create all dirs
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-
     if not ignore_present and os.path.exists(path):
         return
 
     # Write empty json
-    with open(path, "w") as f:
-        json.dump({}, f, indent=4)
+    atomic_save_json(path, {})
 
 
 def get_file_name_from_url(url: str):
@@ -216,11 +226,8 @@ def download_file(url: str, path: str = "", file_name: str = None) -> str:
 
     path = os.path.join(path, file_name)
 
-    if os.path.dirname(path) != "":
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-
-    with open(path, "wb") as f:
-        f.write(requests.get(url).content)
+    with atomic_write(path, "wb") as f:
+        f.write(requests.get(url, timeout=(10, 30)).content)
 
     return path
 
@@ -354,17 +361,18 @@ def sort_times(time_list):
     """
     return sorted(time_list, key=lambda x: datetime.fromisoformat(x))
 
-
-def run_command(command):
+def run_command(command: str):
     if command is None:
         return
 
+    argv = command.split(" ")
     if is_flatpak():
-        command = "flatpak-spawn --host " + command
-
-    p = multiprocessing.Process(target=subprocess.Popen, args=[command], kwargs={
-                                "shell": True, "start_new_session": True, "stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL, "cwd": os.path.expanduser("~")})
-    p.start()
+        argv = ["flatpak-spawn", "--host"] + argv
+    try:
+        subprocess.Popen(argv, start_new_session=True, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=os.path.expanduser("~"))
+    except (FileNotFoundError, OSError) as e:
+        log.error(f"Failed to run command {" ".join(argv)}: {e}")
 
 def open_web(url):
     if not url.startswith("http"):

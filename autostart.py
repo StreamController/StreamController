@@ -74,7 +74,7 @@ def setup_autostart_flatpak(enable: bool = True):
         xdp.request_background(
             None,  # parent
             "Autostart StreamController",  # reason
-            ["/app/bin/launch.sh", "-b"],  # commandline
+            ["/app/bin/launch.sh", "--daemon-only"],  # commandline
             flag,
             None,  # cancellable
             request_background_callback,

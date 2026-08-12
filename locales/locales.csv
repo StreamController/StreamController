@@ -21,6 +21,7 @@ header-page-selector-page-label;Seite:;Page:;Page :;Página:;Página:
 header-page-selector-drop-down-hint;Seite für aktives Deck auswählen;Select page for active deck;Sélectionnez la page pour le Deck actif;Selecciona la página para el deck activo;Selecione a página para o deck ativo
 header-page-selector-page-settings-hint;Einstellungen der Seite öffnen;Open Page Settings;Ouvrir les paramètres de la page;Abrir ajustes de página;Abrir Configurações da Página
 header-page-selector-page-manager-hint;Seiten verwalten;Open Page Manager;Ouvrir le gestionnaire de page;Abrir gestor de página;Abrir Gerenciador de Páginas
+header-page-selector-search-hint;Suchen;Search;Rechercher;Buscar;Buscar
 main-page-page-settings;Einstellungen der Seite;Page Settings;Paramétrage de la page;Ajustes de página;Configurações da Página
 main-page-deck-config;Tasten der Seite;Page Key Grid;Paramétrage des boutons;Cuadrícula de teclas de la página;Grade de Teclas da Página
 toggle-config-to-page;Seite einstellen;Configure page;Configurer la page;Configurar página;Configurar página
@@ -76,6 +77,7 @@ settings-dev-settings-title;Entwickler;Developer;Développeur;Desarrollador;Dese
 settings-fake-decks-header;Fake Decks;Fake Decks;Faux Decks;Mazos falsos;Decks Falsos
 settings-number-of-fake-decks;Anzahl der Fake Decks;Number of fake decks;Nombre de Faux Decks;Número de barajas falsas;Número de decks falsos
 settings-number-of-fake-decks-hint;Für Testzwecke (App muss mölicherweise neugestartet werden);For testing purposes (might require restart of the app);À des fins de test (peut nécessiter un redémarrage de l'application);Para pruebas (puede ser necesario reiniciar la aplicación);Para fins de teste (pode exigir a reinicialização do aplicativo)
+settings-fake-deck-type;Typ von Fake Deck {number};Type of fake deck {number};;;
 settings-store-settings-title;Store;Store;Magasin;Tienda;Loja
 settings-store-settings-header;Store;Store;Magasin;Tienda;Loja
 settings-store-settings-auto-update;Automatische Aktualisierung der Assets;Auto-update assets;Mise à jour automatique des ressources;Actualización automática de activos;Atualizar ativos automaticamente
@@ -119,6 +121,9 @@ onboarding.multiple.header;Multi Deck Support;Multi Deck Support;Support Multi D
 onboarding.multiple.details;Support für mehrere Elgato Stream Decks;Support for multiple Elgato Stream Decks at once;Prise en charge de plusieurs Stream Decks à la fois;Soporte para múltiples Elgato Stream Decks a la vez;Suporte para vários Elgato Stream Decks ao mesmo tempo
 onboarding.ready.header;Bereit?;Ready?;Prêt ?;¿Preparado?;Pronto?
 onboarding.ready.button;Start;Start;Commencez;Iniciar;Começar
+deck.general-group.title;Allgemein;General;Général;General;Geral
+deck.general-group.description;Gilt für dieses Deck;Applies to this deck;S'applique à ce Deck;Se aplica a este deck;Aplica-se a este deck
+deck.general-group.name;Anzeigename;Display name;Nom affiché;Nombre visible;Nome de exibição
 deck.deck-group.title;Deck Einstellungen;Deck Settings;Paramètres du Deck;Configuración del deck;Configurações do Deck
 deck.deck-group.description;Betreffen das ganze Deck, sofern nicht überschrieben;Applies to the whole deck unless overwritten;S'applique à tout le Deck sauf indication contraire;Se aplica a todo el deck a menos que se sobrescriba;Aplica-se a todo o deck a menos que seja substituído
 deck.deck-group.brightness;Helligkeit;Brightness;Luminosité;Brillo;Brilho
@@ -137,6 +142,7 @@ background.processing;Verarbeiten...;Processing...;Traitement en cours…;Proces
 asset-chooser.custom.browse-files;Durchsuchen;Browse Files;Parcourir les fichiers;Examinar archivos;Procurar Arquivos
 asset-chooser.custom.browse-files.dialog.title;Dateien auswählen;Select Files;Sélectionner des fichiers;Seleccionar archivos;Selecionar Arquivos
 asset-chooser.custom.browse-files.dialog.select-button;Auswählen;Select;Sélectionner;Seleccione;Selecionar
+asset-chooser.custom.add-button.label;Hinzufügen;Add;Ajouter;Añadir;Adicionar
 background-editor.header;Hintergrund;Background;L'arrière-plan;Fondo;Fundo
 asset-chooser.add-more-button.label;Mehr hinzufügen;Add More;Ajouter plus;Añadir más;Adicionar Mais
 background-editor-expander.subtitle;Hintergrund für diese Taste;Background for this key;L'arrière-plan pour cette touche;Fondo para esta llave;Fundo para esta tecla
@@ -236,3 +242,18 @@ settings-font-outline-color-settings-subtitle;Standardfarbe der Schriftumrandung
 settings-font-outline-width-settings-header;Dicke der Schriftumrandung;Width of the outline;Taille du contour;Ancho del contorno;Largura do contorno
 settings-font-outline-width-settings-subtitle;Standarddicke der Schriftumrandung;Default width of the outline;Taille par défaut du contour;Ancho predeterminado del contorno;Largura padrão do contorno
 support;Unterstützen;Donate;Faites un don;Donar;Doar
+store.info.source.title;Quelle;Source;Source;Fuente;Fonte
+store.info.source.description;Wähle ob die Store-Version, ein Git-Branch oder ein Git-Tag verwendet werden soll;Choose to use the store version, a git branch, or a git tag;Choisissez d'utiliser la version du magasin, une branche git ou un tag git;Elija usar la versión de la tienda, una rama git o un tag git;Escolha usar a versão da loja, um branch ou uma tag git
+store.info.source.branch-row.title;Quelle;Source;Source;Fuente;Fonte
+store.info.source.branch-row.subtitle;Store-Version, Branch oder Tag auswählen;Select store version, branch, or tag;Sélectionnez la version du magasin, une branche ou un tag;Seleccione la versión de la tienda, rama o tag;Selecione a versão da loja, branch ou tag
+store.info.source.refresh.tooltip;Branches und Tags von GitHub aktualisieren;Refresh branches and tags from GitHub;Actualiser les branches et tags depuis GitHub;Actualizar ramas y tags desde GitHub;Atualizar branches e tags do GitHub
+store.info.source.store-version;Store-Version (empfohlen);Store Version (Recommended);Version du magasin (recommandée);Versión de la tienda (recomendada);Versão da Loja (Recomendada)
+store.info.source.confirm.title;Quelle wechseln?;Switch Source?;Changer de source ?;¿Cambiar fuente?;Mudar fonte?
+store.info.source.confirm.body;Du wechselst zu "{ref}". Alles außer der offiziellen Store-Version ist unverifiziert und kann unsicher sein. Nutzung auf eigene Gefahr.;You are switching to "{ref}". Everything besides the official store version is unverified and can be unsafe. Use at your own risk.;Vous passez à "{ref}". Tout ce qui n'est pas la version officielle du magasin est non vérifié et peut être dangereux. À utiliser à vos risques et périls.;Vas a cambiar a "{ref}". Todo lo que no sea la versión oficial de la tienda no está verificado y puede ser inseguro. Úselo bajo su propio riesgo.;Você está mudando para "{ref}". Tudo, exceto a versão oficial da loja, não é verificado e pode ser inseguro. Use por sua conta e risco.
+store.info.source.confirm.confirm;Trotzdem wechseln;Switch Anyway;Changer quand même;Cambiar de todos modos;Mudar mesmo assim
+media-source;Quelle;Source;Source;Fuente;Fonte
+media-source.single;Einzelnes Asset;Single Asset;Ressource unique;Recurso único;Ativo único
+media-source.folder;Ordner;Folder;Dossier;Carpeta;Pasta
+media-source.rotation-interval;Wechseln alle (Minuten);Change Every (Minutes);Changer toutes les (minutes);Cambiar cada (minutos);Mudar a cada (minutos)
+media-source.no-folder-selected;Kein Ordner ausgewählt;No folder selected;Aucun dossier sélectionné;Ninguna carpeta seleccionada;Nenhuma pasta selecionada
+media-source.media-count;{count} Dateien;{count} files;{count} fichiers;{count} archivos;{count} arquivos

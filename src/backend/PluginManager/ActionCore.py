@@ -59,6 +59,12 @@ if TYPE_CHECKING:
     from src.backend.DeckManagement.DeckController import ControllerInput, ControllerInputState
 
 class ActionCore(rpyc.Service):
+    backend_spawn_count = 0
+    # How long to keep retrying an RPyC backend connection before giving up
+    BACKEND_CONNECT_TIMEOUT: float = 30.0
+    # How long a physical/UI event may sit queued waiting for the backend before it is dropped
+    PENDING_EVENT_TIMEOUT: float = 30.0
+
     # Change to match your action
     def __init__(self, action_id: str, action_name: str,
                  deck_controller: "DeckController", page: "Page", plugin_base: "PluginBase", state: int,
@@ -66,7 +72,13 @@ class ActionCore(rpyc.Service):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
-        
+        self.backend_process: subprocess.Popen | None = None
+
+        # True while this action's own backend has been launched but hasn't connected back yet
+        self.backend_launch_pending: bool = False
+        self._pending_action_events: list[tuple[float, callable]] = []
+        self._pending_action_events_lock = threading.Lock()
+
         self.deck_controller = deck_controller
         self.page = page
         self.state = state
@@ -119,6 +131,16 @@ class ActionCore(rpyc.Service):
         self.event_manager.add_event_assigner(event_assigner)
 
     def _raw_event_callback(self, event: InputEvent, data: dict = None):
+        # If this action's own backend or its plugin's backend is still connecting, queue the event
+        # instead of dispatching it now - the underlying action would just silently no-op because
+        # self.backend/self.plugin_base.backend is still None. Replayed once the backend connects,
+        # dropped if it's still not ready after PENDING_EVENT_TIMEOUT seconds.
+        retry = lambda: self._raw_event_callback(event, data)
+        if self.queue_action_event(retry):
+            return
+        if self.plugin_base is not None and self.plugin_base.queue_action_event(retry):
+            return
+
         event_assigner = self.event_manager.get_event_assigner_for_event(event)
         if event_assigner:
             event_assigner.call(data)
@@ -527,18 +549,29 @@ class ActionCore(rpyc.Service):
             self.server.close()
         if self.backend_connection is not None:
             self.backend_connection.close()
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            log.info(f"[backend] stopping action backend pid={self.backend_process.pid} action={self.action_id}")
+            self.backend_process.terminate()
         self.backend = None
-    
+        self.backend_process = None
+        self.backend_launch_pending = False
+
     def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False):
-        self.start_server()
-        port = self.server.port
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            log.info("Backend process already running, skipping launch.")
+            return
 
         if venv_path is not None:
             if not os.path.exists(venv_path):
                 raise ValueError(f"Venv path does not exist: {venv_path}")
-        if backend_path is None:
-            if  not os.path.exists(backend_path):
-                raise ValueError(f"Backend path does not exist: {backend_path}")
+            if not self.plugin_base.is_backend_venv_healthy(venv_path):
+                log.info(f"Recreating venv for action {self.action_id} - This may take a while...")
+                self.plugin_base.recreate_venv(plugin_path=self.plugin_base.PATH)
+
+        self.start_server()
+        port = self.server.port
+        if not os.path.exists(backend_path):
+            raise ValueError(f"Backend path does not exist: {backend_path}")
 
         ## Launch
         if open_in_terminal:
@@ -553,14 +586,34 @@ class ActionCore(rpyc.Service):
             command += f"python3 {backend_path} --port={port}"
 
         log.info(f"Launching backend: {command}")
-        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        self.backend_launch_pending = True
+        self.backend_process = subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        ActionCore.backend_spawn_count += 1
+        log.info(
+            f"[backend] started action backend pid={self.backend_process.pid} "
+            f"action={self.action_id} spawns={ActionCore.backend_spawn_count}"
+        )
 
-        self.wait_for_backend()
+        threading.Thread(target=self.wait_for_backend, name="wait_for_backend", daemon=True).start()
 
-    def wait_for_backend(self, tries: int = 3):
-        while tries > 0 and self.backend_connection is None:
+    def wait_for_backend(self, timeout: float = None):
+        """
+        Polls for the backend connection to be established, for up to `timeout` seconds. Run in a
+        background thread by `launch_backend` so it never blocks action loading - events that arrive
+        while the connection is still pending are queued instead of silently dropped (see
+        `queue_action_event`/`_flush_pending_action_events`).
+        """
+        if timeout is None:
+            timeout = self.BACKEND_CONNECT_TIMEOUT
+
+        deadline = time.monotonic() + timeout
+        while self.backend_connection is None and time.monotonic() < deadline:
             time.sleep(0.1)
-            tries -= 1
+
+        if self.backend_connection is None:
+            log.error(f"{self.action_id} - Could not connect to action backend within {timeout}s")
+            self.backend_launch_pending = False
+            self._flush_pending_action_events()
 
     def register_backend(self, port: int):
         """
@@ -569,7 +622,49 @@ class ActionCore(rpyc.Service):
         self.backend_connection = rpyc.connect("localhost", port, config={"allow_public_attrs": True})
         self.backend = self.backend_connection.root
         gl.plugin_manager.backends.append(self.backend_connection)
+        self.backend_launch_pending = False
         self.on_backend_ready()
+        self._flush_pending_action_events()
+
+    def queue_action_event(self, retry: callable) -> bool:
+        """
+        Queues an action event to be replayed once this action's own backend finishes connecting,
+        instead of letting it silently no-op because `self.backend` is still None.
+
+        Only queues while a backend launch is actually in progress - actions that never call
+        `launch_backend` are unaffected and events are dispatched immediately as before.
+
+        Args:
+            retry (callable): A zero-argument callable that re-dispatches the event once called.
+
+        Returns:
+            bool: True if the event was queued (caller should not dispatch it now), False if there is
+            nothing pending and the caller should dispatch it immediately.
+        """
+        if not self.backend_launch_pending:
+            return False
+
+        with self._pending_action_events_lock:
+            if not self.backend_launch_pending:
+                return False
+            self._pending_action_events.append((time.monotonic(), retry))
+        return True
+
+    def _flush_pending_action_events(self) -> None:
+        with self._pending_action_events_lock:
+            pending = self._pending_action_events
+            self._pending_action_events = []
+
+        now = time.monotonic()
+        for queued_at, retry in pending:
+            age = now - queued_at
+            if age > self.PENDING_EVENT_TIMEOUT:
+                log.warning(f"{self.action_id} - Dropping queued action event that waited {age:.1f}s for the backend")
+                continue
+            try:
+                retry()
+            except Exception as e:
+                log.error(f"{self.action_id} - Error replaying queued action event: {e}")
 
     def on_backend_ready(self):
         pass
@@ -578,8 +673,7 @@ class ActionCore(rpyc.Service):
         return True
     
     def on_removed_from_cache(self) -> None:
-        #TODO: Fully implement
-        pass
+        self.on_disconnect()
 
     def on_remove(self) -> None:
         #TODO: Fully implement

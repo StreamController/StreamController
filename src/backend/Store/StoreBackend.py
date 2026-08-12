@@ -28,8 +28,6 @@ import time
 import os
 import uuid
 import shutil
-from packaging import version
-import urllib.request
 import threading
 
 # Import GLib
@@ -41,6 +39,7 @@ from autostart import is_flatpak
 from src.backend.Store.StoreCache import StoreCache
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.HelperMethods import recursive_hasattr
+from src.backend.Utils.AtomicSaveUtils import atomic_write, atomic_save_json
 
 # Import signals
 from src.Signals import Signals
@@ -58,6 +57,12 @@ class StoreBackend:
     STORE_CACHE_PATH = "Store/cache"
     # STORE_CACHE_PATH = os.path.join(gl.DATA_PATH, STORE_CACHE_PATH)
     STORE_BRANCH = "1.5.0"
+
+    # (connect timeout, read timeout) in seconds. A slow/lossy connection must
+    # fail fast instead of hanging on the OS-level TCP retry for minutes -
+    # see https://github.com/StreamController/StreamController/issues/467
+    REQUEST_TIMEOUT = (10, 15)
+    DOWNLOAD_TIMEOUT = (10, 30)
 
     WALLPAPERS_FILE = "Wallpapers.json"
     PLUGIN_FILE = "Plugins.json"
@@ -110,6 +115,83 @@ class StoreBackend:
 
         return plugins
     
+    def get_plugin_git_override(self, plugin_id: str) -> dict | None:
+        """
+        Get the git override settings for a plugin.
+        Returns dict with 'branch' key if override exists, None otherwise.
+        """
+        if plugin_id is None:
+            return None
+            
+        settings = gl.settings_manager.get_app_settings()
+        overrides = settings.get("store", {}).get("plugin-git-overrides", {})
+        return overrides.get(plugin_id)
+    
+    def set_plugin_git_override(self, plugin_id: str, branch: str | None):
+        """
+        Set a git override for a plugin. If branch is None or empty, removes the override.
+        """
+        if plugin_id is None:
+            return
+            
+        settings = gl.settings_manager.get_app_settings()
+        settings.setdefault("store", {})
+        settings["store"].setdefault("plugin-git-overrides", {})
+        
+        if branch is None or branch.strip() == "":
+            if plugin_id in settings["store"]["plugin-git-overrides"]:
+                del settings["store"]["plugin-git-overrides"][plugin_id]
+        else:
+            settings["store"]["plugin-git-overrides"][plugin_id] = {"branch": branch.strip()}
+        
+        gl.settings_manager.save_app_settings(settings)
+    
+    def remove_plugin_git_override(self, plugin_id: str):
+        """Remove git override for a plugin (use store version)."""
+        self.set_plugin_git_override(plugin_id, None)
+    
+    async def get_repo_branches(self, repo_url: str) -> list[str] | None:
+        """
+        Fetch available branches from a GitHub repository.
+        Returns list of branch names or None on error.
+        """
+        try:
+            user_name = self.get_user_name(repo_url)
+            repo_name = self.get_repo_name(repo_url)
+            url = f"https://api.github.com/repos/{user_name}/{repo_name}/branches?per_page=100"
+            response = requests.get(url, timeout=self.REQUEST_TIMEOUT)
+
+            if response.status_code != 200:
+                log.error(f"Failed to fetch branches for {repo_url}: {response.status_code}")
+                return None
+            
+            branches = response.json()
+            return [branch["name"] for branch in branches]
+        except Exception as e:
+            log.error(f"Error fetching branches for {repo_url}: {e}")
+            return None
+    
+    async def get_repo_tags(self, repo_url: str) -> list[str] | None:
+        """
+        Fetch available tags from a GitHub repository.
+        Returns list of tag names or None on error.
+        """
+        try:
+            user_name = self.get_user_name(repo_url)
+            repo_name = self.get_repo_name(repo_url)
+            url = f"https://api.github.com/repos/{user_name}/{repo_name}/tags?per_page=100"
+            response = requests.get(url, timeout=self.REQUEST_TIMEOUT)
+
+            if response.status_code != 200:
+                log.error(f"Failed to fetch tags for {repo_url}: {response.status_code}")
+                return None
+            
+            tags = response.json()
+            return [tag["name"] for tag in tags]
+        except Exception as e:
+            log.error(f"Error fetching tags for {repo_url}: {e}")
+            return None
+    
     async def get_official_store_branch(self) -> str:
         if self.official_store_branch_cache is not None:
             return self.official_store_branch_cache
@@ -123,12 +205,14 @@ class StoreBackend:
 
     async def request_from_url(self, url: str) -> requests.Response:
         try:
-            req = requests.get(url, stream=True)
+            req = requests.get(url, stream=True, timeout=self.DOWNLOAD_TIMEOUT)
             if req.status_code == 200:
                 return req
             log.error(f"Request to {url} failed with status code {req.status_code}")
             return NoConnectionError()
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.RequestException as e:
+            # Covers connection errors as well as connect/read timeouts, so a
+            # dead or lossy connection fails fast instead of hanging.
             log.error(e)
             return NoConnectionError()
     
@@ -207,11 +291,15 @@ class StoreBackend:
         
     async def get_last_commit(self, repo_url: str, branch_name: str = "main") -> str:
         url = f"https://api.github.com/repos/{self.get_user_name(repo_url)}/{self.get_repo_name(repo_url)}/commits?sha={branch_name}&per_page=1"
-        response = requests.get(url)
+        try:
+            response = requests.get(url, timeout=self.REQUEST_TIMEOUT)
+        except requests.exceptions.RequestException as e:
+            log.error(e)
+            return
 
         if response.status_code != 200:
             return
-        
+
         commits = response.json()
         if len(commits) == 0:
             return
@@ -251,13 +339,14 @@ class StoreBackend:
         if n_stores_with_errors >= len(stores):
             return NoConnectionError()
 
-        prepare_tasks = [process_func(data, include_images, True) for data in data_list]
+        prepare_tasks = [process_func({"custom": False, **data}, include_images, True) for data in data_list]
 
         if get_custom_func is not None:
             for url, branch in get_custom_func():
                 asset = {
                     "url": url,
-                    "branch": branch
+                    "branch": branch,
+                    "custom": True
                 }
                 prepare_tasks.append(process_func(asset, include_images, False))
 
@@ -314,21 +403,34 @@ class StoreBackend:
     async def prepare_plugin(self, plugin, include_image: bool = True, verified: bool = False):
         url = plugin["url"]
 
-        # Check if suitable version is available
-        compatible = True
         commit: str = None
-        if "commits" in plugin:
-            version = self.get_newest_compatible_version(plugin["commits"])
-            if version is None:
-                compatible = False
-                version = self.get_newest_version(list(plugin["commits"].keys()))
-                if version is None:
-                    return NoCompatibleVersion #TODO
-            commit = plugin["commits"][version]
-
         branch = plugin.get("branch")
-        if branch is not None:
-            commit = await self.get_last_commit(url, branch)
+        using_git_override = False
+
+        # First, try to get manifest to determine plugin_id for override check
+        # We need to do a preliminary check to see if there's an override
+        temp_commit = plugin.get("hash")
+
+        # Get manifest to find plugin_id
+        temp_manifest = await self.get_manifest(url, temp_commit or branch or "main")
+        plugin_id = None
+        if temp_manifest and not isinstance(temp_manifest, NoConnectionError):
+            plugin_id = temp_manifest.get("id")
+        
+        # Check for git override
+        if plugin_id:
+            override = self.get_plugin_git_override(plugin_id)
+            if override and override.get("branch"):
+                branch = override["branch"]
+                using_git_override = True
+                commit = await self.get_last_commit(url, branch)
+        
+        # If no override, use normal logic
+        if not using_git_override:
+            commit = plugin.get("hash")
+
+            if branch is not None:
+                commit = await self.get_last_commit(url, branch)
 
         manifest = await self.get_manifest(url, commit or branch)
         if isinstance(manifest, NoConnectionError):
@@ -386,8 +488,10 @@ class StoreBackend:
             plugin_version=manifest.get("version") or None,
             plugin_id=manifest.get("id") or None,
 
-            is_compatible=compatible,
-            verified=verified
+            is_compatible=True,
+            verified=verified,
+            using_git_override=using_git_override,
+            is_custom_plugin=plugin.get("custom", False)
         )
     
     def get_current_git_commit_hash_without_git(self, repo_path: str) -> str:
@@ -436,15 +540,9 @@ class StoreBackend:
 
         url = icon["url"]
 
-        # Check if suitable version is available
-        compatible = True
-        version = self.get_newest_compatible_version(icon["commits"])
-        if version is None:
-            compatible = False
-            version = self.get_newest_version(list(icon["commits"].keys()))
-            if version is None:
-                return NoCompatibleVersion
-        commit = icon["commits"][version]
+        commit = icon.get("hash")
+        if commit is None:
+            return None
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -496,7 +594,7 @@ class StoreBackend:
             icon_version=manifest.get("version") or None,
             icon_id=manifest.get("id") or None,
 
-            is_compatible=compatible,
+            is_compatible=True,
             verified=verified
         )
 
@@ -509,15 +607,9 @@ class StoreBackend:
 
         url = wallpaper["url"]
 
-        # Check if suitable version is available
-        compatible = True
-        version = self.get_newest_compatible_version(wallpaper["commits"])
-        if version is None:
-            compatible = False
-            version = self.get_newest_version(list(wallpaper["commits"].keys()))
-            if version is None:
-                return NoCompatibleVersion
-        commit = wallpaper["commits"][version]
+        commit = wallpaper.get("hash")
+        if commit is None:
+            return None
 
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
@@ -565,7 +657,7 @@ class StoreBackend:
             wallpaper_version=manifest.get("version") or None,
             wallpaper_id=manifest.get("id") or None,
 
-            is_compatible=compatible,
+            is_compatible=True,
             verified=verified
         )
 
@@ -576,16 +668,11 @@ class StoreBackend:
             return None
 
         url = sd_plus_bar_wallpaper["url"]
-        
-        compatible = True
-        version = self.get_newest_compatible_version(sd_plus_bar_wallpaper["commits"])
-        if version is None:
-            compatible = False
-            version = self.get_newest_version(list(sd_plus_bar_wallpaper["commits"].keys()))
-            if version is None:
-                return NoCompatibleVersion
-        commit = sd_plus_bar_wallpaper["commits"][version]
-        
+
+        commit = sd_plus_bar_wallpaper.get("hash")
+        if commit is None:
+            return None
+
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
@@ -630,9 +717,9 @@ class StoreBackend:
 
             name=manifest.get("name") or None,
             version=manifest.get("version") or None,
-            id=manifest.get("id") or None,    
+            id=manifest.get("id") or None,
 
-            is_compatible=compatible,
+            is_compatible=True,
             verified=verified
         )
 
@@ -667,8 +754,7 @@ class StoreBackend:
             self.api_cache[api_call_url] = {}
             self.api_cache[api_call_url]["answer"] = resp.json()
             self.api_cache[api_call_url]["time-code"] = datetime.now().strftime("%d-%m-%y-%H-%M")
-            with open(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json"), "w") as f:
-                json.dump(self.api_cache, f, indent=4)
+            atomic_save_json(os.path.join(gl.DATA_PATH, self.STORE_CACHE_PATH, "api.json"), self.api_cache, indent=4)
             return resp.json()
 
         if api_call_url not in self.api_cache:
@@ -701,30 +787,6 @@ class StoreBackend:
     def get_all_plugins(self, include_images: bool = True) -> list[PluginData]:
         return asyncio.run(self.get_all_plugins_async(include_images))
     
-    def get_newest_compatible_version(self, available_versions: list[str]) -> str:
-        if gl.exact_app_version_check:
-            if gl.app_version in available_versions:
-                return gl.app_version
-            else:
-                return None
-            
-        current_major = version.parse(gl.app_version).major
-
-        compatible_versions = [v for v in available_versions if version.parse(v).major == current_major]
-        parsed_compatible_versions = [version.parse(v) for v in compatible_versions]
-
-        if compatible_versions:
-            max_index = parsed_compatible_versions.index(max(parsed_compatible_versions))
-            return compatible_versions[max_index]
-        else:
-            return None
-        
-    def get_newest_version(self, available_versions: list[str]) -> str:
-        parsed_versions = [version.parse(v) for v in available_versions]
-        
-        max_index = parsed_versions.index(max(parsed_versions))
-        return available_versions[max_index]
-
     ## Install
     async def subp_call(self, args):
         return subprocess.call(args)
@@ -765,15 +827,22 @@ class StoreBackend:
         sha = commit_sha
         if commit_sha is None and branch_name is not None:
             # Used to write the version
-            sha = self.get_last_commit(repo_url, branch_name)
+            sha = await self.get_last_commit(repo_url, branch_name)
         zip_url = f"https://github.com/{username}/{projectname}/archive/{sha}.zip"
-        
+
         # Download
         try:
             # Create cache dir
             os.makedirs(os.path.join(gl.DATA_PATH, "cache"), exist_ok=True)
-            urllib.request.urlretrieve(zip_url, os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip"))
-        except TypeError as e:
+            zip_path = os.path.join(gl.DATA_PATH, "cache", f"{projectname}-{sha}.zip")
+            with requests.get(zip_url, stream=True, timeout=self.DOWNLOAD_TIMEOUT) as resp:
+                if resp.status_code != 200:
+                    log.error(f"Failed to download {zip_url}: {resp.status_code}")
+                    return NoConnectionError()
+                with atomic_write(zip_path, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=1024 * 64):
+                        f.write(chunk)
+        except (requests.exceptions.RequestException, TypeError) as e:
             log.error(e)
             return NoConnectionError()
         
@@ -806,7 +875,7 @@ class StoreBackend:
         
         ## Write version
         path = os.path.join(directory, "VERSION")
-        with open(path, "w") as f:
+        with atomic_write(path, "w") as f:
             f.write(sha)
         
         return 200
@@ -842,7 +911,7 @@ class StoreBackend:
 
         ## Write version
         path = os.path.join(local_path, "VERSION")
-        with open(path, "w") as f:
+        with atomic_write(path, "w") as f:
             f.write(commit_sha or branch_name)
 
         # Set repository to the given commit_sha
@@ -851,7 +920,8 @@ class StoreBackend:
             return
         
         if branch_name is not None:
-            await self.os_sys(f"cd '{local_path}' && git switch {branch_name}")
+            # Use git checkout (not git switch) - works for both branches and tags
+            await self.os_sys(f"cd '{local_path}' && git checkout {branch_name}")
             return
         
         
@@ -1002,7 +1072,19 @@ class StoreBackend:
         for plugin in plugins:
             if plugin.plugin_id == plugin_id:
                 return plugin
-            
+
+    async def get_icon_for_id(self, icon_id):
+        icons = await self.get_all_icons()
+        for icon in icons:
+            if icon.icon_id == icon_id:
+                return icon
+
+    async def get_wallpaper_for_id(self, wallpaper_id):
+        wallpapers = await self.get_all_wallpapers()
+        for wallpaper in wallpapers:
+            if wallpaper.wallpaper_id == wallpaper_id:
+                return wallpaper
+
     ## Updates
     async def get_plugins_to_update(self):
         plugins =  await self.get_all_plugins_async()
@@ -1104,6 +1186,3 @@ class StoreBackend:
             return NoConnectionError()
 
         return n_plugins + n_icons + n_wallpapers
-
-class NoCompatibleVersion:
-    pass

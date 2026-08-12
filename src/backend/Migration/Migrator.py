@@ -18,6 +18,7 @@ import globals as gl
 import os
 from packaging import version
 from loguru import logger as log
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 
 class Migrator:
     SETTINGS_DIR = os.path.join(gl.DATA_PATH, "settings", "migrations.json")
@@ -52,9 +53,7 @@ class Migrator:
         """
         SettingsManager is not yet loaded when this is called
         """
-        os.makedirs(os.path.dirname(self.SETTINGS_DIR), exist_ok=True)
-        with open(self.SETTINGS_DIR, "w") as f:
-            json.dump(settings, f, indent=4)
+        atomic_save_json(self.SETTINGS_DIR, settings, indent=4)
 
     def create_backup(self) -> None:
         pages_path = os.path.join(gl.DATA_PATH, "pages")

@@ -52,6 +52,13 @@ def _ensure_symbol_fonts():
     _symbol_fonts_added = True
 
 @lru_cache(maxsize=128)
+def _load_font(font_path: str, font_size: int, encoding: str) -> ImageFont.FreeTypeFont:
+    # ImageFont.truetype() re-parses the font file from disk every call otherwise,
+    # and this can run a few times per key per render
+    return ImageFont.truetype(font_path, font_size, encoding=encoding)
+
+
+@lru_cache(maxsize=128)
 def _is_symbol_font(font_path: str) -> bool:
     """Check if font uses symbol encoding (e.g., Webdings, Wingdings).
     
@@ -116,4 +123,4 @@ class KeyLabel:
     def get_font(self) -> ImageFont.FreeTypeFont:
         font_path = self.get_font_path()
         encoding = "symb" if _is_symbol_font(font_path) else "unic"
-        return ImageFont.truetype(font_path, self.font_size, encoding=encoding)
+        return _load_font(font_path, self.font_size, encoding)

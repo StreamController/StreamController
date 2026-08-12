@@ -54,6 +54,11 @@ class KeepRunningDialog(Adw.MessageDialog):
         app_settings["system"]["keep-running"] = keep_runnning
         gl.settings_manager.save_app_settings(app_settings)
 
+        # Keep the Gio.Application hold in sync so the choice takes effect
+        # immediately for this session.
+        if hasattr(gl, "app"):
+            gl.app.set_keep_running_hold(keep_runnning)
+
         if callable(self.callback):
             self.callback(keep_runnning)
 

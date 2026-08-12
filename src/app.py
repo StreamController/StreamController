@@ -47,9 +47,10 @@ from src.windows.Store.Store import Store
 from src.windows.Shortcuts.Shortcuts import ShortcutsWindow
 from src.windows.Onboarding.OnboardingWindow import OnboardingWindow
 from src.windows.Permissions.FlatpakPermissionRequest import FlatpakPermissionRequestWindow
-from src.backend.DeckManagement.InputIdentifier import Input
 
 from src.Signals import Signals
+from src.api import start_dbus_service, stop_dbus_service
+from src.backend.Utils.AtomicSaveUtils import atomic_write
 
 # Import globals
 import globals as gl
@@ -57,7 +58,20 @@ import globals as gl
 class App(Adw.Application):
     def __init__(self, deck_manager, **kwargs):
         super().__init__(**kwargs)
+        # Hold the application when running with keep-running enabled:
+        # closing the main window only hides it, and without a hold
+        # Gio.Application's lifecycle can idle-quit the process silently.
+        self._held = False
+        try:
+            _keep_running = gl.settings_manager.get_app_settings().get("system", {}).get("keep-running")
+            self.set_keep_running_hold(bool(_keep_running))
+        except Exception:
+            # If settings aren't ready yet, default to holding; the worst
+            # case is the app stays alive until explicit on_quit().
+            self.set_keep_running_hold(True)
         self.deck_manager = deck_manager
+        self.daemon_only = gl.argparser.parse_args().daemon_only
+        self.daemon_hold = False
 
         self.register_sigint_handler()
 
@@ -85,19 +99,31 @@ class App(Adw.Application):
         else:
             self.style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK) # Not everything looks good in light mode at the moment #TODO
 
+    def set_keep_running_hold(self, keep_running: bool) -> None:
+        # Keeps the Gio.Application hold in sync with the keep-running
+        # setting, including when it is toggled while the app is already
+        # running (e.g. from the settings page or the KeepRunningDialog).
+        if keep_running and not self._held:
+            self.hold()
+            self._held = True
+        elif not keep_running and self._held:
+            self.release()
+            self._held = False
+
     def on_activate(self, app):
         log.trace("running: on_activate")
-        self.main_win = MainWindow(application=app, deck_manager=self.deck_manager)
-        if not gl.argparser.parse_args().b:
-            self.main_win.present()
+        if self.daemon_only:
+            log.info("Starting in daemon-only mode (UI is created lazily on reopen)")
+            # Keep the GTK application alive without an initial window.
+            self.hold()
+            self.daemon_hold = True
+        else:
+            self.ensure_main_window(present=not gl.argparser.parse_args().b)
 
-        self.show_onboarding()
-        # self.show_donate()
-        self.main_win.on_finished.append(self.show_donate())
-        # self.show_permissions()
-
-        self.shortcuts = ShortcutsWindow(app=app, application=app)
-        # self.shortcuts.present()
+            self.show_onboarding()
+            # self.show_donate()
+            self.main_win.on_finished.append(self.show_donate())
+            # self.show_permissions()
 
         on_reopen_action = Gio.SimpleAction.new("reopen", None)
         on_reopen_action.connect("activate", self.on_reopen)
@@ -114,28 +140,64 @@ class App(Adw.Application):
         for task in gl.app_loading_finished_tasks:
             if callable(task):
                 task()
-        change_page_action = Gio.SimpleAction.new("change_page", GLib.VariantType("as")) # as = array of strings
-        change_page_action.connect("activate", self.on_change_page)
-        self.add_action(change_page_action)
+        # change_page/change_state/trigger_action used to be Gio.SimpleActions here;
+        # they're now ChangePage/ChangeState/EmulateInput on the DBus API in src/api.py,
+        # which main.py's CLI dispatch calls directly instead of going through
+        # org.gtk.Actions.
 
-        change_state_action = Gio.SimpleAction.new("change_state", GLib.VariantType("as")) # as = array of strings
-        change_state_action.connect("activate", self.on_change_state)
-        self.add_action(change_state_action)
+        # Start DBus API service
+        if not gl.IS_MAC:
+            start_dbus_service()
 
         log.success("Finished loading app")
 
     def on_reopen(self, *args, **kwargs):
-        self.main_win.present()
+        self.ensure_main_window(present=True)
         log.info("awake")
 
         self.show_donate(ignore_background_launch=True)
 
+    def ensure_ui_services(self):
+        from src.backend.AssetManagerBackend import AssetManagerBackend
+        from src.backend.IconPackManagement.IconPackManager import IconPackManager
+        from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
+        from src.backend.SDPlusBarWallpaperPackManagement.SDPlusBarWallpaperPackManager import SDPlusBarWallpaperPackManager
+        from src.backend.Store.StoreBackend import StoreBackend
+
+        if gl.asset_manager_backend is None:
+            gl.asset_manager_backend = AssetManagerBackend()
+        if gl.icon_pack_manager is None:
+            gl.icon_pack_manager = IconPackManager()
+        if gl.wallpaper_pack_manager is None:
+            gl.wallpaper_pack_manager = WallpaperPackManager()
+        if gl.sd_plus_bar_wallpaper_pack_manager is None:
+            gl.sd_plus_bar_wallpaper_pack_manager = SDPlusBarWallpaperPackManager()
+        if gl.store_backend is None:
+            gl.store_backend = StoreBackend()
+
+        # Load remaining plugins when opening the full UI.
+        gl.plugin_manager.load_plugins(show_notification=False)
+        gl.plugin_manager.generate_action_index()
+
+    def ensure_main_window(self, present: bool = False):
+        self.ensure_ui_services()
+        if not hasattr(self, "main_win"):
+            self.main_win = MainWindow(application=self, deck_manager=self.deck_manager)
+            self.shortcuts = ShortcutsWindow(app=self, application=self)
+        if present:
+            self.main_win.present()
+        return self.main_win
+
     def let_user_select_asset(self, default_path, callback_func=None, *callback_args, **callback_kwargs):
+        if not hasattr(self, "main_win"):
+            self.ensure_main_window(present=True)
         self.asset_manager = AssetManager(application=self, main_window=self.main_win)
         gl.asset_manager = self.asset_manager
         self.asset_manager.show_for_path(default_path, callback_func, *callback_args, **callback_kwargs)
 
     def show_donate(self, ignore_background_launch: bool = False):
+        if not hasattr(self, "main_win"):
+            return
         if not ignore_background_launch and gl.argparser.parse_args().b:
             return
         if gl.showed_donate_window:
@@ -157,6 +219,8 @@ class App(Adw.Application):
         self.donate.present(self.main_win)
 
     def show_onboarding(self):
+        if self.daemon_only:
+            return
         if gl.argparser.parse_args().b:
             return
         if os.path.exists(os.path.join(gl.DATA_PATH, ".skip-onboarding")):
@@ -166,7 +230,7 @@ class App(Adw.Application):
         self.onboarding.present(self.main_win)
 
         # Disable onboarding for future sessions
-        with open(os.path.join(gl.DATA_PATH, ".skip-onboarding"), "w") as f:
+        with atomic_write(os.path.join(gl.DATA_PATH, ".skip-onboarding"), "w") as f:
             f.write("")
 
     def show_permissions(self):
@@ -186,7 +250,12 @@ class App(Adw.Application):
     def on_quit(self, *args):
         log.info("Quitting...")
 
-        self.main_win.destroy()
+        # Stop DBus API service
+        if not gl.IS_MAC:
+            stop_dbus_service()
+
+        if hasattr(self, "main_win"):
+            self.main_win.destroy()
 
         gl.signal_manager.trigger_signal(Signals.AppQuit)
 
@@ -216,9 +285,15 @@ class App(Adw.Application):
 
         gl.tray_icon.stop()
 
+        if self.daemon_hold:
+            self.release()
+            self.daemon_hold = False
+
         # Close all decks
         gl.deck_manager.close_all()
         # Stop timer
+        # Balance any outstanding hold so Gio.Application can clean up.
+        self.set_keep_running_hold(False)
         log.success("Stopped StreamController. Have a nice day!")
         log.stop()
         sys.exit(0)
@@ -244,6 +319,7 @@ class App(Adw.Application):
 
     @log.catch
     def _update_all_assets(self):
+        self.ensure_ui_services()
         self.set_working(True)
 
         asyncio.run(gl.store_backend.update_everything())
@@ -258,6 +334,7 @@ class App(Adw.Application):
 
     @log.catch
     def _install_plugin(self, plugin_id: str):
+        self.ensure_ui_services()
         plugin = asyncio.run(gl.store_backend.get_plugin_for_id(plugin_id=plugin_id))
 
         self.set_working(True)
@@ -281,10 +358,12 @@ class App(Adw.Application):
     def set_working(self, working: bool) -> None:
         if working:
             GLib.idle_add(gl.app.mark_busy)
-            GLib.idle_add(gl.app.main_win.set_cursor_from_name, "wait")
+            if hasattr(gl.app, "main_win"):
+                GLib.idle_add(gl.app.main_win.set_cursor_from_name, "wait")
         else:
             GLib.idle_add(gl.app.unmark_busy)
-            GLib.idle_add(gl.app.main_win.set_cursor_from_name, "default")
+            if hasattr(gl.app, "main_win"):
+                GLib.idle_add(gl.app.main_win.set_cursor_from_name, "default")
 
     def send_notification(self,
                           icon_name: str,
@@ -305,102 +384,6 @@ class App(Adw.Application):
             notif.add_button_with_target(button[0], button[1], button[2])
 
         GLib.idle_add(super().send_notification, "com.core447.StreamController", notif)
-    def on_change_page(self, action, data: GLib.Variant, *args):
-        """
-        page_name can be either the name or the path of the page
-        """
-        serial_number, page_name = data.unpack()
-
-        for controller in self.deck_manager.deck_controller:
-            if controller.serial_number() == serial_number:
-                page_path = gl.page_manager.find_matching_page_path(page_name)
-
-                if controller is not None:
-                    if controller.active_page is not None:
-                        if os.path.abspath(page_path) == os.path.abspath(controller.active_page.json_path):
-                            continue
-
-                page = gl.page_manager.get_page(page_path, controller)
-                if page_path is None:
-                    continue
-
-                controller.load_page(page)
-
-    def on_change_state(self, action, data: GLib.Variant, *args):
-        """
-        Change the state of a specific StreamDeck item
-        """
-        serial_number, page_name, coords, state_number = data.unpack()
-        
-        # Find the controller with matching serial number
-        target_controller = None
-        for controller in self.deck_manager.deck_controller:
-            if controller.serial_number() == serial_number:
-                target_controller = controller
-                break
-        
-        if target_controller is None:
-            # Serial number not found - provide helpful suggestions
-            available_serials = [c.serial_number() for c in self.deck_manager.deck_controller]
-            if available_serials:
-                log.error(f"StreamDeck with serial '{serial_number}' not found. Available devices: {', '.join(available_serials)}")
-            else:
-                log.error("No StreamDeck devices connected")
-            return
-
-        # Find the requested page
-        page_path = gl.page_manager.find_matching_page_path(page_name)
-        if page_path is None:
-            # Page not found - provide helpful suggestions
-            available_pages = [os.path.splitext(os.path.basename(p))[0] for p in gl.page_manager.get_pages()]
-            log.error(f"Page '{page_name}' not found. Available pages: {', '.join(available_pages)}")
-            return
-
-        # Load the page if not already active
-        if target_controller.active_page is None or os.path.abspath(page_path) != os.path.abspath(target_controller.active_page.json_path):
-            page = gl.page_manager.get_page(page_path, target_controller)
-            target_controller.load_page(page)
-
-        # Parse and validate coordinates
-        try:
-            x, y = map(int, coords.split(','))
-        except (ValueError, AttributeError):
-            log.error(f"Invalid coordinate format '{coords}'. Expected format: 'x,y' (e.g., '0,0')")
-            return
-
-        # Validate coordinates are within deck bounds
-        rows, cols = target_controller.deck.key_layout()
-        if x < 0 or x >= cols or y < 0 or y >= rows:
-            log.error(f"Coordinates ({x},{y}) are out of bounds for this device. Valid range: x=0-{cols-1}, y=0-{rows-1}")
-            return
-
-        # Create the input identifier for the key
-        identifier = Input.Key(f"{x}x{y}")
-        c_input = target_controller.get_input(identifier)
-        
-        if c_input is None:
-            log.error(f"Could not find input at coordinates ({x},{y})")
-            return
-
-        # Validate state number
-        try:
-            state_num = int(state_number)
-        except ValueError:
-            log.error(f"Invalid state number '{state_number}'. Must be an integer")
-            return
-
-        # Check if the requested state exists
-        if state_num < 0 or state_num >= len(c_input.states):
-            max_state = len(c_input.states) - 1
-            if max_state == 0:
-                log.error(f"Position ({x},{y}) only has 1 state (state 0). Requested state {state_num} does not exist")
-            else:
-                log.error(f"Position ({x},{y}) has {len(c_input.states)} states (0-{max_state}). Requested state {state_num} does not exist")
-            return
-
-        # Successfully change to the specified state
-        c_input.set_state(state_num)
-        log.info(f"Successfully changed state of ({x},{y}) to state {state_num} on device {serial_number}")
 
     def send_outdated_plugin_notification(self, plugin_id: str) -> None:
         self.send_notification(

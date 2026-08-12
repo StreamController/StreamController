@@ -19,6 +19,7 @@ import gi
 
 from GtkHelper.ScaleRow import ScaleRow
 from GtkHelper.ToggleRow import ToggleRow
+from GtkHelper.MediaSourceControls import DEFAULT_INTERVAL, SOURCE_FILE, SOURCE_FOLDER, RowMediaSourceControls
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 from src.windows.MultiDeckSelector.MultiDeckSelectorRow import MultiDeckSelectorRow
 gi.require_version("Gtk", "4.0")
@@ -37,7 +38,7 @@ import globals as gl
 import os
 
 # Import own modules
-from GtkHelper.GtkHelper import BetterExpander, better_disconnect
+from GtkHelper.GtkHelper import BetterExpander, better_disconnect, let_user_select_folder
 from src.backend.WindowGrabber.Window import Window
 from src.windows.PageManager.elements.MenuButton import MenuButton
 from src.backend.PageManagement.Page import Page
@@ -261,11 +262,15 @@ class AutoChangeGroup(PageEditorGroup):
         )
         self.add(self.deck_selector)
 
-        self.title_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.title-regex"), text="", show_apply_button=True)
+        self.title_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.title-regex"), text=".*", show_apply_button=True)
         self.add(self.title_entry)
+        self.title_focus_ctrl = Gtk.EventControllerFocus()
+        self.title_entry.add_controller(self.title_focus_ctrl)
 
-        self.wm_class_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.wm-class-regex"), text="", show_apply_button=True)
+        self.wm_class_entry = Adw.EntryRow(title=gl.lm.get("page-manager.page-editor.change-group.wm-class-regex"), text=".*", show_apply_button=True)
         self.add(self.wm_class_entry)
+        self.wm_class_focus_ctrl = Gtk.EventControllerFocus()
+        self.wm_class_entry.add_controller(self.wm_class_focus_ctrl)
 
         self.matching_window_expander = MatchingWindowExpander(auto_change_group=self)
         self.add(self.matching_window_expander)
@@ -275,20 +280,24 @@ class AutoChangeGroup(PageEditorGroup):
         self.stay_on_page_toggle.connect("notify::active", self.on_stay_on_page_changed)
         self.title_entry.connect("apply", self.on_title_entry_applied)
         self.wm_class_entry.connect("apply", self.on_wm_class_entry_applied)
+        self.title_focus_ctrl.connect("leave", self.on_title_entry_focus_leave)
+        self.wm_class_focus_ctrl.connect("leave", self.on_wm_class_entry_focus_leave)
 
     def disconnect_events(self):
         better_disconnect(self.enable_toggle, self.on_enable_changed)
         better_disconnect(self.stay_on_page_toggle, self.on_stay_on_page_changed)
         better_disconnect(self.title_entry, self.on_title_entry_applied)
         better_disconnect(self.wm_class_entry, self.on_wm_class_entry_applied)
+        better_disconnect(self.title_focus_ctrl, self.on_title_entry_focus_leave)
+        better_disconnect(self.wm_class_focus_ctrl, self.on_wm_class_entry_focus_leave)
 
     def load_config_settings(self, page_path: str):
         auto_change = gl.page_manager.get_auto_change_settings(self.page_editor.active_page_path)
 
         self.enable_toggle.set_active(auto_change.get("enable", False))
         self.stay_on_page_toggle.set_active(auto_change.get("stay-on-page", True))
-        self.wm_class_entry.set_text(auto_change.get("wm-class", ""))
-        self.title_entry.set_text(auto_change.get("title", ""))
+        self.wm_class_entry.set_text(auto_change.get("wm-class", ".*"))
+        self.title_entry.set_text(auto_change.get("title", ".*"))
         self.deck_selector.set_selected_deck_serials(auto_change.get("decks", []).copy())
 
     def on_enable_changed(self, *args):
@@ -296,6 +305,7 @@ class AutoChangeGroup(PageEditorGroup):
             path=self.page_editor.active_page_path,
             enable=self.enable_toggle.get_active()
         )
+        gl.window_grabber.recheck_active_window()
 
     def on_stay_on_page_changed(self, *args):
         gl.page_manager.overwrite_auto_change_settings(
@@ -310,6 +320,7 @@ class AutoChangeGroup(PageEditorGroup):
             path=self.page_editor.active_page_path,
             regex_title=self.title_entry.get_text()
         )
+        gl.window_grabber.recheck_active_window()
 
     def on_wm_class_entry_applied(self, *args):
         self.matching_window_expander.update_matching_windows()
@@ -318,6 +329,17 @@ class AutoChangeGroup(PageEditorGroup):
             path=self.page_editor.active_page_path,
             wm_class=self.wm_class_entry.get_text()
         )
+        gl.window_grabber.recheck_active_window()
+
+    def on_title_entry_focus_leave(self, *args):
+        saved = gl.page_manager.get_auto_change_settings(self.page_editor.active_page_path).get("title", ".*")
+        if self.title_entry.get_text() != saved:
+            self.on_title_entry_applied()
+
+    def on_wm_class_entry_focus_leave(self, *args):
+        saved = gl.page_manager.get_auto_change_settings(self.page_editor.active_page_path).get("wm-class", ".*")
+        if self.wm_class_entry.get_text() != saved:
+            self.on_wm_class_entry_applied()
 
     def on_deck_changed(self, serial_number: str, state: bool):
         path = self.page_editor.active_page_path
@@ -332,6 +354,7 @@ class AutoChangeGroup(PageEditorGroup):
             return
 
         gl.page_manager.overwrite_auto_change_settings(path, decks=decks)
+        gl.window_grabber.recheck_active_window()
 
 class BrightnessGroup(PageEditorGroup):
     def __init__(self, page_editor: PageEditor):
@@ -388,6 +411,8 @@ class BrightnessGroup(PageEditorGroup):
         GLib.idle_add(on_idle)
 
 class BackgroundGroup(PageEditorGroup):
+    SOURCES = ["file", "folder"]
+
     def __init__(self, page_editor: PageEditor):
         super().__init__(page_editor, title="Background Override")
 
@@ -409,6 +434,10 @@ class BackgroundGroup(PageEditorGroup):
         self.show_background_toggle = Adw.SwitchRow(title="Show Background")
         self.media_settings_box.append(self.show_background_toggle)
 
+        self.media_source = RowMediaSourceControls()
+        self.media_settings_box.append(self.media_source.source_widget)
+        self.media_settings_box.append(self.media_source.interval_widget)
+
         self.loop_toggle = Adw.SwitchRow(title="Loop")
         self.media_settings_box.append(self.loop_toggle)
 
@@ -426,11 +455,14 @@ class BackgroundGroup(PageEditorGroup):
         )
         self.button_box.append(self.media_selector_button)
 
+        self.button_box.append(self.media_source.folder_label)
+
         self.media_selector_image = Gtk.Image()
 
     def connect_events(self):
         self.enable_expander.connect("notify::enable-expansion", self.on_enable_changed)
         self.show_background_toggle.connect("notify::active", self.on_show_background_changed)
+        self.media_source.connect_signals(self.on_source_changed, self.on_interval_changed)
         self.loop_toggle.connect("notify::active", self.on_loop_changed)
         self.fps_spin.connect("changed", self.on_fps_changed)
         self.media_selector_button.connect("clicked", self.on_media_selector_click)
@@ -438,6 +470,7 @@ class BackgroundGroup(PageEditorGroup):
     def disconnect_events(self):
         better_disconnect(self.enable_expander, self.on_enable_changed)
         better_disconnect(self.show_background_toggle, self.on_show_background_changed)
+        self.media_source.disconnect_signals(self.on_source_changed, self.on_interval_changed)
         better_disconnect(self.loop_toggle, self.on_loop_changed)
         better_disconnect(self.fps_spin, self.on_fps_changed)
         better_disconnect(self.media_selector_button, self.on_media_selector_click)
@@ -451,7 +484,35 @@ class BackgroundGroup(PageEditorGroup):
         self.show_background_toggle.set_active(background_settings.get("show", False))
         self.loop_toggle.set_active(background_settings.get("loop", False))
         self.fps_spin.set_value(background_settings.get("fps", 0))
-        self.set_thumbnail(background_settings.get("media-path", None))
+        self.media_source.set_interval(background_settings.get("rotation-interval", DEFAULT_INTERVAL))
+        self.media_source.set_source(background_settings.get("source", SOURCE_FILE))
+        self.update_source_ui(background_settings)
+
+    def get_source(self) -> str:
+        return self.media_source.get_source()
+
+    def update_source_ui(self, background_settings: dict):
+        """Show the widgets belonging to the selected source and preview it."""
+        self.set_thumbnail(self.media_source.update_for(
+            source=self.get_source(),
+            folder_path=background_settings.get("folder-path", None),
+            media_path=background_settings.get("media-path", None),
+        ))
+
+    def on_source_changed(self, *args):
+        gl.page_manager.overwrite_background_settings(
+            path=self.page_editor.active_page_path,
+            source=self.get_source()
+        )
+        self.update_source_ui(gl.page_manager.get_background_settings(self.page_editor.active_page_path))
+        self.update_background()
+
+    def on_interval_changed(self, *args):
+        gl.page_manager.overwrite_background_settings(
+            path=self.page_editor.active_page_path,
+            rotation_interval=self.media_source.get_interval()
+        )
+        self.update_background()
 
     def on_enable_changed(self, *args):
         gl.page_manager.overwrite_background_settings(
@@ -484,6 +545,10 @@ class BackgroundGroup(PageEditorGroup):
     def on_media_selector_click(self, *args):
         background_settings = gl.page_manager.get_background_settings(self.page_editor.active_page_path)
 
+        if self.get_source() == SOURCE_FOLDER:
+            let_user_select_folder(callback=self.update_folder, initial_folder=background_settings.get("folder-path", ""), parent=self.get_root())
+            return
+
         gl.app.let_user_select_asset(default_path=background_settings.get("media-path", ""), callback_func=self.update_image)
 
     def set_thumbnail(self, file_path):
@@ -508,6 +573,15 @@ class BackgroundGroup(PageEditorGroup):
             media_path=file_path
         )
 
+        self.update_background()
+
+    def update_folder(self, folder_path):
+        gl.page_manager.overwrite_background_settings(
+            path=self.page_editor.active_page_path,
+            folder_path=folder_path
+        )
+
+        self.update_source_ui(gl.page_manager.get_background_settings(self.page_editor.active_page_path))
         self.update_background()
 
     def update_background(self):
@@ -544,6 +618,10 @@ class ScreensaverGroup(PageEditorGroup):
         self.delay_spin.set_title("Delay (min)")
         self.media_settings_box.append(self.delay_spin)
 
+        self.media_source = RowMediaSourceControls()
+        self.media_settings_box.append(self.media_source.source_widget)
+        self.media_settings_box.append(self.media_source.interval_widget)
+
         self.loop_toggle = Adw.SwitchRow(title="Loop")
         self.media_settings_box.append(self.loop_toggle)
 
@@ -566,12 +644,15 @@ class ScreensaverGroup(PageEditorGroup):
         )
         self.button_box.append(self.media_selector_button)
 
+        self.button_box.append(self.media_source.folder_label)
+
         self.media_selector_image = Gtk.Image()
 
     def connect_events(self):
         self.overwrite_expander.connect("notify::enable-expansion", self.on_overwrite_changed)
         self.enable_screensaver_toggle.connect("notify::active", self.on_enable_changed)
         self.delay_spin.connect("changed", self.on_delay_changed)
+        self.media_source.connect_signals(self.on_source_changed, self.on_interval_changed)
         self.loop_toggle.connect("notify::active", self.on_loop_changed)
         self.fps_spin.connect("changed", self.on_fps_changed)
         self.brightness_scale.scale.connect("value-changed", self.on_brightness_changed)
@@ -581,6 +662,7 @@ class ScreensaverGroup(PageEditorGroup):
         better_disconnect(self.overwrite_expander, self.on_overwrite_changed)
         better_disconnect(self.enable_screensaver_toggle, self.on_enable_changed)
         better_disconnect(self.delay_spin, self.on_delay_changed)
+        self.media_source.disconnect_signals(self.on_source_changed, self.on_interval_changed)
         better_disconnect(self.loop_toggle, self.on_loop_changed)
         better_disconnect(self.fps_spin, self.on_fps_changed)
         better_disconnect(self.brightness_scale, self.on_brightness_changed)
@@ -598,7 +680,44 @@ class ScreensaverGroup(PageEditorGroup):
         self.fps_spin.set_value(screensaver_settings.get("fps", 30))
         self.brightness_scale.set_value(screensaver_settings.get("brightness", 75))
 
-        self.set_thumbnail(screensaver_settings.get("media-path", None))
+        self.media_source.set_interval(screensaver_settings.get("rotation-interval", DEFAULT_INTERVAL))
+        self.media_source.set_source(screensaver_settings.get("source", SOURCE_FILE))
+        self.update_source_ui(screensaver_settings)
+
+    def get_source(self) -> str:
+        return self.media_source.get_source()
+
+    def update_source_ui(self, screensaver_settings: dict):
+        """Show the widgets belonging to the selected source and preview it."""
+        self.set_thumbnail(self.media_source.update_for(
+            source=self.get_source(),
+            folder_path=screensaver_settings.get("folder-path", None),
+            media_path=screensaver_settings.get("media-path", None),
+        ))
+
+    def on_source_changed(self, *args):
+        gl.page_manager.overwrite_screensaver_settings(
+            path=self.page_editor.active_page_path,
+            source=self.get_source()
+        )
+        self.update_source_ui(gl.page_manager.get_screensaver_settings(self.page_editor.active_page_path))
+        self.update_screensaver()
+
+    def on_interval_changed(self, *args):
+        gl.page_manager.overwrite_screensaver_settings(
+            path=self.page_editor.active_page_path,
+            rotation_interval=self.media_source.get_interval()
+        )
+        self.update_screensaver()
+
+    def update_folder(self, folder_path):
+        gl.page_manager.overwrite_screensaver_settings(
+            path=self.page_editor.active_page_path,
+            folder_path=folder_path
+        )
+
+        self.update_source_ui(gl.page_manager.get_screensaver_settings(self.page_editor.active_page_path))
+        self.update_screensaver()
 
     def on_overwrite_changed(self, *args):
         gl.page_manager.overwrite_screensaver_settings(
@@ -644,6 +763,10 @@ class ScreensaverGroup(PageEditorGroup):
 
     def on_media_selector_click(self, *args):
         screensaver_settings = gl.page_manager.get_screensaver_settings(self.page_editor.active_page_path)
+
+        if self.get_source() == SOURCE_FOLDER:
+            let_user_select_folder(callback=self.update_folder, initial_folder=screensaver_settings.get("folder-path", ""), parent=self.get_root())
+            return
 
         gl.app.let_user_select_asset(default_path=screensaver_settings.get("media-path", ""), callback_func=self.update_image)
 

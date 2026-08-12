@@ -35,6 +35,7 @@ from numpy import isin
 # Import globals
 from src.backend.PluginManager.EventAssigner import EventAssigner
 from src.backend.DeckManagement.ImageHelpers import crop_key_image_from_deck_sized_image
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 import globals as gl
 
 from src.backend.PluginManager.ActionCore import ActionCore
@@ -94,8 +95,7 @@ class Page:
         # Make keys last element
         for type in Input.KeyTypes:
             self.move_key_to_end(without_objects, type)
-        with open(self.json_path, "w") as f:
-            json.dump(without_objects, f, indent=4)
+        atomic_save_json(self.json_path, without_objects, indent=4)
         self.file_access_semaphore.release()
 
     def make_backup(self):
@@ -177,6 +177,8 @@ class Page:
     def get_new_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, input_ident):
         
         action_holder = gl.plugin_manager.get_action_holder_from_id(action_id)
+        if action_holder is None and gl.argparser.parse_args().daemon_only:
+            action_holder = gl.plugin_manager.ensure_action_holder_loaded(action_id)
 
         ## No action holder found
         if action_holder is None:
@@ -570,13 +572,11 @@ class Page:
         for input_type in self.action_objects:
             for input_identifier in self.action_objects[input_type]:
                 for state in self.action_objects[input_type][input_identifier]:
-                    for i, action in enumerate(list(self.action_objects[input_type][input_identifier][state].values())):
-                        self.action_objects[input_type][input_identifier][state][i].page = None
-                        self.action_objects[input_type][input_identifier][state][i] = None
-                        if isinstance(self.action_objects[input_type][input_identifier][state][i], ActionCore):
-                            if hasattr(self.action_objects[input_type][input_identifier][state][i], "on_removed_from_cache"):
-                                self.action_objects[input_type][input_identifier][state][i].on_removed_from_cache()
-                        self.action_objects[input_type][input_identifier][state][i] = None
+                    for i, action in list(self.action_objects[input_type][input_identifier][state].items()):
+                        if action is not None:
+                            if isinstance(action, ActionCore) and hasattr(action, "on_removed_from_cache"):
+                                action.on_removed_from_cache()
+                            action.page = None
                         del self.action_objects[input_type][input_identifier][state][i]
             self.action_objects[input_type] = {}
 
@@ -691,6 +691,16 @@ class Page:
         inputs: list["ControllerInput"] = []
 
         for controller in gl.deck_manager.deck_controller:
+            # Only decks actually showing this page - their inputs are the ones
+            # holding this page's values. update_input() filters the same way;
+            # without this, writing to a page that is not on a deck (or that is
+            # only on one of several decks) pushes this page's labels/media/
+            # background into the live state of a key showing a different page,
+            # where it stays until that input is reloaded.
+            active_page = controller.active_page
+            if active_page is None or active_page.json_path != self.json_path:
+                continue
+
             for c_input in controller.get_inputs(identifier):
                 if c_input.identifier == identifier:
                     inputs.append(c_input)
@@ -742,9 +752,34 @@ class Page:
         label_manager = self.get_label_manager(identifier, state)
         if label_manager is not None:
             label_manager.page_labels[label_position].text = text
+            label_manager.update_label_editor()
 
         if update:
             self.update_input(identifier, state)
+
+    def get_active_states(self, identifier: InputIdentifier) -> dict:
+        """
+        The last active state per deck serial number. Keyed by serial because the
+        same page can be loaded on several decks at the same time, each on its own
+        state - and keying it by serial keeps working when the page is renamed.
+        """
+        states = self._get_dict_value([identifier.input_type, identifier.json_identifier, "active_state"])
+        if not isinstance(states, dict):
+            return {}
+        return states
+
+    def get_active_state(self, identifier: InputIdentifier, deck_serial_number: str) -> int | None:
+        return self.get_active_states(identifier).get(deck_serial_number)
+
+    def set_active_state(self, identifier: InputIdentifier, deck_serial_number: str, active_state: int):
+        states = self.get_active_states(identifier)
+        # _set_dict_value saves the whole page to disk - don't do that for a state
+        # switch that doesn't change anything, this runs on every key press
+        if states.get(deck_serial_number) == active_state:
+            return
+
+        states[deck_serial_number] = active_state
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "active_state"], states)
 
     def get_label_font_family(self, identifier: InputIdentifier, state: int, label_position: str) -> str:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-family"])
@@ -800,6 +835,9 @@ class Page:
         if update:
             self.update_input(identifier, state)
 
+    def get_label_font_color(self, identifier: InputIdentifier, state: int, label_position: str) -> list[int]:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "color"])
+
     def set_label_font_color(self, identifier: InputIdentifier, state: int, label_position: str, font_color: list[int], update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
             key_state.label_manager.page_labels[label_position].color = font_color
@@ -814,6 +852,9 @@ class Page:
         if update:
             self.update_input(identifier, state)
 
+    def get_label_outline_width(self, identifier: InputIdentifier, state: int, label_position: str) -> int:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "outline_width"])
+
     def set_label_outline_width(self, identifier: InputIdentifier, state: int, label_position: str, outline_width: list[int], update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
             key_state.label_manager.page_labels[label_position].outline_width = outline_width
@@ -827,6 +868,9 @@ class Page:
 
         if update:
             self.update_input(identifier, state)
+
+    def get_label_outline_color(self, identifier: InputIdentifier, state: int, label_position: str) -> list[int]:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "outline_color"])
 
     def set_label_outline_color(self, identifier: InputIdentifier, state: int, label_position: str, outline_color: list[int], update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
@@ -855,6 +899,9 @@ class Page:
 
         if update:
             self.update_input(identifier, state)
+
+    def get_label_alignment(self, identifier: InputIdentifier, state: int, label_position: str) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "alignment"])
 
     def set_label_alignment(self, identifier: InputIdentifier, state: int, label_position: str, alignment: str, update: bool = True) -> None:
         for key_state in self.get_controller_input_states(identifier, state):
@@ -902,6 +949,18 @@ class Page:
             key_state.layout_manager.page_layout.halign = halign
 
         self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "halign"], halign)
+
+        if update:
+            self.update_input(identifier, state)
+
+    def get_media_fill_mode(self, identifier: InputIdentifier, state: int) -> str:
+        return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "fill-mode"])
+
+    def set_media_fill_mode(self, identifier: InputIdentifier, state: int, fill_mode: str, update: bool = True) -> None:
+        for key_state in self.get_controller_input_states(identifier, state):
+            key_state.layout_manager.page_layout.fill_mode = fill_mode
+
+        self._set_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "media", "fill-mode"], fill_mode)
 
         if update:
             self.update_input(identifier, state)

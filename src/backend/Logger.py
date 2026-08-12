@@ -1,8 +1,45 @@
 import inspect
+import logging
 import os
 from dataclasses import dataclass
 from loguru import logger
 import globals as gl
+
+
+class InterceptHandler(logging.Handler):
+    """
+    Forwards records from the standard library's logging module into loguru.
+
+    Our dependencies do not know about loguru - the streamdeck library in
+    particular logs the deck reconnect diagnostics this way - and without this
+    their messages never reach our log file.
+    """
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            # A level loguru does not know about (e.g. a custom numeric one)
+            level = record.levelno
+
+        # Walk out of the logging machinery so the logged location is the
+        # caller's, not this handler's.
+        frame, depth = inspect.currentframe(), 0
+        while frame and (depth == 0 or frame.f_code.co_filename == logging.__file__):
+            frame = frame.f_back
+            depth += 1
+
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
+
+def intercept_stdlib_logging(level: int = logging.INFO) -> None:
+    """
+    Routes everything logged through the standard library into loguru.
+
+    Call once during startup, after the loguru sinks are set up.
+    """
+    logging.basicConfig(handlers=[InterceptHandler()], level=level, force=True)
+
 
 @dataclass
 class Loglevel:
@@ -58,7 +95,6 @@ class Logger:
     def add_sink(self):
         def log_filter(record):
             if record["level"].name.startswith(f"{self.config.name}_"):
-                print(record)
                 return True
             return False
 

@@ -17,7 +17,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gdk, GLib
+from gi.repository import Gtk, Adw, Gdk, GLib
 
 import globals as gl
 
@@ -78,6 +78,23 @@ class ChooserPage(Gtk.Stack):
         self.loading_box.append(self.loading_label)
 
         self.set_loading(True)
+
+    def add_pill_button(self, label: str, icon_name: str = "list-add-symbolic", tooltip: str = None) -> Gtk.Button:
+        """
+        Adds a floating pill button to the bottom right of the page. The main box
+        is wrapped in an overlay for it, so this can only be done once per page.
+        """
+        self.remove(self.main_box)
+        self.overlay = Gtk.Overlay()
+        self.overlay.set_child(self.main_box)
+        self.add_titled(self.overlay, "main", "main")
+
+        button = Gtk.Button(css_classes=["suggested-action", "pill"], halign=Gtk.Align.END,
+                            valign=Gtk.Align.END, margin_end=20, margin_bottom=20, tooltip_text=tooltip)
+        button.set_child(Adw.ButtonContent(icon_name=icon_name, label=label))
+        self.overlay.add_overlay(button)
+
+        return button
 
     def set_loading(self, loading: bool) -> None:
         if loading:

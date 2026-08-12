@@ -1,34 +1,18 @@
 import json
 import Pyro5.api
 import os
+from collections import deque
 from typing import TYPE_CHECKING
-import argparse
 import sys
 from loguru import logger as log
 
+from src.CLI import build_argparser
 from src.backend.DeckManagement.HelperMethods import find_fallback_font
 
 # Automatically detect macOS
 IS_MAC = sys.platform == "darwin"
 
-argparser = argparse.ArgumentParser()
-argparser.add_argument("-b", help="Open in background", action="store_true")
-argparser.add_argument("--devel", help="Developer mode (disables auto update)", action="store_true")
-argparser.add_argument("--skip-load-hardware-decks", help="Skips initilization/use of hardware decks", action="store_true")
-argparser.add_argument("--close-running", help="Close running", action="store_true")
-argparser.add_argument("--data", help="Data path", type=str)
-argparser.add_argument("--change-page", action="append", nargs=2, help="Change the page for a device", metavar=("SERIAL_NUMBER", "PAGE_NAME"))
-argparser.add_argument("--list-devices", help="List all connected StreamDeck devices and their properties", action="store_true")
-argparser.add_argument("--list-pages", help="List all available pages", action="store_true")
-argparser.add_argument("--change-state", action="append", nargs=4, 
-                      help="Change the state of a StreamDeck item. Format: SERIAL PAGE COORDS STATE\n"
-                           "  SERIAL: Device serial number (e.g., CL123456789)\n"
-                           "  PAGE: Page name (e.g., Main, Soundboard) \n"
-                           "  COORDS: Position as x,y (e.g., 0,0 for top-left)\n"
-                           "  STATE: State number to change to (0, 1, 2, etc.)\n"
-                           "Example: --change-state CL123456789 Main 0,0 1", 
-                      metavar=("SERIAL", "PAGE", "COORDS", "STATE"))
-argparser.add_argument("app_args", nargs="*")
+argparser = build_argparser()
 
 MAIN_PATH: str
 VAR_APP_PATH = os.path.join(os.path.expanduser("~"), ".var", "app", "com.core447.StreamController")
@@ -126,43 +110,29 @@ threads_running: bool = True
 app_loading_finished_tasks: callable = []
 api_page_requests: dict[str, str] = {} # Stores api page requests made my --change-page
 api_state_requests: dict[str, dict] = {} # Stores api state change requests made by --change-state
+api_action_requests: dict[str, dict] = {} # Stores api action trigger requests made by --action
 tray_icon: "TrayIcon" = None
 fallback_font: str = find_fallback_font()
 showed_donate_window: bool = False
 screen_locked: bool = False
 loggers: dict[str, "Logger"] = {}
 
-app_version: str = "1.5.0-beta.14"  # In breaking.feature.fix-state format
-exact_app_version_check: bool = False
-logs: list[str] = []
+app_version: str = "1.5.0-beta.16"  # In breaking.feature.fix-state format
+logs = deque(maxlen=5000)
 
 release_notes: str = """
 <p>Features:</p>
     <ul>
-        <li>Add support for remote decks (beta)</li>
-        <li>Support webdings fonts</li>
-        <li>Add option to disable label scrolling</li>
+        <li>Add uninstall button to plugin settings page</li>
     </ul>
 <p>Improvements:</p>
     <ul>
-        <li>Reworked page settings UI</li>
-        <li>Auto hide compatible/incompatible switcher in store</li>
-        <li>Better handling of transparent images</li>
-        <li>Improve SD+ Dial interaction through the UI</li>
-        <li>Streamdeck-UI Importer</li>
-        <li>Overall stability</li>
-        <li>Respect GIF frame delays</li>
-        <li>Respect Adwaita accent color</li>
+        <li>Improved page switch speed</li>
+        <li>Reduce idle CPU usage</li>
+        <li>Improve Hyprland active window detection</li>
+        <li>Switch to new GNOME runtime</li>
     </ul>
 <p>Fixes:</p>
     <ul>
-        <li>Tray icon not getting loaded on some desktops</li>
-        <li>SD+ bar images not always respecting aspect ratio</li>
-        <li>Auto page switching not working on some KDE and Sway installations</li>
-        <li>App not starting when backup dir does not exist</li>
-        <li>Font stylings not loading correctly</li>
-        <li>Localization problems</li>
-        <li>--change-state argument not working</li>
-        <li>Media plugin not showing artworks from some sources</li>
     </ul>
 """

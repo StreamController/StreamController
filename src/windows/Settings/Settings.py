@@ -19,6 +19,7 @@ import gi
 
 from GtkHelper.GtkHelper import BetterPreferencesGroup
 from autostart import is_flatpak, setup_autostart
+from src.backend.DeckManagement.Subclasses.FakeDeck import DEFAULT_FAKE_DECK_TYPE, get_supported_deck_types
 from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
 from src.windows.Settings.PluginSettingsPage import PluginSettingsPage
 
@@ -193,6 +194,10 @@ class FakeDecksGroup(Adw.PreferencesGroup):
         self.settings = settings
         super().__init__(title=gl.lm.get("settings-fake-decks-header"))
 
+        self.deck_types: list[str] = get_supported_deck_types()
+        self.type_rows: list[Adw.ComboRow] = []
+        self.updating_type_rows = False
+
         self.n_fake_decks_row = Adw.SpinRow.new_with_range(min=0, max=3, step=1)
         self.n_fake_decks_row.set_title(gl.lm.get("settings-number-of-fake-decks"))
         self.n_fake_decks_row.set_subtitle(gl.lm.get("settings-number-of-fake-decks-hint"))
@@ -206,11 +211,77 @@ class FakeDecksGroup(Adw.PreferencesGroup):
 
     def load_defaults(self):
         self.n_fake_decks_row.set_value(self.settings.settings_json.get("dev", {}).get("n-fake-decks", 0))
+        self.update_type_rows()
+
+    def get_n_fake_decks(self) -> int:
+        return int(self.n_fake_decks_row.get_value())
+
+    def get_configured_types(self) -> list[str]:
+        """
+        The configured deck type of each fake deck, padded to the current number
+        of fake decks with the default type
+        """
+        configured = self.settings.settings_json.get("dev", {}).get("fake-deck-types", [])
+
+        types: list[str] = []
+        for i in range(self.get_n_fake_decks()):
+            deck_type = configured[i] if i < len(configured) else None
+            if deck_type not in self.deck_types:
+                deck_type = DEFAULT_FAKE_DECK_TYPE
+            types.append(deck_type)
+
+        return types
+
+    def update_type_rows(self):
+        """
+        Shows one deck type selector per fake deck
+        """
+        types = self.get_configured_types()
+
+        while len(self.type_rows) > len(types):
+            self.remove(self.type_rows.pop())
+
+        while len(self.type_rows) < len(types):
+            row = Adw.ComboRow(model=Gtk.StringList.new(self.deck_types))
+            row.connect("notify::selected", self.on_type_row_changed)
+            self.add(row)
+            self.type_rows.append(row)
+
+        self.updating_type_rows = True
+        for i, row in enumerate(self.type_rows):
+            row.set_title(gl.lm.get("settings-fake-deck-type").format(number=i+1))
+            row.set_selected(self.deck_types.index(types[i]))
+        self.updating_type_rows = False
 
     def on_n_fake_decks_row_changed(self, *args):
         #FIXME: For some reason this gets called twice
         self.settings.settings_json.setdefault("dev", {})
-        self.settings.settings_json["dev"]["n-fake-decks"] = self.n_fake_decks_row.get_value()
+        stored_types = self.settings.settings_json["dev"].get("fake-deck-types", [])
+        self.settings.settings_json["dev"]["n-fake-decks"] = self.get_n_fake_decks()
+        # One type per deck - the types of decks beyond the current number are
+        # kept around so that they come back when the number is raised again
+        types = self.get_configured_types()
+        self.settings.settings_json["dev"]["fake-deck-types"] = types + stored_types[len(types):]
+
+        # Save
+        self.settings.save_json()
+
+        self.update_type_rows()
+
+        # Reload decks
+        gl.deck_manager.load_fake_decks()
+
+    def on_type_row_changed(self, row: Adw.ComboRow, *args):
+        if self.updating_type_rows:
+            return
+
+        self.settings.settings_json.setdefault("dev", {})
+        stored_types = self.settings.settings_json["dev"].get("fake-deck-types", [])
+
+        types = self.get_configured_types()
+        types[self.type_rows.index(row)] = self.deck_types[row.get_selected()]
+
+        self.settings.settings_json["dev"]["fake-deck-types"] = types + stored_types[len(types):]
 
         # Save
         self.settings.save_json()
@@ -285,16 +356,9 @@ class DataPathGroup(Adw.PreferencesGroup):
         gl.settings_manager.save_static_settings(static_settings)
 
     def on_open_data_path_button_clicked(self, *args):
-        command = ""
-        if is_flatpak():
-            command += "flatpak-spawn --host "
-
-        command += f"xdg-open {self.data_path.get_text()}"
-
-        try:
-            subprocess.check_output(command, shell=True)
-        except subprocess.CalledProcessError:
-            pass
+        path = self.data_path.get_text().strip()
+        uri = Gio.File.new_for_path(path).get_uri()
+        Gio.AppInfo.launch_default_for_uri(uri, None)
 
 
 class GeneralPage(Adw.PreferencesPage):
@@ -321,15 +385,25 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         self.rolling_labels = Adw.SwitchRow(title="Rolling labels", subtitle="Enable automatic rolling/scrolling of too long labels")
         self.add(self.rolling_labels)
 
+        self.persistent_states = Adw.SwitchRow(title="Persistent states", subtitle="Remember the active state of each key and dial across restarts")
+        self.add(self.persistent_states)
+
+        self.shrink_background = Adw.SwitchRow(title="Shrink background on press", subtitle="Scale the background down together with the icon when a key is pressed")
+        self.add(self.shrink_background)
+
         self.load_defaults()
 
         # Connect signals
         self.hold_time_row.connect("changed", self.on_n_fake_decks_row_changed)
         self.rolling_labels.connect("notify::active", self.on_rolling_labels_changed)
+        self.persistent_states.connect("notify::active", self.on_persistent_states_changed)
+        self.shrink_background.connect("notify::active", self.on_shrink_background_changed)
 
     def load_defaults(self):
         self.hold_time_row.set_value(self.settings.settings_json.get("general", {}).get("hold-time", 0.5))
         self.rolling_labels.set_active(self.settings.settings_json.get("general", {}).get("rolling-labels", True))
+        self.persistent_states.set_active(self.settings.settings_json.get("general", {}).get("persistent-states", False))
+        self.shrink_background.set_active(self.settings.settings_json.get("general", {}).get("shrink-background-on-press", True))
 
     def on_n_fake_decks_row_changed(self, *args):
         self.settings.settings_json.setdefault("general", {})
@@ -354,6 +428,32 @@ class GeneralPageGroup(Adw.PreferencesGroup):
         # Reload all pages - TODO: might not be necessary
         for controller in gl.deck_manager.deck_controller:
             controller.reload_page()
+
+    def on_persistent_states_changed(self, *args):
+        self.settings.settings_json.setdefault("general", {})
+        self.settings.settings_json["general"]["persistent-states"] = self.persistent_states.get_active()
+
+        # Save
+        self.settings.save_json()
+
+        # Write the states the inputs are on right now, so enabling it doesn't only
+        # start taking effect after the next state switch
+        if self.persistent_states.get_active():
+            for controller in gl.deck_manager.deck_controller:
+                if controller.active_page is None:
+                    continue
+                for input_type in controller.inputs:
+                    for controller_input in controller.inputs[input_type]:
+                        if not controller_input.enable_states:
+                            continue
+                        controller.active_page.set_active_state(controller_input.identifier, controller.safe_serial_number(), controller_input.state)
+
+    def on_shrink_background_changed(self, *args):
+        self.settings.settings_json.setdefault("general", {})
+        self.settings.settings_json["general"]["shrink-background-on-press"] = self.shrink_background.get_active()
+
+        # Save
+        self.settings.save_json()
 
 class FontPageGroup(Adw.PreferencesGroup):
     def __init__(self, settings: Settings):
@@ -719,7 +819,7 @@ class SystemGroup(Adw.PreferencesGroup):
         self.autostart = Adw.SwitchRow(title=gl.lm.get("settings-system-settings-autostart"), subtitle=gl.lm.get("settings-system-settings-autostart-subtitle"), active=True)
         self.add(self.autostart)
 
-        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Works on Gnome, KDE, Cinnamon and Hyprland", active=True)
+        self.lock_on_lock_screen = Adw.SwitchRow(title="Lock decks when screen is locked", subtitle="Works on Gnome, KDE, Cinnamon, Hyprland, and Niri", active=True)
         self.add(self.lock_on_lock_screen)
 
         self.beta_resume_mode = Adw.SwitchRow(title="Use new resume mode (beta)", subtitle="Use new way to resume after suspends - requires restart", active=False)
@@ -745,6 +845,11 @@ class SystemGroup(Adw.PreferencesGroup):
 
         # Save
         self.settings.save_json()
+
+        # Keep the Gio.Application hold in sync so the change applies
+        # immediately, without requiring an app restart.
+        if hasattr(gl, "app"):
+            gl.app.set_keep_running_hold(self.keep_running.get_active())
 
     def on_autostart_toggled(self, *args):
         self.settings.settings_json.setdefault("system", {})

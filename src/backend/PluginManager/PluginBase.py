@@ -1,8 +1,10 @@
+import configparser
 from functools import lru_cache
 import importlib
 import os
 import inspect
 import json
+import sys
 import threading
 import time
 import subprocess
@@ -34,6 +36,7 @@ import globals as gl
 from locales.LegacyLocaleManager import LegacyLocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.EventHolder import EventHolder
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 
 class PluginBase(rpyc.Service):
     """
@@ -42,11 +45,23 @@ class PluginBase(rpyc.Service):
 
     plugins = {}
     disabled_plugins = {}
+    backend_spawn_count = 0
+
+    # How long to keep retrying an RPyC backend connection before giving up
+    BACKEND_CONNECT_TIMEOUT: float = 30.0
+    # How long a physical/UI event may sit queued waiting for the backend before it is dropped
+    PENDING_EVENT_TIMEOUT: float = 30.0
 
     def __init__(self, use_legacy_locale: bool = True, legacy_dir: str = "locales"):
         self.backend_connection: Connection = None
         self.backend: netref = None
         self.server: ThreadedServer = None
+        self.backend_process: subprocess.Popen | None = None
+
+        # True while a backend has been launched but hasn't connected back yet
+        self.backend_launch_pending: bool = False
+        self._pending_action_events: list[tuple[float, callable]] = []
+        self._pending_action_events_lock = threading.Lock()
 
         self.logger = gl.loggers.get("plugins", None)
 
@@ -397,8 +412,7 @@ class PluginBase(rpyc.Service):
                     "file-version": "2.0",
                     "settings": settings
                 }
-                with open(self.settings_path, "w") as f:
-                    json.dump(new_settings, f, indent=4)
+                atomic_save_json(self.settings_path, new_settings, indent=4)
 
                 return settings
                 
@@ -437,28 +451,21 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
-        os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
+        content = {}
+        if os.path.isfile(self.settings_path):
+            with open(self.settings_path, "r") as f:
+                content = json.load(f)
 
-        if not os.path.isfile(self.settings_path):
-            with open(self.settings_path, "w") as f:
-                json.dump({}, f)
-
-        with open(self.settings_path, "r+") as f:
-            content = json.load(f)
-
+        if content.get("file-version") == "2.0":
             new_content = content.copy()
+            new_content["settings"] = settings
+        else:
+            new_content = {
+                "file-version": "2.0",
+                "settings": settings
+            }
 
-            if content.get("file-version") == "2.0":
-                new_content["settings"] = settings
-            else:
-                new_content = {
-                    "file-version": "2.0",
-                    "settings": settings
-                }
-
-            f.seek(0)
-            json.dump(new_content, f, indent=4)
-            f.truncate()
+        atomic_save_json(self.settings_path, new_content, indent=4)
 
 
     def add_css_stylesheet(self, path):
@@ -601,7 +608,34 @@ class PluginBase(rpyc.Service):
             self.server.close()
         if self.backend_connection is not None:
             self.backend_connection.close()
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            plugin_id = self.get_plugin_id_from_folder_name()
+            log.info(f"[backend] stopping plugin backend pid={self.backend_process.pid} plugin={plugin_id}")
+            self.backend_process.terminate()
         self.backend_connection = None
+        self.backend_process = None
+        self.backend = None
+        self.backend_launch_pending = False
+
+    def is_backend_venv_healthy(self, venv_path: str) -> bool:
+        # Get python version of venv
+        pyvenv_path = os.path.join(venv_path, "pyvenv.cfg")
+        if not os.path.exists(pyvenv_path):
+            return False
+
+        pyvenv = configparser.ConfigParser()
+        with open(pyvenv_path, "r") as f:
+            # Prepend a dummy section header in memory - otherwise configparser raises an error
+            pyvenv.read_string("[root]\n" + f.read())
+
+        pyvenv_version = pyvenv["root"]["version"]
+        system_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+        return pyvenv_version == system_version
+
+    def recreate_venv(self, plugin_path: str):
+        if os.path.isfile(os.path.join(plugin_path, "__install__.py")):
+            subprocess.run(f"{sys.executable} {os.path.join(plugin_path, '__install__.py')}", shell=True, start_new_session=True)
 
     def launch_backend(self, backend_path: str, venv_path: str = None, open_in_terminal: bool = False) -> None:
         """
@@ -618,6 +652,14 @@ class PluginBase(rpyc.Service):
         Returns:
             None
         """
+        if self.backend_process is not None and self.backend_process.poll() is None:
+            log.info("Backend process already running, skipping launch.")
+            return
+
+        if venv_path is not None and not self.is_backend_venv_healthy(venv_path):
+            log.info(f"Recreating venv for plugin {self.PATH} - This may take a while...")
+            self.recreate_venv(plugin_path=self.PATH)
+
         self.start_server()
         port = self.server.port
 
@@ -634,25 +676,43 @@ class PluginBase(rpyc.Service):
             command += f"python3 {backend_path} --port={port}"
 
         log.info(f"Launching backend: {command}")
-        subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        self.backend_launch_pending = True
+        self.backend_process = subprocess.Popen(command, shell=True, start_new_session=open_in_terminal)
+        PluginBase.backend_spawn_count += 1
+        plugin_id = self.get_plugin_id_from_folder_name()
+        log.info(
+            f"[backend] started plugin backend pid={self.backend_process.pid} "
+            f"plugin={plugin_id} spawns={PluginBase.backend_spawn_count}"
+        )
 
-        self.wait_for_backend()
+        threading.Thread(target=self.wait_for_backend, name="wait_for_backend", daemon=True).start()
 
-    def wait_for_backend(self, tries: int = 3) -> None:
+    def wait_for_backend(self, timeout: float = None) -> None:
         """
         Waits for the backend to establish a connection.
 
-        This method repeatedly checks if the backend connection is established within the given number of tries.
+        This method repeatedly polls for the backend connection to be established, for up to `timeout`
+        seconds. It is run in a background thread by `launch_backend` so it never blocks plugin loading -
+        events that arrive for this plugin while the connection is still pending are queued instead of
+        silently dropped (see `queue_action_event`/`_flush_pending_action_events`).
 
         Args:
-            tries (int, optional): The number of attempts to wait for the backend connection. Defaults to 3.
+            timeout (float, optional): How long to keep retrying. Defaults to `BACKEND_CONNECT_TIMEOUT`.
 
         Returns:
             None
         """
-        while tries > 0 and self.backend_connection is None:
+        if timeout is None:
+            timeout = self.BACKEND_CONNECT_TIMEOUT
+
+        deadline = time.monotonic() + timeout
+        while self.backend_connection is None and time.monotonic() < deadline:
             time.sleep(0.1)
-            tries -= 1
+
+        if self.backend_connection is None:
+            log.error(f"{self.plugin_id} - Could not connect to plugin backend within {timeout}s")
+            self.backend_launch_pending = False
+            self._flush_pending_action_events()
 
     def register_backend(self, port: int) -> None:
         """
@@ -671,6 +731,50 @@ class PluginBase(rpyc.Service):
         self.backend = self.backend_connection.root
 
         gl.plugin_manager.backends.append(self.backend_connection)
+
+        self.backend_launch_pending = False
+        self._flush_pending_action_events()
+
+    def queue_action_event(self, retry: callable) -> bool:
+        """
+        Queues an action event to be replayed once the backend finishes connecting, instead of letting it
+        silently no-op because `self.backend` is still None.
+
+        Only queues while a backend launch is actually in progress - plugins that never call
+        `launch_backend` are unaffected and events are dispatched immediately as before.
+
+        Args:
+            retry (callable): A zero-argument callable that re-dispatches the event once called.
+
+        Returns:
+            bool: True if the event was queued (caller should not dispatch it now), False if there is
+            nothing pending and the caller should dispatch it immediately.
+        """
+        if not self.backend_launch_pending:
+            return False
+
+        with self._pending_action_events_lock:
+            # Re-check under the lock in case the backend connected between the check above and here
+            if not self.backend_launch_pending:
+                return False
+            self._pending_action_events.append((time.monotonic(), retry))
+        return True
+
+    def _flush_pending_action_events(self) -> None:
+        with self._pending_action_events_lock:
+            pending = self._pending_action_events
+            self._pending_action_events = []
+
+        now = time.monotonic()
+        for queued_at, retry in pending:
+            age = now - queued_at
+            if age > self.PENDING_EVENT_TIMEOUT:
+                log.warning(f"{self.plugin_id} - Dropping queued action event that waited {age:.1f}s for the backend")
+                continue
+            try:
+                retry()
+            except Exception as e:
+                log.error(f"{self.plugin_id} - Error replaying queued action event: {e}")
 
     def ping(self) -> bool:
         """

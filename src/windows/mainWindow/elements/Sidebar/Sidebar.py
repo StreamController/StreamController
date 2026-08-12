@@ -222,7 +222,18 @@ class Sidebar(Adw.NavigationPage):
         self.main_stack.set_transition_duration(200)
 
     def update(self):
-        self.load_for_identifier(self.active_identifier, self.active_state)
+        # Follow the state the input is actually on - load_for_identifier() pushes the
+        # state it gets onto the input, so a stale self.active_state would switch the
+        # input back (e.g. on page load, which refreshes the sidebar from a thread that
+        # loaded a different state)
+        state = self.active_state
+        controller = self.main_window.get_active_controller()
+        if controller is not None and self.active_identifier is not None:
+            c_input = controller.get_input(self.active_identifier)
+            if c_input is not None:
+                state = c_input.state
+
+        self.load_for_identifier(self.active_identifier, state)
 
 
 class KeyEditor(Gtk.Box):

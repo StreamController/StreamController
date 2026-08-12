@@ -21,9 +21,10 @@ from src.backend.DeckManagement.HelperMethods import open_web
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk, GLib
+from gi.repository import Gtk, Adw, Gdk, GLib, Gio
 
 # Import Python modules
+import os
 from loguru import logger as log
 import webbrowser as web
 
@@ -57,6 +58,29 @@ def better_disconnect(widget: Gtk.Widget, handler: callable):
 def better_unparent(widget: Gtk.Widget):
     if widget.get_parent() is not None:
         widget.unparent()
+
+def let_user_select_folder(callback: callable, initial_folder: str = None, parent: Gtk.Window = None) -> None:
+    """Ask the user for a folder and pass its path to callback. Does nothing if the user cancels."""
+    if not isinstance(parent, Gtk.Window):
+        parent = getattr(gl.app, "main_win", None)
+
+    dialog = Gtk.FileDialog.new()
+    dialog.set_modal(True)
+    if initial_folder not in [None, ""] and os.path.isdir(initial_folder):
+        dialog.set_initial_folder(Gio.File.new_for_path(initial_folder))
+
+    def on_selected(dialog: Gtk.FileDialog, task) -> None:
+        try:
+            folder = dialog.select_folder_finish(task)
+        except GLib.Error as e:
+            # Raised when the user cancels the dialog
+            log.info(f"Folder selection aborted: {e}")
+            return
+        if folder is None:
+            return
+        callback(folder.get_path())
+
+    dialog.select_folder(parent, None, on_selected)
 
 # Helper Classes
 class BetterExpander(Adw.ExpanderRow):

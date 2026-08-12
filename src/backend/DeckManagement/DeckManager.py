@@ -17,26 +17,24 @@ import threading
 import time
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.Devices import StreamDeck
+from StreamDeck.ProductIDs import USBProductIDs, USBVendorIDs
 from StreamDeck.ImageHelpers import PILHelper
 from loguru import logger as log
 from usbmonitor import USBMonitor
 import usb.core
 import usb.util
 import os
-import types
 
 
 # Import own modules
 from src.backend.DeckManagement.Subclasses.RemoteDeckManager import RemoteDeckManager
 from src.backend.DeckManagement.Subclasses.RemoteDeck import RemoteDeck
-from src.backend.DeckManagement.BetterDeck import BetterDeck
+from StreamDeck.Devices.RotatedDeck import RotatedDeck
 from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.PageManagerBackend import PageManagerBackend
 from src.backend.SettingsManager import SettingsManager
 from src.backend.DeckManagement.HelperMethods import get_sys_param_value, recursive_hasattr
-from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
-
-from src.backend.DeckManagement.beta_resume import _read as beta_read
+from src.backend.DeckManagement.Subclasses.FakeDeck import DEFAULT_FAKE_DECK_TYPE, FakeDeck
 
 # Import globals first to get IS_MAC
 import globals as gl
@@ -85,6 +83,9 @@ class DeckManager:
         if gl.settings_manager.get_app_settings().get("dev", {}).get("n-remote-decks", 0) > 0:
             self.load_remote_decks()
 
+    def check_for_errors_if_window_ready(self):
+        if recursive_hasattr(gl, "app.main_win.check_for_errors"):
+            gl.app.main_win.check_for_errors()
 
     def load_remote_decks(self):
         print(" load remote decks")
@@ -102,13 +103,12 @@ class DeckManager:
         if recursive_hasattr(gl, "app.main_win.sidebar.page_selector"):
             GLib.idle_add(gl.app.main_win.sidebar.page_selector.update)
 
-        if recursive_hasattr(gl, "app.main_win"):
-            gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
 
     def remove_remote_decks(self):
         for controller in self.remote_deck_manager.deck_controllers:
             self.remove_controller(controller)
-        gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
         self.remote_deck_manager.stop()
 
     def load_decks(self):
@@ -131,42 +131,58 @@ class DeckManager:
             deck_controller = DeckController(self, deck)
             self.deck_controller.append(deck_controller)
 
+    def get_fake_deck_types(self) -> list[str]:
+        """
+        One deck type per configured fake deck. Decks without a configured type
+        (eg. right after the number of fake decks was increased) fall back to
+        the default model.
+        """
+        dev_settings = gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json")).get("dev", {})
+        n_fake_decks = int(dev_settings.get("n-fake-decks", 0))
+        configured_types = dev_settings.get("fake-deck-types", [])
+
+        types: list[str] = []
+        for i in range(n_fake_decks):
+            deck_type = configured_types[i] if i < len(configured_types) else None
+            types.append(deck_type or DEFAULT_FAKE_DECK_TYPE)
+
+        return types
+
     def load_fake_decks(self):
-        old_n_fake_decks = len(self.fake_deck_controller)
-        n_fake_decks = int(gl.settings_manager.load_settings_from_file(os.path.join(gl.DATA_PATH, "settings", "settings.json")).get("dev", {}).get("n-fake-decks", 0))
+        """
+        Syncs the loaded fake decks with the settings - both their number and
+        their deck types. Called whenever one of those settings changes, so no
+        restart is needed.
+        """
+        types = self.get_fake_deck_types()
 
-        if n_fake_decks > old_n_fake_decks:
-            log.info(f"Loading {n_fake_decks - old_n_fake_decks} fake deck(s)")
-            # Load difference in number of fake decks
-            for controller in range(n_fake_decks - old_n_fake_decks):
-                a = f"Fake Deck {len(self.fake_deck_controller)+1}"
-                fake_deck = FakeDeck(serial_number = f"fake-deck-{len(self.fake_deck_controller)+1}", deck_type=f"Fake Deck {len(self.fake_deck_controller)+1}")
-                self.add_newly_connected_deck(fake_deck, is_fake=True)
+        # Everything up to the first deck whose type changed can stay - the ones
+        # behind it have to be rebuilt because the serial numbers are tied to the
+        # position in the list
+        n_keep = min(len(types), len(self.fake_deck_controller))
+        for i, controller in enumerate(self.fake_deck_controller):
+            # controller.deck is a RotatedDeck, the fake deck itself sits behind it
+            fake_deck = getattr(controller.deck, "deck", controller.deck)
+            if i >= len(types) or fake_deck.model_name != types[i]:
+                n_keep = i
+                break
 
-            # Update header deck switcher if the new deck is the only one
-            if len(self.deck_controller) == 1 and False:
-                # Check if ui is loaded - if not it will grab the controller automatically
-                if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
-                    gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(True)
-
-        elif n_fake_decks < old_n_fake_decks:
-            # Remove difference in number of fake decks
-            log.info(f"Removing {old_n_fake_decks - n_fake_decks} fake deck(s)")
-            for controller in self.fake_deck_controller[-(old_n_fake_decks - n_fake_decks):]:
-                # Remove controller from fake_decks
-                self.fake_deck_controller.remove(controller)
-                # Remove controller from main list
-                self.deck_controller.remove(controller)
-                # Remove deck page on stack
+        for controller in self.fake_deck_controller[n_keep:]:
+            log.info(f"Removing fake deck {controller.deck.get_serial_number()}")
+            # Remove controller from fake_decks
+            self.fake_deck_controller.remove(controller)
+            # Remove controller from main list
+            self.deck_controller.remove(controller)
+            # Remove deck page on stack
+            if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
                 gl.app.main_win.leftArea.deck_stack.remove_page(controller)
 
-            # Update header deck switcher if there are no more decks
-            if len(self.deck_controller) == 0 and False:
-                # Check if ui is loaded - if not it will grab the controller automatically
-                if recursive_hasattr(gl, "app.main_win.header_bar.deckSwitcher"):
-                    gl.app.main_win.header_bar.deckSwitcher.set_show_switcher(False)
-        if hasattr(gl.app, "main_win"):
-            gl.app.main_win.check_for_errors()
+        for i in range(n_keep, len(types)):
+            log.info(f"Loading fake deck {i+1} of type {types[i]}")
+            fake_deck = FakeDeck(serial_number=f"fake-deck-{i+1}", deck_type=types[i])
+            self.add_newly_connected_deck(fake_deck, is_fake=True)
+
+        self.check_for_errors_if_window_ready()
 
     def on_connect(self, device_id, device_info):
         log.info(f"Device {device_id} with info: {device_info} connected")
@@ -188,7 +204,7 @@ class DeckManager:
             # Add deck
             self.add_newly_connected_deck(deck)
 
-        gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
 
 
     def on_disconnect(self, device_id, device_info):
@@ -200,13 +216,27 @@ class DeckManager:
             if not controller.deck.connected():
                 self.remove_controller(controller)
 
-        gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
 
     def remove_controller(self, deck_controller: DeckController) -> None:
         self.deck_controller.remove(deck_controller)
         if recursive_hasattr(gl, "app.main_win.leftArea.deck_stack"):
-            gl.app.main_win.leftArea.deck_stack.remove_page(deck_controller)
+            # remove_controller() is called from non-GTK threads (e.g.
+            # FlatpakDeckDisconnectThread, udev callbacks); route the GTK call
+            # through the main loop like add_newly_connected_deck() does for
+            # add_page().
+            GLib.idle_add(gl.app.main_win.leftArea.deck_stack.remove_page, deck_controller)
         deck_controller.delete()
+
+        # delete() stops the reader thread, which up to now was the only thing that
+        # ever closed the device on a disconnect. A device left open makes libusb
+        # abort once the process exits (see issue #631)
+        try:
+            if deck_controller.deck is not None and deck_controller.deck.is_open():
+                deck_controller.deck.close()
+        except Exception as e:
+            log.error(f"Failed to close deck of removed controller. Error: {e}")
+
         del deck_controller
 
     def get_controller_for_deck(self, deck: StreamDeck) -> DeckController | None:
@@ -233,19 +263,37 @@ class DeckManager:
 
         if not recursive_hasattr(gl, "app.main_win."):
             return
-        gl.app.main_win.check_for_errors()
+        self.check_for_errors_if_window_ready()
 
     def close_all(self):
         log.info("Closing all decks")
         for controller in self.deck_controller:
+            # continue, not return - one deck that is already gone must not keep
+            # the remaining ones open. An open HID device at interpreter exit makes
+            # libusb abort (see issue #631)
             if controller.deck is None:
-                return
+                continue
             if not controller.deck.is_open():
-                return
-            
-            log.info(f"Closing deck: {controller.deck.get_serial_number()}")
-            controller.clear()
-            controller.deck.close()
+                continue
+
+            try:
+                log.info(f"Closing deck: {controller.deck.get_serial_number()}")
+            except Exception as e:
+                log.error(f"Failed to get serial number of deck to close. Error: {e}")
+
+            # The reader thread has to be gone before the device is closed,
+            # see DeckController.stop_reader()
+            controller.stop_reader()
+
+            try:
+                controller.clear()
+            except Exception as e:
+                log.error(f"Failed to clear deck before closing it. Error: {e}")
+
+            try:
+                controller.deck.close()
+            except Exception as e:
+                log.error(f"Failed to close deck. Error: {e}")
 
     def stop_usb_monitoring(self):
         self.usb_monitor.stop_monitoring(timeout=2)
@@ -256,15 +304,15 @@ class DeckManager:
         for device in devices:
             try:
                 # Check if it's a StreamDeck
-                if device.idVendor == DeviceManager.USB_VID_ELGATO and device.idProduct in [
-                    DeviceManager.USB_PID_STREAMDECK_ORIGINAL,
-                    DeviceManager.USB_PID_STREAMDECK_ORIGINAL_V2,
-                    DeviceManager.USB_PID_STREAMDECK_MINI,
-                    DeviceManager.USB_PID_STREAMDECK_XL,
-                    DeviceManager.USB_PID_STREAMDECK_MK2,
-                    DeviceManager.USB_PID_STREAMDECK_PEDAL,
-                    DeviceManager.USB_PID_STREAMDECK_PLUS,
-                    DeviceManager.USB_PID_STREAMDECK_NEO
+                if device.idVendor == USBVendorIDs.USB_VID_ELGATO and device.idProduct in [
+                    USBProductIDs.USB_PID_STREAMDECK_ORIGINAL,
+                    USBProductIDs.USB_PID_STREAMDECK_ORIGINAL_V2,
+                    USBProductIDs.USB_PID_STREAMDECK_MINI,
+                    USBProductIDs.USB_PID_STREAMDECK_XL,
+                    USBProductIDs.USB_PID_STREAMDECK_MK2,
+                    USBProductIDs.USB_PID_STREAMDECK_PEDAL,
+                    USBProductIDs.USB_PID_STREAMDECK_PLUS,
+                    USBProductIDs.USB_PID_STREAMDECK_NEO
                 ]:
                     # Reset deck
                     usb.util.dispose_resources(device)
@@ -291,12 +339,30 @@ class DeckManager:
             if new_device:
                 log.info(f"Replacing deck")
                 current_rotation = deck_controller.deck.get_rotation()
-                deck_controller.deck = BetterDeck(new_device, current_rotation)
-                deck_controller.update_all_inputs()
+                deck_controller.deck = RotatedDeck(new_device, current_rotation)
+                # The device was just reset, so what we believe is on it is stale -
+                # without this, the page reload below skips every key whose image is unchanged
+                deck_controller.invalidate_render_caches()
 
                 deck_controller.deck.set_key_callback(deck_controller.key_event_callback)
                 deck_controller.deck.set_dial_callback(deck_controller.dial_event_callback)
                 deck_controller.deck.set_touchscreen_callback(deck_controller.touchscreen_event_callback)
+
+                # Reset cached signatures so resume always refreshes media/background state.
+                if hasattr(deck_controller, "_last_background_signature"):
+                    deck_controller._last_background_signature = None
+                if hasattr(deck_controller, "_last_screensaver_signature"):
+                    deck_controller._last_screensaver_signature = None
+
+                # Force reload of current page to restore backgrounds/screensaver/media on device.
+                if deck_controller.active_page is not None:
+                    deck_controller.load_page(
+                        deck_controller.active_page,
+                        allow_reload=True,
+                        force_background_reload=True,
+                    )
+                else:
+                    deck_controller.load_default_page()
 
                 # deck_controller.deck._setup_reader(deck_controller.deck._read)
 
@@ -325,7 +391,7 @@ class FlatpakDeckDisconnectThread(threading.Thread):
             for controller in self.deck_manager.deck_controller:
                 if not controller.deck.connected():
                     self.deck_manager.remove_controller(controller)
-                    gl.app.main_win.check_for_errors()
+                    self.deck_manager.check_for_errors_if_window_ready()
 
 class DetectResumeThread(threading.Thread):
     def __init__(self, deck_manager: DeckManager):

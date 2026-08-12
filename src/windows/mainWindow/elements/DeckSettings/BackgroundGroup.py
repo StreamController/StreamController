@@ -30,12 +30,14 @@ from time import sleep
 import globals as gl
 
 # Import own modules
+from GtkHelper.GtkHelper import let_user_select_folder
+from GtkHelper.MediaSourceControls import DEFAULT_INTERVAL, SOURCE_FILE, SOURCE_FOLDER, PlainMediaSourceControls
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf, is_transparent
 
 class BackgroundGroup(Adw.PreferencesGroup):
     def __init__(self, settings_page):
         super().__init__(title=gl.lm.get("deck.background-group.title"), description=gl.lm.get("deck.background-group.description"))
-        self.set_margin_top(50)
+        self.set_margin_top(30)
         self.deck_serial_number = settings_page.deck_serial_number
         self.media_row = BackgroundMediaRow(settings_page, self.deck_serial_number)
         self.add(self.media_row)
@@ -79,6 +81,9 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
         self.config_box.append(Gtk.Separator(hexpand=True, margin_top=10, margin_bottom=10))
 
+        self.media_source = PlainMediaSourceControls()
+        self.config_box.append(self.media_source.source_widget)
+
         self.media_selector = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER)
         self.config_box.append(self.media_selector)
 
@@ -86,6 +91,10 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
         self.media_selector_button = Gtk.Button(label=gl.lm.get("deck.deck-group.media-select-label"), css_classes=["page-settings-media-selector"])
         self.media_selector.append(self.media_selector_button)
+
+        self.media_selector.append(self.media_source.folder_label)
+
+        self.config_box.append(self.media_source.interval_widget)
 
         self.loop_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, margin_bottom=15)
         self.config_box.append(self.loop_box)
@@ -110,13 +119,15 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
     def connect_signals(self):
         self.enable_switch.connect("state-set", self.on_toggle_enable)
+        self.media_source.connect_signals(self.on_change_source, self.on_change_interval)
         self.media_selector_button.connect("clicked", self.on_choose_image)
         self.loop_switch.connect("state-set", self.on_toggle_loop)
         self.fps_spinner.connect("value-changed", self.on_change_fps)
-        
+
 
     def disconnect_signals(self):
         self.enable_switch.disconnect_by_func(self.on_toggle_enable)
+        self.media_source.disconnect_signals(self.on_change_source, self.on_change_interval)
         self.media_selector_button.disconnect_by_func(self.on_choose_image)
         self.loop_switch.disconnect_by_func(self.on_toggle_loop)
         self.fps_spinner.disconnect_by_func(self.on_change_fps)
@@ -132,10 +143,13 @@ class BackgroundMediaRow(Adw.PreferencesRow):
 
         # Set defaut values
         original_values.setdefault("background", {})
-        path = original_values["background"].setdefault("media-path", "")
+        original_values["background"].setdefault("media-path", "")
         enable = original_values["background"].setdefault("enable", False)
         loop = original_values["background"].setdefault("loop", True)
         fps = original_values["background"].setdefault("fps", 30)
+        source = original_values["background"].setdefault("source", SOURCE_FILE)
+        original_values["background"].setdefault("folder-path", "")
+        interval = original_values["background"].setdefault("rotation-interval", DEFAULT_INTERVAL)
 
         # Save if changed
         if original_values != gl.settings_manager.get_deck_settings(self.deck_serial_number):
@@ -146,9 +160,24 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         self.config_box.set_visible(enable)
         self.loop_switch.set_active(loop)
         self.fps_spinner.set_value(fps)
-        self.set_thumbnail(path)
+        self.media_source.set_interval(interval)
+        self.media_source.set_source(source)
+        self.update_source_ui()
 
         self.connect_signals()
+
+    def get_source(self) -> str:
+        return self.media_source.get_source()
+
+    def update_source_ui(self):
+        """Show the widgets belonging to the selected source and preview it."""
+        settings = gl.settings_manager.get_deck_settings(self.deck_serial_number).get("background", {})
+
+        self.set_thumbnail(self.media_source.update_for(
+            source=self.get_source(),
+            folder_path=settings.get("folder-path", ""),
+            media_path=settings.get("media-path", ""),
+        ))
 
     def load_defaults_from_page(self):
         return
@@ -207,15 +236,41 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         # Update
         self.settings_page.deck_controller.load_background(page=self.settings_page.deck_controller.active_page)
 
+    def on_change_source(self, *args):
+        settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        settings["background"]["source"] = self.get_source()
+
+        # Save
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
+
+        # Update
+        self.update_source_ui()
+        self.settings_page.deck_controller.load_background(page=self.settings_page.deck_controller.active_page)
+
+    def on_change_interval(self, *args):
+        settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        settings["background"]["rotation-interval"] = self.media_source.get_interval()
+
+        # Save
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
+
+        # Update
+        self.settings_page.deck_controller.load_background(page=self.settings_page.deck_controller.active_page)
+
     def on_choose_image(self, button):
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("background", {})
+
+        if self.get_source() == SOURCE_FOLDER:
+            let_user_select_folder(callback=self.update_folder, initial_folder=settings["background"].setdefault("folder-path", ""), parent=self.get_root())
+            return
+
         media_path = settings["background"].setdefault("media-path", None)
 
         gl.app.let_user_select_asset(default_path=media_path, callback_func=self.update_image)
 
     def update_image(self, file_path):
-        self.set_thumbnail(file_path)   
+        self.set_thumbnail(file_path)
         settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
         settings.setdefault("background", {})
         settings["background"]["media-path"] = file_path
@@ -224,10 +279,20 @@ class BackgroundMediaRow(Adw.PreferencesRow):
         controller = self.settings_page.deck_controller
         controller.load_background(page=controller.active_page)
 
+    def update_folder(self, folder_path):
+        settings = gl.settings_manager.get_deck_settings(self.deck_serial_number)
+        settings.setdefault("background", {})
+        settings["background"]["folder-path"] = folder_path
+        gl.settings_manager.save_deck_settings(self.deck_serial_number, settings)
+
+        self.update_source_ui()
+
+        controller = self.settings_page.deck_controller
+        controller.load_background(page=controller.active_page)
+
     def set_thumbnail(self, file_path):
-        if file_path in [None, ""]:
-            return
-        if not os.path.isfile(file_path):
+        if file_path in [None, ""] or not os.path.isfile(file_path):
+            self.media_selector_button.set_label(gl.lm.get("deck.deck-group.media-select-label"))
             return
         image = gl.media_manager.get_thumbnail(file_path)
         pixbuf = image2pixbuf(image)

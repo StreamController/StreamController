@@ -34,6 +34,7 @@ from src.backend.DeckManagement.DeckController import DeckController
 from src.backend.PageManagement.Page import Page
 from src.backend.PageManagement.DummyPage import DummyPage
 from src.backend.DeckManagement.HelperMethods import get_sub_folders, natural_sort, natural_sort_by_filenames, recursive_hasattr, sort_times
+from src.backend.Utils.AtomicSaveUtils import atomic_save_json
 
 # Import globals
 import globals as gl
@@ -82,6 +83,9 @@ class PageManagerBackend:
             page["page_number"] = self.page_number
             page_object = page["page"]
             self.page_number += 1
+
+        if gl.argparser.parse_args().daemon_only:
+            self.clear_old_cached_pages()
 
         return page_object
 
@@ -276,13 +280,17 @@ class PageManagerBackend:
 
         #self.update_auto_change_info()
 
-    def add_page(self, page_name: str, page_dict: dict = None):
+    def add_page(self, page_name: str, page_dict: dict = None) -> str:
         page_dict = page_dict or {}
 
-        with open(os.path.join(self.PAGE_PATH, f"{page_name}.json"), "w") as f:
-            json.dump(page_dict, f)
+        path = os.path.join(self.PAGE_PATH, f"{page_name}.json")
+        if os.path.exists(path):
+            raise FileExistsError(f"A page with the name '{page_name}' already exists.")
+        
+        atomic_save_json(path, page_dict)
 
         #self.update_auto_change_info()
+        return path
 
     def register_page(self, path: str):
         if not os.path.isfile(path):
@@ -332,7 +340,7 @@ class PageManagerBackend:
             if page.deck_controller.active_page != page:
                 continue
 
-            page.deck_controller.load_page(page, allow_relaod=True,
+            page.deck_controller.load_page(page, allow_reload=True,
                                            load_brightness=brightness,
                                            load_screensaver=screensaver,
                                            load_background=background,
@@ -417,8 +425,7 @@ class PageManagerBackend:
             # If any asset was removed, update page file and reload pages
             if page_had_asset:
                 # Write updated page data back to file with pretty JSON
-                with open(page_path, "w") as f:
-                    json.dump(page_dict, f, indent=4)
+                atomic_save_json(page_path, page_dict, indent=4)
 
                 # Update internal cache or tracking dict with this page path
                 self.update_dict_of_pages_with_path(page_path)
@@ -531,7 +538,7 @@ class PageManagerBackend:
         page_settings = self.get_page_settings(path)
         return page_settings.get("auto-change", {})
 
-    def set_auto_change_settings(self, path: str, enable: bool = False, wm_class: str = "", regex_title: str = "", stay_on_page: bool = False, decks: list[str] = None):
+    def set_auto_change_settings(self, path: str, enable: bool = False, wm_class: str = ".*", regex_title: str = ".*", stay_on_page: bool = False, decks: list[str] = None):
         settings = self.get_page_settings(path)
 
         decks = decks or []
@@ -568,7 +575,7 @@ class PageManagerBackend:
         page_settings = self.get_page_settings(path)
         return page_settings.get("screensaver", {})
 
-    def set_screensaver_settings(self, path: str, overwrite: bool = False, enable: bool = False, time_delay: int = 5, loop: bool = False, fps: int = 30, brightness: float = 75, media_path: str = ""):
+    def set_screensaver_settings(self, path: str, overwrite: bool = False, enable: bool = False, time_delay: int = 5, loop: bool = False, fps: int = 30, brightness: float = 75, media_path: str = "", source: str = "file", folder_path: str = "", rotation_interval: int = 5):
         settings = self.get_page_settings(path)
 
         settings["screensaver"] = {
@@ -578,12 +585,15 @@ class PageManagerBackend:
             "loop": loop,
             "fps": fps,
             "brightness": brightness,
-            "media-path": media_path
+            "media-path": media_path,
+            "source": source,
+            "folder-path": folder_path,
+            "rotation-interval": rotation_interval
         }
 
         self.set_page_settings(path, settings)
 
-    def overwrite_screensaver_settings(self, path: str, overwrite: bool = None, enable: bool = None, time_delay: int = None, loop: bool = None, fps: int = None, brightness: float = None, media_path: str = None):
+    def overwrite_screensaver_settings(self, path: str, overwrite: bool = None, enable: bool = None, time_delay: int = None, loop: bool = None, fps: int = None, brightness: float = None, media_path: str = None, source: str = None, folder_path: str = None, rotation_interval: int = None):
         settings = self.get_page_settings(path)
         screensaver_settings = settings.get("screensaver", {})
 
@@ -601,6 +611,12 @@ class PageManagerBackend:
             screensaver_settings["brightness"] = brightness
         if media_path is not None:
             screensaver_settings["media-path"] = media_path
+        if source is not None:
+            screensaver_settings["source"] = source
+        if folder_path is not None:
+            screensaver_settings["folder-path"] = folder_path
+        if rotation_interval is not None:
+            screensaver_settings["rotation-interval"] = rotation_interval
 
         settings["screensaver"] = screensaver_settings
         self.set_page_settings(path, settings)
@@ -635,7 +651,7 @@ class PageManagerBackend:
         page_settings = self.get_page_settings(path)
         return page_settings.get("background", {})
 
-    def set_background_settings(self, path: str, overwrite: bool = False, show: bool = False, fps: int = 30, loop: bool = False, media_path: str = ""):
+    def set_background_settings(self, path: str, overwrite: bool = False, show: bool = False, fps: int = 30, loop: bool = False, media_path: str = "", source: str = "file", folder_path: str = "", rotation_interval: int = 5):
         settings = self.get_page_settings(path)
 
         settings["background"] = {
@@ -643,12 +659,15 @@ class PageManagerBackend:
             "show": show,
             "fps": fps,
             "loop": loop,
-            "media-path": media_path
+            "media-path": media_path,
+            "source": source,
+            "folder-path": folder_path,
+            "rotation-interval": rotation_interval
         }
 
         self.set_page_settings(path, settings)
 
-    def overwrite_background_settings(self, path: str, overwrite: bool = None, show: bool = None, fps: int = None, loop: bool = None, media_path: str = None):
+    def overwrite_background_settings(self, path: str, overwrite: bool = None, show: bool = None, fps: int = None, loop: bool = None, media_path: str = None, source: str = None, folder_path: str = None, rotation_interval: int = None):
         settings = self.get_page_settings(path)
         background_settings = settings.get("background", {})
 
@@ -662,6 +681,12 @@ class PageManagerBackend:
             background_settings["loop"] = loop
         if media_path is not None:
             background_settings["media-path"] = media_path
+        if source is not None:
+            background_settings["source"] = source
+        if folder_path is not None:
+            background_settings["folder-path"] = folder_path
+        if rotation_interval is not None:
+            background_settings["rotation-interval"] = rotation_interval
 
         settings["background"] = background_settings
         self.set_page_settings(path, settings)

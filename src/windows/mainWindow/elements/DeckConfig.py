@@ -27,6 +27,7 @@ from gi.repository import Gtk, Adw
 from src.windows.mainWindow.elements.KeyGrid import KeyGrid
 from src.windows.mainWindow.DeckPlus.ScreenBar import ScreenBar
 from src.windows.mainWindow.DeckPlus.DialBox import DialBox
+from src.windows.mainWindow.DeckNeo.ScreenRow import ScreenRow as NeoScreenRow
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -40,6 +41,7 @@ class DeckConfig(Gtk.Box):
 
         self.active_widget = None
         self.screenbar = None
+        self.screen_row = None
         self.build()
 
     def build(self):
@@ -50,22 +52,33 @@ class DeckConfig(Gtk.Box):
         if self.page_settings_page.deck_controller.deck.is_touch():
             self.screenbar = ScreenBar(self.page_settings_page, Input.Touchscreen("sd-plus"))
             self.append(self.screenbar)
+        elif self.page_settings_page.deck_controller.has_screen():
+            self.screen_row = NeoScreenRow(self.page_settings_page)
+            self.screenbar = self.screen_row.screenbar
+            self.append(self.screen_row)
 
         self.dial_box = DialBox(self.page_settings_page.deck_controller, self.page_settings_page)
         self.append(self.dial_box)
 
         self.apply_rotation_layout()
 
+    def get_screen_child(self) -> Gtk.Widget:
+        """The child holding the screen - on the Neo it also holds the touch keys next to it"""
+        if self.screen_row is not None:
+            return self.screen_row
+        return self.screenbar
+
     def rebuild_for_rotation(self):
         """Re-create the parts whose size depends on the rotation, then re-lay them out."""
         # Whatever was selected is about to be destroyed
         self.active_widget = None
 
-        for child in [self.grid, self.screenbar, self.dial_box]:
+        for child in [self.grid, self.get_screen_child(), self.dial_box]:
             if child is not None:
                 self.remove(child)
 
         self.screenbar = None
+        self.screen_row = None
         self.build()
 
     def apply_rotation_layout(self):
@@ -79,8 +92,9 @@ class DeckConfig(Gtk.Box):
         rotation = self.page_settings_page.deck_controller.deck.get_rotation()
 
         children = [self.grid]
-        if self.screenbar is not None:
-            children.append(self.screenbar)
+        screen_child = self.get_screen_child()
+        if screen_child is not None:
+            children.append(screen_child)
         children.append(self.dial_box)
 
         if rotation % 180 == 0:

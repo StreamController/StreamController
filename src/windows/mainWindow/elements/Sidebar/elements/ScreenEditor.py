@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 import globals as gl
 
+
 class ScreenEditor(Gtk.ScrolledWindow):
     def __init__(self, sidebar: "Sidebar"):
         self.sidebar = sidebar
@@ -29,7 +30,7 @@ class ScreenEditor(Gtk.ScrolledWindow):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.clamp.set_child(self.main_box)
 
-        self.header = Gtk.Label(label="Touch Bar", css_classes=["large-title", "bold"], margin_top=15, margin_bottom=30)
+        self.header = Gtk.Label(css_classes=["large-title", "bold"], margin_top=15, margin_bottom=30)
         self.main_box.append(self.header)
 
         self.state_switcher = StateSwitcher("touchscreens", margin_start=20, margin_end=20, margin_top=10, margin_bottom=10, hexpand=True)
@@ -41,11 +42,8 @@ class ScreenEditor(Gtk.ScrolledWindow):
         self.background_editor = BackgroundEditor(self.sidebar, margin_top=25)
         self.main_box.append(self.background_editor)
 
-        self.action_manager_group = Adw.PreferencesGroup(title="Actions")
-        self.main_box.append(self.action_manager_group)
-
-        self.action_manager = ActionManager(self.sidebar)
-        self.action_manager_group.add(self.action_manager)
+        self.action_manager = ActionManager(self.sidebar, margin_top=25)
+        self.main_box.append(self.action_manager)
 
         self.remove_state_button = Gtk.Button(label="Remove State", css_classes=["destructive-action"], margin_top=15, margin_bottom=15, margin_start=15, margin_end=15)
         self.remove_state_button.connect("clicked", self.on_remove_state)
@@ -54,7 +52,6 @@ class ScreenEditor(Gtk.ScrolledWindow):
 
     def on_state_switch(self, *args):
         state = self.state_switcher.get_selected_state()
-        # self.sidebar.active_state = self.state_switcher.get_selected_state()
 
         visible_child = gl.app.main_win.leftArea.deck_stack.get_visible_child()
         if visible_child is None:
@@ -62,23 +59,20 @@ class ScreenEditor(Gtk.ScrolledWindow):
         controller = visible_child.deck_controller
         if controller is None:
             return
-        
-        for t in controller.touchscreens:
-            if t.identifier == self.sidebar.active_identifier:
-                t.set_state(state, update_sidebar=True)
-                break
+
+        c_input = controller.get_input(self.sidebar.active_identifier)
+        if c_input is not None:
+            c_input.set_state(state, update_sidebar=True)
 
     def on_add_new_state(self, state):
         controller = gl.app.main_win.get_active_controller()
-
         if controller is None:
             return
-        
-        for t in controller.touchscreens:
-            if t.identifier == self.sidebar.active_identifier:
-                t.add_new_state()
-                self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
-                break
+
+        c_input = controller.get_input(self.sidebar.active_identifier)
+        if c_input is not None:
+            c_input.add_new_state()
+            self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
     def on_remove_state(self, button):
         if self.state_switcher.get_n_states() <= 1:
@@ -87,16 +81,23 @@ class ScreenEditor(Gtk.ScrolledWindow):
         controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
-        
+
         active_state = self.state_switcher.get_selected_state()
-        
-        for t in controller.touchscreens:
-            if t.identifier == self.sidebar.active_identifier:
-                t.remove_state(active_state)
-                break
+
+        c_input = controller.get_input(self.sidebar.active_identifier)
+        if c_input is not None:
+            c_input.remove_state(active_state)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
 
+
+    def get_header_label(self, identifier) -> str:
+        # This editor is used for every input that only has a background and actions
+        if isinstance(identifier, Input.Screen):
+            return "Infobar"
+        if isinstance(identifier, Input.TouchKey):
+            return f"Touch Key {identifier.index + 1}"
+        return "Touch Bar"
 
     def load_for_identifier(self, identifier, state):
         self.sidebar.active_identifier = identifier
@@ -104,12 +105,14 @@ class ScreenEditor(Gtk.ScrolledWindow):
         controller = gl.app.main_win.get_active_controller()
         if controller is None:
             return
-        
+
         controller_input = controller.get_input(identifier)
         self.state_switcher.load_for_identifier(identifier, state)
         controller_input.set_state(state, update_sidebar=False)
 
         self.remove_state_button.set_visible(self.state_switcher.get_n_states() > 1)
+
+        self.header.set_label(self.get_header_label(identifier))
 
         self.background_editor.load_for_identifier(identifier, state)
         self.action_manager.load_for_identifier(identifier, state)

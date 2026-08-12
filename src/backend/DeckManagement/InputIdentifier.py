@@ -123,15 +123,39 @@ class Input:
             self.index = str(json_identifier)
             super().__init__(self.input_type, json_identifier, self.controller_class_name)
 
-    All = (Key, Dial, Touchscreen)
+    class TouchKey(InputIdentifier):
+        input_type = "touch_keys"
+        controller_class_name = "ControllerTouchKey"
+
+        def __init__(self, json_identifier: str):
+            self.index = int(json_identifier)
+            super().__init__(self.input_type, json_identifier, self.controller_class_name)
+
+    # Touch keys are keys without a display, so actions written for keys work on them
+    TouchKey.Events = Key.Events
+
+    class Screen(InputIdentifier):
+        input_type = "screens"
+        controller_class_name = "ControllerScreen"
+
+        class Events(InputEvent):
+            UPDATE = "Screen Update"
+
+        def __init__(self, json_identifier: str):
+            self.index = str(json_identifier)
+            super().__init__(self.input_type, json_identifier, self.controller_class_name)
+
+    All = (Key, Dial, Touchscreen, TouchKey, Screen)
     KeyTypes = [key_type.input_type for key_type in All]
-    
+
     @staticmethod
     def FromTypeIdentifier(input_type: str, json_identifier: str):
         input_map = {
             "keys": Input.Key,
             "dials": Input.Dial,
-            "touchscreens": Input.Touchscreen
+            "touchscreens": Input.Touchscreen,
+            "touch_keys": Input.TouchKey,
+            "screens": Input.Screen,
         }
         if input_type in input_map:
             return input_map[input_type](json_identifier)
@@ -142,9 +166,9 @@ class Input:
         events: list[InputEvent] = []
 
         for t in Input.All:
-            events.extend(list(t.Events))
-
-
+            for event in t.Events:
+                if event not in events:
+                    events.append(event)
 
         return events
         for attr in dir(Input):

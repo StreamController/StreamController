@@ -177,7 +177,7 @@ class ImageOnboardingScreen(Gtk.Box):
         self.build()
 
     def build(self):
-        self.image = Gtk.Image(file=self.image_path, css_classes=["onboarding-image"], margin_top=70)
+        self.image = Gtk.Image(file=self.image_path, margin_top=70, pixel_size=300)
         self.append(self.image)
 
         self.label = Gtk.Label(label=self.label, css_classes=["onboarding-welcome-label"],
@@ -198,7 +198,7 @@ class IconOnboardingScreen(Gtk.Box):
         self.build()
 
     def build(self):
-        self.image = Gtk.Image(icon_name=self.icon_name, pixel_size=350, margin_top=20)
+        self.image = Gtk.Image(icon_name=self.icon_name, pixel_size=250, margin_top=80, margin_bottom=40)
         self.append(self.image)
 
         self.label = Gtk.Label(label=self.label, css_classes=["onboarding-welcome-label"],

@@ -163,6 +163,25 @@
 .asset-preview:selected{
   background-color: #283C54;
 }
+.icon-grid > child{
+  border-radius: 8px;
+  padding: 4px;
+}
+.icon-grid > child:hover{
+  background-color: alpha(currentColor, 0.07);
+}
+.icon-grid > child:selected{
+  background-color: @accent_bg_color;
+}
+.icon-tile-backdrop{
+  background-color: alpha(currentColor, 0.45);
+  border-radius: 6px;
+}
+.icon-tile-info-button{
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0px;
+}
 .plugin-store-image{
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;

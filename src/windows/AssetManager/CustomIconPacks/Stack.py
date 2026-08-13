@@ -52,6 +52,11 @@ class CustomIconPackChooserStack(Gtk.Stack):
         self.set_visible_child_name("icon-chooser")
         self.asset_manager.back_button.set_visible(True)
 
+    def show_all_icons(self) -> None:
+        self.icon_chooser.load_all_packs()
+        self.set_visible_child_name("icon-chooser")
+        self.asset_manager.back_button.set_visible(True)
+
     def show_for_path(self, path):
         if not self.get_is_build_finished():
             self.on_loads_finished_tasks.append(lambda: self.show_for_path(path))

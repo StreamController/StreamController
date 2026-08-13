@@ -42,6 +42,26 @@ class IconPackManager:
                 log.warning(f"Icon pack {pack} is not valid.")
         return packs
 
+    def get_all_icon_packs(self) -> list[IconPack]:
+        """
+        All packs the user has available: the ones from the store and the locally created ones.
+        """
+        from src.backend.IconPackManagement import CustomIconPack
+
+        packs: list[IconPack] = list(self.get_icon_packs().values())
+        packs.extend(CustomIconPack.get_custom_icon_packs().values())
+        return packs
+
+    def get_all_icons(self) -> list:
+        """
+        The icons of every pack, used by the cross pack search of the icon browser.
+        Scans the disk, so this should not be called from the main thread.
+        """
+        icons = []
+        for pack in self.get_all_icon_packs():
+            icons.extend(pack.get_icons())
+        return icons
+
     def get_pack_icons(self, icon_pack: dict):
         path = icon_pack.get("path")
         icons_path = os.path.join(path, "icons")

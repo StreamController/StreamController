@@ -95,7 +95,7 @@ class IconPack:
             return
 
         # Load Content From Base Directory
-        base_dir_content = self.load_content(pack_path)
+        base_dir_content = self.load_content(pack_path, "Base")
         if base_dir_content:
             self.pack_structure["Base"] = base_dir_content
 
@@ -105,15 +105,15 @@ class IconPack:
         for folder in subfolders:
             if not self.pack_structure.__contains__(folder.name):
                 self.pack_structure[folder.name] = []
-            icons = self.load_content(folder.path)
+            icons = self.load_content(folder.path, folder.name)
             self.pack_structure[folder.name] = icons
 
-    def load_content(self, folder_path: str):
+    def load_content(self, folder_path: str, category: str = ""):
         content: list = []
 
         for entry in os.scandir(folder_path):
             if os.path.isdir(entry.path):
                 continue
-            content.append(Icon(icon_pack=self, path=entry.path))
+            content.append(Icon(icon_pack=self, path=entry.path, category=category))
 
         return content

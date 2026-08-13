@@ -23,6 +23,7 @@ from gi.repository import Gtk, Adw
 
 # Import python modules
 import os
+from fuzzywuzzy import fuzz
 
 # Import own modules
 from src.windows.AssetManager.ChooserPage import ChooserPage
@@ -49,16 +50,27 @@ class IconPackChooser(ChooserPage):
 
         self.build_finished = False
 
+        self.build_header()
+
         threading.Thread(target=self.build).start()
-        
+
+    def build_header(self):
+        self.type_box.set_visible(False)
+        self.search_entry.set_placeholder_text("Search packs")
+
+        self.all_icons_button = Gtk.Button(margin_start=15, tooltip_text="Search icons across all packs")
+        self.all_icons_button.set_child(Adw.ButtonContent(icon_name="system-search-symbolic", label="All Icons"))
+        self.all_icons_button.connect("clicked", self.on_all_icons_clicked)
+        self.nav_box.append(self.all_icons_button)
+
     @log.catch
     def build(self):
         self.build_finished = False
-        self.type_box.set_visible(False)
 
         self.icon_pack_chooser = IconPackFlowBox(self, orientation=Gtk.Orientation.HORIZONTAL, hexpand=True)
         self.scrolled_box.prepend(self.icon_pack_chooser)
 
+        self.icon_pack_chooser.flow_box.set_filter_func(self.filter_func)
         self.icon_pack_chooser.flow_box.connect("child-activated", self.on_child_activated)
 
         self.load()
@@ -82,3 +94,20 @@ class IconPackChooser(ChooserPage):
         self.asset_manager.asset_chooser.icon_pack_chooser.set_visible_child_name("icon-chooser")
         # Show back button
         self.asset_manager.back_button.set_visible(True)
+
+    def on_all_icons_clicked(self, button):
+        self.stack.show_all_icons()
+
+    def filter_func(self, child: IconPackPreview) -> bool:
+        search = self.search_entry.get_text().lower()
+        if search == "":
+            return True
+
+        name = child.pack.name.lower()
+        return search in name or fuzz.partial_ratio(name, search) >= 70
+
+    def on_search_changed(self, entry):
+        if not hasattr(self, "icon_pack_chooser"):
+            # Still loading
+            return
+        self.icon_pack_chooser.flow_box.invalidate_filter()

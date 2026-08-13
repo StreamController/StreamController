@@ -21,11 +21,16 @@ if TYPE_CHECKING:
     from src.backend.IconPackManagement.IconPack import IconPack
 
 class Icon:
-    def __init__(self, icon_pack: "IconPackpath", path: str):
+    def __init__(self, icon_pack: "IconPackpath", path: str, category: str = ""):
         self.icon_pack = icon_pack
         self.path = path
+        self.category = category
 
         self.name = os.path.splitext(os.path.basename(path))[0]
+
+        # Pre computed for the search in the icon browser
+        self.search_name = self.name.lower()
+        self.search_category = category.lower()
 
     def get_attribution(self):
         attribution = self.icon_pack.get_attribution_json()

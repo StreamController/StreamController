@@ -55,6 +55,11 @@ class CustomIconPackChooser(ChooserPage):
         self.type_box.set_visible(False)
         self.search_entry.set_placeholder_text("Search packs")
 
+        self.all_icons_button = Gtk.Button(margin_start=15, tooltip_text="Search icons across all packs")
+        self.all_icons_button.set_child(Adw.ButtonContent(icon_name="system-search-symbolic", label="All Icons"))
+        self.all_icons_button.connect("clicked", self.on_all_icons_clicked)
+        self.nav_box.append(self.all_icons_button)
+
         self.status_page = Adw.StatusPage(
             icon_name="folder-download-symbolic",
             title="No Custom Asset Packs",
@@ -93,6 +98,9 @@ class CustomIconPackChooser(ChooserPage):
 
     def on_child_activated(self, flow_box, child: CustomIconPackPreview):
         self.stack.show_pack(child.pack)
+
+    def on_all_icons_clicked(self, button):
+        self.stack.show_all_icons()
 
     def on_new_clicked(self, button):
         CustomIconPackDialog(self).present(gl.asset_manager)

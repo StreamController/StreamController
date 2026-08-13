@@ -21,7 +21,7 @@ from gi.repository import Gtk, Adw, Gio, GLib
 
 # Import own modules
 from src.windows.AssetManager.ChooserPage import ChooserPage
-from src.windows.AssetManager.IconPacks.Icons.IconTile import IconObject, IconTile
+from src.windows.AssetManager.IconPacks.Icons.IconTile import IconObject, IconTile, get_render_size
 from src.backend.IconPackManagement import IconSearch
 
 # Import python modules
@@ -47,6 +47,12 @@ DEFAULT_ICON_SIZE = 64
 SEARCH_DEBOUNCE_MS = 150
 SETTINGS_DEBOUNCE_MS = 500
 
+# Space a tile needs on top of its icon (grid cell padding and spacing)
+TILE_PADDING = 14
+
+# Above this the search runs in a thread instead of blocking the key press
+THREADED_SEARCH_THRESHOLD = 1500
+
 
 class IconChooserPage(ChooserPage):
     """
@@ -70,14 +76,16 @@ class IconChooserPage(ChooserPage):
         self.all_packs: bool = False
 
         # The recycled tiles of the grid, kept to apply the view settings to them
-        self.tiles: list[IconTile] = []
+        self.tiles: set[IconTile] = set()
 
         self.search_timeout_id: int = None
         self.settings_timeout_id: int = None
         self.load_id: int = 0
+        self.search_id: int = 0
         self.updating_all_packs_button: bool = False
 
         self.icon_size, self.show_names, self.backdrop = self.load_view_settings()
+        self.render_size = get_render_size(self.icon_size)
 
         self.build_finished = False
         self.build()
@@ -120,11 +128,20 @@ class IconChooserPage(ChooserPage):
         factory.connect("unbind", self.on_factory_unbind)
         factory.connect("teardown", self.on_factory_teardown)
 
-        self.grid_view = Gtk.GridView(model=self.selection_model, factory=factory, max_columns=64,
+        self.grid_view = Gtk.GridView(model=self.selection_model, factory=factory,
+                                      max_columns=self.get_column_count(),
                                       single_click_activate=True, vexpand=True, hexpand=True,
                                       css_classes=["icon-grid"])
         self.grid_view.connect("activate", self.on_activate)
         self.grid_scroller.set_child(self.grid_view)
+
+        # The grid keeps a tile around for every column of a fixed number of
+        # rows, so a max_columns that is not reached costs hundreds of tiles
+        # that are built and thrown away on every pack switch and every search
+        self.grid_scroller.get_hadjustment().connect("notify::page-size", self.on_width_changed)
+
+        # The scale factor of the monitor is only known once the page is in a window
+        self.connect("realize", self.on_realize)
 
         self.set_loading(False)
 
@@ -184,15 +201,37 @@ class IconChooserPage(ChooserPage):
             GLib.source_remove(self.settings_timeout_id)
         self.settings_timeout_id = GLib.timeout_add(SETTINGS_DEBOUNCE_MS, self.save_view_settings)
 
+    def get_column_count(self) -> int:
+        """
+        How many tiles fit next to each other. Anything above that only makes
+        the grid build tiles nobody gets to see.
+        """
+        width = self.grid_scroller.get_hadjustment().get_page_size() or self.get_width()
+        return max(1, int(width // (self.icon_size + TILE_PADDING)))
+
+    def update_column_count(self) -> None:
+        columns = self.get_column_count()
+        if columns != self.grid_view.get_max_columns():
+            self.grid_view.set_max_columns(columns)
+
+    def on_width_changed(self, adjustment, param):
+        self.update_column_count()
+
+    def on_realize(self, *args):
+        self.render_size = get_render_size(self.icon_size, self.get_scale_factor())
+        self.update_column_count()
+
     def on_size_changed(self, scale: Gtk.Scale):
         size = int(scale.get_value())
         if size == self.icon_size:
             return
         self.icon_size = size
+        self.render_size = get_render_size(size, self.get_scale_factor())
 
         for tile in self.tiles:
-            tile.set_icon_size(size)
+            tile.set_icon_size(size, self.render_size)
 
+        self.update_column_count()
         self.save_view_settings_delayed()
 
     def on_show_names_toggled(self, button: Gtk.CheckButton):
@@ -291,15 +330,38 @@ class IconChooserPage(ChooserPage):
 
     def update_results(self) -> None:
         query = self.search_entry.get_text()
-        icons = IconSearch.search_icons(self.icons, query, match_pack_name=self.all_packs)
+        self.search_id += 1
 
+        if len(self.icons) < THREADED_SEARCH_THRESHOLD:
+            self.show_results(self.search_id, IconSearch.search_icons(self.icons, query,
+                                                                      match_pack_name=self.all_packs))
+            return
+
+        # Matching a few thousand icons takes long enough to be noticed between
+        # two key presses, so the entry does not wait for it
+        threading.Thread(target=self.search_thread, name="icon-search", daemon=True,
+                         args=(self.search_id, self.icons, query, self.all_packs)).start()
+
+    @log.catch
+    def search_thread(self, search_id: int, icons: list["Icon"], query: str, all_packs: bool) -> None:
+        matches = IconSearch.search_icons(icons, query, match_pack_name=all_packs)
+        GLib.idle_add(self.show_results, search_id, matches)
+
+    def show_results(self, search_id: int, icons: list["Icon"]) -> bool:
+        if search_id != self.search_id:
+            # The user has typed on or switched to another pack in the meantime
+            return False
+
+        icon_objects = self.icon_objects
         self.list_store.splice(0, self.list_store.get_n_items(),
-                               [self.icon_objects[icon.path] for icon in icons])
+                               [icon_objects[icon.path] for icon in icons])
 
         self.status_page.set_visible(len(icons) == 0 and len(self.icons) > 0)
         self.grid_scroller.get_vadjustment().set_value(0)
 
         self.apply_selection()
+
+        return False
 
     ## Selection
 
@@ -372,23 +434,29 @@ class IconChooserPage(ChooserPage):
 
     def on_factory_setup(self, factory, list_item: Gtk.ListItem):
         tile = IconTile(self)
-        tile.set_icon_size(self.icon_size)
-        tile.set_show_name(self.show_names)
-        tile.set_backdrop(self.backdrop)
+        tile.set_icon_size(self.icon_size, self.render_size)
+        if self.show_names:
+            tile.set_show_name(True)
+        if self.backdrop:
+            tile.set_backdrop(True)
 
-        self.tiles.append(tile)
+        self.tiles.add(tile)
         list_item.set_child(tile)
 
     def on_factory_bind(self, factory, list_item: Gtk.ListItem):
-        list_item.get_child().set_icon(list_item.get_item().icon)
+        list_item.get_child().set_icon(list_item.get_item())
 
     def on_factory_unbind(self, factory, list_item: Gtk.ListItem):
         list_item.get_child().clear()
 
     def on_factory_teardown(self, factory, list_item: Gtk.ListItem):
         tile = list_item.get_child()
-        if tile in self.tiles:
-            self.tiles.remove(tile)
+        if tile is None:
+            return
+
+        # The loader would keep the tile alive until its icon has been loaded
+        tile.clear()
+        self.tiles.discard(tile)
 
     def show_info_for_icon(self, icon: "Icon") -> None:
         attribution = icon.get_attribution() or {}

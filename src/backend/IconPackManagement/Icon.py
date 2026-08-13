@@ -31,6 +31,7 @@ class Icon:
         # Pre computed for the search in the icon browser
         self.search_name = self.name.lower()
         self.search_category = category.lower()
+        self.sort_key = (self.search_category, self.search_name)
 
     def get_attribution(self):
         attribution = self.icon_pack.get_attribution_json()

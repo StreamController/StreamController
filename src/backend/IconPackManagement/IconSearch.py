@@ -28,6 +28,7 @@ lowercase name and category).
 
 # Import python modules
 from dataclasses import dataclass, field
+from operator import attrgetter
 
 from fuzzywuzzy import fuzz
 
@@ -134,8 +135,8 @@ def sort_icons(icons: list["Icon"], group_by_pack: bool = False) -> list["Icon"]
     together, packs stay together if their icons are mixed.
     """
     if group_by_pack:
-        return sorted(icons, key=lambda icon: (icon.icon_pack.name.lower(), icon.search_category, icon.search_name))
-    return sorted(icons, key=lambda icon: (icon.search_category, icon.search_name))
+        return sorted(icons, key=lambda icon: (icon.icon_pack.name.lower(), icon.sort_key))
+    return sorted(icons, key=attrgetter("sort_key"))
 
 
 def search_icons(icons: list["Icon"], query: str, match_pack_name: bool = False) -> list["Icon"]:

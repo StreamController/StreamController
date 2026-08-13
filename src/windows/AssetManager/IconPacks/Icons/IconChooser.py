@@ -164,7 +164,7 @@ class IconChooserPage(ChooserPage):
         settings = gl.settings_manager.get_app_settings().get("icon-browser", {})
         size = settings.get("icon-size", DEFAULT_ICON_SIZE)
         size = min(max(int(size), MIN_ICON_SIZE), MAX_ICON_SIZE)
-        return size, bool(settings.get("show-names", False)), bool(settings.get("backdrop", True))
+        return size, bool(settings.get("show-names", False)), bool(settings.get("backdrop", False))
 
     def save_view_settings(self) -> bool:
         self.settings_timeout_id = None

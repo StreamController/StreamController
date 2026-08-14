@@ -21,13 +21,19 @@
 
 StreamController supports the following Elgato Stream Deck models:
 
-- Stream Deck Original (2)
+- Stream Deck Original
 - Stream Deck Mini
 - Stream Deck XL
 - Stream Deck Pedal
 - Stream Deck Plus
-- Stream Deck Neo (only the normal buttons)
+- Stream Deck Plus XL
+- Stream Deck Neo
+- Stream Deck Studio
 - Stream Deck Modules
+
+Support for devices from other manufacturers is experimental:
+
+- Mirabox Stream Dock 293S (no hotplug support yet - connect it before starting the app)
 
 ## Features
 
@@ -45,11 +51,29 @@ Set up a custom screen saver to display a picture or video when your Stream Deck
 
 ### Automatic Page Switching
 
-Available for GNOME, Hyprland, Sway, KDE (when kdotool is installed) and all X11 desktops, this feature allows you to automatically change your active page based on the active window. For example, you can switch to your favorite music albums when you open Spotify, your projects when you open VSCode, or your favorite websites in Firefox.
+Available for GNOME (using our GNOME Shell extension), Hyprland, Sway, KDE (when kdotool is installed) and all X11 desktops, this feature allows you to automatically change your active page based on the active window. For example, you can switch to your favorite music albums when you open Spotify, your projects when you open VSCode, or your favorite websites in Firefox.
 
-## Auto-Lock
+### Auto-Lock
 
-Lock your Stream deck when your system is locked, preventing unwanted use from third parties (available on KDE and GNOME, and Cinnamon).
+Lock your Stream deck when your system is locked, preventing unwanted use from third parties. This works on every session where systemd-logind reports the lock, with dedicated support for Hyprland, GNOME, KDE and Cinnamon.
+
+### Sticky actions
+
+Maybe you want to have your specialy party mode button on all your pages. With sticky actions you can do this, without needing to copy it to all pages manually.
+
+### Command Line & API
+
+StreamController can be scripted. While the app is running you can switch pages, change states, emulate button presses, set the brightness or put a deck to sleep - and you can read back the current devices, pages and actions, with `--json` for machine-readable output. Pages can also be created, renamed, duplicated, exported and edited (labels, icons, background colors, states) without the app running at all.
+
+```sh
+flatpak run com.core447.StreamController --list-devices --json
+flatpak run com.core447.StreamController --change-page ABC12345678 "Gaming"
+flatpak run com.core447.StreamController --set-label "Gaming" 0,0 0 center text "Play"
+```
+
+Run it with `--help` for the full list. Everything is also available over the D-Bus API at `com.core447.StreamController`, so external tools can integrate with StreamController directly.
+
+**And many more.**
 
 ## Installation
 
@@ -71,7 +95,10 @@ The following packages are functional but unofficial and maintained by our commu
 
 ## Warning
 
-StreamController is currently in beta. While core features like actions and pages are stable, high memory usage can still be an issue. We are actively working to resolve this and bring the app to a stable release soon. Please report any issues you encounter.
+StreamController is currently in beta. Please report any issues you encounter.
+
+### Known issues
+* High memory can be a problem. We are actively working to resolve this. 
 
 ## Contributing
 
@@ -95,4 +122,4 @@ Thank you to all our contributors for your hard work and support!
 
 ## Note
 
-This application is unofficial and not affiliated with Elgato.
+This application is unofficial and not affiliated with Elgato in any way.

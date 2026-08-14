@@ -125,16 +125,51 @@ logs = deque(maxlen=5000)
 release_notes: str = """
 <p>Features:</p>
     <ul>
-        <li>Add uninstall button to plugin settings page</li>
+        <li>Sticky actions: keep actions on the same key across all pages</li>
+        <li>Full support for the Stream Deck Neo</li>
+        <li>New icon chooser in the asset manager</li>
+        <li>Create your own asset packs</li>
+        <li>Download premade pages from the store</li>
+        <li>Optional AI assistant to help configure actions (off by default)</li>
+        <li>Choose a plugin's git branch when installing from the store</li>
+        <li>Use multiple wallpapers</li>
+        <li>Rename decks</li>
+        <li>Search entry in the page selector</li>
+        <li>Option to keep states between restarts</li>
+        <li>Option to not shrink the background on key press</li>
+        <li>Choose the deck type of fake decks</li>
+        <li>Daemon-only mode for running without the window</li>
+        <li>Restart option in the tray menu</li>
+        <li>Greatly extended command line interface</li>
     </ul>
 <p>Improvements:</p>
     <ul>
-        <li>Improved page switch speed</li>
-        <li>Reduce idle CPU usage</li>
-        <li>Improve Hyprland active window detection</li>
-        <li>Switch to new GNOME runtime</li>
+        <li>Lower CPU and RAM usage, faster page switching and faster resume from suspend</li>
+        <li>Reorder actions via drag and drop</li>
+        <li>Page import and export now include the used assets and plugins</li>
+        <li>More responsive Stream Deck+ touchscreen</li>
+        <li>Decks automatically reconnect after temporary USB errors</li>
+        <li>Sensitive information is redacted from log files</li>
+        <li>Settings and pages are saved atomically, so a crash can no longer corrupt them</li>
+        <li>Reset buttons of spinners no longer react to accidental clicks</li>
+        <li>StreamController now tells you when an input is controlled by a stick action</li>
+        <li>Default regex for automatic page switching</li>
     </ul>
 <p>Fixes:</p>
     <ul>
+        <li>Deck frozen after unlocking the screen</li>
+        <li>Random crashes caused by background threads</li>
+        <li>Plugin backends breaking after a Python update</li>
+        <li>Proper GIF support with transparency and per-frame timing</li>
+        <li>App silently quitting while running in the background</li>
+        <li>Page switch could leave a key in the pressed state</li>
+        <li>Various problems with rotated decks</li>
+        <li>Screen bar problems on the Stream Deck Plus XL</li>
+        <li>Sidebar not fully updating when switching pages</li>
+        <li>Tray icon sometimes not loading correctly</li>
+        <li>Infinite loading in the asset manager when adding invalid assets</li>
+        <li>Wrong icon sizes in the onboarding dialog</li>
+        <li>Open button in the data path settings</li>
+        <li>Automatic page switching on Niri</li>
     </ul>
 """

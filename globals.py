@@ -171,5 +171,6 @@ release_notes: str = """
         <li>Wrong icon sizes in the onboarding dialog</li>
         <li>Open button in the data path settings</li>
         <li>Automatic page switching on Niri</li>
+        <li>Fonts sometimes not getting resolved after restart</li>
     </ul>
 """

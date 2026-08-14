@@ -117,6 +117,6 @@ class SettingsManager:
 
     def save_font_defaults(self) -> None:
         app_settings = self.get_app_settings()
-        app_settings["general"] = {}
-        app_settings["general"]["default-font"] = self.font_defaults
+        # Only replace default-font, every other key under general has to survive
+        app_settings.setdefault("general", {})["default-font"] = self.font_defaults
         self.save_app_settings(app_settings)

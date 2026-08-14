@@ -29,7 +29,8 @@ from PIL import Image
 
 import gi
 gi.require_version("Gdk", "4.0")
-from gi.repository import Gdk, Pango
+gi.require_version("PangoCairo", "1.0")
+from gi.repository import Gdk, Pango, PangoCairo
 
 # Import globals
 from autostart import is_flatpak
@@ -260,35 +261,47 @@ def add_default_keys(d: dict, keys: list):
         current_level = current_level[key]
 
 
+# Ordered list of last resort fonts, all of them cover latin scripts
+FALLBACK_FONT_CANDIDATES = ("DejaVu Sans", "Liberation Sans", "Noto Sans", "Cantarell", "Adwaita Sans", "FreeSans", "Arial")
+
+
 @lru_cache()
 def find_fallback_font(fallback="DejaVu Sans"):
     """
-    TODO: Improve speed - maybe be writing the last one into a file and just checking if it still exists
+    Returns the name of the font to use when no font is configured.
+
+    This has to be deterministic: matplotlib.font_manager.findSystemFonts() returns
+    the paths in an arbitrary order (it builds them from a set), so picking "the first
+    font on the system" gave a different - and often unusable, e.g. script only or
+    symbol - font on every start.
+
+    The font also has to be known to both PIL (which draws the labels on the deck) and
+    Pango (which shows the font in the font choosers). matplotlib ships its own copy of
+    DejaVu Sans, so it can be renderable without being installed on the system - picking
+    such a font makes every font chooser in the ui display "None".
     """
-    # Find system fonts
-    font_paths = matplotlib.font_manager.findSystemFonts(
-        fontpaths=None, fontext='ttf')
+    try:
+        renderable = {font.name for font in matplotlib.font_manager.fontManager.ttflist}
+    except Exception:
+        renderable = set()
 
-    # Extract font names
-    font_names = []
-    for font in font_paths:
-        try:
-            font_name = matplotlib.font_manager.FontProperties(
-                fname=font).get_name()
-            font_names.append(font_name)
-            if font_name == fallback:
-                break
-        except:
-            pass
+    try:
+        displayable = {family.get_name() for family in PangoCairo.FontMap.get_default().list_families()}
+    except Exception:
+        displayable = renderable
 
-    # Check for fallback font
-    if fallback in font_names:
-        return fallback
-    else:
-        if len(font_names) > 0:
-            return font_names[0]
-        else:
-            return
+    installed = renderable & displayable
+
+    for font_name in (fallback, *FALLBACK_FONT_CANDIDATES):
+        if font_name in installed:
+            return font_name
+
+    # Sorted to stay deterministic, see above
+    for font_name in sorted(installed):
+        return font_name
+
+    # matplotlib ships DejaVu Sans itself, so findfont() can always resolve it
+    return "DejaVu Sans"
 
 
 def color_values_to_gdk(color_values: tuple[int, int, int, int]) -> Gdk.RGBA:

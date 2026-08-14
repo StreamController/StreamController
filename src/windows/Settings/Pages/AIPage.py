@@ -16,6 +16,7 @@ from loguru import logger as log
 
 from GtkHelper.ComboRow import ComboRow, SimpleComboRowItem
 from src.backend.AI.Providers import PROVIDERS, ProviderError, get_provider_class
+from src.backend.DeckManagement.HelperMethods import recursive_hasattr
 
 import globals as gl
 
@@ -27,7 +28,31 @@ class AIPage(Adw.PreferencesPage):
         self.set_title("AI")
         self.set_icon_name("starred-symbolic")
 
+        self.add(AIAssistantGroup())
         self.add(AIProviderGroup())
+
+
+class AIAssistantGroup(Adw.PreferencesGroup):
+    """The assistant is opt in - without this switch nothing in the ui offers to ask a model."""
+
+    def __init__(self):
+        super().__init__(title="Assistant")
+
+        self.enable_row = Adw.SwitchRow(
+            title="AI assistant",
+            subtitle="Adds a button to the sidebar that configures the selected key from a "
+                     "description. Sends that description, your installed actions and the "
+                     "key's current configuration to the provider below.",
+            active=gl.ai_manager.get_assistant_enabled(),
+        )
+        self.enable_row.connect("notify::active", self.on_enabled_changed)
+        self.add(self.enable_row)
+
+    def on_enabled_changed(self, *_args) -> None:
+        gl.ai_manager.set_assistant_enabled(self.enable_row.get_active())
+
+        if recursive_hasattr(gl, "app.main_win.sidebar.ai_assistant_button"):
+            gl.app.main_win.sidebar.ai_assistant_button.update_visibility()
 
 
 class AIProviderGroup(Adw.PreferencesGroup):

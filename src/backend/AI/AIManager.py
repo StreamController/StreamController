@@ -30,6 +30,10 @@ class AIManager:
 
     # ---------------------------------------------------------------- getters
 
+    def get_assistant_enabled(self) -> bool:
+        """Off until the user turns it on in Settings -> AI - nothing talks to a model uninvited."""
+        return self.get_settings().get("assistant_enabled", False)
+
     def get_provider_id(self) -> str:
         return self.get_settings().get("provider", "chatgpt")
 
@@ -50,6 +54,11 @@ class AIManager:
         return self.get_settings().get("model_cache", {}).get(provider_id, [])
 
     # ---------------------------------------------------------------- setters
+
+    def set_assistant_enabled(self, enabled: bool) -> None:
+        ai_settings = self.get_settings()
+        ai_settings["assistant_enabled"] = enabled
+        self.set_settings(ai_settings)
 
     def set_provider_id(self, provider_id: str) -> None:
         ai_settings = self.get_settings()

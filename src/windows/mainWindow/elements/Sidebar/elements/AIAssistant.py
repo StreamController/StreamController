@@ -62,7 +62,12 @@ EXAMPLES = [
 
 
 class AIAssistantButton(Gtk.Button):
-    """The accent coloured circle floating over the bottom right of the sidebar."""
+    """
+    The accent coloured circle floating over the bottom right of the sidebar.
+
+    Only visible once the assistant has been switched on in Settings -> AI; the settings
+    switch calls `update_visibility()` so it appears and disappears right away.
+    """
 
     def __init__(self, sidebar, **kwargs):
         super().__init__(
@@ -77,6 +82,10 @@ class AIAssistantButton(Gtk.Button):
         )
         self.sidebar = sidebar
         self.connect("clicked", self.on_click)
+        self.update_visibility()
+
+    def update_visibility(self) -> None:
+        self.set_visible(gl.ai_manager is not None and gl.ai_manager.get_assistant_enabled())
 
     def on_click(self, _button):
         identifier = self.sidebar.active_identifier

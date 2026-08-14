@@ -112,6 +112,7 @@ Answer with ONE JSON object and nothing else. No markdown fences, no prose.
       "background": "red",
       "labels": {"center": "Safety"},
       "media": {"path": "/path/to/icon.png", "size": 0.8},
+      "controls": {"image": 0, "background": 0, "labels": {"center": 0}},
       "actions": [
         {
           "id": "<action id from the catalog below>",
@@ -136,11 +137,14 @@ state you send with just a "background" keeps its existing labels, icon and acti
   just text, or an object for more control:
       {"center": "Safety"}
       {"center": {"text": "Safety", "color": "white", "font-size": 18}}
-  "" clears a row. Most buttons only need "center".
+  "" clears a row and keeps it empty; null hands the row back to the action that controls
+  it. Most buttons only need "center".
 * "media" is the icon: {"path": "<absolute file path>"} plus optional "size" (0.0-1.0),
   "valign" and "halign" (-1.0 to 1.0). Only ever use a path the user gave you - you
   cannot browse their files. Leave "media" out if they did not mention an icon.
   {"path": ""} removes the current icon.
+* "controls" says which action is allowed to draw the icon, the background and each label
+  row. See "WHO DRAWS THE BUTTON" below - you rarely need it.
 * "actions" is the full list of actions for that state, in the order they should run.
   Send [] to explicitly remove every action from a state.
 * "settings" may be omitted or {} if the action needs no configuration.
@@ -199,6 +203,47 @@ touch_long  a long press on the touch strip.
 Several actions may share a trigger - they run top to bottom, in list order.
 
 ================================================================================
+WHO DRAWS THE BUTTON - "controls"
+================================================================================
+
+Actions do not only do things, they also draw: a mute action shows a crossed out
+microphone, a media action writes the track title into a label, a status action turns the
+key red. For each state exactly one action may draw the icon, one may set the background
+colour, and one may write each of the three label rows - or nobody may. "controls" is
+where you decide, by position in that state's "actions" list:
+
+  "controls": {"image": 1, "background": null, "labels": {"top": 0, "center": 1}}
+
+0 is the first action in the list. null means no action: whatever you put in "media",
+"background" or "labels" stays exactly as you set it, and if you left it empty the key
+simply shows nothing there.
+
+Leave "controls" out and the first action gets all of it. That is the right answer for a
+normal button, so only send "controls" when one of these applies:
+
+* The action that has something to show is not the first one. Actions are listed in the
+  order they run, and that is often not the order of who should be visible. A button that
+  toggles playback and shows the current track puts Play/Pause first (it is what the press
+  does) but wants the media action to own the display:
+      "controls": {"image": 0, "labels": {"center": 1, "bottom": 1}}
+* The user asked for a fixed look and an action would fight it. "A red button with my own
+  icon and nothing else on it" is: set "media", "background" and the labels you want, then
+  "controls": {"image": null, "background": null, "labels": {"top": null, "center": null,
+  "bottom": null}} so no action can paint over it.
+* The user does not want an icon at all. Actions ship their own icon and will draw it as
+  soon as they may - so "just a coloured key that says Mute", with no picture on it, needs
+  "controls": {"image": null}. Without that the mute action puts its microphone on the key.
+* An action would clutter the key. "Run Command" showing its output, or a second action
+  writing over the label you just wrote, is fixed by handing that row to the other action
+  or to null.
+
+Two things you never need "controls" for: a fixed label text and a fixed background colour
+already win over what the action would have drawn. It only matters for the icon and for the
+rows you left empty.
+
+Never point a control at an action index that does not exist in that state.
+
+================================================================================
 RULES
 ================================================================================
 
@@ -217,7 +262,10 @@ RULES
    a multi state button understandable at a glance.
 6. Keep it minimal. Do not add actions the user did not ask for - except the way back out
    of a state, which is part of making the request work.
-7. The summary is read by a beginner. Say what the button now does, not which json you
+7. Think about what the finished key looks like, not just what it does. If an action would
+   draw something the user did not ask for, or the one that should be visible is not the
+   first in the list, say so with "controls".
+8. The summary is read by a beginner. Say what the button now does, not which json you
    produced. One sentence.
 '''.strip()
 
@@ -334,6 +382,16 @@ def describe_current_config(identifier: InputIdentifier, page) -> str:
         for action in state_dict.get("actions", []):
             events = action.get("event-assignments", {})
             lines.append(f"    - {action.get('id')} settings={action.get('settings', {})} events={events}")
+
+        if state_dict.get("actions"):
+            label_indices = state_dict.get("label-control-actions") or [None, None, None]
+            label_controls = ", ".join(
+                f"{position}: {index}"
+                for position, index in zip(LABEL_POSITIONS, label_indices)
+            )
+            lines.append(f"    controls: image={state_dict.get('image-control-action')}, "
+                         f"background={state_dict.get('background-control-action')}, "
+                         f"labels={{{label_controls}}}")
 
     return "\n".join(lines)
 
@@ -516,6 +574,7 @@ def apply_spec(spec: dict, identifier: InputIdentifier, page) -> str:
         state_dict.setdefault("label-control-actions", [0, 0, 0])
         state_dict.setdefault("background-control-action", 0)
 
+        _apply_controls(state_dict, state_spec.get("controls"))
         _apply_labels(state_dict, state_spec.get("labels"))
         _apply_background(state_dict, state_spec.get("background"))
         _apply_media(state_dict, state_spec.get("media"))
@@ -566,6 +625,70 @@ def parse_color(value) -> list[int] | None:
     return None
 
 
+_INVALID_INDEX = object()
+
+
+def _control_index(value, action_count: int):
+    """None means "no action controls this"; anything that is not a real action index is dropped."""
+    if value is None:
+        return None
+
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value < action_count:
+        log.warning(f"AI assistant: ignoring control index {value!r}, the state has {action_count} actions")
+        return _INVALID_INDEX
+
+    return value
+
+
+def _clamp_control_index(value, action_count: int):
+    """
+    An index left over from a longer action list would hand the icon (or a label, or the
+    background) to an action that is no longer there, leaving that part of the key blank.
+    Fall back to the first action, which is what a fresh state gets.
+    """
+    if value is None or (isinstance(value, int) and not isinstance(value, bool) and 0 <= value < action_count):
+        return value
+    return 0 if action_count else None
+
+
+def _apply_controls(state_dict: dict, controls) -> None:
+    """
+    Hands the icon, the background colour and each label row to one action - or to none.
+
+    Indexes point into this state's action list, the same thing the toggles on an action
+    row in the sidebar set. Whatever the spec does not mention keeps its current value.
+    """
+    action_count = len(state_dict.get("actions", []))
+
+    label_indices = state_dict.setdefault("label-control-actions", [None, None, None])
+    while len(label_indices) < len(LABEL_POSITIONS):
+        label_indices.append(None)
+
+    if isinstance(controls, dict):
+        for name, key in (("image", "image-control-action"), ("background", "background-control-action")):
+            if name not in controls:
+                continue
+            index = _control_index(controls[name], action_count)
+            if index is not _INVALID_INDEX:
+                state_dict[key] = index
+
+        labels = controls.get("labels")
+        if isinstance(labels, list):
+            labels = dict(zip(LABEL_POSITIONS, labels))
+
+        if isinstance(labels, dict):
+            for position, value in labels.items():
+                if position not in LABEL_POSITIONS:
+                    continue
+                index = _control_index(value, action_count)
+                if index is not _INVALID_INDEX:
+                    label_indices[LABEL_POSITIONS.index(position)] = index
+
+    state_dict["image-control-action"] = _clamp_control_index(state_dict.get("image-control-action"), action_count)
+    state_dict["background-control-action"] = _clamp_control_index(state_dict.get("background-control-action"), action_count)
+    state_dict["label-control-actions"] = [_clamp_control_index(index, action_count) for index in label_indices]
+
+
 def _apply_labels(state_dict: dict, labels) -> None:
     if not labels or not isinstance(labels, dict):
         return
@@ -580,7 +703,9 @@ def _apply_labels(state_dict: dict, labels) -> None:
 
         if isinstance(value, dict):
             if "text" in value:
-                entry["text"] = str(value["text"])
+                # null drops the fixed text so the action controlling this row can write it;
+                # "" keeps the row fixed and empty
+                _set_label_text(entry, value["text"])
             if "color" in value:
                 color = parse_color(value["color"])
                 if color:
@@ -589,7 +714,18 @@ def _apply_labels(state_dict: dict, labels) -> None:
                 if key in value:
                     entry[key] = value[key]
         else:
-            entry["text"] = str(value)
+            _set_label_text(entry, value)
+
+
+def _set_label_text(entry: dict, text) -> None:
+    """
+    A fixed text always beats what an action writes into that row, and an empty string is
+    a fixed empty row. null is how the model gives the row back to its action.
+    """
+    if text is None:
+        entry.pop("text", None)
+    else:
+        entry["text"] = str(text)
 
 
 def _apply_background(state_dict: dict, background) -> None:

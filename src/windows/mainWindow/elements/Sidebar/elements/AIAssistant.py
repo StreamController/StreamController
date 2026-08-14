@@ -347,4 +347,35 @@ def describe_spec(spec: dict) -> str:
             detail = ", ".join(f"{k}={v}" for k, v in settings.items())
             lines.append(f"    on {trigger}: {name}" + (f" ({detail})" if detail else ""))
 
+        controls = describe_controls(state.get("controls"), actions)
+        if controls:
+            lines.append(f"    {controls}")
+
     return "\n".join(lines)
+
+
+def describe_controls(controls, actions: list) -> str:
+    """Which action is allowed to draw what - only mentioned when the spec says so."""
+    if not isinstance(controls, dict):
+        return ""
+
+    def target(value) -> str:
+        if value is None:
+            return "nothing"
+        if isinstance(value, int) and 0 <= value < len(actions):
+            return actions[value].get("id", "").split("::")[-1]
+        return str(value)
+
+    parts = []
+    if "image" in controls:
+        parts.append(f"icon by {target(controls['image'])}")
+    if "background" in controls:
+        parts.append(f"background by {target(controls['background'])}")
+
+    labels = controls.get("labels")
+    if isinstance(labels, dict):
+        for position in ("top", "center", "bottom"):
+            if position in labels:
+                parts.append(f"{position} label by {target(labels[position])}")
+
+    return "drawn: " + ", ".join(parts) if parts else ""

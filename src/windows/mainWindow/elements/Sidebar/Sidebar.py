@@ -36,6 +36,7 @@ from src.windows.mainWindow.elements.Sidebar.elements.IconSelector import IconSe
 from src.windows.mainWindow.elements.Sidebar.elements.LabelEditor import LabelEditor
 from src.windows.mainWindow.elements.Sidebar.elements.ActionManager import ActionManager
 from src.windows.mainWindow.elements.Sidebar.elements.ActionChooser import ActionChooser
+from src.windows.mainWindow.elements.Sidebar.elements.AIAssistant import AIAssistantButton
 from src.windows.mainWindow.elements.Sidebar.elements.ActionConfigurator import ActionConfigurator
 from src.windows.mainWindow.elements.Sidebar.elements.BackgroundEditor import BackgroundEditor
 from src.windows.mainWindow.elements.Sidebar.elements.ImageEditor import ImageEditor
@@ -65,8 +66,12 @@ class Sidebar(Adw.NavigationPage):
         self.on_map_tasks.clear()
 
     def build(self):
+        # The assistant button floats over the sidebar content, so everything goes in an overlay
+        self.overlay = Gtk.Overlay(hexpand=True)
+        self.set_child(self.overlay)
+
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        self.set_child(self.main_box)
+        self.overlay.set_child(self.main_box)
 
         self.header = Adw.HeaderBar(css_classes=["flat"], show_back_button=False)
         self.main_box.append(self.header)
@@ -100,6 +105,9 @@ class Sidebar(Adw.NavigationPage):
 
         self.page_selector = PageSelector(self.main_window, gl.page_manager, halign=Gtk.Align.CENTER)
         self.header.set_title_widget(self.page_selector)
+
+        self.ai_assistant_button = AIAssistantButton(self)
+        self.overlay.add_overlay(self.ai_assistant_button)
 
         self.load_for_identifier(Input.Key("0x0"), 0)
 

@@ -528,3 +528,31 @@ row.suggested-action {
   margin-bottom: 0px;
   margin-top: 0px;
 }
+/* Floating AI assistant button in the sidebar */
+.ai-assistant-fab {
+  min-width: 48px;
+  min-height: 48px;
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  box-shadow: 0 2px 6px 1px rgba(0, 0, 0, 0.3);
+}
+
+.ai-assistant-fab:hover {
+  background-image: image(alpha(currentColor, 0.1));
+}
+
+/* AI assistant chat bubbles */
+.ai-bubble-assistant {
+  background-color: alpha(currentColor, 0.05);
+  border-radius: 12px;
+}
+
+.ai-bubble-user {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border-radius: 12px;
+}
+
+.ai-example {
+  opacity: 0.8;
+}

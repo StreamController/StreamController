@@ -59,6 +59,9 @@ class ActionHolder:
             Input.TouchKey: ActionInputSupport.UNTESTED,
             Input.Screen: ActionInputSupport.UNTESTED,
         },
+        description: str = None,
+        requirements: str = None,
+        settings_schema: dict = None,
         *args, **kwargs):
         
         ## Verify variables
@@ -78,7 +81,61 @@ class ActionHolder:
         self.icon = icon
         self.min_app_version = min_app_version
         self.action_support = deepcopy(action_support)
-        
+
+        # Optional self description, used by the AI assistant to configure this action
+        # without a human picking every setting. All three are optional - an action that
+        # does not fill them in simply shows up without documentation.
+        self.description = description
+        self.requirements = requirements
+        self.settings_schema = deepcopy(settings_schema) if settings_schema else None
+
+    def get_ai_documentation(self) -> str | None:
+        """
+        Renders what this action told us about itself, for the AI assistant's catalog.
+
+        `settings_schema` maps a settings key to either a plain description string or a
+        dict with any of "type", "description", "default", "example", "required",
+        "values" - whichever the plugin author bothered to write down.
+
+        Returns None when the action documented nothing.
+        """
+        if not any((self.description, self.requirements, self.settings_schema)):
+            return None
+
+        lines: list[str] = []
+
+        if self.description:
+            lines.append(f"      what it does: {self.description}")
+
+        if self.requirements:
+            lines.append(f"      requires: {self.requirements}")
+
+        if self.settings_schema:
+            lines.append("      settings:")
+            for key, spec in self.settings_schema.items():
+                if not isinstance(spec, dict):
+                    lines.append(f'        "{key}": {spec}')
+                    continue
+
+                parts = []
+                if spec.get("type"):
+                    parts.append(str(spec["type"]))
+                if spec.get("required"):
+                    parts.append("required")
+                if "default" in spec:
+                    parts.append(f"default {spec['default']!r}")
+                if spec.get("values"):
+                    parts.append(f"one of {spec['values']}")
+                if spec.get("example") is not None:
+                    parts.append(f"e.g. {spec['example']!r}")
+
+                detail = ", ".join(parts)
+                description = spec.get("description", "")
+                lines.append(f'        "{key}"' + (f" ({detail})" if detail else "")
+                             + (f": {description}" if description else ""))
+
+        return "\n".join(lines)
+
     def get_is_compatible(self) -> bool:
         if self.min_app_version is not None:
             if version.parse(gl.app_version) < version.parse(self.min_app_version):

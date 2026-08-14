@@ -66,6 +66,8 @@ from src.backend.PageManagement import HeadlessPageOps as ops
 from src.CLI import (print_get_results, print_emulate_input_usage, print_state_change_usage,
                      validate_emulate_input_args, validate_state_change_args)
 from src.backend.SettingsManager import SettingsManager
+from src.backend.AI.AIManager import AIManager
+from src.backend.AI.ActionDocs import ActionDocRegistry
 from src.backend.PluginManager.PluginManager import PluginManager
 from src.backend.IconPackManagement.IconPackManager import IconPackManager
 from src.backend.WallpaperPackManagement.WallpaperPackManager import WallpaperPackManager
@@ -230,6 +232,9 @@ def create_global_objects():
     gl.gnome_extensions = GnomeExtensions()
 
     gl.settings_manager = SettingsManager()
+
+    gl.ai_manager = AIManager()
+    gl.action_doc_registry = ActionDocRegistry()
 
     gl.signal_manager = SignalManager()
 

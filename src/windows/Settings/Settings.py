@@ -22,6 +22,7 @@ from autostart import is_flatpak, setup_autostart
 from src.backend.DeckManagement.Subclasses.FakeDeck import DEFAULT_FAKE_DECK_TYPE, get_supported_deck_types
 from src.backend.DeckManagement.HelperMethods import color_values_to_gdk, gdk_color_to_values, get_pango_font_description, get_values_from_pango_font_description
 from src.windows.Settings.PluginSettingsPage import PluginSettingsPage
+from src.windows.Settings.Pages.AIPage import AIPage
 
 # Import globals first to get IS_MAC
 import globals as gl
@@ -53,6 +54,7 @@ class Settings(Adw.PreferencesWindow):
         self.performance_page = PerformancePage(settings=self)
         self.dev_page = DevPage(settings=self)
         self.system_page = SystemPage(settings=self)
+        self.ai_page = AIPage(settings=self)
         self.plugin_page = PluginSettingsPage(settings=self)
 
         self.add(self.general_page)
@@ -60,6 +62,7 @@ class Settings(Adw.PreferencesWindow):
         self.add(self.store_page)
         self.add(self.performance_page)
         self.add(self.system_page)
+        self.add(self.ai_page)
         self.add(self.dev_page)
         self.add(self.plugin_page)
 

@@ -42,8 +42,9 @@ class PluginSettingsGroup(BetterPreferencesGroup):
 
     def load(self):
         self.clear()
-        for plugin_id in gl.plugin_manager.get_plugins():
-            plugin_base = gl.plugin_manager.get_plugin_by_id(plugin_id)
+        plugin_bases = [gl.plugin_manager.get_plugin_by_id(plugin_id) for plugin_id in gl.plugin_manager.get_plugins()]
+        plugin_bases.sort(key=lambda plugin_base: (plugin_base.plugin_name or "").lower())
+        for plugin_base in plugin_bases:
             self.add(PluginExpander(settings_group=self, plugin_base=plugin_base))
 
 

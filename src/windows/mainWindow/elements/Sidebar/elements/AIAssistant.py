@@ -56,7 +56,7 @@ def fetch_store_docs_once() -> None:
 
 EXAMPLES = [
     "Mute my microphone while I hold it",
-    "Press once to arm it, press again to open Firefox",
+    "Type my email address when I press it",
     "Show a confirm step before it shuts down my PC",
 ]
 

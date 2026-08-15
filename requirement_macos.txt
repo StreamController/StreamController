@@ -47,7 +47,7 @@ memray==1.15.0
 meson==1.7.0
 meson-python==0.17.1
 natsort==8.4.0
-nltk==3.9.1
+nltk==3.10.0
 numpy==2.2.3
 opencv-python==4.11.0.86
 packaging==24.2

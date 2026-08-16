@@ -688,7 +688,7 @@ class PluginBase(rpyc.Service):
         threading.Thread(target=self.wait_for_backend, name="wait_for_backend", daemon=True).start()
         # self.wait_for_backend()
 
-    def wait_for_backend(self, timeout: float = None) -> None:
+    def wait_for_backend(self, timeout: float = None, tries = 3) -> None:
         """
         Waits for the backend to establish a connection.
 
@@ -699,7 +699,7 @@ class PluginBase(rpyc.Service):
 
         Args:
             timeout (float, optional): How long to keep retrying. Defaults to `BACKEND_CONNECT_TIMEOUT`.
-
+            tries: not used. only there for compatability with old plugins
         Returns:
             None
         """

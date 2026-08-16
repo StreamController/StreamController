@@ -598,12 +598,14 @@ class ActionCore(rpyc.Service):
 
         threading.Thread(target=self.wait_for_backend, name="wait_for_backend", daemon=True).start()
 
-    def wait_for_backend(self, timeout: float = None):
+    def wait_for_backend(self, timeout: float = None, tries = 3):
         """
         Polls for the backend connection to be established, for up to `timeout` seconds. Run in a
         background thread by `launch_backend` so it never blocks action loading - events that arrive
         while the connection is still pending are queued instead of silently dropped (see
         `queue_action_event`/`_flush_pending_action_events`).
+
+        tries: not used, only there for compatibility with old plugins
         """
         if timeout is None:
             timeout = self.BACKEND_CONNECT_TIMEOUT

@@ -257,8 +257,8 @@ sources:
   url: https://files.pythonhosted.org/packages/ec/43/82583712f1dd438e9476ab0ea2de50767bc156a035487f48fd7c1af9d50a/streamcontroller_plugin_tools-2.0.2-py3-none-any.whl
   sha256: 89172670080401eb2a651aade84a865987b2221776ef4a9408b0447717f960d2
 - type: file
-  url: https://files.pythonhosted.org/packages/79/17/ceec5eb6dbeaa0393d9ad7f164340f5bb872bc83b0e571f13184d90e684c/streamcontroller_streamdeck-0.2.0-py3-none-any.whl
-  sha256: e4f53b1406f46fc6d3d3d28ed6e48b95ce551e4213f66650a278e94df5573d4b
+  url: https://files.pythonhosted.org/packages/86/d7/c38c77c62885a0b6581b3bfb04ab6cd5563192220c40d53502252391fa13/streamcontroller_streamdeck-0.2.1-py3-none-any.whl
+  sha256: 2ccd24c854c941e9ece9732a3f842211b5e150548e13d320480ff3e39bf7e950
 - type: file
   url: https://files.pythonhosted.org/packages/60/45/c7b5c3168458db837e8ceab06dc77824e18202679d0463f0e8f002143a97/tinycss2-1.5.1-py3-none-any.whl
   sha256: 3415ba0f5839c062696996998176c4a3751d18b7edaaeeb658c9ce21ec150661

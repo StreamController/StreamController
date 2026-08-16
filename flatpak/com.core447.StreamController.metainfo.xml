@@ -41,12 +41,14 @@
   <url type="bugtracker">https://github.com/StreamController/StreamController/issues</url>
   <url type="contribute">https://github.com/StreamController/StreamController</url>
   <releases>
-    <release version="1.5.0-beta.16" date="2026-08-14">
+    <release version="1.5.0-beta.16" date="2026-08-16">
       <description translatable="no">
         <p>Features:</p>
         <ul>
           <li>Sticky actions: keep actions on the same key across all pages</li>
           <li>Full support for the Stream Deck Neo</li>
+          <li>Support for the Stream Deck Mini Discord Edition</li>
+          <li>Experimental support for the Ulanzi Stream Controller D200</li>
           <li>New icon chooser in the asset manager</li>
           <li>Create your own asset packs</li>
           <li>Download premade pages from the store</li>
@@ -681,6 +683,7 @@
     <ul>
       <li>Stream Deck Original</li>
       <li>Stream Deck Mini</li>
+      <li>Stream Deck Mini Discord Edition</li>
       <li>Stream Deck XL</li>
       <li>Stream Deck Pedal</li>
       <li>Stream Deck Plus</li>
@@ -694,6 +697,7 @@
     </p>
     <ul>
       <li>Mirabox Stream Dock 293S (no hotplug support yet)</li>
+      <li>Ulanzi Stream Controller D200 (no hotplug support yet)</li>
     </ul>
   </description>
 

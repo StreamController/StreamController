@@ -127,6 +127,8 @@ release_notes: str = """
     <ul>
         <li>Sticky actions: keep actions on the same key across all pages</li>
         <li>Full support for the Stream Deck Neo</li>
+        <li>Support for the Stream Deck Mini Discord Edition</li>
+        <li>Experimental support for the Ulanzi Stream Controller D200</li>
         <li>New icon chooser in the asset manager</li>
         <li>Create your own asset packs</li>
         <li>Download premade pages from the store</li>

@@ -23,6 +23,7 @@ StreamController supports the following Elgato Stream Deck models:
 
 - Stream Deck Original
 - Stream Deck Mini
+- Stream Deck Mini Discord Edition
 - Stream Deck XL
 - Stream Deck Pedal
 - Stream Deck Plus
@@ -34,6 +35,7 @@ StreamController supports the following Elgato Stream Deck models:
 Support for devices from other manufacturers is experimental:
 
 - Mirabox Stream Dock 293S (no hotplug support yet - connect it before starting the app)
+- Ulanzi Stream Controller D200 (no hotplug support yet - connect it before starting the app)
 
 ## Features
 

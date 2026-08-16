@@ -42,6 +42,14 @@ bash flatpak/install.sh --repo=current --branch=<branch>   # build the local che
 
 Releasing a version: bump `app_version` and `release_notes` in `globals.py`, then run `python3 scripts/update_metainfo.py` to regenerate `flatpak/com.core447.StreamController.metainfo.xml` from them. The flatpak manifest's `StreamController` module pins a git `tag` that also needs updating.
 
+Changing `requirements.txt` is only half the job: the flatpak gets its Python packages from `pypi-requirements.yaml`, not from `requirements.txt` (the manifest's `pip install -r requirements.txt` line is commented out). Regenerate it after every requirements change:
+
+```sh
+req2flatpak --requirements-file requirements.txt --yaml -o pypi-requirements.yaml --target-platforms 313-aarch64 313-x86_64
+```
+
+The `313` target is the runtime's Python, not the dev machine's — `org.gnome.Sdk//50` ships Python 3.13.14 (`flatpak run --command=python3 org.gnome.Sdk//50 --version` to re-check after a runtime bump). Every package must be pinned, because req2flatpak resolves exactly what is listed and adds no transitive deps; `uv pip compile requirements.txt --python-version 3.13` must round-trip to the identical set. Two things about the generated file have to be restored/checked by hand every time — see "Hard constraints" below.
+
 There is no linter or formatter configured.
 
 ## Hard constraints (violating these causes crashes that have already been fixed once)
@@ -49,6 +57,10 @@ There is no linter or formatter configured.
 **GTK/Adw widget calls must happen on the main thread.** The app runs many background threads (per-deck `tick_actions`, `MediaPlayerThread`, udev/USB callbacks, store update threads, plugin RPyC threads, `threading.Timer`s). Any widget mutation from those must go through `GLib.idle_add`. Symptom of getting this wrong is a silent SIGSEGV with no Python traceback.
 
 **dbus-python must never be attached to a GLib main loop.** `dbus-gmain` is not thread safe and the app calls D-Bus from tick threads, so an attached connection produces random `SIGABRT` in `dbus_watch_handle`. dbus-python is only used for blocking method calls (see `quit_running()` / `make_api_calls()` in `main.py`). Anything needing signals, async replies, or exported objects must use GDBus (`gi.repository.Gio`) or dasbus. `tests/test_dbus_mainloop.py` greps the tree for the forbidden APIs and fails the build if they reappear.
+
+**`pypi-requirements.yaml` must keep its two `pip3 install` build steps.** req2flatpak emits a single install command; the flatpak build needs the bootstrap step (`meson meson-python patchelf setuptools pip`) to run *first*, on its own, before the full package list — otherwise the sdist-built packages have no build backend available under `--no-build-isolation`. After every regeneration, re-add that first command by hand (it is the first entry of `build-commands`, identical flags, only the package list differs) and fix the `-o` path in the generated header comment back to `pypi-requirements.yaml`.
+
+**Do not drop "unused" packages from `requirements.txt` without checking the plugin store.** The app's Python env is also the plugin env: every store plugin's `main.py`, actions and in-process helpers import from it, and only plugins that ship an `__install__.py` + `create_venv` backend bring their own dependencies. `pulsectl` (AudioControl, AudioSwitcher, MicMute, VolumeMixer, BetterVolumeMixer, Volume-Controller-Plus), `websocket-client` (HomeAssistant, XIVDeck, VSCode, opendeck), `speedtest-cli` (Speedtest) and `pytz` (Clocks) are in the list for plugins only — nothing in `src/` imports them. A missing one makes `PluginManager.load_plugins()` log `Error importing plugin …` and silently skip the plugin, turning every action on the user's pages into a missing action. Audit against https://github.com/StreamController/StreamController-Store/blob/main/Plugins.json before removing anything.
 
 **Writes to user data go through `src/backend/Utils/AtomicSaveUtils.py`** (`atomic_write` / `atomic_save_json`), so a crash mid-write cannot truncate pages or settings.
 

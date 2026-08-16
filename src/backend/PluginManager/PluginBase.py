@@ -686,6 +686,7 @@ class PluginBase(rpyc.Service):
         )
 
         threading.Thread(target=self.wait_for_backend, name="wait_for_backend", daemon=True).start()
+        # self.wait_for_backend()
 
     def wait_for_backend(self, timeout: float = None) -> None:
         """
@@ -710,7 +711,7 @@ class PluginBase(rpyc.Service):
             time.sleep(0.1)
 
         if self.backend_connection is None:
-            log.error(f"{self.plugin_id} - Could not connect to plugin backend within {timeout}s")
+            log.error(f"{self.get_plugin_id()} - Could not connect to plugin backend within {timeout}s")
             self.backend_launch_pending = False
             self._flush_pending_action_events()
 

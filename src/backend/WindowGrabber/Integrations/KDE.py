@@ -134,8 +134,17 @@ class KDE(Integration):
             if kdotool is None:
                 return
             title = kdotool.communicate()[0].decode().strip()
-            if title is None or len(title) < 2:
+            if title is None:
                 return
+            if title == "":
+                # When the desktop (plasmashell) has an empty title and
+                # rejecting it means minimising every window is never seen as a
+                # window change, so auto-change pages never fall back.
+                time.sleep(0.1)
+                kdotool = self._run_command(["kdotool", "getwindowname", window_id])
+                if kdotool is None:
+                    return
+                title = kdotool.communicate()[0].decode().strip()
             return title
         except CalledProcessError as e:
             log.error(f"An error occurred while running kdotool: {e}")

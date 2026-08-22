@@ -31,11 +31,12 @@ from src.backend.WindowGrabber.Integrations.Gnome import Gnome
 from src.backend.WindowGrabber.Integrations.Sway import Sway
 from src.backend.WindowGrabber.Integrations.X11 import X11
 from src.backend.WindowGrabber.Integrations.KDE import KDE
+from src.backend.WindowGrabber.Integrations.Mangowm import MangoWM
 from src.api import notify_foreground_window_changed
 
 class WindowGrabber:
     def __init__(self):
-        self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "sway:wlroots", "sway:wlroots:swayfx", "x11", "kde"]
+        self.SUPPORTED_ENVS = ["hyprland", "gnome", "sway", "sway:wlroots", "sway:wlroots:swayfx", "x11", "kde", "mango"]
 
         self.integration: Integration = None
         self.init_integration()
@@ -74,6 +75,8 @@ class WindowGrabber:
             self.integration = X11(self)
         elif self.environment == "kde":
             self.integration = KDE(self)
+        elif self.environment == "mango":
+            self.integration = MangoWM(self)
 
     @log.catch
     def get_all_windows(self) -> list[Window]:

@@ -17,7 +17,7 @@ build-commands:
   psutil pulsectl py-gcode-metadata pycairo pyclip pycparser pydantic pydantic_core
   pyenchant pyflakes Pygments PyGObject PyGObject-stubs pymongo pyparsing pyperclip
   pyproject-metadata pyproject_hooks Pyro5 pyspellchecker python-dateutil python-discovery
-  python-wayland-extra pytz pyudev pyusb PyYAML RapidFuzz regex requests requirements-parser
+  python-wayland-extra python-xlib pytz pyudev pyusb PyYAML RapidFuzz regex requests requirements-parser
   rich rpyc serpent setproctitle setuptools six smmap speedtest-cli streamcontroller-plugin-tools
   streamcontroller-streamdeck textual tinycss2 tomli tomli_w tqdm truststore types-setuptools
   typing-inspection typing_extensions uc-micro-py urllib3 usb-monitor virtualenv webencodings
@@ -449,6 +449,9 @@ sources:
 - type: file
   url: https://files.pythonhosted.org/packages/ee/6b/6a07f16a75e2ec74384771a3be49fd7056c09b5136a065860b32a36366aa/python_wayland_extra-0.7.0-py3-none-any.whl
   sha256: e0ef708b7dc30ea6db72aa82b215a4de5329188ec3d7840a342537b06f289fa2
+- type: file
+  url: https://files.pythonhosted.org/packages/fc/b8/ff33610932e0ee81ae7f1269c890f697d56ff74b9f5b2ee5d9b7fa2c5355/python_xlib-0.33-py2.py3-none-any.whl
+  sha256: c3534038d42e0df2f1392a1b30a15a4ff5fdc2b86cfa94f072bf11b10a164398
 - type: file
   url: https://files.pythonhosted.org/packages/0f/7b/39c34ca613b0b198cb866466651b26b045e2009864c5183c979a3b83f383/pytz-2026.3.post1-py2.py3-none-any.whl
   sha256: dd95840dd199baea12d9cc096a1d452caa6596a1c1e4b5f3dbd1541855d5e815

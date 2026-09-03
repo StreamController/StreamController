@@ -346,8 +346,10 @@ def quit_running():
                 action_interface.Activate("quit", [], [])
             except dbus.exceptions.DBusException as e:
                 if "org.freedesktop.DBus.Error.NoReply" in str(e):
+                    log.info("Running instance closed")
+                else:
                     log.error("Could not close running instance: " + str(e))
-                    sys.exit(0)
+                    sys.exit(1)
             time.sleep(5)
 
         else:

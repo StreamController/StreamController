@@ -19,6 +19,7 @@ from src.backend.LockScreenManager.Detectors.Cinnamon import CinnamonLockScreenD
 from src.backend.LockScreenManager.Detectors.KDE import KDELockScreenDetector
 from src.backend.LockScreenManager.Detectors.Hyprland import HyprlandLockScreenDetector
 from src.backend.LockScreenManager.Detectors.Omarchy import OmarchyLockScreenDetector
+from src.backend.LockScreenManager.Detectors.Hyprlock import HyprlockLockScreenDetector
 from src.backend.LockScreenManager.Detectors.Logind import LogindLockScreenDetector
 from src.backend.LockScreenManager.LockScreenDetector import LockScreenDetector
 from loguru import logger as log
@@ -49,8 +50,14 @@ class LockScreenManager:
                 self.detector = OmarchyLockScreenDetector(self)
                 return
 
-            self.detector = HyprlandLockScreenDetector(self)
-            return
+            # hyprlock has no IPC, but its process runs for exactly as long as
+            # the session is locked
+            if HyprlockLockScreenDetector.is_available():
+                self.detector = HyprlockLockScreenDetector(self)
+                return
+
+            # Nothing Hyprland specific is left to try, so fall through to
+            # logind rather than dead-ending on a notifier that never arrives
 
         # Try logind
         try:

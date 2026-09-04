@@ -311,8 +311,8 @@ sources:
   url: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
   sha256: 4732914fb471f56b5cce04d7bae6f164a592c7712e1c85f9ef585e197299521c
 - type: file
-  url: https://files.pythonhosted.org/packages/1f/2b/bf677eb32ca6684b270c0d19ab133c2271e9f3375997e5a8dd2b08e3152d/nltk-3.10.2-py3-none-any.whl
-  sha256: 2c7ccacb765c5e26b0cb60fb1b57080af522c6924d12a714a243305ba3637412
+  url: https://files.pythonhosted.org/packages/b6/6d/ebd2af4640b12168fdf0cb74b6118df2f32a2f62ec7e0c06fbfd80706639/nltk-3.10.3-py3-none-any.whl
+  sha256: ff9598a8e20518ee0d557745890cc4435b9578489e2dcbc69c4f81fa060caf7c
 - type: file
   url: https://files.pythonhosted.org/packages/29/f1/2a64a307d92c5d98f5255a4014eb43bb6103ee477087b61ecae44a3aa9b9/numpy-2.5.2-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl
   sha256: 0aadf13b60048d501e05fa699efaf7734e2494f3498a4c2a5521d822640324f3

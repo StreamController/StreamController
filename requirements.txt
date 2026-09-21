@@ -88,6 +88,7 @@ pyspellchecker==0.9.0
 python-dateutil==2.9.0.post0
 python-discovery==1.5.1
 python-wayland-extra==0.7.0
+python-xlib==0.33
 pytz==2026.3.post1
 pyudev==0.24.4
 pyusb==1.3.1

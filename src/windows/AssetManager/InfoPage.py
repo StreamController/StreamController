@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 from PIL import Image
 
 # Import own modules
-from GtkHelper.GtkHelper import AttributeRow, OriginalURL
+from GtkHelper.GtkHelper import AttributeRow, URLRow
 from src.backend.DeckManagement.HelperMethods import is_video, get_image_aspect_ratio
 
 class InfoPage(Gtk.Box):
@@ -67,7 +67,7 @@ class InfoPage(Gtk.Box):
         self.license_url_row = AttributeRow(title="URL:", attr="Error")
         self.license_group.add(self.license_url_row)
 
-        self.original_url_row = OriginalURL()
+        self.original_url_row = URLRow()
         self.license_group.add(self.original_url_row)
 
         self.license_comment_row = AttributeRow(title="Comment:", attr="Error")

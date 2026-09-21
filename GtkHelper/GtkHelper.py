@@ -396,9 +396,9 @@ class ErrorPage(Gtk.Box):
     def set_reload_args(self, reload_args):
         self.reload_args = reload_args
 
-class OriginalURL(Adw.ActionRow):
-    def __init__(self):
-        super().__init__(title="Original URL:", subtitle="N/A")
+class URLRow(Adw.ActionRow):
+    def __init__(self, title: str, url: str = None):
+        super().__init__(title=title, subtitle="N/A")
         self.set_activatable(False)
 
         self.suffix_box = Gtk.Box(valign=Gtk.Align.CENTER)
@@ -408,8 +408,10 @@ class OriginalURL(Adw.ActionRow):
         self.open_button.connect("clicked", self.on_open_clicked)
         self.suffix_box.append(self.open_button)
 
+        self.set_url(url)
+
     def set_url(self, url:str):
-        if url is None:
+        if not url:
             self.set_subtitle("N/A")
             self.open_button.set_sensitive(False)
             return

@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from src.windows.Store.StorePage import StorePage
     from src.windows.Store.StoreData import PluginData
 
-from GtkHelper.GtkHelper import AttributeRow, OriginalURL
+from GtkHelper.GtkHelper import AttributeRow, URLRow
 from GtkHelper.ConfirmationDialog import ConfirmationDialog
 
 # Import globals
@@ -67,6 +67,9 @@ class InfoPage(Gtk.Box):
         self.version_row = AttributeRow(title="Version:", attr="Error")
         self.about_group.add(self.version_row)
 
+        self.source_url_row = URLRow(title="Source:")
+        self.about_group.add(self.source_url_row)
+
         # Only used by content that is made for a specific deck layout
         self.deck_row = AttributeRow(title=gl.lm.get("store.info.deck-row.title"), attr="N/A", visible=False)
         self.about_group.add(self.deck_row)
@@ -91,7 +94,7 @@ class InfoPage(Gtk.Box):
         self.copyright_row = AttributeRow(title="Copyright:", attr="Error")
         self.legal_group.add(self.copyright_row)
 
-        self.original_url = OriginalURL()
+        self.original_url = URLRow(title="Original URL:")
         self.legal_group.add(self.original_url)
 
         self.license_description = DescriptionRow(title="License Description:", desc="N/A")
@@ -118,6 +121,9 @@ class InfoPage(Gtk.Box):
 
     def set_version(self, version:str):
         self.version_row.set_url(version)
+
+    def set_source_url(self, url: str):
+        self.source_url_row.set_url(url)
 
     def set_deck_info(self, deck: dict):
         """

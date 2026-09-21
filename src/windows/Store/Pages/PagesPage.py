@@ -269,6 +269,7 @@ class PagePreview(StorePreview):
         self.pages_page.info_page.set_author(self.page_data.author)
         self.pages_page.info_page.set_version(self.page_data.page_version)
         self.pages_page.info_page.set_deck_info(self.page_data.deck)
+        self.pages_page.info_page.set_source_url(self.page_data.github)
 
         self.pages_page.info_page.set_license(self.page_data.license)
         self.pages_page.info_page.set_copyright(self.page_data.copyright)

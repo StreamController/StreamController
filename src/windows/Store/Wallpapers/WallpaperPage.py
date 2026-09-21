@@ -123,6 +123,7 @@ class WallpaperPreview(StorePreview):
         self.wallpaper_page.info_page.set_description(self.wallpaper_data.description)
         self.wallpaper_page.info_page.set_author(self.wallpaper_data.author)
         self.wallpaper_page.info_page.set_version(self.wallpaper_data.wallpaper_version)
+        self.wallpaper_page.info_page.set_source_url(self.wallpaper_data.github)
 
         self.wallpaper_page.info_page.set_license(self.wallpaper_data.license)
         self.wallpaper_page.info_page.set_copyright(self.wallpaper_data.copyright)

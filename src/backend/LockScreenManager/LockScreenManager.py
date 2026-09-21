@@ -18,6 +18,8 @@ from src.backend.LockScreenManager.Detectors.Gnome import GnomeLockScreenDetecto
 from src.backend.LockScreenManager.Detectors.Cinnamon import CinnamonLockScreenDetector
 from src.backend.LockScreenManager.Detectors.KDE import KDELockScreenDetector
 from src.backend.LockScreenManager.Detectors.Hyprland import HyprlandLockScreenDetector
+from src.backend.LockScreenManager.Detectors.Omarchy import OmarchyLockScreenDetector
+from src.backend.LockScreenManager.Detectors.Hyprlock import HyprlockLockScreenDetector
 from src.backend.LockScreenManager.Detectors.Logind import LogindLockScreenDetector
 from src.backend.LockScreenManager.LockScreenDetector import LockScreenDetector
 from loguru import logger as log
@@ -36,8 +38,26 @@ class LockScreenManager:
 
         # Hyprland uses the Wayland lock notifier protocol directly
         if env == "hyprland":
-            self.detector = HyprlandLockScreenDetector(self)
-            return
+            if self.wait_for_hyprland_lock_notifier():
+                self.detector = HyprlandLockScreenDetector(self)
+                return
+
+            # The notifier covers every ext-session-lock client, hyprlock and
+            # Omarchy's Quickshell lock alike, but the compositor withholds it
+            # from sandboxed clients - so under Flatpak an Omarchy session has
+            # to be asked about its own lock instead.
+            if OmarchyLockScreenDetector.is_available():
+                self.detector = OmarchyLockScreenDetector(self)
+                return
+
+            # hyprlock has no IPC, but its process runs for exactly as long as
+            # the session is locked
+            if HyprlockLockScreenDetector.is_available():
+                self.detector = HyprlockLockScreenDetector(self)
+                return
+
+            # Nothing Hyprland specific is left to try, so fall through to
+            # logind rather than dead-ending on a notifier that never arrives
 
         # Try logind
         try:
@@ -53,6 +73,18 @@ class LockScreenManager:
             self.detector = CinnamonLockScreenDetector(self)
         elif env == "kde":
             self.detector = KDELockScreenDetector(self)
+
+    @log.catch
+    def wait_for_hyprland_lock_notifier(self, timeout: float = 2) -> bool:
+        """Wait for the registry to report Hyprland's lock notifier.
+
+        The globals arrive on the Wayland tick thread shortly after startup, so
+        the answer is not in yet by the time this runs.
+        """
+        wayland = getattr(gl, "wayland", None)
+        if wayland is None:
+            return False
+        return wayland.lock_notifier_found.wait(timeout)
 
     @log.catch
     def get_active_environment(self) -> str:

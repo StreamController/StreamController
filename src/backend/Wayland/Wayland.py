@@ -16,6 +16,7 @@ class Wayland:
             log.debug("Hyprland lock notifier found, hooking...")
             wayland.wl_registry.bind(name, interface, version, name)
             wayland.hyprland_lock_notifier_v1.get_lock_notification()
+            self.lock_notifier_found.set()
 
     def __on_lock(self):
         gl.signal_manager.trigger_signal(WaylandSignals.HyprlandLock)
@@ -34,6 +35,9 @@ class Wayland:
     def __init__(self):
         self.__quit = False
         self.__TICK_DELAY = 0.1
+        # Hyprland only advertises the lock notifier to unsandboxed clients,
+        # so whether it turns up decides if lock detection can use it at all
+        self.lock_notifier_found = threading.Event()
         if not getenv("WAYLAND_DISPLAY", False):
             raise(EnvironmentError("Attempted to initialize Wayland when WAYLAND_DISPLAY is not set"))
         wayland.initialise(True)

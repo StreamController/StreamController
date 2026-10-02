@@ -11,7 +11,7 @@ class TrayIcon(DBusTrayIcon):
     MenuPath = "/com/core447/StreamController/Menu"
     IndicatorPath = "/org/ayatana/NotificationItem/com_core447_StreamController_TrayIcon"
     AppId = "com.core447.StreamController.TrayIcon"
-    IconName = "com.core447.StreamController"
+    IconName = "com.core447.StreamController-symbolic"
 
     def __init__(self):
         if gl.IS_MAC:

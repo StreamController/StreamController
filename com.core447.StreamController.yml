@@ -107,6 +107,7 @@ modules:
       - install -D flatpak/launch.sh /app/bin/launch.sh
       - chmod +x /app/bin/launch.sh
       - install -D flatpak/icon_256.png /app/share/icons/hicolor/256x256/apps/com.core447.StreamController.png
+      - install -D Assets/icons/hicolor/scalable/apps/com.core447.StreamController-symbolic.svg /app/share/icons/hicolor/symbolic/apps/com.core447.StreamController-symbolic.svg
       - install -D flatpak/launch.desktop /app/share/applications/com.core447.StreamController.desktop
       - install -D flatpak/com.core447.StreamController.metainfo.xml /app/share/metainfo/com.core447.StreamController.metainfo.xml
     sources:

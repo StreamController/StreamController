@@ -82,7 +82,25 @@ class StorePreview(Gtk.FlowBoxChild):
                                  content_fit=Gtk.ContentFit.COVER,
                                  height_request=90, width_request=250,
                                  css_classes=["plugin-store-image"], can_shrink=True)
-        self.main_button_box.append(self.image)
+        # Keep image dimensions out of the card's size calculation. Placeholder
+        # and loaded image share one allocation, even for very tall thumbnails.
+        self.image_overlay = Gtk.Overlay(hexpand=True, vexpand=True)
+        self.image_overlay.set_child(Gtk.Box(width_request=250, height_request=90))
+        self.image_overlay.add_overlay(self.image)
+        self.image_overlay.set_measure_overlay(self.image, False)
+        self.image_overlay.set_clip_overlay(self.image, True)
+        self.image_placeholder = Gtk.Image(
+            icon_name="image-x-generic-symbolic", pixel_size=32,
+            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+            css_classes=["dim-label"],
+        )
+        self.image_overlay.add_overlay(self.image_placeholder)
+        self.image_spinner = Gtk.Spinner(
+            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+            width_request=24, height_request=24, visible=False,
+        )
+        self.image_overlay.add_overlay(self.image_spinner)
+        self.main_button_box.append(self.image_overlay)
 
         # Container for Labels and Badges
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=6, margin_start=6, margin_bottom=6)
@@ -154,11 +172,18 @@ class StorePreview(Gtk.FlowBoxChild):
             self.install_spinner.set_spinning(False)
 
     def set_image(self, image:Image):
+        self.set_image_loading(False)
+        self.image_placeholder.set_visible(image is None)
         if image is None:
             return
         image.thumbnail((250, 360))
         pixbuf = image2pixbuf(image, force_transparency=True)
         GLib.idle_add(self.image.set_pixbuf, pixbuf)
+
+    def set_image_loading(self, loading: bool):
+        self.image_spinner.set_visible(loading)
+        self.image_spinner.set_spinning(loading)
+        self.image_placeholder.set_visible(not loading and self.image.get_paintable() is None)
 
     def set_official(self, official:bool):
         self.official_badge.set_visible(official)

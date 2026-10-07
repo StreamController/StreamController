@@ -346,7 +346,7 @@ class StoreBackend:
             log.error(e)
             return None, n_stores_with_errors
 
-    async def process_store_data(self, filename: str, process_func: callable, get_custom_func: callable, data_class, include_images=True, flatten_func: callable = None, on_ready: callable = None):
+    async def process_store_data(self, filename: str, process_func: callable, get_custom_func: callable, data_class, include_images=True, flatten_func: callable = None, on_ready: callable = None, on_catalog_ready: callable = None):
         n_stores_with_errors = 0
         data_list = []
 
@@ -365,8 +365,8 @@ class StoreBackend:
             data_list = flatten_func(data_list)
 
         async def prepare(data, verified):
-            result = await process_func(data, include_images, verified)
-            if on_ready is not None and isinstance(result, data_class):
+            result = await process_func(data, include_images and on_catalog_ready is None, verified)
+            if on_catalog_ready is None and on_ready is not None and isinstance(result, data_class):
                 on_ready(result)
             return result
 
@@ -384,27 +384,45 @@ class StoreBackend:
         results = await asyncio.gather(*prepare_tasks)
         results = [result for result in results if isinstance(result, data_class)]
 
+        if on_catalog_ready is not None:
+            # Names and search metadata are now known for every valid entry.
+            # Let the UI reserve all sorted positions before any image arrives.
+            on_catalog_ready(results)
+
+            async def load_image(asset):
+                if include_images:
+                    image = await self.get_web_image(
+                        asset.github, asset.thumbnail, asset.commit_sha or asset.branch,
+                        size=self.STORE_IMAGE_SIZE,
+                    )
+                    asset.image = None if isinstance(image, NoConnectionError) else image
+                if on_ready is not None:
+                    on_ready(asset)
+
+            await asyncio.gather(*(load_image(asset) for asset in results))
+
+
         return results
 
-    async def get_all_plugins_async(self, include_images: bool = True, on_ready: callable = None) -> int:
-        return await self.process_store_data(self.PLUGIN_FILE, self.prepare_plugin, self.get_custom_plugins, PluginData, include_images, on_ready=on_ready)
+    async def get_all_plugins_async(self, include_images: bool = True, on_ready: callable = None, on_catalog_ready: callable = None) -> int:
+        return await self.process_store_data(self.PLUGIN_FILE, self.prepare_plugin, self.get_custom_plugins, PluginData, include_images, on_ready=on_ready, on_catalog_ready=on_catalog_ready)
 
-    async def get_all_icons(self, on_ready: callable = None) -> int:
-        return await self.process_store_data(self.ICON_FILE, self.prepare_icon, None, IconData, on_ready=on_ready)
+    async def get_all_icons(self, on_ready: callable = None, on_catalog_ready: callable = None) -> int:
+        return await self.process_store_data(self.ICON_FILE, self.prepare_icon, None, IconData, on_ready=on_ready, on_catalog_ready=on_catalog_ready)
 
-    async def get_all_wallpapers(self, on_ready: callable = None) -> int:
-        return await self.process_store_data(self.WALLPAPERS_FILE, self.prepare_wallpaper, None, WallpaperData, on_ready=on_ready)
+    async def get_all_wallpapers(self, on_ready: callable = None, on_catalog_ready: callable = None) -> int:
+        return await self.process_store_data(self.WALLPAPERS_FILE, self.prepare_wallpaper, None, WallpaperData, on_ready=on_ready, on_catalog_ready=on_catalog_ready)
     
-    async def get_all_sd_plus_bar_wallpapers(self, on_ready: callable = None) -> int:
-        return await self.process_store_data(self.SDPLUSWALLPAPERS_FILE, self.prepare_sd_plus_bar_wallpaper, None, SDPlusBarWallpaperData, on_ready=on_ready)
+    async def get_all_sd_plus_bar_wallpapers(self, on_ready: callable = None, on_catalog_ready: callable = None) -> int:
+        return await self.process_store_data(self.SDPLUSWALLPAPERS_FILE, self.prepare_sd_plus_bar_wallpaper, None, SDPlusBarWallpaperData, on_ready=on_ready, on_catalog_ready=on_catalog_ready)
 
-    async def get_all_pages(self, on_ready: callable = None) -> int:
+    async def get_all_pages(self, on_ready: callable = None, on_catalog_ready: callable = None) -> int:
         # Scanned once instead of per entry, prepare_page would otherwise read every
         # page of the user for every page in the store
         self.installed_page_commits = StorePages.get_installed_commits()
 
         return await self.process_store_data(self.PAGES_FILE, self.prepare_page, None, PageData,
-                                             flatten_func=self.flatten_page_entries, on_ready=on_ready)
+                                             flatten_func=self.flatten_page_entries, on_ready=on_ready, on_catalog_ready=on_catalog_ready)
 
     @staticmethod
     def flatten_page_entries(entries: list[dict]) -> list[dict]:
@@ -595,8 +613,6 @@ class StoreBackend:
             return f.read().strip()
     
     async def prepare_icon(self, icon, include_image: bool = True, verified: bool = False):
-        if not include_image:
-            raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in icon:
             return None
 
@@ -610,10 +626,14 @@ class StoreBackend:
         if isinstance(manifest, NoConnectionError):
             return manifest
         thumbnail_path = manifest.get("thumbnail")
-        image, attribution = await asyncio.gather(
-            self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
-            self.get_attribution(url, commit),
-        )
+        image = None
+        if include_image:
+            image, attribution = await asyncio.gather(
+                self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
+                self.get_attribution(url, commit),
+            )
+        else:
+            attribution = await self.get_attribution(url, commit)
         if isinstance(image, NoConnectionError):
             return image
         if isinstance(attribution, NoConnectionError):
@@ -663,8 +683,6 @@ class StoreBackend:
 
     
     async def prepare_wallpaper(self, wallpaper, include_image: bool = True, verified: bool = False):
-        if not include_image:
-            raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in wallpaper:
             return None
 
@@ -679,10 +697,14 @@ class StoreBackend:
             return manifest
 
         thumbnail_path = manifest.get("thumbnail")
-        image, attribution = await asyncio.gather(
-            self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
-            self.get_attribution(url, commit),
-        )
+        image = None
+        if include_image:
+            image, attribution = await asyncio.gather(
+                self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
+                self.get_attribution(url, commit),
+            )
+        else:
+            attribution = await self.get_attribution(url, commit)
         if isinstance(image, NoConnectionError):
             return image
         if isinstance(attribution, NoConnectionError):
@@ -727,8 +749,6 @@ class StoreBackend:
         )
 
     async def prepare_sd_plus_bar_wallpaper(self, sd_plus_bar_wallpaper, include_image: bool = True, verified: bool = False):
-        if not include_image:
-            raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in sd_plus_bar_wallpaper:
             return None
 
@@ -743,10 +763,14 @@ class StoreBackend:
             return manifest
         
         thumbnail_path = manifest.get("thumbnail")
-        image, attribution = await asyncio.gather(
-            self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
-            self.get_attribution(url, commit),
-        )
+        image = None
+        if include_image:
+            image, attribution = await asyncio.gather(
+                self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
+                self.get_attribution(url, commit),
+            )
+        else:
+            attribution = await self.get_attribution(url, commit)
         if isinstance(image, NoConnectionError):
             return image
         if isinstance(attribution, NoConnectionError):
@@ -819,8 +843,6 @@ class StoreBackend:
         return posixpath.normpath(posixpath.join(posixpath.dirname(page_path), thumbnail))
 
     async def prepare_page(self, page, include_image: bool = True, verified: bool = False):
-        if not include_image:
-            raise NotImplementedError("Not yet implemented") #TODO
         if "url" not in page:
             return None
 
@@ -842,10 +864,14 @@ class StoreBackend:
 
         thumbnail_path = self.resolve_page_thumbnail(page_path, manifest.get("thumbnail"))
         # Pages use the attribution of the repository they live in.
-        image, attribution = await asyncio.gather(
-            self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
-            self.get_attribution(url, commit),
-        )
+        image = None
+        if include_image:
+            image, attribution = await asyncio.gather(
+                self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
+                self.get_attribution(url, commit),
+            )
+        else:
+            attribution = await self.get_attribution(url, commit)
         if isinstance(image, NoConnectionError):
             return image
         if isinstance(attribution, NoConnectionError):
@@ -964,8 +990,8 @@ class StoreBackend:
             return
         return split[2]
     
-    def get_all_plugins(self, include_images: bool = True, on_ready: callable = None) -> list[PluginData]:
-        return asyncio.run(self.get_all_plugins_async(include_images, on_ready=on_ready))
+    def get_all_plugins(self, include_images: bool = True, on_ready: callable = None, on_catalog_ready: callable = None) -> list[PluginData]:
+        return asyncio.run(self.get_all_plugins_async(include_images, on_ready=on_ready, on_catalog_ready=on_catalog_ready))
     
     ## Install
     async def subp_call(self, args):

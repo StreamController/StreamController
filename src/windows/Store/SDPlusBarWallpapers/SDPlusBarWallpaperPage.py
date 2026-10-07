@@ -56,8 +56,9 @@ class SDPlusBarWallpaperPage(StorePage):
     def load(self):
         self.set_loading()
         preview = lambda data: SDPlusBarWallpaperPreview(wallpaper_page=self, wallpaper_data=data)
-        on_ready = lambda data: self.queue_asset(data, preview)
-        result = asyncio.run(self.store.backend.get_all_sd_plus_bar_wallpapers(on_ready=on_ready))
+        on_ready = self.queue_asset_image
+        on_catalog_ready = lambda assets: self.queue_catalog(assets, preview)
+        result = asyncio.run(self.store.backend.get_all_sd_plus_bar_wallpapers(on_ready=on_ready, on_catalog_ready=on_catalog_ready))
         if isinstance(result, NoConnectionError):
             GLib.idle_add(self.show_connection_error)
             return

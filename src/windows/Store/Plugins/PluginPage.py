@@ -57,8 +57,9 @@ class PluginPage(StorePage):
     def load(self):
         self.set_loading()
         preview = lambda data: PluginPreview(plugin_page=self, plugin_data=data)
-        on_ready = lambda data: self.queue_asset(data, preview)
-        result = self.store.backend.get_all_plugins(on_ready=on_ready)
+        on_ready = self.queue_asset_image
+        on_catalog_ready = lambda assets: self.queue_catalog(assets, preview)
+        result = self.store.backend.get_all_plugins(on_ready=on_ready, on_catalog_ready=on_catalog_ready)
         if isinstance(result, NoConnectionError):
             GLib.idle_add(self.show_connection_error)
             return

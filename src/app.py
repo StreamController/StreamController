@@ -137,6 +137,7 @@ class App(Adw.Application):
 
         # Do tasks
         gl.app = self
+        gl.tray_icon.initialize()
         for task in gl.app_loading_finished_tasks:
             if callable(task):
                 task()

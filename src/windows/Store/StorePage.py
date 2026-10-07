@@ -100,6 +100,20 @@ class StorePage(Gtk.Stack):
         GLib.idle_add(self.spinner.set_spinning, True)
         GLib.idle_add(self.section_switcher.set_visible, False)
 
+    def queue_asset(self, data, preview_factory):
+        # Backend callbacks run on a loading thread. Construct and append GTK
+        # widgets on the main loop as soon as each asset is ready.
+        GLib.idle_add(self._append_asset, data, preview_factory)
+
+    def _append_asset(self, data, preview_factory):
+        section = self.compatible_section if data.is_compatible else self.incompatible_section
+        section.append_child(preview_factory(data))
+        self.section_stack.set_visible(True)
+        self.loading_box.set_visible(False)
+        self.spinner.set_spinning(False)
+        self.section_switcher.set_visible(self.incompatible_section.are_items_present())
+        return False
+
     def set_loaded(self):
         GLib.idle_add(self.section_stack.set_visible, True)
         # GLib.idle_add(self.bottom_box.set_visible, True)

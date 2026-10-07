@@ -55,17 +55,12 @@ class SDPlusBarWallpaperPage(StorePage):
     @log.catch
     def load(self):
         self.set_loading()
-        wallpapers = asyncio.run(self.store.backend.get_all_sd_plus_bar_wallpapers())
-        if isinstance(wallpapers, NoConnectionError):
-            self.show_connection_error()
+        preview = lambda data: SDPlusBarWallpaperPreview(wallpaper_page=self, wallpaper_data=data)
+        on_ready = lambda data: self.queue_asset(data, preview)
+        result = asyncio.run(self.store.backend.get_all_sd_plus_bar_wallpapers(on_ready=on_ready))
+        if isinstance(result, NoConnectionError):
+            GLib.idle_add(self.show_connection_error)
             return
-        for wallpaper in wallpapers:
-            if wallpaper.is_compatible:
-                section = self.compatible_section
-            else:
-                section = self.incompatible_section
-            GLib.idle_add(section.append_child, SDPlusBarWallpaperPreview(wallpaper_page=self, wallpaper_data=wallpaper))
-
         self.set_loaded()
 
 

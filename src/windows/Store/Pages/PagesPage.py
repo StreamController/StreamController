@@ -59,17 +59,12 @@ class PagesPage(StorePage):
     @log.catch
     def load(self):
         self.set_loading()
-        pages: list[PageData] = asyncio.run(self.store.backend.get_all_pages())
-        if isinstance(pages, NoConnectionError):
-            self.show_connection_error()
+        preview = lambda data: PagePreview(pages_page=self, page_data=data)
+        on_ready = lambda data: self.queue_asset(data, preview)
+        result = asyncio.run(self.store.backend.get_all_pages(on_ready=on_ready))
+        if isinstance(result, NoConnectionError):
+            GLib.idle_add(self.show_connection_error)
             return
-        for page in pages:
-            if page.is_compatible:
-                section = self.compatible_section
-            else:
-                section = self.incompatible_section
-            GLib.idle_add(section.append_child, PagePreview(pages_page=self, page_data=page))
-
         self.set_loaded()
 
 

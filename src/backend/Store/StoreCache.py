@@ -14,7 +14,7 @@ class StoreCache:
         self.files_json = os.path.join(self.CACHE_PATH, "files.json")
         self.files_dir = os.path.join(self.CACHE_PATH, "files")
 
-        self.write_lock = threading.Lock()
+        self.write_lock = threading.RLock()
 
         self.files = self.get_files()
         self.remove_old_cache_files()
@@ -40,12 +40,10 @@ class StoreCache:
         DAYS_TO_KEEP = 3
         for string in self.files.copy():
             path = self.files[string].get("path")
-            if not os.path.exists(path):
-                continue
-            date = self.files[string].get("date")
-            if date is None:
-                os.remove(path)
+            if not path or not os.path.exists(path):
                 self.files.pop(string)
+                continue
+            date = max(self.files[string].get("date") or 0, os.path.getmtime(path))
 
             if time.time() - date > DAYS_TO_KEEP * 24 * 60 * 60:
                 os.remove(path)
@@ -86,21 +84,10 @@ class StoreCache:
         return f"{user}::{repo}::{branch}::{data_type}::{path}"
     
     def get_cache_path(self, url: str, path: str, branch: str = "main", data_type: str = "text") -> str:
-        # return os.path.join(self.files_dir, self.generate_cache_string(url, path, branch, data_type))
-
         cache_string = self.generate_cache_string(url, path, branch, data_type)
-        if cache_string in self.files:
-            return self.files[cache_string].get("path")
-        
-        else:
-            path = os.path.join(self.files_dir, cache_string)
-            self.files[cache_string] = {
-                "path": path,
-                "date": time.time()
-            }
-            self.set_files(self.files)
-            return path
-    
+        with self.write_lock:
+            return self.files.get(cache_string, {}).get("path") or os.path.join(self.files_dir, cache_string)
+
     def is_cached(self, url: str, path: str, branch: str = "main", data_type: str = "text") -> bool:
         cache_string = self.generate_cache_string(url, path, branch, data_type)
         if cache_string not in self.files:
@@ -113,12 +100,18 @@ class StoreCache:
 
     def open_cache_file(self, url: str, path: str, branch: str = "main", data_type: str = "text", mode: str = "r") -> str:
         cache_path = self.get_cache_path(url, path, branch, data_type)
-        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-
-        self.files[self.generate_cache_string(url, path, branch, data_type)] = {
-            "path": cache_path,
-            "date": time.time()
-        }
-        self.set_files(self.files)
-        
-        return open(cache_path, mode)
+        if mode in ("r", "rb"):
+            file = open(cache_path, mode)
+            try:
+                os.utime(file.fileno(), None)
+            except OSError:
+                file.close()
+                raise
+            return file
+        with self.write_lock:
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            self.files[self.generate_cache_string(url, path, branch, data_type)] = {
+                "path": cache_path, "date": time.time()
+            }
+            self.set_files(self.files)
+            return open(cache_path, mode)

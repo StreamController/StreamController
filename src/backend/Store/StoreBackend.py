@@ -30,6 +30,7 @@ import posixpath
 import uuid
 import shutil
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 # Import GLib
 import gi
@@ -66,6 +67,16 @@ class StoreBackend:
     # see https://github.com/StreamController/StreamController/issues/467
     REQUEST_TIMEOUT = (10, 15)
     DOWNLOAD_TIMEOUT = (10, 30)
+    # Match the preview size so GTK does not decode full-size images on its loop.
+    STORE_IMAGE_SIZE = (250, 360)
+    MAX_CONCURRENT_REQUESTS = 8
+    # Tabs have separate event loops; share bounded, thread-safe executors.
+    _request_executor = ThreadPoolExecutor(
+        max_workers=MAX_CONCURRENT_REQUESTS, thread_name_prefix="store-request"
+    )
+    # Decoding a finished download must not queue behind slow network requests.
+    _image_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="store-image")
+    _request_state = threading.local()
 
     WALLPAPERS_FILE = "Wallpapers.json"
     PLUGIN_FILE = "Plugins.json"
@@ -210,19 +221,27 @@ class StoreBackend:
         self.official_store_branch_cache = v
         return v
 
-    async def request_from_url(self, url: str) -> requests.Response:
+    async def request_from_url(self, url: str) -> requests.Response | NoConnectionError:
+        return await asyncio.get_running_loop().run_in_executor(
+            self._request_executor, self._request_from_url_sync, url
+        )
+
+    def _request_from_url_sync(self, url: str) -> requests.Response | NoConnectionError:
+        # Reuse connections without sharing mutable Session state across threads.
+        if not hasattr(self._request_state, "session"):
+            self._request_state.session = requests.Session()
         try:
-            req = requests.get(url, stream=True, timeout=self.DOWNLOAD_TIMEOUT)
-            if req.status_code == 200:
-                return req
-            log.error(f"Request to {url} failed with status code {req.status_code}")
+            with self._request_state.session.get(url, stream=True, timeout=self.DOWNLOAD_TIMEOUT) as req:
+                if req.status_code == 200:
+                    # Read the body here too, away from the caller's event loop.
+                    req.content
+                    return req
+                log.error(f"Request to {url} failed with status code {req.status_code}")
             return NoConnectionError()
         except requests.exceptions.RequestException as e:
-            # Covers connection errors as well as connect/read timeouts, so a
-            # dead or lossy connection fails fast instead of hanging.
             log.error(e)
             return NoConnectionError()
-    
+
     def build_url(self, repo_url: str, file_path: str, branch_name: str = "main") -> str:
         """
         Replaces the domain in the given repository URL with "raw.githubusercontent.com" and constructs the URL for the specified file path in the repository's branch.
@@ -298,13 +317,8 @@ class StoreBackend:
         
     async def get_last_commit(self, repo_url: str, branch_name: str = "main") -> str:
         url = f"https://api.github.com/repos/{self.get_user_name(repo_url)}/{self.get_repo_name(repo_url)}/commits?sha={branch_name}&per_page=1"
-        try:
-            response = requests.get(url, timeout=self.REQUEST_TIMEOUT)
-        except requests.exceptions.RequestException as e:
-            log.error(e)
-            return
-
-        if response.status_code != 200:
+        response = await self.request_from_url(url)
+        if isinstance(response, NoConnectionError):
             return
 
         commits = response.json()
@@ -332,7 +346,7 @@ class StoreBackend:
             log.error(e)
             return None, n_stores_with_errors
 
-    async def process_store_data(self, filename: str, process_func: callable, get_custom_func: callable, data_class, include_images=True, flatten_func: callable = None):
+    async def process_store_data(self, filename: str, process_func: callable, get_custom_func: callable, data_class, include_images=True, flatten_func: callable = None, on_ready: callable = None):
         n_stores_with_errors = 0
         data_list = []
 
@@ -350,7 +364,13 @@ class StoreBackend:
             # Not every store file has one asset per entry
             data_list = flatten_func(data_list)
 
-        prepare_tasks = [process_func({"custom": False, **data}, include_images, True) for data in data_list]
+        async def prepare(data, verified):
+            result = await process_func(data, include_images, verified)
+            if on_ready is not None and isinstance(result, data_class):
+                on_ready(result)
+            return result
+
+        prepare_tasks = [prepare({"custom": False, **data}, True) for data in data_list]
 
         if get_custom_func is not None:
             for url, branch in get_custom_func():
@@ -359,32 +379,32 @@ class StoreBackend:
                     "branch": branch,
                     "custom": True
                 }
-                prepare_tasks.append(process_func(asset, include_images, False))
+                prepare_tasks.append(prepare(asset, False))
 
         results = await asyncio.gather(*prepare_tasks)
         results = [result for result in results if isinstance(result, data_class)]
 
         return results
 
-    async def get_all_plugins_async(self, include_images: bool = True) -> int:
-        return await self.process_store_data(self.PLUGIN_FILE, self.prepare_plugin, self.get_custom_plugins, PluginData, include_images)
+    async def get_all_plugins_async(self, include_images: bool = True, on_ready: callable = None) -> int:
+        return await self.process_store_data(self.PLUGIN_FILE, self.prepare_plugin, self.get_custom_plugins, PluginData, include_images, on_ready=on_ready)
 
-    async def get_all_icons(self) -> int:
-        return await self.process_store_data(self.ICON_FILE, self.prepare_icon, None, IconData)
+    async def get_all_icons(self, on_ready: callable = None) -> int:
+        return await self.process_store_data(self.ICON_FILE, self.prepare_icon, None, IconData, on_ready=on_ready)
 
-    async def get_all_wallpapers(self) -> int:
-        return await self.process_store_data(self.WALLPAPERS_FILE, self.prepare_wallpaper, None, WallpaperData)
+    async def get_all_wallpapers(self, on_ready: callable = None) -> int:
+        return await self.process_store_data(self.WALLPAPERS_FILE, self.prepare_wallpaper, None, WallpaperData, on_ready=on_ready)
     
-    async def get_all_sd_plus_bar_wallpapers(self) -> int:
-        return await self.process_store_data(self.SDPLUSWALLPAPERS_FILE, self.prepare_sd_plus_bar_wallpaper, None, SDPlusBarWallpaperData)
+    async def get_all_sd_plus_bar_wallpapers(self, on_ready: callable = None) -> int:
+        return await self.process_store_data(self.SDPLUSWALLPAPERS_FILE, self.prepare_sd_plus_bar_wallpaper, None, SDPlusBarWallpaperData, on_ready=on_ready)
 
-    async def get_all_pages(self) -> int:
+    async def get_all_pages(self, on_ready: callable = None) -> int:
         # Scanned once instead of per entry, prepare_page would otherwise read every
         # page of the user for every page in the store
         self.installed_page_commits = StorePages.get_installed_commits()
 
         return await self.process_store_data(self.PAGES_FILE, self.prepare_page, None, PageData,
-                                             flatten_func=self.flatten_page_entries)
+                                             flatten_func=self.flatten_page_entries, on_ready=on_ready)
 
     @staticmethod
     def flatten_page_entries(entries: list[dict]) -> list[dict]:
@@ -482,11 +502,14 @@ class StoreBackend:
         image = None
         thumbnail_path = manifest.get("thumbnail")
         if include_image:
-            image = await self.get_web_image(url, thumbnail_path, commit or branch)
-            if isinstance(manifest, NoConnectionError):
-                return image
-        
-        attribution = await self.get_attribution(url, commit or branch)
+            image, attribution = await asyncio.gather(
+                self.get_web_image(url, thumbnail_path, commit or branch, size=self.STORE_IMAGE_SIZE),
+                self.get_attribution(url, commit or branch),
+            )
+            if isinstance(image, NoConnectionError):
+                image = None
+        else:
+            attribution = await self.get_attribution(url, commit or branch)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
@@ -586,15 +609,16 @@ class StoreBackend:
         manifest = await self.get_manifest(url, commit)
         if isinstance(manifest, NoConnectionError):
             return manifest
-        attribution = await self.get_attribution(url, commit)
+        thumbnail_path = manifest.get("thumbnail")
+        image, attribution = await asyncio.gather(
+            self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
+            self.get_attribution(url, commit),
+        )
+        if isinstance(image, NoConnectionError):
+            return image
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
-
-        thumbnail_path = manifest.get("thumbnail")
-        image = await self.get_web_image(url, thumbnail_path, commit)
-        if isinstance(image, NoConnectionError):
-            return image
 
         author = self.get_user_name(url)
 
@@ -655,10 +679,12 @@ class StoreBackend:
             return manifest
 
         thumbnail_path = manifest.get("thumbnail")
-        image = await self.get_web_image(url, thumbnail_path, commit)
+        image, attribution = await asyncio.gather(
+            self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
+            self.get_attribution(url, commit),
+        )
         if isinstance(image, NoConnectionError):
             return image
-        attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
@@ -717,10 +743,12 @@ class StoreBackend:
             return manifest
         
         thumbnail_path = manifest.get("thumbnail")
-        image = await self.get_web_image(url, thumbnail_path, commit)
+        image, attribution = await asyncio.gather(
+            self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
+            self.get_attribution(url, commit),
+        )
         if isinstance(image, NoConnectionError):
             return image
-        attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {}) #TODO: Choose correct attribution
@@ -813,12 +841,13 @@ class StoreBackend:
             return None
 
         thumbnail_path = self.resolve_page_thumbnail(page_path, manifest.get("thumbnail"))
-        image = await self.get_web_image(url, thumbnail_path, commit)
+        # Pages use the attribution of the repository they live in.
+        image, attribution = await asyncio.gather(
+            self.get_web_image(url, thumbnail_path, commit, size=self.STORE_IMAGE_SIZE),
+            self.get_attribution(url, commit),
+        )
         if isinstance(image, NoConnectionError):
             return image
-
-        # Pages do not have their own attribution, they use the one of the repository they live in
-        attribution = await self.get_attribution(url, commit)
         if isinstance(attribution, NoConnectionError):
             return attribution
         attribution = attribution.get("generic", {})
@@ -863,18 +892,29 @@ class StoreBackend:
             verified=verified
         )
 
-    async def get_web_image(self, url: str, path: str, branch: str = "main") -> Image:
+    async def get_web_image(self, url: str, path: str, branch: str = "main", size: tuple[int, int] | None = None) -> Image:
+        if not path:
+            return None
         try:
             result = await self.get_remote_file(url, path, branch, data_type="content")
-        except:
-            return
+        except OSError:
+            return None
         if isinstance(result, NoConnectionError):
             return result
-        try:
-            return Image.open(BytesIO(result))
-        except:
-            return
-    
+
+        def decode():
+            try:
+                with Image.open(BytesIO(result)) as image:
+                    if size is not None:
+                        image.thumbnail(size)
+                    # Detach from the input buffer, with pixels decoded before
+                    # GTK constructs the preview. Only keep the display size.
+                    return image.copy()
+            except (OSError, ValueError, TypeError):
+                return None
+
+        return await asyncio.get_running_loop().run_in_executor(self._image_executor, decode)
+
     async def get_stargazers(self, repo_url: str) -> int:
         "Deactivated for now because of rate limits"
         return 0
@@ -924,8 +964,8 @@ class StoreBackend:
             return
         return split[2]
     
-    def get_all_plugins(self, include_images: bool = True) -> list[PluginData]:
-        return asyncio.run(self.get_all_plugins_async(include_images))
+    def get_all_plugins(self, include_images: bool = True, on_ready: callable = None) -> list[PluginData]:
+        return asyncio.run(self.get_all_plugins_async(include_images, on_ready=on_ready))
     
     ## Install
     async def subp_call(self, args):

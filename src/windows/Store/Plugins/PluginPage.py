@@ -56,19 +56,12 @@ class PluginPage(StorePage):
     @log.catch
     def load(self):
         self.set_loading()
-        plugins: list[PluginData] = self.store.backend.get_all_plugins()
-        if isinstance(plugins, NoConnectionError):
-            self.show_connection_error()
+        preview = lambda data: PluginPreview(plugin_page=self, plugin_data=data)
+        on_ready = lambda data: self.queue_asset(data, preview)
+        result = self.store.backend.get_all_plugins(on_ready=on_ready)
+        if isinstance(result, NoConnectionError):
+            GLib.idle_add(self.show_connection_error)
             return
-        for plugin in plugins:
-            if not plugin:
-                continue
-            if plugin.is_compatible:
-                section = self.compatible_section
-            else:
-                section = self.incompatible_section
-            GLib.idle_add(section.append_child, PluginPreview(plugin_page=self, plugin_data=plugin))
-
         self.set_loaded()
 
     def check_required_version(self, app_version_to_check: str, is_min_app_version: bool = False):

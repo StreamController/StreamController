@@ -29,13 +29,6 @@ class TrayIcon(DBusTrayIcon):
         self.set_icon(self.IconName, path=self.get_icon_theme_path())
         self.set_tooltip("StreamController")
 
-        self.main_win = None
-        self.show_about_action = None
-        self.show_store_action = None
-        self.show_settings_action = None
-        self.quit_app_action = None
-        self.activate_id = -1
-
     def get_icon_theme_path(self) -> str:
         """
         The tray host resolves the icon on its own side, so IconThemePath is only useful if it
@@ -53,45 +46,44 @@ class TrayIcon(DBusTrayIcon):
         return os.path.join(gl.MAIN_PATH, "Assets", "icons")
 
     @log.catch
-    def initialize(self, main_win):
-        self.main_win = main_win
-        self.show_about_action = main_win.menu_button.open_about_action
-        self.show_store_action = main_win.menu_button.open_store_action
-        self.show_settings_action = main_win.menu_button.open_settings_action
-        self.quit_app_action = main_win.menu_button.quit_action
+    def initialize(self):
         app_settings = gl.settings_manager.get_app_settings()
         show_now = app_settings.get("ui",{}).get("tray-icon", True)
         if show_now:
-            self.register()
+            self.start()
 
     @log.catch
     def start(self):
-        self.register()
+        if not gl.IS_MAC:
+            self.register()
 
     @log.catch
     def stop(self):
-        self.unregister()
+        if not gl.IS_MAC:
+            self.unregister()
 
     @log.catch
     def on_show(self):
-        self.main_win.present()
+        gl.app.ensure_main_window(present=True)
 
     @log.catch
     def on_settings(self):
-        self.show_settings_action.activate()
+        main_win = gl.app.ensure_main_window(present=True)
+        main_win.menu_button.open_settings_action.activate(None)
 
     @log.catch
     def on_store(self):
-        self.show_store_action.activate()
+        main_win = gl.app.ensure_main_window(present=True)
+        main_win.menu_button.open_store_action.activate(None)
 
     @log.catch
     def on_about(self):
-        self.main_win.present()
-        self.show_about_action.activate()
+        main_win = gl.app.ensure_main_window(present=True)
+        main_win.menu_button.open_about_action.activate(None)
 
     @log.catch
     def on_quit(self):
-        self.quit_app_action.activate()
+        GLib.idle_add(gl.app.on_quit)
 
     @log.catch
     def on_restart(self):
@@ -123,7 +115,7 @@ exec "$@"
             stderr=subprocess.DEVNULL,
         )
 
-        self.quit_app_action.activate()
+        self.on_quit()
 
 
 

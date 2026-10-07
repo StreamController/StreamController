@@ -26,7 +26,7 @@ from queue import Queue
 from threading import Thread, Timer
 
 import psutil
-from PIL import Image, ImageDraw, ImageFont, ImageSequence
+from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.Devices import StreamDeck
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 from StreamDeck.Devices.StreamDeckPlus import StreamDeckPlus
@@ -40,12 +40,12 @@ from src.backend.DeckManagement.ImageHelpers import *
 from src.backend.DeckManagement.InputIdentifier import Input, InputEvent, InputIdentifier
 from src.backend.DeckManagement.Subclasses.ActionPermissionManager import ActionPermissionManager
 from src.backend.DeckManagement.Subclasses.FakeDeck import FakeDeck
+from src.backend.DeckManagement.Subclasses.KeyGIF import KeyGIF
 from src.backend.DeckManagement.Subclasses.KeyImage import InputImage
 from src.backend.DeckManagement.Subclasses.KeyLabel import KeyLabel
 from src.backend.DeckManagement.Subclasses.KeyLayout import ImageLayout
 from src.backend.DeckManagement.Subclasses.KeyVideo import InputVideo
 from src.backend.DeckManagement.Subclasses.ScreenSaver import ScreenSaver
-from src.backend.DeckManagement.Subclasses.SingleKeyAsset import SingleKeyAsset
 from src.backend.DeckManagement.Subclasses.background_video_cache import BackgroundVideoCache
 from src.backend.PageManagement.Page import ActionOutdated, Page, NoActionHolderFound
 from src.backend.Utils.AtomicSaveUtils import atomic_save_json
@@ -393,10 +393,8 @@ class MediaPlayerThread(threading.Thread):
         self.running = False
 
     def _needs_key_ticks(self) -> bool:
-        # Check once per second whether any key/dial has animated content
-        # (video or scrolling text) that on_media_player_tick needs to advance.
-        if self.media_ticks % self.FPS != 0:
-            return getattr(self, '_cached_needs_ticks', False)
+        # Check every iteration: at the 2 FPS idle rate, caching for 30 ticks
+        # can leave newly added animations frozen for up to 15 seconds.
         needs = False
         for key in self.deck_controller.inputs.get(Input.Key, []):
             state = key.get_active_state()
@@ -2179,58 +2177,6 @@ class BackgroundVideo(BackgroundVideoCache):
         # transparency for GIF backgrounds.
         return segment.convert("RGBA")
 
-class KeyGIF(SingleKeyAsset):
-    def __init__(self, controller_key: "ControllerKey", gif_path: str, fps: int = 30, loop: bool = True):
-        super().__init__(controller_key)
-        self.gif_path = gif_path
-        self.fps = fps
-        self.loop = loop
-
-        self.active_frame: int = -1
-
-        self.gif = Image.open(self.gif_path)
-        self.frames = []
-        self.frame_delays = []
-        
-        # Extract frames and their delays
-        for frame in ImageSequence.Iterator(self.gif):
-            self.frames.append(frame.convert("RGBA"))
-            # Get frame delay from GIF metadata (in milliseconds)
-            # Default to 100ms (10fps) if no delay specified
-            delay = self.gif.info.get('duration', 100)
-            # Some GIFs use delay in centiseconds, convert to milliseconds
-            if delay < 50:
-                delay *= 10
-            self.frame_delays.append(delay)
-
-    def get_next_frame(self) -> Image.Image:
-        self.active_frame += 1
-
-        if self.active_frame >= len(self.frames):
-            if self.loop:
-                self.active_frame = 0
-            else:
-                self.active_frame = len(self.frames) - 1
-
-        return self.frames[self.active_frame]
-    
-    def get_frame_delay(self) -> float:
-        """Get delay for current frame in seconds"""
-        if self.active_frame < 0 or self.active_frame >= len(self.frame_delays):
-            return 1.0 / self.fps  # Fallback to fps-based timing
-        return self.frame_delays[self.active_frame] / 1000.0  # Convert ms to seconds
-    
-    def get_raw_image(self) -> Image.Image:
-        return self.get_next_frame()
-    
-    def close(self) -> None:
-        self.gif = None
-        self.frames = None
-        self.frame_delays = None
-        del self.gif
-        del self.frames
-        del self.frame_delays
-
 class LabelManager:
     def __init__(self, controller_input: "ControllerInput"):
         self.controller_input = controller_input
@@ -3134,9 +3080,6 @@ class ControllerKey(ControllerInput):
         self.press_state: bool = self.deck_controller.deck.key_states()[self.index]
 
         self.down_start_time: float = None
-         
-        # GIF timing tracking
-        self.last_gif_update_time: float = 0
 
     def on_hold_timer_end(self):
         state = self.get_active_state()
@@ -3211,29 +3154,17 @@ class ControllerKey(ControllerInput):
 
     def on_media_player_tick(self) -> None:
         self.media_ticks += 1
-        current_time = time.time()
 
         state = self.get_active_state()
-        needs_update = False
-        
-        # Check if we need to update based on content type
+        needs_update = (
+            self.deck_controller.background.video is not None
+            or state.label_manager.get_has_scroll_labels()
+        )
         if state.key_video is not None:
             if isinstance(state.key_video, KeyGIF):
-                # Use GIF frame delay timing
-                if self.last_gif_update_time == 0:
-                    self.last_gif_update_time = current_time
-                    needs_update = True
-                else:
-                    frame_delay = state.key_video.get_frame_delay()
-                    if current_time - self.last_gif_update_time >= frame_delay:
-                        self.last_gif_update_time = current_time
-                        needs_update = True
+                needs_update = needs_update or state.key_video.is_frame_due()
             else:
-                # For non-GIF videos, use the original FPS-based logic
                 needs_update = True
-        elif self.deck_controller.background.video is not None or state.label_manager.get_has_scroll_labels():
-            # Other content types
-            needs_update = True
 
         if needs_update:
             self.update(priority=TASK_PRIORITY_LOW)
@@ -4187,10 +4118,6 @@ class ControllerKeyState(ControllerInputState):
         if self.key_video is not None:
             self.key_video.close()
             self.key_video = None
-            
-        # Reset GIF timing
-        if isinstance(self.controller_input, ControllerKey):
-            self.controller_input.last_gif_update_time = 0
     
     def set_image(self, key_image: "InputImage", update: bool = True) -> None:
         if self.key_image is not None:
@@ -4211,10 +4138,6 @@ class ControllerKeyState(ControllerInputState):
         if self.key_image is not None:
             self.key_image.close()
         self.key_image = None
-        
-        # Reset GIF timing for new video
-        if isinstance(self.controller_input, ControllerKey):
-            self.controller_input.last_gif_update_time = 0
 
     def clear(self):
         if self.key_image is not None:

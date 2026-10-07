@@ -57,17 +57,13 @@ class IconPage(StorePage):
     @log.catch
     def load(self):
         self.set_loading()
-        icons: list[IconData] = asyncio.run(self.store.backend.get_all_icons())
-        if isinstance(icons, NoConnectionError):
-            self.show_connection_error()
+        preview = lambda data: IconPreview(icon_page=self, icon_data=data)
+        on_ready = self.queue_asset_image
+        on_catalog_ready = lambda assets: self.queue_catalog(assets, preview)
+        result = asyncio.run(self.store.backend.get_all_icons(on_ready=on_ready, on_catalog_ready=on_catalog_ready))
+        if isinstance(result, NoConnectionError):
+            GLib.idle_add(self.show_connection_error)
             return
-        for icon in icons:
-            if icon.is_compatible:
-                section = self.compatible_section
-            else:
-                section = self.incompatible_section
-            GLib.idle_add(section.append_child, IconPreview(icon_page=self, icon_data=icon))
-
         self.set_loaded()
 
 

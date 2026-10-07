@@ -100,6 +100,35 @@ class StorePage(Gtk.Stack):
         GLib.idle_add(self.spinner.set_spinning, True)
         GLib.idle_add(self.section_switcher.set_visible, False)
 
+    def queue_catalog(self, assets, preview_factory):
+        GLib.idle_add(self._populate_catalog, assets, preview_factory)
+
+    def _populate_catalog(self, assets, preview_factory):
+        # Populate all metadata before exposing the grid, so sorting/searching
+        # stays stable while the thumbnails finish on background workers.
+        self._asset_previews = {}
+        for data in assets:
+            preview = preview_factory(data)
+            if data.image is None:
+                preview.set_image_loading(bool(data.thumbnail))
+            self._asset_previews[id(data)] = preview
+            section = self.compatible_section if data.is_compatible else self.incompatible_section
+            section.append_child(preview)
+        self.section_stack.set_visible(True)
+        self.loading_box.set_visible(False)
+        self.spinner.set_spinning(False)
+        self.section_switcher.set_visible(self.incompatible_section.are_items_present())
+        return False
+
+    def queue_asset_image(self, data):
+        GLib.idle_add(self._update_asset_image, data)
+
+    def _update_asset_image(self, data):
+        preview = self._asset_previews.get(id(data))
+        if preview is not None:
+            preview.set_image(data.image)
+        return False
+
     def set_loaded(self):
         GLib.idle_add(self.section_stack.set_visible, True)
         # GLib.idle_add(self.bottom_box.set_visible, True)

@@ -55,17 +55,13 @@ class WallpaperPage(StorePage):
     @log.catch
     def load(self):
         self.set_loading()
-        wallpapers = asyncio.run(self.store.backend.get_all_wallpapers())
-        if isinstance(wallpapers, NoConnectionError):
-            self.show_connection_error()
+        preview = lambda data: WallpaperPreview(wallpaper_page=self, wallpaper_data=data)
+        on_ready = self.queue_asset_image
+        on_catalog_ready = lambda assets: self.queue_catalog(assets, preview)
+        result = asyncio.run(self.store.backend.get_all_wallpapers(on_ready=on_ready, on_catalog_ready=on_catalog_ready))
+        if isinstance(result, NoConnectionError):
+            GLib.idle_add(self.show_connection_error)
             return
-        for wallpaper in wallpapers:
-            if wallpaper.is_compatible:
-                section = self.compatible_section
-            else:
-                section = self.incompatible_section
-            GLib.idle_add(section.append_child, WallpaperPreview(wallpaper_page=self, wallpaper_data=wallpaper))
-
         self.set_loaded()
 
 

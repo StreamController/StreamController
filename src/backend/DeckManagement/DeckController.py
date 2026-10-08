@@ -1771,6 +1771,11 @@ class DeckController:
         while self.media_player.media_ticks <= ticks and time.time() < deadline:
             time.sleep(1/60)
 
+        # A discarded frame may never have reached the deck. Let the next page
+        # render it again even if its pixels match the last render (e.g. key up).
+        for key in self.inputs.get(Input.Key, []):
+            key._last_img_hash = None
+
     def clear_media_player_tasks_via_task(self):
         self.media_player_tasks.append(MediaPlayerTask(
             deck_controller=self,

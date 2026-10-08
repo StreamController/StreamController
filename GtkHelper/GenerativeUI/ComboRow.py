@@ -1,8 +1,5 @@
-from GtkHelper.ComboRow import ComboRow as Combo, BaseComboRowItem
+from GtkHelper.ComboRow import ComboRow as Combo, BaseComboRowItem, ComboRowItem
 from GtkHelper.GenerativeUI.GenerativeUI import GenerativeUI
-
-import gi
-from gi.repository import Gtk, Adw
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -61,6 +58,7 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         self._handle_reset_button_creation()
         self.connect_signals()
 
+    @GenerativeUI.signal_manager
     def set_sensitive(self, sensitive: bool):
         self.widget.set_sensitive(sensitive)
 
@@ -84,23 +82,53 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
         """Handles updating the stored value and triggering the change callback."""
         old_value = self.get_value(self._default_value)
 
-        if update_settings:
+        if update_settings and item is not None:
             self.set_value(item)
 
         if trigger_callback and self.on_change:
-            old_value = self.get_item(old_value)
+            # Look the previous value up in the model, but fall back to the stored value itself.
+            # A stored value that is not (yet) in the model must not be reported as None, otherwise
+            # on_change handlers cannot tell a real user change from a reload.
+            old_item = self.get_item(old_value)
+            if old_item is None and old_value not in (None, ""):
+                old_item = ComboRowItem(str(old_value))
 
-            self.on_change(self.widget, item, old_value)
+            self.on_change(self.widget, item, old_item)
 
     @GenerativeUI.signal_manager
     def reset_value(self):
         selected_item = self.widget.set_selected_item(self._default_value)
+        if selected_item is None and self._default_value not in (None, ""):
+            # The default may not be in the model - store it anyway, a reset is an explicit user
+            # action. Keep the declared item as it is so its get_value() is persisted; only a
+            # plain string needs wrapping so callbacks always receive a BaseComboRowItem.
+            if isinstance(self._default_value, BaseComboRowItem):
+                selected_item = self._default_value
+            else:
+                selected_item = ComboRowItem(str(self._default_value))
         self._handle_value_changed(selected_item)
 
+    @GenerativeUI.signal_manager
     def load_initial_ui(self):
+        """
+        Restore the UI from the stored value.
+
+        Restoring must be strictly read-only with respect to the settings: signals are disconnected
+        so that notify::selected cannot write the restored (or a fallback) value back, and
+        _handle_value_changed() is told not to update them either. The on_change callback still
+        runs, like it does for every other generative UI element, because plugins use it to
+        initialize dependent widgets.
+        """
         value = self.get_value()
         selected_item = self.widget.set_selected_item(value)
-        self._handle_value_changed(selected_item, False)
+
+        if selected_item is None and value not in (None, ""):
+            # The stored value is not in the model yet - the combo is usually filled later, from a
+            # plugin backend. Report the stored value rather than None so on_change handlers see a
+            # no-op restore instead of what looks like the user clearing the selection.
+            selected_item = ComboRowItem(str(value))
+
+        self._handle_value_changed(selected_item, update_settings=False)
 
     @GenerativeUI.signal_manager
     def set_ui_value(self, value: BaseComboRowItem | str):
@@ -119,11 +147,21 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
 
     # Widget Wrappers
 
-    def set_selected_item(self, item: BaseComboRowItem | str = "", update_setting: bool = False):
-        """Sets the selected item and optionally updates the stored value."""
-        selected_item = self.widget.set_selected_item(item)
+    @GenerativeUI.signal_manager
+    def set_selected_item(self, item: BaseComboRowItem | str = "", update_setting: bool = False,
+                          fallback_to_first: bool = False):
+        """
+        Sets the selected item and optionally updates the stored value.
 
-        if update_setting:
+        Signal managed like every other operation that changes the widget: without it the change
+        would emit notify::selected, and when the call is dispatched from another thread that
+        emission arrives after the caller is long gone - persisting a selection the user never
+        made. Off the main thread the decorator returns None, which callers already treat as
+        "nothing selected" and therefore never write.
+        """
+        selected_item = self.widget.set_selected_item(item, fallback_to_first=fallback_to_first)
+
+        if update_setting and selected_item is not None:
             self.set_value(selected_item)
 
         return selected_item
@@ -176,11 +214,27 @@ class ComboRow(GenerativeUI[BaseComboRowItem]):
     @GenerativeUI.signal_manager
     def populate(self, items: list[BaseComboRowItem] | list[str], selected_item: BaseComboRowItem | str = "",
                  update_settings: bool = False,
-                 trigger_callback: bool = True):
-        """Repopulates the combo box with new items and optionally updates the selection."""
+                 trigger_callback: bool = True,
+                 fallback_to_first: bool = False):
+        """
+        Repopulates the combo box with new items and optionally updates the selection.
+
+        Refilling the model and deciding on the selection has to happen as one uninterrupted step:
+        whether the requested value is a fallback is decided by reading the model back. The
+        decorator keeps the whole method on the main thread, so those reads always see the model
+        this call just built rather than a half applied one.
+        """
         self.widget.remove_all_items()
         self.widget.add_items(items)
-        selected_item = self.widget.set_selected_item(selected_item)
 
-        self._handle_value_changed(selected_item, update_settings, trigger_callback)
-        self.widget.set_selected_item(selected_item)
+        # Whether the requested value really is in the new model - a fallback selection is a purely
+        # visual affordance and must never be written to the settings
+        # An explicitly empty selection is a deliberate clear, not a fallback
+        is_fallback = bool(selected_item) and self.widget.get_item(selected_item) is None
+        selected_item = self.widget.set_selected_item(selected_item, fallback_to_first=fallback_to_first)
+
+        self._handle_value_changed(selected_item, update_settings and not is_fallback, trigger_callback)
+        if selected_item is not None:
+            # Re-apply the selection, the callback above may have changed it. Never re-run the
+            # fallback here, that would select the first item for a value that is not in the model.
+            self.widget.set_selected_item(selected_item)

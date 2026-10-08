@@ -19,6 +19,7 @@ import json
 import sys
 import threading
 import time
+from contextlib import contextmanager
 
 # Import globals first to get IS_MAC
 import globals as gl
@@ -29,6 +30,10 @@ if not gl.IS_MAC:
 from loguru import logger as log
 from copy import copy
 import shutil
+
+import gi
+gi.require_version("Gtk", "4.0")
+from gi.repository import GLib
 
 from numpy import isin
 
@@ -49,6 +54,9 @@ if TYPE_CHECKING:
 
 
 class Page:
+    # How many generations of a page backup to keep in pages/backups
+    BACKUP_GENERATIONS = 3
+
     def __init__(self, json_path, deck_controller, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -64,18 +72,25 @@ class Page:
 
         self.file_access_semaphore = threading.Semaphore()
 
+        # While saving is suspended, save() only remembers that a save is due. This keeps the
+        # degraded intermediate state actions produce while they initialize off the disk.
+        # Reentrant so save() can be reached from inside the lock without deadlocking
+        self._save_suspend_lock = threading.RLock()
+        self._save_suspend_depth = 0
+        self._save_pending = False
+
         self.load(load_from_file=True) #TODO: Later we want to limit the load of action objects to the available inputs
 
     def get_name(self) -> str:
         return os.path.splitext(os.path.basename(self.json_path))[0]
-    
+
     def update_dict(self) -> None:
         """
         Updates the dict without any updates on the action objects.
         Do NOT use if you made changes to the action objects
         """
         self.dict = gl.page_manager.get_page_data(self.json_path)
-    
+
     def load(self, load_from_file: bool = False):
         start = time.time()
         if load_from_file:
@@ -86,27 +101,70 @@ class Page:
         end = time.time()
         log.debug(f"Loaded page {self.get_name()} in {end - start:.2f} seconds")
 
-    def save(self):
-        self.file_access_semaphore.acquire()
-        # Make backup in case something goes wrong
-        self.make_backup()
+    @contextmanager
+    def suspended_saving(self):
+        """
+        Batch all save() calls made inside the block into a single save at the end.
 
-        without_objects = self.get_without_action_objects()
-        # Make keys last element
-        for type in Input.KeyTypes:
-            self.move_key_to_end(without_objects, type)
-        atomic_save_json(self.json_path, without_objects, indent=4)
-        self.file_access_semaphore.release()
+        Action initialization writes settings many times in a row; without this every one of those
+        writes would hit the disk and overwrite the backup.
+
+        The suspension is per page, not per thread: a save another thread requests for this page
+        while the block is open is deferred as well. Nothing is lost - all writers mutate the same
+        in-memory dict, and the flush at the end of the block persists the result of all of them.
+        """
+        with self._save_suspend_lock:
+            self._save_suspend_depth += 1
+        try:
+            yield
+        finally:
+            with self._save_suspend_lock:
+                self._save_suspend_depth -= 1
+                flush = self._save_suspend_depth == 0 and self._save_pending
+                if flush:
+                    self._save_pending = False
+            if flush:
+                try:
+                    self.save()
+                except Exception:
+                    # Do not lose the pending state if writing fails - the next save has to happen
+                    with self._save_suspend_lock:
+                        self._save_pending = True
+                    raise
+
+    def save(self):
+        # The suspension check and the write have to be one atomic step. Releasing the lock in
+        # between would let another thread open a suspension block and start mutating the page
+        # while this write serializes it, persisting exactly the intermediate state the suspension
+        # exists to keep off the disk.
+        with self._save_suspend_lock:
+            if self._save_suspend_depth > 0:
+                self._save_pending = True
+                return
+
+            self.file_access_semaphore.acquire()
+            try:
+                # Make backup in case something goes wrong
+                self.make_backup()
+
+                without_objects = self.get_without_action_objects()
+                # Make keys last element
+                for type in Input.KeyTypes:
+                    self.move_key_to_end(without_objects, type)
+                atomic_save_json(self.json_path, without_objects, indent=4)
+            finally:
+                self.file_access_semaphore.release()
 
         if self.deck_controller is not None and self.deck_controller.sticky_page is self:
             # Which inputs the sticky page takes over may have changed
             self.deck_controller.on_sticky_page_saved()
 
     def make_backup(self):
-        os.makedirs(os.path.join(gl.DATA_PATH, "pages","backups"), exist_ok=True)
+        backup_dir = os.path.join(gl.DATA_PATH, "pages","backups")
+        os.makedirs(backup_dir, exist_ok=True)
 
         src_path = self.json_path
-        dst_path = os.path.join(gl.DATA_PATH, "pages","backups", os.path.basename(src_path))
+        dst_path = os.path.join(backup_dir, os.path.basename(src_path))
 
         # Check if json in src is valid
         with open(src_path) as f:
@@ -116,7 +174,31 @@ class Page:
                 log.error(f"Invalid json in {src_path}: {e}")
                 return
 
+        self.rotate_backups(dst_path)
         shutil.copy2(src_path, dst_path)
+
+    def rotate_backups(self, dst_path: str, keep: int = None):
+        """
+        Keep a few older generations of the backup around.
+
+        A single backup is worthless as soon as something writes twice in a row: the first save
+        backs up the good file and the second one replaces that backup with the already broken
+        content.
+        """
+        if keep is None:
+            keep = self.BACKUP_GENERATIONS
+
+        # The caller overwrites dst_path right after this, so every generation can be moved
+        # instead of copied - that is atomic and does not double the I/O of a save.
+        for generation in range(keep - 1, 0, -1):
+            older = f"{dst_path}.{generation}"
+            newer = f"{dst_path}.{generation - 1}" if generation > 1 else dst_path
+            if not os.path.isfile(newer):
+                continue
+            try:
+                os.replace(newer, older)
+            except OSError as e:
+                log.error(f"Failed to rotate page backup {newer} to {older}: {e}")
 
     def move_key_to_end(self, dictionary, key):
         if key in self.dict:
@@ -179,7 +261,7 @@ class Page:
     # def load_action_object_sector(self, loaded_action_objects, dict_key: str, state)
 
     def get_new_action_object(self, loaded_action_objects: dict, action_id: str, state: int, i: int, input_ident):
-        
+
         action_holder = gl.plugin_manager.get_action_holder_from_id(action_id)
         if action_holder is None and gl.argparser.parse_args().daemon_only:
             action_holder = gl.plugin_manager.ensure_action_holder_loaded(action_id)
@@ -196,8 +278,8 @@ class Page:
         if old_action is not None:
             if isinstance(old_action, action_holder.action_core):
                 return old_action #FIXME: gets never used
-            
-        ## Create new action object            
+
+        ## Create new action object
         action_object = action_holder.init_and_get_action(
             deck_controller=self.deck_controller,
             page=self,
@@ -238,14 +320,14 @@ class Page:
                                 input_action_objects[state][i] = NoActionHolderFound(id=action["id"])
                             continue
                         action_class = action_holder.action_core
-                        
+
                         if action_class is None:
                             input_action_objects[state][i] = NoActionHolderFound(id=action["id"])
                             continue
 
                         old_action_object = input_ident.get_dict(loaded_action_objects)
                         old_object = old_action_object.get(state, {}).get(i)
-                        
+
                         if i in old_action_object.get(state, {}):
                             # if isinstance(loaded_action_objects.get(key, {}).get(i), action_class):
                             if old_object is not None:
@@ -346,7 +428,7 @@ class Page:
                             del self.action_objects[type][key][state][index]
 
         return True
-    
+
     def update_inputs_with_actions_from_plugin(self, plugin_id: str):
         # plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
         for input_type in list(self.action_objects.keys()):
@@ -362,12 +444,12 @@ class Page:
                             c_input = self.deck_controller.get_input(identifier)
                             if c_input.state == int(state):
                                 c_input.update()
-    
+
 #    def get_keys_with_plugin(self, plugin_id: str):
 #        plugin_obj = gl.plugin_manager.get_plugin_by_id(plugin_id)
 #        if plugin_obj is None:
 #            return []
-#        
+#
 #        keys = []
 #        for type in self.action_objects.values():
 #            for key in self.action_objects[type]:
@@ -418,7 +500,7 @@ class Page:
                             continue
                         actions.append(action)
         return actions
-    
+
     def get_all_actions_for_type(self, ident, only_action_cores: bool = False):
         actions = []
         input_type = ident.input_type
@@ -432,7 +514,7 @@ class Page:
                         continue
                     actions.append(action)
         return actions
-    
+
     def get_all_actions_for_input(self, ident, state, only_action_cores: bool = False):
         actions = []
         input_type = ident.input_type
@@ -446,49 +528,63 @@ class Page:
                         continue
                     actions.append(action)
         return actions
-    
+
     def get_action(self, identifier: InputIdentifier = None, state: int = None, index: int = None):
         return self.action_objects.get(identifier.input_type, {}).get(identifier.json_identifier, {}).get(state, {}).get(index)
-    
+
     def get_action_dict(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         # Arg validation
         if action_object is None:
             if None in (identifier, state, index):
                 raise ValueError("Please pass an identifier, state and index or an action object")
-            
+
         if action_object is None:
             action_object = self.get_action(identifier, state, index)
 
         if action_object is None:
             raise ValueError("Could not find action object")
-        
+
         for state in self.dict.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get("states", {}):
             for i, action_dict in enumerate(self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state].get("actions", [])):
                 if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {}).get(i) is action_object:
                     return action_dict
-                
+
+        # An empty dict looks like "this action has no settings yet" to the caller, which makes
+        # actions install their defaults over perfectly good stored values - so say so. Once per
+        # action object is enough: a stale object asks again on every event it still receives.
+        if not getattr(action_object, "warned_missing_action_dict", False):
+            try:
+                action_object.warned_missing_action_dict = True
+            except AttributeError:
+                pass
+            log.warning(
+                f"Could not find action dict for {getattr(action_object, 'action_id', action_object)} on "
+                f"{action_object.input_ident.json_identifier} of page {self.get_name()}. The action "
+                f"object is no longer part of this page - it is most likely a stale copy that was "
+                f"not torn down."
+            )
         return {}
-                
+
     def set_action_dict(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None, action_dict: dict = None):
         # Arg validation
         if action_object is None:
             if None in (identifier, state, index):
                 raise ValueError("Please pass an identifier, state and index or an action object")
-            
+
         if action_object is None:
             action_object = self.get_action(identifier, state, index)
 
         if action_object is None:
             raise ValueError("Could not find action object")
-        
+
         for state in self.dict.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get("states", {}):
             for i, action_dict in enumerate(self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state].get("actions", [])):
-                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {})[i] is action_object:
+                if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {}).get(i) is action_object:
                     self.dict[action_object.input_ident.input_type][action_object.input_ident.json_identifier]["states"][state]["actions"][i] = action_dict
                     break
 
         self.save()
-    
+
     def get_action_settings(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
         return action_dict.get("settings", {})
@@ -496,7 +592,7 @@ class Page:
         if action_object is None:
             if None in (identifier, state, index):
                 raise ValueError("Please pass an identifier, state and index or an action object")
-            
+
         if action_object is None:
             action_object = self.get_action(identifier, state, index)
 
@@ -508,7 +604,7 @@ class Page:
                 if self.action_objects.get(action_object.input_ident.input_type, {}).get(action_object.input_ident.json_identifier, {}).get(int(state), {})[i] is action_object:
                     return action_dict["settings"]
         return {}
-    
+
     def set_action_settings(self, action_object = None, identifier: InputIdentifier = None, state: int = None, index: int = None, settings: dict = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
         action_dict["settings"] = settings
@@ -518,7 +614,7 @@ class Page:
         if action_object is None:
             if None in (identifier, state, index):
                 raise ValueError("Please pass an identifier, state and index or an action object")
-            
+
         if action_object is None:
             action_object = self.get_action(identifier, state, index)
 
@@ -542,8 +638,8 @@ class Page:
                 assignments[key] = None
 
         return assignments
-    
-    
+
+
     def set_action_event_assigment(self, event_assigner: EventAssigner | None, input_event: "InputEvent | None", action_object: ActionCore = None, identifier: InputIdentifier = None, state: int = None, index: int = None):
         action_dict = self.get_action_dict(action_object, identifier, state, index)
         action_dict.setdefault("event-assignments", {})
@@ -564,13 +660,35 @@ class Page:
 
     @log.catch
     def initialize_actions(self):
-        for action in self.get_all_actions():
-            if not action.on_ready_called:
-                action.on_ready_called = True
-                action.load_event_overrides()
-                action.load_initial_generative_ui()
-                action.on_ready()
-                action.on_update()
+        # Pages are also reloaded from background threads (ActionPermissionManager.reload_pages()
+        # for example). on_ready()/on_update() end up in plugin code that touches GTK widgets, and
+        # the restore below has to run before them, so the whole sequence goes to the main loop in
+        # one piece instead of only its first step.
+        if threading.current_thread() is not threading.main_thread():
+            GLib.idle_add(self._do_initialize_actions)
+            return
+
+        self._do_initialize_actions()
+
+    @log.catch
+    def _do_initialize_actions(self):
+        # Saving is suspended for the whole initialization: actions write their settings several
+        # times while they set themselves up, and none of those intermediate states must reach the
+        # disk. Everything is flushed once at the end.
+        with self.suspended_saving():
+            for action in self.get_all_actions():
+                if not action.on_ready_called:
+                    action.on_ready_called = True
+                    action.load_event_overrides()
+                    # Deliberately synchronous and deliberately before on_ready(): on_ready()
+                    # populates the very widgets this restores from the settings, so deferring one
+                    # of the two through the idle queue makes their order undefined. That race is
+                    # what used to let a half populated combo overwrite stored values.
+                    action.load_initial_generative_ui(defer=False)
+                    action.on_ready()
+                    action.on_update()
+
+        return False
 
     def clear_action_objects(self):
         for input_type in self.action_objects:
@@ -579,14 +697,17 @@ class Page:
                     for i, action in list(self.action_objects[input_type][input_identifier][state].items()):
                         if action is not None:
                             if isinstance(action, ActionCore) and hasattr(action, "on_removed_from_cache"):
+                                # teardown() detaches the page itself, once the plugin had its
+                                # chance to read the settings one last time
                                 action.on_removed_from_cache()
-                            action.page = None
+                            else:
+                                action.page = None
                         del self.action_objects[input_type][input_identifier][state][i]
             self.action_objects[input_type] = {}
 
     def get_name(self):
         return os.path.splitext(os.path.basename(self.json_path))[0]
-    
+
     def get_pages_with_same_json(self, get_self: bool = False) -> list:
         pages: list[Page]= []
         for controller in gl.deck_manager.deck_controller:
@@ -602,11 +723,11 @@ class Page:
             pages.append(self)
 
         return pages
-    
+
     def reload_similar_pages(self, identifier: InputIdentifier = None, reload_self: bool = False,
                              load_brightness: bool = True, load_screensaver: bool = True, load_background: bool = True, load_inputs: bool = True,
                              load_dials: bool = True, load_touchscreens: bool = True):
-        
+
         self.save()
         for page in self.get_pages_with_same_json(get_self=reload_self):
             page.load(load_from_file=True)
@@ -633,13 +754,13 @@ class Page:
         """
         if identifier.json_identifier not in self.action_objects.get(identifier.input_type, {}):
             return
-        
+
         actions = list(self.action_objects[identifier.input_type][identifier.json_identifier].values())
 
         self.action_objects[identifier.input_type][identifier.json_identifier] = {}
         for i, action in enumerate(actions):
             self.action_objects[identifier.input_type][identifier.json_identifier][i] = action
-    
+
     # Configuration
     def _get_dict_value(self, keys: list[str]):
         value = self.dict
@@ -653,7 +774,7 @@ class Page:
             except:
                 return
         return value
-    
+
     def _set_dict_value(self, keys: list[str], value):
         d = self.dict
         for i, key in enumerate(keys):
@@ -740,12 +861,12 @@ class Page:
         if isinstance(coords, tuple):
             return f"{coords[0]}x{coords[1]}"
         return coords
-    
+
     def get_tuple_coords(self, coords: str | tuple[int, int]) -> tuple[int, int]:
         if isinstance(coords, str):
             return tuple(map(int, coords.split("x")))
         return coords
-    
+
     # Get/set methods
 
     def get_label_manager(self, identifier: InputIdentifier, state: int) -> "LabelManager":
@@ -755,9 +876,9 @@ class Page:
         state = c_input.states.get(state)
         if state is None:
             return
-        
+
         return state.label_manager
-        
+
 
     def get_label_text(self, identifier: InputIdentifier, state: int, label_position: str) -> str:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "text"])
@@ -819,10 +940,10 @@ class Page:
 
     def get_label_font_size(self, identifier: InputIdentifier, state: int, label_position: str) -> int:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-size"])
-    
+
     def get_label_font_style(self, identifier: InputIdentifier, state: int, label_position: str) -> int:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-style"])
-    
+
     def get_label_font_weight(self, identifier: InputIdentifier, state: int, label_position: str) -> int:
         return self._get_dict_value([identifier.input_type, identifier.json_identifier, "states", str(state), "labels", label_position, "font-weight"])
 

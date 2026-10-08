@@ -1,13 +1,11 @@
 import functools
+import threading
 from abc import ABC, abstractmethod
 from typing import TypeVar, Callable
 
-import gi
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 from typing import TYPE_CHECKING
-
-from globals import signal_manager
 
 if TYPE_CHECKING:
     from src.backend.PluginManager.ActionCore import ActionCore
@@ -107,7 +105,17 @@ class GenerativeUI[T](ABC):
     @staticmethod
     def signal_manager(func):
         """
-        Decorator to manage signal connections by disconnecting and reconnecting signals around the function call.
+        Run a UI changing operation on the GTK main thread with the widget's signals disconnected.
+
+        Disconnecting and reconnecting signals is itself a GTK call, and the operation in between
+        only stays consistent if nothing else touches the widget while the signals are off. Both
+        have to happen on the main thread, as one piece: plugins call these methods from their
+        backend threads, and doing any of it off thread corrupts GTK's internal state - for list
+        backed widgets fatally, with "gtk_list_tile_split: assertion failed" aborting the process
+        without a Python traceback.
+
+        Off the main thread the whole call is therefore queued on the main loop, in call order, and
+        the caller gets None back because the result cannot be known yet.
 
         Args:
             func (Callable): The function to wrap.
@@ -118,6 +126,18 @@ class GenerativeUI[T](ABC):
 
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
+            if threading.current_thread() is not threading.main_thread():
+                def run_on_main():
+                    self.disconnect_signals()
+                    try:
+                        func(self, *args, **kwargs)
+                    finally:
+                        self.connect_signals()
+                    return False
+
+                GLib.idle_add(run_on_main)
+                return None
+
             self.disconnect_signals()
             try:
                 return func(self, *args, **kwargs)

@@ -1,3 +1,5 @@
+import threading
+
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -5,6 +7,47 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GObject
 
 from loguru import logger as log
+
+_warned_off_thread_mutation: set[int] = set()
+
+
+def _warn_off_main_thread(combo_row: "ComboRow", what: str) -> None:
+    """Complain once per widget about a caller that changes the model from a background thread."""
+    key = id(combo_row)
+    if key in _warned_off_thread_mutation:
+        return
+    _warned_off_thread_mutation.add(key)
+
+    log.warning(
+        f"ComboRow.{what}() was called from thread '{threading.current_thread().name}'. "
+        "GTK widgets may only be touched from the main thread; call through "
+        "GenerativeUI.signal_manager so the full operation runs on the main loop."
+    )
+
+
+def main_thread_only(func):
+    """
+    Guard model changing methods so they only run on the GTK main thread.
+
+    An Adw.ComboRow keeps a Gtk.ListView over its model, and the list item manager behind it is not
+    thread safe. Changing the model from another thread corrupts that manager and aborts the whole
+    process with "gtk_list_tile_split: assertion failed" - an abort inside GTK, not an exception
+    Python could report, so the offending caller is impossible to find afterwards.
+
+    Dispatching from here is too late for generative UI calls because signal disconnection and
+    reconnection must be part of the same main-thread operation. Cross-thread marshaling therefore
+    happens one level up in GenerativeUI.signal_manager; this guard only blocks unsafe direct calls.
+    """
+
+    def wrapper(self, *args, **kwargs):
+        if threading.current_thread() is not threading.main_thread():
+            _warn_off_main_thread(self, func.__name__)
+            return None
+
+        return func(self, *args, **kwargs)
+
+    return wrapper
+
 
 class BaseComboRowItem(GObject.GObject):
     def __init__(self):
@@ -27,6 +70,7 @@ class BaseComboRowItem(GObject.GObject):
     def filter_value(self):
         return self.__str__()
 
+
 class ComboRowItem(BaseComboRowItem):
     def __init__(self, label: str):
         super().__init__()
@@ -34,7 +78,8 @@ class ComboRowItem(BaseComboRowItem):
 
     def __str__(self):
         return self.label
-    
+
+
 class SimpleComboRowItem(BaseComboRowItem):
     def __init__(self, value: str, label: str):
         super().__init__()
@@ -43,9 +88,10 @@ class SimpleComboRowItem(BaseComboRowItem):
 
     def __str__(self):
         return self.label
-    
+
     def get_value(self):
         return self.value
+
 
 class ComboRow(Adw.ComboRow):
     """
@@ -67,6 +113,7 @@ class ComboRow(Adw.ComboRow):
             The method also sets up the filter expression for the search functionality and adds the items to the combo row.
             The combo row will automatically highlight the item at the provided default selection index.
     """
+
     def __init__(self,
                  items: list[BaseComboRowItem] | list[str],
                  title: str = None,
@@ -87,7 +134,9 @@ class ComboRow(Adw.ComboRow):
         self.set_enable_search(enable_search)
         self.set_expression(Gtk.PropertyExpression.new(BaseComboRowItem, None, "filter_value"))
 
-        self.populate(self.convert_item_list(items), default_selection)
+        # The constructor selects a default, not a stored user value, so falling back to the first
+        # item is fine here - it keeps the plain widget behaving as before.
+        self.populate(self.convert_item_list(items), default_selection, fallback_to_first=True)
 
     def convert_item_list(self, items):
         converted_list: list[BaseComboRowItem] = []
@@ -100,28 +149,43 @@ class ComboRow(Adw.ComboRow):
 
         return converted_list
 
-    def set_selected_item(self, item: BaseComboRowItem | str):
-        selected_item_index = 0
+    @main_thread_only
+    def set_selected_item(self, item: BaseComboRowItem | str, fallback_to_first: bool = False):
+        """
+        Select the given item.
 
+        If the item is not in the model the selection is cleared and None is returned instead of
+        silently falling back to the first item - a fallback selection used to be written back into
+        the action settings, which replaced stored values with whatever happened to be first.
+        Callers that want a visual fallback have to ask for it via fallback_to_first, and must never
+        persist the result.
+        """
         for index in range(self.model.get_n_items()):
             if self.model.get_item(index) == item:
-                selected_item_index = index
-                break
+                self.set_selected(index)
+                return self.get_item_at(index)
 
-        self.set_selected(selected_item_index)
-        return self.get_item_at(selected_item_index)
+        if fallback_to_first and self.model.get_n_items() > 0:
+            self.set_selected(0)
+            return self.get_item_at(0)
 
+        self.set_selected(Gtk.INVALID_LIST_POSITION)
+        return None
+
+    @main_thread_only
     def add_item(self, combo_row_item: BaseComboRowItem | str):
         if isinstance(combo_row_item, str):
             combo_row_item = ComboRowItem(combo_row_item)
 
         self.model.append(combo_row_item)
 
+    @main_thread_only
     def add_items(self, items: list[BaseComboRowItem] | list[str]):
         converted_list = self.convert_item_list(items)
 
         self.model.splice(self.model.get_n_items(), 0, converted_list)
 
+    @main_thread_only
     def remove_item_at_index(self, index: int):
         size = self.model.get_n_items()
 
@@ -131,12 +195,14 @@ class ComboRow(Adw.ComboRow):
 
         self.model.remove(index)
 
+    @main_thread_only
     def remove_item(self, item: BaseComboRowItem | str):
         for index in range(self.model.get_n_items()):
             if self.model.get_item(index) == item:
                 self.remove_item_at_index(index)
                 break
 
+    @main_thread_only
     def remove_items(self, start: int, amount: int):
         size = self.model.get_n_items()
 
@@ -147,6 +213,7 @@ class ComboRow(Adw.ComboRow):
         for i in range(amount + 1):
             self.model.remove(start)
 
+    @main_thread_only
     def remove_all_items(self):
         self.model.remove_all()
 
@@ -167,15 +234,18 @@ class ComboRow(Adw.ComboRow):
     def get_selected_item(self) -> BaseComboRowItem | None:
         selected_index = self.get_selected()
 
-        if selected_index == -1:
+        # GTK reports "nothing selected" as Gtk.INVALID_LIST_POSITION, not as -1
+        if selected_index == Gtk.INVALID_LIST_POSITION:
             return None
 
         return self.get_item_at(selected_index)
 
-    def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = ""):
+    @main_thread_only
+    def populate(self, items: list[BaseComboRowItem], selected_item: BaseComboRowItem | str = "",
+                 fallback_to_first: bool = False):
         self.remove_all_items()
         self.add_items(items)
-        self.set_selected_item(selected_item)
+        self.set_selected_item(selected_item, fallback_to_first=fallback_to_first)
 
     def _on_factory_setup(self, factory, list_item):
         label = Gtk.Label(halign=Gtk.Align.START)

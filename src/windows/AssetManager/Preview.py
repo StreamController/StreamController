@@ -51,7 +51,7 @@ class Preview(Gtk.FlowBoxChild):
         self.picture.set_pixbuf(self.pixbuf)
         self.main_box.append(self.picture)
 
-        self.label = Gtk.Label(xalign=Gtk.Align.CENTER, hexpand=False, ellipsize=Pango.EllipsizeMode.END, max_width_chars=20,
+        self.label = Gtk.Label(xalign=0.5, hexpand=False, ellipsize=Pango.EllipsizeMode.END, max_width_chars=20,
                                margin_start=20, margin_end=20)
         self.main_box.append(self.label)
 

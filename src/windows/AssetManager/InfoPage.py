@@ -67,7 +67,7 @@ class InfoPage(Gtk.Box):
         self.license_url_row = AttributeRow(title="URL:", attr="Error")
         self.license_group.add(self.license_url_row)
 
-        self.original_url_row = URLRow()
+        self.original_url_row = URLRow(title="Original URL:")
         self.license_group.add(self.original_url_row)
 
         self.license_comment_row = AttributeRow(title="Comment:", attr="Error")

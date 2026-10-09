@@ -13,6 +13,9 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import os
+import re
+import shutil
 import threading
 import time
 from src.backend.WindowGrabber.Integration import Integration
@@ -37,6 +40,8 @@ if TYPE_CHECKING:
 
 
 class KDE(Integration):
+    KWIN_SCRIPT_NAME = "streamcontroller-window-watcher"
+
     def __init__(self, window_grabber: "WindowGrabber"):
         super().__init__(window_grabber=window_grabber)
 
@@ -47,8 +52,49 @@ class KDE(Integration):
 
         self.is_kdotool_installed = self.get_is_kdotool_installed()
 
-        if self.is_kdotool_installed:
+        # Preferred: a KWin script reports window changes through our DBus API
+        # (NotifyForegroundWindow), so nothing has to be polled. kdotool polling
+        # stays as the fallback, e.g. for KWin versions without the scripting API.
+        if self.load_kwin_script():
+            log.info("KDE: active window is reported by a KWin script, no polling")
+        elif self.is_kdotool_installed:
             self.start_active_window_change_thread()
+
+    @log.catch
+    def load_kwin_script(self) -> bool:
+        source = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kde_window_watcher.js")
+        # KWin runs on the host and has to read the file: the data dir is shared
+        # with the host, the Flatpak's /app is not.
+        script_dir = os.path.join(gl.DATA_PATH, "cache")
+        os.makedirs(script_dir, exist_ok=True)
+        script = os.path.join(script_dir, "kde_window_watcher.js")
+        shutil.copyfile(source, script)
+
+        # A copy from an earlier run would report twice
+        self._kwin_call("/Scripting", "org.kde.kwin.Scripting.unloadScript", self.KWIN_SCRIPT_NAME)
+        loaded = self._kwin_call("/Scripting", "org.kde.kwin.Scripting.loadScript", script, self.KWIN_SCRIPT_NAME)
+        match = re.search(r"-?\d+", loaded or "")
+        if match is None or int(match.group()) < 0:
+            log.warning(f"KDE: could not load the KWin window watcher script: {loaded!r}")
+            return False
+        script_id = match.group()
+        # Plasma 6 exposes loaded scripts as /Scripting/Script<id>, Plasma 5 as /<id>
+        for path in (f"/Scripting/Script{script_id}", f"/{script_id}"):
+            if self._kwin_call(path, "org.kde.kwin.Script.run") is not None:
+                return True
+        log.warning("KDE: loaded the KWin window watcher script but could not run it")
+        return False
+
+    def _kwin_call(self, path: str, method: str, *args: str) -> Optional[str]:
+        """Call KWin over DBus (on the host when running as a Flatpak); None on failure."""
+        process = self._run_command(["gdbus", "call", "--session", "--dest", "org.kde.KWin",
+                                     "--object-path", path, "--method", method, *args])
+        if process is None:
+            return None
+        stdout, _ = process.communicate()
+        if process.returncode != 0:
+            return None
+        return stdout.decode().strip()
 
     @log.catch
     def _run_command(self, command: list[str]) -> Optional[Popen]:

@@ -21,6 +21,16 @@ from src.backend.PluginManager.ActionCore import ActionCore
 if TYPE_CHECKING:
     from src.backend.DeckManagement.DeckController import ControllerInputState
 
+# A state that never went through the action UI - a page added over DBus
+# (AddPage), created with the CLI or written by hand - has no control entries.
+# Treat that like the UI does when the first action is added
+# (ActionManager.add_action): action 0 controls image, background and labels.
+# An explicit None still means "no action controls this".
+DEFAULT_IMAGE_CONTROL = 0
+DEFAULT_BACKGROUND_CONTROL = 0
+DEFAULT_LABEL_CONTROLS = (0, 0, 0)
+
+
 class ActionPermissionManager:
     def __init__(self, controller_input_state: "ControllerInputState"):
         self.controller_input_state = controller_input_state
@@ -30,14 +40,15 @@ class ActionPermissionManager:
     ## Labels
     def get_label_control_indices(self) -> list[int | None]:
         state_dict = self.get_state_dict()
-        return state_dict.get("label-control-actions", [None, None, None])
+        return state_dict.get("label-control-actions", list(DEFAULT_LABEL_CONTROLS))
     
     def get_label_control_index(self, label_position: int) -> ActionCore:
         return self.get_label_control_indices()[label_position]
     
     def set_label_control_index(self, label_position: int, index: int, reload_pages: bool = True, reload_self: bool = True):
         state_dict = self.get_state_dict()
-        state_dict.setdefault("label-control-actions", [None, None, None])
+        # Start from the effective values, so toggling one label keeps the others
+        state_dict.setdefault("label-control-actions", list(DEFAULT_LABEL_CONTROLS))
         state_dict["label-control-actions"][label_position] = index
         self.set_state_dict(state_dict)
 
@@ -46,7 +57,7 @@ class ActionPermissionManager:
     ## Media
     def get_image_control_index(self) -> ActionCore:
         state_dict = self.get_state_dict()
-        return state_dict.get("image-control-action", None)
+        return state_dict.get("image-control-action", DEFAULT_IMAGE_CONTROL)
     
     def set_image_control_index(self, index: int, reload_pages: bool = True, reload_self: bool = True):
         state_dict = self.get_state_dict()
@@ -58,7 +69,7 @@ class ActionPermissionManager:
     ## Background
     def get_background_control_index(self) -> ActionCore:
         state_dict = self.get_state_dict()
-        return state_dict.get("background-control-action", None)
+        return state_dict.get("background-control-action", DEFAULT_BACKGROUND_CONTROL)
     
     def set_background_control_index(self, index: int, reload_pages: bool = True, reload_self: bool = True):
         state_dict = self.get_state_dict()

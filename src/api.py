@@ -231,22 +231,28 @@ class StreamControllerAPI:
     def AddPage(self, name: Str, json_contents: Str) -> None:
         """Add a new page with the given name and JSON contents."""
         log.info(f"DBus API: AddPage called – name={name!r}")
+        if gl.page_manager is None:
+            raise DBusError(ERR + "NotReady", "PageManager not initialized")
         try:
             page_dict = json.loads(json_contents) if json_contents else {}
-            if gl.page_manager is not None:
-                path = gl.page_manager.add_page(name, page_dict)
-                gl.page_manager.update_dict_of_pages_with_path(path)
-                gl.page_manager.reload_pages_with_path(path)
-                gl.signal_manager.trigger_signal(Signals.PageAdd, path)
+        except json.JSONDecodeError as e:
+            log.error(f"DBus API: AddPage – invalid JSON: {e}")
+            raise DBusError(ERR + "InvalidArgument", f"Invalid JSON: {e}")
+        if not isinstance(page_dict, dict):
+            raise DBusError(ERR + "InvalidArgument", "Page JSON must be an object")
+        try:
+            path = gl.page_manager.add_page(name, page_dict)
+            gl.page_manager.update_dict_of_pages_with_path(path)
+            gl.page_manager.reload_pages_with_path(path)
+            gl.signal_manager.trigger_signal(Signals.PageAdd, path)
         except FileExistsError as e:
             raise DBusError(
                 "com.core447.StreamController.Error.PageExists",
                 f"Page '{name}' already exists"
             )
-        except json.JSONDecodeError as e:
-            log.error(f"DBus API: AddPage – invalid JSON: {e}")
         except Exception as e:
             log.error(f"DBus API: AddPage error: {e}")
+            raise DBusError(ERR + "Failed", str(e))
 
     def RemovePage(self, name: Str) -> None:
         """Remove the page with the given name."""

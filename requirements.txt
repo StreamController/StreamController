@@ -4,7 +4,7 @@ bcrypt==5.0.0
 blinker==1.9.0
 build==1.5.0
 cairocffi==1.7.1
-CairoSVG==2.9.0
+CairoSVG==2.9.1
 certifi==2026.7.22
 cffi==2.1.1
 charset-normalizer==3.4.9
@@ -54,7 +54,7 @@ nab-index==0.0.12
 nab-python==0.0.12
 nab-resolver==0.0.12
 natsort==8.4.0
-nltk==3.10.2
+nltk==3.10.3
 numpy==2.5.2
 opencv-python==5.0.0.93
 packaging==26.3
@@ -78,7 +78,7 @@ pyflakes==3.4.0
 Pygments==2.20.0
 PyGObject==3.56.3
 PyGObject-stubs==2.17.0
-pymongo==4.17.0
+pymongo==4.18.2
 pyparsing==3.3.2
 pyperclip==1.11.0
 pyproject-metadata==0.12.1
@@ -86,7 +86,7 @@ pyproject_hooks==1.2.0
 Pyro5==5.17
 pyspellchecker==0.9.0
 python-dateutil==2.9.0.post0
-python-discovery==1.5.1
+python-discovery==1.6.2
 python-wayland-extra==0.7.0
 pytz==2026.3.post1
 pyudev==0.24.4
@@ -116,9 +116,9 @@ types-setuptools==83.0.0.20260807
 typing-inspection==0.4.2
 typing_extensions==4.16.0
 uc-micro-py==2.0.0
-urllib3==2.7.0
+urllib3==2.8.0
 usb-monitor==1.23
-virtualenv==21.7.3
+virtualenv==21.7.13
 webencodings==0.5.1
 websocket-client==1.9.0
-Werkzeug==3.1.8
+Werkzeug==3.1.9

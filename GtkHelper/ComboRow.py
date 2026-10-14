@@ -101,6 +101,15 @@ class ComboRow(Adw.ComboRow):
         return converted_list
 
     def set_selected_item(self, item: BaseComboRowItem | str):
+        active_model = self.get_model() or self.model
+        n_items = active_model.get_n_items() if active_model else 0
+        if n_items == 0:
+            try:
+                self.set_selected(Gtk.INVALID_LIST_POSITION)
+            except Exception:
+                pass
+            return None
+
         selected_item_index = 0
 
         for index in range(self.model.get_n_items()):
@@ -108,8 +117,16 @@ class ComboRow(Adw.ComboRow):
                 selected_item_index = index
                 break
 
-        self.set_selected(selected_item_index)
-        return self.get_item_at(selected_item_index)
+        try:
+            if 0 <= selected_item_index < n_items:
+                self.set_selected(selected_item_index)
+                return self.get_item_at(selected_item_index)
+            else:
+                self.set_selected(Gtk.INVALID_LIST_POSITION)
+                return None
+        except Exception as e:
+            log.debug(f"ComboRow set_selected error: {e}")
+            return None
 
     def add_item(self, combo_row_item: BaseComboRowItem | str):
         if isinstance(combo_row_item, str):
@@ -140,17 +157,19 @@ class ComboRow(Adw.ComboRow):
     def remove_items(self, start: int, amount: int):
         size = self.model.get_n_items()
 
-        if not (0 <= start < size and start + amount < size):
+        if not (0 <= start < size and start + amount <= size):
             log.error("Not able to remove Items!")
             return
 
-        for i in range(amount + 1):
+        for i in range(amount):
             self.model.remove(start)
 
     def remove_all_items(self):
         self.model.remove_all()
 
-    def get_item_at(self, index: int) -> BaseComboRowItem:
+    def get_item_at(self, index: int) -> BaseComboRowItem | None:
+        if index < 0 or index >= self.model.get_n_items():
+            return None
         return self.model.get_item(index)
 
     def get_item(self, name: str) -> BaseComboRowItem | None:
@@ -167,7 +186,7 @@ class ComboRow(Adw.ComboRow):
     def get_selected_item(self) -> BaseComboRowItem | None:
         selected_index = self.get_selected()
 
-        if selected_index == -1:
+        if selected_index < 0 or selected_index == Gtk.INVALID_LIST_POSITION or selected_index >= self.model.get_n_items():
             return None
 
         return self.get_item_at(selected_index)

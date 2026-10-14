@@ -49,8 +49,6 @@ class ColorButtonRow(Adw.ActionRow):
         rgba = self.convert_to_rgba(value)
         self.color_button.set_rgba(rgba)
 
-        self.color_button.emit("color-set")
-
     def convert_from_rgba(self, color: Gdk.RGBA) -> tuple[int, int, int, int]:
         color = (color.red, color.green, color.blue, color.alpha)
 

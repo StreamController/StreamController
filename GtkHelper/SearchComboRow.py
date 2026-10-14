@@ -114,10 +114,18 @@ class SearchComboRow(Adw.PreferencesRow):
         for item in list:
             self.model_widget.append(item)
 
-        self.dropdown.set_selected(selected_index)
+        n_items = self.model_widget.get_n_items()
+        if n_items == 0:
+            self.dropdown.set_selected(Gtk.INVALID_LIST_POSITION)
+        elif 0 <= selected_index < n_items:
+            self.dropdown.set_selected(selected_index)
+        else:
+            self.dropdown.set_selected(0)
 
     def set_selected_item(self, index: int):
-        if index < 0:
+        n_items = self.model_widget.get_n_items()
+        if n_items == 0 or index < 0 or index >= n_items:
+            self.dropdown.set_selected(Gtk.INVALID_LIST_POSITION)
             return
 
         try:

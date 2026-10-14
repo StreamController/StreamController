@@ -1263,14 +1263,8 @@ class DeckController:
         start = time.time()
         controller_inputs = [controller_input for t in self.inputs for controller_input in self.inputs[t]]
 
-        # Avoid dispatch overhead for small decks/pages.
-        if len(controller_inputs) <= 16:
-            for controller_input in controller_inputs:
-                self.load_input(controller_input, page, update)
-        else:
-            futures = [self.input_load_executor.submit(self.load_input, controller_input, page, update) for controller_input in controller_inputs]
-            for future in futures:
-                future.result()
+        for controller_input in controller_inputs:
+            self.load_input(controller_input, page, update)
         log.info(f"Loading all inputs took {time.time() - start} seconds")
 
     def load_input_from_identifier(self, identifier: str, page: Page, update: bool = True):

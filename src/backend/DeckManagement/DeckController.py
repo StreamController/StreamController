@@ -1365,6 +1365,7 @@ class DeckController:
         # Stop queued tasks. Also waits out any in-flight media tick, so we don't
         # need a second wait here anymore.
         self.clear_media_player_tasks()
+        self.invalidate_render_caches()
 
         # Update ui
         GLib.idle_add(self.update_ui_on_page_change) #TODO: Use new signal manager instead
@@ -1391,7 +1392,7 @@ class DeckController:
         else:
             screensaver_ms = 0.0
         if load_inputs:
-            self.media_player.add_task(self.load_all_inputs, page, update=False, task_label=f"load_all_inputs:{page.get_name()}")
+            self.load_all_inputs(page, update=False)
 
         t_initialize_actions = time.time()
         self.active_page.initialize_actions()
@@ -3508,7 +3509,7 @@ class ControllerKey(ControllerInput):
             
             elif len(state.get_own_actions()) == 1:
                 if state_dict.get("image-control-action") is None:
-                    self.set_key_image(None, update=False)
+                    state_dict["image-control-action"] = 0
                 # action = self.get_own_actions()[0]
                 # if action.has_image_control()
 

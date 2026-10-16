@@ -2929,12 +2929,16 @@ class ControllerInput:
         d = self.get_page_input_dict()
 
         # Add new state
-        self.states[len(self.states)] = self.ControllerStateClass(self, len(self.states))
+        new_state_index = len(self.states)
+        self.states[new_state_index] = self.ControllerStateClass(self, new_state_index)
         # Write to json
         for state in self.states.keys():
             d["states"].setdefault(str(state), {})
 
         own_page = self.get_own_page()
+        for p in own_page.get_pages_with_same_json(get_self=True):
+            p.action_objects.setdefault(self.identifier.input_type, {}).setdefault(self.identifier.json_identifier, {})[new_state_index] = {}
+
         own_page.save()
         gl.page_manager.update_dict_of_pages_with_path(own_page.json_path)
 
@@ -2979,8 +2983,10 @@ class ControllerInput:
 
         d["states"] = new_states_dict
 
-
         own_page = self.get_own_page()
+        for p in own_page.get_pages_with_same_json(get_self=True):
+            p.remove_state(self.identifier, state, state_map)
+
         own_page.save()
         gl.page_manager.update_dict_of_pages_with_path(own_page.json_path)
 

@@ -271,7 +271,7 @@ class RemoveButton(Gtk.Button):
         except KeyError:
             #FIXME
             pass
-        page.fix_action_objects_order(self.action.input_ident)
+        page.fix_action_objects_order(self.action.input_ident, int(self.action.state))
 
         # Remove from page json
         page.dict[self.action.input_ident.input_type][self.action.input_ident.json_identifier]["states"][str(self.action.state)]["actions"].pop(self.index)

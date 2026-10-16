@@ -627,18 +627,49 @@ class Page:
             self.dict[identifier.input_type][identifier.json_identifier]["states"][str(state)]["actions"][index]["comment"] = comment
             self.save()
 
-    def fix_action_objects_order(self, identifier: InputIdentifier) -> None:
+    def remove_state(self, identifier: InputIdentifier, state: int, state_map: dict[int, int]) -> None:
+        if identifier.input_type not in self.action_objects:
+            return
+        if identifier.json_identifier not in self.action_objects[identifier.input_type]:
+            return
+
+        states_dict = self.action_objects[identifier.input_type][identifier.json_identifier]
+
+        # 1. Clean up resources for actions in the deleted state
+        removed_actions = states_dict.pop(state, {})
+        for action in list(removed_actions.values()):
+            if action is not None:
+                if isinstance(action, ActionCore) and hasattr(action, "on_removed_from_cache"):
+                    action.on_removed_from_cache()
+                action.page = None
+
+        # 2. Re-map the remaining states according to state_map
+        new_states_dict = {}
+        for old_state, actions in states_dict.items():
+            new_state = state_map.get(old_state, old_state)
+            for action in actions.values():
+                if isinstance(action, ActionCore):
+                    action.state = new_state
+            new_states_dict[new_state] = actions
+
+        self.action_objects[identifier.input_type][identifier.json_identifier] = new_states_dict
+
+    def fix_action_objects_order(self, identifier: InputIdentifier, state: int = None) -> None:
         """
         #TODO: Switch to list instead of dict to avoid this
         """
         if identifier.json_identifier not in self.action_objects.get(identifier.input_type, {}):
             return
         
-        actions = list(self.action_objects[identifier.input_type][identifier.json_identifier].values())
-
-        self.action_objects[identifier.input_type][identifier.json_identifier] = {}
-        for i, action in enumerate(actions):
-            self.action_objects[identifier.input_type][identifier.json_identifier][i] = action
+        input_states = self.action_objects[identifier.input_type][identifier.json_identifier]
+        if state is not None:
+            if state in input_states:
+                actions = list(input_states[state].values())
+                input_states[state] = {i: action for i, action in enumerate(actions)}
+        else:
+            for s in list(input_states.keys()):
+                actions = list(input_states[s].values())
+                input_states[s] = {i: action for i, action in enumerate(actions)}
     
     # Configuration
     def _get_dict_value(self, keys: list[str]):

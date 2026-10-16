@@ -163,16 +163,26 @@ class AssetChooser(Gtk.Stack):
         self.connect("notify::visible-child-name", self.on_switch)
 
     def show_for_path(self, path):
-        if gl.asset_manager_backend.has_by_internal_path(path):
+        if path and gl.asset_manager_backend.has_by_internal_path(path):
             # Is custom asset
+            self.set_visible_child_name("custom-assets")
             self.custom_asset_chooser.show_for_path(path)
             self.asset_manager.back_button.set_visible(False)
-        elif CustomIconPack.is_custom_pack_path(path):
+        elif path and CustomIconPack.is_custom_pack_path(path):
+            self.set_visible_child_name("custom-asset-packs")
             self.custom_icon_pack_chooser.show_for_path(path)
-        else:
+        elif path:
             # Check if really is a icon pack
             # TODO
+            self.set_visible_child_name("icon-packs")
             self.icon_pack_chooser.show_for_path(path)
+        else:
+            if gl.icon_pack_manager.get_icon_packs():
+                self.set_visible_child_name("icon-packs")
+            elif CustomIconPack.get_custom_icon_packs():
+                self.set_visible_child_name("custom-asset-packs")
+            else:
+                self.set_visible_child_name("custom-assets")
 
 
     def on_switch(self, stack, name):

@@ -455,7 +455,8 @@ class ActionCore(rpyc.Service):
     def has_custom_user_asset(self) -> bool:
         if not self.get_is_present(): return False
         media = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {}).get("media", {})
-        return media.get("path", None) is not None
+        path = media.get("path", None)
+        return bool(path and os.path.isfile(path))
     
     def get_own_action_index(self) -> int:
         if not self.get_is_present(): return -1

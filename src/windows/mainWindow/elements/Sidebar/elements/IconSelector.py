@@ -118,7 +118,7 @@ class IconSelector(Gtk.Box):
 
     def on_click(self, button):
         media_path = self.get_media_path()
-        GLib.idle_add(gl.app.let_user_select_asset, media_path, self.set_media_callback)
+        gl.app.let_user_select_asset(media_path, self.set_media_callback)
 
     def get_media_path(self):
         page = gl.app.main_win.get_active_page()

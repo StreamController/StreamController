@@ -426,17 +426,6 @@ class ActionCore(rpyc.Service):
         #TODO: Might require performance improvements
         image_control_index = self.get_state().action_permission_manager.get_image_control_index()
         return image_control_index == self.get_own_action_index()
-
-
-        key_dict = self.input_ident.get_config(self.page).get("states", {}).get(str(self.state), {})
-
-        if key_dict.get("image-control-action") is None:
-            return False
-        
-        if ("image-control-action" not in key_dict) and (not self.get_is_multi_action()):
-            return True
-
-        return self.get_own_action_index() == key_dict.get("image-control-action")
     
     def has_background_control(self):
         #TODO: Might require performance improvements

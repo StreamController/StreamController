@@ -30,7 +30,12 @@ class ActionPermissionManager:
     ## Labels
     def get_label_control_indices(self) -> list[int | None]:
         state_dict = self.get_state_dict()
-        return state_dict.get("label-control-actions", [None, None, None])
+        indices = state_dict.get("label-control-actions")
+        if indices is None:
+            if len(state_dict.get("actions", [])) == 1:
+                return [0, 0, 0]
+            return [None, None, None]
+        return indices
     
     def get_label_control_index(self, label_position: int) -> ActionCore:
         return self.get_label_control_indices()[label_position]
@@ -46,7 +51,10 @@ class ActionPermissionManager:
     ## Media
     def get_image_control_index(self) -> ActionCore:
         state_dict = self.get_state_dict()
-        return state_dict.get("image-control-action", None)
+        image_control = state_dict.get("image-control-action")
+        if image_control is None and len(state_dict.get("actions", [])) == 1:
+            return 0
+        return image_control
     
     def set_image_control_index(self, index: int, reload_pages: bool = True, reload_self: bool = True):
         state_dict = self.get_state_dict()
@@ -58,7 +66,10 @@ class ActionPermissionManager:
     ## Background
     def get_background_control_index(self) -> ActionCore:
         state_dict = self.get_state_dict()
-        return state_dict.get("background-control-action", None)
+        bg_control = state_dict.get("background-control-action")
+        if bg_control is None and len(state_dict.get("actions", [])) == 1:
+            return 0
+        return bg_control
     
     def set_background_control_index(self, index: int, reload_pages: bool = True, reload_self: bool = True):
         state_dict = self.get_state_dict()

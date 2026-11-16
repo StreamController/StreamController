@@ -42,7 +42,8 @@ def setup_autostart(enable: bool = True):
             setup_autostart_desktop_entry(True, True)
 
     else:
-        setup_autostart_flatpak(False)
+        if is_flatpak():
+            setup_autostart_flatpak(False)
         setup_autostart_desktop_entry(False)
     
     
@@ -63,7 +64,7 @@ def setup_autostart_flatpak(enable: bool = True):
             success = False
         log.info(f"request_background success={success}")
         if not success:
-            setup_autostart_desktop_entry()
+            setup_autostart_desktop_entry(enable)
 
     xdp = Xdp.Portal.new()
 

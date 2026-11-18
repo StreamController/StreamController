@@ -84,6 +84,25 @@ def setup_autostart_flatpak(enable: bool = True):
         log.error(f"request_background failed")
         setup_autostart_desktop_entry(enable)
 
+def _remove_stale_autostart_backups(autostart_dir: str) -> None:
+    """
+    systemd --user launches every *.desktop in ~/.config/autostart, including
+    StreamController.desktop.bak.* copies left behind by manual edits. Those
+    spawn extra StreamController processes that fight over the same deck/logs.
+    """
+    if not os.path.isdir(autostart_dir):
+        return
+    for name in os.listdir(autostart_dir):
+        if not name.startswith("StreamController.desktop.bak"):
+            continue
+        path = os.path.join(autostart_dir, name)
+        try:
+            os.remove(path)
+            log.info(f"Removed stale autostart backup: {path}")
+        except Exception as e:
+            log.error(f"Failed to remove stale autostart backup {path}: {e}")
+
+
 def setup_autostart_desktop_entry(enable: bool = True, native: bool = False):
     log.info("Setting up autostart using desktop entry")
 
@@ -92,6 +111,9 @@ def setup_autostart_desktop_entry(enable: bool = True, native: bool = False):
     xdg_config_home = os.path.join(os.environ.get("HOME"), ".config")
     AUTOSTART_DIR = os.path.join(xdg_config_home, "autostart")
     AUTOSTART_DESKTOP_PATH = os.path.join(AUTOSTART_DIR, "StreamController.desktop")
+
+    # Always scrub backup desktop files so they cannot keep launching duplicates.
+    _remove_stale_autostart_backups(AUTOSTART_DIR)
 
     if enable:
         try:

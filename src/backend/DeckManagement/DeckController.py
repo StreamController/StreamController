@@ -371,10 +371,17 @@ class MediaPlayerThread(threading.Thread):
 
             end = time.time()
 
-            # Use low FPS when idle (no animated content, no pending tasks)
+            # Use low FPS when idle (no animated content, no pending tasks).
+            # Scrolling labels alone do not need the full 30 FPS video path — that
+            # path was retaining a PIL image per key update while the UI was
+            # hidden (daemon-only), ballooning RSS over long sessions.
             has_pending = bool(self.tasks or self.image_tasks or self.touchscreen_task or self.touchscreen_region_tasks or self.screen_task)
-            if has_pending or has_bg_video or getattr(self, '_cached_needs_ticks', False):
+            needs_ticks = getattr(self, '_cached_needs_ticks', False)
+            scroll_only = getattr(self, '_cached_scroll_only', False)
+            if has_pending or has_bg_video or (needs_ticks and not scroll_only):
                 target_fps = self.FPS
+            elif needs_ticks and scroll_only:
+                target_fps = 10  # Readable scroll without video-rate churn
             else:
                 target_fps = 2  # Idle: just check for new tasks occasionally
 
@@ -398,18 +405,29 @@ class MediaPlayerThread(threading.Thread):
         if self.media_ticks % self.FPS != 0:
             return getattr(self, '_cached_needs_ticks', False)
         needs = False
+        has_video = False
+        has_scroll = False
         for key in self.deck_controller.inputs.get(Input.Key, []):
             state = key.get_active_state()
-            if state.key_video is not None or state.label_manager.get_has_scroll_labels():
+            if state.key_video is not None:
+                has_video = True
                 needs = True
                 break
-        if not needs:
+            if state.label_manager.get_has_scroll_labels():
+                has_scroll = True
+                needs = True
+        if not has_video:
             for dial in self.deck_controller.inputs.get(Input.Dial, []):
                 state = dial.get_active_state()
-                if state.video is not None or state.label_manager.get_has_scroll_labels():
+                if state.video is not None:
+                    has_video = True
                     needs = True
                     break
+                if state.label_manager.get_has_scroll_labels():
+                    has_scroll = True
+                    needs = True
         self._cached_needs_ticks = needs
+        self._cached_scroll_only = needs and has_scroll and not has_video
         return needs
 
     def append_fps(self, fps: float) -> None:
@@ -1485,10 +1503,34 @@ class DeckController:
         # caches are keyed by logical index/region, but the logical -> physical mapping
         # just changed underneath them.
         self.invalidate_render_caches()
-        self.ui_image_changes_while_hidden.clear()
+        self.clear_ui_image_changes_while_hidden()
         self.clear()
 
         self.rebuild_ui_for_rotation()
+
+    def store_ui_image_while_hidden(self, identifier: InputIdentifier, image: Image.Image) -> None:
+        """
+        Stash a UI preview frame for when the main window is mapped.
+
+        In daemon-only / unmapped UI mode this can be called at media-player rates
+        (scrolling labels, GIFs). Always close the previous image for this input so
+        we keep at most one frame per identifier instead of retaining every frame.
+        """
+        if image is None:
+            return
+        previous = self.ui_image_changes_while_hidden.get(identifier)
+        if previous is not None and previous is not image:
+            previous.close()
+        self.ui_image_changes_while_hidden[identifier] = image
+
+    def clear_ui_image_changes_while_hidden(self) -> None:
+        for image in self.ui_image_changes_while_hidden.values():
+            if image is not None:
+                try:
+                    image.close()
+                except Exception:
+                    pass
+        self.ui_image_changes_while_hidden.clear()
 
     def invalidate_render_caches(self):
         """
@@ -3541,8 +3583,8 @@ class ControllerKey(ControllerInput):
         x, y = ControllerKey.Index_To_Coords(self.deck_controller.deck, self.index)
 
         if self.deck_controller.get_own_key_grid() is None or not recursive_hasattr(gl, "app.main_win.get_mapped") or not gl.app.main_win.get_mapped():
-            # Save to use later
-            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image # The ui key coords are in reverse order
+            # Save to use later (closes any previous stash for this key)
+            self.deck_controller.store_ui_image_while_hidden(self.identifier, image)
         else:
             try:
                 GLib.idle_add(self.deck_controller.get_own_key_grid().buttons[x][y].set_image, image)
@@ -3704,10 +3746,7 @@ class ControllerTouchScreen(ControllerInput):
         GLib.idle_add(screenbar.image.update_region, region, x1, y1, identifier)
 
     def _store_ui_image_while_hidden(self, image: Image.Image) -> None:
-        previous = self.deck_controller.ui_image_changes_while_hidden.get(self.identifier)
-        if previous is not None:
-            previous.close()
-        self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
+        self.deck_controller.store_ui_image_while_hidden(self.identifier, image)
 
     def get_current_image(self) -> Image.Image:
         active_state = self.get_active_state()
@@ -4360,7 +4399,7 @@ class ControllerScreen(ControllerInput):
             screenbar = self.deck_controller.own_deck_stack_child.page_settings.deck_config.screenbar
             GLib.idle_add(screenbar.image.set_image, image)
         else:
-            self.deck_controller.ui_image_changes_while_hidden[self.identifier] = image
+            self.deck_controller.store_ui_image_while_hidden(self.identifier, image)
 
     def get_current_image(self) -> Image.Image:
         active_state = self.get_active_state()

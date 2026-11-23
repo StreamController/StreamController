@@ -273,17 +273,19 @@ class MediaPlayerSetImageTask:
     def close(self):
         self.native_image = None
 
-    def run(self):
+    def run(self) -> bool:
+        """Returns True if the image was written to the device."""
         try:
             self.deck_controller.deck.set_key_image(self.key_index, self.native_image)
             self.close()
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] = 0
+            return True
         except StreamDeck.TransportError as e:
             log.error(f"Failed to set deck key image. Error: {e}")
 
             beta_resume = gl.settings_manager.get_app_settings().get("system", {}).get("beta-resume-mode", True)
             if beta_resume:
-                return
+                return False
 
             MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] += 1
             if MediaPlayerSetImageTask.n_failed_in_row[self.deck_controller.serial_number()] > 5:
@@ -295,6 +297,7 @@ class MediaPlayerSetImageTask:
                 gl.deck_manager.remove_controller(self.deck_controller)
 
                 gl.deck_manager.connect_new_decks()
+            return False
         finally:
             self.close()
 
@@ -675,8 +678,10 @@ class MediaPlayerThread(threading.Thread):
         if has_hardware_updates:
             with self.deck_controller.deck:
                 for task in sorted(key_tasks, key=lambda t: (-t.priority, t.key_index)):
-                    task.run()
-                    self.last_key_image_hashes[task.key_index] = task.image_hash
+                    # A failed write leaves the key showing something else, so
+                    # don't record it as up to date or it is never re-sent
+                    if task.run():
+                        self.last_key_image_hashes[task.key_index] = task.image_hash
 
                 if full_touchscreen_task is not None:
                     full_touchscreen_task.run()
@@ -828,6 +833,9 @@ class DeckController:
 
 
         self.load_sticky_page()
+
+        if self.deck_manager.beta_resume_mode:
+            self.redraw_after_reconnects()
 
         # If screen is locked start the screensaver - this happens when the deck gets reconnected during the screensaver
         if gl.screen_locked and gl.settings_manager.get_app_settings().get("system", {}).get("lock-on-lock-screen", True):
@@ -1489,6 +1497,40 @@ class DeckController:
         self.clear()
 
         self.rebuild_ui_for_rotation()
+
+    def redraw_after_reconnects(self) -> None:
+        """
+        Redraw the deck whenever the StreamDeck library reopens it after a transport
+        error (beta resume mode). On resume from suspend the deck is usually reset and
+        comes back blank, but the render caches still describe the old display, so
+        every key whose image did not change would stay blank (issue #698). The
+        legacy resume path does the same in DeckManager.on_resumed().
+
+        The library has no reconnect callback, so its _reconnect() is wrapped. It
+        runs on the old read thread, which exits right after it returns.
+        """
+        device = getattr(self.deck, "deck", self.deck)
+        reconnect = getattr(device, "_reconnect", None)
+        if reconnect is None:
+            # Fake and remote decks never reconnect
+            return
+
+        def reconnect_and_redraw() -> bool:
+            if not reconnect():
+                return False
+            try:
+                self.invalidate_render_caches()
+                self._last_background_signature = None
+                self._last_screensaver_signature = None
+                if self.active_page is not None:
+                    self.load_page(self.active_page, allow_reload=True, force_background_reload=True)
+                else:
+                    self.load_default_page()
+            except Exception as e:
+                log.error(f"Failed to redraw deck {self.safe_serial_number()} after reconnecting it. Error: {e}")
+            return True
+
+        device._reconnect = reconnect_and_redraw
 
     def invalidate_render_caches(self):
         """

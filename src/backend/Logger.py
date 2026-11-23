@@ -55,7 +55,7 @@ class LoggerConfig:
     log_file_path: str
     base_log_level: str
     rotation: str
-    retention: str
+    retention: str | int | None
     compression: str
 
 class Logger:

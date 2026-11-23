@@ -94,6 +94,8 @@ import globals as gl
 
 # Define constants
 DEFAULT_DATA_PATH = os.path.expanduser("~/.var/app/com.core447.StreamController/data")
+LOG_ROTATION = "10 MB"
+LOG_ARCHIVES_TO_KEEP = 5
 
 main_path = os.path.abspath(os.path.dirname(__file__))
 gl.MAIN_PATH = main_path
@@ -108,7 +110,8 @@ def config_logger():
     # the logs they paste into bug reports - covers every sink below at once
     log.configure(patcher=LogRedaction.patch_record)
     # Create log files
-    log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation="3 days", backtrace=True, diagnose=True, level="TRACE")
+    log.add(os.path.join(gl.DATA_PATH, "logs/logs.log"), rotation=LOG_ROTATION,
+            retention=LOG_ARCHIVES_TO_KEEP, backtrace=True, diagnose=True, level="TRACE")
     # Set min level to print
     log.add(sys.stderr, level="TRACE")
     log.add(write_logs, level="TRACE")
@@ -122,8 +125,8 @@ def config_logger():
             name="PLUGIN",
             log_file_path=os.path.join(gl.DATA_PATH, "logs/plugins.log"),
             base_log_level="TRACE",
-            rotation="3 days",
-            retention=None,
+            rotation=LOG_ROTATION,
+            retention=LOG_ARCHIVES_TO_KEEP,
             compression="zip"
         ),
         [

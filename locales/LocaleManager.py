@@ -93,6 +93,6 @@ class LocaleManager:
 
         # Escape HTML/XML entities for GTK markup compatibility
         if result:
-            result = html.escape(result)
+            result = html.escape(result, quote=False)
 
         return result

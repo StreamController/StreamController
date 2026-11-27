@@ -168,7 +168,7 @@ class Page:
 
         for old_action in old_actions:
             if old_action not in new_actions:
-                old_action.on_removed_from_cache()
+                old_action.release_from_app()
 
         self.action_objects = new_action_objects
 
@@ -285,7 +285,7 @@ class Page:
         for action in all_old_objects:
             if action not in all_action_objects:
                 if isinstance(action, ActionCore):
-                    action.on_removed_from_cache()
+                    action.release_from_app()
                     action.page = None
                 del action
 
@@ -578,8 +578,8 @@ class Page:
                 for state in self.action_objects[input_type][input_identifier]:
                     for i, action in list(self.action_objects[input_type][input_identifier][state].items()):
                         if action is not None:
-                            if isinstance(action, ActionCore) and hasattr(action, "on_removed_from_cache"):
-                                action.on_removed_from_cache()
+                            if isinstance(action, ActionCore):
+                                action.release_from_app()
                             action.page = None
                         del self.action_objects[input_type][input_identifier][state][i]
             self.action_objects[input_type] = {}

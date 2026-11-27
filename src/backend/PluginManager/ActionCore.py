@@ -679,6 +679,32 @@ class ActionCore(rpyc.Service):
     def on_removed_from_cache(self) -> None:
         self.on_disconnect()
 
+    def release_from_app(self) -> None:
+        """
+        Called by the app when it drops this action for good. Runs the plugin's
+        on_removed_from_cache() hook, then undoes what the app hooked up on the
+        action's behalf - plugins override that hook, often without super().
+
+        Both leftovers keep the action, and through it its DeckController, alive:
+        SignalManager has no other way to forget a connected bound method, and a
+        GenerativeUI row's GObject signal handler closes a reference cycle through
+        C that Python's garbage collector cannot see.
+        """
+        try:
+            self.on_removed_from_cache()
+        except Exception as e:
+            # A plugin's hook must not stop the rest of the cleanup, nor the deck teardown that called us
+            log.error(f"on_removed_from_cache() of {type(self).__name__} failed: {e}")
+        gl.signal_manager.disconnect_owner(self)
+
+        generative_ui_objects, self.generative_ui_objects = self.generative_ui_objects, []
+
+        def disconnect_generative_ui():
+            for generative_ui_object in generative_ui_objects:
+                generative_ui_object.disconnect_signals()
+        # Pages are released from non-GTK threads too (deck disconnect handling)
+        GLib.idle_add(disconnect_generative_ui)
+
     def on_remove(self) -> None:
         #TODO: Fully implement
         pass

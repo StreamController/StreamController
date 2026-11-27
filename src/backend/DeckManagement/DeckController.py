@@ -12,6 +12,7 @@ This programm comes with ABSOLUTELY NO WARRANTY!
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+import functools
 import gc
 import hashlib
 import os
@@ -707,6 +708,25 @@ class MediaPlayerThread(threading.Thread):
                 gl.deck_manager.connect_new_decks()
 
 
+def _cache_per_instance(method):
+    """
+    Memoizes an argument-less method on the instance itself.
+
+    @lru_cache on a method keys a cache that lives on the class by `self`, so it
+    holds a strong reference to every instance ever created - for DeckController
+    that pinned the controller of every deck that was unplugged or reconnected,
+    together with its pages, actions and plugin worker processes.
+    """
+    attr = f"_cached_{method.__name__}"
+
+    @functools.wraps(method)
+    def wrapper(self):
+        if attr not in self.__dict__:
+            self.__dict__[attr] = method(self)
+        return self.__dict__[attr]
+    return wrapper
+
+
 @lru_cache(maxsize=64)
 def _decode_page_media_cached(path: str, mtime: float, is_svg_media: bool) -> Image.Image:
     # Keyed on (path, mtime) so re-visiting a page doesn't re-decode/re-rasterize
@@ -894,7 +914,7 @@ class DeckController:
                 return i
         return None
 
-    @lru_cache(maxsize=None)
+    @_cache_per_instance
     def serial_number(self) -> str:
         return self.deck.get_serial_number()
 
@@ -1001,7 +1021,7 @@ class DeckController:
     def generate_alpha_key(self) -> Image.Image:
         return Image.new("RGBA", self.get_key_image_size(), (0, 0, 0, 0))
     
-    @lru_cache(maxsize=None)
+    @_cache_per_instance
     def get_key_image_size(self) -> tuple[int]:
         if not self.get_alive(): return
         size = self.deck.key_image_format()["size"]
@@ -1010,7 +1030,7 @@ class DeckController:
         size = max(size[0], 72), max(size[1], 72)
         return size
     
-    @lru_cache(maxsize=None)
+    @_cache_per_instance
     def get_touchscreen_image_size(self) -> tuple[int]:
         """Size of the touchscreen as we render it, i.e. rotation applied."""
         if not self.get_alive(): return
@@ -1025,7 +1045,7 @@ class DeckController:
         fmt = self.deck.screen_image_format()
         return fmt.get("size", (0, 0)) != (0, 0)
 
-    @lru_cache(maxsize=None)
+    @_cache_per_instance
     def get_screen_image_size(self) -> tuple[int]:
         if not self.get_alive(): return
         size = self.deck.screen_image_format()["size"]
@@ -1813,9 +1833,15 @@ class DeckController:
             log.error(f"Reader thread of deck {device.id()} did not exit in time")
 
     def delete(self):
-        if hasattr(self, "active_page"):
-            if self.active_page is not None:
-                self.active_page.action_objects = {}
+        # Release the actions of every page cached for this deck, not just wipe the
+        # active one: clear_action_objects() runs each action's on_removed_from_cache()
+        # (which is what stops e.g. the OS plugin's graph worker processes) and
+        # dropping our PageManagerBackend entry lets the controller be freed.
+        pages = [entry["page"] for entry in gl.page_manager.pages.pop(self, {}).values()]
+        if getattr(self, "active_page", None) is not None and self.active_page not in pages:
+            pages.append(self.active_page)
+        for page in pages:
+            page.clear_action_objects()
 
         if hasattr(self, "media_player"):
             self.media_player.stop()

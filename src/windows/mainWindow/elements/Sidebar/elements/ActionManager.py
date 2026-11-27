@@ -641,8 +641,8 @@ class ActionRow(Adw.ActionRow):
         page.reload_similar_pages(type=self.action_object.type, identifier=self.action_object.identifier)
         page.reload_similar_pages()
 
-        if hasattr(self.action_object, "on_removed_from_cache"):
-            self.action_object.on_removed_from_cache()
+        if hasattr(self.action_object, "release_from_app"):
+            self.action_object.release_from_app()
 
         self.action_object = None
         del self.action_object

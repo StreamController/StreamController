@@ -33,6 +33,11 @@ class SignalManager:
         self.connected_signals.setdefault(signal, [])
         self.connected_signals[signal].append(callback)
 
+    def disconnect_owner(self, owner: object) -> None:
+        """Disconnects every callback that is a bound method of owner."""
+        for callbacks in self.connected_signals.values():
+            callbacks[:] = [cb for cb in callbacks if getattr(cb, "__self__", None) is not owner]
+
     def trigger_signal(self, signal: Signal, *args, **kwargs) -> None:
         # Verify signal
         if not issubclass(signal, Signal):
